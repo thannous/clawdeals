@@ -21,28 +21,53 @@ const COPY = {
   }
 };
 
-export async function getServerSideProps({ locale }) {
+function baseUrlFromRequest(req) {
+  const configured = process.env.SITE_URL;
+  if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
+
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
+  const proto = req?.headers?.["x-forwarded-proto"] || "https";
+  if (!host) return "https://www.clawdeals.com";
+  return `${proto}://${host}`.replace(/\/$/, "");
+}
+
+export async function getServerSideProps({ locale, req }) {
   return {
     props: {
       locale: locale || "en",
+      baseUrl: baseUrlFromRequest(req),
       buildTimeIso: new Date().toISOString()
     }
   };
 }
 
-export default function Home({ locale, buildTimeIso }) {
+export default function Home({ locale, baseUrl, buildTimeIso }) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
+  const canonicalPath = currentLocale === "fr" ? "/fr" : "/";
+  const canonicalUrl = `${baseUrl}${canonicalPath}`;
+  const enUrl = `${baseUrl}/`;
+  const frUrl = `${baseUrl}/fr`;
 
   return (
     <>
       <Head>
         <title>{meta.title}</title>
         <meta name="description" content={meta.description} />
+        <meta name="robots" content="index,follow" />
+        <link rel="canonical" href={canonicalUrl} />
+
+        <link rel="alternate" hrefLang="en" href={enUrl} />
+        <link rel="alternate" hrefLang="fr" href={frUrl} />
+        <link rel="alternate" hrefLang="x-default" href={enUrl} />
+
         <meta property="og:title" content={meta.ogTitle} />
         <meta property="og:description" content={meta.ogDescription} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content={canonicalUrl} />
+
+        <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <Landing locale={currentLocale} buildTimeIso={buildTimeIso} />
     </>

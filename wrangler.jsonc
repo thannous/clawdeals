@@ -5,5 +5,8 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-02-02",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SITE_URL": "https://www.clawdeals.com"
+  },
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
 }
