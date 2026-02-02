@@ -9,6 +9,8 @@ export default class MyDocument extends Document {
         <Head>
           <meta name="theme-color" content="#050505" />
           <meta name="color-scheme" content="dark" />
+          <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+          <link rel="manifest" href="/site.webmanifest" />
         </Head>
         <body>
           <Main />
