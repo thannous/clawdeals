@@ -14,6 +14,7 @@ pnpm-debug.log*
 .next/
 out/
 .vercel/
+.open-next/
 
 # Env files (keep .env.example committed if present)
 .env*.local
@@ -21,6 +22,7 @@ out/
 # Tooling caches
 .eslintcache
 coverage/
+.wrangler/
 
 # Editors
 .vscode/
