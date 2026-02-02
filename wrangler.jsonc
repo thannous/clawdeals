@@ -1,9 +1,9 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "clawdeals",
+  "account_id": "412fc919ce706e002b751da5daaa0076",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-02-02",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
 }
-
