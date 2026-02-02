@@ -31,17 +31,23 @@ function baseUrlFromRequest(req) {
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 
+function isWorkersDevRequest(req) {
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
+  return typeof host === "string" && host.includes(".workers.dev");
+}
+
 export async function getServerSideProps({ locale, req }) {
   return {
     props: {
       locale: locale || "en",
       baseUrl: baseUrlFromRequest(req),
+      isPreviewHost: isWorkersDevRequest(req),
       buildTimeIso: new Date().toISOString()
     }
   };
 }
 
-export default function Home({ locale, baseUrl, buildTimeIso }) {
+export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso }) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
@@ -49,13 +55,14 @@ export default function Home({ locale, baseUrl, buildTimeIso }) {
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
   const enUrl = `${baseUrl}/`;
   const frUrl = `${baseUrl}/fr`;
+  const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow";
 
   return (
     <>
       <Head>
         <title>{meta.title}</title>
         <meta name="description" content={meta.description} />
-        <meta name="robots" content="index,follow" />
+        <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 
         <link rel="alternate" hrefLang="en" href={enUrl} />
