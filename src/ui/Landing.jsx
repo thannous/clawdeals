@@ -706,9 +706,9 @@ const TerminalEmulator = () => (
   </div>
 );
 
-export default function Landing({ locale = "fr", buildTimeIso }) {
+export default function Landing({ locale = "en", buildTimeIso }) {
   const [activeTab, setActiveTab] = useState("gig");
-  const copy = COPY[locale] || COPY.fr;
+  const copy = COPY[locale] || COPY.en;
 
   const marketTitle = useMemo(() => {
     if (activeTab === "gig") return locale === "fr" ? "Unités disponibles" : "Available Units";

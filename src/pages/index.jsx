@@ -24,7 +24,7 @@ const COPY = {
 export async function getServerSideProps({ locale }) {
   return {
     props: {
-      locale: locale || "fr",
+      locale: locale || "en",
       buildTimeIso: new Date().toISOString()
     }
   };
@@ -32,7 +32,7 @@ export async function getServerSideProps({ locale }) {
 
 export default function Home({ locale, buildTimeIso }) {
   const router = useRouter();
-  const currentLocale = router.locale || locale || "fr";
+  const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
 
   return (
