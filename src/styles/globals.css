@@ -1,28 +1,81 @@
 @import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap");
 
+@config "../../tailwind.config.js";
 @import "tailwindcss";
 
+@theme {
+  --color-primary: var(--theme-primary);
+  --color-secondary: var(--theme-secondary);
+  --color-bg: var(--theme-bg);
+  --color-surface: var(--theme-surface);
+  --color-surface-alt: var(--theme-surface-alt);
+  --color-border: var(--theme-border);
+  --color-border-strong: var(--theme-border-strong);
+  --color-text: var(--theme-text);
+  --color-muted: var(--theme-text-muted);
+  --color-subtle: var(--theme-text-subtle);
+  --font-sans: var(--theme-font-sans);
+  --font-mono: var(--theme-font-mono);
+  --animate-spin-slow: spin 12s linear infinite;
+}
+
 :root {
-  --color-primary: #ff5f1f; /* Safety Orange */
-  --color-secondary: #00f0ff; /* Cyber Cyan */
-  --color-bg: #050505;
-  --color-surface: #0f1115;
-  --color-border: #2a2f3a;
+  --theme-primary: #ff5f1f; /* Safety Orange */
+  --theme-primary-rgb: 255 95 31;
+  --theme-secondary: #00f0ff; /* Cyber Cyan */
+  --theme-bg: #050505;
+  --theme-surface: #0f1115;
+  --theme-surface-alt: #1f2937;
+  --theme-border: #2a2f3a;
+  --theme-border-strong: #334155;
+  --theme-text: #e2e8f0;
+  --theme-text-muted: #94a3b8;
+  --theme-text-subtle: #64748b;
+  --theme-font-sans: "Chakra Petch", sans-serif;
+  --theme-font-mono: "JetBrains Mono", monospace;
+}
+
+[data-theme="default"] {
+  --theme-primary: #ff5f1f;
+  --theme-primary-rgb: 255 95 31;
+  --theme-secondary: #00f0ff;
+  --theme-bg: #050505;
+  --theme-surface: #0f1115;
+  --theme-surface-alt: #1f2937;
+  --theme-border: #2a2f3a;
+  --theme-border-strong: #334155;
+  --theme-text: #e2e8f0;
+  --theme-text-muted: #94a3b8;
+  --theme-text-subtle: #64748b;
+  --theme-font-sans: "Chakra Petch", sans-serif;
+  --theme-font-mono: "JetBrains Mono", monospace;
+}
+
+[data-theme="ember"] {
+  --theme-primary: #ffb02e;
+  --theme-primary-rgb: 255 176 46;
+  --theme-secondary: #4ade80;
+  --theme-bg: #0b0a07;
+  --theme-surface: #15120c;
+  --theme-surface-alt: #1f1a12;
+  --theme-border: #3a2f22;
+  --theme-border-strong: #524032;
+  --theme-text: #f5f0e6;
+  --theme-text-muted: #c2b59f;
+  --theme-text-subtle: #8f7f67;
+  --theme-font-sans: "Chakra Petch", sans-serif;
+  --theme-font-mono: "JetBrains Mono", monospace;
 }
 
 body {
   background-color: var(--color-bg);
-  font-family: "Chakra Petch", sans-serif;
-  color: #e2e8f0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
   overflow-x: hidden;
 }
 
-.font-mono {
-  font-family: "JetBrains Mono", monospace;
-}
-
 .text-shadow-glow {
-  text-shadow: 0 0 24px rgba(255, 95, 31, 0.12);
+  text-shadow: 0 0 24px rgb(var(--theme-primary-rgb) / 0.12);
 }
 
 /* Custom Scrollbar */
@@ -31,13 +84,13 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #000;
+  background: var(--color-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: var(--color-border);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
+  background: var(--theme-primary);
 }
 
 /* Animations */
@@ -94,8 +147,12 @@ body {
 
 .tech-grid {
   background-size: 40px 40px;
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-image: linear-gradient(
+      to right,
+      rgb(var(--theme-primary-rgb) / 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgb(var(--theme-primary-rgb) / 0.03) 1px, transparent 1px);
 }
 
 .hazard-stripe {
@@ -103,8 +160,7 @@ body {
     45deg,
     rgba(0, 0, 0, 0.2),
     rgba(0, 0, 0, 0.2) 10px,
-    rgba(255, 95, 31, 0.05) 10px,
-    rgba(255, 95, 31, 0.05) 20px
+    rgb(var(--theme-primary-rgb) / 0.05) 10px,
+    rgb(var(--theme-primary-rgb) / 0.05) 20px
   );
 }
-

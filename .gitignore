@@ -23,6 +23,8 @@ out/
 .eslintcache
 coverage/
 .wrangler/
+playwright-report/
+test-results/
 
 # Editors
 .vscode/
