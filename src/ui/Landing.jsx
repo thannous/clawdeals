@@ -20,6 +20,7 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
+import packageInfo from "../../package.json";
 
 const COPY = {
   fr: {
@@ -876,6 +877,8 @@ export default function Landing({ locale = "en", buildTimeIso }) {
               <br />
               <br />
               {copy.footer.serverTime}: <span suppressHydrationWarning>{buildTimeIso}</span>
+              <br />
+              VERSION: <span>v{packageInfo.version}</span>
             </p>
           </div>
           <div>
