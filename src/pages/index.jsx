@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Landing from "../ui/Landing";
+import packageJson from "../../package.json";
 
 const COPY = {
   fr: {
@@ -40,6 +41,7 @@ export async function getServerSideProps({ locale, req }) {
   const appVersion =
     process.env.NEXT_PUBLIC_APP_VERSION ||
     process.env.npm_package_version ||
+    packageJson?.version ||
     "0.0.1";
   return {
     props: {

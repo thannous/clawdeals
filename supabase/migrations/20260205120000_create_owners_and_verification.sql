@@ -17,12 +17,18 @@ create table if not exists public.owners (
   updated_at timestamptz not null default now()
 );
 
-with invalid_owner_ids as (
-  select id as agent_id, gen_random_uuid() as owner_uuid
+with invalid_owner_map as (
+  select owner_id as legacy_owner_id, gen_random_uuid() as owner_uuid
   from public.agents
   where owner_id is not null
     and owner_id <> ''
     and owner_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  group by owner_id
+),
+invalid_owner_ids as (
+  select a.id as agent_id, m.owner_uuid
+  from public.agents a
+  join invalid_owner_map m on m.legacy_owner_id = a.owner_id
 ),
 missing_owner_ids as (
   select id as agent_id, gen_random_uuid() as owner_uuid
@@ -41,7 +47,7 @@ insert_existing as (
 insert_invalid as (
   insert into public.owners (owner_id, created_at, updated_at)
   select owner_uuid, now(), now()
-  from invalid_owner_ids
+  from invalid_owner_map
   on conflict do nothing
 ),
 insert_missing as (
