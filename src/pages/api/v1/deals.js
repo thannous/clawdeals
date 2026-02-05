@@ -2,14 +2,15 @@ import { withApiMiddlewares } from "../../../server/middleware/with-api-middlewa
 import { jsonResponse } from "../../../server/http/response";
 import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors.js";
-import { createDeal } from "../../../server/services/deals";
+import { createDeal, findRecentDealDuplicate } from "../../../server/services/deals";
 import { DEALS_DEFAULT_LIMIT, DEALS_MAX_LIMIT, listDeals } from "../../../server/services/deals-list";
 import { decodeDealsCursor } from "../../../server/services/deals-cursor";
 import { resolveTrustContext } from "../../../server/trustscore/context";
 import {
   ALLOWED_CURRENCIES,
   DEAL_MAX_TTL_DAYS,
-  DEAL_NEW_WINDOW_SECONDS
+  DEAL_NEW_WINDOW_SECONDS,
+  DUPLICATE_WINDOW_DAYS
 } from "../../../server/config/deals";
 import { fingerprintUrl, normalizeDealUrl, normalizeTags } from "../../../server/utils/deals";
 
@@ -270,10 +271,34 @@ export async function handler(req, res, ctx) {
   }
 
   try {
-    await resolveTrustContext({ ctx, actionType: "deal.create" });
-
     const newUntil = new Date(now.getTime() + DEAL_NEW_WINDOW_SECONDS * 1000).toISOString();
     const fingerprint = fingerprintUrl(normalizedUrl);
+
+    const duplicate = await findRecentDealDuplicate({
+      fingerprint,
+      now,
+      windowDays: DUPLICATE_WINDOW_DAYS
+    });
+    if (duplicate) {
+      if (ctx) {
+        ctx.auditEvent = "deal.duplicate_detected";
+        ctx.outcome = { type: "BLOCKED", reason: "duplicate" };
+        ctx.security = {
+          ...(ctx.security && typeof ctx.security === "object" ? ctx.security : {}),
+          existing_deal_id: duplicate.deal_id,
+          existing_created_at: duplicate.created_at
+        };
+      }
+      return jsonResponse(
+        409,
+        errorPayload("DUPLICATE_SUSPECTED", "A similar deal was recently posted.", {
+          existing_deal_id: duplicate.deal_id,
+          existing_created_at: duplicate.created_at
+        })
+      );
+    }
+
+    await resolveTrustContext({ ctx, actionType: "deal.create" });
 
     const deal = await createDeal({
       title: normalizedTitle,

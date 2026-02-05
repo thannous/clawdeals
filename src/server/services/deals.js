@@ -67,6 +67,43 @@ export async function createDeal({
   return data;
 }
 
+export async function findRecentDealDuplicate({
+  fingerprint,
+  now = new Date(),
+  windowDays = 14
+} = {}) {
+  if (!fingerprint || typeof fingerprint !== "string") {
+    return null;
+  }
+
+  const days = Number.isFinite(windowDays) ? windowDays : 14;
+  const windowMs = Math.max(0, days) * 24 * 60 * 60 * 1000;
+  const windowStart = new Date(now.getTime() - windowMs).toISOString();
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("deals")
+    .select("deal_id, created_at, status")
+    .eq("source_url_fingerprint", fingerprint)
+    .gte("created_at", windowStart)
+    .neq("status", "REMOVED")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+
+  if (!data) return null;
+
+  return {
+    deal_id: data.deal_id,
+    created_at: data.created_at
+  };
+}
+
 export async function createDealVote({ dealId, agentId, direction, reason, weight }) {
   const client = getSupabaseServiceClient();
   const payload = {

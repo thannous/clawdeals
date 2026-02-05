@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("../../../server/services/deals", () => ({
-  createDeal: vi.fn()
+  createDeal: vi.fn(),
+  findRecentDealDuplicate: vi.fn()
 }));
 
 vi.mock("../../../server/services/deals-list", () => ({
@@ -15,8 +16,9 @@ vi.mock("../../../server/trustscore/context", () => ({
 }));
 
 import { handler } from "./deals";
-import { createDeal } from "../../../server/services/deals";
+import { createDeal, findRecentDealDuplicate } from "../../../server/services/deals";
 import { listDeals } from "../../../server/services/deals-list";
+import { fingerprintUrl, normalizeDealUrl } from "../../../server/utils/deals";
 
 const baseCtx = {
   ownerId: "owner-1",
@@ -84,6 +86,7 @@ describe("POST /v1/deals", () => {
   });
 
   it("creates deal and returns deal", async () => {
+    findRecentDealDuplicate.mockResolvedValue(null);
     createDeal.mockResolvedValue({
       deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
       title: "RTX 4070 - 399€",
@@ -111,6 +114,56 @@ describe("POST /v1/deals", () => {
     expect(result.body.deal.deal_id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
     expect(result.body.data).toBeUndefined();
     expect(createDeal).toHaveBeenCalled();
+  });
+
+  it("returns 409 DUPLICATE_SUSPECTED when recent fingerprint match exists", async () => {
+    const nowIso = new Date("2026-02-05T12:00:00.000Z").toISOString();
+    findRecentDealDuplicate.mockResolvedValue({
+      deal_id: "11111111-1111-1111-1111-111111111111",
+      created_at: nowIso
+    });
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: validBody
+    };
+    const ctx = { ...baseCtx };
+    const result = await handler(req, null, ctx);
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("DUPLICATE_SUSPECTED");
+    expect(result.body.error.details.existing_deal_id).toBe("11111111-1111-1111-1111-111111111111");
+    expect(createDeal).not.toHaveBeenCalled();
+    expect(ctx.auditEvent).toBe("deal.duplicate_detected");
+    expect(ctx.outcome?.type).toBe("BLOCKED");
+  });
+
+  it("treats utm_* variants as duplicates (fingerprint normalization)", async () => {
+    const normalized = normalizeDealUrl(validBody.url);
+    expect(normalized).not.toContain("utm_source");
+
+    const expectedFingerprint = fingerprintUrl(normalized);
+    const withoutUtmFingerprint = fingerprintUrl(normalizeDealUrl("https://example.com/deal"));
+    expect(withoutUtmFingerprint).toBe(expectedFingerprint);
+
+    findRecentDealDuplicate.mockResolvedValue({
+      deal_id: "22222222-2222-2222-2222-222222222222",
+      created_at: new Date("2026-02-05T11:00:00.000Z").toISOString()
+    });
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: validBody
+    };
+    await handler(req, null, { ...baseCtx });
+
+    expect(findRecentDealDuplicate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fingerprint: expectedFingerprint
+      })
+    );
   });
 });
 
