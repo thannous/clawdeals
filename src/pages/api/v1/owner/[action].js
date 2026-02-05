@@ -177,7 +177,7 @@ async function handleConfirm(req, ctx, { type, tokenField, eventName }) {
   return jsonResponse(200, { data: ownerSummary(verifiedOwner) });
 }
 
-async function handler(req, res, ctx) {
+export async function handler(req, res, ctx) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
   }

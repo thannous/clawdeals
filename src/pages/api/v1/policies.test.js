@@ -46,4 +46,20 @@ describe("/v1/policies", () => {
     expect(result.status).toBe(200);
     expect(result.body.data.version).toBe(2);
   });
+
+  it("returns 400 when If-Match is not an integer", async () => {
+    const req = { method: "PUT", headers: { "if-match": "abc" }, body: { version: 1 } };
+    const result = await handler(req, null, ownerCtx());
+    expect(result.status).toBe(400);
+    expect(result.body.error.message).toContain("If-Match");
+  });
+
+  it("passes expectedVersion from If-Match to upsertPolicy", async () => {
+    upsertPolicy.mockResolvedValue({ policy_json: { version: 3, budgets: {} }, version: 3 });
+    const req = { method: "PUT", headers: { "if-match": "2" }, body: { version: 2 } };
+    await handler(req, null, ownerCtx());
+    expect(upsertPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedVersion: 2 })
+    );
+  });
 });

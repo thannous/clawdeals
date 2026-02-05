@@ -19,7 +19,7 @@ function ownerSummary(owner) {
   };
 }
 
-async function handler(req) {
+export async function handler(req) {
   if (req.method !== "GET" && req.method !== "PATCH") {
     return methodNotAllowed(["GET", "PATCH"]);
   }

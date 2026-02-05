@@ -31,7 +31,7 @@ function getHeaderValue(req, name) {
   return value;
 }
 
-async function handler(req, res, ctx) {
+export async function handler(req, res, ctx) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
   }

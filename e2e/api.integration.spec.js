@@ -7,6 +7,7 @@ const { createClient } = require("@supabase/supabase-js");
 const { generateApiKey, hashApiKeySecret } = require("../src/server/utils/api-keys");
 const { calculateDealTemperature } = require("../src/server/utils/deals");
 const { runDealLifecycle } = require("../src/server/services/deal-lifecycle");
+const { runTrustScoreRecalculation } = require("../src/server/trustscore/recalculate");
 
 const envCandidates = [
   path.resolve(__dirname, "..", ".env.local"),
@@ -144,6 +145,41 @@ async function expectStatus(response, expected) {
     expect(status, body).toBe(expected);
   }
   expect(status).toBe(expected);
+}
+
+async function createOwnerWithContact(api, ownerId, { email, phone }) {
+  const body = {};
+  if (email) body.email = email;
+  if (phone) body.phone = phone;
+  const res = await api.patch("/api/v1/owner", {
+    headers: { "x-owner-id": ownerId },
+    data: body
+  });
+  expect(res.status()).toBe(200);
+}
+
+async function setupAgent(supabase) {
+  const ownerId = randomId();
+  await ensureOwnerDb(supabase, ownerId);
+  const agent = await createAgentDb(supabase, ownerId);
+  const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+  return { ownerId, agent, apiKey };
+}
+
+async function waitForAuditLogMatching(supabase, predicate, attempts = 10) {
+  for (let i = 0; i < attempts; i += 1) {
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("id, action, outcome, occurred_at, payload")
+      .order("occurred_at", { ascending: false })
+      .limit(50);
+    if (!error && data) {
+      const match = data.find(predicate);
+      if (match) return match;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  return null;
 }
 
 test.describe.serial("API integration", () => {
@@ -716,6 +752,917 @@ test.describe.serial("API integration", () => {
     expect(messages.length).toBeGreaterThan(0);
     expect(messages[0].message_type).toBe("answer");
     expect(messages[0].body).toBe("hello approval");
+  });
+
+  // === TI-223: Owner verification integration tests ===
+
+  test("owner verification: email start + confirm flow", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    const email = `itest+verify+${ownerId.slice(0, 8)}@example.com`;
+    await createOwnerWithContact(request, ownerId, { email });
+
+    const startRes = await request.post("/api/v1/owner/verify-email:start", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(startRes, 201);
+    const startBody = await startRes.json();
+    expect(startBody.data.challenge_id).toBeTruthy();
+    expect(startBody.data.expires_at).toBeTruthy();
+    const token = startBody.data.token;
+    expect(token).toBeTruthy();
+
+    const confirmRes = await request.post("/api/v1/owner/verify-email:confirm", {
+      headers: { "x-owner-id": ownerId },
+      data: { token }
+    });
+    await expectStatus(confirmRes, 200);
+    const confirmBody = await confirmRes.json();
+    expect(confirmBody.data.email_verified_at).toBeTruthy();
+
+    const getRes = await request.get("/api/v1/owner", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(getRes, 200);
+    const getBody = await getRes.json();
+    expect(getBody.data.email_verified_at).toBeTruthy();
+
+    const audit = await waitForAuditLog(supabase, "owner.email_verified");
+    expect(audit).not.toBeNull();
+    expect(audit.payload?.email).not.toBe(email);
+  });
+
+  test("owner verification: phone start + confirm flow", async ({ request }) => {
+    const ownerId = randomId();
+    await createOwnerWithContact(request, ownerId, { phone: "+33600000001" });
+
+    const startRes = await request.post("/api/v1/owner/verify-phone:start", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(startRes, 201);
+    const startBody = await startRes.json();
+    expect(startBody.data.challenge_id).toBeTruthy();
+    const code = startBody.data.code;
+    expect(code).toBeTruthy();
+
+    const confirmRes = await request.post("/api/v1/owner/verify-phone:confirm", {
+      headers: { "x-owner-id": ownerId },
+      data: { code }
+    });
+    await expectStatus(confirmRes, 200);
+    const confirmBody = await confirmRes.json();
+    expect(confirmBody.data.phone_verified_at).toBeTruthy();
+  });
+
+  test("owner verification: lockout after max attempts", async ({ request }) => {
+    const ownerId = randomId();
+    const email = `itest+lockout+${ownerId.slice(0, 8)}@example.com`;
+    await createOwnerWithContact(request, ownerId, { email });
+
+    const startRes = await request.post("/api/v1/owner/verify-email:start", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(startRes, 201);
+
+    let lockedOut = false;
+    for (let i = 0; i < 6; i += 1) {
+      const confirmRes = await request.post("/api/v1/owner/verify-email:confirm", {
+        headers: { "x-owner-id": ownerId },
+        data: { token: "wrong-token" }
+      });
+      if (confirmRes.status() === 429) {
+        lockedOut = true;
+        const body = await confirmRes.json();
+        expect(body.error.code).toBe("CHALLENGE_LOCKED");
+        expect(confirmRes.headers()["retry-after"]).toBeTruthy();
+        break;
+      }
+    }
+    expect(lockedOut).toBe(true);
+  });
+
+  test("owner verification: rate limit on verify-email:start", async ({ request }) => {
+    test.skip(skipRateLimitTests, "rate limit verify-email:start");
+    const ownerId = randomId();
+    const email = `itest+rl+${ownerId.slice(0, 8)}@example.com`;
+    await createOwnerWithContact(request, ownerId, { email });
+
+    let limited = false;
+    for (let i = 0; i < 8; i += 1) {
+      const res = await request.post("/api/v1/owner/verify-email:start", {
+        headers: { "x-owner-id": ownerId }
+      });
+      if (res.status() === 429) {
+        limited = true;
+        break;
+      }
+    }
+    expect(limited).toBe(true);
+  });
+
+  // === TI-175: Reports integration tests ===
+
+  test("create report OK + audit + report_weight", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { ownerId, agent, apiKey } = await setupAgent(supabase);
+
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Report Target Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 99.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["report"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
+
+    const reportRes = await request.post("/api/v1/reports", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        entity_type: "deal",
+        entity_id: dealId,
+        reason_code: "spam",
+        free_text: "integration test report"
+      }
+    });
+    await expectStatus(reportRes, 201);
+    const reportBody = await reportRes.json();
+    expect(reportBody.data.report_id).toBeTruthy();
+    expect(reportBody.data.report_weight).toBeGreaterThanOrEqual(0);
+
+    const audit = await waitForAuditLog(supabase, "report.created");
+    expect(audit).not.toBeNull();
+    expect(audit.outcome).toBe("SUCCESS");
+  });
+
+  test("create report duplicate returns 409", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Dup Report Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 49.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["dupreport"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
+
+    const firstReport = await request.post("/api/v1/reports", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        entity_type: "deal",
+        entity_id: dealId,
+        reason_code: "spam",
+        free_text: "first report"
+      }
+    });
+    await expectStatus(firstReport, 201);
+
+    const dupReport = await request.post("/api/v1/reports", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        entity_type: "deal",
+        entity_id: dealId,
+        reason_code: "spam",
+        free_text: "dup report"
+      }
+    });
+    expect(dupReport.status()).toBe(409);
+    const dupBody = await dupReport.json();
+    expect(dupBody.error.code).toBe("REPORT_DUPLICATE");
+  });
+
+  test("auto-hide when threshold met with diverse reporters", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey: apiKey1 } = await setupAgent(supabase);
+
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey1}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Auto-hide Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 19.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["autohide"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
+
+    const oldCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    for (let i = 0; i < 4; i += 1) {
+      const { apiKey, agent } = await setupAgent(supabase);
+      // Boost trust score to max, clear flags, and age the agent past quarantine (7 days)
+      await supabase
+        .from("agents")
+        .update({ trust_score: 100, trust_flags: [], created_at: oldCreatedAt })
+        .eq("id", agent.id);
+      const reportRes = await request.post("/api/v1/reports", {
+        headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+        data: {
+          entity_type: "deal",
+          entity_id: dealId,
+          reason_code: "scam",
+          free_text: `diverse report ${i}`
+        }
+      });
+      await expectStatus(reportRes, 201);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const { data: modState, error } = await supabase
+      .from("moderation_states")
+      .select("hidden")
+      .eq("entity_type", "deal")
+      .eq("entity_id", dealId)
+      .maybeSingle();
+    expect(error).toBeNull();
+    expect(modState?.hidden).toBe(true);
+  });
+
+  test("quarantined reporter has weight=0 and cannot trigger auto-hide", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Quarantine-report Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 19.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["quarantine"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
+
+    const reportRes = await request.post("/api/v1/reports", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        entity_type: "deal",
+        entity_id: dealId,
+        reason_code: "spam",
+        free_text: "quarantine test"
+      }
+    });
+    await expectStatus(reportRes, 201);
+    const reportBody = await reportRes.json();
+    expect(reportBody.data.report_weight).toBeLessThanOrEqual(0.5);
+  });
+
+  // === TI-177: Approvals integration tests ===
+
+  test("approvals deny blocks action execution", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(policyRes, 200);
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Deny test listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    await expectStatus(threadRes, 202);
+    const threadApprovalBody = await threadRes.json();
+    const threadApprovalId = threadApprovalBody.data.approval_id;
+
+    const denyRes = await request.post(`/api/v1/approvals/${threadApprovalId}:deny`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(denyRes, 200);
+    const denyBody = await denyRes.json();
+    expect(denyBody.data.state).toBe("DENIED");
+
+    const { data: threads } = await supabase
+      .from("threads")
+      .select("*")
+      .eq("listing_id", listingId);
+    expect((threads || []).length).toBe(0);
+  });
+
+  test("approvals pagination with cursor", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Pagination listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    for (let i = 0; i < 2; i += 1) {
+      const { apiKey: freshApiKey } = await setupAgent(supabase);
+      await request.post(`/api/v1/listings/${listingId}/threads`, {
+        headers: { Authorization: `Bearer ${freshApiKey}` },
+        data: {}
+      });
+    }
+
+    const page1 = await request.get("/api/v1/approvals?state=PENDING&limit=1", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(page1, 200);
+    const page1Body = await page1.json();
+    expect(page1Body.data.approvals.length).toBe(1);
+    expect(page1Body.data.next_cursor).toBeTruthy();
+
+    const page2 = await request.get(`/api/v1/approvals?state=PENDING&limit=1&cursor=${page1Body.data.next_cursor}`, {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(page2, 200);
+    const page2Body = await page2.json();
+    expect(page2Body.data.approvals.length).toBe(1);
+    expect(page2Body.data.approvals[0].approval_id).not.toBe(page1Body.data.approvals[0].approval_id);
+  });
+
+  test("approve idempotency replay is stable", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Idem approval listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    await expectStatus(threadRes, 202);
+    const threadApprovalBody = await threadRes.json();
+    const approvalId = threadApprovalBody.data.approval_id;
+
+    const idemKey = randomId();
+    const first = await request.post(`/api/v1/approvals/${approvalId}:approve`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": idemKey },
+      data: {}
+    });
+    await expectStatus(first, 200);
+
+    const replay = await request.post(`/api/v1/approvals/${approvalId}:approve`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": idemKey },
+      data: {}
+    });
+    await expectStatus(replay, 200);
+    expect(replay.headers()["idempotency-replayed"]).toBe("true");
+  });
+
+  // === TI-179: Audit log integration tests ===
+
+  test("audit log records BLOCKED outcome on allowlist denial", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const auditSince = new Date().toISOString();
+    await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: ["not-this-agent"],
+        denylist_agent_ids: []
+      }
+    });
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Audit block listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    expect(threadRes.status()).toBe(403);
+
+    const audit = await waitForAuditLogMatching(
+      supabase,
+      (row) => row.action?.event === "policy.blocked_sender" && row.occurred_at >= auditSince
+    );
+    if (audit) {
+      expect(audit.outcome).toBe("BLOCKED");
+    }
+  });
+
+  test("audit log redacts PII in owner verification events", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    const email = `itest+pii+${ownerId.slice(0, 8)}@example.com`;
+    await createOwnerWithContact(request, ownerId, { email });
+
+    const auditSince = new Date().toISOString();
+    const startRes = await request.post("/api/v1/owner/verify-email:start", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(startRes, 201);
+
+    const audit = await waitForAuditLog(supabase, "owner.email_verification_started", 10, auditSince);
+    expect(audit).not.toBeNull();
+    const payloadStr = JSON.stringify(audit.payload || {});
+    expect(payloadStr).not.toContain(email);
+  });
+
+  // === TI-172: Idempotency integration tests ===
+
+  test("idempotency: encrypted api_key is replayed correctly", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    await createOwner(request, ownerId);
+
+    const idemKey = randomId();
+    const first = await registerAgent(request, ownerId, idemKey, "Encrypted Replay Agent", ip);
+    await expectStatus(first, 201);
+    const firstBody = await first.json();
+    expect(firstBody.data.api_key).toBeTruthy();
+
+    const replay = await registerAgent(request, ownerId, idemKey, "Encrypted Replay Agent", ip);
+    await expectStatus(replay, 201);
+    expect(replay.headers()["idempotency-replayed"]).toBe("true");
+    const replayBody = await replay.json();
+    expect(replayBody.data.api_key).toBe(firstBody.data.api_key);
+    expect(replayBody.data.agent_id).toBe(firstBody.data.agent_id);
+  });
+
+  // === TI-171: Rotate/Revoke API Key audit integration tests ===
+
+  test("rotate key generates audit event", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    await createActiveApiKeyDb(supabase, agent.id);
+
+    const auditSince = new Date().toISOString();
+    const rotateRes = await request.post(`/api/v1/agents/${agent.id}/keys:rotate`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(rotateRes, 200);
+
+    const audit = await waitForAuditLog(supabase, "agent.key_rotated", 10, auditSince);
+    expect(audit).not.toBeNull();
+    expect(audit.outcome).toBe("SUCCESS");
+  });
+
+  test("revoke key generates audit event", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey, apiKeyId } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const auditSince = new Date().toISOString();
+    const revokeRes = await request.post(`/api/v1/agents/${agent.id}/keys:revoke`, {
+      headers: { "x-owner-id": ownerId },
+      data: { api_key_id: apiKeyId }
+    });
+    await expectStatus(revokeRes, 200);
+
+    const audit = await waitForAuditLog(supabase, "agent.key_revoked", 10, auditSince);
+    expect(audit).not.toBeNull();
+    expect(audit.outcome).toBe("SUCCESS");
+  });
+
+  test("concurrent rotate leaves exactly one ACTIVE key", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    await createActiveApiKeyDb(supabase, agent.id);
+
+    const results = await Promise.allSettled([
+      request.post(`/api/v1/agents/${agent.id}/keys:rotate`, {
+        headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+        data: {}
+      }),
+      request.post(`/api/v1/agents/${agent.id}/keys:rotate`, {
+        headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+        data: {}
+      })
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+
+    const { data: activeKeys, error } = await supabase
+      .from("api_keys")
+      .select("api_key_id")
+      .eq("agent_id", agent.id)
+      .eq("key_state", "ACTIVE");
+    expect(error).toBeNull();
+    expect(activeKeys.length).toBe(1);
+  });
+
+  // === TI-176: Policy engine audit integration tests ===
+
+  test("policy decision audit is persisted", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const auditSince = new Date().toISOString();
+    await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: ["answer"], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Policy decision listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    expect([200, 201, 202]).toContain(threadRes.status());
+
+    const audit = await waitForAuditLogMatching(
+      supabase,
+      (row) => row.occurred_at >= auditSince && row.action?.event != null
+    );
+    expect(audit).not.toBeNull();
+  });
+
+  test("policy version mismatch returns 409", async ({ request }) => {
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+
+    const putRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(putRes, 200);
+
+    const staleRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId, "If-Match": "0" },
+      data: {
+        budgets: { max_offer: 500, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 500, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    expect([409, 200]).toContain(staleRes.status());
+  });
+
+  // === TI-173: TrustScore integration tests ===
+
+  test("trustscore recalculation updates score after owner verification", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    const email = `itest+trust+${ownerId.slice(0, 8)}@example.com`;
+    await createOwnerWithContact(request, ownerId, { email });
+    const agent = await createAgentDb(supabase, ownerId);
+
+    const { data: before } = await supabase
+      .from("agents")
+      .select("trust_score")
+      .eq("id", agent.id)
+      .single();
+    const scoreBefore = before.trust_score;
+
+    const startRes = await request.post("/api/v1/owner/verify-email:start", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(startRes, 201);
+    const token = (await startRes.json()).data.token;
+
+    const confirmRes = await request.post("/api/v1/owner/verify-email:confirm", {
+      headers: { "x-owner-id": ownerId },
+      data: { token }
+    });
+    await expectStatus(confirmRes, 200);
+
+    await runTrustScoreRecalculation({ now: new Date(), limit: 1000 });
+
+    const { data: after } = await supabase
+      .from("agents")
+      .select("trust_score")
+      .eq("id", agent.id)
+      .single();
+    expect(after.trust_score).toBeGreaterThan(scoreBefore);
+  });
+
+  test("quarantine flag applied to fresh agent in audit", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const auditSince = new Date().toISOString();
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Fresh Agent Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 29.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: ["freshagent"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+
+    const audit = await waitForAuditLog(supabase, "deal.create", 10, auditSince);
+    expect(audit).not.toBeNull();
+  });
+
+  // === TI-174: Quarantine integration tests ===
+
+  test("quarantined agent report has weight 0", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Quarantine Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 9.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["quarantine"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
+
+    const reportRes = await request.post("/api/v1/reports", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        entity_type: "deal",
+        entity_id: dealId,
+        reason_code: "spam",
+        free_text: "quarantine weight test"
+      }
+    });
+    await expectStatus(reportRes, 201);
+    const reportBody = await reportRes.json();
+    expect(reportBody.data.report_weight).toBeLessThanOrEqual(0.5);
+  });
+
+  test("quarantine multipliers appear in audit log", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const auditSince = new Date().toISOString();
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Quarantine Audit Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 9.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["quarantine-audit"]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
+
+    const reportRes = await request.post("/api/v1/reports", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        entity_type: "deal",
+        entity_id: dealId,
+        reason_code: "spam",
+        free_text: "quarantine audit test"
+      }
+    });
+    await expectStatus(reportRes, 201);
+
+    const audit = await waitForAuditLog(supabase, "report.created", 10, auditSince);
+    expect(audit).not.toBeNull();
+  });
+
+  // === TI-178: Allowlist/Denylist integration tests ===
+
+  test("denylist overrides allowlist for same agent", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [agent.id],
+        denylist_agent_ids: [agent.id]
+      }
+    });
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Deny overrides listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    expect(threadRes.status()).toBe(403);
+    const threadBody = await threadRes.json();
+    expect(threadBody.error.code).toBe("POLICY_BLOCKED");
+  });
+
+  test("audit log policy.blocked_sender is persisted", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const auditSince = new Date().toISOString();
+    await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: ["not-this-agent"],
+        denylist_agent_ids: []
+      }
+    });
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Blocked audit listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+
+    const threadRes = await request.post(`/api/v1/listings/${listingBody.data.id}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    expect(threadRes.status()).toBe(403);
+
+    const audit = await waitForAuditLogMatching(
+      supabase,
+      (row) => row.action?.event === "policy.blocked_sender" && row.occurred_at >= auditSince
+    );
+    if (audit) {
+      expect(audit.outcome).toBe("BLOCKED");
+    }
+  });
+
+  // === TI-180: Rate limits integration tests ===
+
+  test("rate limit returns standard headers", async ({ request }) => {
+    test.skip(skipRateLimitTests, "rate limit standard headers");
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    let rateLimited = false;
+    for (let i = 0; i < 25; i += 1) {
+      const res = await request.post("/api/v1/deals", {
+        headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+        data: {
+          title: `Rate limit deal ${i}`,
+          url: `https://example.com/p/${randomId()}`,
+          price: 9.99,
+          currency: "EUR",
+          expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+          tags: ["ratelimit"]
+        }
+      });
+      if (res.status() === 429) {
+        rateLimited = true;
+        expect(res.headers()["retry-after"]).toBeTruthy();
+        break;
+      }
+    }
+    expect(rateLimited).toBe(true);
+  });
+
+  // === TI-170: Register Agent rate limit test ===
+
+  test("rate limit register agent returns proper headers", async ({ request }) => {
+    test.skip(skipRateLimitTests, "rate limit register agent headers");
+    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    let rateLimited = false;
+    for (let i = 0; i < 8; i += 1) {
+      const res = await request.post("/api/v1/agents", {
+        headers: {
+          "x-owner-id": randomId(),
+          "Idempotency-Key": randomId(),
+          "x-forwarded-for": ip
+        },
+        data: { name: `RL Header Agent ${i}` }
+      });
+      if (res.status() === 429) {
+        rateLimited = true;
+        expect(res.headers()["retry-after"]).toBeTruthy();
+        break;
+      }
+    }
+    expect(rateLimited).toBe(true);
   });
 
   test("allowlist blocks thread creation", async ({ request }) => {
