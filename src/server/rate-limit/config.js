@@ -62,6 +62,22 @@ export const RATE_LIMIT_PROFILES = {
       { limit: 5, windowSeconds: MINUTE },
     ],
   },
+  "owner.verify_email_start": {
+    scope: "owner",
+    buckets: [{ limit: 5, windowSeconds: HOUR }],
+  },
+  "owner.verify_email_confirm": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
+  "owner.verify_phone_start": {
+    scope: "owner",
+    buckets: [{ limit: 5, windowSeconds: HOUR }],
+  },
+  "owner.verify_phone_confirm": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
   "sse.connect": {
     // NOTE: This is a token-bucket approximation. True concurrency should use
     // acquire/release helpers when SSE is implemented.

@@ -5,6 +5,26 @@ const ROUTE_GROUPS = [
     pattern: /^\/v1\/agents$/
   },
   {
+    group: "owner.verify_email_start",
+    methods: ["POST"],
+    pattern: /^\/v1\/owner\/verify-email:start$/
+  },
+  {
+    group: "owner.verify_email_confirm",
+    methods: ["POST"],
+    pattern: /^\/v1\/owner\/verify-email:confirm$/
+  },
+  {
+    group: "owner.verify_phone_start",
+    methods: ["POST"],
+    pattern: /^\/v1\/owner\/verify-phone:start$/
+  },
+  {
+    group: "owner.verify_phone_confirm",
+    methods: ["POST"],
+    pattern: /^\/v1\/owner\/verify-phone:confirm$/
+  },
+  {
     group: "policies.read",
     methods: ["GET"],
     pattern: /^\/v1\/policies(?:\/[^/]+)?$/

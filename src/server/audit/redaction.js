@@ -9,6 +9,9 @@ const DEFAULT_REDACT_KEYS = [
   "authorization",
   "cookie",
   "set-cookie",
+  "email",
+  "phone",
+  "phone_e164",
   "api_key",
   "apikey",
   "client_secret",
@@ -19,6 +22,7 @@ const DEFAULT_REDACT_KEYS = [
   "session",
   "bearer",
   "otp",
+  "code",
   "mfa",
   "pin"
 ];

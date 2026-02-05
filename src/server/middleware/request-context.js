@@ -34,6 +34,7 @@ export function createRequestContext(req) {
     agentId: null,
     rateLimit: null,
     idempotency: null,
+    auditEvent: null,
     outcome: null,
     response: null
   };

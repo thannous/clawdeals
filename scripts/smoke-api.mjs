@@ -2,7 +2,8 @@
 import crypto from "node:crypto";
 
 const baseUrl = process.env.SMOKE_BASE_URL || "http://localhost:3000";
-const ownerId = process.env.SMOKE_OWNER_ID || "";
+const ownerId = process.env.SMOKE_OWNER_ID || crypto.randomUUID();
+const shouldCreateOwner = !process.env.SMOKE_OWNER_ID;
 const agentId = process.env.SMOKE_AGENT_ID || "";
 
 const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IDEMPOTENCY_SECRET"];
@@ -47,6 +48,15 @@ async function putJson(path, body, extraHeaders = {}) {
   return response;
 }
 
+async function patchJson(path, body, extraHeaders = {}) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "PATCH",
+    headers: buildHeaders(extraHeaders),
+    body: JSON.stringify(body)
+  });
+  return response;
+}
+
 async function getJson(path, extraHeaders = {}) {
   const response = await fetch(`${baseUrl}${path}`, {
     method: "GET",
@@ -59,6 +69,14 @@ async function run() {
   console.log(`Smoke test base: ${baseUrl}`);
 
   const idempotencyKey = crypto.randomUUID();
+
+  if (shouldCreateOwner) {
+    const email = `smoke+${ownerId}@example.com`;
+    const ownerRes = await patchJson("/api/v1/owner", { email });
+    await expectStatus(ownerRes, [200]);
+    const owner = await ownerRes.json();
+    console.log("Owner upserted", owner.data?.owner_id);
+  }
 
   const agentRes = await postJson("/api/v1/agents", { name: "Smoke Agent" }, {
     "Idempotency-Key": idempotencyKey

@@ -64,7 +64,8 @@ function buildAuditEvent(ctx) {
     action: {
       route_group: ctx.rateLimit?.group || null,
       method: ctx.method,
-      path: ctx.path
+      path: ctx.path,
+      event: ctx.auditEvent || null
     },
     security: {},
     policy: {},
