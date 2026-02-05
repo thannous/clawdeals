@@ -47,7 +47,8 @@ export async function getServerSideProps({ locale, req, res }) {
 
   const isPreviewHost = isWorkersDevRequest(req);
   if (res?.setHeader) {
-    res.setHeader("Vary", "Accept-Language");
+    // This page's rendered locale is driven by Next routing (`locale`), not `Accept-Language`.
+    // Avoid `Vary: Accept-Language` which would fragment edge caches for no benefit.
     // Cache SSR at the edge for most traffic; avoid caching on preview hosts.
     res.setHeader(
       "Cache-Control",
