@@ -2,6 +2,7 @@ const { test, expect } = require("@playwright/test");
 const crypto = require("node:crypto");
 const { createClient } = require("@supabase/supabase-js");
 const { generateApiKey, hashApiKeySecret } = require("../src/server/utils/api-keys");
+const { runDealLifecycle } = require("../src/server/services/deal-lifecycle");
 
 const requiredEnv = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IDEMPOTENCY_SECRET"];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
@@ -9,6 +10,10 @@ test.skip(missingEnv.length > 0, `Missing env vars: ${missingEnv.join(", ")}`);
 
 function randomId() {
   return crypto.randomUUID();
+}
+
+function sha256Hex(value) {
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
 
 async function createOwner(api, ownerId) {
@@ -262,6 +267,90 @@ test.describe.serial("API integration", () => {
     const audit = await waitForAuditLog(supabase, "deal.create");
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
+  });
+
+  test("deal lifecycle transitions NEW to ACTIVE and ACTIVE to EXPIRED", async () => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const pastIso = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+    const createdAtIso = new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString();
+    const futureIso = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+
+    const urlA = `https://example.com/deal/${randomId()}`;
+    const urlB = `https://example.com/deal/${randomId()}`;
+
+    const { data: inserted, error } = await supabase
+      .from("deals")
+      .insert([
+        {
+          title: "Lifecycle NEW",
+          source_url: urlA,
+          source_url_normalized: urlA,
+          source_url_fingerprint: sha256Hex(urlA),
+          price: 10,
+          currency: "EUR",
+          created_at: createdAtIso,
+          expires_at: futureIso,
+          tags: ["lifecycle"],
+          status: "NEW",
+          new_until: pastIso,
+          creator_agent_id: agent.id
+        },
+        {
+          title: "Lifecycle ACTIVE",
+          source_url: urlB,
+          source_url_normalized: urlB,
+          source_url_fingerprint: sha256Hex(urlB),
+          price: 20,
+          currency: "EUR",
+          created_at: createdAtIso,
+          expires_at: pastIso,
+          tags: ["lifecycle"],
+          status: "ACTIVE",
+          new_until: pastIso,
+          active_at: pastIso,
+          creator_agent_id: agent.id
+        }
+      ])
+      .select("deal_id");
+
+    expect(error).toBeNull();
+    const [dealA, dealB] = inserted.map((row) => row.deal_id);
+
+    await runDealLifecycle({ now });
+
+    const { data: updatedA, error: fetchAError } = await supabase
+      .from("deals")
+      .select("status, active_at, expired_at")
+      .eq("deal_id", dealA)
+      .single();
+    expect(fetchAError).toBeNull();
+    expect(updatedA.status).toBe("ACTIVE");
+    expect(updatedA.active_at).toBeTruthy();
+
+    const { data: updatedB, error: fetchBError } = await supabase
+      .from("deals")
+      .select("status, active_at, expired_at")
+      .eq("deal_id", dealB)
+      .single();
+    expect(fetchBError).toBeNull();
+    expect(updatedB.status).toBe("EXPIRED");
+    expect(updatedB.expired_at).toBeTruthy();
+
+    const { data: audits, error: auditError } = await supabase
+      .from("audit_logs")
+      .select("payload")
+      .eq("action->>event", "deal.state_changed")
+      .gte("occurred_at", nowIso);
+    expect(auditError).toBeNull();
+    const changedIds = new Set((audits || []).map((row) => row.payload?.deal_id));
+    expect(changedIds.has(dealA)).toBe(true);
+    expect(changedIds.has(dealB)).toBe(true);
   });
 
   test("deal vote with reason + unique vote", async ({ request }) => {

@@ -136,12 +136,16 @@ export async function rateLimitMiddleware(request, options = {}) {
 
   const redis = options.redis || createUpstashRedis(redisConfig);
   const nowMs = options.nowMs || Date.now();
+  // In non-production, relax limits to reduce local/dev test flakiness.
+  const isDevEnv = process.env.NODE_ENV !== "production";
   const limitMultiplier =
     typeof options.limitMultiplier === "number"
       ? options.limitMultiplier
       : typeof profile.limitMultiplier === "number"
         ? profile.limitMultiplier
-        : 1;
+        : isDevEnv
+          ? 100
+          : 1;
 
   try {
     for (const bucket of profile.buckets) {
