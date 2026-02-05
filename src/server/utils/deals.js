@@ -2,6 +2,7 @@ import crypto from "crypto";
 
 const TRACKING_PARAM_PREFIXES = ["utm_", "mc_"];
 const TRACKING_PARAM_KEYS = new Set(["gclid", "fbclid"]);
+const DEAL_TEMPERATURE_K = 5.0;
 
 function isTrackingParam(key) {
   const normalized = key.toLowerCase();
@@ -61,6 +62,18 @@ export function fingerprintUrl(normalizedUrl) {
     throw new Error("normalizedUrl must be a non-empty string");
   }
   return crypto.createHash("sha256").update(normalizedUrl).digest("hex");
+}
+
+export function calculateDealTemperature(weightedUp = 0, weightedDown = 0, k = DEAL_TEMPERATURE_K) {
+  const wu = Number.isFinite(weightedUp) ? weightedUp : 0;
+  const wd = Number.isFinite(weightedDown) ? weightedDown : 0;
+  const smoothing = Number.isFinite(k) ? k : DEAL_TEMPERATURE_K;
+  const denom = wu + wd + smoothing;
+  if (!Number.isFinite(denom) || denom <= 0) {
+    return 50;
+  }
+  const ratio = (wu - wd) / denom;
+  return Math.round(50 + 50 * ratio);
 }
 
 export function normalizeTags(tags, options = {}) {

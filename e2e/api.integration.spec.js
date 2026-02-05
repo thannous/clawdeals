@@ -1,3 +1,6 @@
+const fs = require("node:fs");
+const path = require("node:path");
+const dotenv = require("dotenv");
 const { test, expect } = require("@playwright/test");
 const crypto = require("node:crypto");
 const { createClient } = require("@supabase/supabase-js");
@@ -5,9 +8,23 @@ const { generateApiKey, hashApiKeySecret } = require("../src/server/utils/api-ke
 const { calculateDealTemperature } = require("../src/server/utils/deals");
 const { runDealLifecycle } = require("../src/server/services/deal-lifecycle");
 
+const envCandidates = [
+  path.resolve(__dirname, "..", ".env.local"),
+  path.resolve(process.cwd(), ".env.local")
+];
+const envPath = envCandidates.find((candidate) => fs.existsSync(candidate));
+if (envPath) {
+  const parsed = dotenv.parse(fs.readFileSync(envPath));
+  for (const [key, value] of Object.entries(parsed)) {
+    process.env[key] = value;
+  }
+}
+
 const requiredEnv = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IDEMPOTENCY_SECRET"];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
-test.skip(missingEnv.length > 0, `Missing env vars: ${missingEnv.join(", ")}`);
+if (missingEnv.length > 0) {
+  throw new Error(`Missing env vars for integration tests: ${missingEnv.join(", ")}`);
+}
 const skipRateLimitTests = process.env.NODE_ENV !== "production";
 
 function randomId() {
@@ -471,7 +488,8 @@ test.describe.serial("API integration", () => {
     expect(frozen.temperature).toBe(42);
   });
 
-  test.skip(skipRateLimitTests, "rate limit reports create", async ({ request }) => {
+  test("rate limit reports create", async ({ request }) => {
+    test.skip(skipRateLimitTests, "rate limit reports create");
     const ip = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
@@ -501,7 +519,8 @@ test.describe.serial("API integration", () => {
     expect(limited).toBe(true);
   });
 
-  test.skip(skipRateLimitTests, "rate limit register agent", async ({ request }) => {
+  test("rate limit register agent", async ({ request }) => {
+    test.skip(skipRateLimitTests, "rate limit register agent");
     const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
     let limited = false;
     for (let i = 0; i < 6; i += 1) {

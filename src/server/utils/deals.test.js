@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import crypto from "crypto";
-import { fingerprintUrl, normalizeDealUrl, normalizeTags } from "./deals";
+import { calculateDealTemperature, fingerprintUrl, normalizeDealUrl, normalizeTags } from "./deals";
 
 describe("deal utils", () => {
   it("normalizes URL by removing tracking params and fragment", () => {
@@ -23,6 +23,23 @@ describe("deal utils", () => {
   it("normalizes tags", () => {
     const result = normalizeTags([" GPU ", "nvidia", "GPU"]);
     expect(result).toEqual(["gpu", "nvidia"]);
+  });
+
+  it("calculates baseline temperature", () => {
+    expect(calculateDealTemperature(0, 0)).toBe(50);
+  });
+
+  it("temperature tends to extremes", () => {
+    expect(calculateDealTemperature(1000, 0)).toBe(100);
+    expect(calculateDealTemperature(0, 1000)).toBe(0);
+  });
+
+  it("temperature is monotone with weighted votes", () => {
+    const base = calculateDealTemperature(1, 1);
+    const moreUp = calculateDealTemperature(2, 1);
+    const moreDown = calculateDealTemperature(1, 2);
+    expect(moreUp).toBeGreaterThanOrEqual(base);
+    expect(moreDown).toBeLessThanOrEqual(base);
   });
 
   it("rejects too many tags", () => {
