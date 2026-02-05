@@ -25,6 +25,16 @@ import { useTheme } from "../theme/theme-context";
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
 
+function preloadTerminalEmulator() {
+  // Explicit prefetch for better tab-switch latency (bundle-preload).
+  void import("./landing/TerminalEmulator");
+}
+
+function preloadNpmCallout() {
+  // Explicit prefetch for better tab-switch latency (bundle-preload).
+  void import("./landing/NpmCallout");
+}
+
 const COPY = {
   fr: {
     tabs: {
@@ -560,6 +570,11 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
     { id: "data", label: copy.tabs.data }
   ];
 
+  function maybePreload(tabId) {
+    if (tabId === "gig") preloadTerminalEmulator();
+    if (tabId === "npm") preloadNpmCallout();
+  }
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-bg backdrop-blur-md border-b border-border h-16">
       <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
@@ -581,6 +596,8 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              onMouseEnter={() => maybePreload(tab.id)}
+              onFocus={() => maybePreload(tab.id)}
               className={`px-6 py-2 text-sm font-bold tracking-wide transition-all duration-300 clip-corner ${
                 activeTab === tab.id
                   ? "bg-text text-bg shadow-[0_0_15px_rgba(255,255,255,0.3)]"
@@ -931,7 +948,9 @@ const GigTabPanel = ({ copy, locale, items, futureMode }) => {
 
       <div className="mt-24 max-w-4xl mx-auto">
         <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
-        <TerminalEmulator />
+        <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
+          <TerminalEmulator />
+        </div>
       </div>
     </>
   );
@@ -943,7 +962,9 @@ const NpmTabPanel = ({ copy, locale, items, futureMode }) => {
   return (
     <>
       <MarketSection title={marketTitle} items={items} type="npm" copy={copy} futureMode={futureMode} />
-      <NpmCallout copy={copy} />
+      <div style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
+        <NpmCallout copy={copy} />
+      </div>
     </>
   );
 };
