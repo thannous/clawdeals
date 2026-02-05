@@ -511,103 +511,121 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
   );
 };
 
-const HeroHUD = ({ activeTab, copy }) => {
-  const current = copy.hero[activeTab];
-  const iconColor =
-    activeTab === "gig" ? "bg-primary" : activeTab === "npm" ? "bg-secondary" : "bg-emerald-400";
+const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Icon }) => (
+  <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
+    <div className="animate-scanline" />
+    <div className="tech-grid absolute inset-0 opacity-30" />
 
-  return (
-    <div
-      className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden"
-      data-testid="hero-section"
-    >
-      <div className="animate-scanline" />
-      <div className="tech-grid absolute inset-0 opacity-30" />
+    <div className="max-w-[1400px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`w-2 h-2 rounded-full ${iconColor} animate-pulse`} />
+          <span className="font-mono text-xs text-muted tracking-widest uppercase">{copy.systemStatus}</span>
+        </div>
+        <h1 className="text-5xl md:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
+          {hero.title.split(" ").map((word, i) => (
+            <span key={i} className="block">
+              {word}
+            </span>
+          ))}
+        </h1>
+        <p className="text-lg text-muted font-mono mb-8 max-w-lg border-l-2 border-border-strong pl-4">
+          {hero.description}
+        </p>
 
-      <div className="max-w-[1400px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <div className={`w-2 h-2 rounded-full ${iconColor} animate-pulse`} />
-            <span className="font-mono text-xs text-muted tracking-widest uppercase">{copy.systemStatus}</span>
+        <div className="flex gap-4">
+          <button
+            className="bg-primary text-bg px-8 py-4 font-bold uppercase tracking-wider hover:bg-text transition-colors clip-corner-top-right relative group overflow-hidden"
+            data-testid="hero-cta-primary"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
+            </span>
+          </button>
+          <button
+            className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
+            data-testid="hero-cta-secondary"
+          >
+            {copy.ctas.secondary}
+          </button>
+        </div>
+      </div>
+
+      <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
+        <div className="absolute top-2 left-2 text-[10px] font-mono text-primary">CAM_01 // LIVE</div>
+        <div className="absolute top-2 right-2 text-[10px] font-mono text-subtle">REC ●</div>
+
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="relative w-64 h-64 border border-border rounded-full flex items-center justify-center animate-spin-slow">
+            <div className="absolute w-full h-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
+            <div className="absolute h-full w-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
+            <div className={`w-48 h-48 border-2 border-dashed rounded-full opacity-50 ${orbitBorderClass}`} />
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
-            {current.title.split(" ").map((word, i) => (
-              <span key={i} className="block">
-                {word}
-              </span>
-            ))}
-          </h1>
-          <p className="text-lg text-muted font-mono mb-8 max-w-lg border-l-2 border-border-strong pl-4">
-            {current.description}
-          </p>
-
-          <div className="flex gap-4">
-            <button
-              className="bg-primary text-bg px-8 py-4 font-bold uppercase tracking-wider hover:bg-text transition-colors clip-corner-top-right relative group overflow-hidden"
-              data-testid="hero-cta-primary"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
-              </span>
-            </button>
-            <button
-              className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
-              data-testid="hero-cta-secondary"
-            >
-              {copy.ctas.secondary}
-            </button>
+          <div className="absolute">
+            <Icon className={`w-16 h-16 ${iconClassName}`} />
           </div>
         </div>
 
-        <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
-          <div className="absolute top-2 left-2 text-[10px] font-mono text-primary">CAM_01 // LIVE</div>
-          <div className="absolute top-2 right-2 text-[10px] font-mono text-subtle">REC ●</div>
-
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative w-64 h-64 border border-border rounded-full flex items-center justify-center animate-spin-slow">
-              <div className="absolute w-full h-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
-              <div className="absolute h-full w-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
-              <div
-                className={`w-48 h-48 border-2 border-dashed rounded-full opacity-50 ${
-                  activeTab === "gig" ? "border-primary" : "border-border-strong"
-                }`}
-              />
-            </div>
-            <div className="absolute">
-              {activeTab === "gig" && <Cpu className="w-16 h-16 text-primary" />}
-              {activeTab === "npm" && <Package className="w-16 h-16 text-secondary" />}
-              {activeTab === "data" && <Database className="w-16 h-16 text-emerald-400" />}
-            </div>
+        <div className="absolute bottom-4 left-4 font-mono text-xs text-subtle space-y-1">
+          <div className="flex gap-4">
+            <span className="text-subtle">CPU</span>{" "}
+            <div className="w-24 h-2 bg-surface-alt">
+              <div className="w-[70%] h-full bg-primary" />
+            </div>{" "}
+            70%
           </div>
-
-          <div className="absolute bottom-4 left-4 font-mono text-xs text-subtle space-y-1">
-            <div className="flex gap-4">
-              <span className="text-subtle">CPU</span>{" "}
-              <div className="w-24 h-2 bg-surface-alt">
-                <div className="w-[70%] h-full bg-primary" />
-              </div>{" "}
-              70%
-            </div>
-            <div className="flex gap-4">
-              <span className="text-subtle">MEM</span>{" "}
-              <div className="w-24 h-2 bg-surface-alt">
-                <div className="w-[40%] h-full bg-secondary" />
-              </div>{" "}
-              40%
-            </div>
-            <div className="flex gap-4">
-              <span className="text-subtle">NET</span>{" "}
-              <div className="w-24 h-2 bg-surface-alt">
-                <div className="w-[90%] h-full bg-emerald-400" />
-              </div>{" "}
-              90%
-            </div>
+          <div className="flex gap-4">
+            <span className="text-subtle">MEM</span>{" "}
+            <div className="w-24 h-2 bg-surface-alt">
+              <div className="w-[40%] h-full bg-secondary" />
+            </div>{" "}
+            40%
+          </div>
+          <div className="flex gap-4">
+            <span className="text-subtle">NET</span>{" "}
+            <div className="w-24 h-2 bg-surface-alt">
+              <div className="w-[90%] h-full bg-emerald-400" />
+            </div>{" "}
+            90%
           </div>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
+
+const GigHero = ({ copy }) => (
+  <HeroFrame
+    copy={copy}
+    hero={copy.hero.gig}
+    iconColor="bg-primary"
+    iconClassName="text-primary"
+    orbitBorderClass="border-primary"
+    Icon={Cpu}
+  />
+);
+
+const NpmHero = ({ copy }) => (
+  <HeroFrame
+    copy={copy}
+    hero={copy.hero.npm}
+    iconColor="bg-secondary"
+    iconClassName="text-secondary"
+    orbitBorderClass="border-border-strong"
+    Icon={Package}
+  />
+);
+
+const DataHero = ({ copy }) => (
+  <HeroFrame
+    copy={copy}
+    hero={copy.hero.data}
+    iconColor="bg-emerald-400"
+    iconClassName="text-emerald-400"
+    orbitBorderClass="border-border-strong"
+    Icon={Database}
+  />
+);
 
 const MarketCard = ({ item, type, copy, dataTestId }) => (
   <TechBorder className="h-full" dataTestId={dataTestId}>
@@ -679,6 +697,71 @@ const MarketCard = ({ item, type, copy, dataTestId }) => (
   </TechBorder>
 );
 
+const MarketSection = ({ title, items, type, copy }) => (
+  <>
+    <SectionHeader title={title} subtitle={copy.headers.market.subtitle} />
+
+    <div className="flex justify-between items-center mb-8 bg-surface border border-border p-2">
+      <div className="flex gap-4 px-4 font-mono text-xs text-muted">
+        <span className="flex items-center gap-2">
+          <Radio className="w-3 h-3 text-red-500 animate-pulse" /> {copy.filters.live}
+        </span>
+        <span>
+          {copy.filters.total}: {items.length}
+        </span>
+      </div>
+      <div className="flex gap-2">
+        <button className="px-4 py-1 bg-surface-alt text-xs font-mono text-muted border border-border hover:border-border-strong">
+          {copy.filters.sort}
+        </button>
+        <button className="px-4 py-1 bg-surface-alt text-xs font-mono text-muted border border-border hover:border-border-strong">
+          {copy.filters.view}
+        </button>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="cards-grid">
+      {items.map((item) => (
+        <MarketCard key={item.id} item={item} type={type} copy={copy} dataTestId={`card-${item.id}`} />
+      ))}
+    </div>
+  </>
+);
+
+const GigTabPanel = ({ copy, locale, items }) => {
+  const marketTitle = locale === "fr" ? "Unités disponibles" : "Available Units";
+
+  return (
+    <>
+      <SectionHeader title={copy.headers.mission.title} subtitle={copy.headers.mission.subtitle} />
+      <TaskSelector copy={copy} />
+      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} />
+
+      <div className="mt-24 max-w-4xl mx-auto">
+        <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
+        <TerminalEmulator />
+      </div>
+    </>
+  );
+};
+
+const NpmTabPanel = ({ copy, locale, items }) => {
+  const marketTitle = locale === "fr" ? "Modules de skills" : "Skill Modules";
+
+  return (
+    <>
+      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} />
+      <NpmCallout copy={copy} />
+    </>
+  );
+};
+
+const DataTabPanel = ({ copy, locale, items }) => {
+  const marketTitle = locale === "fr" ? "Contextes data" : "Data Contexts";
+
+  return <MarketSection title={marketTitle} items={items} type="data" copy={copy} />;
+};
+
 const TaskSelector = ({ copy }) => (
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
     {[
@@ -695,7 +778,9 @@ const TaskSelector = ({ copy }) => (
           {item.icon}
         </div>
         <div className="relative z-10 flex flex-col justify-end h-full">
-          <div className="font-mono text-[10px] text-subtle mb-1 group-hover:text-primary">0{idx + 1} // SELECT</div>
+          <div className="font-mono text-[10px] text-subtle mb-1 group-hover:text-primary">
+            0{idx + 1} {"//"} SELECT
+          </div>
           <div className="font-bold text-text text-sm uppercase">{item.label}</div>
         </div>
         <div className="absolute bottom-0 left-0 h-1 w-0 bg-primary group-hover:w-full transition-all duration-300" />
@@ -704,20 +789,19 @@ const TaskSelector = ({ copy }) => (
   </div>
 );
 
-function getMarketTitle(activeTab, locale) {
-  if (activeTab === "gig") return locale === "fr" ? "Unités disponibles" : "Available Units";
-  if (activeTab === "npm") return locale === "fr" ? "Modules de skills" : "Skill Modules";
-  return locale === "fr" ? "Contextes data" : "Data Contexts";
-}
-
 export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
   const [activeTab, setActiveTab] = useState("gig");
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
 
-  const marketTitle = getMarketTitle(activeTab, locale);
-
-  const items = copy.cards[activeTab];
+  const tabVariants = {
+    gig: { Hero: GigHero, Panel: GigTabPanel, items: copy.cards.gig },
+    npm: { Hero: NpmHero, Panel: NpmTabPanel, items: copy.cards.npm },
+    data: { Hero: DataHero, Panel: DataTabPanel, items: copy.cards.data }
+  };
+  const activeVariant = tabVariants[activeTab] || tabVariants.gig;
+  const ActiveHero = activeVariant.Hero;
+  const ActivePanel = activeVariant.Panel;
 
   return (
     <div className="min-h-screen">
@@ -731,7 +815,7 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
       />
 
       <main className="pb-32">
-        <HeroHUD activeTab={activeTab} copy={copy} />
+        <ActiveHero copy={copy} />
 
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
           <div
@@ -743,70 +827,18 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
                 <span className="flex items-center gap-2">
                   <ShieldCheck size={14} /> {copy.trust.verified}
                 </span>
-                <span className="opacity-30">///</span>
+                <span className="opacity-30">{"///"}</span>
                 <span className="flex items-center gap-2">
                   <Lock size={14} /> {copy.trust.escrow}
                 </span>
-                <span className="opacity-30">///</span>
+                <span className="opacity-30">{"///"}</span>
               </React.Fragment>
             ))}
           </div>
         </div>
 
         <div className="max-w-[1400px] mx-auto px-6 py-16">
-          {activeTab === "gig" && (
-            <>
-              <SectionHeader title={copy.headers.mission.title} subtitle={copy.headers.mission.subtitle} />
-              <TaskSelector copy={copy} />
-            </>
-          )}
-
-          <SectionHeader title={marketTitle} subtitle={copy.headers.market.subtitle} />
-
-          <div className="flex justify-between items-center mb-8 bg-surface border border-border p-2">
-            <div className="flex gap-4 px-4 font-mono text-xs text-muted">
-              <span className="flex items-center gap-2">
-                <Radio className="w-3 h-3 text-red-500 animate-pulse" /> {copy.filters.live}
-              </span>
-              <span>
-                {copy.filters.total}: {items.length}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button className="px-4 py-1 bg-surface-alt text-xs font-mono text-muted border border-border hover:border-border-strong">
-                {copy.filters.sort}
-              </button>
-              <button className="px-4 py-1 bg-surface-alt text-xs font-mono text-muted border border-border hover:border-border-strong">
-                {copy.filters.view}
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            data-testid="cards-grid"
-          >
-            {items.map((item) => (
-              <MarketCard
-                key={item.id}
-                item={item}
-                type={activeTab}
-                copy={copy}
-                dataTestId={`card-${item.id}`}
-              />
-            ))}
-          </div>
-
-          {activeTab === "gig" && (
-            <div className="mt-24 max-w-4xl mx-auto">
-              <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
-              <TerminalEmulator />
-            </div>
-          )}
-
-          {activeTab === "npm" && (
-            <NpmCallout copy={copy} />
-          )}
+          <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
         </div>
       </main>
 

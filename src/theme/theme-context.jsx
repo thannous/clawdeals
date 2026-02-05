@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
+import React, { createContext, use, useMemo, useState, useEffect, useCallback } from "react";
 import { THEMES, DEFAULT_THEME_ID } from "./themes";
 
 const ThemeContext = createContext({
@@ -26,7 +26,15 @@ const applyThemeToDom = (theme) => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [themeId, setThemeId] = useState(DEFAULT_THEME_ID);
+  const [themeId, setThemeId] = useState(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_THEME_ID;
+    }
+
+    const stored = window.localStorage.getItem("theme");
+    const resolvedTheme = themeMap[stored] || themeMap[DEFAULT_THEME_ID];
+    return resolvedTheme.id;
+  });
 
   const setTheme = useCallback((nextThemeId) => {
     const resolvedTheme = themeMap[nextThemeId] || themeMap[DEFAULT_THEME_ID];
@@ -35,20 +43,12 @@ export const ThemeProvider = ({ children }) => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("theme", resolvedTheme.id);
     }
-
-    applyThemeToDom(resolvedTheme);
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const stored = window.localStorage.getItem("theme");
-    const resolvedTheme = themeMap[stored] || themeMap[DEFAULT_THEME_ID];
-    setThemeId(resolvedTheme.id);
+    const resolvedTheme = themeMap[themeId] || themeMap[DEFAULT_THEME_ID];
     applyThemeToDom(resolvedTheme);
-  }, []);
+  }, [themeId]);
 
   const value = useMemo(
     () => ({
@@ -62,4 +62,4 @@ export const ThemeProvider = ({ children }) => {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => use(ThemeContext);

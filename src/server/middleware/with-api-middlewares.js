@@ -32,7 +32,6 @@ async function safeAuditLog(event) {
     const logger = getAuditLogger();
     await logger(event);
   } catch (error) {
-    // eslint-disable-next-line no-console
     console.error("[audit] failed", error);
   }
 }
@@ -185,7 +184,6 @@ export function withApiMiddlewares(handler, options = {}) {
             status: ctx.response.status >= 500 ? "FAILED" : "COMPLETED"
           };
         } catch (error) {
-          // eslint-disable-next-line no-console
           console.error("[idempotency] finalize failed", error);
         }
       }
@@ -202,7 +200,6 @@ export function withApiMiddlewares(handler, options = {}) {
             headers: {}
           });
         } catch (finalizeError) {
-          // eslint-disable-next-line no-console
           console.error("[idempotency] finalize failed", finalizeError);
         }
       }

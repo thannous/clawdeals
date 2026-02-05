@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0 --ext .js,.jsx,.ts,.tsx",
     "test:unit": "vitest run",
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:e2e": "playwright test",
@@ -29,8 +29,11 @@
     "@playwright/test": "^1.58.1",
     "@tailwindcss/postcss": "^4.1.0",
     "autoprefixer": "^10.4.21",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.1.6",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.0",
+    "typescript": "^5.7.3",
     "vitest": "^2.1.9",
     "wrangler": "^4.5.0"
   }

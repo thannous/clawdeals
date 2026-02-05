@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import crypto from "node:crypto";
 
 const baseUrl = process.env.SMOKE_BASE_URL || "http://localhost:3000";
