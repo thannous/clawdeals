@@ -40,6 +40,7 @@ export function createRequestContext(req) {
     auditEvent: null,
     security: null,
     policy: null,
+    trustContext: null,
     outcome: null,
     response: null
   };

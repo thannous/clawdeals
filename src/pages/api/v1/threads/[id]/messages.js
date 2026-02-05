@@ -9,6 +9,7 @@ import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/pol
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { createApproval } from "../../../../../server/services/approvals";
 import crypto from "crypto";
+import { resolveTrustContext } from "../../../../../server/trustscore/context";
 
 async function handler(req, res, ctx) {
   if (req.method !== "POST") {
@@ -41,6 +42,7 @@ async function handler(req, res, ctx) {
 
     const agentId = ctx?.agentId || null;
     const ownerId = ctx?.ownerId || null;
+    await resolveTrustContext({ ctx, actionType: "message.send" });
     const targetOwnerId = thread.owner_id || ownerId || null;
 
     if (targetOwnerId) {

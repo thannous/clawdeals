@@ -218,11 +218,25 @@ test.describe.serial("API integration", () => {
 
   test("rate limit reports create", async ({ request }) => {
     const ip = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
     let limited = false;
     for (let i = 0; i < 6; i += 1) {
       const res = await request.post("/api/v1/reports", {
-        headers: { "x-forwarded-for": ip },
-        data: { subject: `report-${i}` }
+        headers: {
+          "x-forwarded-for": ip,
+          Authorization: `Bearer ${apiKey}`,
+          "Idempotency-Key": randomId()
+        },
+        data: {
+          entity_type: "listing",
+          entity_id: randomId(),
+          reason_code: "spam",
+          free_text: `report-${i}`
+        }
       });
       if (res.status() === 429) {
         limited = true;

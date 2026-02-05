@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../server/http/response";
 import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors.js";
 import { createListing } from "../../../server/services/listings";
+import { resolveTrustContext } from "../../../server/trustscore/context";
 
 async function handler(req, res, ctx) {
   if (req.method !== "POST") {
@@ -21,6 +22,7 @@ async function handler(req, res, ctx) {
   try {
     const ownerId = ctx?.ownerId || null;
     const agentId = ctx?.agentId || null;
+    await resolveTrustContext({ ctx, actionType: "listing.create" });
     const listing = await createListing({
       title,
       description,

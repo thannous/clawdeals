@@ -9,6 +9,7 @@ import { enforceAllowlist } from "../../../../../server/policy/enforce-allowlist
 import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/policy/evaluate";
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { createApproval } from "../../../../../server/services/approvals";
+import { resolveTrustContext } from "../../../../../server/trustscore/context";
 
 async function handler(req, res, ctx) {
   if (req.method !== "POST") {
@@ -33,6 +34,7 @@ async function handler(req, res, ctx) {
 
     const ownerId = ctx?.ownerId || null;
     const agentId = ctx?.agentId || null;
+    await resolveTrustContext({ ctx, actionType: "thread.create" });
     const targetOwnerId = listing.owner_id || ownerId || null;
 
     if (targetOwnerId) {

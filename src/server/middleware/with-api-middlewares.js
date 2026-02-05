@@ -6,6 +6,7 @@ import { beginIdempotency, finalizeIdempotency } from "../idempotency/middleware
 import { createAuditLogger, createSupabaseAuditWriter } from "../audit";
 import { jsonResponse, sendJson } from "../http/response";
 import { sendError } from "../http/errors";
+import { mergeTrustContextIntoPolicy } from "../trustscore/context";
 
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,
@@ -212,6 +213,7 @@ export function withApiMiddlewares(handler, options = {}) {
       }
     } finally {
       if (resolved.enableAudit) {
+        mergeTrustContextIntoPolicy(ctx);
         await safeAuditLog(buildAuditEvent(ctx));
       }
     }
