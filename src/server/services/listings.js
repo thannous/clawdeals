@@ -18,3 +18,13 @@ export async function createListing({ title, description, status = "active", dea
   }
   return data;
 }
+
+export async function getListing(listingId) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("listings").select("*").eq("id", listingId).maybeSingle();
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  return data || null;
+}

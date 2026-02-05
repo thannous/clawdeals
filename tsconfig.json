@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "strict": false,
+    "incremental": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "e2e/**/*",
+    "playwright.config.js",
+    "next.config.js",
+    "open-next.config.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

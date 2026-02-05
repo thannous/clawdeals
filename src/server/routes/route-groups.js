@@ -55,6 +55,21 @@ const ROUTE_GROUPS = [
     pattern: /^\/v1\/policies(?:\/[^/]+)?$/
   },
   {
+    group: "approvals.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/approvals$/
+  },
+  {
+    group: "approvals.approve",
+    methods: ["POST"],
+    pattern: /^\/v1\/approvals\/[^/]+:approve$/
+  },
+  {
+    group: "approvals.deny",
+    methods: ["POST"],
+    pattern: /^\/v1\/approvals\/[^/]+:deny$/
+  },
+  {
     group: "deals.create",
     methods: ["POST"],
     pattern: /^\/v1\/deals$/

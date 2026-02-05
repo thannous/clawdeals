@@ -55,6 +55,24 @@ describe("evaluatePolicyAction", () => {
     expect(decision.reason).toBe("message_type_allowlisted");
   });
 
+  it("requires approval for non-allowlisted actions", () => {
+    const decision = evaluatePolicyAction({
+      policy: basePolicy,
+      action: "thread.create"
+    });
+    expect(decision.decision).toBe(POLICY_DECISION.REQUIRES_APPROVAL);
+    expect(decision.reason).toBe("action_not_allowlisted");
+  });
+
+  it("auto-approves allowlisted actions", () => {
+    const decision = evaluatePolicyAction({
+      policy: basePolicy,
+      action: "listing.create"
+    });
+    expect(decision.decision).toBe(POLICY_DECISION.AUTO_APPROVED);
+    expect(decision.reason).toBe("action_allowlisted");
+  });
+
   it("requires approval for contact reveal by default", () => {
     const decision = evaluatePolicyAction({ action: "contact_reveal" });
     expect(decision.decision).toBe(POLICY_DECISION.REQUIRES_APPROVAL);

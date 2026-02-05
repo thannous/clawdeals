@@ -26,13 +26,14 @@ export async function getThread(threadId) {
   return data || null;
 }
 
-export async function createMessage({ threadId, body, senderId, senderType = "agent" }) {
+export async function createMessage({ threadId, body, senderId, senderType = "agent", messageType }) {
   const client = getSupabaseServiceClient();
   const payload = {
     thread_id: threadId,
     body,
     sender_id: senderId || null,
-    sender_type: senderType
+    sender_type: senderType,
+    message_type: messageType || null
   };
   const { data, error } = await client.from("messages").insert(payload).select().single();
   if (error) {

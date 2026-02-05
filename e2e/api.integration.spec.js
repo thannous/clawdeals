@@ -333,4 +333,129 @@ test.describe.serial("API integration", () => {
     const body = await second.json();
     expect(body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
   });
+
+  test("approvals queue executes thread + message actions", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(policyRes, 200);
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Approval listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    await expectStatus(threadRes, 202);
+    const threadApprovalBody = await threadRes.json();
+    const threadApprovalId = threadApprovalBody.data.approval_id;
+
+    const approvalsRes = await request.get("/api/v1/approvals?state=PENDING", {
+      headers: { "x-owner-id": ownerId }
+    });
+    await expectStatus(approvalsRes, 200);
+    const approvalsBody = await approvalsRes.json();
+    const pendingIds = approvalsBody.data.approvals.map((item) => item.approval_id);
+    expect(pendingIds).toContain(threadApprovalId);
+
+    const approveThreadRes = await request.post(`/api/v1/approvals/${threadApprovalId}:approve`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(approveThreadRes, 200);
+    const approveThreadBody = await approveThreadRes.json();
+    expect(approveThreadBody.data.state).toBe("APPROVED");
+
+    const { data: threads, error: threadsError } = await supabase
+      .from("threads")
+      .select("*")
+      .eq("listing_id", listingId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (threadsError) throw threadsError;
+    expect(threads.length).toBeGreaterThan(0);
+    const threadId = threads[0].id;
+
+    const msgRes = await request.post(`/api/v1/threads/${threadId}/messages`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { body: "hello approval", message_type: "answer" }
+    });
+    await expectStatus(msgRes, 202);
+    const msgApprovalBody = await msgRes.json();
+    const msgApprovalId = msgApprovalBody.data.approval_id;
+
+    const approveMsgRes = await request.post(`/api/v1/approvals/${msgApprovalId}:approve`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(approveMsgRes, 200);
+    const approveMsgBody = await approveMsgRes.json();
+    expect(approveMsgBody.data.state).toBe("APPROVED");
+
+    const { data: messages, error: messagesError } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("thread_id", threadId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (messagesError) throw messagesError;
+    expect(messages.length).toBeGreaterThan(0);
+    expect(messages[0].message_type).toBe("answer");
+    expect(messages[0].body).toBe("hello approval");
+  });
+
+  test("allowlist blocks thread creation", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: [] },
+        allowlist_agent_ids: ["agent-not-allowed"],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(policyRes, 200);
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: { title: `Allowlist listing ${randomId()}` }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.data.id;
+
+    const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      data: {}
+    });
+    expect(threadRes.status()).toBe(403);
+    const threadBody = await threadRes.json();
+    expect(threadBody.error.code).toBe("POLICY_BLOCKED");
+  });
 });

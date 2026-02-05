@@ -95,7 +95,7 @@ async function run() {
   const policyRes = await putJson("/api/v1/policies", {
     budgets: { max_offer: 400, currency: "EUR" },
     approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-    auto_approve: { message_types: ["answer"], actions: [] },
+    auto_approve: { message_types: ["answer"], actions: ["thread.create"] },
     allowlist_agent_ids: [],
     denylist_agent_ids: []
   }, {}, { useAgent: false });
@@ -134,7 +134,7 @@ async function run() {
 
   const msgRes = await postJson(
     `/api/v1/threads/${thread.data?.id}/messages`,
-    { body: "hello" },
+    { body: "hello", message_type: "answer" },
     {},
     { useOwner: false, useAgent: true }
   );

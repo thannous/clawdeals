@@ -33,6 +33,18 @@ export const RATE_LIMIT_PROFILES = {
   "policies.write": {
     buckets: [{ limit: 10, windowSeconds: HOUR }],
   },
+  "approvals.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "approvals.approve": {
+    scope: "owner",
+    buckets: [{ limit: 60, windowSeconds: HOUR }],
+  },
+  "approvals.deny": {
+    scope: "owner",
+    buckets: [{ limit: 60, windowSeconds: HOUR }],
+  },
   "deals.create": {
     buckets: [{ limit: 20, windowSeconds: DAY }],
   },
