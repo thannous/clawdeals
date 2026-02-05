@@ -1,10 +1,10 @@
-import { withApiMiddlewares } from "../../../server/middleware/with-api-middlewares";
-import { jsonResponse } from "../../../server/http/response";
-import { methodNotAllowed } from "../../../server/http/methods";
-import { errorPayload } from "../../../server/http/errors";
-import { isUuid } from "../../../server/utils/validators";
-import { getOwner, invalidateOwnerChallenges, upsertOwner } from "../../../server/services/owners";
-import { isE164, normalizeEmail, normalizePhoneE164 } from "../../../server/utils/owner-verification";
+import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares";
+import { jsonResponse } from "../../../../server/http/response";
+import { methodNotAllowed } from "../../../../server/http/methods";
+import { errorPayload } from "../../../../server/http/errors.js";
+import { isUuid } from "../../../../server/utils/validators";
+import { getOwner, invalidateOwnerChallenges, upsertOwner } from "../../../../server/services/owners";
+import { isE164, normalizeEmail, normalizePhoneE164 } from "../../../../server/utils/owner-verification";
 
 function getOwnerId(req) {
   const headerValue = req.headers["x-owner-id"];

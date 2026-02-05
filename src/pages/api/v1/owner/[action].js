@@ -1,8 +1,8 @@
-import { withApiMiddlewares } from "../../../server/middleware/with-api-middlewares";
-import { jsonResponse } from "../../../server/http/response";
-import { methodNotAllowed } from "../../../server/http/methods";
-import { errorPayload } from "../../../server/http/errors";
-import { isUuid } from "../../../server/utils/validators";
+import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares";
+import { jsonResponse } from "../../../../server/http/response";
+import { methodNotAllowed } from "../../../../server/http/methods";
+import { errorPayload } from "../../../../server/http/errors.js";
+import { isUuid } from "../../../../server/utils/validators";
 import {
   OWNER_VERIFICATION,
   computeExpiryDate,
@@ -12,15 +12,15 @@ import {
   normalizePhoneE164,
   secondsUntil,
   verifyTokenHash
-} from "../../../server/utils/owner-verification";
-import { getOwner, setOwnerVerified } from "../../../server/services/owners";
+} from "../../../../server/utils/owner-verification";
+import { getOwner, setOwnerVerified } from "../../../../server/services/owners";
 import {
   consumeChallenge,
   createChallenge,
   evaluateChallenge,
   getLatestActiveChallenge,
   incrementChallengeAttempt
-} from "../../../server/services/owner-verification";
+} from "../../../../server/services/owner-verification";
 
 function getOwnerId(req) {
   const headerValue = req.headers["x-owner-id"];
