@@ -4,12 +4,19 @@ vi.mock("../../../server/services/deals", () => ({
   createDeal: vi.fn()
 }));
 
+vi.mock("../../../server/services/deals-list", () => ({
+  listDeals: vi.fn(),
+  DEALS_DEFAULT_LIMIT: 30,
+  DEALS_MAX_LIMIT: 100
+}));
+
 vi.mock("../../../server/trustscore/context", () => ({
   resolveTrustContext: vi.fn().mockResolvedValue(null)
 }));
 
 import { handler } from "./deals";
 import { createDeal } from "../../../server/services/deals";
+import { listDeals } from "../../../server/services/deals-list";
 
 const baseCtx = {
   ownerId: "owner-1",
@@ -38,7 +45,7 @@ describe("POST /v1/deals", () => {
       headers: {},
       body: validBody
     };
-    const result = await handler(req, null, baseCtx);
+    const result = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -60,7 +67,7 @@ describe("POST /v1/deals", () => {
       headers: { "idempotency-key": "abc" },
       body: { ...validBody, price: 0 }
     };
-    const result = await handler(req, null, baseCtx);
+    const result = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("PRICE_INVALID");
   });
@@ -71,7 +78,7 @@ describe("POST /v1/deals", () => {
       headers: { "idempotency-key": "abc" },
       body: { ...validBody, expires_at: new Date(Date.now() - 1000).toISOString() }
     };
-    const result = await handler(req, null, baseCtx);
+    const result = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("EXPIRES_AT_INVALID");
   });
@@ -99,10 +106,91 @@ describe("POST /v1/deals", () => {
       headers: { "idempotency-key": "abc" },
       body: validBody
     };
-    const result = await handler(req, null, baseCtx);
+    const result = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(201);
     expect(result.body.deal.deal_id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
     expect(result.body.data).toBeUndefined();
     expect(createDeal).toHaveBeenCalled();
+  });
+});
+
+describe("GET /v1/deals", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("requires authentication", async () => {
+    const req = {
+      method: "GET",
+      query: {}
+    };
+    const result = await handler(req, null, { ...baseCtx, ownerId: null, agentId: null });
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("returns 400 for malformed cursor", async () => {
+    const req = {
+      method: "GET",
+      query: { cursor: "bad-cursor" }
+    };
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.message).toContain("cursor");
+  });
+
+  it("returns items + next_cursor and masks temperature for NEW", async () => {
+    listDeals.mockResolvedValue({
+      items: [
+        {
+          deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
+          title: "RTX 4070 - 399€",
+          source_url: "https://example.com/deal",
+          price: "399.00",
+          currency: "EUR",
+          expires_at: "2026-02-06T12:00:00Z",
+          tags: ["gpu", "nvidia"],
+          status: "NEW",
+          temperature: 50,
+          votes_up: 0,
+          votes_down: 0,
+          created_at: "2026-02-05T12:00:00Z"
+        }
+      ],
+      nextCursor: "cursor-abc"
+    });
+
+    const ctx = { ...baseCtx };
+    const req = {
+      method: "GET",
+      query: { sort: "new" }
+    };
+    const result = await handler(req, null, ctx);
+    expect(result.status).toBe(200);
+    expect(ctx.auditEvent).toBe("deals.listed");
+    expect(result.body.items).toHaveLength(1);
+    expect(result.body.items[0].temperature).toBeNull();
+    expect(result.body.items[0].price).toBe(399);
+    expect(result.body.next_cursor).toBe("cursor-abc");
+    expect(listDeals).toHaveBeenCalledWith({
+      sort: "new",
+      statuses: ["NEW", "ACTIVE"],
+      q: null,
+      tags: [],
+      minTemperature: 0,
+      limit: 30,
+      cursor: null
+    });
+  });
+
+  it("rejects status filter for temp", async () => {
+    const req = {
+      method: "GET",
+      query: { sort: "temp", status: "NEW" }
+    };
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(listDeals).not.toHaveBeenCalled();
   });
 });

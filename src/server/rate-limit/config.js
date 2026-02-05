@@ -48,6 +48,9 @@ export const RATE_LIMIT_PROFILES = {
   "deals.create": {
     buckets: [{ limit: 20, windowSeconds: DAY }],
   },
+  "deals.read": {
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
   "deals.vote": {
     buckets: [{ limit: 120, windowSeconds: HOUR }],
   },

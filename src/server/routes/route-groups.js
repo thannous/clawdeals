@@ -70,6 +70,11 @@ const ROUTE_GROUPS = [
     pattern: /^\/v1\/approvals\/[^/]+:deny$/
   },
   {
+    group: "deals.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/deals$/
+  },
+  {
     group: "deals.create",
     methods: ["POST"],
     pattern: /^\/v1\/deals$/
