@@ -216,6 +216,54 @@ test.describe.serial("API integration", () => {
     expect(getBody.data.version).toBe(putBody.data.version);
   });
 
+  test("create deal idempotency + audit", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const payload = {
+      title: "Integration Deal",
+      url: `https://example.com/p/${randomId()}?utm_source=twitter&b=2&a=1#frag`,
+      price: 129.99,
+      currency: "EUR",
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      tags: ["gpu", "nvidia"]
+    };
+
+    const idemKey = randomId();
+    const first = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idemKey },
+      data: payload
+    });
+    await expectStatus(first, 201);
+    const firstBody = await first.json();
+    expect(firstBody.deal.deal_id).toBeTruthy();
+
+    const second = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idemKey },
+      data: payload
+    });
+    await expectStatus(second, 201);
+    expect(second.headers()["idempotency-replayed"]).toBe("true");
+    const secondBody = await second.json();
+    expect(secondBody.deal.deal_id).toBe(firstBody.deal.deal_id);
+
+    const { data: persisted, error } = await supabase
+      .from("deals")
+      .select("source_url_normalized, source_url_fingerprint")
+      .eq("deal_id", firstBody.deal.deal_id)
+      .single();
+    expect(error).toBeNull();
+    expect(persisted?.source_url_normalized).toBeTruthy();
+    expect(persisted?.source_url_fingerprint).toMatch(/^[0-9a-f]{64}$/i);
+
+    const audit = await waitForAuditLog(supabase, "deal.create");
+    expect(audit).not.toBeNull();
+    expect(audit.outcome).toBe("SUCCESS");
+  });
+
   test("rate limit reports create", async ({ request }) => {
     const ip = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
     const supabase = createSupabaseAdmin();
@@ -302,12 +350,19 @@ test.describe.serial("API integration", () => {
     const grace = await createGraceApiKeyDb(supabase, agent.id, { expired: false });
 
     const res = await request.post("/api/v1/deals", {
-      headers: { Authorization: `Bearer ${grace.apiKey}` },
-      data: { title: `Grace Deal ${randomId()}` }
+      headers: { Authorization: `Bearer ${grace.apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: `Grace Deal ${randomId()}`,
+        url: `https://example.com/p/${randomId()}`,
+        price: 49.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: ["grace"]
+      }
     });
     await expectStatus(res, 201);
     const body = await res.json();
-    expect(body.data.agent_id).toBe(agent.id);
+    expect(body.data.creator_agent_id).toBe(agent.id);
   });
 
   test("rotate idempotency misuse returns 409", async ({ request }) => {

@@ -107,14 +107,27 @@ async function run() {
   await expectStatus(policiesList, [200]);
   console.log("Policies list ok");
 
-  const dealRes = await postJson("/api/v1/deals", { title: "Smoke deal" }, {}, { useOwner: false, useAgent: true });
+  const dealIdempotencyKey = crypto.randomUUID();
+  const dealRes = await postJson(
+    "/api/v1/deals",
+    {
+      title: "Smoke deal",
+      url: `https://example.com/deals/${crypto.randomUUID()}?utm_source=smoke`,
+      price: 99.99,
+      currency: "EUR",
+      expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+      tags: ["smoke", "deal"]
+    },
+    { "Idempotency-Key": dealIdempotencyKey },
+    { useOwner: false, useAgent: true }
+  );
   await expectStatus(dealRes, [201]);
   const deal = await dealRes.json();
-  console.log("Deal created", deal.data?.id);
+  console.log("Deal created", deal.data?.id || deal.deal?.deal_id);
 
   const listingRes = await postJson(
     "/api/v1/listings",
-    { title: "Smoke listing", deal_id: deal.data?.id },
+    { title: "Smoke listing", deal_id: deal.data?.id || deal.deal?.deal_id },
     {},
     { useOwner: false, useAgent: true }
   );
