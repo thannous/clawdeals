@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
+import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
 import { THEMES, DEFAULT_THEME_ID } from "./themes";
 
 const ThemeContext = createContext({
@@ -28,7 +28,7 @@ const applyThemeToDom = (theme) => {
 export const ThemeProvider = ({ children }) => {
   const [themeId, setThemeId] = useState(DEFAULT_THEME_ID);
 
-  const setTheme = (nextThemeId) => {
+  const setTheme = useCallback((nextThemeId) => {
     const resolvedTheme = themeMap[nextThemeId] || themeMap[DEFAULT_THEME_ID];
     setThemeId(resolvedTheme.id);
 
@@ -37,7 +37,7 @@ export const ThemeProvider = ({ children }) => {
     }
 
     applyThemeToDom(resolvedTheme);
-  };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -56,7 +56,7 @@ export const ThemeProvider = ({ children }) => {
       setTheme,
       themes: THEMES
     }),
-    [themeId]
+    [themeId, setTheme]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

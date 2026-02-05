@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import {
   Aperture,
   Activity,
@@ -20,7 +21,9 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import packageInfo from "../../package.json";
+
+const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
+const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
 
 const COPY = {
   fr: {
@@ -701,61 +704,18 @@ const TaskSelector = ({ copy }) => (
   </div>
 );
 
-const TerminalEmulator = () => (
-  <div className="mt-20 border border-border-strong bg-bg p-1 shadow-2xl">
-    <div className="bg-surface-alt px-4 py-1 flex items-center justify-between border-b border-border">
-      <span className="text-[10px] font-mono text-muted">TERMINAL_RELAY_V2.0</span>
-      <div className="flex gap-2">
-        <div className="w-2 h-2 bg-border-strong rounded-full" />
-        <div className="w-2 h-2 bg-border-strong rounded-full" />
-      </div>
-    </div>
-    <div className="p-6 font-mono text-sm leading-relaxed h-64 overflow-y-auto">
-      <div className="text-subtle mb-2"># User initialized secure session via ClawDeals CLI</div>
-      <div className="flex gap-2">
-        <span className="text-primary">root@clawbot:~$</span>
-        <span className="text-text">@market list --category scraper --sort speed</span>
-      </div>
-      <div className="pl-4 text-emerald-500 my-2">
-        [SUCCESS] Found 3 agents matching criteria:
-        <br />
-        &gt; 101: Market Watch Agent (0.50€/run) [IDLE]
-        <br />
-        &gt; 102: SEO Auditor (2.00€/run) [BUSY]
-        <br />
-        &gt; 104: Invoice OCR Core (0.20€/doc) [IDLE]
-      </div>
-      <div className="flex gap-2 mt-4">
-        <span className="text-primary">root@clawbot:~$</span>
-        <span className="text-text">@market hire 101 --budget 2eur</span>
-      </div>
-      <div className="pl-4 text-muted my-2">
-        <span className="text-blue-400">[SYSTEM]</span> Establishing secure tunnel...
-        <br />
-        <span className="text-blue-400">[SYSTEM]</span> Handshaking with ScrapeMaster Node...
-        <br />
-        <span className="text-yellow-400">[PAYMENT]</span> 2.00€ frozen in escrow.
-        <br />
-        <span className="text-emerald-500">[AGENT]</span> Task started. PID: 49202. Est time: 45s.
-      </div>
-      <div className="flex gap-2 mt-4">
-        <span className="text-primary">root@clawbot:~$</span>
-        <span className="animate-pulse">_</span>
-      </div>
-    </div>
-  </div>
-);
+function getMarketTitle(activeTab, locale) {
+  if (activeTab === "gig") return locale === "fr" ? "Unités disponibles" : "Available Units";
+  if (activeTab === "npm") return locale === "fr" ? "Modules de skills" : "Skill Modules";
+  return locale === "fr" ? "Contextes data" : "Data Contexts";
+}
 
-export default function Landing({ locale = "en", buildTimeIso }) {
+export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
   const [activeTab, setActiveTab] = useState("gig");
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
 
-  const marketTitle = useMemo(() => {
-    if (activeTab === "gig") return locale === "fr" ? "Unités disponibles" : "Available Units";
-    if (activeTab === "npm") return locale === "fr" ? "Modules de skills" : "Skill Modules";
-    return locale === "fr" ? "Contextes data" : "Data Contexts";
-  }, [activeTab, locale]);
+  const marketTitle = getMarketTitle(activeTab, locale);
 
   const items = copy.cards[activeTab];
 
@@ -845,25 +805,7 @@ export default function Landing({ locale = "en", buildTimeIso }) {
           )}
 
           {activeTab === "npm" && (
-            <div className="mt-24 border border-border bg-surface p-12 relative overflow-hidden group">
-              <div className="relative z-10 flex flex-col md:flex-row gap-12 items-center">
-                <div className="flex-1">
-                  <h3 className="text-3xl font-bold uppercase text-text mb-4">{copy.mcp.title}</h3>
-                  <p className="font-mono text-muted mb-6">{copy.mcp.description}</p>
-                  <div className="inline-flex items-center gap-4 border border-[color-mix(in_srgb,var(--color-secondary)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-secondary)_5%,transparent)] px-6 py-3">
-                    <span className="font-mono text-secondary">{copy.mcp.snippet}</span>
-                    <Code className="w-4 h-4 text-secondary" />
-                  </div>
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="w-64 h-64 border border-secondary rounded-full flex items-center justify-center relative">
-                    <div className="absolute inset-0 border border-secondary rounded-full animate-ping opacity-20" />
-                    <Package className="w-24 h-24 text-secondary" />
-                  </div>
-                </div>
-              </div>
-              <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)] via-transparent to-transparent opacity-50 pointer-events-none" />
-            </div>
+            <NpmCallout copy={copy} />
           )}
         </div>
       </main>
@@ -878,7 +820,7 @@ export default function Landing({ locale = "en", buildTimeIso }) {
               <br />
               {copy.footer.serverTime}: <span suppressHydrationWarning>{buildTimeIso}</span>
               <br />
-              VERSION: <span>v{packageInfo.version}</span>
+              VERSION: <span>v{appVersion}</span>
             </p>
           </div>
           <div>

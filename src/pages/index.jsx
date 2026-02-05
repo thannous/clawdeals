@@ -37,17 +37,22 @@ function isWorkersDevRequest(req) {
 }
 
 export async function getServerSideProps({ locale, req }) {
+  const appVersion =
+    process.env.NEXT_PUBLIC_APP_VERSION ||
+    process.env.npm_package_version ||
+    "0.0.1";
   return {
     props: {
       locale: locale || "en",
       baseUrl: baseUrlFromRequest(req),
       isPreviewHost: isWorkersDevRequest(req),
-      buildTimeIso: new Date().toISOString()
+      buildTimeIso: new Date().toISOString(),
+      appVersion
     }
   };
 }
 
-export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso }) {
+export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, appVersion }) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
@@ -76,7 +81,7 @@ export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso }) {
 
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
-      <Landing locale={currentLocale} buildTimeIso={buildTimeIso} />
+      <Landing locale={currentLocale} buildTimeIso={buildTimeIso} appVersion={appVersion} />
     </>
   );
 }
