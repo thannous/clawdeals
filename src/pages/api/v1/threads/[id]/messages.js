@@ -1,9 +1,9 @@
-import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares";
-import { jsonResponse } from "../../../../server/http/response";
-import { methodNotAllowed } from "../../../../server/http/methods";
-import { errorPayload } from "../../../../server/http/errors";
-import { createMessage, getThread } from "../../../../server/services/threads";
-import { isUuid } from "../../../../server/utils/validators";
+import { withApiMiddlewares } from "../../../../../server/middleware/with-api-middlewares";
+import { jsonResponse } from "../../../../../server/http/response";
+import { methodNotAllowed } from "../../../../../server/http/methods";
+import { errorPayload } from "../../../../../server/http/errors.js";
+import { createMessage, getThread } from "../../../../../server/services/threads";
+import { isUuid } from "../../../../../server/utils/validators";
 
 async function handler(req) {
   if (req.method !== "POST") {

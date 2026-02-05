@@ -1,7 +1,7 @@
 create extension if not exists "pgcrypto";
 
 create table if not exists public.audit_logs (
-  id uuid primary key default gen_random_uuid(),
+  id uuid not null default gen_random_uuid(),
   created_at timestamptz not null default now(),
   occurred_at timestamptz not null default now(),
   actor jsonb not null default '{}'::jsonb,
@@ -19,7 +19,8 @@ create table if not exists public.audit_logs (
   user_agent text,
   payload_fingerprint text not null,
   redacted boolean not null default false,
-  hash_algo text not null default 'hmac-sha256'
+  hash_algo text not null default 'hmac-sha256',
+  primary key (id, occurred_at)
 ) partition by range (occurred_at);
 
 do $$

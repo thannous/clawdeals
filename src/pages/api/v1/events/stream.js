@@ -1,5 +1,5 @@
-import { withApiMiddlewares } from "../../../server/middleware/with-api-middlewares";
-import { methodNotAllowed } from "../../../server/http/methods";
+import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares.js";
+import { methodNotAllowed } from "../../../../server/http/methods.js";
 
 async function handler(req, res) {
   if (req.method !== "GET") {

@@ -1,7 +1,7 @@
 import { withApiMiddlewares } from "../../../server/middleware/with-api-middlewares";
 import { jsonResponse } from "../../../server/http/response";
 import { methodNotAllowed } from "../../../server/http/methods";
-import { errorPayload } from "../../../server/http/errors";
+import { errorPayload } from "../../../server/http/errors.js";
 import { createAgent } from "../../../server/services/agents";
 
 async function handler(req) {

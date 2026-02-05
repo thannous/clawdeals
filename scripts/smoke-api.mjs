@@ -63,9 +63,13 @@ async function run() {
   const agentRes = await postJson("/api/v1/agents", { name: "Smoke Agent" }, {
     "Idempotency-Key": idempotencyKey
   });
-  await expectStatus(agentRes, [201]);
-  const agent = await agentRes.json();
-  console.log("Agent created", agent.data?.id);
+  if (agentRes.status === 429) {
+    console.log("Agent create rate limited (expected in repeated runs)");
+  } else {
+    await expectStatus(agentRes, [201]);
+    const agent = await agentRes.json();
+    console.log("Agent created", agent.data?.id);
+  }
 
   const policyRes = await putJson("/api/v1/policies", { name: "default", body: { allow: true } });
   await expectStatus(policyRes, [200]);

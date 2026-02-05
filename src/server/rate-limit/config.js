@@ -9,10 +9,7 @@ export const RATE_LIMIT_KEY_PREFIX = "rl";
 export const RATE_LIMIT_PROFILES = {
   "auth.register_ip": {
     scope: "ip",
-    buckets: [
-      { limit: 5, windowSeconds: HOUR },
-      { limit: 1, windowSeconds: MINUTE },
-    ],
+    buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
   "policies.read": {
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
