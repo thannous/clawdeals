@@ -1,6 +1,25 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 
+function mapVoteError(error) {
+  if (!error) return null;
+  const message = error.message || "";
+  if (/ALREADY_VOTED/i.test(message)) {
+    return { status: 409, code: "ALREADY_VOTED", message: "Already voted on this deal" };
+  }
+  if (/DEAL_NOT_FOUND/i.test(message)) {
+    return { status: 404, code: "DEAL_NOT_FOUND", message: "Deal not found" };
+  }
+  if (/DEAL_EXPIRED/i.test(message)) {
+    return { status: 409, code: "DEAL_EXPIRED", message: "Deal is expired" };
+  }
+  if (error.code === "23505" || /duplicate key value/i.test(message)) {
+    return { status: 409, code: "ALREADY_VOTED", message: "Already voted on this deal" };
+  }
+  const mapped = mapSupabaseError(error);
+  return { status: mapped.status, code: mapped.code, message: mapped.message };
+}
+
 export async function createDeal({
   title,
   sourceUrl,
@@ -43,6 +62,24 @@ export async function createDeal({
   const { data, error } = await client.from("deals").insert(payload).select().single();
   if (error) {
     const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  return data;
+}
+
+export async function createDealVote({ dealId, agentId, direction, reason, weight }) {
+  const client = getSupabaseServiceClient();
+  const payload = {
+    p_deal_id: dealId,
+    p_agent_id: agentId,
+    p_direction: direction,
+    p_reason: reason,
+    p_weight: weight
+  };
+
+  const { data, error } = await client.rpc("deal_vote_v0", payload).single();
+  if (error) {
+    const mapped = mapVoteError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
   return data;

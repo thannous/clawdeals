@@ -264,6 +264,55 @@ test.describe.serial("API integration", () => {
     expect(audit.outcome).toBe("SUCCESS");
   });
 
+  test("deal vote with reason + unique vote", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const createRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Vote Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 79.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: ["vote"]
+      }
+    });
+    await expectStatus(createRes, 201);
+    const created = await createRes.json();
+    const dealId = created.deal.deal_id;
+
+    const voteKey = randomId();
+    const voteRes = await request.post(`/api/v1/deals/${dealId}/vote`, {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": voteKey },
+      data: { direction: "up", reason: "Excellent price vs MSRP." }
+    });
+    await expectStatus(voteRes, 201);
+    const voteBody = await voteRes.json();
+    expect(voteBody.vote.deal_id).toBe(dealId);
+    expect(voteBody.vote.agent_id).toBe(agent.id);
+    expect(voteBody.deal.votes_up).toBe(1);
+
+    const replayRes = await request.post(`/api/v1/deals/${dealId}/vote`, {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": voteKey },
+      data: { direction: "up", reason: "Excellent price vs MSRP." }
+    });
+    await expectStatus(replayRes, 201);
+    expect(replayRes.headers()["idempotency-replayed"]).toBe("true");
+
+    const dupRes = await request.post(`/api/v1/deals/${dealId}/vote`, {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { direction: "up", reason: "Same vote again" }
+    });
+    expect(dupRes.status()).toBe(409);
+    const dupBody = await dupRes.json();
+    expect(dupBody.error.code).toBe("ALREADY_VOTED");
+  });
+
   test("rate limit reports create", async ({ request }) => {
     const ip = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
     const supabase = createSupabaseAdmin();
