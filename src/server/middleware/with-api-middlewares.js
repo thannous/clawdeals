@@ -3,10 +3,10 @@ import { applyCanonicalBody } from "./body";
 import { applyAuthStub } from "./auth-stub";
 import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { beginIdempotency, finalizeIdempotency } from "../idempotency/middleware";
-import { createAuditLogger, createSupabaseAuditWriter } from "../audit";
 import { jsonResponse, sendJson } from "../http/response";
 import { sendError } from "../http/errors";
 import { mergeTrustContextIntoPolicy } from "../trustscore/context";
+import { safeAuditLog } from "../audit/singleton.js";
 
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,
@@ -19,24 +19,7 @@ function isWriteMethod(method) {
   return !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
 }
 
-let auditLogger;
-function getAuditLogger() {
-  if (!auditLogger) {
-    auditLogger = createAuditLogger({
-      write: createSupabaseAuditWriter()
-    });
-  }
-  return auditLogger;
-}
-
-async function safeAuditLog(event) {
-  try {
-    const logger = getAuditLogger();
-    await logger(event);
-  } catch (error) {
-    console.error("[audit] failed", error);
-  }
-}
+// safeAuditLog is imported from ../audit/singleton.js
 
 function inferOutcome(ctx) {
   if (ctx.outcome?.type) return ctx.outcome.type;

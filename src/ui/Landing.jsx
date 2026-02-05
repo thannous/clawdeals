@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
@@ -433,7 +433,8 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle");
   const [message, setMessage] = useState("");
-  const isLoading = status === "loading";
+  const [isPending, startTransition] = useTransition();
+  const isLoading = status === "loading" || isPending;
   const isSuccess = status === "success";
   const isError = status === "error";
 
@@ -465,23 +466,31 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        setStatus("error");
-        setMessage(payload?.error?.message || copy.waitlist.error);
+        startTransition(() => {
+          setStatus("error");
+          setMessage(payload?.error?.message || copy.waitlist.error);
+        });
         return;
       }
 
       const resultStatus = payload?.data?.status;
       if (resultStatus === "already_registered") {
-        setStatus("success");
-        setMessage(copy.waitlist.already);
+        startTransition(() => {
+          setStatus("success");
+          setMessage(copy.waitlist.already);
+        });
         return;
       }
 
-      setStatus("success");
-      setMessage(copy.waitlist.success);
+      startTransition(() => {
+        setStatus("success");
+        setMessage(copy.waitlist.success);
+      });
     } catch (error) {
-      setStatus("error");
-      setMessage(copy.waitlist.error);
+      startTransition(() => {
+        setStatus("error");
+        setMessage(copy.waitlist.error);
+      });
       void error;
     }
   };

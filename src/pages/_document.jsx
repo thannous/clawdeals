@@ -9,7 +9,7 @@ export default class MyDocument extends Document {
       return acc;
     }, {});
     const themeColorMapJson = JSON.stringify(themeColorMap);
-    const prepaintScript = `(function(){try{var stored=localStorage.getItem("theme");var map=${themeColorMapJson};var themeId=stored&&map[stored]?stored:"${DEFAULT_THEME_ID}";document.documentElement.dataset.theme=themeId;var meta=document.querySelector('meta[name="theme-color"]');if(meta){meta.setAttribute("content",map[themeId]);}}catch(e){}})();`;
+    const prepaintScript = `(function(){try{var KEY="theme:v1";var LEGACY="theme";var stored=localStorage.getItem(KEY)||"";if(!stored){var legacy=localStorage.getItem(LEGACY)||"";if(legacy){stored=legacy;try{localStorage.setItem(KEY,legacy);localStorage.removeItem(LEGACY);}catch(e){}}}var map=${themeColorMapJson};var themeId=stored&&map[stored]?stored:"${DEFAULT_THEME_ID}";document.documentElement.dataset.theme=themeId;var meta=document.querySelector('meta[name="theme-color"]');if(meta){meta.setAttribute("content",map[themeId]);}}catch(e){}})();`;
     const defaultThemeColor = themeColorMap[DEFAULT_THEME_ID];
 
     return (

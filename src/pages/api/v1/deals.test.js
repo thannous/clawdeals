@@ -76,7 +76,7 @@ describe("POST /v1/deals", () => {
     expect(result.body.error.code).toBe("EXPIRES_AT_INVALID");
   });
 
-  it("creates deal and returns deal + data", async () => {
+  it("creates deal and returns deal", async () => {
     createDeal.mockResolvedValue({
       deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
       title: "RTX 4070 - 399€",
@@ -102,7 +102,7 @@ describe("POST /v1/deals", () => {
     const result = await handler(req, null, baseCtx);
     expect(result.status).toBe(201);
     expect(result.body.deal.deal_id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
-    expect(result.body.data.id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
+    expect(result.body.data).toBeUndefined();
     expect(createDeal).toHaveBeenCalled();
   });
 });

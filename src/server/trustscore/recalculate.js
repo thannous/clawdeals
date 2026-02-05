@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient } from "../db/supabase";
-import { createAuditLogger, createSupabaseAuditWriter } from "../audit";
+import { getAuditLogger } from "../audit/singleton.js";
 import { isFeatureEnabled } from "../config/feature-flags";
 import {
   areFlagsEqual,
@@ -35,9 +35,7 @@ function extractOwnerRelation(ownerRelation) {
 
 async function logTrustscoreRecalculated({ now, summary, outcome = "SUCCESS" }) {
   try {
-    const logger = createAuditLogger({
-      write: createSupabaseAuditWriter()
-    });
+    const logger = getAuditLogger();
     await logger({
       occurredAt: now.toISOString(),
       actor: { type: "system", source: "cron" },

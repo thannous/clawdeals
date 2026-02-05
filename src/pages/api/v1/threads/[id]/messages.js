@@ -35,14 +35,16 @@ async function handler(req, res, ctx) {
   }
 
   try {
-    const thread = await getThread(threadId);
+    const threadPromise = getThread(threadId);
+    const trustPromise = resolveTrustContext({ ctx, actionType: "message.send" });
+
+    const [thread] = await Promise.all([threadPromise, trustPromise]);
     if (!thread) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Thread not found"));
     }
 
     const agentId = ctx?.agentId || null;
     const ownerId = ctx?.ownerId || null;
-    await resolveTrustContext({ ctx, actionType: "message.send" });
     const targetOwnerId = thread.owner_id || ownerId || null;
 
     if (targetOwnerId) {

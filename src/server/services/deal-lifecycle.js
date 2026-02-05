@@ -1,5 +1,5 @@
-import { createAuditLogger, createSupabaseAuditWriter } from "../audit";
 import { getSupabaseServiceClient } from "../db/supabase";
+import { getAuditLogger } from "../audit/singleton.js";
 
 const DEFAULT_BATCH_SIZE = 500;
 const AUDIT_PATH = "/internal/cron/deals-lifecycle";
@@ -52,7 +52,7 @@ async function logStateChanges(changes, nowIso, logger) {
 
 export async function runDealLifecycle({ now = new Date(), batchSize = DEFAULT_BATCH_SIZE } = {}) {
   const client = getSupabaseServiceClient();
-  const logger = createAuditLogger({ write: createSupabaseAuditWriter() });
+  const logger = getAuditLogger();
   const nowIso = now.toISOString();
 
   let activatedCount = 0;

@@ -1,7 +1,6 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { normalizeTrustFlags } from "../trustscore/compute";
-import { createAuditLogger, createSupabaseAuditWriter } from "../audit";
 
 const REPORT_WINDOW_DAYS = 7;
 const MIN_DISTINCT_REPORTER_OWNERS = 3;
@@ -33,37 +32,6 @@ function getThreshold(entityType) {
 
 function computeWindowStart(now = new Date()) {
   return new Date(now.getTime() - REPORT_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
-}
-
-async function logThresholdTriggered({ ctx, payload, now = new Date() }) {
-  try {
-    const logger = createAuditLogger({ write: createSupabaseAuditWriter() });
-    await logger({
-      occurredAt: now.toISOString(),
-      actor: ctx?.actor || { type: "system", id: null },
-      auth: {
-        agent_id: ctx?.agentId || null,
-        owner_id: ctx?.ownerId || null,
-        api_key_id: ctx?.apiKeyId || null,
-        api_key_state: ctx?.apiKeyState || null
-      },
-      request: {
-        id: ctx?.requestId,
-        ip: ctx?.ip,
-        userAgent: ctx?.userAgent,
-        method: ctx?.method,
-        path: ctx?.path,
-        query: ctx?.query
-      },
-      action: {
-        event: "report.threshold_triggered"
-      },
-      payload,
-      outcome: "SUCCESS"
-    });
-  } catch (error) {
-    console.error("[report] threshold audit failed", error);
-  }
 }
 
 async function maybeApplyAutoHide({
@@ -110,7 +78,17 @@ async function maybeApplyAutoHide({
     .maybeSingle();
 
   if (existing?.hidden) {
-    return { hidden: true, alreadyHidden: true };
+    return {
+      hidden: true,
+      alreadyHidden: true,
+      audit: {
+        auto_hide_applied: false,
+        already_hidden: true,
+        weighted_sum: weightedSum,
+        threshold,
+        distinct_reporter_owners: distinctOwners.size
+      }
+    };
   }
 
   const nowIso = now.toISOString();
@@ -134,19 +112,29 @@ async function maybeApplyAutoHide({
     throw new Error(`Failed to upsert moderation state: ${moderationError.message}`);
   }
 
-  await logThresholdTriggered({
-    ctx,
-    now,
-    payload: {
+  if (ctx && typeof ctx === "object") {
+    ctx.security = {
+      ...(ctx.security && typeof ctx.security === "object" ? ctx.security : {}),
+      auto_hide_applied: true,
+      hidden_reason: "report_threshold",
       entity_type: entityType,
       entity_id: entityId,
       weighted_sum: weightedSum,
       threshold,
       distinct_reporter_owners: distinctOwners.size
-    }
-  });
+    };
+  }
 
-  return { hidden: true, moderationState };
+  return {
+    hidden: true,
+    moderationState,
+    audit: {
+      auto_hide_applied: true,
+      weighted_sum: weightedSum,
+      threshold,
+      distinct_reporter_owners: distinctOwners.size
+    }
+  };
 }
 
 export async function createReport({

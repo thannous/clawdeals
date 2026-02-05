@@ -37,18 +37,31 @@ function isWorkersDevRequest(req) {
   return typeof host === "string" && host.includes(".workers.dev");
 }
 
-export async function getServerSideProps({ locale, req }) {
+export async function getServerSideProps({ locale, req, res }) {
   const appVersion =
     process.env.NEXT_PUBLIC_APP_VERSION ||
     process.env.npm_package_version ||
     packageJson?.version ||
     "0.0.1";
   const futureMode = String(process.env.NEXT_PUBLIC_FUTURE_MODE || "").toLowerCase() === "true";
+
+  const isPreviewHost = isWorkersDevRequest(req);
+  if (res?.setHeader) {
+    res.setHeader("Vary", "Accept-Language");
+    // Cache SSR at the edge for most traffic; avoid caching on preview hosts.
+    res.setHeader(
+      "Cache-Control",
+      isPreviewHost
+        ? "no-store"
+        : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
+    );
+  }
+
   return {
     props: {
       locale: locale || "en",
       baseUrl: baseUrlFromRequest(req),
-      isPreviewHost: isWorkersDevRequest(req),
+      isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
       futureMode

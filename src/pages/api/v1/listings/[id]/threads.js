@@ -27,14 +27,16 @@ async function handler(req, res, ctx) {
   }
 
   try {
-    const listing = await getListing(listingId);
+    const listingPromise = getListing(listingId);
+    const trustPromise = resolveTrustContext({ ctx, actionType: "thread.create" });
+
+    const [listing] = await Promise.all([listingPromise, trustPromise]);
     if (!listing) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
     }
 
     const ownerId = ctx?.ownerId || null;
     const agentId = ctx?.agentId || null;
-    await resolveTrustContext({ ctx, actionType: "thread.create" });
     const targetOwnerId = listing.owner_id || ownerId || null;
 
     if (targetOwnerId) {

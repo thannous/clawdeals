@@ -3,12 +3,10 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { createDealVote } from "../../../../../server/services/deals";
-import { createAuditLogger, createSupabaseAuditWriter } from "../../../../../server/audit";
 import { resolveTrustContext } from "../../../../../server/trustscore/context";
 import { isUuid } from "../../../../../server/utils/validators";
 
 const BLOCKED_FLAGS = new Set(["restricted", "suspended"]);
-const REQUIRED_AUDIT_ENVS = ["AUDIT_HMAC_SECRET", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -34,42 +32,6 @@ function toNumber(value) {
   if (value === null || value === undefined) return value;
   const numeric = Number(value);
   return Number.isNaN(numeric) ? value : numeric;
-}
-
-function canLogTemperatureUpdated() {
-  return REQUIRED_AUDIT_ENVS.every((key) => process.env[key]);
-}
-
-async function logTemperatureUpdated({ ctx, payload }) {
-  if (!ctx || !canLogTemperatureUpdated()) return;
-  try {
-    const logger = createAuditLogger({ write: createSupabaseAuditWriter() });
-    await logger({
-      occurredAt: new Date().toISOString(),
-      actor: ctx.actor,
-      auth: {
-        agent_id: ctx.agentId,
-        owner_id: ctx.ownerId,
-        api_key_id: ctx.apiKeyId || null,
-        api_key_state: ctx.apiKeyState || null
-      },
-      request: {
-        id: ctx.requestId,
-        ip: ctx.ip,
-        userAgent: ctx.userAgent,
-        method: ctx.method,
-        path: ctx.path,
-        query: ctx.query
-      },
-      action: {
-        event: "deal.temperature_updated"
-      },
-      payload,
-      outcome: "SUCCESS"
-    });
-  } catch (error) {
-    console.error("[deal-temperature] audit failed", error);
-  }
 }
 
 export async function handler(req, res, ctx) {
@@ -156,17 +118,18 @@ export async function handler(req, res, ctx) {
     };
 
     if (result.temperature_changed && (result.status === "NEW" || result.status === "ACTIVE")) {
-      await logTemperatureUpdated({
-        ctx,
-        payload: {
+      if (ctx) {
+        ctx.security = {
+          ...(ctx.security && typeof ctx.security === "object" ? ctx.security : {}),
+          temperature_changed: true,
           deal_id: result.deal_id,
           status: result.status,
           previous_temperature: result.previous_temperature,
           temperature: result.temperature,
           votes_up: result.votes_up,
           votes_down: result.votes_down
-        }
-      });
+        };
+      }
     }
 
     return jsonResponse(201, { vote: responseVote, deal: responseDeal });

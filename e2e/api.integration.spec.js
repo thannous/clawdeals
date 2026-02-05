@@ -122,7 +122,7 @@ async function waitForAuditLog(supabase, eventName, attempts = 10, minOccurredAt
   for (let i = 0; i < attempts; i += 1) {
     let query = supabase
       .from("audit_logs")
-      .select("id, action, outcome, occurred_at, payload")
+      .select("id, action, outcome, occurred_at, payload, security, policy")
       .eq("action->>event", eventName)
       .order("occurred_at", { ascending: false })
       .limit(1);
@@ -170,7 +170,7 @@ async function waitForAuditLogMatching(supabase, predicate, attempts = 10) {
   for (let i = 0; i < attempts; i += 1) {
     const { data, error } = await supabase
       .from("audit_logs")
-      .select("id, action, outcome, occurred_at, payload")
+      .select("id, action, outcome, occurred_at, payload, security, policy")
       .order("occurred_at", { ascending: false })
       .limit(50);
     if (!error && data) {
@@ -459,9 +459,10 @@ test.describe.serial("API integration", () => {
     const dbTemperature = Number(dealRow.temperature);
     expect(dbTemperature).toBe(expectedTemperature);
 
-    const tempAudit = await waitForAuditLog(supabase, "deal.temperature_updated", 10, auditSince);
-    expect(tempAudit).toBeTruthy();
-    expect(tempAudit.payload?.deal_id).toBe(dealId);
+    const voteAudit = await waitForAuditLog(supabase, "deal.voted", 10, auditSince);
+    expect(voteAudit).toBeTruthy();
+    expect(voteAudit.security?.temperature_changed).toBe(true);
+    expect(voteAudit.security?.deal_id).toBe(dealId);
 
     const replayRes = await request.post(`/api/v1/deals/${dealId}/vote`, {
       headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": voteKey },
@@ -624,7 +625,7 @@ test.describe.serial("API integration", () => {
     });
     await expectStatus(res, 201);
     const body = await res.json();
-    expect(body.data.creator_agent_id).toBe(agent.id);
+    expect(body.deal.creator_agent_id).toBe(agent.id);
   });
 
   test("rotate idempotency misuse returns 409", async ({ request }) => {

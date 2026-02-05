@@ -1,6 +1,9 @@
 import React, { createContext, use, useMemo, useState, useEffect, useCallback } from "react";
 import { THEMES, DEFAULT_THEME_ID } from "./themes";
 
+const THEME_STORAGE_KEY = "theme:v1";
+const LEGACY_THEME_STORAGE_KEY = "theme";
+
 const ThemeContext = createContext({
   themeId: DEFAULT_THEME_ID,
   setTheme: () => {},
@@ -31,7 +34,22 @@ export const ThemeProvider = ({ children }) => {
       return DEFAULT_THEME_ID;
     }
 
-    const stored = window.localStorage.getItem("theme");
+    let stored = null;
+    try {
+      stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+      if (!stored) {
+        // One-time migration from legacy key.
+        const legacy = window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+        if (legacy) {
+          stored = legacy;
+          window.localStorage.setItem(THEME_STORAGE_KEY, legacy);
+          window.localStorage.removeItem(LEGACY_THEME_STORAGE_KEY);
+        }
+      }
+    } catch {
+      stored = null;
+    }
+
     const resolvedTheme = themeMap[stored] || themeMap[DEFAULT_THEME_ID];
     return resolvedTheme.id;
   });
@@ -41,7 +59,11 @@ export const ThemeProvider = ({ children }) => {
     setThemeId(resolvedTheme.id);
 
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("theme", resolvedTheme.id);
+      try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, resolvedTheme.id);
+      } catch {
+        // localStorage may throw in private browsing / quota exceeded.
+      }
     }
   }, []);
 

@@ -152,13 +152,7 @@ export async function handler(req, res, ctx) {
       created_at: deal.created_at
     };
 
-    return jsonResponse(201, {
-      deal: responseDeal,
-      data: {
-        ...deal,
-        id: deal.deal_id
-      }
-    });
+    return jsonResponse(201, { deal: responseDeal });
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }
