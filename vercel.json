@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/internal/cron/trustscore-recalc",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

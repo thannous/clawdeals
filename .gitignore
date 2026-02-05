@@ -15,12 +15,14 @@ pnpm-debug.log*
 out/
 .vercel/
 .open-next/
+next-env.d.ts
 
 # Env files (keep .env.example committed if present)
 .env*.local
 
 # Tooling caches
 .eslintcache
+tsconfig.tsbuildinfo
 coverage/
 .wrangler/
 playwright-report/
