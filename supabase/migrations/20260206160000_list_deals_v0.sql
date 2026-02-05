@@ -99,7 +99,7 @@ as $$
     )
   )
   order by status_rank asc, created_at desc, deal_id desc
-  limit greatest(1, least(coalesce(p_limit, 30), 100));
+  limit greatest(1, least(coalesce(p_limit, 30), 101)); -- allow (MAX_LIMIT + 1) fetch for cursor pagination
 $$;
 
 create or replace function public.list_deals_temp_v0(
@@ -183,7 +183,7 @@ as $$
     )
   )
   order by temperature desc, created_at desc, deal_id desc
-  limit greatest(1, least(coalesce(p_limit, 30), 100));
+  limit greatest(1, least(coalesce(p_limit, 30), 101)); -- allow (MAX_LIMIT + 1) fetch for cursor pagination
 $$;
 
 create or replace function public.list_deals_trend_v0(
@@ -290,5 +290,5 @@ as $$
     )
   )
   order by trend_score desc, active_at desc, created_at desc, deal_id desc
-  limit greatest(1, least(coalesce(p_limit, 30), 100));
+  limit greatest(1, least(coalesce(p_limit, 30), 101)); -- allow (MAX_LIMIT + 1) fetch for cursor pagination
 $$;
