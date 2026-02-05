@@ -10,7 +10,8 @@ import { sendError } from "../http/errors";
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,
   enableIdempotency: true,
-  enableAudit: true
+  enableAudit: true,
+  idempotencyUseIpFallback: false
 };
 
 function isWriteMethod(method) {
@@ -50,7 +51,9 @@ function buildAuditEvent(ctx) {
     actor: ctx.actor,
     auth: {
       agent_id: ctx.agentId,
-      owner_id: ctx.ownerId
+      owner_id: ctx.ownerId,
+      api_key_id: ctx.apiKeyId || null,
+      api_key_state: ctx.apiKeyState || null
     },
     request: {
       id: ctx.requestId,
@@ -66,8 +69,8 @@ function buildAuditEvent(ctx) {
       path: ctx.path,
       event: ctx.auditEvent || null
     },
-    security: {},
-    policy: {},
+    security: ctx.security || {},
+    policy: ctx.policy || {},
     payload: ctx.body || {},
     rateLimit: ctx.rateLimit || null,
     idempotency: ctx.idempotency || null,
@@ -81,7 +84,7 @@ export function withApiMiddlewares(handler, options = {}) {
   return async function apiHandler(req, res) {
     const ctx = createRequestContext(req);
     applyCanonicalBody(req, ctx);
-    applyAuthStub(req, ctx);
+    await applyAuthStub(req, ctx);
 
     let idempotencyContext = null;
 
@@ -134,7 +137,11 @@ export function withApiMiddlewares(handler, options = {}) {
       }
 
       if (resolved.enableIdempotency && isWriteMethod(ctx.method)) {
-        const idemResult = await beginIdempotency(req, ctx, { enabled: true });
+        const idemResult = await beginIdempotency(req, ctx, {
+          enabled: true,
+          useIpFallback: resolved.idempotencyUseIpFallback === true,
+          ip: ctx.ip
+        });
         if (idemResult.action === "error") {
           ctx.outcome = { type: "BLOCKED", reason: "idempotency" };
           sendJson(res, idemResult.response.status, idemResult.response.body, idemResult.response.headers);

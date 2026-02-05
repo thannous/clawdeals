@@ -4,9 +4,13 @@ import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors.js";
 import { createListing } from "../../../server/services/listings";
 
-async function handler(req) {
+async function handler(req, res, ctx) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
+  }
+
+  if (ctx?.authError) {
+    return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
   const { title, description, deal_id: dealId } = req.body || {};
@@ -15,10 +19,8 @@ async function handler(req) {
   }
 
   try {
-    const ownerHeader = req.headers["x-owner-id"];
-    const agentHeader = req.headers["x-agent-id"];
-    const ownerId = Array.isArray(ownerHeader) ? ownerHeader[0] : ownerHeader;
-    const agentId = Array.isArray(agentHeader) ? agentHeader[0] : agentHeader;
+    const ownerId = ctx?.ownerId || null;
+    const agentId = ctx?.agentId || null;
     const listing = await createListing({
       title,
       description,

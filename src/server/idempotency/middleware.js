@@ -88,9 +88,13 @@ export async function beginIdempotency(req, ctx, options = {}) {
     };
   }
 
-  const actorType = ctx.actor?.type === "owner" ? "owner" : "agent";
-  const actorId = ctx.actor?.id;
-  if (!actorId) {
+  let actorType = ctx.actor?.type === "owner" ? "owner" : ctx.actor?.type === "agent" ? "agent" : null;
+  let actorId = ctx.actor?.id;
+  if (!actorId && options.useIpFallback && ctx.ip) {
+    actorType = "ip";
+    actorId = ctx.ip;
+  }
+  if (!actorId || !actorType) {
     return { action: "skip" };
   }
 

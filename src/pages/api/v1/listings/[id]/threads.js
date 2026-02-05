@@ -5,9 +5,13 @@ import { errorPayload } from "../../../../../server/http/errors.js";
 import { createThread } from "../../../../../server/services/threads";
 import { isUuid } from "../../../../../server/utils/validators";
 
-async function handler(req) {
+async function handler(req, res, ctx) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
+  }
+
+  if (ctx?.authError) {
+    return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
   const rawId = req.query?.id;
@@ -17,10 +21,8 @@ async function handler(req) {
   }
 
   try {
-    const ownerHeader = req.headers["x-owner-id"];
-    const agentHeader = req.headers["x-agent-id"];
-    const ownerId = Array.isArray(ownerHeader) ? ownerHeader[0] : ownerHeader;
-    const agentId = Array.isArray(agentHeader) ? agentHeader[0] : agentHeader;
+    const ownerId = ctx?.ownerId || null;
+    const agentId = ctx?.agentId || null;
     const thread = await createThread({ listingId, ownerId, agentId });
     return jsonResponse(201, { data: thread });
   } catch (error) {

@@ -5,6 +5,26 @@ const ROUTE_GROUPS = [
     pattern: /^\/v1\/agents$/
   },
   {
+    group: "agents.keys.rotate",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:rotate$/
+  },
+  {
+    group: "agents.keys.revoke",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:revoke$/
+  },
+  {
+    group: "agent.keys.rotate",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:rotate$/
+  },
+  {
+    group: "agent.keys.revoke",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:revoke$/
+  },
+  {
     group: "owner.verify_email_start",
     methods: ["POST"],
     pattern: /^\/v1\/owner\/verify-email:start$/

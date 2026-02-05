@@ -11,6 +11,22 @@ export const RATE_LIMIT_PROFILES = {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
+  "agents.keys.rotate": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
+  "agents.keys.revoke": {
+    scope: "owner",
+    buckets: [{ limit: 20, windowSeconds: HOUR }],
+  },
+  "agent.keys.rotate": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
+  "agent.keys.revoke": {
+    scope: "owner",
+    buckets: [{ limit: 20, windowSeconds: HOUR }],
+  },
   "policies.read": {
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },

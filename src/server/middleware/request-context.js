@@ -32,9 +32,14 @@ export function createRequestContext(req) {
     actor: null,
     ownerId: null,
     agentId: null,
+    apiKeyId: null,
+    apiKeyState: null,
+    authError: null,
     rateLimit: null,
     idempotency: null,
     auditEvent: null,
+    security: null,
+    policy: null,
     outcome: null,
     response: null
   };
