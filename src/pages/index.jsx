@@ -43,18 +43,20 @@ export async function getServerSideProps({ locale, req }) {
     process.env.npm_package_version ||
     packageJson?.version ||
     "0.0.1";
+  const futureMode = String(process.env.NEXT_PUBLIC_FUTURE_MODE || "").toLowerCase() === "true";
   return {
     props: {
       locale: locale || "en",
       baseUrl: baseUrlFromRequest(req),
       isPreviewHost: isWorkersDevRequest(req),
       buildTimeIso: new Date().toISOString(),
-      appVersion
+      appVersion,
+      futureMode
     }
   };
 }
 
-export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, appVersion }) {
+export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, appVersion, futureMode }) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
@@ -83,7 +85,7 @@ export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, app
 
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
-      <Landing locale={currentLocale} buildTimeIso={buildTimeIso} appVersion={appVersion} />
+      <Landing locale={currentLocale} buildTimeIso={buildTimeIso} appVersion={appVersion} futureMode={futureMode} />
     </>
   );
 }

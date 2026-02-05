@@ -56,6 +56,23 @@ const COPY = {
       }
     },
     ctas: { primary: "Initialiser le protocole", secondary: "Lire la doc" },
+    future: {
+      badge: "COMING SOON",
+      bannerTitle: "MODE FONCTIONNALITÉS FUTURES",
+      bannerBody:
+        "Site en cours de développement. Les fonctionnalités sont en préparation. Inscris-toi à la waitlist pour être notifié."
+    },
+    waitlist: {
+      title: "Accès anticipé",
+      label: "Email",
+      placeholder: "ton@email.com",
+      cta: "Rejoindre la waitlist",
+      helper: "Notifications de lancement, pas de spam.",
+      success: "Merci ! Tu es sur la waitlist.",
+      already: "Déjà inscrit. On te tient au courant.",
+      invalid: "Entre un email valide.",
+      error: "Une erreur est survenue. Réessaie."
+    },
     trust: { verified: "Verified Runtime Env", escrow: "Escrow Secured Payments" },
     headers: {
       mission: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
@@ -226,6 +243,22 @@ const COPY = {
       }
     },
     ctas: { primary: "Initialize Protocol", secondary: "Read Documentation" },
+    future: {
+      badge: "COMING SOON",
+      bannerTitle: "FUTURE FEATURES MODE",
+      bannerBody: "Site in development. Core features are in progress. Join the waitlist to get notified."
+    },
+    waitlist: {
+      title: "Early Access",
+      label: "Email",
+      placeholder: "you@example.com",
+      cta: "Join the waitlist",
+      helper: "Launch updates only, no spam.",
+      success: "You're on the waitlist.",
+      already: "Already registered. We'll keep you posted.",
+      invalid: "Enter a valid email.",
+      error: "Something went wrong. Try again."
+    },
     trust: { verified: "Verified Runtime Env", escrow: "Escrow Secured Payments" },
     headers: {
       mission: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
@@ -394,7 +427,121 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 );
 
-const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) => {
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [message, setMessage] = useState("");
+  const isLoading = status === "loading";
+  const isSuccess = status === "success";
+  const isError = status === "error";
+
+  const helperText = isSuccess
+    ? message || copy.waitlist.success
+    : isError
+      ? message || copy.waitlist.error
+      : copy.waitlist.helper;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (isLoading) return;
+
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || !EMAIL_REGEX.test(normalized)) {
+      setStatus("error");
+      setMessage(copy.waitlist.invalid);
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/v1/watchlists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized, locale, source })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setStatus("error");
+        setMessage(payload?.error?.message || copy.waitlist.error);
+        return;
+      }
+
+      const resultStatus = payload?.data?.status;
+      if (resultStatus === "already_registered") {
+        setStatus("success");
+        setMessage(copy.waitlist.already);
+        return;
+      }
+
+      setStatus("success");
+      setMessage(copy.waitlist.success);
+    } catch (error) {
+      setStatus("error");
+      setMessage(copy.waitlist.error);
+      void error;
+    }
+  };
+
+  const handleChange = (event) => {
+    setEmail(event.target.value);
+    if (status !== "idle") {
+      setStatus("idle");
+      setMessage("");
+    }
+  };
+
+  const containerClasses = compact
+    ? "border border-border bg-surface-alt p-4"
+    : "border border-border bg-surface p-5";
+  const formClasses = compact ? "flex flex-col sm:flex-row gap-3" : "flex flex-col sm:flex-row gap-4";
+  const actionDisabled = isLoading || isSuccess;
+
+  return (
+    <div className={containerClasses} data-testid={`waitlist-${source}`}>
+      <div className="font-mono text-xs uppercase tracking-widest text-subtle mb-3">{copy.waitlist.title}</div>
+      <form onSubmit={handleSubmit} className={formClasses}>
+        <div className="flex-1">
+          <label className="sr-only" htmlFor={`waitlist-email-${source}`}>
+            {copy.waitlist.label}
+          </label>
+          <input
+            id={`waitlist-email-${source}`}
+            type="email"
+            value={email}
+            onChange={handleChange}
+            placeholder={copy.waitlist.placeholder}
+            autoComplete="email"
+            disabled={actionDisabled}
+            className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={actionDisabled}
+          className={`h-11 px-6 font-bold uppercase tracking-wider text-xs border border-primary transition-colors ${
+            actionDisabled
+              ? "bg-surface-alt text-subtle cursor-not-allowed"
+              : "bg-primary text-bg hover:bg-text hover:text-bg"
+          }`}
+        >
+          {copy.waitlist.cta}
+        </button>
+      </form>
+      <div
+        className={`mt-2 text-xs font-mono ${isError ? "text-red-400" : isSuccess ? "text-emerald-400" : "text-subtle"}`}
+        aria-live="polite"
+      >
+        {helperText}
+      </div>
+    </div>
+  );
+};
+
+const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futureMode }) => {
   const router = useRouter();
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
@@ -497,10 +644,12 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
             </div>
           </div>
 
-          <button className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-            <Terminal className="w-4 h-4" />
-            {copy.connect}
-          </button>
+          {!futureMode && (
+            <button className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+              <Terminal className="w-4 h-4" />
+              {copy.connect}
+            </button>
+          )}
         </div>
       </div>
 
@@ -511,7 +660,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
   );
 };
 
-const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Icon }) => (
+const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Icon, futureMode, locale }) => (
   <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
     <div className="animate-scanline" />
     <div className="tech-grid absolute inset-0 opacity-30" />
@@ -533,21 +682,32 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           {hero.description}
         </p>
 
-        <div className="flex gap-4">
-          <button
-            className="bg-primary text-bg px-8 py-4 font-bold uppercase tracking-wider hover:bg-text transition-colors clip-corner-top-right relative group overflow-hidden"
-            data-testid="hero-cta-primary"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
-            </span>
-          </button>
-          <button
-            className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
-            data-testid="hero-cta-secondary"
-          >
-            {copy.ctas.secondary}
-          </button>
+        <div className="space-y-6">
+          {futureMode ? (
+            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
+              <span className="w-2 h-2 bg-primary animate-pulse" />
+              {copy.future.badge}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-4">
+              <button
+                className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+                data-testid="hero-cta-primary"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
+                </span>
+              </button>
+              <button
+                className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
+                data-testid="hero-cta-secondary"
+              >
+                {copy.ctas.secondary}
+              </button>
+            </div>
+          )}
+
+          <WaitlistForm copy={copy} locale={locale} source="hero" />
         </div>
       </div>
 
@@ -594,7 +754,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
   </div>
 );
 
-const GigHero = ({ copy }) => (
+const GigHero = ({ copy, futureMode, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.gig}
@@ -602,10 +762,12 @@ const GigHero = ({ copy }) => (
     iconClassName="text-primary"
     orbitBorderClass="border-primary"
     Icon={Cpu}
+    futureMode={futureMode}
+    locale={locale}
   />
 );
 
-const NpmHero = ({ copy }) => (
+const NpmHero = ({ copy, futureMode, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.npm}
@@ -613,10 +775,12 @@ const NpmHero = ({ copy }) => (
     iconClassName="text-secondary"
     orbitBorderClass="border-border-strong"
     Icon={Package}
+    futureMode={futureMode}
+    locale={locale}
   />
 );
 
-const DataHero = ({ copy }) => (
+const DataHero = ({ copy, futureMode, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.data}
@@ -624,12 +788,19 @@ const DataHero = ({ copy }) => (
     iconClassName="text-emerald-400"
     orbitBorderClass="border-border-strong"
     Icon={Database}
+    futureMode={futureMode}
+    locale={locale}
   />
 );
 
-const MarketCard = ({ item, type, copy, dataTestId }) => (
+const MarketCard = ({ item, type, copy, dataTestId, futureMode }) => (
   <TechBorder className="h-full" dataTestId={dataTestId}>
     <div className="p-6 flex flex-col h-full relative">
+      {futureMode && (
+        <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-[9px] font-mono uppercase text-subtle">
+          {copy.future.badge}
+        </div>
+      )}
       <div className="flex justify-between items-start mb-4">
         <div className="w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center text-muted">
           {type === "npm" && <Code size={20} />}
@@ -685,7 +856,12 @@ const MarketCard = ({ item, type, copy, dataTestId }) => (
               </span>
             ))}
         </div>
-        <button className="bg-text hover:bg-primary hover:text-text text-bg text-xs font-bold uppercase px-4 py-2 transition-colors">
+        <button
+          disabled={futureMode}
+          className={`text-bg text-xs font-bold uppercase px-4 py-2 transition-colors ${
+            futureMode ? "bg-surface-alt text-subtle cursor-not-allowed" : "bg-text hover:bg-primary hover:text-text"
+          }`}
+        >
           {type === "gig" ? copy.actions.deploy : copy.actions.acquire}
         </button>
       </div>
@@ -697,7 +873,7 @@ const MarketCard = ({ item, type, copy, dataTestId }) => (
   </TechBorder>
 );
 
-const MarketSection = ({ title, items, type, copy }) => (
+const MarketSection = ({ title, items, type, copy, futureMode }) => (
   <>
     <SectionHeader title={title} subtitle={copy.headers.market.subtitle} />
 
@@ -722,20 +898,27 @@ const MarketSection = ({ title, items, type, copy }) => (
 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="cards-grid">
       {items.map((item) => (
-        <MarketCard key={item.id} item={item} type={type} copy={copy} dataTestId={`card-${item.id}`} />
+        <MarketCard
+          key={item.id}
+          item={item}
+          type={type}
+          copy={copy}
+          dataTestId={`card-${item.id}`}
+          futureMode={futureMode}
+        />
       ))}
     </div>
   </>
 );
 
-const GigTabPanel = ({ copy, locale, items }) => {
+const GigTabPanel = ({ copy, locale, items, futureMode }) => {
   const marketTitle = locale === "fr" ? "Unités disponibles" : "Available Units";
 
   return (
     <>
       <SectionHeader title={copy.headers.mission.title} subtitle={copy.headers.mission.subtitle} />
       <TaskSelector copy={copy} />
-      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} />
+      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} futureMode={futureMode} />
 
       <div className="mt-24 max-w-4xl mx-auto">
         <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
@@ -745,21 +928,21 @@ const GigTabPanel = ({ copy, locale, items }) => {
   );
 };
 
-const NpmTabPanel = ({ copy, locale, items }) => {
+const NpmTabPanel = ({ copy, locale, items, futureMode }) => {
   const marketTitle = locale === "fr" ? "Modules de skills" : "Skill Modules";
 
   return (
     <>
-      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} />
+      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} futureMode={futureMode} />
       <NpmCallout copy={copy} />
     </>
   );
 };
 
-const DataTabPanel = ({ copy, locale, items }) => {
+const DataTabPanel = ({ copy, locale, items, futureMode }) => {
   const marketTitle = locale === "fr" ? "Contextes data" : "Data Contexts";
 
-  return <MarketSection title={marketTitle} items={items} type="data" copy={copy} />;
+  return <MarketSection title={marketTitle} items={items} type="data" copy={copy} futureMode={futureMode} />;
 };
 
 const TaskSelector = ({ copy }) => (
@@ -789,7 +972,7 @@ const TaskSelector = ({ copy }) => (
   </div>
 );
 
-export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
+export default function Landing({ locale = "en", buildTimeIso, appVersion, futureMode = false }) {
   const [activeTab, setActiveTab] = useState("gig");
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
@@ -812,10 +995,23 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
+        futureMode={futureMode}
       />
 
       <main className="pb-32">
-        <ActiveHero copy={copy} />
+        {futureMode && (
+          <div className="bg-bg border-b border-border">
+            <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
+                <span className="w-2 h-2 bg-primary animate-pulse" />
+                {copy.future.bannerTitle}
+              </div>
+              <div className="text-xs font-mono text-muted">{copy.future.bannerBody}</div>
+            </div>
+          </div>
+        )}
+
+        <ActiveHero copy={copy} futureMode={futureMode} locale={locale} />
 
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
           <div
@@ -838,7 +1034,7 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
         </div>
 
         <div className="max-w-[1400px] mx-auto px-6 py-16">
-          <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
+          <ActivePanel copy={copy} locale={locale} items={activeVariant.items} futureMode={futureMode} />
         </div>
       </main>
 
@@ -854,6 +1050,9 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion }) {
               <br />
               VERSION: <span>v{appVersion}</span>
             </p>
+            <div className="mt-6 max-w-md">
+              <WaitlistForm copy={copy} locale={locale} compact source="footer" />
+            </div>
           </div>
           <div>
             <h4 className="text-text font-bold mb-4 uppercase">{copy.footer.sysLinks}</h4>
