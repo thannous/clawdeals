@@ -75,3 +75,19 @@ export async function createListing(
     }
   });
 }
+
+export async function patchListing(
+  api: APIRequestContext,
+  apiKey: string,
+  listingId: string,
+  patch: Record<string, unknown> = {},
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.patch(`/api/v1/listings/${encodeURIComponent(listingId)}`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: patch
+  });
+}

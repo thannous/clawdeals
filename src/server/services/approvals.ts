@@ -173,4 +173,50 @@ export async function resolveApproval({ approvalId, ownerId, decision, resolvedB
   return data;
 }
 
+export async function cancelPendingListingPublishApproval({ ownerId, listingId, now = new Date() }: any = {}) {
+  if (!ownerId || typeof ownerId !== "string") {
+    throw Object.assign(new Error("ownerId is required"), { status: 400, code: "VALIDATION_ERROR" });
+  }
+  if (!listingId || typeof listingId !== "string") {
+    throw Object.assign(new Error("listingId is required"), { status: 400, code: "VALIDATION_ERROR" });
+  }
+
+  const client = getSupabaseServiceClient();
+  const { data: existing, error: existingError } = await client
+    .from("approvals")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .eq("action_type", "listing_publish")
+    .eq("action_ref_id", listingId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) {
+    mapError(existingError);
+  }
+  if (!existing) return null;
+  if (existing.state !== "PENDING") return existing;
+
+  const { data, error } = await client
+    .from("approvals")
+    .update({
+      state: "CANCELLED",
+      resolved_at: now.toISOString(),
+      resolved_by_human_id: null
+    })
+    .eq("approval_id", existing.approval_id)
+    .eq("owner_id", ownerId)
+    .eq("state", "PENDING")
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    mapError(error);
+  }
+
+  // In case of a race (another resolver updated the row), fall back to the last observed state.
+  return data || existing;
+}
+
 export { MAX_LIMIT as APPROVALS_MAX_LIMIT };

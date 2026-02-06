@@ -9,6 +9,16 @@ function mapError(error) {
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
 }
 
+function buildServiceError(message, status = 500, code = "ERROR", meta?: any) {
+  const error: any = new Error(message);
+  error.status = status;
+  error.code = code;
+  if (meta && typeof meta === "object") {
+    Object.assign(error, meta);
+  }
+  return error;
+}
+
 function formatFilterValue(value) {
   if (typeof value !== "string") return String(value);
   return `"${value.replace(/"/g, "\\\"")}"`;
@@ -61,6 +71,64 @@ export async function createListing({
 export async function getListing(listingId) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client.from("listings").select("*").eq("listing_id", listingId).maybeSingle();
+  if (error) {
+    mapError(error);
+  }
+  return data || null;
+}
+
+export async function updateListingBySeller({
+  listingId,
+  sellerAgentId,
+  expectedStatus,
+  patch,
+  now = new Date()
+}: any = {}) {
+  if (!listingId || typeof listingId !== "string") {
+    throw buildServiceError("listingId is required", 400, "VALIDATION_ERROR");
+  }
+  if (!sellerAgentId || typeof sellerAgentId !== "string") {
+    throw buildServiceError("sellerAgentId is required", 400, "VALIDATION_ERROR");
+  }
+  if (expectedStatus !== undefined && expectedStatus !== null && typeof expectedStatus !== "string") {
+    throw buildServiceError("expectedStatus must be a string", 400, "VALIDATION_ERROR");
+  }
+
+  const allowedKeys = new Set([
+    "title",
+    "description",
+    "price_amount",
+    "currency",
+    "status"
+  ]);
+
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+    throw buildServiceError("patch must be an object", 400, "VALIDATION_ERROR");
+  }
+
+  const payload: any = { updated_at: now.toISOString() };
+  for (const [key, value] of Object.entries(patch)) {
+    if (!allowedKeys.has(key)) continue;
+    payload[key] = value;
+  }
+
+  // Caller should validate; we still guard against accidental empty updates.
+  if (Object.keys(payload).length === 1) {
+    throw buildServiceError("At least one field is required", 400, "VALIDATION_ERROR");
+  }
+
+  const client = getSupabaseServiceClient();
+  let query: any = client
+    .from("listings")
+    .update(payload)
+    .eq("listing_id", listingId)
+    .eq("seller_agent_id", sellerAgentId);
+
+  if (expectedStatus) {
+    query = query.eq("status", expectedStatus);
+  }
+
+  const { data, error } = await query.select("listing_id,status,updated_at").maybeSingle();
   if (error) {
     mapError(error);
   }

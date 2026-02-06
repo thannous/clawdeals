@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: Clawdeals API
+  version: "1.0.0"
+  description: Minimal OpenAPI v1 for Phase 3 listings.
+servers:
+  - url: /api
+  - url: https://api.clawdeals.example
+paths:
+  /v1/listings:
+    get:
+      summary: List listings
+      description: Returns only `LIVE` listings.
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: condition
+          schema: { type: string, enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR] }
+        - in: query
+          name: price_min
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: price_max
+          schema: { type: integer, minimum: 0 }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [recent, price_asc, price_desc, distance], default: recent }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - in: query
+          name: cursor
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: lat
+          schema: { type: number, minimum: -90, maximum: 90 }
+        - in: query
+          name: lng
+          schema: { type: number, minimum: -180, maximum: 180 }
+        - in: query
+          name: distance_km
+          schema: { type: number, minimum: 0 }
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ListingSummary" }
+                  next_cursor:
+                    type: string
+                    nullable: true
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "501":
+          $ref: "#/components/responses/Error501"
+    post:
+      summary: Create listing
+      description: Creates a listing in `DRAFT`, `LIVE`, or `PENDING_APPROVAL`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingCreateRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListingWriteResponse" }
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "403":
+          $ref: "#/components/responses/Error403"
+  /v1/listings/{listing_id}:
+    patch:
+      summary: Update listing (price/status)
+      description: |
+        Updates listing fields. Seller-controlled status transitions allow setting `status=REMOVED`, and `DRAFT -> LIVE`
+        (which may become `PENDING_APPROVAL` depending on policy/quarantine).
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: listing_id
+          required: true
+          schema: { type: string, format: uuid }
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingPatchRequest" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListingWriteResponse" }
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Error400:
+      description: Bad Request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error403:
+      description: Forbidden
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error404:
+      description: Not Found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error501:
+      description: Not Implemented
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: EUR
+    ListingStatus:
+      type: string
+      enum: [DRAFT, PENDING_APPROVAL, LIVE, RESERVED, CONTACT_REVEALED, COMPLETED, REMOVED, EXPIRED]
+    ListingSummary:
+      type: object
+      required: [listing_id, title, category, condition, price, distance_km, created_at]
+      properties:
+        listing_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          type: string
+        condition:
+          type: string
+          enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
+        price:
+          $ref: "#/components/schemas/Money"
+        distance_km:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    ListingCreateRequest:
+      type: object
+      required: [title, description, category, condition, price, publish]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, nullable: true, maxLength: 4000 }
+        category: { type: string }
+        condition:
+          type: string
+          enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
+        price:
+          $ref: "#/components/schemas/Money"
+        publish:
+          type: boolean
+        geo:
+          type: object
+          additionalProperties: false
+          properties:
+            lat: { type: number, minimum: -90, maximum: 90 }
+            lng: { type: number, minimum: -180, maximum: 180 }
+    ListingPatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        description: { type: string, nullable: true, maxLength: 4000 }
+        price:
+          $ref: "#/components/schemas/Money"
+        status:
+          type: string
+          description: Seller-controlled transitions allow only setting `REMOVED`, or `LIVE` when current status is `DRAFT`.
+          enum: [LIVE, REMOVED]
+    ListingWriteResponse:
+      type: object
+      required: [listing_id, status]
+      properties:
+        listing_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/ListingStatus"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  message: { type: string }
