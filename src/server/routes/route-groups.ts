@@ -1,4 +1,11 @@
-const ROUTE_GROUPS = [
+type RouteGroupMatcher = {
+  group: string;
+  methods?: string[];
+  pattern: RegExp;
+  query?: (searchParams: URLSearchParams) => boolean;
+};
+
+const ROUTE_GROUPS: RouteGroupMatcher[] = [
   {
     group: "auth.register_ip",
     methods: ["POST"],

@@ -62,11 +62,11 @@ function buildAuditEvent(ctx) {
   };
 }
 
-export function withApiMiddlewares(handler, options = {}) {
-  const resolved = { ...DEFAULT_OPTIONS, ...options };
+export function withApiMiddlewares(handler: any, options: any = {}) {
+  const resolved: any = { ...DEFAULT_OPTIONS, ...options };
 
   return async function apiHandler(req, res) {
-    const ctx = createRequestContext(req);
+    const ctx: any = createRequestContext(req);
     applyCanonicalBody(req, ctx);
     await applyAuthStub(req, ctx);
 
@@ -97,14 +97,15 @@ export function withApiMiddlewares(handler, options = {}) {
         if (rateLimitResult && rateLimitResult.status === 429) {
           ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
           if (rateLimitResult.meta) {
+            const meta: any = rateLimitResult.meta;
             ctx.rateLimit = {
-              group: rateLimitResult.meta.group || resolved.routeGroup || null,
-              scope: rateLimitResult.meta.scope,
-              identity: rateLimitResult.meta.identity,
-              limit: rateLimitResult.meta.limit,
-              remaining: rateLimitResult.meta.remaining,
-              resetSeconds: rateLimitResult.meta.resetSeconds,
-              retryAfterSeconds: rateLimitResult.meta.retryAfterSeconds
+              group: meta.group || resolved.routeGroup || null,
+              scope: meta.scope,
+              identity: meta.identity,
+              limit: meta.limit,
+              remaining: meta.remaining,
+              resetSeconds: meta.resetSeconds,
+              retryAfterSeconds: meta.retryAfterSeconds
             };
           }
           sendJson(res, rateLimitResult.status, rateLimitResult.body, rateLimitResult.headers);
@@ -112,10 +113,11 @@ export function withApiMiddlewares(handler, options = {}) {
           return;
         }
         if (rateLimitResult?.meta) {
+          const meta: any = rateLimitResult.meta;
           ctx.rateLimit = {
-            group: rateLimitResult.meta.group || resolved.routeGroup || null,
-            scope: rateLimitResult.meta.scope,
-            identity: rateLimitResult.meta.identity
+            group: meta.group || resolved.routeGroup || null,
+            scope: meta.scope,
+            identity: meta.identity
           };
         }
       }

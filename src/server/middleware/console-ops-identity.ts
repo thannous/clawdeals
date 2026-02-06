@@ -42,7 +42,7 @@ function respondNotFound(res) {
  * Console endpoints are called by the browser. For v0 we treat them as ops/human
  * by injecting an owner identity server-side, without exposing it to the client.
  */
-export function injectConsoleOpsOwner(apiHandler, options = {}) {
+export function injectConsoleOpsOwner(apiHandler: any, options: any = {}) {
   const ownerId = options.ownerId || process.env.CONSOLE_OPS_OWNER_ID || DEFAULT_CONSOLE_OPS_OWNER_ID;
 
   return async function consoleOpsOwnerInjected(req, res) {
