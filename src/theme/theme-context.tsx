@@ -1,21 +1,28 @@
-import React, { createContext, use, useMemo, useState, useEffect, useCallback } from "react";
-import { THEMES, DEFAULT_THEME_ID } from "./themes";
+import { createContext, use, useMemo, useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
+import { THEMES, DEFAULT_THEME_ID, type Theme } from "./themes";
 
 const THEME_STORAGE_KEY = "theme:v1";
 const LEGACY_THEME_STORAGE_KEY = "theme";
 
-const ThemeContext = createContext({
+type ThemeContextValue = {
+  themeId: string;
+  setTheme: (nextThemeId: string) => void;
+  themes: Theme[];
+};
+
+const ThemeContext = createContext<ThemeContextValue>({
   themeId: DEFAULT_THEME_ID,
-  setTheme: () => {},
+  setTheme: (_nextThemeId: string) => {},
   themes: THEMES
 });
 
-const themeMap = THEMES.reduce((acc, theme) => {
+const themeMap = THEMES.reduce<Record<string, Theme>>((acc, theme) => {
   acc[theme.id] = theme;
   return acc;
 }, {});
 
-const applyThemeToDom = (theme) => {
+const applyThemeToDom = (theme: Theme) => {
   if (typeof document === "undefined") {
     return;
   }
@@ -28,13 +35,17 @@ const applyThemeToDom = (theme) => {
   }
 };
 
-export const ThemeProvider = ({ children }) => {
+type ThemeProviderProps = {
+  children: ReactNode;
+};
+
+export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [themeId, setThemeId] = useState(() => {
     if (typeof window === "undefined") {
       return DEFAULT_THEME_ID;
     }
 
-    let stored = null;
+    let stored: string | null = null;
     try {
       stored = window.localStorage.getItem(THEME_STORAGE_KEY);
       if (!stored) {
@@ -54,7 +65,7 @@ export const ThemeProvider = ({ children }) => {
     return resolvedTheme.id;
   });
 
-  const setTheme = useCallback((nextThemeId) => {
+  const setTheme = useCallback((nextThemeId: string) => {
     const resolvedTheme = themeMap[nextThemeId] || themeMap[DEFAULT_THEME_ID];
     setThemeId(resolvedTheme.id);
 
@@ -72,7 +83,7 @@ export const ThemeProvider = ({ children }) => {
     applyThemeToDom(resolvedTheme);
   }, [themeId]);
 
-  const value = useMemo(
+  const value = useMemo<ThemeContextValue>(
     () => ({
       themeId,
       setTheme,
