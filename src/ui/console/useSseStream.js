@@ -3,8 +3,26 @@ import { useState, useEffect, useRef, useCallback } from "react";
 const MAX_EVENTS = 500;
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
+const LAST_EVENT_ID_STORAGE_KEY = "console_sse_last_event_id";
 
-function buildUrl({ types, entityId, replay, heartbeat }) {
+function safeGetStoredLastEventId() {
+  try {
+    return globalThis?.localStorage?.getItem(LAST_EVENT_ID_STORAGE_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+function safeSetStoredLastEventId(value) {
+  try {
+    if (!value) return;
+    globalThis?.localStorage?.setItem(LAST_EVENT_ID_STORAGE_KEY, String(value));
+  } catch {
+    // Ignore storage errors (private mode, disabled storage, etc.)
+  }
+}
+
+function buildUrl({ types, entityId, replay, heartbeat, lastEventId, asMessage }) {
   const params = new URLSearchParams();
   if (types && types.length > 0) {
     params.set("types", types.join(","));
@@ -14,6 +32,12 @@ function buildUrl({ types, entityId, replay, heartbeat }) {
   }
   if (replay) {
     params.set("replay", "true");
+  }
+  if (lastEventId) {
+    params.set("last_event_id", String(lastEventId));
+  }
+  if (asMessage) {
+    params.set("as_message", "true");
   }
   if (heartbeat !== undefined && heartbeat !== null) {
     params.set("heartbeat", String(heartbeat));
@@ -50,7 +74,29 @@ export function useSseStream({ types, entityId, replay = true, heartbeat } = {})
   const connect = useCallback(() => {
     if (!mountedRef.current) return;
 
-    const url = buildUrl({ types, entityId, replay: replay && !!lastEventIdRef.current, heartbeat });
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+
+    // Ensure we never keep multiple EventSource connections alive.
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    const storedLastEventId = safeGetStoredLastEventId();
+    const url = buildUrl({
+      types,
+      entityId,
+      replay,
+      heartbeat,
+      // Provide a cursor for initial connections (EventSource can't set headers),
+      // while still letting the browser-managed Last-Event-ID header take over
+      // for automatic reconnects.
+      lastEventId: lastEventIdRef.current || storedLastEventId || null,
+      asMessage: true
+    });
     const es = new EventSource(url);
     eventSourceRef.current = es;
 
@@ -62,18 +108,23 @@ export function useSseStream({ types, entityId, replay = true, heartbeat } = {})
 
     es.onerror = () => {
       if (!mountedRef.current) return;
-      es.close();
-      eventSourceRef.current = null;
       setConnectionState("reconnecting");
 
-      const delay = reconnectDelayRef.current;
-      reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
-      reconnectTimerRef.current = setTimeout(() => {
-        if (mountedRef.current) {
-          // Call the latest connect() to avoid stale closure issues.
-          connectRef.current?.();
+      // Prefer browser-managed reconnection (keeps Last-Event-ID). Only fall back
+      // to a manual reconnect if the EventSource is fully closed.
+      if (es.readyState === 2) {
+        const delay = reconnectDelayRef.current;
+        reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current);
         }
-      }, delay);
+        reconnectTimerRef.current = setTimeout(() => {
+          if (mountedRef.current) {
+            // Call the latest connect() to avoid stale closure issues.
+            connectRef.current?.();
+          }
+        }, delay);
+      }
     };
 
     function handleEvent(e) {
@@ -86,13 +137,15 @@ export function useSseStream({ types, entityId, replay = true, heartbeat } = {})
         return;
       }
 
-      if (e.lastEventId) {
-        lastEventIdRef.current = e.lastEventId;
+      const incomingId = parsed?.id || e.lastEventId || "";
+      if (incomingId) {
+        lastEventIdRef.current = incomingId;
+        safeSetStoredLastEventId(incomingId);
       }
 
       const event = {
         id: parsed.id || e.lastEventId || `${Date.now()}-${Math.random()}`,
-        type: parsed.type || e.type || "unknown",
+        type: parsed.type || "unknown",
         ts: parsed.ts || new Date().toISOString(),
         actor: parsed.actor || null,
         entity: parsed.entity || null,
@@ -110,15 +163,6 @@ export function useSseStream({ types, entityId, replay = true, heartbeat } = {})
     }
 
     es.addEventListener("message", handleEvent);
-
-    const knownTypes = [
-      "deal.created", "deal.temperature_changed", "deal.state_changed",
-      "watchlist.match", "agent.registered", "sse.gap"
-    ];
-
-    for (const type of knownTypes) {
-      es.addEventListener(type, handleEvent);
-    }
   }, [types, entityId, replay, heartbeat, addEvents]);
 
   useEffect(() => {

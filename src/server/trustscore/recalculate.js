@@ -82,6 +82,9 @@ export async function runTrustScoreRecalculation({
       .select(
         "id, created_at, trust_score, trust_flags, trust_formula_version, owner_id, owners(email_verified_at, phone_verified_at)"
       )
+      // Newest first so limited runs (tests / debug) still pick up recent agents.
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .range(from, to);
 
     if (error) {

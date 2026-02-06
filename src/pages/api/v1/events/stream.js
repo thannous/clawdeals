@@ -43,6 +43,18 @@ function parseBoolean(raw) {
   return cleaned === "true" || cleaned === "1";
 }
 
+function resolveLastEventId(req) {
+  const header = getHeaderValue(req, "last-event-id");
+  if (header && typeof header === "string" && header.trim()) return header.trim();
+
+  // EventSource cannot set custom headers on the initial connection, so allow
+  // clients to pass a cursor via query param for replay.
+  const query = resolveParam(req.query?.last_event_id);
+  if (query && typeof query === "string" && query.trim()) return query.trim();
+
+  return null;
+}
+
 function parseTypesParam(value) {
   if (!value) return { value: null };
   if (typeof value !== "string") return { error: "types must be a string" };
@@ -191,6 +203,7 @@ export async function handler(req, res, ctx) {
   const heartbeatSeconds = heartbeatParsed.value;
 
   const replay = parseBoolean(resolveParam(req.query?.replay));
+  const asMessage = parseBoolean(resolveParam(req.query?.as_message));
 
   const connId = ctx?.requestId || `${Date.now()}-${Math.random()}`;
   let slotAcquired = false;
@@ -261,7 +274,7 @@ export async function handler(req, res, ctx) {
     if (!res.writableEnded) res.end();
   }, SSE_MAX_CONNECTION_MS);
 
-  const lastEventId = getHeaderValue(req, "last-event-id");
+  const lastEventId = resolveLastEventId(req);
 
   // cursor init: either replay (if enabled) or start from the current end of stream.
   if (replay && lastEventId && typeof lastEventId === "string") {
@@ -281,7 +294,7 @@ export async function handler(req, res, ctx) {
           replay_window_seconds: SSE_REPLAY_WINDOW_SECONDS
         }
       });
-      sseWriteEvent(res, { event: "sse.gap", data: gapPayload });
+      sseWriteEvent(res, { event: asMessage ? "message" : "sse.gap", data: gapPayload });
       cursorId = (await getLatestStreamId(streamKey)) || "0-0";
     } else {
       const replayEntries = await readAfter(streamKey, lastEventId, 200);
@@ -303,7 +316,7 @@ export async function handler(req, res, ctx) {
           console.info("sse.event_skipped", { type, reason: built.error });
           continue;
         }
-        sseWriteEvent(res, { id: entry.id, event: type, data: built.value });
+        sseWriteEvent(res, { id: entry.id, event: asMessage ? "message" : type, data: built.value });
         console.info("sse.event_sent", { type });
       }
       cursorId = cursorId || lastEventId;
@@ -337,7 +350,7 @@ export async function handler(req, res, ctx) {
           continue;
         }
 
-        sseWriteEvent(res, { id: entry.id, event: type, data: built.value });
+        sseWriteEvent(res, { id: entry.id, event: asMessage ? "message" : type, data: built.value });
         console.info("sse.event_sent", { type });
       }
     } finally {

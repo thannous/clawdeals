@@ -28,6 +28,13 @@ describe("EventRow", () => {
     expect(ts.textContent).toMatch(/^\d{2}:\d{2}:\d{2}\.\d{3}$/);
   });
 
+  it("falls back when timestamp is invalid", () => {
+    const bad = { ...baseEvent, ts: "not-a-date" };
+    renderRow({ event: bad });
+    const ts = screen.getByTestId("event-ts");
+    expect(ts.textContent).toBe("not-a-date");
+  });
+
   it("renders event type badge", () => {
     renderRow({ event: baseEvent });
     const type = screen.getByTestId("event-type");

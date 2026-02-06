@@ -1,16 +1,13 @@
 import { useCallback } from "react";
 
 function formatTimestamp(ts) {
-  try {
-    const d = new Date(ts);
-    const h = String(d.getHours()).padStart(2, "0");
-    const m = String(d.getMinutes()).padStart(2, "0");
-    const s = String(d.getSeconds()).padStart(2, "0");
-    const ms = String(d.getMilliseconds()).padStart(3, "0");
-    return `${h}:${m}:${s}.${ms}`;
-  } catch {
-    return ts || "--:--:--.---";
-  }
+  const d = new Date(ts);
+  if (!Number.isFinite(d.getTime())) return ts || "--:--:--.---";
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  const s = String(d.getSeconds()).padStart(2, "0");
+  const ms = String(d.getMilliseconds()).padStart(3, "0");
+  return `${h}:${m}:${s}.${ms}`;
 }
 
 function truncateId(id) {

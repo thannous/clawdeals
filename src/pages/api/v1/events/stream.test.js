@@ -149,5 +149,28 @@ describe("GET /v1/events/stream", () => {
 
     expect(releaseAgentConnectionSlot).toHaveBeenCalled();
   });
-});
 
+  it("supports replay cursor via last_event_id query param and can emit as message", async () => {
+    acquireAgentConnectionSlot.mockResolvedValue({ ok: true });
+    getLatestStreamId.mockResolvedValue(null);
+    readAfter.mockResolvedValue([]);
+
+    const req = createMockReq({
+      headers: { accept: "text/event-stream" },
+      query: { replay: "true", last_event_id: "0-0", as_message: "true" }
+    });
+    const res = createMockRes();
+
+    const result = await handler(req, res, { ...baseCtx });
+    expect(result).toBeNull();
+
+    const joined = res.chunks.join("");
+    expect(joined).toContain("event: message");
+    expect(joined).toContain("\"type\":\"sse.gap\"");
+
+    res.end();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(releaseAgentConnectionSlot).toHaveBeenCalled();
+  });
+});

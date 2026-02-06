@@ -61,6 +61,16 @@ describe("useSseStream", () => {
   beforeEach(() => {
     MockEventSource.instances = [];
     globalThis.EventSource = MockEventSource;
+    if (!globalThis.localStorage) {
+      const store = new Map();
+      globalThis.localStorage = {
+        getItem: (k) => (store.has(String(k)) ? store.get(String(k)) : null),
+        setItem: (k, v) => store.set(String(k), String(v)),
+        removeItem: (k) => store.delete(String(k)),
+        clear: () => store.clear()
+      };
+    }
+    globalThis.localStorage.clear();
     vi.useFakeTimers();
   });
 
@@ -95,7 +105,7 @@ describe("useSseStream", () => {
     });
 
     act(() => {
-      es._simulateMessage("deal.created", {
+      es._simulateMessage("message", {
         id: "evt-1",
         type: "deal.created",
         ts: "2026-02-06T10:00:00.000Z",
@@ -114,12 +124,23 @@ describe("useSseStream", () => {
     renderHook(() => useSseStream({ types: ["deal.created", "watchlist.match"] }));
     const es = MockEventSource.instances[0];
     expect(es.url).toContain("types=deal.created%2Cwatchlist.match");
+    expect(es.url).toContain("replay=true");
+    expect(es.url).toContain("as_message=true");
   });
 
   it("builds URL with entity_id filter", () => {
     renderHook(() => useSseStream({ entityId: "abc-123" }));
     const es = MockEventSource.instances[0];
     expect(es.url).toContain("entity_id=abc-123");
+    expect(es.url).toContain("replay=true");
+    expect(es.url).toContain("as_message=true");
+  });
+
+  it("builds URL with last_event_id from localStorage when available", () => {
+    globalThis.localStorage.setItem("console_sse_last_event_id", "123-4");
+    renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+    expect(es.url).toContain("last_event_id=123-4");
   });
 
   it("pauses and buffers events, increments missedCount", () => {
@@ -137,7 +158,7 @@ describe("useSseStream", () => {
     expect(result.current.paused).toBe(true);
 
     act(() => {
-      es._simulateMessage("deal.created", {
+      es._simulateMessage("message", {
         id: "evt-1",
         type: "deal.created",
         ts: "2026-02-06T10:00:00.000Z",
@@ -162,13 +183,13 @@ describe("useSseStream", () => {
     });
 
     act(() => {
-      es._simulateMessage("deal.created", {
+      es._simulateMessage("message", {
         id: "evt-1",
         type: "deal.created",
         ts: "2026-02-06T10:00:00.000Z",
         payload: {}
       });
-      es._simulateMessage("deal.created", {
+      es._simulateMessage("message", {
         id: "evt-2",
         type: "deal.created",
         ts: "2026-02-06T10:00:01.000Z",
@@ -188,7 +209,7 @@ describe("useSseStream", () => {
     expect(result.current.missedCount).toBe(0);
   });
 
-  it("reconnects with exponential backoff on error", () => {
+  it("does not create a new EventSource on transient errors (preserves Last-Event-ID)", () => {
     const { result } = renderHook(() => useSseStream());
     const es1 = MockEventSource.instances[0];
 
@@ -203,47 +224,22 @@ describe("useSseStream", () => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(MockEventSource.instances).toHaveLength(2);
-
-    const es2 = MockEventSource.instances[1];
-    act(() => {
-      es2._simulateError();
-    });
-
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(MockEventSource.instances).toHaveLength(2);
-
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(MockEventSource.instances).toHaveLength(3);
+    expect(MockEventSource.instances).toHaveLength(1);
   });
 
-  it("resets backoff on successful connection", () => {
+  it("manually reconnects with backoff only when EventSource is closed", () => {
     renderHook(() => useSseStream());
     const es1 = MockEventSource.instances[0];
 
     act(() => {
+      es1.close();
       es1._simulateError();
     });
     act(() => {
       vi.advanceTimersByTime(1000);
     });
 
-    const es2 = MockEventSource.instances[1];
-    act(() => {
-      es2._simulateOpen();
-    });
-
-    act(() => {
-      es2._simulateError();
-    });
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(MockEventSource.instances).toHaveLength(3);
+    expect(MockEventSource.instances).toHaveLength(2);
   });
 
   it("closes EventSource on unmount", () => {
@@ -267,7 +263,7 @@ describe("useSseStream", () => {
 
     act(() => {
       for (let i = 0; i < 510; i++) {
-        es._simulateMessage("deal.created", {
+        es._simulateMessage("message", {
           id: `evt-${i}`,
           type: "deal.created",
           ts: "2026-02-06T10:00:00.000Z",
@@ -278,5 +274,26 @@ describe("useSseStream", () => {
 
     expect(result.current.events.length).toBeLessThanOrEqual(500);
     expect(result.current.events[0].id).toBe("evt-10");
+  });
+
+  it("does not drop unknown SSE event types when delivered as message", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    act(() => {
+      es._simulateMessage("message", {
+        id: "evt-x",
+        type: "some.new.event",
+        ts: "2026-02-06T10:00:02.000Z",
+        payload: { ok: true }
+      });
+    });
+
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.events[0].type).toBe("some.new.event");
   });
 });

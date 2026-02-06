@@ -76,7 +76,14 @@ export async function readAfter(key, afterId, limit = 50) {
     id,
     type: typeof fields.type === "string" ? fields.type : null,
     ts: typeof fields.ts === "string" ? fields.ts : null,
-    data: typeof fields.data === "string" ? fields.data : null
+    // @upstash/redis automatically JSON-parses stream field values when possible.
+    // We store `data` as a JSON string, so reads can come back as an object.
+    data:
+      typeof fields.data === "string"
+        ? fields.data
+        : fields.data != null
+          ? JSON.stringify(fields.data)
+          : null
   }));
 }
 
@@ -172,4 +179,3 @@ export async function publishSseEvent({
 }
 
 export { parseStreamId };
-

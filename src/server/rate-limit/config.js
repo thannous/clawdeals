@@ -71,6 +71,9 @@ export const RATE_LIMIT_PROFILES = {
   "watchlists.read": {
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+  "watchlist.match": {
+    buckets: [{ limit: 60, windowSeconds: MINUTE }],
+  },
   "listings.create": {
     buckets: [{ limit: 10, windowSeconds: DAY }],
   },

@@ -15,9 +15,14 @@ vi.mock("../../../server/trustscore/context", () => ({
   resolveTrustContext: vi.fn().mockResolvedValue(null)
 }));
 
+vi.mock("../../../server/services/watchlist-matching", () => ({
+  matchDealToWatchlists: vi.fn().mockResolvedValue(null)
+}));
+
 import { handler } from "./deals";
 import { createDeal, findRecentDealDuplicate } from "../../../server/services/deals";
 import { listDeals } from "../../../server/services/deals-list";
+import { matchDealToWatchlists } from "../../../server/services/watchlist-matching";
 import { fingerprintUrl, normalizeDealUrl } from "../../../server/utils/deals";
 
 const baseCtx = {
@@ -114,6 +119,11 @@ describe("POST /v1/deals", () => {
     expect(result.body.deal.deal_id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
     expect(result.body.data).toBeUndefined();
     expect(createDeal).toHaveBeenCalled();
+    expect(matchDealToWatchlists).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deal: expect.objectContaining({ deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4" })
+      })
+    );
   });
 
   it("returns 409 DUPLICATE_SUSPECTED when recent fingerprint match exists", async () => {
@@ -135,6 +145,7 @@ describe("POST /v1/deals", () => {
     expect(result.body.error.code).toBe("DUPLICATE_SUSPECTED");
     expect(result.body.error.details.existing_deal_id).toBe("11111111-1111-1111-1111-111111111111");
     expect(createDeal).not.toHaveBeenCalled();
+    expect(matchDealToWatchlists).not.toHaveBeenCalled();
     expect(ctx.auditEvent).toBe("deal.duplicate_detected");
     expect(ctx.outcome?.type).toBe("BLOCKED");
   });
