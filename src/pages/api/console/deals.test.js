@@ -1,23 +1,25 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("../../../server/services/deals-list", () => ({
-  listDeals: vi.fn()
+  listDeals: vi.fn(),
+  DEALS_DEFAULT_LIMIT: 30,
+  DEALS_MAX_LIMIT: 100
 }));
 
 vi.mock("../../../server/services/deals-cursor", () => ({
   decodeDealsCursor: vi.fn()
 }));
 
-import handler from "./deals";
+import { handler } from "./deals";
 import { listDeals } from "../../../server/services/deals-list";
 import { decodeDealsCursor } from "../../../server/services/deals-cursor";
 
-function mockRes() {
-  const res = { _status: null, _json: null };
-  res.status = (code) => { res._status = code; return res; };
-  res.json = (body) => { res._json = body; return res; };
-  return res;
-}
+const baseCtx = {
+  ownerId: "owner-1",
+  agentId: null,
+  actor: { type: "owner", id: "owner-1" },
+  authError: null
+};
 
 describe("GET /api/console/deals", () => {
   beforeEach(() => {
@@ -26,10 +28,9 @@ describe("GET /api/console/deals", () => {
 
   it("rejects non-GET methods", async () => {
     const req = { method: "POST", query: {} };
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(405);
-    expect(res._json.error.code).toBe("METHOD_NOT_ALLOWED");
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(405);
+    expect(result.body.error.code).toBe("METHOD_NOT_ALLOWED");
   });
 
   it("returns items and next_cursor", async () => {
@@ -54,15 +55,14 @@ describe("GET /api/console/deals", () => {
     });
 
     const req = { method: "GET", query: { sort: "new" } };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(200);
-    expect(res._json.items).toHaveLength(1);
-    expect(res._json.items[0].deal_id).toBe("d1");
-    expect(res._json.items[0].price).toBe(29.99);
-    expect(res._json.items[0].temperature).toBe(72);
-    expect(res._json.next_cursor).toBe("cursor-abc");
+    expect(result.status).toBe(200);
+    expect(result.body.items).toHaveLength(1);
+    expect(result.body.items[0].deal_id).toBe("d1");
+    expect(result.body.items[0].price).toBe(29.99);
+    expect(result.body.items[0].temperature).toBe(72);
+    expect(result.body.next_cursor).toBe("cursor-abc");
   });
 
   it("masks temperature for NEW deals", async () => {
@@ -87,12 +87,11 @@ describe("GET /api/console/deals", () => {
     });
 
     const req = { method: "GET", query: {} };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(200);
-    expect(res._json.items[0].temperature).toBeNull();
-    expect(res._json.next_cursor).toBeNull();
+    expect(result.status).toBe(200);
+    expect(result.body.items[0].temperature).toBeNull();
+    expect(result.body.next_cursor).toBeNull();
   });
 
   it("passes sort, statuses, q, tags to listDeals", async () => {
@@ -100,15 +99,14 @@ describe("GET /api/console/deals", () => {
 
     const req = {
       method: "GET",
-      query: { sort: "temp", status: ["NEW", "ACTIVE"], q: "laptop", tags: "gpu,nvidia" }
+      query: { sort: "temp", status: ["ACTIVE"], q: "laptop", tags: "gpu,nvidia" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(200);
+    expect(result.status).toBe(200);
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({
       sort: "temp",
-      statuses: ["NEW", "ACTIVE"],
+      statuses: ["ACTIVE"],
       q: "laptop",
       tags: ["gpu", "nvidia"]
     }));
@@ -118,10 +116,9 @@ describe("GET /api/console/deals", () => {
     listDeals.mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: { status: "NEW,ACTIVE,EXPIRED" } };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(200);
+    expect(result.status).toBe(200);
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({
       statuses: ["NEW", "ACTIVE", "EXPIRED"]
     }));
@@ -131,11 +128,10 @@ describe("GET /api/console/deals", () => {
     decodeDealsCursor.mockReturnValue({ error: "Invalid cursor" });
 
     const req = { method: "GET", query: { cursor: "bad-cursor" } };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(400);
-    expect(res._json.error.code).toBe("INVALID_CURSOR");
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("passes decoded cursor to listDeals", async () => {
@@ -144,10 +140,9 @@ describe("GET /api/console/deals", () => {
     listDeals.mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: { cursor: "valid-cursor" } };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(200);
+    expect(result.status).toBe(200);
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({
       cursor: cursorValue
     }));
@@ -159,19 +154,17 @@ describe("GET /api/console/deals", () => {
     );
 
     const req = { method: "GET", query: {} };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(500);
-    expect(res._json.error.code).toBe("DB_ERROR");
+    expect(result.status).toBe(500);
+    expect(result.body.error.code).toBe("DB_ERROR");
   });
 
   it("defaults limit to 30", async () => {
     listDeals.mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: {} };
-    const res = mockRes();
-    await handler(req, res);
+    await handler(req, null, { ...baseCtx });
 
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({ limit: 30 }));
   });
@@ -180,8 +173,7 @@ describe("GET /api/console/deals", () => {
     listDeals.mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: { limit: "10" } };
-    const res = mockRes();
-    await handler(req, res);
+    await handler(req, null, { ...baseCtx });
 
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
   });
@@ -197,10 +189,9 @@ describe("GET /api/console/deals", () => {
     });
 
     const req = { method: "GET", query: {} };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(typeof res._json.items[0].price).toBe("number");
-    expect(res._json.items[0].price).toBe(99.5);
+    expect(typeof result.body.items[0].price).toBe("number");
+    expect(result.body.items[0].price).toBe(99.5);
   });
 });

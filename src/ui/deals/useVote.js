@@ -61,7 +61,10 @@ export function useVote({ onVoteSuccess } = {}) {
 
       if (resp.status === 429) {
         const body = await resp.json().catch(() => ({}));
-        const retryAfter = body?.retry_after_seconds || 30;
+        const retryAfter =
+          body?.retry_after_seconds ??
+          body?.error?.details?.retry_after_seconds ??
+          30;
         setDisabledUntil(Date.now() + retryAfter * 1000);
         setError("Rate limited. Please wait.");
         setSubmitState("error");

@@ -1,4 +1,8 @@
-import crypto from "crypto";
+import { withApiMiddlewares } from "../../../../../server/middleware/with-api-middlewares";
+import { injectConsoleOpsOwner } from "../../../../../server/middleware/console-ops-identity";
+import { jsonResponse } from "../../../../../server/http/response";
+import { methodNotAllowed } from "../../../../../server/http/methods";
+import { errorPayload } from "../../../../../server/http/errors";
 import { createDealVote } from "../../../../../server/services/deals";
 import { isUuid } from "../../../../../server/utils/validators";
 
@@ -17,27 +21,44 @@ function toNumber(value) {
   return Number.isNaN(numeric) ? value : numeric;
 }
 
-export default async function handler(req, res) {
+function resolveParam(value) {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export async function handler(req, res, ctx) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: { code: "METHOD_NOT_ALLOWED", message: "Only POST is allowed" } });
+    return methodNotAllowed(["POST"]);
   }
 
-  const dealId = Array.isArray(req.query.deal_id) ? req.query.deal_id[0] : req.query.deal_id;
+  if (ctx) {
+    ctx.auditEvent = "deal.voted";
+  }
+
+  if (ctx?.authError) {
+    return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
+  }
+
+  if (!ctx?.ownerId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+  }
+
+  const dealId = resolveParam(req.query?.deal_id);
   if (!isUuid(dealId)) {
-    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "deal_id must be a UUID" } });
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "deal_id must be a UUID"));
   }
 
   const { direction, reason } = req.body || {};
   if (direction !== "up" && direction !== "down") {
-    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "direction must be up or down" } });
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "direction must be up or down"));
   }
 
   const cleanedReason = sanitizeReason(reason);
   if (!cleanedReason) {
-    return res.status(400).json({ error: { code: "REASON_REQUIRED", message: "reason is required" } });
+    return jsonResponse(400, errorPayload("REASON_REQUIRED", "reason is required"));
   }
   if (cleanedReason.length > 240) {
-    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "reason must be 1..240 characters" } });
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "reason must be 1..240 characters"));
   }
 
   const agentId = process.env.CONSOLE_OPS_AGENT_ID || "00000000-0000-4000-a000-000000000001";
@@ -69,9 +90,11 @@ export default async function handler(req, res) {
       votes_down: result.votes_down
     };
 
-    return res.status(201).json({ vote, deal });
+    return jsonResponse(201, { vote, deal });
   } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ error: { code: error.code || "ERROR", message: error.message } });
+    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }
 }
+
+export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "deals.vote" }));
+

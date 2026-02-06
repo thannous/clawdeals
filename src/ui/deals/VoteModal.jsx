@@ -10,11 +10,8 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
   const overlayRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Reset on open
   useEffect(() => {
     if (isOpen) {
-      setReason("");
-      setLocalError(null);
       // Focus textarea after render
       requestAnimationFrame(() => textareaRef.current?.focus());
     }

@@ -23,6 +23,8 @@ export function useDeals() {
     return [];
   });
   const [q, setQState] = useState(() => router.query.q || "");
+  // Debounced query used for fetching. This avoids wiping results after a successful fetch.
+  const [debouncedQ, setDebouncedQ] = useState(() => router.query.q || "");
 
   const [deals, setDeals] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
@@ -32,6 +34,11 @@ export function useDeals() {
 
   const debounceRef = useRef(null);
   const abortRef = useRef(null);
+  const debouncedQRef = useRef(debouncedQ);
+
+  useEffect(() => {
+    debouncedQRef.current = debouncedQ;
+  }, [debouncedQ]);
 
   // Sync state to URL
   const syncUrl = useCallback((newSort, newStatuses, newQ, newTags) => {
@@ -100,9 +107,9 @@ export function useDeals() {
 
   // Initial fetch + refetch on filter change
   useEffect(() => {
-    fetchDeals({ sort, statuses, q, tags });
+    fetchDeals({ sort, statuses, q: debouncedQ, tags });
     return () => { if (abortRef.current) abortRef.current.abort(); };
-  }, [sort, statuses, q, tags, fetchDeals]);
+  }, [sort, statuses, debouncedQ, tags, fetchDeals]);
 
   // Setters with URL sync
   const setSort = useCallback((newSort) => {
@@ -110,6 +117,8 @@ export function useDeals() {
     // Sort constraint: temp/trend force ACTIVE only
     const newStatuses = (newSort === "temp" || newSort === "trend") ? ["ACTIVE"] : DEFAULT_STATUSES;
     setStatusesState(newStatuses);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setDebouncedQ(q);
     setDeals([]);
     setNextCursor(null);
     syncUrl(newSort, newStatuses, q, tags);
@@ -117,6 +126,8 @@ export function useDeals() {
 
   const setStatuses = useCallback((newStatuses) => {
     setStatusesState(newStatuses);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setDebouncedQ(q);
     setDeals([]);
     setNextCursor(null);
     syncUrl(sort, newStatuses, q, tags);
@@ -124,6 +135,8 @@ export function useDeals() {
 
   const setTags = useCallback((newTags) => {
     setTagsState(newTags);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setDebouncedQ(q);
     setDeals([]);
     setNextCursor(null);
     syncUrl(sort, statuses, q, newTags);
@@ -133,8 +146,13 @@ export function useDeals() {
     setQState(newQ);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      setDeals([]);
-      setNextCursor(null);
+      // Only clear + refetch when the effective query actually changes.
+      // Otherwise we'd wipe the list and not trigger a new fetch.
+      if (debouncedQRef.current !== newQ) {
+        setDeals([]);
+        setNextCursor(null);
+        setDebouncedQ(newQ);
+      }
       syncUrl(sort, statuses, newQ, tags);
     }, SEARCH_DEBOUNCE_MS);
   }, [sort, statuses, tags, syncUrl]);
@@ -146,8 +164,8 @@ export function useDeals() {
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadMoreState === "loading") return;
-    fetchDeals({ sort, statuses, q, tags, cursor: nextCursor }, true);
-  }, [nextCursor, loadMoreState, sort, statuses, q, tags, fetchDeals]);
+    fetchDeals({ sort, statuses, q: debouncedQ, tags, cursor: nextCursor }, true);
+  }, [nextCursor, loadMoreState, sort, statuses, debouncedQ, tags, fetchDeals]);
 
   // Update deals list after a vote (replace the deal in-place)
   const updateDealInList = useCallback((updatedDeal) => {

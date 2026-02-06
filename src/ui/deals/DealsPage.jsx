@@ -63,16 +63,18 @@ export default function DealsPage() {
       </main>
 
       {/* Vote Modal */}
-      <VoteModal
-        isOpen={vote.isOpen}
-        targetDeal={vote.targetDeal}
-        direction={vote.direction}
-        submitState={vote.submitState}
-        error={vote.error}
-        retryIn={vote.retryIn}
-        onClose={vote.closeVote}
-        onSubmit={vote.submitVote}
-      />
+      {vote.isOpen && (
+        <VoteModal
+          isOpen={vote.isOpen}
+          targetDeal={vote.targetDeal}
+          direction={vote.direction}
+          submitState={vote.submitState}
+          error={vote.error}
+          retryIn={vote.retryIn}
+          onClose={vote.closeVote}
+          onSubmit={vote.submitVote}
+        />
+      )}
     </div>
   );
 }

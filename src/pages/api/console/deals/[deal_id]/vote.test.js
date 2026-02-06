@@ -4,17 +4,16 @@ vi.mock("../../../../../server/services/deals", () => ({
   createDealVote: vi.fn()
 }));
 
-import handler from "./vote";
+import { handler } from "./vote";
 import { createDealVote } from "../../../../../server/services/deals";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
-
-function mockRes() {
-  const res = { _status: null, _json: null };
-  res.status = (code) => { res._status = code; return res; };
-  res.json = (body) => { res._json = body; return res; };
-  return res;
-}
+const baseCtx = {
+  ownerId: "owner-1",
+  agentId: null,
+  actor: { type: "owner", id: "owner-1" },
+  authError: null
+};
 
 describe("POST /api/console/deals/:deal_id/vote", () => {
   beforeEach(() => {
@@ -23,10 +22,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
 
   it("rejects non-POST methods", async () => {
     const req = { method: "GET", query: { deal_id: dealId }, body: {} };
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(405);
-    expect(res._json.error.code).toBe("METHOD_NOT_ALLOWED");
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(405);
+    expect(result.body.error.code).toBe("METHOD_NOT_ALLOWED");
   });
 
   it("validates deal_id is a UUID", async () => {
@@ -35,11 +33,10 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: "bad" },
       body: { direction: "up", reason: "Good deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(400);
-    expect(res._json.error.code).toBe("VALIDATION_ERROR");
-    expect(res._json.error.message).toContain("UUID");
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toContain("UUID");
   });
 
   it("validates direction", async () => {
@@ -48,10 +45,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "sideways", reason: "Good deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(400);
-    expect(res._json.error.code).toBe("VALIDATION_ERROR");
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("requires reason", async () => {
@@ -60,10 +56,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "" }
     };
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(400);
-    expect(res._json.error.code).toBe("REASON_REQUIRED");
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("REASON_REQUIRED");
   });
 
   it("rejects reason over 240 chars", async () => {
@@ -72,10 +67,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "a".repeat(241) }
     };
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(400);
-    expect(res._json.error.code).toBe("VALIDATION_ERROR");
+    const result = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("sanitizes HTML from reason", async () => {
@@ -97,10 +91,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: '<script>alert("xss")</script>Good deal' }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(201);
+    expect(result.status).toBe(201);
     expect(createDealVote).toHaveBeenCalledWith(expect.objectContaining({
       reason: expect.not.stringContaining("<script>")
     }));
@@ -128,10 +121,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "https://example.com is great" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(201);
+    expect(result.status).toBe(201);
     const calledReason = createDealVote.mock.calls[0][0].reason;
     expect(calledReason).toContain("[redacted]");
     expect(calledReason).not.toContain("https://example.com");
@@ -156,10 +148,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "Great deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(201);
+    expect(result.status).toBe(201);
     expect(createDealVote).toHaveBeenCalledWith({
       dealId,
       agentId: "00000000-0000-4000-a000-000000000001",
@@ -167,10 +158,10 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       reason: "Great deal",
       weight: 1.0
     });
-    expect(res._json.vote.deal_id).toBe(dealId);
-    expect(res._json.vote.weight).toBe(1);
-    expect(res._json.deal.temperature).toBe(72);
-    expect(res._json.deal.votes_up).toBe(6);
+    expect(result.body.vote.deal_id).toBe(dealId);
+    expect(result.body.vote.weight).toBe(1);
+    expect(result.body.deal.temperature).toBe(72);
+    expect(result.body.deal.votes_up).toBe(6);
   });
 
   it("maps direction down to -1", async () => {
@@ -192,10 +183,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "down", reason: "Bad deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(201);
+    expect(result.status).toBe(201);
     expect(createDealVote).toHaveBeenCalledWith(expect.objectContaining({
       direction: -1
     }));
@@ -220,11 +210,10 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "Great deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(201);
-    expect(res._json.deal.temperature).toBeNull();
+    expect(result.status).toBe(201);
+    expect(result.body.deal.temperature).toBeNull();
   });
 
   it("returns 409 for ALREADY_VOTED", async () => {
@@ -237,11 +226,10 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "Duplicate vote" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(409);
-    expect(res._json.error.code).toBe("ALREADY_VOTED");
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("ALREADY_VOTED");
   });
 
   it("returns 404 for DEAL_NOT_FOUND", async () => {
@@ -254,11 +242,10 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "up", reason: "Missing deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(404);
-    expect(res._json.error.code).toBe("DEAL_NOT_FOUND");
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("DEAL_NOT_FOUND");
   });
 
   it("returns 409 for DEAL_EXPIRED", async () => {
@@ -271,11 +258,10 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: { direction: "down", reason: "Expired deal" }
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(409);
-    expect(res._json.error.code).toBe("DEAL_EXPIRED");
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("DEAL_EXPIRED");
   });
 
   it("handles missing body gracefully", async () => {
@@ -284,10 +270,9 @@ describe("POST /api/console/deals/:deal_id/vote", () => {
       query: { deal_id: dealId },
       body: undefined
     };
-    const res = mockRes();
-    await handler(req, res);
+    const result = await handler(req, null, { ...baseCtx });
 
-    expect(res._status).toBe(400);
-    expect(res._json.error.code).toBe("VALIDATION_ERROR");
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 });
