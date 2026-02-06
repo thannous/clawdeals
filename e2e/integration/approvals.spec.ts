@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId } from "./helpers/ids";
 import { createListing, expectStatus } from "./helpers/http";
-import { createSupabaseAdmin, ensureOwnerDb, createAgentDb, createActiveApiKeyDb, setupAgent } from "./helpers/supabase";
+import { createSupabaseAdmin, ensureOwnerDb, createAgentDbWithOverrides, createActiveApiKeyDb, setupAgent } from "./helpers/supabase";
 
 assertIntegrationEnv();
 
@@ -14,28 +14,30 @@ test.describe.serial("Integration: Approvals", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
-    const agent = await createAgentDb(supabase, ownerId);
-    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+    const { apiKey: buyerApiKey, agent: buyerAgent } = await setupAgent(supabase);
 
     const policyRes = await request.put("/api/v1/policies", {
       headers: { "x-owner-id": ownerId },
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: [] },
+        auto_approve: { message_types: [], actions: ["listing.create"] },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await createListing(request, apiKey, { title: `Approval listing ${randomId()}` });
+    const listingRes = await createListing(request, sellerApiKey, { title: `Approval listing ${randomId()}`, publish: true });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
       data: {}
     });
     await expectStatus(threadRes, 202);
@@ -66,11 +68,12 @@ test.describe.serial("Integration: Approvals", () => {
       .limit(1);
     if (threadsError) throw threadsError;
     expect(threads.length).toBeGreaterThan(0);
-    const threadId = threads[0].id;
+    const threadId = threads[0].thread_id;
+    expect(threads[0].buyer_agent_id).toBe(buyerAgent.id);
 
     const msgRes = await request.post(`/api/v1/threads/${threadId}/messages`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { body: "hello approval", message_type: "answer" }
+      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      data: { type: "question", text: "hello approval" }
     });
     await expectStatus(msgRes, 202);
     const msgApprovalBody = await msgRes.json();
@@ -92,36 +95,39 @@ test.describe.serial("Integration: Approvals", () => {
       .limit(1);
     if (messagesError) throw messagesError;
     expect(messages.length).toBeGreaterThan(0);
-    expect(messages[0].message_type).toBe("answer");
-    expect(messages[0].body).toBe("hello approval");
+    expect(messages[0].type).toBe("question");
+    expect(messages[0].payload?.type).toBe("question");
+    expect(messages[0].payload?.text).toBe("hello approval");
   });
 
   test("approvals deny blocks action execution", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
-    const agent = await createAgentDb(supabase, ownerId);
-    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+    const { apiKey: buyerApiKey } = await setupAgent(supabase);
 
     const policyRes = await request.put("/api/v1/policies", {
       headers: { "x-owner-id": ownerId },
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: [] },
+        auto_approve: { message_types: [], actions: ["listing.create"] },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await createListing(request, apiKey, { title: `Deny test listing ${randomId()}` });
+    const listingRes = await createListing(request, sellerApiKey, { title: `Deny test listing ${randomId()}`, publish: true });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
       data: {}
     });
     await expectStatus(threadRes, 202);
@@ -144,21 +150,22 @@ test.describe.serial("Integration: Approvals", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
-    const agent = await createAgentDb(supabase, ownerId);
-    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     await request.put("/api/v1/policies", {
       headers: { "x-owner-id": ownerId },
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: [] },
+        auto_approve: { message_types: [], actions: ["listing.create"] },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
 
-    const listingRes = await createListing(request, apiKey, { title: `Pagination listing ${randomId()}` });
+    const listingRes = await createListing(request, sellerApiKey, { title: `Pagination listing ${randomId()}`, publish: true });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -166,7 +173,7 @@ test.describe.serial("Integration: Approvals", () => {
     for (let i = 0; i < 2; i += 1) {
       const { apiKey: freshApiKey } = await setupAgent(supabase);
       await request.post(`/api/v1/listings/${listingId}/threads`, {
-        headers: { Authorization: `Bearer ${freshApiKey}` },
+        headers: { Authorization: `Bearer ${freshApiKey}`, "Idempotency-Key": randomId() },
         data: {}
       });
     }
@@ -192,27 +199,29 @@ test.describe.serial("Integration: Approvals", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
-    const agent = await createAgentDb(supabase, ownerId);
-    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+    const { apiKey: buyerApiKey } = await setupAgent(supabase);
 
     await request.put("/api/v1/policies", {
       headers: { "x-owner-id": ownerId },
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: [] },
+        auto_approve: { message_types: [], actions: ["listing.create"] },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
 
-    const listingRes = await createListing(request, apiKey, { title: `Idem approval listing ${randomId()}` });
+    const listingRes = await createListing(request, sellerApiKey, { title: `Idem approval listing ${randomId()}`, publish: true });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
       data: {}
     });
     await expectStatus(threadRes, 202);

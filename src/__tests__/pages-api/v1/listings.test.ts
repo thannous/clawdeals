@@ -141,6 +141,20 @@ describe("/v1/listings", () => {
     expect(createListingMock).not.toHaveBeenCalled();
   });
 
+  it("POST blocks quarantined publish when ownerId is missing", async () => {
+    resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: true } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: { ...validBody, publish: true }
+    };
+    const result: any = await handler(req, null, { ...baseCtx, ownerId: null });
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+    expect(createListingMock).not.toHaveBeenCalled();
+  });
+
   it("POST policy requires approval => PENDING_APPROVAL + createApproval(listing_publish)", async () => {
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
     getPolicyOrDefaultMock.mockResolvedValue({ policy_json: { auto_approve: { actions: [] } } } as any);
@@ -237,4 +251,3 @@ describe("/v1/listings", () => {
     );
   });
 });
-

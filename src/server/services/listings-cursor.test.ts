@@ -10,6 +10,7 @@ describe("listings cursor", () => {
       listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
     };
     const encoded = encodeListingsCursor(input);
+    expect(encoded).not.toMatch(/[+/=]/);
     const decoded = decodeListingsCursor(encoded);
     expect(decoded?.value).toEqual(input);
   });
@@ -47,4 +48,3 @@ describe("listings cursor", () => {
     expect(decoded?.error).toBe("Invalid cursor");
   });
 });
-

@@ -25,7 +25,7 @@ export async function enforceAllowlist({ ownerId, agentId, ctx, policyRecord }: 
       };
       ctx.outcome = { type: "BLOCKED", reason: "policy" };
     }
-    return jsonResponse(403, errorPayload("POLICY_BLOCKED", "Sender blocked by policy"));
+    return jsonResponse(403, errorPayload("SENDER_NOT_ALLOWED", "Sender not allowed"));
   }
 
   if (ctx) {

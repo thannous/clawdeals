@@ -3,8 +3,9 @@ import crypto from "node:crypto";
 const baseUrl = process.env.SMOKE_BASE_URL || "http://localhost:3000";
 const ownerId = process.env.SMOKE_OWNER_ID || crypto.randomUUID();
 const shouldCreateOwner = !process.env.SMOKE_OWNER_ID;
-const agentId = process.env.SMOKE_AGENT_ID || "";
-let agentApiKey = process.env.SMOKE_AGENT_API_KEY || "";
+const sellerAgentId = process.env.SMOKE_AGENT_ID || "";
+let sellerApiKey = process.env.SMOKE_AGENT_API_KEY || "";
+let buyerApiKey = process.env.SMOKE_BUYER_API_KEY || "";
 
 const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IDEMPOTENCY_SECRET"];
 const missing = required.filter((key) => !process.env[key]);
@@ -13,9 +14,15 @@ if (missing.length) {
   process.exit(1);
 }
 
+if (!process.env.MESSAGE_REDACTION_HMAC_SECRET && !process.env.AUDIT_HMAC_SECRET) {
+  console.error("Missing required env var: MESSAGE_REDACTION_HMAC_SECRET or AUDIT_HMAC_SECRET");
+  process.exit(1);
+}
+
 function buildHeaders(extra = {}, options = {}) {
   const useOwner = options.useOwner ?? true;
   const useAgent = options.useAgent ?? true;
+  const agentApiKey = options.agentApiKey || sellerApiKey;
   const headers = {
     "Content-Type": "application/json",
     ...extra
@@ -107,14 +114,28 @@ async function run() {
   } else {
     await expectStatus(agentRes, [201]);
     const agent = await agentRes.json();
-    agentApiKey = agent.data?.api_key || agentApiKey;
+    sellerApiKey = agent.data?.api_key || sellerApiKey;
     console.log("Agent created", agent.data?.agent_id);
+  }
+
+  if (!buyerApiKey) {
+    const buyerRes = await postJson("/api/v1/agents", { name: "Smoke Buyer" }, {
+      "Idempotency-Key": crypto.randomUUID()
+    }, { useAgent: false });
+    if (buyerRes.status === 429) {
+      console.log("Buyer agent create rate limited (expected in repeated runs)");
+    } else {
+      await expectStatus(buyerRes, [201]);
+      const buyer = await buyerRes.json();
+      buyerApiKey = buyer.data?.api_key || buyerApiKey;
+      console.log("Buyer agent created", buyer.data?.agent_id);
+    }
   }
 
   const policyRes = await putJson("/api/v1/policies", {
     budgets: { max_offer: 400, currency: "EUR" },
     approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-    auto_approve: { message_types: ["answer"], actions: ["thread.create"] },
+    auto_approve: { message_types: ["question", "answer", "info"], actions: ["listing.create", "thread.create"] },
     allowlist_agent_ids: [],
     denylist_agent_ids: []
   }, {}, { useAgent: false });
@@ -138,7 +159,7 @@ async function run() {
       tags: ["smoke", "deal"]
     },
     { "Idempotency-Key": dealIdempotencyKey },
-    { useOwner: false, useAgent: true }
+    { useOwner: false, useAgent: true, agentApiKey: sellerApiKey }
   );
   await expectStatus(dealRes, [201]);
   const deal = await dealRes.json();
@@ -153,11 +174,11 @@ async function run() {
       category: "unknown",
       condition: "GOOD",
       price: { amount: 0, currency: "EUR" },
-      publish: false,
+      publish: true,
       ...(dealId ? { deal_id: dealId } : {})
     },
     { "Idempotency-Key": crypto.randomUUID() },
-    { useOwner: false, useAgent: true }
+    { useOwner: false, useAgent: true, agentApiKey: sellerApiKey }
   );
   await expectStatus(listingRes, [201]);
   const listing = await listingRes.json();
@@ -166,22 +187,22 @@ async function run() {
   const threadRes = await postJson(
     `/api/v1/listings/${listing.listing_id}/threads`,
     {},
-    {},
-    { useOwner: false, useAgent: true }
+    { "Idempotency-Key": crypto.randomUUID() },
+    { useOwner: false, useAgent: true, agentApiKey: buyerApiKey }
   );
   await expectStatus(threadRes, [201]);
   const thread = await threadRes.json();
-  console.log("Thread created", thread.data?.id);
+  console.log("Thread created", thread.thread_id);
 
   const msgRes = await postJson(
-    `/api/v1/threads/${thread.data?.id}/messages`,
-    { body: "hello", message_type: "answer" },
-    {},
-    { useOwner: false, useAgent: true }
+    `/api/v1/threads/${thread.thread_id}/messages`,
+    { type: "question", text: "hello" },
+    { "Idempotency-Key": crypto.randomUUID() },
+    { useOwner: false, useAgent: true, agentApiKey: buyerApiKey }
   );
   await expectStatus(msgRes, [201]);
   const msg = await msgRes.json();
-  console.log("Message sent", msg.data?.id);
+  console.log("Message sent", msg.message_id);
 
   const reportRes = await postJson(
     "/api/v1/reports",
@@ -198,7 +219,7 @@ async function run() {
     const sseRes = await fetch(`${baseUrl}/api/v1/events/stream?heartbeat=1&types=watchlist.match`, {
       method: "GET",
       headers: {
-        ...buildHeaders({}, { useOwner: true, useAgent: true }),
+        ...buildHeaders({}, { useOwner: true, useAgent: true, agentApiKey: sellerApiKey }),
         Accept: "text/event-stream"
       },
       signal: sseController.signal

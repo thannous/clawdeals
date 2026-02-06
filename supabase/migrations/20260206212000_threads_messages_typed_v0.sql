@@ -45,6 +45,12 @@ where t.listing_id = l.listing_id
 delete from public.threads
 where agent_id is null or agent_id = '';
 
+-- Drop rows with invalid UUID agent IDs (cannot be migrated safely).
+delete from public.threads
+where agent_id is not null
+  and agent_id <> ''
+  and agent_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+
 -- THREADS
 do $$
 begin
@@ -87,25 +93,6 @@ alter table public.threads
 
 do $$
 begin
-  if exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'threads'
-      and column_name = 'owner_id'
-      and udt_name <> 'uuid'
-  ) then
-    alter table public.threads
-      alter column owner_id type uuid
-      using (
-        case
-          when owner_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            then owner_id::uuid
-          else null
-        end
-      );
-  end if;
-
   if exists (
     select 1
     from information_schema.columns
@@ -159,12 +146,6 @@ begin
     alter table public.threads
       add constraint threads_seller_agent_id_fkey
       foreign key (seller_agent_id) references public.agents(id) on delete restrict;
-  end if;
-
-  if not exists (select 1 from pg_constraint where conname = 'threads_owner_id_fkey') then
-    alter table public.threads
-      add constraint threads_owner_id_fkey
-      foreign key (owner_id) references public.owners(owner_id) on delete set null;
   end if;
 end $$;
 
@@ -289,6 +270,10 @@ begin
   end if;
 end $$;
 
+-- Drop legacy defaults before changing enum types (Postgres can't cast defaults automatically).
+alter table public.messages
+  alter column sender_type drop default;
+
 alter table public.messages
   alter column sender_type type message_sender_type
   using (
@@ -300,6 +285,9 @@ alter table public.messages
       else 'agent'::message_sender_type
     end
   );
+
+alter table public.messages
+  alter column sender_type set default 'agent'::message_sender_type;
 
 alter table public.messages
   alter column type type message_type
@@ -572,4 +560,3 @@ begin
   return approval_row;
 end;
 $$;
-

@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { createMessage, createSystemWarningMessage, getThread } from "../../../../../server/services/threads";
+import { getListing } from "../../../../../server/services/listings";
 import { isUuid } from "../../../../../server/utils/validators";
 import { enforceAllowlist } from "../../../../../server/policy/enforce-allowlist";
 import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/policy/evaluate";
@@ -11,6 +12,28 @@ import { createApproval } from "../../../../../server/services/approvals";
 import crypto from "crypto";
 import { resolveTrustContext } from "../../../../../server/trustscore/context";
 import { computeMessageBodyHmac, redactMessageText, TEXT_MESSAGE_TYPES } from "../../../../../server/messaging/redaction";
+import { isTypedMessageParseError, parseTypedMessage } from "../../../../../server/messaging/typed-message";
+import { publishSseEvent } from "../../../../../server/sse/store";
+import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
+
+function getHeaderValue(req, name) {
+  const value = req.headers?.[name];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function mapMessageResponse(message: any) {
+  return {
+    message_id: message.message_id,
+    thread_id: message.thread_id,
+    sender_type: message.sender_type,
+    sender_id: message.sender_id,
+    type: message.type,
+    payload: message.payload,
+    redacted: Boolean(message.redacted),
+    created_at: message.created_at
+  };
+}
 
 export async function handler(req, res, ctx) {
   if (req.method !== "POST") {
@@ -21,55 +44,86 @@ export async function handler(req, res, ctx) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
+  const idempotencyKey = getHeaderValue(req, "idempotency-key");
+  if (!idempotencyKey) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+  }
+
+  const agentId = ctx?.agentId || null;
+  if (!agentId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
+  }
+
   const rawId = req.query?.id;
   const threadId = Array.isArray(rawId) ? rawId[0] : rawId;
   if (!isUuid(threadId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "thread id must be a UUID"));
   }
 
-  const { body, message_type: messageType } = req.body || {};
-  if (!body) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "body is required"));
-  }
-  if (typeof body !== "string") {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "body must be a string"));
-  }
-  if (!messageType || typeof messageType !== "string") {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "message_type is required"));
+  const parsed = parseTypedMessage(req.body || {});
+  if (isTypedMessageParseError(parsed)) {
+    return jsonResponse(400, errorPayload(parsed.error.code, parsed.error.message, parsed.error.details));
   }
 
-  const shouldApplyRedaction = TEXT_MESSAGE_TYPES.has(messageType);
-  const redaction = shouldApplyRedaction ? redactMessageText(body) : { text: body, redacted: false, reasons: [], matchCount: 0 };
-  const originalHmac = computeMessageBodyHmac(body);
-  const bodyToStore = redaction.text;
-  const primaryReason = redaction.reasons[0] || null;
+  const messageType: any = parsed.value.type;
+  const messagePayload: any = parsed.value.payload;
 
-  // Ensure request-level audit never stores plaintext message body.
+  let redaction: any = null;
+  let originalHmac: string | null = null;
+  let redactedPayload: any = messagePayload;
+  let primaryReason: string | null = null;
+
+  // Redact any user-supplied message text, regardless of type, to avoid bypasses.
+  // (Schema validation should constrain which types can contain text.)
+  if (messagePayload && typeof messagePayload.text === "string") {
+    const text = messagePayload.text;
+    originalHmac = computeMessageBodyHmac(text);
+    redaction = redactMessageText(text);
+    primaryReason = redaction.reasons?.[0] || null;
+    redactedPayload = redaction.redacted ? { ...messagePayload, text: redaction.text } : messagePayload;
+  }
+
+  // Ensure request-level audit never stores plaintext message text.
   if (ctx) {
     ctx.body = {
-      message_type: messageType,
-      body_hmac: originalHmac,
-      body_redacted: bodyToStore,
-      redaction_applied: redaction.redacted,
-      redaction_reasons: redaction.reasons
+      thread_id: threadId,
+      message: {
+        type: messageType,
+        original_hmac: originalHmac,
+        payload_redacted: redactedPayload,
+        redaction_applied: Boolean(redaction?.redacted),
+        redaction_reasons: redaction?.reasons || []
+      }
     };
   }
 
   try {
     const threadPromise = getThread(threadId);
     const trustPromise = resolveTrustContext({ ctx, actionType: "message.send" });
-
     const [thread] = await Promise.all([threadPromise, trustPromise]);
+
     if (!thread) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Thread not found"));
     }
 
-    const agentId = ctx?.agentId || null;
-    const ownerId = ctx?.ownerId || null;
-    const targetOwnerId = thread.owner_id || ownerId || null;
+    const isBuyer = thread.buyer_agent_id === agentId;
+    const isSeller = thread.seller_agent_id === agentId;
+    if (!isBuyer && !isSeller) {
+      // Anti-enumeration: pretend it doesn't exist.
+      return jsonResponse(404, errorPayload("NOT_FOUND", "Thread not found"));
+    }
 
-    if (targetOwnerId) {
+    const listing = thread.listing_id ? await getListing(thread.listing_id) : null;
+    if (!listing) {
+      return jsonResponse(404, errorPayload("NOT_FOUND", "Thread not found"));
+    }
+
+    const targetOwnerId = listing.owner_id || null;
+
+    // Apply allowlist + message policy only for buyer -> seller messages.
+    if (isBuyer && targetOwnerId) {
       const policyRecord = await getPolicyOrDefault(targetOwnerId);
+
       const allowlistResponse = await enforceAllowlist({
         ownerId: targetOwnerId,
         agentId,
@@ -100,11 +154,12 @@ export async function handler(req, res, ctx) {
           owner_id: targetOwnerId,
           agent_id: agentId || null,
           message_type: messageType,
-          message_redacted: redaction.redacted,
+          message_redacted: Boolean(redaction?.redacted),
           redaction_reason: primaryReason,
           original_hmac: originalHmac
         };
-        const hashInput = `${threadId}:${agentId || ""}:${messageType}:${body}`;
+
+        const hashInput = `${threadId}:${agentId || ""}:${messageType}:${canonicalJsonStringify(redactedPayload)}`;
         const actionRefId = crypto.createHash("sha256").update(hashInput).digest("hex");
 
         const approval = await createApproval({
@@ -112,7 +167,7 @@ export async function handler(req, res, ctx) {
           actionType: "message.send",
           actionRef,
           actionRefId,
-          actionPayload: { body: bodyToStore },
+          actionPayload: { payload: redactedPayload },
           createdByAgentId: agentId
         });
 
@@ -139,24 +194,37 @@ export async function handler(req, res, ctx) {
       ctx.policy = { decision: "N_A", policy_version: null, approval_id: null };
     }
 
-    const senderId = agentId || ownerId || null;
-    const senderType = agentId ? "agent" : "owner";
-
     const message = await createMessage({
       threadId,
-      body: bodyToStore,
-      senderId,
-      senderType,
-      messageType,
-      redacted: redaction.redacted
+      senderId: agentId,
+      senderType: "agent",
+      type: messageType,
+      payload: redactedPayload,
+      redacted: Boolean(redaction?.redacted)
     });
+
     if (ctx) {
-      ctx.auditEvent = redaction.redacted ? "message.redacted" : "message.sent";
+      ctx.auditEvent = redaction?.redacted ? "message.redacted" : "message.sent";
     }
-    if (redaction.redacted) {
+
+    if (redaction?.redacted) {
       await createSystemWarningMessage({ threadId });
     }
-    return jsonResponse(201, { data: message });
+
+    try {
+      await publishSseEvent({
+        audienceType: "agent",
+        audienceId: agentId,
+        type: redaction?.redacted ? "message.redacted" : "message.sent",
+        actor: { type: "agent", id: agentId },
+        entity: { type: "message", id: message.message_id },
+        payload: { thread_id: threadId, message_type: messageType, redacted: Boolean(redaction?.redacted) }
+      });
+    } catch (error) {
+      console.info("sse.publish_failed", { type: "message.sent", error: error?.message || String(error) });
+    }
+
+    return jsonResponse(201, mapMessageResponse(message));
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }

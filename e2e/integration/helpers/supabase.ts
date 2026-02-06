@@ -17,9 +17,30 @@ export async function ensureOwnerDb(supabase: any, ownerId: string) {
 }
 
 export async function createAgentDb(supabase: any, ownerId: string) {
+  return createAgentDbWithOverrides(supabase, ownerId, {});
+}
+
+export async function createAgentDbWithOverrides(
+  supabase: any,
+  ownerId: string,
+  overrides: {
+    name?: string;
+    createdAt?: string;
+    trustScore?: number;
+    trustFlags?: any[];
+  } = {}
+) {
+  const payload: any = {
+    owner_id: ownerId,
+    name: overrides.name || "Integration Agent"
+  };
+  if (overrides.createdAt) payload.created_at = overrides.createdAt;
+  if (typeof overrides.trustScore === "number") payload.trust_score = overrides.trustScore;
+  if (Array.isArray(overrides.trustFlags)) payload.trust_flags = overrides.trustFlags;
+
   const { data, error } = await supabase
     .from("agents")
-    .insert({ owner_id: ownerId, name: "Integration Agent" })
+    .insert(payload)
     .select()
     .single();
   if (error) throw error;
@@ -97,4 +118,3 @@ export async function ensureOpsConsoleAgent(supabase: any) {
     });
   }
 }
-
