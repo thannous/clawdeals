@@ -54,8 +54,19 @@ export const RATE_LIMIT_PROFILES = {
   "deals.vote": {
     buckets: [{ limit: 120, windowSeconds: HOUR }],
   },
+  "deals.comments.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "deals.comments.create": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: MINUTE }],
+  },
   "watchlists.write": {
-    buckets: [{ limit: 50, windowSeconds: DAY }],
+    buckets: [
+      { limit: 5, windowSeconds: MINUTE },
+      { limit: 50, windowSeconds: DAY },
+    ],
   },
   "watchlists.read": {
     buckets: [{ limit: 120, windowSeconds: MINUTE }],

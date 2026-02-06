@@ -3,7 +3,7 @@ import { jsonResponse } from "../../../server/http/response";
 import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors.js";
 import { normalizeEmail } from "../../../server/utils/owner-verification";
-import { createWatchlistSignup } from "../../../server/services/watchlists";
+import { createWatchlistSignup } from "../../../server/services/watchlist-signups";
 
 async function handler(req, res) {
   if (req.method !== "POST") {

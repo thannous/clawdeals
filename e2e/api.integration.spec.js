@@ -2133,4 +2133,107 @@ test.describe.serial("API integration", () => {
     });
     expect(noReasonRes.status()).toBe(400);
   });
+
+  test("watchlists CRUD + idempotency + authz + quota", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const startedAt = new Date().toISOString();
+
+    const agentA = await setupAgent(supabase);
+    const agentB = await setupAgent(supabase);
+
+    const payload = {
+      name: "RTX 4070 IDF",
+      criteria: {
+        query: "RTX 4070",
+        tags: ["gpu", "nvidia"],
+        price_max: 450
+      },
+      active: true
+    };
+
+    const idemKey = randomId();
+    const first = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": idemKey },
+      data: payload
+    });
+    await expectStatus(first, 201);
+    const firstBody = await first.json();
+    expect(firstBody.watchlist_id).toBeTruthy();
+    expect(firstBody.agent_id).toBe(agentA.agent.id);
+
+    const replay = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": idemKey },
+      data: payload
+    });
+    await expectStatus(replay, 201);
+    expect(replay.headers()["idempotency-replayed"]).toBe("true");
+    const replayBody = await replay.json();
+    expect(replayBody.watchlist_id).toBe(firstBody.watchlist_id);
+
+    const mismatch = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": idemKey },
+      data: { ...payload, name: "Different name" }
+    });
+    expect(mismatch.status()).toBe(409);
+    const mismatchBody = await mismatch.json();
+    expect(mismatchBody.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
+
+    const createAudit = await waitForAuditLog(supabase, "watchlist.created", 10, startedAt);
+    expect(createAudit).not.toBeNull();
+    expect(createAudit.outcome).toBe("SUCCESS");
+
+    const forbidden = await request.get(`/api/v1/watchlists/${firstBody.watchlist_id}`, {
+      headers: { Authorization: `Bearer ${agentB.apiKey}` }
+    });
+    expect(forbidden.status()).toBe(404);
+    const forbiddenBody = await forbidden.json();
+    expect(forbiddenBody.error.code).toBe("NOT_FOUND");
+
+    const blockedAudit = await waitForAuditLog(supabase, "watchlist.get", 10, startedAt);
+    expect(blockedAudit).not.toBeNull();
+    expect(blockedAudit.outcome).toBe("BLOCKED");
+
+    const updateKey = randomId();
+    const updated = await request.patch(`/api/v1/watchlists/${firstBody.watchlist_id}`, {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": updateKey },
+      data: { active: false }
+    });
+    await expectStatus(updated, 200);
+    const updatedBody = await updated.json();
+    expect(updatedBody.active).toBe(false);
+
+    const list = await request.get("/api/v1/watchlists?active=true&limit=50", {
+      headers: { Authorization: `Bearer ${agentA.apiKey}` }
+    });
+    await expectStatus(list, 200);
+    const listBody = await list.json();
+    const ids = (listBody.items || []).map((item) => item.watchlist_id);
+    expect(ids).not.toContain(firstBody.watchlist_id);
+
+    const deleteKey = randomId();
+    const deleted = await request.delete(`/api/v1/watchlists/${firstBody.watchlist_id}`, {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": deleteKey }
+    });
+    await expectStatus(deleted, 200);
+    const deletedBody = await deleted.json();
+    expect(deletedBody.deleted).toBe(true);
+
+    const seed = Array.from({ length: 50 }, (_, index) => ({
+      agent_id: agentB.agent.id,
+      name: `WL ${index}`,
+      active: true,
+      criteria: { tags: ["gpu"] },
+      tags: ["gpu"]
+    }));
+    const { error: seedError } = await supabase.from("watchlists").insert(seed);
+    expect(seedError).toBeNull();
+
+    const quotaRes = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${agentB.apiKey}`, "Idempotency-Key": randomId() },
+      data: { criteria: { tags: ["gpu"] }, active: true }
+    });
+    expect(quotaRes.status()).toBe(409);
+    const quotaBody = await quotaRes.json();
+    expect(quotaBody.error.code).toBe("WATCHLIST_LIMIT_REACHED");
+  });
 });
