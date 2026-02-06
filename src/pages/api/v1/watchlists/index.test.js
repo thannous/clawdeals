@@ -70,6 +70,20 @@ describe("/v1/watchlists (index)", () => {
     });
   });
 
+  it("GET rejects non-integer limit encodings", async () => {
+    const req1 = { method: "GET", query: { limit: "10.5" } };
+    const res1 = await handler(req1, null, { ...baseCtx });
+    expect(res1.status).toBe(400);
+    expect(res1.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res1.body.error.message).toBe("limit must be an integer");
+
+    const req2 = { method: "GET", query: { limit: "10abc" } };
+    const res2 = await handler(req2, null, { ...baseCtx });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res2.body.error.message).toBe("limit must be an integer");
+  });
+
   it("POST requires Idempotency-Key", async () => {
     const req = {
       method: "POST",
@@ -91,6 +105,28 @@ describe("/v1/watchlists (index)", () => {
     const result = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("POST validates criteria: distance_km must be an integer", async () => {
+    const req1 = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: { criteria: { tags: ["gpu"], geo: { lat: 1, lon: 2 }, distance_km: 10.5 }, active: true }
+    };
+    const res1 = await handler(req1, null, { ...baseCtx });
+    expect(res1.status).toBe(400);
+    expect(res1.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res1.body.error.message).toBe("criteria.distance_km must be an integer");
+
+    const req2 = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: { criteria: { tags: ["gpu"], geo: { lat: 1, lon: 2 }, distance_km: "10km" }, active: true }
+    };
+    const res2 = await handler(req2, null, { ...baseCtx });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res2.body.error.message).toBe("criteria.distance_km must be an integer");
   });
 
   it("POST normalizes empty query to null", async () => {
@@ -119,4 +155,3 @@ describe("/v1/watchlists (index)", () => {
     );
   });
 });
-

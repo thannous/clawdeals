@@ -33,6 +33,20 @@ function parseBooleanQueryParam(raw, name) {
   throw new Error(`${name} must be true or false`);
 }
 
+function parseIntegerQueryParam(raw, name) {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const asString = typeof raw === "string" ? raw : String(raw);
+  const trimmed = asString.trim();
+  if (!/^[+-]?\d+$/.test(trimmed)) {
+    throw new Error(`${name} must be an integer`);
+  }
+  const n = Number(trimmed);
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(`${name} must be an integer`);
+  }
+  return n;
+}
+
 function mapWatchlistRow(row) {
   if (!row) return null;
   return {
@@ -78,9 +92,11 @@ export async function handler(req, res, ctx) {
     const rawLimit = resolveParam(req.query?.limit);
     let limit = WATCHLISTS_DEFAULT_LIMIT;
     if (rawLimit !== undefined && rawLimit !== null && rawLimit !== "") {
-      const parsed = Number.parseInt(String(rawLimit), 10);
-      if (Number.isNaN(parsed)) {
-        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "limit must be an integer"));
+      let parsed;
+      try {
+        parsed = parseIntegerQueryParam(rawLimit, "limit");
+      } catch (error) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
       }
       if (parsed < 1 || parsed > WATCHLISTS_MAX_LIMIT) {
         return jsonResponse(

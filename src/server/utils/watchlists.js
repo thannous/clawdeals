@@ -1,5 +1,23 @@
 import { normalizeTags } from "./deals";
 
+function parseStrictInteger(value) {
+  // Accept either a number (must already be an integer) or a digits-only string.
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || !Number.isInteger(value)) return null;
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!/^[+-]?\d+$/.test(trimmed)) return null;
+    const n = Number(trimmed);
+    if (!Number.isSafeInteger(n)) return null;
+    return n;
+  }
+
+  return null;
+}
+
 export function parseWatchlistCriteria(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new Error("criteria is required");
@@ -66,8 +84,8 @@ export function parseWatchlistCriteria(raw) {
 
   let distanceKm = null;
   if (raw.distance_km !== undefined && raw.distance_km !== null) {
-    const parsed = Number.parseInt(String(raw.distance_km), 10);
-    if (Number.isNaN(parsed)) {
+    const parsed = parseStrictInteger(raw.distance_km);
+    if (parsed === null) {
       throw new Error("criteria.distance_km must be an integer");
     }
     if (parsed < 1 || parsed > 300) {
@@ -106,4 +124,3 @@ export function parseWatchlistCriteria(raw) {
     distanceKm
   };
 }
-
