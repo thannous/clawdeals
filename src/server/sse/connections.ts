@@ -28,7 +28,7 @@ redis.call("PEXPIRE", key, ttl_ms + 60000)
 return {1, count}
 `;
 
-export async function acquireAgentConnectionSlot({ agentId, connId, nowMs } = {}) {
+export async function acquireAgentConnectionSlot({ agentId, connId, nowMs }: any = {}) {
   if (!agentId) return { ok: false, reason: "missing_agent_id" };
   if (!connId) return { ok: false, reason: "missing_conn_id" };
   const redis = getRedis();
@@ -52,7 +52,7 @@ export async function acquireAgentConnectionSlot({ agentId, connId, nowMs } = {}
   }
 }
 
-export async function releaseAgentConnectionSlot({ agentId, connId } = {}) {
+export async function releaseAgentConnectionSlot({ agentId, connId }: any = {}) {
   if (!agentId || !connId) return;
   const redis = getRedis();
   try {
@@ -61,4 +61,3 @@ export async function releaseAgentConnectionSlot({ agentId, connId } = {}) {
     console.info("sse.redis_error", { op: "release_slot", error: error?.message || String(error) });
   }
 }
-

@@ -61,7 +61,7 @@ function buildRecord(event, now, redactor, secret) {
   };
 }
 
-export function createAuditLogger({ write, hmacSecret, now, redact } = {}) {
+export function createAuditLogger({ write, hmacSecret, now, redact }: any = {}) {
   const writer = write ?? defaultWriter;
   const timeSource = now ?? (() => new Date());
   const redactor = redact ?? redactValue;
@@ -78,7 +78,7 @@ export function createAuditLogger({ write, hmacSecret, now, redact } = {}) {
   };
 }
 
-export function createConsoleAuditWriter({ logger = console } = {}) {
+export function createConsoleAuditWriter({ logger = console }: any = {}) {
   return async function writeAuditRow(row) {
     logger.info("[audit]", JSON.stringify(row));
   };

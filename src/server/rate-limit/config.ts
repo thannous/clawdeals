@@ -155,7 +155,7 @@ export function normalizeKeyPart(value) {
   return String(value).replace(/[^a-zA-Z0-9._:-]/g, "_");
 }
 
-export function getProfileForGroup(group, overrides) {
+export function getProfileForGroup(group: string, overrides?: any) {
   const profiles = overrides || RATE_LIMIT_PROFILES;
   return profiles[group] || null;
 }

@@ -103,7 +103,7 @@ function buildRateLimitResponse({
   };
 }
 
-export async function rateLimitMiddleware(request, options = {}) {
+export async function rateLimitMiddleware(request: any, options: any = {}) {
   const group = options.routeGroup || (request ? matchRouteGroupFromRequest(request) : null);
 
   if (!group) {

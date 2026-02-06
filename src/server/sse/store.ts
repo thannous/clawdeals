@@ -101,7 +101,7 @@ export async function publishSseEvent({
   entity,
   payload,
   ts
-} = {}) {
+}: any = {}) {
   if (!audienceType || (audienceType !== "agent" && audienceType !== "ops")) {
     throw new Error("publishSseEvent audienceType must be 'agent' or 'ops'");
   }
@@ -149,7 +149,7 @@ export async function publishSseEvent({
     keys.push(opsStreamKey());
   }
 
-  const ids = {};
+  const ids: any = {};
 
   for (const key of keys) {
     try {

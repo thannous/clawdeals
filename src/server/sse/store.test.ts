@@ -22,7 +22,7 @@ describe("sse/store readAfter", () => {
         }
       })
     };
-    getRedis.mockReturnValue(redis);
+    (getRedis as any).mockReturnValue(redis);
 
     const entries = await readAfter("sse:stream:test", "0-0", 50);
     expect(entries[0].data).toBe("{\"v\":1,\"payload\":{\"a\":1}}");
@@ -39,7 +39,7 @@ describe("sse/store readAfter", () => {
         }
       })
     };
-    getRedis.mockReturnValue(redis);
+    (getRedis as any).mockReturnValue(redis);
 
     const entries = await readAfter("sse:stream:test", "0-0", 50);
     expect(entries[0].data).toBe(JSON.stringify(parsed));
@@ -54,10 +54,9 @@ describe("sse/store readAfter", () => {
         }
       })
     };
-    getRedis.mockReturnValue(redis);
+    (getRedis as any).mockReturnValue(redis);
 
     const entries = await readAfter("sse:stream:test", "0-0", 50);
     expect(entries[0].data).toBeNull();
   });
 });
-

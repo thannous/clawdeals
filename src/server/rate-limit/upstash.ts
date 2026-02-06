@@ -5,7 +5,7 @@ function resolveFetch() {
   throw new Error("Global fetch is not available in this runtime.");
 }
 
-export function createUpstashRedis({ url, token, fetcher } = {}) {
+export function createUpstashRedis({ url, token, fetcher }: any = {}) {
   if (!url || !token) {
     throw new Error("Upstash Redis url/token missing.");
   }

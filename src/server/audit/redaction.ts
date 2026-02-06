@@ -118,12 +118,12 @@ function redactInternal(value, options, depth, state) {
   return out;
 }
 
-export function redactValue(value, options = {}) {
+export function redactValue(value: any, options: any = {}) {
   const resolvedOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
     redactKeys: options.redactKeys
-      ? new Set(Array.from(options.redactKeys, (key) => key.toLowerCase()))
+      ? new Set(Array.from(options.redactKeys, (key) => String(key).toLowerCase()))
       : DEFAULT_OPTIONS.redactKeys,
     redactKeyMatchers: options.redactKeyMatchers ?? DEFAULT_OPTIONS.redactKeyMatchers
   };

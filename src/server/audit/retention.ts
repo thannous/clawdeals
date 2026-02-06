@@ -31,7 +31,7 @@ function parseDeletedCount(contentRange) {
   return Number.isFinite(count) ? count : null;
 }
 
-async function restRequest({ supabaseUrl, serviceRoleKey, table, method, cutoff, body }) {
+async function restRequest({ supabaseUrl, serviceRoleKey, table, method, cutoff, body }: any) {
   const baseUrl = supabaseUrl.replace(/\/$/, "");
   const url = new URL(`${baseUrl}/rest/v1/${table}`);
   url.searchParams.set("occurred_at", `lt.${cutoff.toISOString()}`);
@@ -58,7 +58,7 @@ async function restRequest({ supabaseUrl, serviceRoleKey, table, method, cutoff,
   };
 }
 
-async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }) {
+async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }: any) {
   return restRequest({
     supabaseUrl,
     serviceRoleKey,
@@ -68,7 +68,7 @@ async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }) {
   });
 }
 
-async function updateAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, updates }) {
+async function updateAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, updates }: any) {
   return restRequest({
     supabaseUrl,
     serviceRoleKey,
@@ -83,7 +83,7 @@ export async function runAuditRetention({
   env = process.env,
   now = new Date(),
   table = "audit_logs"
-} = {}) {
+}: any = {}) {
   const supabaseUrl = env.SUPABASE_URL;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
@@ -93,7 +93,7 @@ export async function runAuditRetention({
     };
   }
 
-  const results = {};
+  const results: any = {};
 
   const retentionDays = parseRetentionDays(env[RETENTION_ENV]);
   if (retentionDays) {

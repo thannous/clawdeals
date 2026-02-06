@@ -28,12 +28,12 @@ function normalizeValue(value, seen) {
   return out;
 }
 
-export function stableStringify(value) {
+export function stableStringify(value: any) {
   const normalized = normalizeValue(value, new WeakSet());
   return JSON.stringify(normalized);
 }
 
-export function createHmacFingerprint({ data, secret, algorithm = DEFAULT_HASH_ALGORITHM } = {}) {
+export function createHmacFingerprint({ data, secret, algorithm = DEFAULT_HASH_ALGORITHM }: any = {}) {
   if (!secret) {
     throw new Error("HMAC secret is required to compute audit fingerprints.");
   }
