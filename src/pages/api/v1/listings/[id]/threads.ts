@@ -2,7 +2,7 @@ import { withApiMiddlewares } from "../../../../../server/middleware/with-api-mi
 import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
-import { createThread } from "../../../../../server/services/threads";
+import { createMessage, createSystemWarningMessage, createThread } from "../../../../../server/services/threads";
 import { getListing } from "../../../../../server/services/listings";
 import { isUuid } from "../../../../../server/utils/validators";
 import { enforceAllowlist } from "../../../../../server/policy/enforce-allowlist";
@@ -10,8 +10,9 @@ import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/pol
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { createApproval } from "../../../../../server/services/approvals";
 import { resolveTrustContext } from "../../../../../server/trustscore/context";
+import { computeMessageBodyHmac, redactMessageText, TEXT_MESSAGE_TYPES } from "../../../../../server/messaging/redaction";
 
-async function handler(req, res, ctx) {
+export async function handler(req, res, ctx) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
   }
@@ -24,6 +25,43 @@ async function handler(req, res, ctx) {
   const listingId = Array.isArray(rawId) ? rawId[0] : rawId;
   if (!isUuid(listingId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "listing id must be a UUID"));
+  }
+
+  const { body, message_type: messageType } = req.body || {};
+  const hasInitialMessage = body !== undefined || messageType !== undefined;
+  if (hasInitialMessage) {
+    if (typeof body !== "string" || !body) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "body must be a non-empty string when message_type is provided"));
+    }
+    if (!messageType || typeof messageType !== "string") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "message_type is required when body is provided"));
+    }
+  }
+
+  const shouldApplyRedaction = hasInitialMessage && TEXT_MESSAGE_TYPES.has(messageType);
+  const redaction = hasInitialMessage && shouldApplyRedaction
+    ? redactMessageText(body)
+    : hasInitialMessage
+      ? { text: body, redacted: false, reasons: [], matchCount: 0 }
+      : null;
+  const originalHmac = hasInitialMessage ? computeMessageBodyHmac(body) : null;
+  const bodyToStore = hasInitialMessage ? (redaction ? redaction.text : body) : null;
+  const primaryReason = redaction?.reasons?.[0] || null;
+
+  // Ensure request-level audit never stores plaintext initial message body.
+  if (ctx) {
+    ctx.body = {
+      listing_id: listingId,
+      initial_message: hasInitialMessage
+        ? {
+            message_type: messageType,
+            body_hmac: originalHmac,
+            body_redacted: bodyToStore,
+            redaction_applied: Boolean(redaction?.redacted),
+            redaction_reasons: redaction?.reasons || []
+          }
+        : null
+    };
   }
 
   try {
@@ -68,7 +106,11 @@ async function handler(req, res, ctx) {
         const actionRef = {
           listing_id: listingId,
           owner_id: targetOwnerId,
-          agent_id: agentId || null
+          agent_id: agentId || null,
+          message_type: hasInitialMessage ? messageType : null,
+          message_redacted: Boolean(redaction?.redacted),
+          redaction_reason: primaryReason,
+          original_hmac: originalHmac
         };
 
         const approval = await createApproval({
@@ -76,7 +118,7 @@ async function handler(req, res, ctx) {
           actionType: "thread.create",
           actionRef,
           actionRefId: `${listingId}:${agentId || ""}`,
-          actionPayload: {},
+          actionPayload: hasInitialMessage ? { body: bodyToStore } : {},
           createdByAgentId: agentId
         });
 
@@ -108,6 +150,26 @@ async function handler(req, res, ctx) {
       ownerId: targetOwnerId || ownerId,
       agentId
     });
+
+    if (ctx) {
+      ctx.auditEvent = "thread.created";
+    }
+
+    if (hasInitialMessage) {
+      const senderId = agentId || ownerId || null;
+      const senderType = agentId ? "agent" : "owner";
+      await createMessage({
+        threadId: thread.id,
+        body: bodyToStore,
+        senderId,
+        senderType,
+        messageType,
+        redacted: Boolean(redaction?.redacted)
+      });
+      if (redaction?.redacted) {
+        await createSystemWarningMessage({ threadId: thread.id });
+      }
+    }
     return jsonResponse(201, { data: thread });
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));

@@ -1,5 +1,6 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { buildExternalLinkWarningBody, SYSTEM_SENDER_ID } from "../messaging/warnings";
 
 export async function createThread({ listingId, ownerId, agentId }) {
   const client = getSupabaseServiceClient();
@@ -26,14 +27,22 @@ export async function getThread(threadId) {
   return data || null;
 }
 
-export async function createMessage({ threadId, body, senderId, senderType = "agent", messageType }) {
+export async function createMessage({
+  threadId,
+  body,
+  senderId,
+  senderType = "agent",
+  messageType,
+  redacted = false
+}) {
   const client = getSupabaseServiceClient();
   const payload = {
     thread_id: threadId,
     body,
     sender_id: senderId || null,
     sender_type: senderType,
-    message_type: messageType || null
+    message_type: messageType || null,
+    redacted: Boolean(redacted)
   };
   const { data, error } = await client.from("messages").insert(payload).select().single();
   if (error) {
@@ -41,4 +50,15 @@ export async function createMessage({ threadId, body, senderId, senderType = "ag
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
   return data;
+}
+
+export async function createSystemWarningMessage({ threadId }) {
+  return createMessage({
+    threadId,
+    body: buildExternalLinkWarningBody(),
+    senderId: SYSTEM_SENDER_ID,
+    senderType: "system",
+    messageType: "warning",
+    redacted: false
+  });
 }

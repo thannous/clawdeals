@@ -5,14 +5,20 @@ vi.mock("../../../../server/services/approvals", () => ({
   resolveApproval: vi.fn()
 }));
 
+vi.mock("../../../../server/audit/singleton", () => ({
+  safeAuditLog: vi.fn().mockResolvedValue(null)
+}));
+
 import { handler } from "../../../../pages/api/v1/approvals/[id]";
 import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
+import { safeAuditLog } from "../../../../server/audit/singleton";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 
 const mockedGetApprovalForOwner = vi.mocked(getApprovalForOwner);
 const mockedResolveApproval = vi.mocked(resolveApproval);
+const mockedSafeAuditLog = vi.mocked(safeAuditLog);
 
 type OwnerCtx = {
   ownerId: string | null;
@@ -103,6 +109,7 @@ describe("POST /v1/approvals/[id]", () => {
     expect(result.status).toBe(200);
     expect((result.body as any).data.state).toBe("APPROVED");
     expect(ctx.auditEvent).toBe("approval.resolved");
+    expect(mockedSafeAuditLog).not.toHaveBeenCalled();
   });
 
   it("returns 200 with state=DENIED", async () => {
@@ -128,5 +135,25 @@ describe("POST /v1/approvals/[id]", () => {
     await handler(makeReq(`${approvalId}:approve`), null, ctx);
     expect(ctx.auditEvent).toBe("approval.resolved");
     expect(ctx.policy?.approval_id).toBe(approvalId);
+  });
+
+  it("writes an additional message.redacted audit event when approving a redacted message", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({
+      approval_id: approvalId,
+      state: "PENDING",
+      action_type: "message.send",
+      action_ref: { thread_id: "t1", message_type: "question", message_redacted: true, original_hmac: "abc", redaction_reason: "external_link" }
+    } as any);
+    mockedResolveApproval.mockResolvedValue({ approval_id: approvalId, state: "APPROVED" } as any);
+
+    const ctx: any = ownerCtx();
+    const result: any = await handler(makeReq(`${approvalId}:approve`), null, ctx);
+    expect(result.status).toBe(200);
+    expect(mockedSafeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: expect.objectContaining({ event: "message.redacted" }),
+        payload: expect.objectContaining({ approval_id: approvalId, thread_id: "t1", message_type: "question" })
+      })
+    );
   });
 });

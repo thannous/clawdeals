@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
 import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
+import { safeAuditLog } from "../../../../server/audit/singleton";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -89,6 +90,51 @@ export async function handler(req, res, ctx) {
         approval_id: approvalId,
         policy_version: null
       };
+    }
+
+    // If this approval executes a redacted message, write an additional audit event
+    // `message.redacted` without storing any plaintext message body.
+    if (decision === "APPROVED" && existing.action_type === "message.send") {
+      const ref: any = existing.action_ref || {};
+      const messageRedacted = ref.message_redacted === true;
+      if (messageRedacted) {
+        await safeAuditLog({
+          occurredAt: new Date().toISOString(),
+          actor: ctx?.actor || null,
+          auth: {
+            agent_id: null,
+            owner_id: ownerId,
+            api_key_id: ctx?.apiKeyId || null,
+            api_key_state: ctx?.apiKeyState || null
+          },
+          request: {
+            id: ctx?.requestId || null,
+            ip: ctx?.ip || null,
+            userAgent: ctx?.userAgent || null,
+            method: ctx?.method || null,
+            path: ctx?.path || null,
+            query: ctx?.query || null
+          },
+          action: {
+            route_group: ctx?.rateLimit?.group || null,
+            method: ctx?.method || null,
+            path: ctx?.path || null,
+            event: "message.redacted"
+          },
+          security: {},
+          policy: ctx?.policy || {},
+          payload: {
+            approval_id: approvalId,
+            thread_id: ref.thread_id || null,
+            message_type: ref.message_type || null,
+            original_hmac: ref.original_hmac || null,
+            redaction_reason: ref.redaction_reason || null
+          },
+          rateLimit: ctx?.rateLimit || null,
+          idempotency: ctx?.idempotency || null,
+          outcome: "SUCCESS"
+        });
+      }
     }
 
     return jsonResponse(200, { data: resolved });

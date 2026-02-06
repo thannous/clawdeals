@@ -1,5 +1,7 @@
 import { expect, type APIRequestContext, type APIResponse } from "@playwright/test";
 
+import { randomId } from "./ids";
+
 export async function expectStatus(response: APIResponse, expected: number) {
   const status = response.status();
   if (status !== expected) {
@@ -50,3 +52,26 @@ export async function registerAgent(
   });
 }
 
+export async function createListing(
+  api: APIRequestContext,
+  apiKey: string,
+  overrides: Record<string, unknown> = {},
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post("/api/v1/listings", {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {
+      title: `Integration listing ${randomId()}`,
+      description: "",
+      category: "unknown",
+      condition: "GOOD",
+      price: { amount: 0, currency: "EUR" },
+      // Default to drafts to keep non-listing tests from creating approvals.
+      publish: false,
+      ...overrides
+    }
+  });
+}

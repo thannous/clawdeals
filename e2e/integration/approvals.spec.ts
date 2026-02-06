@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId } from "./helpers/ids";
-import { expectStatus } from "./helpers/http";
+import { createListing, expectStatus } from "./helpers/http";
 import { createSupabaseAdmin, ensureOwnerDb, createAgentDb, createActiveApiKeyDb, setupAgent } from "./helpers/supabase";
 
 assertIntegrationEnv();
@@ -29,13 +29,10 @@ test.describe.serial("Integration: Approvals", () => {
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Approval listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Approval listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -118,13 +115,10 @@ test.describe.serial("Integration: Approvals", () => {
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Deny test listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Deny test listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -164,13 +158,10 @@ test.describe.serial("Integration: Approvals", () => {
       }
     });
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Pagination listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Pagination listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     for (let i = 0; i < 2; i += 1) {
       const { apiKey: freshApiKey } = await setupAgent(supabase);
@@ -215,13 +206,10 @@ test.describe.serial("Integration: Approvals", () => {
       }
     });
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Idem approval listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Idem approval listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -246,4 +234,3 @@ test.describe.serial("Integration: Approvals", () => {
     expect(replay.headers()["idempotency-replayed"]).toBe("true");
   });
 });
-

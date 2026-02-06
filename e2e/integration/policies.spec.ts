@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId } from "./helpers/ids";
 import { waitForAuditLog, waitForAuditLogMatching } from "./helpers/audit";
-import { expectStatus, createOwner, createOwnerWithContact } from "./helpers/http";
+import { createListing, expectStatus, createOwner, createOwnerWithContact } from "./helpers/http";
 import { createSupabaseAdmin, ensureOwnerDb, createAgentDb, createActiveApiKeyDb } from "./helpers/supabase";
 
 assertIntegrationEnv();
@@ -56,13 +56,10 @@ test.describe.serial("Integration: Policies", () => {
       }
     });
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Policy decision listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Policy decision listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -125,13 +122,10 @@ test.describe.serial("Integration: Policies", () => {
       }
     });
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Audit block listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Audit block listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -166,13 +160,10 @@ test.describe.serial("Integration: Policies", () => {
       }
     });
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Deny overrides listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Deny overrides listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -202,14 +193,11 @@ test.describe.serial("Integration: Policies", () => {
       }
     });
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Blocked audit listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Blocked audit listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
 
-    const threadRes = await request.post(`/api/v1/listings/${listingBody.data.id}/threads`, {
+    const threadRes = await request.post(`/api/v1/listings/${listingBody.listing_id}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
       data: {}
     });
@@ -243,13 +231,10 @@ test.describe.serial("Integration: Policies", () => {
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await request.post("/api/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      data: { title: `Allowlist listing ${randomId()}` }
-    });
+    const listingRes = await createListing(request, apiKey, { title: `Allowlist listing ${randomId()}` });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
-    const listingId = listingBody.data.id;
+    const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -278,4 +263,3 @@ test.describe.serial("Integration: Policies", () => {
     expect(payloadStr).not.toContain(email);
   });
 });
-

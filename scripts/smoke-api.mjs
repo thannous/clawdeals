@@ -144,18 +144,27 @@ async function run() {
   const deal = await dealRes.json();
   console.log("Deal created", deal.data?.id || deal.deal?.deal_id);
 
+  const dealId = deal.deal?.deal_id || deal.data?.id || null;
   const listingRes = await postJson(
     "/api/v1/listings",
-    { title: "Smoke listing", deal_id: deal.data?.id || deal.deal?.deal_id },
-    {},
+    {
+      title: "Smoke listing",
+      description: "",
+      category: "unknown",
+      condition: "GOOD",
+      price: { amount: 0, currency: "EUR" },
+      publish: false,
+      ...(dealId ? { deal_id: dealId } : {})
+    },
+    { "Idempotency-Key": crypto.randomUUID() },
     { useOwner: false, useAgent: true }
   );
   await expectStatus(listingRes, [201]);
   const listing = await listingRes.json();
-  console.log("Listing created", listing.data?.id);
+  console.log("Listing created", listing.listing_id);
 
   const threadRes = await postJson(
-    `/api/v1/listings/${listing.data?.id}/threads`,
+    `/api/v1/listings/${listing.listing_id}/threads`,
     {},
     {},
     { useOwner: false, useAgent: true }

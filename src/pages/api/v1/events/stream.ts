@@ -233,8 +233,6 @@ export async function handler(req, res, ctx) {
     request_id: ctx?.requestId || null
   });
 
-  sseWritePing(res);
-
   let closed = false;
   let pollInFlight = false;
   let cursorId = null;
@@ -324,6 +322,10 @@ export async function handler(req, res, ctx) {
   } else {
     cursorId = (await getLatestStreamId(streamKey)) || "0-0";
   }
+
+  // Send an initial ping only after the cursor is initialized so clients can
+  // treat it as a "stream is ready" barrier.
+  sseWritePing(res);
 
   pollTimer = setInterval(async () => {
     if (res.writableEnded || closed) return;
