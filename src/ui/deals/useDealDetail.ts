@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { trackDealViewed } from "./telemetry";
 
-export function useDealDetail({ dealId } = {}) {
+type UseDealDetailOptions = {
+  dealId?: string;
+};
+
+export function useDealDetail({ dealId }: UseDealDetailOptions = {}) {
   const [deal, setDeal] = useState(null);
   const [fetchState, setFetchState] = useState("idle"); // idle | loading | error | done
   const [error, setError] = useState(null);
@@ -48,4 +52,3 @@ export function useDealDetail({ dealId } = {}) {
     refetch: fetchDeal
   };
 }
-

@@ -101,7 +101,7 @@ export function useDeals() {
 
   // Sync state to URL
   const syncUrl = useCallback((newSort, newStatuses, newQ, newTags) => {
-    const query = {};
+    const query: Record<string, string> = {};
     if (newSort && newSort !== DEFAULT_SORT) query.sort = newSort;
     if (newStatuses?.length && JSON.stringify(newStatuses) !== JSON.stringify(DEFAULT_STATUSES)) {
       query.status = newStatuses.join(",");

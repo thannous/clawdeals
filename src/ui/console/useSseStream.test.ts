@@ -3,9 +3,11 @@ import { renderHook, act } from "@testing-library/react";
 import { useSseStream } from "./useSseStream";
 
 class MockEventSource {
-  static instances = [];
+  // Keep this class intentionally loose: we're emulating the browser EventSource API in tests.
+  static instances: MockEventSource[] = [];
+  [key: string]: any;
 
-  constructor(url) {
+  constructor(url: string) {
     this.url = url;
     this.readyState = 0;
     this._listeners = {};
@@ -15,12 +17,12 @@ class MockEventSource {
     MockEventSource.instances.push(this);
   }
 
-  addEventListener(type, handler) {
+  addEventListener(type: string, handler: any) {
     if (!this._listeners[type]) this._listeners[type] = [];
     this._listeners[type].push(handler);
   }
 
-  removeEventListener(type, handler) {
+  removeEventListener(type: string, handler: any) {
     if (!this._listeners[type]) return;
     this._listeners[type] = this._listeners[type].filter((h) => h !== handler);
   }
@@ -29,7 +31,7 @@ class MockEventSource {
     this.readyState = 2;
   }
 
-  _emit(type, data) {
+  _emit(type: string, data: any) {
     const handlers = this._listeners[type] || [];
     for (const handler of handlers) {
       handler(data);
@@ -45,7 +47,7 @@ class MockEventSource {
     if (this.onerror) this.onerror(new Event("error"));
   }
 
-  _simulateMessage(eventType, data, lastEventId) {
+  _simulateMessage(eventType: string, data: any, lastEventId?: string) {
     const event = {
       type: eventType,
       data: typeof data === "string" ? data : JSON.stringify(data),
@@ -60,23 +62,23 @@ class MockEventSource {
 describe("useSseStream", () => {
   beforeEach(() => {
     MockEventSource.instances = [];
-    globalThis.EventSource = MockEventSource;
-    if (!globalThis.localStorage) {
+    (globalThis as any).EventSource = MockEventSource;
+    if (!(globalThis as any).localStorage) {
       const store = new Map();
-      globalThis.localStorage = {
+      (globalThis as any).localStorage = {
         getItem: (k) => (store.has(String(k)) ? store.get(String(k)) : null),
         setItem: (k, v) => store.set(String(k), String(v)),
         removeItem: (k) => store.delete(String(k)),
         clear: () => store.clear()
       };
     }
-    globalThis.localStorage.clear();
+    (globalThis as any).localStorage.clear();
     vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    delete globalThis.EventSource;
+    delete (globalThis as any).EventSource;
   });
 
   it("starts with connecting state", () => {
@@ -137,7 +139,7 @@ describe("useSseStream", () => {
   });
 
   it("builds URL with last_event_id from localStorage when available", () => {
-    globalThis.localStorage.setItem("console_sse_last_event_id", "123-4");
+    (globalThis as any).localStorage.setItem("console_sse_last_event_id", "123-4");
     renderHook(() => useSseStream());
     const es = MockEventSource.instances[0];
     expect(es.url).toContain("last_event_id=123-4");
@@ -315,6 +317,6 @@ describe("useSseStream", () => {
       });
     });
 
-    expect(globalThis.localStorage.getItem("console_sse_last_event_id")).toBeNull();
+    expect((globalThis as any).localStorage.getItem("console_sse_last_event_id")).toBeNull();
   });
 });

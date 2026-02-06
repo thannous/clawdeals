@@ -2,7 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const PAGE_SIZE = 30;
 
-export function useDealReasons({ dealId } = {}) {
+type UseDealReasonsOptions = {
+  dealId?: string;
+};
+
+type FetchReasonsParams = {
+  cursor?: string | null;
+  append?: boolean;
+};
+
+export function useDealReasons({ dealId }: UseDealReasonsOptions = {}) {
   const [direction, setDirection] = useState(null); // null | "up" | "down"
   const [items, setItems] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
@@ -11,7 +20,7 @@ export function useDealReasons({ dealId } = {}) {
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
 
-  const fetchReasons = useCallback(async ({ cursor, append } = {}) => {
+  const fetchReasons = useCallback(async ({ cursor, append }: FetchReasonsParams = {}) => {
     if (!dealId) return;
 
     if (abortRef.current) abortRef.current.abort();
@@ -81,4 +90,3 @@ export function useDealReasons({ dealId } = {}) {
     loadMore
   };
 }
-

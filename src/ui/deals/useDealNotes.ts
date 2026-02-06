@@ -8,7 +8,20 @@ function containsUrl(value) {
   return /\bhttps?:\/\/\S+/i.test(value) || /\bwww\.\S+/i.test(value);
 }
 
-export function useDealNotes({ dealId } = {}) {
+type UseDealNotesOptions = {
+  dealId?: string;
+};
+
+type FetchNotesParams = {
+  cursor?: string | null;
+  append?: boolean;
+};
+
+type CreateNoteParams = {
+  body?: string;
+};
+
+export function useDealNotes({ dealId }: UseDealNotesOptions = {}) {
   const [items, setItems] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [fetchState, setFetchState] = useState("idle"); // idle | loading | error | done
@@ -18,7 +31,7 @@ export function useDealNotes({ dealId } = {}) {
   const [submitError, setSubmitError] = useState(null);
   const abortRef = useRef(null);
 
-  const fetchNotes = useCallback(async ({ cursor, append } = {}) => {
+  const fetchNotes = useCallback(async ({ cursor, append }: FetchNotesParams = {}) => {
     if (!dealId) return;
 
     if (abortRef.current) abortRef.current.abort();
@@ -76,7 +89,7 @@ export function useDealNotes({ dealId } = {}) {
     fetchNotes({ cursor: nextCursor, append: true });
   }, [nextCursor, loadMoreState, fetchNotes]);
 
-  const createNote = useCallback(async ({ body } = {}) => {
+  const createNote = useCallback(async ({ body }: CreateNoteParams = {}) => {
     if (!dealId) return null;
 
     const raw = typeof body === "string" ? body : "";
@@ -143,4 +156,3 @@ export function useDealNotes({ dealId } = {}) {
     clearSubmitError
   };
 }
-

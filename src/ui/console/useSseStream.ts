@@ -6,6 +6,22 @@ const INITIAL_RECONNECT_DELAY = 1000;
 const LAST_EVENT_ID_STORAGE_KEY = "console_sse_last_event_id";
 const STREAM_ID_RE = /^\\d+-\\d+$/;
 
+type BuildUrlParams = {
+  types?: string[];
+  entityId?: string;
+  replay?: boolean;
+  heartbeat?: number;
+  lastEventId?: string | null;
+  asMessage?: boolean;
+};
+
+type UseSseStreamOptions = {
+  types?: string[];
+  entityId?: string;
+  replay?: boolean;
+  heartbeat?: number;
+};
+
 function isStreamId(value) {
   return typeof value === "string" && STREAM_ID_RE.test(value);
 }
@@ -27,7 +43,7 @@ function safeSetStoredLastEventId(value) {
   }
 }
 
-function buildUrl({ types, entityId, replay, heartbeat, lastEventId, asMessage }) {
+function buildUrl({ types, entityId, replay, heartbeat, lastEventId, asMessage }: BuildUrlParams) {
   const params = new URLSearchParams();
   if (types && types.length > 0) {
     params.set("types", types.join(","));
@@ -51,7 +67,7 @@ function buildUrl({ types, entityId, replay, heartbeat, lastEventId, asMessage }
   return `/api/console/events/stream${qs ? `?${qs}` : ""}`;
 }
 
-export function useSseStream({ types, entityId, replay = true, heartbeat } = {}) {
+export function useSseStream({ types, entityId, replay = true, heartbeat }: UseSseStreamOptions = {}) {
   const [events, setEvents] = useState([]);
   const [connectionState, setConnectionState] = useState("connecting");
   const [missedCount, setMissedCount] = useState(0);

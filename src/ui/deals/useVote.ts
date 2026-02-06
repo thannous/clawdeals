@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-export function useVote({ onVoteSuccess } = {}) {
+type UseVoteOptions = {
+  onVoteSuccess?: (deal: any) => void;
+};
+
+export function useVote({ onVoteSuccess }: UseVoteOptions = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [targetDeal, setTargetDeal] = useState(null);
   const [direction, setDirection] = useState(null);
