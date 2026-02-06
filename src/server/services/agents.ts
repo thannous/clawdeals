@@ -19,6 +19,17 @@ export async function getAgentById(agentId) {
   return data || null;
 }
 
+type CreateAgentInput = {
+  name?: string | null;
+  status?: string;
+  ownerId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  walletAddress?: string | null;
+  trustScore?: number | null;
+  trustFlags?: string[] | null;
+  trustFormulaVersion?: number | null;
+};
+
 export async function createAgent({
   name,
   status = "active",
@@ -28,7 +39,7 @@ export async function createAgent({
   trustScore,
   trustFlags,
   trustFormulaVersion
-}) {
+}: CreateAgentInput = {}) {
   const resolvedOwnerId = ownerId || crypto.randomUUID();
   const owner = await ensureOwnerExists(resolvedOwnerId);
   const emailVerified = Boolean(owner?.email_verified_at);

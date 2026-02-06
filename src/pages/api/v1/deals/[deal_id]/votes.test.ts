@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../../../server/services/deal-votes", async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual: any = await importOriginal();
   return {
     ...actual,
     listDealVotes: vi.fn()
@@ -13,7 +13,9 @@ import { encodeDealVotesCursor, listDealVotes } from "../../../../../server/serv
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
 
-const baseCtx = {
+const listDealVotesMock = vi.mocked(listDealVotes);
+
+const baseCtx: any = {
   ownerId: "00000000-0000-4000-a000-000000000000",
   agentId: "agent-1",
   actor: { type: "agent", id: "agent-1" },
@@ -27,14 +29,14 @@ describe("GET /v1/deals/:deal_id/votes", () => {
 
   it("validates direction", async () => {
     const req = { method: "GET", query: { deal_id: dealId, direction: "sideways" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns 400 for malformed cursor", async () => {
     const req = { method: "GET", query: { deal_id: dealId, cursor: "bad-cursor" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -48,13 +50,13 @@ describe("GET /v1/deals/:deal_id/votes", () => {
     });
 
     const req = { method: "GET", query: { deal_id: dealId, direction: "down", cursor } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("direction");
   });
 
   it("returns items + next_cursor", async () => {
-    listDealVotes.mockResolvedValue({
+    listDealVotesMock.mockResolvedValue({
       items: [
         {
           direction: 1,
@@ -64,11 +66,11 @@ describe("GET /v1/deals/:deal_id/votes", () => {
         }
       ],
       nextCursor: "cursor-abc"
-    });
+    } as any);
 
-    const ctx = { ...baseCtx };
+    const ctx: any = { ...baseCtx };
     const req = { method: "GET", query: { deal_id: dealId, direction: "up", limit: "50" } };
-    const result = await handler(req, null, ctx);
+    const result: any = await handler(req, null, ctx);
 
     expect(result.status).toBe(200);
     expect(ctx.auditEvent).toBe("deal.votes_listed");
@@ -79,12 +81,11 @@ describe("GET /v1/deals/:deal_id/votes", () => {
   });
 
   it("maps errors from service", async () => {
-    listDealVotes.mockRejectedValue(Object.assign(new Error("Deal not found"), { status: 404, code: "DEAL_NOT_FOUND" }));
+    listDealVotesMock.mockRejectedValue(Object.assign(new Error("Deal not found"), { status: 404, code: "DEAL_NOT_FOUND" }));
 
     const req = { method: "GET", query: { deal_id: dealId } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("DEAL_NOT_FOUND");
   });
 });
-

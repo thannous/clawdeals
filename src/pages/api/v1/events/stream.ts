@@ -108,7 +108,7 @@ function sseWritePing(res) {
   }
 }
 
-function sseWriteEvent(res, { id, event, data }) {
+function sseWriteEvent(res: any, { id, event, data }: { id?: any; event: any; data: any }) {
   if (id) res.write(`id: ${id}\n`);
   res.write(`event: ${event}\n`);
   res.write(`data: ${data}\n\n`);

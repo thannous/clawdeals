@@ -9,7 +9,11 @@ vi.mock("../../../../server/services/watchlists", () => ({
 import { handler } from "./[watchlist_id]";
 import { deleteWatchlistForAgent, getWatchlistForAgent, updateWatchlistForAgent } from "../../../../server/services/watchlists";
 
-const baseCtx = {
+const getWatchlistForAgentMock = vi.mocked(getWatchlistForAgent);
+const updateWatchlistForAgentMock = vi.mocked(updateWatchlistForAgent);
+const deleteWatchlistForAgentMock = vi.mocked(deleteWatchlistForAgent);
+
+const baseCtx: any = {
   agentId: "agent-1",
   actor: { type: "agent", id: "agent-1" },
   authError: null
@@ -22,21 +26,21 @@ describe("/v1/watchlists/:watchlist_id", () => {
 
   it("GET validates watchlist_id UUID", async () => {
     const req = { method: "GET", query: { watchlist_id: "not-a-uuid" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("GET returns 404 when not found", async () => {
-    getWatchlistForAgent.mockResolvedValue(null);
+    getWatchlistForAgentMock.mockResolvedValue(null);
     const req = { method: "GET", query: { watchlist_id: "11111111-1111-4111-8111-111111111111" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
   it("GET sets audit outcome BLOCKED when authz is blocked", async () => {
-    getWatchlistForAgent.mockRejectedValue(
+    getWatchlistForAgentMock.mockRejectedValue(
       Object.assign(new Error("Watchlist not found"), {
         status: 404,
         code: "NOT_FOUND",
@@ -44,9 +48,9 @@ describe("/v1/watchlists/:watchlist_id", () => {
         reason: "authz"
       })
     );
-    const ctx = { ...baseCtx };
+    const ctx: any = { ...baseCtx };
     const req = { method: "GET", query: { watchlist_id: "11111111-1111-4111-8111-111111111111" } };
-    const result = await handler(req, null, ctx);
+    const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(404);
     expect(ctx.outcome?.type).toBe("BLOCKED");
   });
@@ -58,7 +62,7 @@ describe("/v1/watchlists/:watchlist_id", () => {
       headers: {},
       body: { active: false }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -70,7 +74,7 @@ describe("/v1/watchlists/:watchlist_id", () => {
       headers: { "idempotency-key": "abc" },
       body: {}
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -82,13 +86,13 @@ describe("/v1/watchlists/:watchlist_id", () => {
       headers: { "idempotency-key": "abc" },
       body: { active: "true" }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("PATCH updates watchlist", async () => {
-    updateWatchlistForAgent.mockResolvedValue({
+    updateWatchlistForAgentMock.mockResolvedValue({
       watchlist_id: "wl-1",
       agent_id: "agent-1",
       name: "GPU deals",
@@ -96,7 +100,7 @@ describe("/v1/watchlists/:watchlist_id", () => {
       criteria: { query: null, tags: ["gpu"], price_max: null, geo: null, distance_km: null },
       created_at: "2026-02-06T12:00:00Z",
       updated_at: "2026-02-06T13:00:00Z"
-    });
+    } as any);
 
     const req = {
       method: "PATCH",
@@ -104,7 +108,7 @@ describe("/v1/watchlists/:watchlist_id", () => {
       headers: { "idempotency-key": "abc" },
       body: { active: false }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(200);
     expect(result.body.active).toBe(false);
     expect(updateWatchlistForAgent).toHaveBeenCalled();
@@ -116,13 +120,13 @@ describe("/v1/watchlists/:watchlist_id", () => {
       query: { watchlist_id: "11111111-1111-4111-8111-111111111111" },
       headers: {}
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("DELETE soft deletes watchlist", async () => {
-    deleteWatchlistForAgent.mockResolvedValue({
+    deleteWatchlistForAgentMock.mockResolvedValue({
       watchlist_id: "wl-1",
       agent_id: "agent-1",
       name: "GPU deals",
@@ -130,14 +134,14 @@ describe("/v1/watchlists/:watchlist_id", () => {
       criteria: { query: null, tags: ["gpu"], price_max: null, geo: null, distance_km: null },
       created_at: "2026-02-06T12:00:00Z",
       updated_at: "2026-02-06T13:00:00Z"
-    });
+    } as any);
 
     const req = {
       method: "DELETE",
       query: { watchlist_id: "11111111-1111-4111-8111-111111111111" },
       headers: { "idempotency-key": "abc" }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(200);
     expect(result.body.deleted).toBe(true);
   });

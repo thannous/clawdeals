@@ -38,6 +38,16 @@ import { verifyTokenHash } from "../../../../server/utils/owner-verification";
 const validUuid = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 const challengeId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 
+const getOwnerMock = vi.mocked(getOwner);
+const setOwnerVerifiedMock = vi.mocked(setOwnerVerified);
+
+const getLatestActiveChallengeMock = vi.mocked(getLatestActiveChallenge);
+const createChallengeMock = vi.mocked(createChallenge);
+const evaluateChallengeMock = vi.mocked(evaluateChallenge);
+const incrementChallengeAttemptMock = vi.mocked(incrementChallengeAttempt);
+
+const verifyTokenHashMock = vi.mocked(verifyTokenHash);
+
 function makeReq(action, body = {}, headers = {}) {
   return {
     method: "POST",
@@ -47,7 +57,7 @@ function makeReq(action, body = {}, headers = {}) {
   };
 }
 
-function makeCtx() {
+function makeCtx(): any {
   return {};
 }
 
@@ -58,35 +68,35 @@ describe("verify-email:start", () => {
 
   it("returns 400 without x-owner-id", async () => {
     const req = { method: "POST", headers: {}, query: { action: "verify-email:start" }, body: {} };
-    const result = await handler(req, null, makeCtx());
+    const result: any = await handler(req, null, makeCtx());
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("x-owner-id");
   });
 
   it("returns 404 when owner not found", async () => {
-    getOwner.mockResolvedValue(null);
-    const result = await handler(makeReq("verify-email:start"), null, makeCtx());
+    getOwnerMock.mockResolvedValue(null);
+    const result: any = await handler(makeReq("verify-email:start"), null, makeCtx());
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
   it("returns 400 when owner has no email", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: null });
-    const result = await handler(makeReq("verify-email:start"), null, makeCtx());
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: null } as any);
+    const result: any = await handler(makeReq("verify-email:start"), null, makeCtx());
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("email");
   });
 
   it("returns 201 with challenge_id and expires_at", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue(null);
-    createChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue(null);
+    createChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       expires_at: "2026-02-05T13:00:00Z"
-    });
+    } as any);
 
     const ctx = makeCtx();
-    const result = await handler(makeReq("verify-email:start"), null, ctx);
+    const result: any = await handler(makeReq("verify-email:start"), null, ctx);
     expect(result.status).toBe(201);
     expect(result.body.data.challenge_id).toBe(challengeId);
     expect(result.body.data.expires_at).toBeTruthy();
@@ -94,36 +104,36 @@ describe("verify-email:start", () => {
   });
 
   it("echoes token in non-production", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue(null);
-    createChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue(null);
+    createChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       expires_at: "2026-02-05T13:00:00Z"
-    });
-    const result = await handler(makeReq("verify-email:start"), null, makeCtx());
+    } as any);
+    const result: any = await handler(makeReq("verify-email:start"), null, makeCtx());
     expect(result.body.data.token).toBe("test-token-123");
   });
 
   it("returns 429 lockout when challenge locked", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue({ challenge_id: challengeId });
-    evaluateChallenge.mockReturnValue({ status: "locked", retryAfterSeconds: 300 });
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({ challenge_id: challengeId } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "locked", retryAfterSeconds: 300 } as any);
 
-    const result = await handler(makeReq("verify-email:start"), null, makeCtx());
+    const result: any = await handler(makeReq("verify-email:start"), null, makeCtx());
     expect(result.status).toBe(429);
     expect(result.body.error.code).toBe("CHALLENGE_LOCKED");
     expect(result.headers["Retry-After"]).toBe("300");
   });
 
   it("consumes active challenge before creating new one", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
     const existing = { challenge_id: "old-id" };
-    getLatestActiveChallenge.mockResolvedValue(existing);
-    evaluateChallenge.mockReturnValue({ status: "active" });
-    createChallenge.mockResolvedValue({
+    getLatestActiveChallengeMock.mockResolvedValue(existing as any);
+    evaluateChallengeMock.mockReturnValue({ status: "active" } as any);
+    createChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       expires_at: "2026-02-05T13:00:00Z"
-    });
+    } as any);
 
     await handler(makeReq("verify-email:start"), null, makeCtx());
     expect(consumeChallenge).toHaveBeenCalledWith("old-id", expect.any(Date));
@@ -137,94 +147,94 @@ describe("verify-email:confirm", () => {
   });
 
   it("returns 400 without token", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    const result = await handler(makeReq("verify-email:confirm", {}), null, makeCtx());
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    const result: any = await handler(makeReq("verify-email:confirm", {}), null, makeCtx());
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("token");
   });
 
   it("returns 404 when no active challenge", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue(null);
-    const result = await handler(makeReq("verify-email:confirm", { token: "abc" }), null, makeCtx());
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue(null);
+    const result: any = await handler(makeReq("verify-email:confirm", { token: "abc" }), null, makeCtx());
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
   it("returns 409 when challenge expired", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue({ challenge_id: challengeId, token_hash: "hash" });
-    evaluateChallenge.mockReturnValue({ status: "expired" });
-    const result = await handler(makeReq("verify-email:confirm", { token: "abc" }), null, makeCtx());
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({ challenge_id: challengeId, token_hash: "hash" } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "expired" } as any);
+    const result: any = await handler(makeReq("verify-email:confirm", { token: "abc" }), null, makeCtx());
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("CHALLENGE_EXPIRED");
   });
 
   it("returns 409 when challenge consumed", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue({ challenge_id: challengeId, token_hash: "hash" });
-    evaluateChallenge.mockReturnValue({ status: "consumed" });
-    const result = await handler(makeReq("verify-email:confirm", { token: "abc" }), null, makeCtx());
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({ challenge_id: challengeId, token_hash: "hash" } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "consumed" } as any);
+    const result: any = await handler(makeReq("verify-email:confirm", { token: "abc" }), null, makeCtx());
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("CHALLENGE_CONSUMED");
   });
 
   it("returns 400 INVALID_TOKEN with remaining_attempts on wrong token", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       token_hash: "hash",
       attempt_count: 1,
       max_attempts: 5
-    });
-    evaluateChallenge.mockReturnValue({ status: "active" });
-    verifyTokenHash.mockResolvedValue(false);
-    incrementChallengeAttempt.mockResolvedValue({ max_attempts: 5 });
+    } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "active" } as any);
+    verifyTokenHashMock.mockResolvedValue(false);
+    incrementChallengeAttemptMock.mockResolvedValue({ max_attempts: 5 } as any);
 
-    const result = await handler(makeReq("verify-email:confirm", { token: "wrong" }), null, makeCtx());
+    const result: any = await handler(makeReq("verify-email:confirm", { token: "wrong" }), null, makeCtx());
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("INVALID_TOKEN");
     expect(result.body.error.details.remaining_attempts).toBeDefined();
   });
 
   it("returns 429 lockout after max attempts", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       token_hash: "hash",
       attempt_count: 4,
       max_attempts: 5
-    });
-    evaluateChallenge.mockReturnValue({ status: "active" });
-    verifyTokenHash.mockResolvedValue(false);
-    incrementChallengeAttempt.mockResolvedValue({
+    } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "active" } as any);
+    verifyTokenHashMock.mockResolvedValue(false);
+    incrementChallengeAttemptMock.mockResolvedValue({
       max_attempts: 5,
       expires_at: "2026-02-05T13:00:00Z"
-    });
+    } as any);
 
-    const result = await handler(makeReq("verify-email:confirm", { token: "wrong" }), null, makeCtx());
+    const result: any = await handler(makeReq("verify-email:confirm", { token: "wrong" }), null, makeCtx());
     expect(result.status).toBe(429);
     expect(result.body.error.code).toBe("CHALLENGE_LOCKED");
   });
 
   it("returns 200 with verified owner on correct token", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" });
-    getLatestActiveChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       token_hash: "hash",
       attempt_count: 0,
       max_attempts: 5
-    });
-    evaluateChallenge.mockReturnValue({ status: "active" });
-    verifyTokenHash.mockResolvedValue(true);
-    setOwnerVerified.mockResolvedValue({
+    } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "active" } as any);
+    verifyTokenHashMock.mockResolvedValue(true);
+    setOwnerVerifiedMock.mockResolvedValue({
       owner_id: validUuid,
       email_verified_at: "2026-02-05T12:00:00Z",
       phone_verified_at: null
-    });
+    } as any);
 
     const ctx = makeCtx();
-    const result = await handler(makeReq("verify-email:confirm", { token: "correct" }), null, ctx);
+    const result: any = await handler(makeReq("verify-email:confirm", { token: "correct" }), null, ctx);
     expect(result.status).toBe(200);
     expect(result.body.data.email_verified_at).toBeTruthy();
     expect(ctx.auditEvent).toBe("owner.email_verified");
@@ -238,22 +248,22 @@ describe("verify-phone:start", () => {
   });
 
   it("returns 400 when owner has no phone", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, phone_e164: null });
-    const result = await handler(makeReq("verify-phone:start"), null, makeCtx());
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, phone_e164: null } as any);
+    const result: any = await handler(makeReq("verify-phone:start"), null, makeCtx());
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("phone");
   });
 
   it("returns 201 with code in dev", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, phone_e164: "+33600000000" });
-    getLatestActiveChallenge.mockResolvedValue(null);
-    createChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, phone_e164: "+33600000000" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue(null);
+    createChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       expires_at: "2026-02-05T13:00:00Z"
-    });
+    } as any);
 
     const ctx = makeCtx();
-    const result = await handler(makeReq("verify-phone:start"), null, ctx);
+    const result: any = await handler(makeReq("verify-phone:start"), null, ctx);
     expect(result.status).toBe(201);
     expect(result.body.data.code).toBe("123456");
     expect(ctx.auditEvent).toBe("owner.phone_verification_started");
@@ -266,23 +276,23 @@ describe("verify-phone:confirm", () => {
   });
 
   it("returns 200 with verified owner", async () => {
-    getOwner.mockResolvedValue({ owner_id: validUuid, phone_e164: "+33600000000" });
-    getLatestActiveChallenge.mockResolvedValue({
+    getOwnerMock.mockResolvedValue({ owner_id: validUuid, phone_e164: "+33600000000" } as any);
+    getLatestActiveChallengeMock.mockResolvedValue({
       challenge_id: challengeId,
       token_hash: "hash",
       attempt_count: 0,
       max_attempts: 5
-    });
-    evaluateChallenge.mockReturnValue({ status: "active" });
-    verifyTokenHash.mockResolvedValue(true);
-    setOwnerVerified.mockResolvedValue({
+    } as any);
+    evaluateChallengeMock.mockReturnValue({ status: "active" } as any);
+    verifyTokenHashMock.mockResolvedValue(true);
+    setOwnerVerifiedMock.mockResolvedValue({
       owner_id: validUuid,
       email_verified_at: null,
       phone_verified_at: "2026-02-05T12:00:00Z"
-    });
+    } as any);
 
     const ctx = makeCtx();
-    const result = await handler(makeReq("verify-phone:confirm", { code: "123456" }), null, ctx);
+    const result: any = await handler(makeReq("verify-phone:confirm", { code: "123456" }), null, ctx);
     expect(result.status).toBe(200);
     expect(result.body.data.phone_verified_at).toBeTruthy();
     expect(ctx.auditEvent).toBe("owner.phone_verified");
@@ -291,14 +301,14 @@ describe("verify-phone:confirm", () => {
 
 describe("unknown action", () => {
   it("returns 404 for unknown action", async () => {
-    const result = await handler(makeReq("unknown-action"), null, makeCtx());
+    const result: any = await handler(makeReq("unknown-action"), null, makeCtx());
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
   it("returns 405 for GET", async () => {
     const req = { method: "GET", headers: { "x-owner-id": validUuid }, query: { action: "verify-email:start" } };
-    const result = await handler(req, null, makeCtx());
+    const result: any = await handler(req, null, makeCtx());
     expect(result.status).toBe(405);
   });
 });

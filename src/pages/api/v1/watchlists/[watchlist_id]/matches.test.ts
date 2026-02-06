@@ -14,7 +14,11 @@ import { handler } from "./matches";
 import { getWatchlistForAgent } from "../../../../../server/services/watchlists";
 import { hydrateDealSummaries, listWatchlistMatches } from "../../../../../server/services/watchlist-matches";
 
-const baseCtx = {
+const getWatchlistForAgentMock = vi.mocked(getWatchlistForAgent);
+const listWatchlistMatchesMock = vi.mocked(listWatchlistMatches);
+const hydrateDealSummariesMock = vi.mocked(hydrateDealSummaries);
+
+const baseCtx: any = {
   agentId: "agent-1",
   actor: { type: "agent", id: "agent-1" },
   authError: null
@@ -27,40 +31,40 @@ describe("/v1/watchlists/:watchlist_id/matches", () => {
 
   it("GET requires agent authentication", async () => {
     const req = { method: "GET", query: {} };
-    const result = await handler(req, null, { ...baseCtx, agentId: null });
+    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
   });
 
   it("GET validates watchlist_id UUID", async () => {
     const req = { method: "GET", query: { watchlist_id: "not-a-uuid", entity_type: "deal" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("GET validates entity_type", async () => {
     const req = { method: "GET", query: { watchlist_id: "11111111-1111-4111-8111-111111111111" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("GET returns 404 when watchlist not found", async () => {
-    getWatchlistForAgent.mockResolvedValue(null);
+    getWatchlistForAgentMock.mockResolvedValue(null);
     const req = { method: "GET", query: { watchlist_id: "11111111-1111-4111-8111-111111111111", entity_type: "deal" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
   it("GET returns items + next_cursor + deal_summary", async () => {
-    getWatchlistForAgent.mockResolvedValue({
+    getWatchlistForAgentMock.mockResolvedValue({
       watchlist_id: "wl-1",
       agent_id: "agent-1"
-    });
+    } as any);
 
-    listWatchlistMatches.mockResolvedValue({
+    listWatchlistMatchesMock.mockResolvedValue({
       items: [
         {
           watchlist_match_id: "wm-1",
@@ -73,9 +77,9 @@ describe("/v1/watchlists/:watchlist_id/matches", () => {
         }
       ],
       nextCursor: "cursor-abc"
-    });
+    } as any);
 
-    hydrateDealSummaries.mockResolvedValue(
+    hydrateDealSummariesMock.mockResolvedValue(
       new Map([
         [
           "deal-1",
@@ -93,9 +97,9 @@ describe("/v1/watchlists/:watchlist_id/matches", () => {
       ])
     );
 
-    const ctx = { ...baseCtx };
+    const ctx: any = { ...baseCtx };
     const req = { method: "GET", query: { watchlist_id: "11111111-1111-4111-8111-111111111111", entity_type: "deal" } };
-    const result = await handler(req, null, ctx);
+    const result: any = await handler(req, null, ctx);
 
     expect(result.status).toBe(200);
     expect(ctx.auditEvent).toBe("watchlist.matches.listed");
@@ -106,4 +110,3 @@ describe("/v1/watchlists/:watchlist_id/matches", () => {
     expect(result.body.next_cursor).toBe("cursor-abc");
   });
 });
-

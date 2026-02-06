@@ -25,7 +25,11 @@ import { listDeals } from "../../../server/services/deals-list";
 import { matchDealToWatchlists } from "../../../server/services/watchlist-matching";
 import { fingerprintUrl, normalizeDealUrl } from "../../../server/utils/deals";
 
-const baseCtx = {
+const createDealMock = vi.mocked(createDeal);
+const findRecentDealDuplicateMock = vi.mocked(findRecentDealDuplicate);
+const listDealsMock = vi.mocked(listDeals);
+
+const baseCtx: any = {
   ownerId: "owner-1",
   agentId: "agent-1",
   actor: { type: "agent", id: "agent-1" },
@@ -52,7 +56,7 @@ describe("POST /v1/deals", () => {
       headers: {},
       body: validBody
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -63,7 +67,7 @@ describe("POST /v1/deals", () => {
       headers: { "idempotency-key": "abc" },
       body: validBody
     };
-    const result = await handler(req, null, { ...baseCtx, agentId: null });
+    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
   });
@@ -74,7 +78,7 @@ describe("POST /v1/deals", () => {
       headers: { "idempotency-key": "abc" },
       body: { ...validBody, price: 0 }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("PRICE_INVALID");
   });
@@ -85,14 +89,14 @@ describe("POST /v1/deals", () => {
       headers: { "idempotency-key": "abc" },
       body: { ...validBody, expires_at: new Date(Date.now() - 1000).toISOString() }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("EXPIRES_AT_INVALID");
   });
 
   it("creates deal and returns deal", async () => {
-    findRecentDealDuplicate.mockResolvedValue(null);
-    createDeal.mockResolvedValue({
+    findRecentDealDuplicateMock.mockResolvedValue(null as any);
+    createDealMock.mockResolvedValue({
       deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
       title: "RTX 4070 - 399€",
       source_url: "https://example.com/deal?utm_source=unit",
@@ -107,14 +111,14 @@ describe("POST /v1/deals", () => {
       votes_down: 0,
       creator_agent_id: "agent-1",
       created_at: "2026-02-05T12:00:00Z"
-    });
+    } as any);
 
     const req = {
       method: "POST",
       headers: { "idempotency-key": "abc" },
       body: validBody
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(201);
     expect(result.body.deal.deal_id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
     expect(result.body.data).toBeUndefined();
@@ -128,18 +132,18 @@ describe("POST /v1/deals", () => {
 
   it("returns 409 DUPLICATE_SUSPECTED when recent fingerprint match exists", async () => {
     const nowIso = new Date("2026-02-05T12:00:00.000Z").toISOString();
-    findRecentDealDuplicate.mockResolvedValue({
+    findRecentDealDuplicateMock.mockResolvedValue({
       deal_id: "11111111-1111-1111-1111-111111111111",
       created_at: nowIso
-    });
+    } as any);
 
     const req = {
       method: "POST",
       headers: { "idempotency-key": "abc" },
       body: validBody
     };
-    const ctx = { ...baseCtx };
-    const result = await handler(req, null, ctx);
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
 
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("DUPLICATE_SUSPECTED");
@@ -158,10 +162,10 @@ describe("POST /v1/deals", () => {
     const withoutUtmFingerprint = fingerprintUrl(normalizeDealUrl("https://example.com/deal"));
     expect(withoutUtmFingerprint).toBe(expectedFingerprint);
 
-    findRecentDealDuplicate.mockResolvedValue({
+    findRecentDealDuplicateMock.mockResolvedValue({
       deal_id: "22222222-2222-2222-2222-222222222222",
       created_at: new Date("2026-02-05T11:00:00.000Z").toISOString()
-    });
+    } as any);
 
     const req = {
       method: "POST",
@@ -188,7 +192,7 @@ describe("GET /v1/deals", () => {
       method: "GET",
       query: {}
     };
-    const result = await handler(req, null, { ...baseCtx, ownerId: null, agentId: null });
+    const result: any = await handler(req, null, { ...baseCtx, ownerId: null, agentId: null });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
   });
@@ -198,13 +202,13 @@ describe("GET /v1/deals", () => {
       method: "GET",
       query: { cursor: "bad-cursor" }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("cursor");
   });
 
   it("returns items + next_cursor and masks temperature for NEW", async () => {
-    listDeals.mockResolvedValue({
+    listDealsMock.mockResolvedValue({
       items: [
         {
           deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
@@ -222,14 +226,14 @@ describe("GET /v1/deals", () => {
         }
       ],
       nextCursor: "cursor-abc"
-    });
+    } as any);
 
-    const ctx = { ...baseCtx };
+    const ctx: any = { ...baseCtx };
     const req = {
       method: "GET",
       query: { sort: "new" }
     };
-    const result = await handler(req, null, ctx);
+    const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(200);
     expect(ctx.auditEvent).toBe("deals.listed");
     expect(result.body.items).toHaveLength(1);
@@ -252,7 +256,7 @@ describe("GET /v1/deals", () => {
       method: "GET",
       query: { sort: "temp", status: "NEW" }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
     expect(listDeals).not.toHaveBeenCalled();

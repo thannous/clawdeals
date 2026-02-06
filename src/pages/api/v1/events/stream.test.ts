@@ -26,7 +26,7 @@ import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../..
 import { getLatestStreamId, readAfter } from "../../../../server/sse/store";
 
 function createMockReq({ method = "GET", headers = {}, query = {} } = {}) {
-  const req = new EventEmitter();
+  const req: any = new EventEmitter();
   req.method = method;
   req.headers = headers;
   req.query = query;
@@ -34,7 +34,7 @@ function createMockReq({ method = "GET", headers = {}, query = {} } = {}) {
 }
 
 function createMockRes() {
-  const res = new EventEmitter();
+  const res: any = new EventEmitter();
   res.writableEnded = false;
   res.statusCode = 200;
   res.headers = {};
@@ -55,7 +55,12 @@ function createMockRes() {
   return res;
 }
 
-const baseCtx = {
+const acquireAgentConnectionSlotMock = vi.mocked(acquireAgentConnectionSlot);
+const releaseAgentConnectionSlotMock = vi.mocked(releaseAgentConnectionSlot);
+const getLatestStreamIdMock = vi.mocked(getLatestStreamId);
+const readAfterMock = vi.mocked(readAfter);
+
+const baseCtx: any = {
   requestId: "req-1",
   authError: null,
   actor: { type: "agent", id: "agent-1" },
@@ -76,7 +81,7 @@ describe("GET /v1/events/stream", () => {
   it("returns 405 for unsupported methods", async () => {
     const req = createMockReq({ method: "POST" });
     const res = createMockRes();
-    const result = await handler(req, res, { ...baseCtx });
+    const result: any = await handler(req, res, { ...baseCtx });
     expect(result.status).toBe(405);
     expect(result.headers.Allow).toBe("GET");
   });
@@ -84,7 +89,7 @@ describe("GET /v1/events/stream", () => {
   it("returns 401 without auth", async () => {
     const req = createMockReq({ headers: { accept: "text/event-stream" } });
     const res = createMockRes();
-    const result = await handler(req, res, {
+    const result: any = await handler(req, res, {
       requestId: "req-1",
       authError: null,
       actor: { type: "anonymous", id: null },
@@ -98,7 +103,7 @@ describe("GET /v1/events/stream", () => {
   it("returns 400 when Accept header is missing", async () => {
     const req = createMockReq();
     const res = createMockRes();
-    const result = await handler(req, res, { ...baseCtx });
+    const result: any = await handler(req, res, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -109,24 +114,24 @@ describe("GET /v1/events/stream", () => {
       query: { heartbeat: "0" }
     });
     const res = createMockRes();
-    const result = await handler(req, res, { ...baseCtx });
+    const result: any = await handler(req, res, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns 429 when concurrent slot acquisition fails", async () => {
-    acquireAgentConnectionSlot.mockResolvedValue({ ok: false, reason: "limit_reached" });
+    acquireAgentConnectionSlotMock.mockResolvedValue({ ok: false, reason: "limit_reached" } as any);
     const req = createMockReq({ headers: { accept: "text/event-stream" } });
     const res = createMockRes();
-    const result = await handler(req, res, { ...baseCtx });
+    const result: any = await handler(req, res, { ...baseCtx });
     expect(result.status).toBe(429);
     expect(result.body.error.code).toBe("RATE_LIMITED");
   });
 
   it("writes sse.gap when Last-Event-ID is too old and replay=true", async () => {
-    acquireAgentConnectionSlot.mockResolvedValue({ ok: true });
-    getLatestStreamId.mockResolvedValue(null);
-    readAfter.mockResolvedValue([]);
+    acquireAgentConnectionSlotMock.mockResolvedValue({ ok: true } as any);
+    getLatestStreamIdMock.mockResolvedValue(null as any);
+    readAfterMock.mockResolvedValue([] as any);
 
     const req = createMockReq({
       headers: {
@@ -140,20 +145,20 @@ describe("GET /v1/events/stream", () => {
     const result = await handler(req, res, { ...baseCtx });
     expect(result).toBeNull();
 
-    const joined = res.chunks.join("");
+    const joined = (res.chunks as any[]).join("");
     expect(joined).toContain(": ping");
     expect(joined).toContain("event: sse.gap");
 
     res.end();
     await vi.runOnlyPendingTimersAsync();
 
-    expect(releaseAgentConnectionSlot).toHaveBeenCalled();
+    expect(releaseAgentConnectionSlotMock).toHaveBeenCalled();
   });
 
   it("supports replay cursor via last_event_id query param and can emit as message", async () => {
-    acquireAgentConnectionSlot.mockResolvedValue({ ok: true });
-    getLatestStreamId.mockResolvedValue(null);
-    readAfter.mockResolvedValue([]);
+    acquireAgentConnectionSlotMock.mockResolvedValue({ ok: true } as any);
+    getLatestStreamIdMock.mockResolvedValue(null as any);
+    readAfterMock.mockResolvedValue([] as any);
 
     const req = createMockReq({
       headers: { accept: "text/event-stream" },
@@ -164,13 +169,13 @@ describe("GET /v1/events/stream", () => {
     const result = await handler(req, res, { ...baseCtx });
     expect(result).toBeNull();
 
-    const joined = res.chunks.join("");
+    const joined = (res.chunks as any[]).join("");
     expect(joined).toContain("event: message");
     expect(joined).toContain("\"type\":\"sse.gap\"");
 
     res.end();
     await vi.runOnlyPendingTimersAsync();
 
-    expect(releaseAgentConnectionSlot).toHaveBeenCalled();
+    expect(releaseAgentConnectionSlotMock).toHaveBeenCalled();
   });
 });

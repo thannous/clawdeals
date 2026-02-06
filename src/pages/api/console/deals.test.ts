@@ -14,7 +14,7 @@ import { handler } from "./deals";
 import { listDeals } from "../../../server/services/deals-list";
 import { decodeDealsCursor } from "../../../server/services/deals-cursor";
 
-const baseCtx = {
+const baseCtx: any = {
   ownerId: "owner-1",
   agentId: null,
   actor: { type: "owner", id: "owner-1" },
@@ -28,13 +28,13 @@ describe("GET /api/console/deals", () => {
 
   it("rejects non-GET methods", async () => {
     const req = { method: "POST", query: {} };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(405);
     expect(result.body.error.code).toBe("METHOD_NOT_ALLOWED");
   });
 
   it("returns items and next_cursor", async () => {
-    listDeals.mockResolvedValue({
+    vi.mocked(listDeals).mockResolvedValue({
       items: [
         {
           deal_id: "d1",
@@ -55,7 +55,7 @@ describe("GET /api/console/deals", () => {
     });
 
     const req = { method: "GET", query: { sort: "new" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(200);
     expect(result.body.items).toHaveLength(1);
@@ -66,7 +66,7 @@ describe("GET /api/console/deals", () => {
   });
 
   it("masks temperature for NEW deals", async () => {
-    listDeals.mockResolvedValue({
+    vi.mocked(listDeals).mockResolvedValue({
       items: [
         {
           deal_id: "d2",
@@ -87,7 +87,7 @@ describe("GET /api/console/deals", () => {
     });
 
     const req = { method: "GET", query: {} };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(200);
     expect(result.body.items[0].temperature).toBeNull();
@@ -95,13 +95,13 @@ describe("GET /api/console/deals", () => {
   });
 
   it("passes sort, statuses, q, tags to listDeals", async () => {
-    listDeals.mockResolvedValue({ items: [], nextCursor: null });
+    vi.mocked(listDeals).mockResolvedValue({ items: [], nextCursor: null });
 
     const req = {
       method: "GET",
       query: { sort: "temp", status: ["ACTIVE"], q: "laptop", tags: "gpu,nvidia" }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(200);
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({
@@ -113,10 +113,10 @@ describe("GET /api/console/deals", () => {
   });
 
   it("handles comma-separated status param", async () => {
-    listDeals.mockResolvedValue({ items: [], nextCursor: null });
+    vi.mocked(listDeals).mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: { status: "NEW,ACTIVE,EXPIRED" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(200);
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({
@@ -125,10 +125,10 @@ describe("GET /api/console/deals", () => {
   });
 
   it("returns 400 for malformed cursor", async () => {
-    decodeDealsCursor.mockReturnValue({ error: "Invalid cursor" });
+    vi.mocked(decodeDealsCursor).mockReturnValue({ error: "Invalid cursor" } as any);
 
     const req = { method: "GET", query: { cursor: "bad-cursor" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
@@ -136,11 +136,11 @@ describe("GET /api/console/deals", () => {
 
   it("passes decoded cursor to listDeals", async () => {
     const cursorValue = { sort: "new", status: "ACTIVE", created_at: "2026-02-01T00:00:00Z", deal_id: "d1" };
-    decodeDealsCursor.mockReturnValue({ value: cursorValue });
-    listDeals.mockResolvedValue({ items: [], nextCursor: null });
+    vi.mocked(decodeDealsCursor).mockReturnValue({ value: cursorValue } as any);
+    vi.mocked(listDeals).mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: { cursor: "valid-cursor" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(200);
     expect(listDeals).toHaveBeenCalledWith(expect.objectContaining({
@@ -149,19 +149,19 @@ describe("GET /api/console/deals", () => {
   });
 
   it("returns 500 on service error", async () => {
-    listDeals.mockRejectedValue(
+    vi.mocked(listDeals).mockRejectedValue(
       Object.assign(new Error("DB error"), { status: 500, code: "DB_ERROR" })
     );
 
     const req = { method: "GET", query: {} };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(500);
     expect(result.body.error.code).toBe("DB_ERROR");
   });
 
   it("defaults limit to 30", async () => {
-    listDeals.mockResolvedValue({ items: [], nextCursor: null });
+    vi.mocked(listDeals).mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: {} };
     await handler(req, null, { ...baseCtx });
@@ -170,7 +170,7 @@ describe("GET /api/console/deals", () => {
   });
 
   it("respects custom limit", async () => {
-    listDeals.mockResolvedValue({ items: [], nextCursor: null });
+    vi.mocked(listDeals).mockResolvedValue({ items: [], nextCursor: null });
 
     const req = { method: "GET", query: { limit: "10" } };
     await handler(req, null, { ...baseCtx });
@@ -179,7 +179,7 @@ describe("GET /api/console/deals", () => {
   });
 
   it("converts string price to number", async () => {
-    listDeals.mockResolvedValue({
+    vi.mocked(listDeals).mockResolvedValue({
       items: [{
         deal_id: "d3", title: "Price Deal", source_url: "https://x.com", price: "99.50",
         currency: "EUR", expires_at: null, tags: [], status: "ACTIVE", temperature: 10,
@@ -189,7 +189,7 @@ describe("GET /api/console/deals", () => {
     });
 
     const req = { method: "GET", query: {} };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
 
     expect(typeof result.body.items[0].price).toBe("number");
     expect(result.body.items[0].price).toBe(99.5);

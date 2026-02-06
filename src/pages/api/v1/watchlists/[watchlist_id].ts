@@ -86,8 +86,9 @@ export async function handler(req, res, ctx) {
       ctx.auditEvent = "watchlist.updated";
     }
 
-    const { name, criteria: rawCriteria, active: rawActive } = req.body || {};
-    const patch = {};
+    const body: any = req.body || {};
+    const { name, criteria: rawCriteria, active: rawActive } = body;
+    const patch: any = {};
 
     if (name !== undefined) {
       if (name === null) {
@@ -174,4 +175,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler);
-

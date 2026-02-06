@@ -11,7 +11,11 @@ vi.mock("../../../../server/services/watchlists", () => ({
 import { handler } from "./index";
 import { createWatchlist, decodeWatchlistCursor, listWatchlists } from "../../../../server/services/watchlists";
 
-const baseCtx = {
+const createWatchlistMock = vi.mocked(createWatchlist);
+const listWatchlistsMock = vi.mocked(listWatchlists);
+const decodeWatchlistCursorMock = vi.mocked(decodeWatchlistCursor);
+
+const baseCtx: any = {
   agentId: "agent-1",
   actor: { type: "agent", id: "agent-1" },
   authError: null
@@ -24,22 +28,22 @@ describe("/v1/watchlists (index)", () => {
 
   it("GET requires agent authentication", async () => {
     const req = { method: "GET", query: {} };
-    const result = await handler(req, null, { ...baseCtx, agentId: null });
+    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
   });
 
   it("GET validates cursor", async () => {
-    decodeWatchlistCursor.mockReturnValue({ error: "Invalid cursor" });
+    decodeWatchlistCursorMock.mockReturnValue({ error: "Invalid cursor" } as any);
 
     const req = { method: "GET", query: { cursor: "bad" } };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("GET returns items + next_cursor", async () => {
-    listWatchlists.mockResolvedValue({
+    listWatchlistsMock.mockResolvedValue({
       items: [
         {
           watchlist_id: "wl-1",
@@ -52,11 +56,11 @@ describe("/v1/watchlists (index)", () => {
         }
       ],
       nextCursor: "cursor-abc"
-    });
+    } as any);
 
-    const ctx = { ...baseCtx };
+    const ctx: any = { ...baseCtx };
     const req = { method: "GET", query: {} };
-    const result = await handler(req, null, ctx);
+    const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(200);
     expect(ctx.auditEvent).toBe("watchlists.listed");
     expect(result.body.items).toHaveLength(1);
@@ -72,13 +76,13 @@ describe("/v1/watchlists (index)", () => {
 
   it("GET rejects non-integer limit encodings", async () => {
     const req1 = { method: "GET", query: { limit: "10.5" } };
-    const res1 = await handler(req1, null, { ...baseCtx });
+    const res1: any = await handler(req1, null, { ...baseCtx });
     expect(res1.status).toBe(400);
     expect(res1.body.error.code).toBe("VALIDATION_ERROR");
     expect(res1.body.error.message).toBe("limit must be an integer");
 
     const req2 = { method: "GET", query: { limit: "10abc" } };
-    const res2 = await handler(req2, null, { ...baseCtx });
+    const res2: any = await handler(req2, null, { ...baseCtx });
     expect(res2.status).toBe(400);
     expect(res2.body.error.code).toBe("VALIDATION_ERROR");
     expect(res2.body.error.message).toBe("limit must be an integer");
@@ -90,7 +94,7 @@ describe("/v1/watchlists (index)", () => {
       headers: {},
       body: { criteria: { tags: ["gpu"] }, active: true }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
     expect(String(result.body.error.message)).toContain("Idempotency-Key");
@@ -102,7 +106,7 @@ describe("/v1/watchlists (index)", () => {
       headers: { "idempotency-key": "abc" },
       body: { criteria: { tags: ["gpu"], distance_km: 10 }, active: true }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
@@ -113,7 +117,7 @@ describe("/v1/watchlists (index)", () => {
       headers: { "idempotency-key": "abc" },
       body: { criteria: { tags: ["gpu"], geo: { lat: 1, lon: 2 }, distance_km: 10.5 }, active: true }
     };
-    const res1 = await handler(req1, null, { ...baseCtx });
+    const res1: any = await handler(req1, null, { ...baseCtx });
     expect(res1.status).toBe(400);
     expect(res1.body.error.code).toBe("VALIDATION_ERROR");
     expect(res1.body.error.message).toBe("criteria.distance_km must be an integer");
@@ -123,14 +127,14 @@ describe("/v1/watchlists (index)", () => {
       headers: { "idempotency-key": "abc" },
       body: { criteria: { tags: ["gpu"], geo: { lat: 1, lon: 2 }, distance_km: "10km" }, active: true }
     };
-    const res2 = await handler(req2, null, { ...baseCtx });
+    const res2: any = await handler(req2, null, { ...baseCtx });
     expect(res2.status).toBe(400);
     expect(res2.body.error.code).toBe("VALIDATION_ERROR");
     expect(res2.body.error.message).toBe("criteria.distance_km must be an integer");
   });
 
   it("POST normalizes empty query to null", async () => {
-    createWatchlist.mockResolvedValue({
+    createWatchlistMock.mockResolvedValue({
       watchlist_id: "wl-1",
       agent_id: "agent-1",
       name: "GPU deals",
@@ -138,14 +142,14 @@ describe("/v1/watchlists (index)", () => {
       criteria: { query: null, tags: ["gpu"], price_max: null, geo: null, distance_km: null },
       created_at: "2026-02-06T12:00:00Z",
       updated_at: "2026-02-06T12:00:00Z"
-    });
+    } as any);
 
     const req = {
       method: "POST",
       headers: { "idempotency-key": "abc" },
       body: { name: "GPU deals", criteria: { query: "   ", tags: ["GPU"] }, active: true }
     };
-    const result = await handler(req, null, { ...baseCtx });
+    const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(201);
     expect(createWatchlist).toHaveBeenCalledWith(
       expect.objectContaining({
