@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+import { test, expect } from "@playwright/test";
 
 const DEAL_ID = "aaaa-1111-2222-3333-444444444444";
 
@@ -151,3 +151,4 @@ test.describe("Deal detail page", () => {
     await expect(page.locator('[data-testid="notes-list"] a')).toHaveCount(0);
   });
 });
+

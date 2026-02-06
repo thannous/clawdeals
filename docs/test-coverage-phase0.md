@@ -31,7 +31,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
   - création nominale + trust_score/flags
 
 **Tests intégration**
-- `e2e/api.integration.spec.js`
+- `e2e/integration/*.spec.ts` *(ex `e2e/api.integration.spec.js`, decoupe en plusieurs specs)*
   - `register agent idempotency + audit`
   - `register agent idempotency misuse returns 409`
   - `rate limit register agent` *(skippé hors NODE_ENV=production)*
@@ -52,7 +52,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
   - rotate/revoke + Idempotency-Key required
 
 **Tests intégration**
-- `e2e/api.integration.spec.js`
+- `e2e/integration/*.spec.ts` *(ex `e2e/api.integration.spec.js`, decoupe en plusieurs specs)*
   - `rotate and revoke api keys`
   - `revoked and grace-expired keys are rejected`
   - `grace key not expired still works`
@@ -80,7 +80,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
   - `src/pages/api/v1/agents/[id]/action.test.js` (rotate)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js`
+- `e2e/integration/*.spec.ts` *(ex `e2e/api.integration.spec.js`, decoupe en plusieurs specs)*
   - replay stable (agents + deals + votes)
   - key reuse → 409 (agents + rotate)
 
@@ -99,7 +99,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/server/utils/owner-verification.test.js` (normalize/hash/evaluate challenge)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js` utilise `createOwner()` → `PATCH /v1/owner` (couverture partielle)
+- `e2e/integration/*.spec.ts` *(ex `e2e/api.integration.spec.js`)* utilise `createOwner()` → `PATCH /v1/owner` (couverture partielle)
 
 **Couverture**: ⚠️ **Partielle (faible)**
 
@@ -152,7 +152,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/server/services/reports.test.js` (computeReportWeight)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js` → `rate limit reports create` *(skippé hors NODE_ENV=production)*
+- `e2e/integration/reports.spec.ts` → `rate limit reports create` *(skippé hors NODE_ENV=production)*
 
 **Couverture**: ⚠️ **Partielle (très faible)**
 
@@ -172,8 +172,8 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/pages/api/v1/policies.test.js` (GET/PUT + validation)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js` → `policy get/put as owner`
-- `e2e/api.integration.spec.js` → creation approvals via policy (thread/message)
+- `e2e/integration/policies.spec.ts` → `policy get/put as owner`
+- `e2e/integration/approvals.spec.ts` → creation approvals via policy (thread/message)
 
 **Couverture**: ⚠️ **Partielle**
 
@@ -191,7 +191,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/server/services/approvals.test.js` (cursor encode/decode)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js` → `approvals queue executes thread + message actions`
+- `e2e/integration/approvals.spec.ts` → `approvals queue executes thread + message actions`
 
 **Couverture**: ⚠️ **Partielle**
 
@@ -211,7 +211,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/server/policy/enforce-allowlist.test.js` (ctx.policy + blocked)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js` → `allowlist blocks thread creation`
+- `e2e/integration/policies.spec.ts` → `allowlist blocks thread creation`
 
 **Couverture**: ⚠️ **Partielle**
 
@@ -229,7 +229,7 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/server/audit/redaction.test.js` (redaction)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js`
+- `e2e/integration/*.spec.ts` *(ex `e2e/api.integration.spec.js`, decoupe en plusieurs specs)*
   - audit `agent.registered`
   - audit `deal.create`
   - audit `deal.state_changed`
@@ -251,8 +251,8 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - `src/server/rate-limit/config.test.js` (formatLimitLabel)
 
 **Tests intégration**
-- `e2e/api.integration.spec.js` → `rate limit register agent`
-- `e2e/api.integration.spec.js` → `rate limit reports create`
+- `e2e/integration/agents.spec.ts` → `rate limit register agent`
+- `e2e/integration/reports.spec.ts` → `rate limit reports create`
   *(les deux skippés hors NODE_ENV=production)*
 
 **Couverture**: ⚠️ **Partielle**
@@ -262,4 +262,3 @@ Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
 - Couvrir plusieurs route groups (messages.send, listings.create, deals.create).
 - Tester SSE concurrent limit.
 - Tester profil quarantine (si activé).
-

@@ -1,4 +1,4 @@
-const { test, expect } = require("@playwright/test");
+import { test, expect } from "@playwright/test";
 
 test.describe("Landing page", () => {
   test("loads with default theme tokens", async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe("Landing page", () => {
     await page.goto("/");
 
     await expect(page.getByRole("navigation")).toBeVisible();
-    await expect(page.getByRole("button", { name: /AGENTS \/\//i })).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp("AGENTS //", "i") })).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 
@@ -25,16 +25,17 @@ test.describe("Landing page", () => {
     await page.goto("/");
 
     await page.getByRole("link", { name: "FR" }).click();
-    await expect(page).toHaveURL(/\/fr/);
+    await expect(page).toHaveURL(new RegExp("/fr"));
     await expect(page.getByRole("heading", { level: 1 })).toContainText("DÉPLOIEMENT");
 
     await page.getByRole("link", { name: "EN" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(new RegExp("/$"));
     await expect(page.getByRole("heading", { level: 1 })).toContainText("TACTICAL");
   });
 
   test("persists theme from localStorage and updates meta theme-color", async ({ page }) => {
     await page.addInitScript(() => {
+      // Legacy key is migrated to the current key on first load.
       localStorage.setItem("theme", "default");
     });
 
@@ -43,7 +44,11 @@ test.describe("Landing page", () => {
     await expect(page.getByTestId("root-html")).toHaveAttribute("data-theme", "default");
     await expect(page.getByTestId("theme-color")).toHaveAttribute("content", "#050505");
 
-    const stored = await page.evaluate(() => localStorage.getItem("theme"));
-    expect(stored).toBe("default");
+    const stored = await page.evaluate(() => ({
+      legacy: localStorage.getItem("theme"),
+      current: localStorage.getItem("theme:v1")
+    }));
+    expect(stored.current).toBe("default");
+    expect(stored.legacy).toBeNull();
   });
 });
