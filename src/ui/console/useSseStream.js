@@ -4,6 +4,11 @@ const MAX_EVENTS = 500;
 const MAX_RECONNECT_DELAY = 30000;
 const INITIAL_RECONNECT_DELAY = 1000;
 const LAST_EVENT_ID_STORAGE_KEY = "console_sse_last_event_id";
+const STREAM_ID_RE = /^\\d+-\\d+$/;
+
+function isStreamId(value) {
+  return typeof value === "string" && STREAM_ID_RE.test(value);
+}
 
 function safeGetStoredLastEventId() {
   try {
@@ -137,10 +142,16 @@ export function useSseStream({ types, entityId, replay = true, heartbeat } = {})
         return;
       }
 
-      const incomingId = parsed?.id || e.lastEventId || "";
-      if (incomingId) {
-        lastEventIdRef.current = incomingId;
-        safeSetStoredLastEventId(incomingId);
+      // Only persist a replay cursor if it looks like a real stream id.
+      // This avoids storing non-stream ids (e.g. sse.gap uses "gap-<ts>").
+      const cursorId = isStreamId(e.lastEventId)
+        ? e.lastEventId
+        : isStreamId(parsed?.id)
+          ? parsed.id
+          : null;
+      if (cursorId) {
+        lastEventIdRef.current = cursorId;
+        safeSetStoredLastEventId(cursorId);
       }
 
       const event = {

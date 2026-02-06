@@ -106,18 +106,18 @@ describe("useSseStream", () => {
 
     act(() => {
       es._simulateMessage("message", {
-        id: "evt-1",
+        id: "1700000000000-1",
         type: "deal.created",
         ts: "2026-02-06T10:00:00.000Z",
         actor: { type: "agent", id: "agent-123" },
         entity: { type: "deal", id: "deal-abc" },
         payload: { title: "Test Deal" }
-      });
+      }, "1700000000000-1");
     });
 
     expect(result.current.events).toHaveLength(1);
     expect(result.current.events[0].type).toBe("deal.created");
-    expect(result.current.events[0].id).toBe("evt-1");
+    expect(result.current.events[0].id).toBe("1700000000000-1");
   });
 
   it("builds URL with types filter", () => {
@@ -159,11 +159,11 @@ describe("useSseStream", () => {
 
     act(() => {
       es._simulateMessage("message", {
-        id: "evt-1",
+        id: "1700000000000-1",
         type: "deal.created",
         ts: "2026-02-06T10:00:00.000Z",
         payload: {}
-      });
+      }, "1700000000000-1");
     });
 
     expect(result.current.events).toHaveLength(0);
@@ -184,17 +184,17 @@ describe("useSseStream", () => {
 
     act(() => {
       es._simulateMessage("message", {
-        id: "evt-1",
+        id: "1700000000000-1",
         type: "deal.created",
         ts: "2026-02-06T10:00:00.000Z",
         payload: {}
-      });
+      }, "1700000000000-1");
       es._simulateMessage("message", {
-        id: "evt-2",
+        id: "1700000000000-2",
         type: "deal.created",
         ts: "2026-02-06T10:00:01.000Z",
         payload: {}
-      });
+      }, "1700000000000-2");
     });
 
     expect(result.current.events).toHaveLength(0);
@@ -263,17 +263,18 @@ describe("useSseStream", () => {
 
     act(() => {
       for (let i = 0; i < 510; i++) {
+        const id = `${1700000000000 + i}-0`;
         es._simulateMessage("message", {
-          id: `evt-${i}`,
+          id,
           type: "deal.created",
           ts: "2026-02-06T10:00:00.000Z",
           payload: { n: i }
-        });
+        }, id);
       }
     });
 
     expect(result.current.events.length).toBeLessThanOrEqual(500);
-    expect(result.current.events[0].id).toBe("evt-10");
+    expect(result.current.events[0].id).toBe("1700000000010-0");
   });
 
   it("does not drop unknown SSE event types when delivered as message", () => {
@@ -286,14 +287,34 @@ describe("useSseStream", () => {
 
     act(() => {
       es._simulateMessage("message", {
-        id: "evt-x",
+        id: "1700000000000-9",
         type: "some.new.event",
         ts: "2026-02-06T10:00:02.000Z",
         payload: { ok: true }
-      });
+      }, "1700000000000-9");
     });
 
     expect(result.current.events).toHaveLength(1);
     expect(result.current.events[0].type).toBe("some.new.event");
+  });
+
+  it("does not persist non-stream ids (e.g. gap-* payload id)", () => {
+    renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    act(() => {
+      es._simulateMessage("message", {
+        id: "gap-1700000000000",
+        type: "sse.gap",
+        ts: "2026-02-06T10:00:02.000Z",
+        payload: { replay: false }
+      });
+    });
+
+    expect(globalThis.localStorage.getItem("console_sse_last_event_id")).toBeNull();
   });
 });
