@@ -1,4 +1,5 @@
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import StatusBadge from "./StatusBadge";
 import TemperatureGauge from "./TemperatureGauge";
 
@@ -19,7 +20,15 @@ export default function DealCard({ deal, retryIn, onVote }) {
 
         {/* Title + Tags */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-text truncate">{deal.title}</h3>
+          <h3 className="text-sm font-semibold text-text truncate">
+            <Link
+              data-testid="deal-detail-link"
+              href={`/deals/${deal.deal_id}`}
+              className="hover:text-primary transition-colors"
+            >
+              {deal.title}
+            </Link>
+          </h3>
           {deal.tags?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {deal.tags.map((tag) => (

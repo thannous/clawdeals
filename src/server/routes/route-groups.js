@@ -75,6 +75,26 @@ const ROUTE_GROUPS = [
     pattern: /^\/v1\/deals$/
   },
   {
+    group: "deals.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/deals\/[^/]+$/
+  },
+  {
+    group: "deals.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/deals\/[^/]+\/votes$/
+  },
+  {
+    group: "deals.comments.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/deals\/[^/]+\/comments$/
+  },
+  {
+    group: "deals.comments.create",
+    methods: ["POST"],
+    pattern: /^\/v1\/deals\/[^/]+\/comments$/
+  },
+  {
     group: "deals.create",
     methods: ["POST"],
     pattern: /^\/v1\/deals$/

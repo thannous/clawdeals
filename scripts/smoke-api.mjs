@@ -67,6 +67,25 @@ async function getJson(path, extraHeaders = {}, options = {}) {
   return response;
 }
 
+async function readUntil(body, predicate, { timeoutMs = 2000 } = {}) {
+  if (!body || typeof body.getReader !== "function") {
+    throw new Error("Response body is not a readable stream");
+  }
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  const start = Date.now();
+  let buffer = "";
+
+  while (Date.now() - start < timeoutMs) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    if (predicate(buffer)) return buffer;
+  }
+
+  throw new Error("Timed out waiting for SSE data");
+}
+
 async function run() {
   console.log(`Smoke test base: ${baseUrl}`);
 
@@ -165,9 +184,22 @@ async function run() {
   const report = await reportRes.json();
   console.log("Report created", report.data?.id);
 
-  const sseRes = await getJson("/api/v1/events/stream");
-  await expectStatus(sseRes, [200]);
-  console.log("SSE endpoint ok");
+  const sseController = new AbortController();
+  try {
+    const sseRes = await fetch(`${baseUrl}/api/v1/events/stream?heartbeat=1&types=watchlist.match`, {
+      method: "GET",
+      headers: {
+        ...buildHeaders({}, { useOwner: true, useAgent: true }),
+        Accept: "text/event-stream"
+      },
+      signal: sseController.signal
+    });
+    await expectStatus(sseRes, [200]);
+    await readUntil(sseRes.body, (text) => text.includes(": ping"), { timeoutMs: 2000 });
+    console.log("SSE endpoint ok");
+  } finally {
+    sseController.abort();
+  }
 
   console.log("Smoke test passed.");
 }

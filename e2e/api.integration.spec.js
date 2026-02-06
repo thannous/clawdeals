@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const { test, expect } = require("@playwright/test");
 const crypto = require("node:crypto");
 const { createClient } = require("@supabase/supabase-js");
+const { Redis } = require("@upstash/redis");
 const { generateApiKey, hashApiKeySecret } = require("../src/server/utils/api-keys");
 const { calculateDealTemperature } = require("../src/server/utils/deals");
 const { runDealLifecycle } = require("../src/server/services/deal-lifecycle");
@@ -21,12 +22,19 @@ if (envPath) {
   }
 }
 
-const requiredEnv = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IDEMPOTENCY_SECRET"];
+const requiredEnv = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "IDEMPOTENCY_SECRET",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN"
+];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 if (missingEnv.length > 0) {
   throw new Error(`Missing env vars for integration tests: ${missingEnv.join(", ")}`);
 }
 const skipRateLimitTests = process.env.NODE_ENV !== "production";
+const baseURL = process.env.API_BASE_URL || "http://localhost:3001";
 
 function randomId() {
   return crypto.randomUUID();
@@ -34,6 +42,73 @@ function randomId() {
 
 function sha256Hex(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function createRedis() {
+  return Redis.fromEnv();
+}
+
+async function openSse(pathname, { headers } = {}) {
+  const controller = new AbortController();
+  const res = await fetch(`${baseURL}${pathname}`, {
+    method: "GET",
+    headers,
+    signal: controller.signal
+  });
+  return { res, controller };
+}
+
+async function waitForSseFrame(response, { timeoutMs = 2500, onFrame } = {}) {
+  if (!response?.body || typeof response.body.getReader !== "function") {
+    throw new Error("SSE response body is not a readable stream");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const start = Date.now();
+  let buffer = "";
+
+  function handleFrame(text) {
+    const lines = text.split("\n").filter((l) => l !== "");
+    if (lines.length === 0) return null;
+
+    if (lines[0].startsWith(":")) {
+      const comment = lines.map((l) => l.slice(1).trim()).join("\n");
+      return { type: "comment", comment };
+    }
+
+    const frame = { type: "event", id: null, event: null, data: "" };
+    for (const line of lines) {
+      if (line.startsWith("id:")) frame.id = line.slice(3).trim();
+      if (line.startsWith("event:")) frame.event = line.slice(6).trim();
+      if (line.startsWith("data:")) frame.data = frame.data ? `${frame.data}\n${line.slice(5).trim()}` : line.slice(5).trim();
+    }
+    return frame;
+  }
+
+  while (Date.now() - start < timeoutMs) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let idx;
+    while ((idx = buffer.indexOf("\n\n")) !== -1) {
+      const raw = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 2);
+      const frame = handleFrame(raw);
+      if (!frame) continue;
+      if (typeof onFrame === "function") {
+        const result = onFrame(frame);
+        if (result !== undefined) return result;
+      }
+    }
+  }
+
+  throw new Error("Timed out waiting for SSE frame");
 }
 
 async function createOwner(api, ownerId) {
