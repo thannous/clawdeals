@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-vi.mock("../redis/upstash.js", () => ({
+vi.mock("../redis/upstash", () => ({
   getRedis: vi.fn()
 }));
 
-import { getRedis } from "../redis/upstash.js";
-import { readAfter } from "./store.js";
+import { getRedis } from "../redis/upstash";
+import { readAfter } from "./store";
 
 describe("sse/store readAfter", () => {
   beforeEach(() => {

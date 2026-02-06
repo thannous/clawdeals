@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "node:events";
 
-vi.mock("../../../../server/sse/connections.js", () => ({
+vi.mock("../../../../server/sse/connections", () => ({
   acquireAgentConnectionSlot: vi.fn(),
   releaseAgentConnectionSlot: vi.fn()
 }));
 
-vi.mock("../../../../server/sse/store.js", () => ({
+vi.mock("../../../../server/sse/store", () => ({
   opsStreamKey: vi.fn(() => "sse:stream:ops:v1"),
   agentStreamKey: vi.fn((agentId) => `sse:stream:agent:v1:${agentId}`),
   getLatestStreamId: vi.fn(),
@@ -22,8 +22,8 @@ vi.mock("../../../../server/sse/store.js", () => ({
 }));
 
 import { handler } from "./stream";
-import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../../../server/sse/connections.js";
-import { getLatestStreamId, readAfter } from "../../../../server/sse/store.js";
+import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../../../server/sse/connections";
+import { getLatestStreamId, readAfter } from "../../../../server/sse/store";
 
 function createMockReq({ method = "GET", headers = {}, query = {} } = {}) {
   const req = new EventEmitter();

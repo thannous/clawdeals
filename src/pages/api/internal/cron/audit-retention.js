@@ -1,4 +1,4 @@
-import { runAuditRetention } from "../../../../server/audit/retention.js";
+import { runAuditRetention } from "../../../../server/audit/retention";
 
 function isAuthorized(req) {
   const secret = process.env.INTERNAL_CRON_SECRET;

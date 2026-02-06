@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient } from "../db/supabase";
-import { getAuditLogger } from "../audit/singleton.js";
+import { getAuditLogger } from "../audit/singleton";
 import { isFeatureEnabled } from "../config/feature-flags";
 import {
   areFlagsEqual,

@@ -1,5 +1,5 @@
-import { createAuditLogger } from "./logger.js";
-import { createSupabaseAuditWriter } from "./supabase-writer.js";
+import { createAuditLogger } from "./logger";
+import { createSupabaseAuditWriter } from "./supabase-writer";
 
 let auditLogger;
 

@@ -1,15 +1,15 @@
-import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares.js";
-import { jsonResponse } from "../../../../server/http/response.js";
-import { errorPayload } from "../../../../server/http/errors.js";
-import { methodNotAllowed } from "../../../../server/http/methods.js";
-import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../../../server/sse/connections.js";
+import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares";
+import { jsonResponse } from "../../../../server/http/response";
+import { errorPayload } from "../../../../server/http/errors";
+import { methodNotAllowed } from "../../../../server/http/methods";
+import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../../../server/sse/connections";
 import {
   agentStreamKey,
   getLatestStreamId,
   opsStreamKey,
   parseStreamId,
   readAfter
-} from "../../../../server/sse/store.js";
+} from "../../../../server/sse/store";
 import {
   SSE_DEFAULT_HEARTBEAT_SECONDS,
   SSE_MAX_CONNECTION_MS,
@@ -19,7 +19,7 @@ import {
   SSE_OPS_AGENT_ID_DEFAULT,
   SSE_POLL_INTERVAL_MS,
   SSE_REPLAY_WINDOW_SECONDS
-} from "../../../../server/config/sse.js";
+} from "../../../../server/config/sse";
 
 function getHeaderValue(req, name) {
   const value = req?.headers?.[name];

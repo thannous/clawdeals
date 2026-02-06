@@ -1,5 +1,5 @@
-import { createHmacFingerprint, DEFAULT_FINGERPRINT_ALGO } from "./fingerprint.js";
-import { redactValue } from "./redaction.js";
+import { createHmacFingerprint, DEFAULT_FINGERPRINT_ALGO } from "./fingerprint";
+import { redactValue } from "./redaction";
 
 const DEFAULT_HMAC_ENV = "AUDIT_HMAC_SECRET";
 

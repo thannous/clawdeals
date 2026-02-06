@@ -1,4 +1,4 @@
-import { runIdempotencyRetention } from "../../../../server/idempotency/retention.js";
+import { runIdempotencyRetention } from "../../../../server/idempotency/retention";
 
 function isAuthorized(req) {
   const secret = process.env.INTERNAL_CRON_SECRET;

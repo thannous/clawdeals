@@ -1,4 +1,4 @@
-import { runTrustScoreRecalculation } from "../../../../server/trustscore/recalculate.js";
+import { runTrustScoreRecalculation } from "../../../../server/trustscore/recalculate";
 
 function isAuthorized(req) {
   const secret = process.env.INTERNAL_CRON_SECRET;

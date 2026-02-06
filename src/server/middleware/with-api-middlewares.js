@@ -6,7 +6,7 @@ import { beginIdempotency, finalizeIdempotency } from "../idempotency/middleware
 import { jsonResponse, sendJson } from "../http/response";
 import { sendError } from "../http/errors";
 import { mergeTrustContextIntoPolicy } from "../trustscore/context";
-import { safeAuditLog } from "../audit/singleton.js";
+import { safeAuditLog } from "../audit/singleton";
 
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,

@@ -1,5 +1,5 @@
 import { getSupabaseServiceClient } from "../db/supabase";
-import { getAuditLogger } from "../audit/singleton.js";
+import { getAuditLogger } from "../audit/singleton";
 
 const DEFAULT_BATCH_SIZE = 500;
 const AUDIT_PATH = "/internal/cron/deals-lifecycle";

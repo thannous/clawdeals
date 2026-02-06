@@ -4,10 +4,10 @@ import {
   formatLimitLabel,
   getProfileForGroup,
   normalizeKeyPart
-} from "./config.js";
-import { createUpstashRedis, resolveUpstashConfig } from "./upstash.js";
-import { consumeTokenBucket } from "./token-bucket.js";
-import { matchRouteGroupFromRequest } from "../routes/route-groups.js";
+} from "./config";
+import { createUpstashRedis, resolveUpstashConfig } from "./upstash";
+import { consumeTokenBucket } from "./token-bucket";
+import { matchRouteGroupFromRequest } from "../routes/route-groups";
 
 function getHeaderValue(headers, name) {
   if (!headers) return null;
