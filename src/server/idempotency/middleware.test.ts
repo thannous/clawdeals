@@ -89,8 +89,8 @@ describe("beginIdempotency", () => {
 
   it("continues when lock acquired and no existing record", async () => {
     mockRedis.set.mockResolvedValue("OK");
-    getIdempotencyRecord.mockResolvedValue(null);
-    insertIdempotencyRecord.mockResolvedValue({ idempotency_id: "idem-1", status: "IN_PROGRESS" });
+    (getIdempotencyRecord as any).mockResolvedValue(null);
+    (insertIdempotencyRecord as any).mockResolvedValue({ idempotency_id: "idem-1", status: "IN_PROGRESS" });
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
     expect(result.action).toBe("continue");
@@ -99,7 +99,7 @@ describe("beginIdempotency", () => {
 
   it("replays when COMPLETED record exists with matching HMAC", async () => {
     mockRedis.set.mockResolvedValue("OK");
-    getIdempotencyRecord.mockResolvedValue({
+    (getIdempotencyRecord as any).mockResolvedValue({
       idempotency_id: "idem-1",
       status: "COMPLETED",
       request_hmac: "hmac-abc",
@@ -115,8 +115,8 @@ describe("beginIdempotency", () => {
 
   it("returns 409 KEY_REUSE on HMAC mismatch", async () => {
     mockRedis.set.mockResolvedValue("OK");
-    buildRequestHmac.mockReturnValue("hmac-different");
-    getIdempotencyRecord.mockResolvedValue({
+    (buildRequestHmac as any).mockReturnValue("hmac-different");
+    (getIdempotencyRecord as any).mockResolvedValue({
       idempotency_id: "idem-1",
       status: "COMPLETED",
       request_hmac: "hmac-original",
@@ -133,7 +133,7 @@ describe("beginIdempotency", () => {
 
   it("returns IN_PROGRESS when lock not acquired and poll times out", async () => {
     mockRedis.set.mockResolvedValue(null);
-    getIdempotencyRecord.mockResolvedValue(null);
+    (getIdempotencyRecord as any).mockResolvedValue(null);
 
     const result = await beginIdempotency(makeReq(), makeCtx(), {
       enabled: true,
@@ -167,8 +167,8 @@ describe("finalizeIdempotency", () => {
       lockKey: "idem:lock:agent:1:POST:/api:key",
       record: { idempotency_id: "idem-1" }
     };
-    shouldEncryptResponseBody.mockReturnValue(false);
-    updateIdempotencyRecord.mockResolvedValue({});
+    (shouldEncryptResponseBody as any).mockReturnValue(false);
+    (updateIdempotencyRecord as any).mockResolvedValue({});
 
     await finalizeIdempotency(context, { status: 200, body: {}, headers: {} });
     expect(mockRedis.del).toHaveBeenCalledWith("idem:lock:agent:1:POST:/api:key");
@@ -197,8 +197,8 @@ describe("finalizeIdempotency", () => {
       lockKey: "lock-key",
       record: { idempotency_id: "idem-1" }
     };
-    shouldEncryptResponseBody.mockReturnValue(false);
-    updateIdempotencyRecord.mockResolvedValue({});
+    (shouldEncryptResponseBody as any).mockReturnValue(false);
+    (updateIdempotencyRecord as any).mockResolvedValue({});
 
     await finalizeIdempotency(context, { status: 201, body: { data: { id: "1" } }, headers: {} });
     expect(updateIdempotencyRecord).toHaveBeenCalledWith(
@@ -212,8 +212,8 @@ describe("finalizeIdempotency", () => {
       lockKey: "lock-key",
       record: { idempotency_id: "idem-1" }
     };
-    shouldEncryptResponseBody.mockReturnValue(false);
-    updateIdempotencyRecord.mockResolvedValue({});
+    (shouldEncryptResponseBody as any).mockReturnValue(false);
+    (updateIdempotencyRecord as any).mockResolvedValue({});
 
     await finalizeIdempotency(context, { status: 500, body: { error: {} }, headers: {} });
     expect(updateIdempotencyRecord).toHaveBeenCalledWith(
@@ -227,9 +227,9 @@ describe("finalizeIdempotency", () => {
       lockKey: "lock-key",
       record: { idempotency_id: "idem-1" }
     };
-    shouldEncryptResponseBody.mockReturnValue(true);
-    encryptJson.mockReturnValue("v1:encrypted-data");
-    updateIdempotencyRecord.mockResolvedValue({});
+    (shouldEncryptResponseBody as any).mockReturnValue(true);
+    (encryptJson as any).mockReturnValue("v1:encrypted-data");
+    (updateIdempotencyRecord as any).mockResolvedValue({});
 
     await finalizeIdempotency(context, {
       status: 201,

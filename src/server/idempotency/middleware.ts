@@ -71,7 +71,7 @@ async function pollForRecord({ actorType, actorId, method, path, key, maxWaitMs 
   return null;
 }
 
-export async function beginIdempotency(req, ctx, options = {}) {
+export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
   if (!options.enabled) return { action: "skip" };
 
   const key = getHeaderValue(req.headers, "idempotency-key");
