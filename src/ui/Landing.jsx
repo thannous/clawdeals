@@ -469,7 +469,7 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
     setMessage("");
 
     try {
-      const response = await fetch("/api/v1/watchlists", {
+      const response = await fetch("/api/v1/watchlist-signups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: normalized, locale, source })
