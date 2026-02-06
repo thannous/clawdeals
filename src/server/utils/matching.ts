@@ -10,7 +10,16 @@ export type TokenizeOptions = {
 };
 
 export function tokenize(text: any, options: TokenizeOptions = {}): string[] {
-  const maxTokens = Number.isFinite(options.maxTokens) ? options.maxTokens : 8;
+  // Default: no cap. Callers can pass `maxTokens` to protect against pathological inputs.
+  const maxTokensRaw: any = (options as any)?.maxTokens;
+  const maxTokens =
+    maxTokensRaw === undefined || maxTokensRaw === null
+      ? Infinity
+      : Number.isFinite(Number(maxTokensRaw))
+        ? Number(maxTokensRaw)
+        : Infinity;
+
+  if (maxTokens <= 0) return [];
   const input = coerceString(text);
   if (!input) return [];
 
