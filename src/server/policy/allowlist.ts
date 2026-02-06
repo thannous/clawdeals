@@ -1,6 +1,6 @@
 import { createDefaultPolicy, normalizePolicyInput } from "./policy";
 
-export function evaluateAgentAccess({ policy, agentId } = {}) {
+export function evaluateAgentAccess({ policy, agentId }: any = {}) {
   const resolvedPolicy = policy && typeof policy === "object" ? policy : createDefaultPolicy();
   const normalized = normalizePolicyInput(resolvedPolicy);
   const policyVersion = Number.isInteger(resolvedPolicy.version) ? resolvedPolicy.version : 1;

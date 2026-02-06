@@ -13,7 +13,7 @@ function buildPolicy(overrides = {}) {
 
 describe("enforceAllowlist", () => {
   it("denies when agent is denylisted", async () => {
-    const ctx = {};
+    const ctx: any = {};
     const result = await enforceAllowlist({
       ownerId: "owner-1",
       agentId: "agent-1",
@@ -31,7 +31,7 @@ describe("enforceAllowlist", () => {
   });
 
   it("denies when allowlist active and agent missing", async () => {
-    const ctx = {};
+    const ctx: any = {};
     const result = await enforceAllowlist({
       ownerId: "owner-1",
       agentId: "agent-2",
@@ -47,7 +47,7 @@ describe("enforceAllowlist", () => {
   });
 
   it("allows when allowlist is empty", async () => {
-    const ctx = {};
+    const ctx: any = {};
     const result = await enforceAllowlist({
       ownerId: "owner-1",
       agentId: "agent-1",
@@ -63,7 +63,7 @@ describe("enforceAllowlist", () => {
   });
 
   it("skips when ownerId missing", async () => {
-    const ctx = {};
+    const ctx: any = {};
     const result = await enforceAllowlist({ ownerId: null, agentId: "agent-1", ctx });
     expect(result).toBeNull();
     expect(ctx.policy?.decision).toBe("N_A");

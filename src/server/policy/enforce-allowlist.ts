@@ -3,7 +3,7 @@ import { evaluateAgentAccess } from "./allowlist";
 import { jsonResponse } from "../http/response";
 import { errorPayload } from "../http/errors";
 
-export async function enforceAllowlist({ ownerId, agentId, ctx, policyRecord } = {}) {
+export async function enforceAllowlist({ ownerId, agentId, ctx, policyRecord }: any = {}) {
   if (!ownerId) {
     if (ctx) {
       ctx.policy = { decision: "N_A", policy_version: null, approval_id: null };

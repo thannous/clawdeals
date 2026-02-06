@@ -87,7 +87,7 @@ function evaluateGenericAction({ policy, policyVersion, action }) {
   return buildDecision(POLICY_DECISION.REQUIRES_APPROVAL, "action_not_allowlisted", policyVersion);
 }
 
-export function evaluatePolicyAction({ policy, action, offerAmount, offerCurrency, messageType } = {}) {
+export function evaluatePolicyAction({ policy, action, offerAmount, offerCurrency, messageType }: any = {}) {
   const { normalized, policyVersion } = resolvePolicy(policy);
 
   if (action === "offer.create") {

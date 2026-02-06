@@ -2,7 +2,7 @@ import { getAgentById } from "../services/agents";
 import { normalizeTrustFlags } from "./compute";
 import { computeActionWeight, computeDaysSinceCreated } from "./quarantine";
 
-export async function resolveTrustContext({ ctx, actionType, now = new Date() } = {}) {
+export async function resolveTrustContext({ ctx, actionType, now = new Date() }: any = {}) {
   if (!ctx?.agentId) return null;
   const agent = await getAgentById(ctx.agentId);
   if (!agent) return null;
