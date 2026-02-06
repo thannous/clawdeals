@@ -1,6 +1,8 @@
+import type { GetServerSideProps } from "next";
+
 const DEFAULT_SITEMAP_PATH = "/sitemap.xml";
 
-export async function getServerSideProps({ req, res }) {
+export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
   const proto = req?.headers?.["x-forwarded-proto"] || "https";
   const baseUrl = process.env.SITE_URL || (host ? `${proto}://${host}` : "https://www.clawdeals.com");
@@ -18,7 +20,7 @@ export async function getServerSideProps({ req, res }) {
   res.end();
 
   return { props: {} };
-}
+};
 
 export default function RobotsTxt() {
   return null;

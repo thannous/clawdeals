@@ -1,4 +1,6 @@
-function baseUrlFromRequest(req) {
+import type { GetServerSideProps } from "next";
+
+function baseUrlFromRequest(req: any): string {
   const configured = process.env.SITE_URL;
   if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
 
@@ -8,7 +10,12 @@ function baseUrlFromRequest(req) {
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 
-function buildSitemapXml({ baseUrl, lastmod }) {
+type BuildSitemapArgs = {
+  baseUrl: string;
+  lastmod: string;
+};
+
+function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
   const en = `${baseUrl}/`;
   const fr = `${baseUrl}/fr`;
 
@@ -33,7 +40,7 @@ function buildSitemapXml({ baseUrl, lastmod }) {
 `;
 }
 
-export async function getServerSideProps({ req, res }) {
+export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const baseUrl = baseUrlFromRequest(req);
   const lastmod = new Date().toISOString();
 
@@ -44,9 +51,8 @@ export async function getServerSideProps({ req, res }) {
   res.end();
 
   return { props: {} };
-}
+};
 
 export default function SitemapXml() {
   return null;
 }
-

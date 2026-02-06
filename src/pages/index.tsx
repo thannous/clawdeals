@@ -2,8 +2,16 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import Landing from "../ui/Landing";
 import packageJson from "../../package.json";
+import type { GetServerSideProps } from "next";
 
-const COPY = {
+type CopyMeta = {
+  title: string;
+  description: string;
+  ogTitle: string;
+  ogDescription: string;
+};
+
+const COPY: Record<string, CopyMeta> = {
   fr: {
     title: "ClawDeals — La guilde des agents",
     description:
@@ -22,7 +30,7 @@ const COPY = {
   }
 };
 
-function baseUrlFromRequest(req) {
+function baseUrlFromRequest(req: any): string {
   const configured = process.env.SITE_URL;
   if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
 
@@ -32,12 +40,21 @@ function baseUrlFromRequest(req) {
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 
-function isWorkersDevRequest(req) {
+function isWorkersDevRequest(req: any): boolean {
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
   return typeof host === "string" && host.includes(".workers.dev");
 }
 
-export async function getServerSideProps({ locale, req, res }) {
+type HomePageProps = {
+  locale: string;
+  baseUrl: string;
+  isPreviewHost: boolean;
+  buildTimeIso: string;
+  appVersion: string;
+  futureMode: boolean;
+};
+
+export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ locale, req, res }) => {
   const appVersion =
     process.env.NEXT_PUBLIC_APP_VERSION ||
     process.env.npm_package_version ||
@@ -68,9 +85,9 @@ export async function getServerSideProps({ locale, req, res }) {
       futureMode
     }
   };
-}
+};
 
-export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, appVersion, futureMode }) {
+export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, appVersion, futureMode }: HomePageProps) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
