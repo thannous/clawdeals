@@ -1,0 +1,163 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/router";
+import { trackDealsViewed } from "./telemetry";
+
+const DEFAULT_SORT = "new";
+const DEFAULT_STATUSES = ["NEW", "ACTIVE"];
+const PAGE_SIZE = 30;
+const SEARCH_DEBOUNCE_MS = 300;
+
+export function useDeals() {
+  const router = useRouter();
+
+  // Initialize from URL query params
+  const [sort, setSortState] = useState(() => router.query.sort || DEFAULT_SORT);
+  const [statuses, setStatusesState] = useState(() => {
+    const s = router.query.status;
+    if (s) return (typeof s === "string" ? s : s[0]).split(",").filter(Boolean);
+    return DEFAULT_STATUSES;
+  });
+  const [tags, setTagsState] = useState(() => {
+    const t = router.query.tags;
+    if (t) return (typeof t === "string" ? t : t[0]).split(",").filter(Boolean);
+    return [];
+  });
+  const [q, setQState] = useState(() => router.query.q || "");
+
+  const [deals, setDeals] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [fetchState, setFetchState] = useState("idle"); // idle | loading | error | done
+  const [loadMoreState, setLoadMoreState] = useState("idle"); // idle | loading
+  const [error, setError] = useState(null);
+
+  const debounceRef = useRef(null);
+  const abortRef = useRef(null);
+
+  // Sync state to URL
+  const syncUrl = useCallback((newSort, newStatuses, newQ, newTags) => {
+    const query = {};
+    if (newSort && newSort !== DEFAULT_SORT) query.sort = newSort;
+    if (newStatuses?.length && JSON.stringify(newStatuses) !== JSON.stringify(DEFAULT_STATUSES)) {
+      query.status = newStatuses.join(",");
+    }
+    if (newQ) query.q = newQ;
+    if (newTags?.length) query.tags = newTags.join(",");
+    router.replace({ pathname: router.pathname, query }, undefined, { shallow: true });
+  }, [router]);
+
+  // Fetch deals
+  const fetchDeals = useCallback(async (params, append = false) => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    if (!append) {
+      setFetchState("loading");
+      setError(null);
+    } else {
+      setLoadMoreState("loading");
+    }
+
+    const searchParams = new URLSearchParams();
+    searchParams.set("sort", params.sort);
+    if (params.statuses?.length) params.statuses.forEach(s => searchParams.append("status", s));
+    if (params.q) searchParams.set("q", params.q);
+    if (params.tags?.length) params.tags.forEach(t => searchParams.append("tags", t));
+    searchParams.set("limit", String(PAGE_SIZE));
+    if (params.cursor) searchParams.set("cursor", params.cursor);
+
+    try {
+      const resp = await fetch(`/api/console/deals?${searchParams}`, { signal: controller.signal });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body?.error?.message || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+
+      if (append) {
+        setDeals(prev => [...prev, ...(data.items || [])]);
+      } else {
+        setDeals(data.items || []);
+      }
+      setNextCursor(data.next_cursor || null);
+      setFetchState("done");
+      setLoadMoreState("idle");
+
+      trackDealsViewed({
+        sort: params.sort,
+        statuses: params.statuses,
+        tags: params.tags,
+        q: params.q,
+        pageSize: PAGE_SIZE
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setError(err.message);
+      setFetchState("error");
+      setLoadMoreState("idle");
+    }
+  }, []);
+
+  // Initial fetch + refetch on filter change
+  useEffect(() => {
+    fetchDeals({ sort, statuses, q, tags });
+    return () => { if (abortRef.current) abortRef.current.abort(); };
+  }, [sort, statuses, q, tags, fetchDeals]);
+
+  // Setters with URL sync
+  const setSort = useCallback((newSort) => {
+    setSortState(newSort);
+    // Sort constraint: temp/trend force ACTIVE only
+    const newStatuses = (newSort === "temp" || newSort === "trend") ? ["ACTIVE"] : DEFAULT_STATUSES;
+    setStatusesState(newStatuses);
+    setDeals([]);
+    setNextCursor(null);
+    syncUrl(newSort, newStatuses, q, tags);
+  }, [q, tags, syncUrl]);
+
+  const setStatuses = useCallback((newStatuses) => {
+    setStatusesState(newStatuses);
+    setDeals([]);
+    setNextCursor(null);
+    syncUrl(sort, newStatuses, q, tags);
+  }, [sort, q, tags, syncUrl]);
+
+  const setTags = useCallback((newTags) => {
+    setTagsState(newTags);
+    setDeals([]);
+    setNextCursor(null);
+    syncUrl(sort, statuses, q, newTags);
+  }, [sort, statuses, q, syncUrl]);
+
+  const setQ = useCallback((newQ) => {
+    setQState(newQ);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDeals([]);
+      setNextCursor(null);
+      syncUrl(sort, statuses, newQ, tags);
+    }, SEARCH_DEBOUNCE_MS);
+  }, [sort, statuses, tags, syncUrl]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
+
+  const loadMore = useCallback(() => {
+    if (!nextCursor || loadMoreState === "loading") return;
+    fetchDeals({ sort, statuses, q, tags, cursor: nextCursor }, true);
+  }, [nextCursor, loadMoreState, sort, statuses, q, tags, fetchDeals]);
+
+  // Update deals list after a vote (replace the deal in-place)
+  const updateDealInList = useCallback((updatedDeal) => {
+    setDeals(prev => prev.map(d =>
+      d.deal_id === updatedDeal.deal_id ? { ...d, ...updatedDeal } : d
+    ));
+  }, []);
+
+  return {
+    deals, sort, setSort, statuses, setStatuses, tags, setTags, q, setQ,
+    nextCursor, fetchState, loadMoreState, error, loadMore, updateDealInList
+  };
+}
