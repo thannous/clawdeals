@@ -5,7 +5,7 @@ vi.mock("../../../../server/services/approvals", () => ({
   resolveApproval: vi.fn()
 }));
 
-import { handler } from "./[id]";
+import { handler } from "../../../../pages/api/v1/approvals/[id]";
 import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";

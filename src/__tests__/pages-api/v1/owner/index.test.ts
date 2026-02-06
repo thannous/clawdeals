@@ -12,7 +12,7 @@ vi.mock("../../../../server/utils/owner-verification", () => ({
   normalizePhoneE164: vi.fn((v) => v || null)
 }));
 
-import { handler } from "./index";
+import { handler } from "../../../../pages/api/v1/owner/index";
 import { getOwner, upsertOwner, invalidateOwnerChallenges } from "../../../../server/services/owners";
 
 const validUuid = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";

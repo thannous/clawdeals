@@ -10,7 +10,7 @@ vi.mock("../../../../../server/services/watchlist-matches", () => ({
   hydrateDealSummaries: vi.fn()
 }));
 
-import { handler } from "./matches";
+import { handler } from "../../../../../pages/api/v1/watchlists/[watchlist_id]/matches";
 import { getWatchlistForAgent } from "../../../../../server/services/watchlists";
 import { hydrateDealSummaries, listWatchlistMatches } from "../../../../../server/services/watchlist-matches";
 

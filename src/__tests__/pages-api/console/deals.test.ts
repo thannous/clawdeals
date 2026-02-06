@@ -10,7 +10,7 @@ vi.mock("../../../server/services/deals-cursor", () => ({
   decodeDealsCursor: vi.fn()
 }));
 
-import { handler } from "./deals";
+import { handler } from "../../../pages/api/console/deals";
 import { listDeals } from "../../../server/services/deals-list";
 import { decodeDealsCursor } from "../../../server/services/deals-cursor";
 

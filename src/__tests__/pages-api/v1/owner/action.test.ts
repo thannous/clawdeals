@@ -24,7 +24,7 @@ vi.mock("../../../../server/utils/owner-verification", () => ({
   verifyTokenHash: vi.fn()
 }));
 
-import { handler } from "./[action]";
+import { handler } from "../../../../pages/api/v1/owner/[action]";
 import { getOwner, setOwnerVerified } from "../../../../server/services/owners";
 import {
   getLatestActiveChallenge,

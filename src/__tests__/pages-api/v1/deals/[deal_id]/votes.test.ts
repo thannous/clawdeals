@@ -8,7 +8,7 @@ vi.mock("../../../../../server/services/deal-votes", async (importOriginal) => {
   };
 });
 
-import { handler } from "./votes";
+import { handler } from "../../../../../pages/api/v1/deals/[deal_id]/votes";
 import { encodeDealVotesCursor, listDealVotes } from "../../../../../server/services/deal-votes";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";

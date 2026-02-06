@@ -8,7 +8,7 @@ vi.mock("../../../server/trustscore/context", () => ({
   resolveTrustContext: vi.fn()
 }));
 
-import { handler } from "./reports";
+import { handler } from "../../../pages/api/v1/reports";
 import { createReport } from "../../../server/services/reports";
 import { resolveTrustContext } from "../../../server/trustscore/context";
 

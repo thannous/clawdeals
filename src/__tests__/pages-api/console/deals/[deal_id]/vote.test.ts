@@ -4,7 +4,7 @@ vi.mock("../../../../../server/services/deals", () => ({
   createDealVote: vi.fn()
 }));
 
-import { handler } from "./vote";
+import { handler } from "../../../../../pages/api/console/deals/[deal_id]/vote";
 import { createDealVote } from "../../../../../server/services/deals";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";

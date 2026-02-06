@@ -8,12 +8,12 @@ vi.mock("../../../../server/middleware/with-api-middlewares", () => ({
   withApiMiddlewares: vi.fn((handler) => handler)
 }));
 
-vi.mock("../../v1/events/stream", () => ({
+vi.mock("../../../../pages/api/v1/events/stream", () => ({
   handler: vi.fn()
 }));
 
-import { config } from "./stream";
-import { handler } from "../../v1/events/stream";
+import { config } from "../../../../pages/api/console/events/stream";
+import { handler } from "../../../../pages/api/v1/events/stream";
 import { injectConsoleOpsOwner } from "../../../../server/middleware/console-ops-identity";
 import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares";
 

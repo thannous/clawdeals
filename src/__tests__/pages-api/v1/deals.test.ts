@@ -19,7 +19,7 @@ vi.mock("../../../server/services/watchlist-matching", () => ({
   matchDealToWatchlists: vi.fn().mockResolvedValue(null)
 }));
 
-import { handler } from "./deals";
+import { handler } from "../../../pages/api/v1/deals";
 import { createDeal, findRecentDealDuplicate } from "../../../server/services/deals";
 import { listDeals } from "../../../server/services/deals-list";
 import { matchDealToWatchlists } from "../../../server/services/watchlist-matching";

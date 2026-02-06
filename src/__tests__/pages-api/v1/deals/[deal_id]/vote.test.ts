@@ -8,7 +8,7 @@ vi.mock("../../../../../server/trustscore/context", () => ({
   resolveTrustContext: vi.fn().mockResolvedValue({ trust_flags: [], action_weight: 0.72 })
 }));
 
-import { handler } from "./vote";
+import { handler } from "../../../../../pages/api/v1/deals/[deal_id]/vote";
 import { createDealVote } from "../../../../../server/services/deals";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";

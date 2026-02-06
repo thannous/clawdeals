@@ -4,7 +4,7 @@ vi.mock("../../../../../server/services/deal-detail", () => ({
   getDealById: vi.fn()
 }));
 
-import { handler } from "./index";
+import { handler } from "../../../../../pages/api/console/deals/[deal_id]/index";
 import { getDealById } from "../../../../../server/services/deal-detail";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";

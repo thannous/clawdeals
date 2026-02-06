@@ -21,7 +21,7 @@ vi.mock("../../../../server/sse/store", () => ({
   })
 }));
 
-import { handler } from "./stream";
+import { handler } from "../../../../pages/api/v1/events/stream";
 import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../../../server/sse/connections";
 import { getLatestStreamId, readAfter } from "../../../../server/sse/store";
 

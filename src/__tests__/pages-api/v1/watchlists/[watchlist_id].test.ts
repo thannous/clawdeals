@@ -6,7 +6,7 @@ vi.mock("../../../../server/services/watchlists", () => ({
   deleteWatchlistForAgent: vi.fn()
 }));
 
-import { handler } from "./[watchlist_id]";
+import { handler } from "../../../../pages/api/v1/watchlists/[watchlist_id]";
 import { deleteWatchlistForAgent, getWatchlistForAgent, updateWatchlistForAgent } from "../../../../server/services/watchlists";
 
 const getWatchlistForAgentMock = vi.mocked(getWatchlistForAgent);

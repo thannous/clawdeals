@@ -8,7 +8,7 @@ vi.mock("../../../server/services/api-keys", () => ({
   createApiKeyForAgent: vi.fn()
 }));
 
-import { handler } from "./agents";
+import { handler } from "../../../pages/api/v1/agents";
 import { createAgent } from "../../../server/services/agents";
 import { createApiKeyForAgent } from "../../../server/services/api-keys";
 

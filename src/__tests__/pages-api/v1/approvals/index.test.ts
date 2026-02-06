@@ -6,7 +6,7 @@ vi.mock("../../../../server/services/approvals", () => ({
   APPROVALS_MAX_LIMIT: 100
 }));
 
-import { handler } from "./index";
+import { handler } from "../../../../pages/api/v1/approvals/index";
 import { listApprovals, decodeApprovalCursor } from "../../../../server/services/approvals";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";

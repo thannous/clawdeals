@@ -9,7 +9,7 @@ vi.mock("../../../../../server/services/api-keys", () => ({
   revokeApiKeyForAgent: vi.fn()
 }));
 
-import { handler } from "./[action]";
+import { handler } from "../../../../../pages/api/v1/agents/[id]/[action]";
 import { getAgentById } from "../../../../../server/services/agents";
 import { rotateApiKeyForAgent, revokeApiKeyForAgent } from "../../../../../server/services/api-keys";
 

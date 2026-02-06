@@ -5,7 +5,7 @@ vi.mock("../../../server/services/policies", () => ({
   upsertPolicy: vi.fn()
 }));
 
-import { handler } from "./policies";
+import { handler } from "../../../pages/api/v1/policies";
 import { getPolicyOrDefault, upsertPolicy } from "../../../server/services/policies";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";

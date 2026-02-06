@@ -8,7 +8,7 @@ vi.mock("../../../../server/services/watchlists", () => ({
   WATCHLISTS_MAX_LIMIT: 100
 }));
 
-import { handler } from "./index";
+import { handler } from "../../../../pages/api/v1/watchlists/index";
 import { createWatchlist, decodeWatchlistCursor, listWatchlists } from "../../../../server/services/watchlists";
 
 const createWatchlistMock = vi.mocked(createWatchlist);
