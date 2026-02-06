@@ -88,12 +88,23 @@ function parseHeartbeatParam(value) {
 
 function sseWritePing(res) {
   res.write(": ping\n\n");
+  try {
+    // When compression is enabled, `flush()` helps ensure small SSE frames are sent immediately.
+    res.flush?.();
+  } catch (error) {
+    // Ignore flush errors (e.g. if the connection is already closed).
+  }
 }
 
 function sseWriteEvent(res, { id, event, data }) {
   if (id) res.write(`id: ${id}\n`);
   res.write(`event: ${event}\n`);
   res.write(`data: ${data}\n\n`);
+  try {
+    res.flush?.();
+  } catch (error) {
+    // Ignore flush errors (e.g. if the connection is already closed).
+  }
 }
 
 function buildEventJson({ id, type, ts, rawData }) {
@@ -214,13 +225,16 @@ export async function handler(req, res, ctx) {
   let closed = false;
   let pollInFlight = false;
   let cursorId = null;
+  let heartbeatTimer = null;
+  let pollTimer = null;
+  let maxConnTimer = null;
 
   const cleanup = async () => {
     if (closed) return;
     closed = true;
-    clearInterval(heartbeatTimer);
-    clearInterval(pollTimer);
-    clearTimeout(maxConnTimer);
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    if (pollTimer) clearInterval(pollTimer);
+    if (maxConnTimer) clearTimeout(maxConnTimer);
     if (slotAcquired) {
       await releaseAgentConnectionSlot({ agentId: ctx.agentId, connId });
     }
@@ -238,12 +252,12 @@ export async function handler(req, res, ctx) {
   });
   res.on?.("close", cleanup);
 
-  const heartbeatTimer = setInterval(() => {
+  heartbeatTimer = setInterval(() => {
     if (res.writableEnded) return;
     sseWritePing(res);
   }, heartbeatSeconds * 1000);
 
-  const maxConnTimer = setTimeout(() => {
+  maxConnTimer = setTimeout(() => {
     if (!res.writableEnded) res.end();
   }, SSE_MAX_CONNECTION_MS);
 
@@ -298,7 +312,7 @@ export async function handler(req, res, ctx) {
     cursorId = (await getLatestStreamId(streamKey)) || "0-0";
   }
 
-  const pollTimer = setInterval(async () => {
+  pollTimer = setInterval(async () => {
     if (res.writableEnded || closed) return;
     if (pollInFlight) return;
     pollInFlight = true;
