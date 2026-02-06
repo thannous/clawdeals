@@ -76,7 +76,13 @@ export function calculateDealTemperature(weightedUp = 0, weightedDown = 0, k = D
   return Math.round(50 + 50 * ratio);
 }
 
-export function normalizeTags(tags, options = {}) {
+export type NormalizeTagsOptions = {
+  maxCount?: number;
+  minLength?: number;
+  maxLength?: number;
+};
+
+export function normalizeTags(tags: unknown, options: NormalizeTagsOptions = {}) {
   if (tags === undefined || tags === null) return [];
   if (!Array.isArray(tags)) throw new Error("tags must be an array");
 

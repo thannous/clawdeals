@@ -5,7 +5,11 @@ function coerceString(value) {
   return trimmed ? trimmed : null;
 }
 
-export function tokenize(text, options = {}) {
+export type TokenizeOptions = {
+  maxTokens?: number;
+};
+
+export function tokenize(text: any, options: TokenizeOptions = {}): string[] {
   const maxTokens = Number.isFinite(options.maxTokens) ? options.maxTokens : 8;
   const input = coerceString(text);
   if (!input) return [];
@@ -27,7 +31,7 @@ export function tokenize(text, options = {}) {
   return tokens;
 }
 
-export function buildEntityTokensFromDeal(deal) {
+export function buildEntityTokensFromDeal(deal: any): string[] {
   const tokens = [];
 
   const title = coerceString(deal?.title);
@@ -57,7 +61,19 @@ function toNumber(value) {
   return null;
 }
 
-export function evaluateWatchlistMatch({ deal, watchlist, entityTokens } = {}) {
+export type WatchlistMatchReason = Record<string, any>;
+export type WatchlistMatchResult = {
+  matched: boolean;
+  reason: WatchlistMatchReason;
+};
+
+export type EvaluateWatchlistMatchArgs = {
+  deal?: any;
+  watchlist?: any;
+  entityTokens?: any;
+};
+
+export function evaluateWatchlistMatch({ deal, watchlist, entityTokens }: EvaluateWatchlistMatchArgs = {}): WatchlistMatchResult {
   if (!deal || typeof deal !== "object") return { matched: false, reason: { invalid: true } };
   if (!watchlist || typeof watchlist !== "object") return { matched: false, reason: { invalid: true } };
 
@@ -65,7 +81,7 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens } = {}) {
     return { matched: false, reason: { inactive: true } };
   }
 
-  const reason = {};
+  const reason: WatchlistMatchReason = {};
 
   const tokens = Array.isArray(entityTokens) ? entityTokens : buildEntityTokensFromDeal(deal);
   const tokenSet = new Set(tokens.map((t) => String(t || "").toLowerCase()).filter(Boolean));
@@ -144,4 +160,3 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens } = {}) {
 
   return { matched: true, reason };
 }
-
