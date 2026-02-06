@@ -54,7 +54,7 @@ function formatFilterValue(value) {
 }
 
 function buildServiceError(message, status = 500, code = "ERROR") {
-  const error = new Error(message);
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   return error;
@@ -76,7 +76,7 @@ async function ensureDealExists(dealId) {
   }
 }
 
-export async function listDealComments({ dealId, limit, cursor } = {}) {
+export async function listDealComments({ dealId, limit, cursor }: any = {}) {
   if (!isUuid(dealId)) {
     throw buildServiceError("dealId must be a UUID", 400, "VALIDATION_ERROR");
   }
@@ -120,7 +120,7 @@ export async function listDealComments({ dealId, limit, cursor } = {}) {
   return { items, nextCursor };
 }
 
-export async function createDealComment({ dealId, ownerId, commentType, body } = {}) {
+export async function createDealComment({ dealId, ownerId, commentType, body }: any = {}) {
   if (!isUuid(dealId)) {
     throw buildServiceError("dealId must be a UUID", 400, "VALIDATION_ERROR");
   }
@@ -154,4 +154,3 @@ export async function createDealComment({ dealId, ownerId, commentType, body } =
 
 export const DEAL_COMMENTS_DEFAULT_LIMIT = DEFAULT_LIMIT;
 export const DEAL_COMMENTS_MAX_LIMIT = MAX_LIMIT;
-

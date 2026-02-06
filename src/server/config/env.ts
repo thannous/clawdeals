@@ -3,6 +3,8 @@ export type GetEnvOptions<T = string> = {
   required?: boolean;
 };
 
+export function getEnv<T = string>(name: string, options: GetEnvOptions<T> & { required: true }): string | T;
+export function getEnv<T = string>(name: string, options?: GetEnvOptions<T>): string | T | undefined;
 export function getEnv<T = string>(name: string, options: GetEnvOptions<T> = {}): string | T | undefined {
   const value = process.env[name];
   if (value !== undefined && value !== "") return value;
@@ -13,6 +15,8 @@ export function getEnv<T = string>(name: string, options: GetEnvOptions<T> = {})
   return undefined;
 }
 
+export function getNumberEnv(name: string, options: GetEnvOptions<number> & { required: true }): number;
+export function getNumberEnv(name: string, options?: GetEnvOptions<number>): number | undefined;
 export function getNumberEnv(name: string, options: GetEnvOptions<number> = {}) {
   const raw = getEnv(name, options);
   if (raw === undefined) return undefined;

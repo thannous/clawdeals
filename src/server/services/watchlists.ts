@@ -47,8 +47,8 @@ function formatFilterValue(value) {
   return `"${value.replace(/"/g, "\\\"")}"`;
 }
 
-function buildServiceError(message, status = 500, code = "ERROR", meta) {
-  const error = new Error(message);
+function buildServiceError(message, status = 500, code = "ERROR", meta?: any) {
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   if (meta && typeof meta === "object") {
@@ -141,7 +141,7 @@ export async function createWatchlist({
   return data;
 }
 
-export async function listWatchlists({ agentId, active, limit, cursor } = {}) {
+export async function listWatchlists({ agentId, active, limit, cursor }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
   let query = client
@@ -183,7 +183,7 @@ export async function listWatchlists({ agentId, active, limit, cursor } = {}) {
   return { items, nextCursor };
 }
 
-export async function getWatchlistForAgent({ watchlistId, agentId } = {}) {
+export async function getWatchlistForAgent({ watchlistId, agentId }: any = {}) {
   const record = await getWatchlistById(watchlistId);
   if (!record) return null;
   if (record.agent_id !== agentId) {
@@ -195,7 +195,7 @@ export async function getWatchlistForAgent({ watchlistId, agentId } = {}) {
   return record;
 }
 
-export async function updateWatchlistForAgent({ watchlistId, agentId, patch } = {}) {
+export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: any = {}) {
   const existing = await getWatchlistById(watchlistId);
   if (!existing) return null;
   if (existing.agent_id !== agentId) {
@@ -219,7 +219,7 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch } = 
   }
 
   const nowIso = new Date().toISOString();
-  const payload = {
+  const payload: any = {
     updated_at: nowIso
   };
 
@@ -255,7 +255,7 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch } = 
   return data || null;
 }
 
-export async function deleteWatchlistForAgent({ watchlistId, agentId, deletedAt } = {}) {
+export async function deleteWatchlistForAgent({ watchlistId, agentId, deletedAt }: any = {}) {
   const existing = await getWatchlistById(watchlistId);
   if (!existing) return null;
   if (existing.agent_id !== agentId) {
@@ -289,4 +289,3 @@ export async function deleteWatchlistForAgent({ watchlistId, agentId, deletedAt 
 }
 
 export { MAX_LIMIT as WATCHLISTS_MAX_LIMIT, DEFAULT_LIMIT as WATCHLISTS_DEFAULT_LIMIT, MAX_ACTIVE_WATCHLISTS };
-

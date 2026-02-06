@@ -93,7 +93,7 @@ export async function createApproval({
   return data;
 }
 
-export async function listApprovals({ ownerId, state, limit, cursor } = {}) {
+export async function listApprovals({ ownerId, state, limit, cursor }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
   let query = client

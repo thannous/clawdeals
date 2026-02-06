@@ -3,7 +3,7 @@ import { WATCHLIST_MATCHES_DEFAULT_LIMIT, WATCHLIST_MATCHES_MAX_LIMIT } from "..
 import { mapSupabaseError } from "./supabase-errors";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
-  const error = new Error(message);
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   return error;
@@ -56,7 +56,7 @@ export function decodeWatchlistMatchesCursor(raw) {
   };
 }
 
-export async function listWatchlistMatches({ watchlistId, entityType = "deal", limit, cursor } = {}) {
+export async function listWatchlistMatches({ watchlistId, entityType = "deal", limit, cursor }: any = {}) {
   if (!watchlistId || typeof watchlistId !== "string") {
     throw buildServiceError("watchlistId is required", 400, "VALIDATION_ERROR");
   }
@@ -100,7 +100,7 @@ export async function listWatchlistMatches({ watchlistId, entityType = "deal", l
   return { items, nextCursor };
 }
 
-export async function hydrateDealSummaries({ dealIds } = {}) {
+export async function hydrateDealSummaries({ dealIds }: any = {}) {
   const ids = Array.isArray(dealIds) ? dealIds.filter(Boolean) : [];
   if (ids.length === 0) return new Map();
 
@@ -121,4 +121,3 @@ export async function hydrateDealSummaries({ dealIds } = {}) {
   }
   return map;
 }
-

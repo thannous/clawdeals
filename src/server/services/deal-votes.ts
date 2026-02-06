@@ -61,7 +61,7 @@ function formatFilterValue(value) {
 }
 
 function buildServiceError(message, status = 500, code = "ERROR") {
-  const error = new Error(message);
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   return error;
@@ -83,7 +83,7 @@ async function ensureDealExists(dealId) {
   }
 }
 
-export async function listDealVotes({ dealId, direction, limit, cursor } = {}) {
+export async function listDealVotes({ dealId, direction, limit, cursor }: any = {}) {
   if (!isUuid(dealId)) {
     throw buildServiceError("dealId must be a UUID", 400, "VALIDATION_ERROR");
   }

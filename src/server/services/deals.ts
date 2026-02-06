@@ -71,7 +71,7 @@ export async function findRecentDealDuplicate({
   fingerprint,
   now = new Date(),
   windowDays = 14
-} = {}) {
+}: any = {}) {
   if (!fingerprint || typeof fingerprint !== "string") {
     return null;
   }

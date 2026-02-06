@@ -6,7 +6,7 @@ import { MAX_MATCHES_PER_DEAL, WATCHLIST_MATCH_EVENT_MAX_IDS } from "../config/w
 import { buildEntityTokensFromDeal, evaluateWatchlistMatch } from "../utils/matching";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
-  const error = new Error(message);
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   return error;
@@ -131,7 +131,7 @@ async function shouldSendSseForAgent({ agentId }) {
   return true;
 }
 
-export async function matchDealToWatchlists({ deal, now = new Date(), client } = {}) {
+export async function matchDealToWatchlists({ deal, now = new Date(), client }: any = {}) {
   if (!deal || typeof deal !== "object") {
     throw buildServiceError("deal is required", 400, "VALIDATION_ERROR");
   }

@@ -13,7 +13,7 @@ const KEY_PREFIX_UNIQUE_CONSTRAINT = "api_keys_key_prefix_unique";
 const MAX_KEY_GENERATION_ATTEMPTS = 5;
 
 function buildServiceError(message, status = 500, code = "ERROR") {
-  const error = new Error(message);
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   return error;
@@ -29,7 +29,7 @@ function isPrefixCollision(error) {
   return error.message.includes(KEY_PREFIX_UNIQUE_CONSTRAINT);
 }
 
-async function insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt }) {
+async function insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt }: any) {
   const client = getSupabaseServiceClient();
 
   for (let attempt = 0; attempt < MAX_KEY_GENERATION_ATTEMPTS; attempt += 1) {
@@ -57,14 +57,14 @@ async function insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt }) 
   throw buildServiceError("Failed to generate a unique API key", 500, "API_KEY_GENERATION_FAILED");
 }
 
-export async function createApiKeyForAgent({ agentId, keyState = "ACTIVE", scope = "full", graceExpiresAt }) {
+export async function createApiKeyForAgent({ agentId, keyState = "ACTIVE", scope = "full", graceExpiresAt }: any) {
   if (!agentId) {
     throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
   }
   return insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt });
 }
 
-export async function issueApiKey({ agentId, scope = "full", state = "ACTIVE" }) {
+export async function issueApiKey({ agentId, scope = "full", state = "ACTIVE" }: any) {
   return createApiKeyForAgent({ agentId, keyState: state, scope });
 }
 
@@ -140,7 +140,7 @@ export async function authenticateApiKey(apiKey) {
   };
 }
 
-export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRACE_SECONDS }) {
+export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRACE_SECONDS }: any) {
   if (!agentId) {
     throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
   }
@@ -225,7 +225,7 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
   }
 }
 
-export async function revokeApiKeyForAgent({ agentId, apiKeyId, revokedAt = new Date() }) {
+export async function revokeApiKeyForAgent({ agentId, apiKeyId, revokedAt = new Date() }: any) {
   if (!agentId) {
     throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
   }

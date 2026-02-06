@@ -77,7 +77,7 @@ export async function invalidateOwnerChallenges({ ownerId, type, now = new Date(
 
 export async function setOwnerVerified({ ownerId, type, verifiedAt = new Date() }) {
   const client = getSupabaseServiceClient();
-  const payload = {
+  const payload: any = {
     updated_at: verifiedAt.toISOString()
   };
   if (type === "EMAIL") {

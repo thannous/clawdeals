@@ -2,7 +2,7 @@ import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
-  const error = new Error(message);
+  const error: any = new Error(message);
   error.status = status;
   error.code = code;
   return error;
@@ -13,7 +13,7 @@ function mapError(error) {
   throw buildServiceError(mapped.message, mapped.status, mapped.code);
 }
 
-export async function getDealById({ dealId } = {}) {
+export async function getDealById({ dealId }: any = {}) {
   if (!dealId || typeof dealId !== "string") {
     throw buildServiceError("dealId is required", 400, "VALIDATION_ERROR");
   }
@@ -37,4 +37,3 @@ export async function getDealById({ dealId } = {}) {
 
   return data;
 }
-

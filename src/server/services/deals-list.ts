@@ -10,7 +10,7 @@ function mapError(error) {
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
 }
 
-export async function listDeals({ sort = "new", statuses, q, tags, minTemperature = 0, limit, cursor } = {}) {
+export async function listDeals({ sort = "new", statuses, q, tags, minTemperature = 0, limit, cursor }: any = {}) {
   const client = getSupabaseServiceClient();
 
   const pageLimit = typeof limit === "number" ? limit : DEFAULT_LIMIT;
