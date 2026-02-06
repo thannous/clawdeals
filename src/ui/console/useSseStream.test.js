@@ -1,0 +1,282 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useSseStream } from "./useSseStream";
+
+class MockEventSource {
+  static instances = [];
+
+  constructor(url) {
+    this.url = url;
+    this.readyState = 0;
+    this._listeners = {};
+    this.onopen = null;
+    this.onerror = null;
+    this.onmessage = null;
+    MockEventSource.instances.push(this);
+  }
+
+  addEventListener(type, handler) {
+    if (!this._listeners[type]) this._listeners[type] = [];
+    this._listeners[type].push(handler);
+  }
+
+  removeEventListener(type, handler) {
+    if (!this._listeners[type]) return;
+    this._listeners[type] = this._listeners[type].filter((h) => h !== handler);
+  }
+
+  close() {
+    this.readyState = 2;
+  }
+
+  _emit(type, data) {
+    const handlers = this._listeners[type] || [];
+    for (const handler of handlers) {
+      handler(data);
+    }
+  }
+
+  _simulateOpen() {
+    this.readyState = 1;
+    if (this.onopen) this.onopen();
+  }
+
+  _simulateError() {
+    if (this.onerror) this.onerror(new Event("error"));
+  }
+
+  _simulateMessage(eventType, data, lastEventId) {
+    const event = {
+      type: eventType,
+      data: typeof data === "string" ? data : JSON.stringify(data),
+      lastEventId: lastEventId || ""
+    };
+    // Real EventSource: named events fire only on addEventListener(name),
+    // not on the generic "message" listener.
+    this._emit(eventType, event);
+  }
+}
+
+describe("useSseStream", () => {
+  beforeEach(() => {
+    MockEventSource.instances = [];
+    globalThis.EventSource = MockEventSource;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    delete globalThis.EventSource;
+  });
+
+  it("starts with connecting state", () => {
+    const { result } = renderHook(() => useSseStream());
+    expect(result.current.connectionState).toBe("connecting");
+    expect(result.current.events).toEqual([]);
+  });
+
+  it("transitions to connected on open", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    expect(result.current.connectionState).toBe("connected");
+  });
+
+  it("adds events on named event message", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    act(() => {
+      es._simulateMessage("deal.created", {
+        id: "evt-1",
+        type: "deal.created",
+        ts: "2026-02-06T10:00:00.000Z",
+        actor: { type: "agent", id: "agent-123" },
+        entity: { type: "deal", id: "deal-abc" },
+        payload: { title: "Test Deal" }
+      });
+    });
+
+    expect(result.current.events).toHaveLength(1);
+    expect(result.current.events[0].type).toBe("deal.created");
+    expect(result.current.events[0].id).toBe("evt-1");
+  });
+
+  it("builds URL with types filter", () => {
+    renderHook(() => useSseStream({ types: ["deal.created", "watchlist.match"] }));
+    const es = MockEventSource.instances[0];
+    expect(es.url).toContain("types=deal.created%2Cwatchlist.match");
+  });
+
+  it("builds URL with entity_id filter", () => {
+    renderHook(() => useSseStream({ entityId: "abc-123" }));
+    const es = MockEventSource.instances[0];
+    expect(es.url).toContain("entity_id=abc-123");
+  });
+
+  it("pauses and buffers events, increments missedCount", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    act(() => {
+      result.current.pause();
+    });
+
+    expect(result.current.paused).toBe(true);
+
+    act(() => {
+      es._simulateMessage("deal.created", {
+        id: "evt-1",
+        type: "deal.created",
+        ts: "2026-02-06T10:00:00.000Z",
+        payload: {}
+      });
+    });
+
+    expect(result.current.events).toHaveLength(0);
+    expect(result.current.missedCount).toBe(1);
+  });
+
+  it("resumes and flushes buffered events", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    act(() => {
+      result.current.pause();
+    });
+
+    act(() => {
+      es._simulateMessage("deal.created", {
+        id: "evt-1",
+        type: "deal.created",
+        ts: "2026-02-06T10:00:00.000Z",
+        payload: {}
+      });
+      es._simulateMessage("deal.created", {
+        id: "evt-2",
+        type: "deal.created",
+        ts: "2026-02-06T10:00:01.000Z",
+        payload: {}
+      });
+    });
+
+    expect(result.current.events).toHaveLength(0);
+    expect(result.current.missedCount).toBe(2);
+
+    act(() => {
+      result.current.resume();
+    });
+
+    expect(result.current.paused).toBe(false);
+    expect(result.current.events).toHaveLength(2);
+    expect(result.current.missedCount).toBe(0);
+  });
+
+  it("reconnects with exponential backoff on error", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es1 = MockEventSource.instances[0];
+
+    act(() => {
+      es1._simulateError();
+    });
+
+    expect(result.current.connectionState).toBe("reconnecting");
+    expect(MockEventSource.instances).toHaveLength(1);
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(MockEventSource.instances).toHaveLength(2);
+
+    const es2 = MockEventSource.instances[1];
+    act(() => {
+      es2._simulateError();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(MockEventSource.instances).toHaveLength(2);
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(MockEventSource.instances).toHaveLength(3);
+  });
+
+  it("resets backoff on successful connection", () => {
+    renderHook(() => useSseStream());
+    const es1 = MockEventSource.instances[0];
+
+    act(() => {
+      es1._simulateError();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    const es2 = MockEventSource.instances[1];
+    act(() => {
+      es2._simulateOpen();
+    });
+
+    act(() => {
+      es2._simulateError();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(MockEventSource.instances).toHaveLength(3);
+  });
+
+  it("closes EventSource on unmount", () => {
+    const { unmount } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    expect(es.readyState).not.toBe(2);
+
+    unmount();
+
+    expect(es.readyState).toBe(2);
+  });
+
+  it("trims events when exceeding max (500)", () => {
+    const { result } = renderHook(() => useSseStream());
+    const es = MockEventSource.instances[0];
+
+    act(() => {
+      es._simulateOpen();
+    });
+
+    act(() => {
+      for (let i = 0; i < 510; i++) {
+        es._simulateMessage("deal.created", {
+          id: `evt-${i}`,
+          type: "deal.created",
+          ts: "2026-02-06T10:00:00.000Z",
+          payload: { n: i }
+        });
+      }
+    });
+
+    expect(result.current.events.length).toBeLessThanOrEqual(500);
+    expect(result.current.events[0].id).toBe("evt-10");
+  });
+});
