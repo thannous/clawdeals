@@ -9,6 +9,7 @@ export function useVote({ onVoteSuccess } = {}) {
   const [disabledUntil, setDisabledUntil] = useState(0);
   const [retryIn, setRetryIn] = useState(0);
   const timerRef = useRef(null);
+  const autoCloseRef = useRef(null);
 
   // Countdown timer for rate limiting
   useEffect(() => {
@@ -31,7 +32,17 @@ export function useVote({ onVoteSuccess } = {}) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [disabledUntil]);
 
+  useEffect(() => {
+    return () => {
+      if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
+    };
+  }, []);
+
   const openVote = useCallback((deal, dir) => {
+    if (autoCloseRef.current) {
+      clearTimeout(autoCloseRef.current);
+      autoCloseRef.current = null;
+    }
     setTargetDeal(deal);
     setDirection(dir);
     setIsOpen(true);
@@ -40,6 +51,10 @@ export function useVote({ onVoteSuccess } = {}) {
   }, []);
 
   const closeVote = useCallback(() => {
+    if (autoCloseRef.current) {
+      clearTimeout(autoCloseRef.current);
+      autoCloseRef.current = null;
+    }
     setIsOpen(false);
     setTargetDeal(null);
     setDirection(null);
@@ -76,7 +91,11 @@ export function useVote({ onVoteSuccess } = {}) {
         setError(body?.error?.message || "Already voted on this deal");
         setSubmitState("error");
         // Auto-close after 2s
-        setTimeout(() => closeVote(), 2000);
+        if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
+        autoCloseRef.current = setTimeout(() => {
+          autoCloseRef.current = null;
+          closeVote();
+        }, 2000);
         return;
       }
 

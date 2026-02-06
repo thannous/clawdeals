@@ -7,7 +7,8 @@ import VoteModal from "./VoteModal";
 export default function DealsPage() {
   const {
     deals, sort, setSort, statuses, setStatuses, tags, setTags, q, setQ,
-    nextCursor, fetchState, loadMoreState, error, loadMore, updateDealInList
+    nextCursor, fetchState, loadMoreState, error, loadMore, updateDealInList,
+    refetch
   } = useDeals();
 
   const vote = useVote({ onVoteSuccess: updateDealInList });
@@ -21,8 +22,7 @@ export default function DealsPage() {
   };
 
   const handleRetry = () => {
-    // Trigger refetch by cycling sort back
-    setSort(sort);
+    refetch();
   };
 
   return (

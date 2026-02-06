@@ -7,24 +7,72 @@ const DEFAULT_STATUSES = ["NEW", "ACTIVE"];
 const PAGE_SIZE = 30;
 const SEARCH_DEBOUNCE_MS = 300;
 
+function resolveQueryParam(value) {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function parseCsvQueryValues(raw) {
+  if (!raw) return [];
+  const arr = Array.isArray(raw) ? raw : [raw];
+  return arr
+    .flatMap((value) => String(value).split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function parseDealsFiltersFromQuery(query) {
+  const sortRaw = resolveQueryParam(query?.sort);
+  const sortCandidate = sortRaw ? String(sortRaw) : DEFAULT_SORT;
+  const sort =
+    sortCandidate === "new" || sortCandidate === "temp" || sortCandidate === "trend"
+      ? sortCandidate
+      : DEFAULT_SORT;
+
+  let statuses = parseCsvQueryValues(query?.status).map((value) => value.toUpperCase());
+  if (sort === "temp" || sort === "trend") {
+    statuses = ["ACTIVE"];
+  } else if (!statuses.length) {
+    statuses = DEFAULT_STATUSES;
+  }
+
+  const tags = parseCsvQueryValues(query?.tags);
+  const qRaw = resolveQueryParam(query?.q);
+  const q = qRaw ? String(qRaw) : "";
+
+  return { sort, statuses, tags, q };
+}
+
 export function useDeals() {
   const router = useRouter();
+  const routerReady = router.isReady ?? true;
 
   // Initialize from URL query params
-  const [sort, setSortState] = useState(() => router.query.sort || DEFAULT_SORT);
+  const [sort, setSortState] = useState(() => {
+    if (!routerReady) return DEFAULT_SORT;
+    return parseDealsFiltersFromQuery(router.query).sort;
+  });
   const [statuses, setStatusesState] = useState(() => {
-    const s = router.query.status;
-    if (s) return (typeof s === "string" ? s : s[0]).split(",").filter(Boolean);
-    return DEFAULT_STATUSES;
+    if (!routerReady) return DEFAULT_STATUSES;
+    return parseDealsFiltersFromQuery(router.query).statuses;
   });
   const [tags, setTagsState] = useState(() => {
-    const t = router.query.tags;
-    if (t) return (typeof t === "string" ? t : t[0]).split(",").filter(Boolean);
-    return [];
+    if (!routerReady) return [];
+    return parseDealsFiltersFromQuery(router.query).tags;
   });
-  const [q, setQState] = useState(() => router.query.q || "");
+  const [q, setQState] = useState(() => {
+    if (!routerReady) return "";
+    return parseDealsFiltersFromQuery(router.query).q;
+  });
   // Debounced query used for fetching. This avoids wiping results after a successful fetch.
-  const [debouncedQ, setDebouncedQ] = useState(() => router.query.q || "");
+  const [debouncedQ, setDebouncedQ] = useState(() => {
+    if (!routerReady) return "";
+    return parseDealsFiltersFromQuery(router.query).q;
+  });
+
+  // When using the Next.js pages router, `router.query` can be empty on first render.
+  // Initialize state from the query only once it's ready, and only then start fetching.
+  const [isInitializedFromQuery, setIsInitializedFromQuery] = useState(() => routerReady);
 
   const [deals, setDeals] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
@@ -39,6 +87,17 @@ export function useDeals() {
   useEffect(() => {
     debouncedQRef.current = debouncedQ;
   }, [debouncedQ]);
+
+  useEffect(() => {
+    if (!routerReady || isInitializedFromQuery) return;
+    const parsed = parseDealsFiltersFromQuery(router.query);
+    setSortState(parsed.sort);
+    setStatusesState(parsed.statuses);
+    setTagsState(parsed.tags);
+    setQState(parsed.q);
+    setDebouncedQ(parsed.q);
+    setIsInitializedFromQuery(true);
+  }, [routerReady, isInitializedFromQuery, router.query]);
 
   // Sync state to URL
   const syncUrl = useCallback((newSort, newStatuses, newQ, newTags) => {
@@ -107,9 +166,10 @@ export function useDeals() {
 
   // Initial fetch + refetch on filter change
   useEffect(() => {
+    if (!routerReady || !isInitializedFromQuery) return;
     fetchDeals({ sort, statuses, q: debouncedQ, tags });
     return () => { if (abortRef.current) abortRef.current.abort(); };
-  }, [sort, statuses, debouncedQ, tags, fetchDeals]);
+  }, [routerReady, isInitializedFromQuery, sort, statuses, debouncedQ, tags, fetchDeals]);
 
   // Setters with URL sync
   const setSort = useCallback((newSort) => {
@@ -174,8 +234,14 @@ export function useDeals() {
     ));
   }, []);
 
+  const refetch = useCallback(() => {
+    if (!routerReady || !isInitializedFromQuery) return;
+    fetchDeals({ sort, statuses, q: debouncedQ, tags });
+  }, [routerReady, isInitializedFromQuery, sort, statuses, debouncedQ, tags, fetchDeals]);
+
   return {
     deals, sort, setSort, statuses, setStatuses, tags, setTags, q, setQ,
-    nextCursor, fetchState, loadMoreState, error, loadMore, updateDealInList
+    nextCursor, fetchState, loadMoreState, error, loadMore, updateDealInList,
+    refetch
   };
 }
