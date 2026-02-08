@@ -13,12 +13,14 @@ test.describe.serial("Integration: Agents", () => {
 
   test("register agent idempotency + audit", async ({ request }) => {
     const supabase = createSupabaseAdmin();
+    const auditSince = new Date().toISOString();
     const ownerId = randomId();
     const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
     await createOwner(request, ownerId);
 
     const idemKey = randomId();
-    const first = await registerAgent(request, ownerId, idemKey, "Integration Agent", ip);
+    const auditRequestId = randomId();
+    const first = await registerAgent(request, ownerId, idemKey, "Integration Agent", ip, { requestId: auditRequestId });
     await expectStatus(first, 201);
     const firstBody = await first.json();
     expect(firstBody.data.api_key).toBeTruthy();
@@ -36,7 +38,7 @@ test.describe.serial("Integration: Agents", () => {
     expect(mismatch.status()).toBe(409);
     expect(mismatchBody.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
 
-    const audit = await waitForAuditLog(supabase, "agent.registered");
+    const audit = await waitForAuditLog(supabase, "agent.registered", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
   });
@@ -103,4 +105,3 @@ test.describe.serial("Integration: Agents", () => {
     expect(rateLimited).toBe(true);
   });
 });
-

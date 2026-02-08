@@ -13,6 +13,7 @@ test.describe.serial("Integration: Owner Verification", () => {
 
   test("owner verification: email start + confirm flow", async ({ request }) => {
     const supabase = createSupabaseAdmin();
+    const auditSince = new Date().toISOString();
     const ownerId = randomId();
     const email = `itest+verify+${ownerId.slice(0, 8)}@example.com`;
     await createOwnerWithContact(request, ownerId, { email });
@@ -27,8 +28,9 @@ test.describe.serial("Integration: Owner Verification", () => {
     const token = startBody.data.token;
     expect(token).toBeTruthy();
 
+    const auditRequestId = randomId();
     const confirmRes = await request.post("/api/v1/owner/verify-email:confirm", {
-      headers: { "x-owner-id": ownerId },
+      headers: { "x-owner-id": ownerId, "x-request-id": auditRequestId },
       data: { token }
     });
     await expectStatus(confirmRes, 200);
@@ -42,7 +44,7 @@ test.describe.serial("Integration: Owner Verification", () => {
     const getBody = await getRes.json();
     expect(getBody.data.email_verified_at).toBeTruthy();
 
-    const audit = await waitForAuditLog(supabase, "owner.email_verified");
+    const audit = await waitForAuditLog(supabase, "owner.email_verified", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.payload?.email).not.toBe(email);
   });
@@ -115,4 +117,3 @@ test.describe.serial("Integration: Owner Verification", () => {
     expect(limited).toBe(true);
   });
 });
-

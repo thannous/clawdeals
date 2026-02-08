@@ -46,8 +46,13 @@ test.describe.serial("Integration: TrustScore & Quarantine", () => {
     const { apiKey } = await setupAgent(supabase);
 
     const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
     const dealRes = await request.post("/api/v1/deals", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Idempotency-Key": randomId(),
+        "x-request-id": auditRequestId
+      },
       data: {
         title: "Fresh Agent Deal",
         url: `https://example.com/p/${randomId()}`,
@@ -59,7 +64,7 @@ test.describe.serial("Integration: TrustScore & Quarantine", () => {
     });
     await expectStatus(dealRes, 201);
 
-    const audit = await waitForAuditLog(supabase, "deal.create", 10, auditSince);
+    const audit = await waitForAuditLog(supabase, "deal.create", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
   });
 
@@ -83,7 +88,11 @@ test.describe.serial("Integration: TrustScore & Quarantine", () => {
     const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
 
     const reportRes = await request.post("/api/v1/reports", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Idempotency-Key": randomId(),
+        "x-request-id": randomId()
+      },
       data: {
         entity_type: "deal",
         entity_id: dealId,
@@ -116,8 +125,13 @@ test.describe.serial("Integration: TrustScore & Quarantine", () => {
     const dealBody = await dealRes.json();
     const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
 
+    const auditRequestId = randomId();
     const reportRes = await request.post("/api/v1/reports", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Idempotency-Key": randomId(),
+        "x-request-id": auditRequestId
+      },
       data: {
         entity_type: "deal",
         entity_id: dealId,
@@ -127,8 +141,7 @@ test.describe.serial("Integration: TrustScore & Quarantine", () => {
     });
     await expectStatus(reportRes, 201);
 
-    const audit = await waitForAuditLog(supabase, "report.created", 10, auditSince);
+    const audit = await waitForAuditLog(supabase, "report.created", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
   });
 });
-

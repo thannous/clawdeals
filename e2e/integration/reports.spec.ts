@@ -43,6 +43,7 @@ test.describe.serial("Integration: Reports & Moderation", () => {
 
   test("create report OK + audit + report_weight", async ({ request }) => {
     const supabase = createSupabaseAdmin();
+    const auditSince = new Date().toISOString();
     const { apiKey } = await setupAgent(supabase);
 
     const dealRes = await request.post("/api/v1/deals", {
@@ -60,8 +61,9 @@ test.describe.serial("Integration: Reports & Moderation", () => {
     const dealBody = await dealRes.json();
     const dealId = dealBody.deal ? dealBody.deal.deal_id : dealBody.data?.deal_id;
 
+    const auditRequestId = randomId();
     const reportRes = await request.post("/api/v1/reports", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId(), "x-request-id": auditRequestId },
       data: {
         entity_type: "deal",
         entity_id: dealId,
@@ -74,7 +76,7 @@ test.describe.serial("Integration: Reports & Moderation", () => {
     expect(reportBody.data.report_id).toBeTruthy();
     expect(reportBody.data.report_weight).toBeGreaterThanOrEqual(0);
 
-    const audit = await waitForAuditLog(supabase, "report.created");
+    const audit = await waitForAuditLog(supabase, "report.created", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
   });
@@ -206,4 +208,3 @@ test.describe.serial("Integration: Reports & Moderation", () => {
     expect(reportBody.data.report_weight).toBeLessThanOrEqual(0.5);
   });
 });
-

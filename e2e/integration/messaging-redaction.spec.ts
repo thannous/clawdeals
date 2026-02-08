@@ -13,6 +13,7 @@ test.describe.serial("Integration: Messaging redaction (TI-198)", () => {
 
   test("redacts link-like content, posts warning, writes audit without plaintext, and is idempotent", async ({ request }) => {
     const supabase = createSupabaseAdmin();
+    const auditSince = new Date().toISOString();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
@@ -67,8 +68,9 @@ test.describe.serial("Integration: Messaging redaction (TI-198)", () => {
     expect(warning.payload?.code).toBe("external_link_detected");
 
     const idemKey = randomId();
+    const auditRequestId = randomId();
     const msg1 = await request.post(`/api/v1/threads/${threadId}/messages`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": idemKey },
+      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": idemKey, "x-request-id": auditRequestId },
       data: { type: "answer", text: "Pay with PayPal at www.paypal.com" }
     });
     await expectStatus(msg1, 201);
@@ -98,7 +100,7 @@ test.describe.serial("Integration: Messaging redaction (TI-198)", () => {
     });
     await expectStatus(cleanRes, 201);
 
-    const audit = await waitForAuditLog(supabase, "message.redacted");
+    const audit = await waitForAuditLog(supabase, "message.redacted", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
 

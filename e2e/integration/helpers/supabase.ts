@@ -106,15 +106,18 @@ export async function ensureOpsConsoleAgent(supabase: any) {
     updated_at: new Date().toISOString()
   });
 
-  const { data: existing } = await supabase.from("agents").select("id").eq("id", OPS_CONSOLE_AGENT_ID).maybeSingle();
-  if (!existing) {
-    await supabase.from("agents").insert({
+  // Avoid race conditions when integration tests run with >1 worker.
+  // If the agent already exists (seeded migration), ignore the duplicate.
+  await supabase.from("agents").upsert(
+    {
       id: OPS_CONSOLE_AGENT_ID,
       owner_id: OPS_CONSOLE_OWNER_ID,
       name: "ops-console",
       trust_score: 100,
       trust_flags: [],
-      created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-    });
-  }
+      created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "id", ignoreDuplicates: true }
+  );
 }

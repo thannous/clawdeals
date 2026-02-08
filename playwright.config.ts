@@ -9,6 +9,12 @@ const uiBaseURL = process.env.E2E_BASE_URL || `http://localhost:${devPort}`;
 const integrationBaseURL = process.env.API_BASE_URL || uiBaseURL;
 // Only skip starting the dev server when explicitly told to.
 const useExistingServer = Boolean(process.env.E2E_BASE_URL);
+const integrationWorkers = (() => {
+  const raw = process.env.PW_INTEGRATION_WORKERS;
+  if (!raw) return 1;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+})();
 
 export default defineConfig({
   timeout: 30 * 1000,
@@ -36,7 +42,7 @@ export default defineConfig({
     {
       name: "integration",
       testDir: "./e2e/integration",
-      workers: 1,
+      workers: integrationWorkers,
       use: { ...devices["Desktop Chrome"], baseURL: integrationBaseURL }
     }
   ]

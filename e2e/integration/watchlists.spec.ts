@@ -30,8 +30,9 @@ test.describe.serial("Integration: Watchlists", () => {
     };
 
     const idemKey = randomId();
+    const createAuditRequestId = randomId();
     const first = await request.post("/api/v1/watchlists", {
-      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": idemKey },
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": idemKey, "x-request-id": createAuditRequestId },
       data: payload
     });
     await expectStatus(first, 201);
@@ -56,18 +57,19 @@ test.describe.serial("Integration: Watchlists", () => {
     const mismatchBody = await mismatch.json();
     expect(mismatchBody.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
 
-    const createAudit = await waitForAuditLog(supabase, "watchlist.created", 10, startedAt);
+    const createAudit = await waitForAuditLog(supabase, "watchlist.created", 10, startedAt, createAuditRequestId);
     expect(createAudit).not.toBeNull();
     expect(createAudit.outcome).toBe("SUCCESS");
 
+    const blockedAuditRequestId = randomId();
     const forbidden = await request.get(`/api/v1/watchlists/${firstBody.watchlist_id}`, {
-      headers: { Authorization: `Bearer ${agentB.apiKey}` }
+      headers: { Authorization: `Bearer ${agentB.apiKey}`, "x-request-id": blockedAuditRequestId }
     });
     expect(forbidden.status()).toBe(404);
     const forbiddenBody = await forbidden.json();
     expect(forbiddenBody.error.code).toBe("NOT_FOUND");
 
-    const blockedAudit = await waitForAuditLog(supabase, "watchlist.get", 10, startedAt);
+    const blockedAudit = await waitForAuditLog(supabase, "watchlist.get", 10, startedAt, blockedAuditRequestId);
     expect(blockedAudit).not.toBeNull();
     expect(blockedAudit.outcome).toBe("BLOCKED");
 

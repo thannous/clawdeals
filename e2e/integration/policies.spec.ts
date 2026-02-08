@@ -262,12 +262,13 @@ test.describe.serial("Integration: Policies", () => {
     await createOwnerWithContact(request, ownerId, { email });
 
     const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
     const startRes = await request.post("/api/v1/owner/verify-email:start", {
-      headers: { "x-owner-id": ownerId }
+      headers: { "x-owner-id": ownerId, "x-request-id": auditRequestId }
     });
     await expectStatus(startRes, 201);
 
-    const audit = await waitForAuditLog(supabase, "owner.email_verification_started", 10, auditSince);
+    const audit = await waitForAuditLog(supabase, "owner.email_verification_started", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     const payloadStr = JSON.stringify(audit.payload || {});
     expect(payloadStr).not.toContain(email);

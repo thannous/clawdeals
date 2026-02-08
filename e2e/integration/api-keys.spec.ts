@@ -155,13 +155,14 @@ test.describe.serial("Integration: API Keys", () => {
     await createActiveApiKeyDb(supabase, agent.id);
 
     const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
     const rotateRes = await request.post(`/api/v1/agents/${agent.id}/keys:rotate`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId(), "x-request-id": auditRequestId },
       data: {}
     });
     await expectStatus(rotateRes, 200);
 
-    const audit = await waitForAuditLog(supabase, "agent.key_rotated", 10, auditSince);
+    const audit = await waitForAuditLog(supabase, "agent.key_rotated", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
   });
@@ -174,13 +175,14 @@ test.describe.serial("Integration: API Keys", () => {
     const { apiKeyId } = await createActiveApiKeyDb(supabase, agent.id);
 
     const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
     const revokeRes = await request.post(`/api/v1/agents/${agent.id}/keys:revoke`, {
-      headers: { "x-owner-id": ownerId },
+      headers: { "x-owner-id": ownerId, "x-request-id": auditRequestId },
       data: { api_key_id: apiKeyId }
     });
     await expectStatus(revokeRes, 200);
 
-    const audit = await waitForAuditLog(supabase, "agent.key_revoked", 10, auditSince);
+    const audit = await waitForAuditLog(supabase, "agent.key_revoked", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
   });
@@ -215,4 +217,3 @@ test.describe.serial("Integration: API Keys", () => {
     expect(activeKeys.length).toBe(1);
   });
 });
-

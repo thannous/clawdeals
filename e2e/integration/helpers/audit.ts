@@ -4,7 +4,8 @@ export async function waitForAuditLog(
   supabase: any,
   eventName: string,
   attempts = 10,
-  minOccurredAt?: string
+  minOccurredAt?: string,
+  requestId?: string
 ): Promise<any | null> {
   for (let i = 0; i < attempts; i += 1) {
     let query = supabase
@@ -13,6 +14,10 @@ export async function waitForAuditLog(
       .eq("action->>event", eventName)
       .order("occurred_at", { ascending: false })
       .limit(1);
+
+    if (requestId) {
+      query = query.eq("request_id", requestId);
+    }
 
     if (minOccurredAt) {
       query = query.gte("occurred_at", minOccurredAt);
@@ -51,4 +56,3 @@ export async function waitForAuditLogMatching(
 
   return null;
 }
-

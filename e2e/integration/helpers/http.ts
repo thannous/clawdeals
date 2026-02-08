@@ -41,10 +41,12 @@ export async function registerAgent(
   ownerId: string,
   idempotencyKey: string,
   name = "Integration Agent",
-  ip?: string
+  ip?: string,
+  options: { requestId?: string } = {}
 ): Promise<APIResponse> {
   const headers: Record<string, string> = { "x-owner-id": ownerId, "Idempotency-Key": idempotencyKey };
   if (ip) headers["x-forwarded-for"] = ip;
+  if (options.requestId) headers["x-request-id"] = options.requestId;
 
   return api.post("/api/v1/agents", {
     headers,

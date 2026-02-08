@@ -16,6 +16,7 @@ test.describe.serial("Integration: Deals API", () => {
 
   test("create deal idempotency + audit", async ({ request }) => {
     const supabase = createSupabaseAdmin();
+    const auditSince = new Date().toISOString();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
     const agent = await createAgentDb(supabase, ownerId);
@@ -31,8 +32,9 @@ test.describe.serial("Integration: Deals API", () => {
     };
 
     const idemKey = randomId();
+    const auditRequestId = randomId();
     const first = await request.post("/api/v1/deals", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idemKey },
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": idemKey, "x-request-id": auditRequestId },
       data: payload
     });
     await expectStatus(first, 201);
@@ -57,7 +59,7 @@ test.describe.serial("Integration: Deals API", () => {
     expect(persisted?.source_url_normalized).toBeTruthy();
     expect(persisted?.source_url_fingerprint).toMatch(/^[0-9a-f]{64}$/i);
 
-    const audit = await waitForAuditLog(supabase, "deal.create");
+    const audit = await waitForAuditLog(supabase, "deal.create", 10, auditSince, auditRequestId);
     expect(audit).not.toBeNull();
     expect(audit.outcome).toBe("SUCCESS");
   });
@@ -253,9 +255,10 @@ test.describe.serial("Integration: Deals API", () => {
     expect(recentId).toBeTruthy();
 
     const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
 
     const newRes = await request.get(`/api/v1/deals?sort=new&tags=${runTag}&limit=10`, {
-      headers: { Authorization: `Bearer ${apiKey}` }
+      headers: { Authorization: `Bearer ${apiKey}`, "x-request-id": auditRequestId }
     });
     await expectStatus(newRes, 200);
     const newBody = await newRes.json();
@@ -289,7 +292,7 @@ test.describe.serial("Integration: Deals API", () => {
     expect(trendBody2.items).toHaveLength(1);
     expect(trendBody2.items[0].deal_id).toBe(hotId);
 
-    const audit = await waitForAuditLog(supabase, "deals.listed", 10, auditSince);
+    const audit = await waitForAuditLog(supabase, "deals.listed", 10, auditSince, auditRequestId);
     expect(audit).toBeTruthy();
     expect(audit.outcome).toBe("SUCCESS");
   });
@@ -318,8 +321,9 @@ test.describe.serial("Integration: Deals API", () => {
 
     const voteKey = randomId();
     const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
     const voteRes = await request.post(`/api/v1/deals/${dealId}/vote`, {
-      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": voteKey },
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": voteKey, "x-request-id": auditRequestId },
       data: { direction: "up", reason: "Excellent price vs MSRP." }
     });
     await expectStatus(voteRes, 201);
@@ -341,7 +345,7 @@ test.describe.serial("Integration: Deals API", () => {
     const dbTemperature = Number(dealRow.temperature);
     expect(dbTemperature).toBe(expectedTemperature);
 
-    const voteAudit = await waitForAuditLog(supabase, "deal.voted", 10, auditSince);
+    const voteAudit = await waitForAuditLog(supabase, "deal.voted", 10, auditSince, auditRequestId);
     expect(voteAudit).toBeTruthy();
     expect(voteAudit.security?.temperature_changed).toBe(true);
     expect(voteAudit.security?.deal_id).toBe(dealId);

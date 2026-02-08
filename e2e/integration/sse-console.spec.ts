@@ -58,7 +58,16 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
 
       const event = await waitForSseFrame(res, {
         timeoutMs: 2500,
-        onFrame: (entry) => (entry.type === "event" && entry.event === "deal.created" ? entry : undefined)
+        onFrame: (entry) => {
+          if (entry.type !== "event" || entry.event !== "deal.created") return undefined;
+          try {
+            const data = JSON.parse(entry.data);
+            if (data?.payload?.console_test === true) return entry;
+          } catch {
+            return undefined;
+          }
+          return undefined;
+        }
       });
 
       if (event.type !== "event") {
@@ -106,7 +115,16 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
 
       const event = await waitForSseFrame(res, {
         timeoutMs: 2500,
-        onFrame: (entry) => (entry.type === "event" && entry.event === "deal.created" ? entry : undefined)
+        onFrame: (entry) => {
+          if (entry.type !== "event" || entry.event !== "deal.created") return undefined;
+          try {
+            const data = JSON.parse(entry.data);
+            if (data?.payload?.filtered === true) return entry;
+          } catch {
+            return undefined;
+          }
+          return undefined;
+        }
       });
 
       if (event.type !== "event") {
@@ -148,7 +166,16 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
 
       const replayed = await waitForSseFrame(res, {
         timeoutMs: 2500,
-        onFrame: (entry) => (entry.type === "event" && entry.event === "deal.created" ? entry : undefined)
+        onFrame: (entry) => {
+          if (entry.type !== "event" || entry.event !== "deal.created") return undefined;
+          try {
+            const data = JSON.parse(entry.data);
+            if (data?.payload?.n === 2) return entry;
+          } catch {
+            return undefined;
+          }
+          return undefined;
+        }
       });
 
       if (replayed.type !== "event") {
