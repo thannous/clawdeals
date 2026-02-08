@@ -113,47 +113,13 @@ begin
   end if;
 end $$;
 
--- Safety: drop any remaining rows that couldn't be migrated (invalid buyer_agent_id -> NULL).
-delete from public.threads
-where buyer_agent_id is null;
-
-do $$
-begin
-  -- `threads.owner_id` is legacy text in some environments and uuid in others.
-  -- Backfill safely without uuid/text coercion errors.
-  if exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'threads'
-      and column_name = 'owner_id'
-      and udt_name = 'uuid'
-  ) then
-    update public.threads t
-    set
-      seller_agent_id = l.seller_agent_id,
-      owner_id = coalesce(
-        t.owner_id,
-        case
-          when l.owner_id is null or l.owner_id::text = '' then null
-          when l.owner_id::text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-            then l.owner_id::text::uuid
-          else null
-        end
-      )
-    from public.listings l
-    where l.listing_id = t.listing_id
-      and (t.seller_agent_id is null or t.owner_id is null);
-  else
-    update public.threads t
-    set
-      seller_agent_id = l.seller_agent_id,
-      owner_id = coalesce(t.owner_id, l.owner_id::text)
-    from public.listings l
-    where l.listing_id = t.listing_id
-      and (t.seller_agent_id is null or t.owner_id is null);
-  end if;
-end $$;
+update public.threads t
+set
+  seller_agent_id = l.seller_agent_id,
+  owner_id = coalesce(t.owner_id, l.owner_id)
+from public.listings l
+where l.listing_id = t.listing_id
+  and (t.seller_agent_id is null or t.owner_id is null);
 
 -- Extra safety: delete any remaining self-threads after backfill.
 delete from public.threads
@@ -186,71 +152,6 @@ end $$;
 alter table public.threads
   alter column buyer_agent_id set not null,
   alter column seller_agent_id set not null;
-
--- Dedupe legacy threads before enforcing UNIQUE (listing_id, buyer_agent_id).
-with ranked as (
-  select
-    t.thread_id,
-    first_value(t.thread_id) over (
-      partition by t.listing_id, t.buyer_agent_id
-      order by t.created_at asc, t.thread_id asc
-    ) as keep_thread_id
-  from public.threads t
-),
-dupes as (
-  select thread_id, keep_thread_id
-  from ranked
-  where thread_id <> keep_thread_id
-)
-update public.messages m
-set thread_id = d.keep_thread_id
-from dupes d
-where m.thread_id = d.thread_id;
-
--- Also rewrite pending approvals that reference a duplicate thread_id.
-with ranked as (
-  select
-    t.thread_id,
-    first_value(t.thread_id) over (
-      partition by t.listing_id, t.buyer_agent_id
-      order by t.created_at asc, t.thread_id asc
-    ) as keep_thread_id
-  from public.threads t
-),
-dupes as (
-  select thread_id, keep_thread_id
-  from ranked
-  where thread_id <> keep_thread_id
-)
-update public.approvals ap
-set action_ref = jsonb_set(
-  ap.action_ref,
-  '{thread_id}',
-  to_jsonb(d.keep_thread_id::text),
-  true
-)
-from dupes d
-where ap.state = 'PENDING'
-  and ap.action_type = 'message.send'
-  and ap.action_ref->>'thread_id' = d.thread_id::text;
-
-with ranked as (
-  select
-    t.thread_id,
-    first_value(t.thread_id) over (
-      partition by t.listing_id, t.buyer_agent_id
-      order by t.created_at asc, t.thread_id asc
-    ) as keep_thread_id
-  from public.threads t
-),
-dupes as (
-  select thread_id, keep_thread_id
-  from ranked
-  where thread_id <> keep_thread_id
-)
-delete from public.threads t
-using dupes d
-where t.thread_id = d.thread_id;
 
 do $$
 begin
@@ -324,9 +225,9 @@ alter table public.messages
 update public.messages
 set payload = case
   when payload is not null then payload
-  when lower(coalesce(type, '')) in ('question', 'answer', 'info') then
-    jsonb_build_object('type', coalesce(lower(type), 'info'), 'text', body)
-  when lower(coalesce(type, '')) = 'warning' then
+  when coalesce(type, '') in ('question', 'answer', 'info') then
+    jsonb_build_object('type', coalesce(type, 'info'), 'text', body)
+  when coalesce(type, '') = 'warning' then
     case
       when body is null or body = '' then
         jsonb_build_object(
@@ -334,52 +235,18 @@ set payload = case
           'code', 'external_link_detected',
           'text', 'Avoid external payment links. Use approved flow only.'
         )
+      when left(body, 1) = '{' then
+        -- Legacy system warnings stored JSON in body.
+        (body::jsonb || jsonb_build_object('type', 'warning'))
       else
-        case
-          when pg_input_is_valid(body, 'jsonb') then
-            case
-              -- Legacy system warnings stored JSON objects in body.
-              when jsonb_typeof(body::jsonb) = 'object' then
-                (body::jsonb || jsonb_build_object('type', 'warning'))
-              else
-                jsonb_build_object('type', 'warning', 'text', body)
-            end
-          else
-            jsonb_build_object('type', 'warning', 'text', body)
-        end
+        jsonb_build_object('type', 'warning', 'text', body)
     end
   when type is null or type = '' then
     jsonb_build_object('type', 'info', 'text', body)
   else
-    jsonb_build_object('type', lower(type))
+    jsonb_build_object('type', type)
 end
 where payload is null;
-
--- Normalize payload.type to valid message_type values (fallback to info).
-update public.messages
-set payload = jsonb_set(
-  payload,
-  '{type}',
-  to_jsonb(
-    case
-      when lower(nullif(payload->>'type', '')) in (
-        'question',
-        'answer',
-        'info',
-        'warning',
-        'offer',
-        'counter_offer',
-        'accept',
-        'decline',
-        'cancel'
-      ) then lower(payload->>'type')
-      else 'info'
-    end
-  ),
-  true
-)
-where payload is not null
-  and jsonb_typeof(payload) = 'object';
 
 do $$
 begin
@@ -427,18 +294,7 @@ alter table public.messages
   using (
     case
       when type is null or type = '' then 'info'
-      when lower(type) in (
-        'question',
-        'answer',
-        'info',
-        'warning',
-        'offer',
-        'counter_offer',
-        'accept',
-        'decline',
-        'cancel'
-      ) then lower(type)
-      else 'info'
+      else lower(type)
     end
   )::message_type;
 
@@ -479,20 +335,20 @@ language plpgsql
 as $$
 declare
   approval_row public.approvals%rowtype;
-  v_listing_id uuid;
-  v_target_listing_id uuid;
-  v_thread_id uuid;
-  v_agent_id uuid;
-  v_buyer_agent_id uuid;
-  v_seller_agent_id uuid;
-  v_action_owner_id uuid;
-  v_message_body text;
-  v_message_type text;
-  v_message_payload jsonb;
-  v_sender_id uuid;
-  v_sender_type message_sender_type;
-  v_message_redacted boolean;
-  v_warning_payload jsonb;
+  listing_id uuid;
+  target_listing_id uuid;
+  thread_id uuid;
+  agent_id uuid;
+  buyer_agent_id uuid;
+  seller_agent_id uuid;
+  action_owner_id uuid;
+  message_body text;
+  message_type text;
+  message_payload jsonb;
+  sender_id uuid;
+  sender_type text;
+  message_redacted boolean;
+  warning_payload jsonb;
 begin
   select *
     into approval_row
@@ -523,169 +379,169 @@ begin
     raise exception 'invalid decision';
   end if;
 
-  v_warning_payload := jsonb_build_object(
+  warning_payload := jsonb_build_object(
     'type', 'warning',
     'code', 'external_link_detected',
     'text', 'Avoid external payment links. Use approved flow only.'
   );
 
   if approval_row.action_type = 'thread.create' then
-    v_listing_id := nullif(approval_row.action_ref->>'listing_id', '')::uuid;
-    v_agent_id := nullif(approval_row.action_ref->>'agent_id', '')::uuid;
-    v_buyer_agent_id := nullif(approval_row.action_ref->>'buyer_agent_id', '')::uuid;
-    v_seller_agent_id := nullif(approval_row.action_ref->>'seller_agent_id', '')::uuid;
-    v_action_owner_id := nullif(approval_row.action_ref->>'owner_id', '')::uuid;
+    listing_id := nullif(approval_row.action_ref->>'listing_id', '')::uuid;
+    agent_id := nullif(approval_row.action_ref->>'agent_id', '')::uuid;
+    buyer_agent_id := nullif(approval_row.action_ref->>'buyer_agent_id', '')::uuid;
+    seller_agent_id := nullif(approval_row.action_ref->>'seller_agent_id', '')::uuid;
+    action_owner_id := nullif(approval_row.action_ref->>'owner_id', '')::uuid;
 
-    if v_listing_id is null then
+    if listing_id is null then
       raise exception 'listing_id required';
     end if;
 
-    if v_seller_agent_id is null then
+    if seller_agent_id is null then
       select l.seller_agent_id, l.owner_id
-        into v_seller_agent_id, v_action_owner_id
+        into seller_agent_id, action_owner_id
         from public.listings l
-       where l.listing_id = v_listing_id;
+       where l.listing_id = listing_id;
     end if;
 
-    v_buyer_agent_id := coalesce(v_buyer_agent_id, v_agent_id);
+    buyer_agent_id := coalesce(buyer_agent_id, agent_id);
 
     insert into public.threads (listing_id, owner_id, buyer_agent_id, seller_agent_id, status)
-    values (v_listing_id, v_action_owner_id, v_buyer_agent_id, v_seller_agent_id, 'OPEN')
-    returning thread_id into v_thread_id;
+    values (listing_id, action_owner_id, buyer_agent_id, seller_agent_id, 'OPEN')
+    returning thread_id into thread_id;
 
-    v_message_redacted := coalesce(nullif(approval_row.action_ref->>'message_redacted', '')::boolean, false);
+    message_redacted := coalesce(nullif(approval_row.action_ref->>'message_redacted', '')::boolean, false);
 
     -- Preferred: typed payload stored as JSONB in action_payload_redacted.
-    v_message_payload := approval_row.action_payload_redacted->'payload';
+    message_payload := approval_row.action_payload_redacted->'payload';
 
     -- Backward compat: legacy approvals stored `body` + `message_type`.
-    if v_message_payload is null then
-      v_message_type := nullif(approval_row.action_ref->>'message_type', '');
-      v_message_body := approval_row.action_payload_redacted->>'body';
-      if v_message_body is not null and v_message_body <> '' and v_message_type is not null and v_message_type <> '' then
-        if v_message_type in ('question', 'answer', 'info') then
-          v_message_payload := jsonb_build_object('type', v_message_type, 'text', v_message_body);
-        elsif v_message_type = 'warning' then
-          if left(v_message_body, 1) = '{' then
-            v_message_payload := (v_message_body::jsonb || jsonb_build_object('type', 'warning'));
+    if message_payload is null then
+      message_type := nullif(approval_row.action_ref->>'message_type', '');
+      message_body := approval_row.action_payload_redacted->>'body';
+      if message_body is not null and message_body <> '' and message_type is not null and message_type <> '' then
+        if message_type in ('question', 'answer', 'info') then
+          message_payload := jsonb_build_object('type', message_type, 'text', message_body);
+        elsif message_type = 'warning' then
+          if left(message_body, 1) = '{' then
+            message_payload := (message_body::jsonb || jsonb_build_object('type', 'warning'));
           else
-            v_message_payload := jsonb_build_object('type', 'warning', 'text', v_message_body);
+            message_payload := jsonb_build_object('type', 'warning', 'text', message_body);
           end if;
         else
-          v_message_payload := jsonb_build_object('type', v_message_type);
+          message_payload := jsonb_build_object('type', message_type);
         end if;
       end if;
     end if;
 
-    if v_message_payload is not null and v_message_payload <> '{}'::jsonb then
-      v_message_type := nullif(v_message_payload->>'type', '');
-      v_sender_id := coalesce(v_buyer_agent_id, v_action_owner_id);
-      if v_sender_id is null then
+    if message_payload is not null and message_payload <> '{}'::jsonb then
+      message_type := nullif(message_payload->>'type', '');
+      sender_id := coalesce(buyer_agent_id, action_owner_id);
+      if sender_id is null then
         raise exception 'sender_id required';
       end if;
-      v_sender_type := case when v_buyer_agent_id is not null then 'agent'::message_sender_type else 'human'::message_sender_type end;
+      sender_type := case when buyer_agent_id is not null then 'agent' else 'human' end;
 
       insert into public.messages (thread_id, sender_id, sender_type, body, type, payload, redacted)
       values (
-        v_thread_id,
-        v_sender_id,
-        v_sender_type,
-        case when v_message_payload ? 'text' then nullif(v_message_payload->>'text', '') else null end,
-        v_message_type::message_type,
-        v_message_payload,
-        v_message_redacted
+        thread_id,
+        sender_id,
+        sender_type,
+        case when message_payload ? 'text' then nullif(message_payload->>'text', '') else null end,
+        message_type::message_type,
+        message_payload,
+        message_redacted
       );
 
-      if v_message_redacted then
+      if message_redacted then
         insert into public.messages (thread_id, sender_id, sender_type, body, type, payload, redacted)
         values (
-          v_thread_id,
+          thread_id,
           '00000000-0000-0000-0000-000000000000',
-          'system'::message_sender_type,
+          'system',
           null,
           'warning'::message_type,
-          v_warning_payload,
+          warning_payload,
           false
         );
       end if;
     end if;
   elsif approval_row.action_type = 'message.send' then
-    v_thread_id := nullif(approval_row.action_ref->>'thread_id', '')::uuid;
-    v_agent_id := nullif(approval_row.action_ref->>'agent_id', '')::uuid;
-    v_action_owner_id := nullif(approval_row.action_ref->>'owner_id', '')::uuid;
-    v_message_type := nullif(approval_row.action_ref->>'message_type', '');
-    v_message_redacted := coalesce(nullif(approval_row.action_ref->>'message_redacted', '')::boolean, false);
+    thread_id := nullif(approval_row.action_ref->>'thread_id', '')::uuid;
+    agent_id := nullif(approval_row.action_ref->>'agent_id', '')::uuid;
+    action_owner_id := nullif(approval_row.action_ref->>'owner_id', '')::uuid;
+    message_type := nullif(approval_row.action_ref->>'message_type', '');
+    message_redacted := coalesce(nullif(approval_row.action_ref->>'message_redacted', '')::boolean, false);
 
-    if v_thread_id is null then
+    if thread_id is null then
       raise exception 'thread_id required';
     end if;
 
     -- Preferred: typed payload stored as JSONB in action_payload_redacted.
-    v_message_payload := approval_row.action_payload_redacted->'payload';
+    message_payload := approval_row.action_payload_redacted->'payload';
 
     -- Backward compat: legacy approvals stored `body` + `message_type`.
-    if v_message_payload is null then
-      v_message_body := approval_row.action_payload_redacted->>'body';
-      if v_message_body is null or v_message_body = '' then
+    if message_payload is null then
+      message_body := approval_row.action_payload_redacted->>'body';
+      if message_body is null or message_body = '' then
         raise exception 'body required';
       end if;
-      if v_message_type is null or v_message_type = '' then
+      if message_type is null or message_type = '' then
         raise exception 'message_type required';
       end if;
-      if v_message_type in ('question', 'answer', 'info') then
-        v_message_payload := jsonb_build_object('type', v_message_type, 'text', v_message_body);
-      elsif v_message_type = 'warning' then
-        if left(v_message_body, 1) = '{' then
-          v_message_payload := (v_message_body::jsonb || jsonb_build_object('type', 'warning'));
+      if message_type in ('question', 'answer', 'info') then
+        message_payload := jsonb_build_object('type', message_type, 'text', message_body);
+      elsif message_type = 'warning' then
+        if left(message_body, 1) = '{' then
+          message_payload := (message_body::jsonb || jsonb_build_object('type', 'warning'));
         else
-          v_message_payload := jsonb_build_object('type', 'warning', 'text', v_message_body);
+          message_payload := jsonb_build_object('type', 'warning', 'text', message_body);
         end if;
       else
-        v_message_payload := jsonb_build_object('type', v_message_type);
+        message_payload := jsonb_build_object('type', message_type);
       end if;
     end if;
 
-    v_sender_id := coalesce(v_agent_id, v_action_owner_id);
-    if v_sender_id is null then
+    sender_id := coalesce(agent_id, action_owner_id);
+    if sender_id is null then
       raise exception 'sender_id required';
     end if;
-    v_sender_type := case when v_agent_id is not null then 'agent'::message_sender_type else 'human'::message_sender_type end;
-    v_message_type := nullif(v_message_payload->>'type', '');
+    sender_type := case when agent_id is not null then 'agent' else 'human' end;
+    message_type := nullif(message_payload->>'type', '');
 
     insert into public.messages (thread_id, sender_id, sender_type, body, type, payload, redacted)
     values (
-      v_thread_id,
-      v_sender_id,
-      v_sender_type,
-      case when v_message_payload ? 'text' then nullif(v_message_payload->>'text', '') else null end,
-      v_message_type::message_type,
-      v_message_payload,
-      v_message_redacted
+      thread_id,
+      sender_id,
+      sender_type,
+      case when message_payload ? 'text' then nullif(message_payload->>'text', '') else null end,
+      message_type::message_type,
+      message_payload,
+      message_redacted
     );
 
-    if v_message_redacted then
+    if message_redacted then
       insert into public.messages (thread_id, sender_id, sender_type, body, type, payload, redacted)
       values (
-        v_thread_id,
+        thread_id,
         '00000000-0000-0000-0000-000000000000',
-        'system'::message_sender_type,
+        'system',
         null,
         'warning'::message_type,
-        v_warning_payload,
+        warning_payload,
         false
       );
     end if;
   elsif approval_row.action_type = 'listing_publish' then
-    v_target_listing_id := nullif(approval_row.action_ref->>'listing_id', '')::uuid;
+    target_listing_id := nullif(approval_row.action_ref->>'listing_id', '')::uuid;
 
-    if v_target_listing_id is null then
+    if target_listing_id is null then
       raise exception 'listing_id required';
     end if;
 
     update public.listings l
        set status = 'LIVE',
            updated_at = now()
-     where l.listing_id = v_target_listing_id;
+     where l.listing_id = target_listing_id;
 
     if not found then
       raise exception 'listing not found';
