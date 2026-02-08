@@ -35,6 +35,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
   let counterOfferMock: any;
   let getListingMock: any;
   let getPolicyOrDefaultMock: any;
+  let enforceAllowlistMock: any;
   let createApprovalMock: any;
   let resolveTrustContextMock: any;
   let publishSseEventMock: any;
@@ -57,7 +58,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     }));
 
     vi.doMock("../../../../server/policy/enforce-allowlist", () => ({
-      enforceAllowlist: vi.fn().mockResolvedValue(null)
+      enforceAllowlist: vi.fn()
     }));
 
     vi.doMock("../../../../server/services/approvals", () => ({
@@ -85,6 +86,9 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     const policiesMod = await import("../../../../server/services/policies");
     getPolicyOrDefaultMock = vi.mocked(policiesMod.getPolicyOrDefault);
 
+    const allowlistMod = await import("../../../../server/policy/enforce-allowlist");
+    enforceAllowlistMock = vi.mocked(allowlistMod.enforceAllowlist);
+
     const approvalsMod = await import("../../../../server/services/approvals");
     createApprovalMock = vi.mocked(approvalsMod.createApproval);
 
@@ -100,6 +104,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     process.env.AUDIT_HMAC_SECRET = "unit-test-secret";
 
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
+    enforceAllowlistMock.mockResolvedValue(null);
 
     getOfferMock.mockResolvedValue({
       offer_id: offerId,
@@ -196,6 +201,21 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(counterOfferMock).not.toHaveBeenCalled();
+  });
+
+  it("validates amount upper bound (Postgres int4)", async () => {
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1" },
+      query: { offer_id: offerId },
+      body: { amount: 2147483648, currency: "EUR", expires_at: validExpiresAt() }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toBe("amount must be <= 2147483647");
     expect(counterOfferMock).not.toHaveBeenCalled();
   });
 
@@ -348,6 +368,51 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     expect(result.body.error.code).toBe("OFFER_ALREADY_OPEN");
     expect(result.body.error.details?.existing_offer_id).toBe("open-2");
     expect(counterOfferMock).not.toHaveBeenCalled();
+  });
+
+  it("enforces allowlist for buyer counter-offers", async () => {
+    enforceAllowlistMock.mockResolvedValue({
+      status: 403,
+      body: { error: { code: "SENDER_NOT_ALLOWED", message: "Sender not allowed" } }
+    });
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1" },
+      query: { offer_id: offerId },
+      body: { amount: 360, currency: "EUR", expires_at: validExpiresAt() }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("SENDER_NOT_ALLOWED");
+    expect(enforceAllowlistMock).toHaveBeenCalled();
+    expect(counterOfferMock).not.toHaveBeenCalled();
+  });
+
+  it("does not enforce allowlist for seller counter-offers", async () => {
+    enforceAllowlistMock.mockResolvedValue({
+      status: 403,
+      body: { error: { code: "SENDER_NOT_ALLOWED", message: "Sender not allowed" } }
+    });
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1" },
+      query: { offer_id: offerId },
+      body: { amount: 360, currency: "EUR", expires_at: validExpiresAt() }
+    };
+
+    const ctx: any = {
+      ...baseCtx,
+      agentId: sellerAgentId,
+      actor: { type: "agent", id: sellerAgentId }
+    };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(201);
+    expect(enforceAllowlistMock).not.toHaveBeenCalled();
+    expect(counterOfferMock).toHaveBeenCalledWith(expect.objectContaining({ senderId: sellerAgentId }));
   });
 
   it("counters offer + publishes SSE under budget", async () => {
