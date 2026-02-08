@@ -187,7 +187,10 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
 
       const acceptAudit = await waitForAuditLogMatching(
         supabase,
-        (row) => row.action?.event === "offer.accept" && row.payload?.offer_id === offerId && row.occurred_at >= auditStart,
+        (row) =>
+          row.action?.event === "offer.accept" &&
+          row.payload?.offer_id === offerId &&
+          Date.parse(row.occurred_at) >= Date.parse(auditStart),
         15
       );
       expect(acceptAudit).toBeTruthy();
@@ -198,7 +201,7 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
           row.action?.event === "transaction.create" &&
           row.payload?.tx_id === txId &&
           row.payload?.accepted_offer_id === offerId &&
-          row.occurred_at >= auditStart,
+          Date.parse(row.occurred_at) >= Date.parse(auditStart),
         15
       );
       expect(txAudit).toBeTruthy();
@@ -321,7 +324,10 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
 
       const declineAudit = await waitForAuditLogMatching(
         supabase,
-        (row) => row.action?.event === "offer.decline" && row.payload?.offer_id === offerId && row.occurred_at >= auditStart,
+        (row) =>
+          row.action?.event === "offer.decline" &&
+          row.payload?.offer_id === offerId &&
+          Date.parse(row.occurred_at) >= Date.parse(auditStart),
         15
       );
       expect(declineAudit).toBeTruthy();
@@ -348,7 +354,10 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
 
       const cancelAudit = await waitForAuditLogMatching(
         supabase,
-        (row) => row.action?.event === "offer.cancel" && row.payload?.offer_id === offer2Id && row.occurred_at >= cancelStart,
+        (row) =>
+          row.action?.event === "offer.cancel" &&
+          row.payload?.offer_id === offer2Id &&
+          Date.parse(row.occurred_at) >= Date.parse(cancelStart),
         15
       );
       expect(cancelAudit).toBeTruthy();
@@ -588,7 +597,7 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
           row.action?.event === "offer.expire" &&
           row.payload?.offer_id === offerId &&
           row.payload?.listing_id === listingId &&
-          row.occurred_at >= auditStart,
+          Date.parse(row.occurred_at) >= Date.parse(auditStart),
         20
       );
       expect(expireAudit).toBeTruthy();

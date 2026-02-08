@@ -116,6 +116,13 @@ export const RATE_LIMIT_PROFILES = {
   "offers.write": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
   },
+  "contact_reveal.request": {
+    buckets: [{ limit: 10, windowSeconds: DAY }],
+  },
+  "contact_reveal.resolve": {
+    scope: "owner",
+    buckets: [{ limit: 500, windowSeconds: HOUR }],
+  },
   "reports.create": {
     buckets: [
       { limit: 20, windowSeconds: DAY },

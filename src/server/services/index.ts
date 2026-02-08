@@ -8,3 +8,4 @@ export * from "./owners";
 export * from "./owner-verification";
 export * from "./api-keys";
 export * from "./approvals";
+export * from "./transactions";
