@@ -117,7 +117,7 @@ export async function getMaskedContactsForTransaction(tx: any) {
 
   const [buyerOwner, sellerOwner] = await Promise.all([getOwner(buyerAgent.owner_id), getOwner(sellerAgent.owner_id)]);
   if (!isOwnerContactVerified(buyerOwner) || !isOwnerContactVerified(sellerOwner)) {
-    throw buildServiceError("Owner contact missing or unverified", 500, "OWNER_CONTACT_MISSING");
+    throw buildServiceError("Owner contact missing or unverified", 409, "OWNER_CONTACT_MISSING");
   }
 
   const buyerEmailMasked = maskEmail(buyerOwner.email);
@@ -126,7 +126,7 @@ export async function getMaskedContactsForTransaction(tx: any) {
   const sellerPhoneMasked = maskPhoneE164(sellerOwner.phone_e164);
 
   if (!buyerEmailMasked || !buyerPhoneMasked || !sellerEmailMasked || !sellerPhoneMasked) {
-    throw buildServiceError("Owner contact missing or unverified", 500, "OWNER_CONTACT_MISSING");
+    throw buildServiceError("Owner contact missing or unverified", 409, "OWNER_CONTACT_MISSING");
   }
 
   return {

@@ -13,6 +13,7 @@ describe("contact masking (TI-203)", () => {
     expect(maskPhoneE164("+33612345678")).toBe("+33 ** ** ** 56 78");
     expect(maskPhoneE164("+14155551234")).toBe("+1 ** ** ** 12 34");
     expect(maskPhoneE164("+447911123456")).toBe("+44 ** ** ** 34 56");
+    expect(maskPhoneE164("+79261234567")).toBe("+7 ** ** ** 45 67");
+    expect(maskPhoneE164("+351912345678")).toBe("+351 ** ** ** 56 78");
   });
 });
-

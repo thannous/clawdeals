@@ -97,6 +97,10 @@ export async function handler(req, res, ctx) {
       return jsonResponse(500, errorPayload("ERROR", "Missing contact reveal approval"));
     }
 
+    // Validate contacts before mutating approval/transaction state to avoid committing
+    // an APPROVED contact reveal that cannot actually return contacts.
+    const contacts = await getMaskedContactsForTransaction(tx);
+
     const resolved = await resolveApproval({
       approvalId: approval.approval_id,
       ownerId: approval.owner_id,
@@ -112,8 +116,6 @@ export async function handler(req, res, ctx) {
     if (!updated || updated.contact_reveal_state !== "APPROVED") {
       return jsonResponse(500, errorPayload("ERROR", "Failed to approve contact reveal"));
     }
-
-    const contacts = await getMaskedContactsForTransaction(updated);
 
     if (ctx) {
       ctx.auditEvent = "contact_reveal.approved";
@@ -169,4 +171,3 @@ export async function handler(req, res, ctx) {
 export default withApiMiddlewares(handler, {
   routeGroup: "contact_reveal.resolve"
 });
-

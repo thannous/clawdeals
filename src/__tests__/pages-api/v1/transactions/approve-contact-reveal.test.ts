@@ -142,6 +142,26 @@ suite("POST /v1/transactions/{tx_id}/approve-contact-reveal (TI-203)", () => {
     expect(result.body.error.code).toBe("TX_NOT_REQUESTED");
   });
 
+  it("returns 409 and does not approve when contacts are missing/unverified", async () => {
+    const error: any = new Error("Owner contact missing or unverified");
+    error.status = 409;
+    error.code = "OWNER_CONTACT_MISSING";
+    getMaskedContactsForTransactionMock.mockRejectedValueOnce(error);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1" },
+      query: { tx_id: txId },
+      body: {}
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("OWNER_CONTACT_MISSING");
+    expect(resolveApprovalMock).not.toHaveBeenCalled();
+    expect(publishSseEventMock).not.toHaveBeenCalled();
+  });
+
   it("approves => 200 with masked contacts", async () => {
     getTransactionMock
       .mockResolvedValueOnce({
