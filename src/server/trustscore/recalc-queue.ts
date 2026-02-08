@@ -135,12 +135,16 @@ export async function recalculateTrustScoreForAgent({
 
 export async function runTrustScoreRecalcQueue({
   now = new Date(),
-  limit = 50
+  limit = 50,
+  client: injectedClient,
+  recalculate = recalculateTrustScoreForAgent
 }: {
   now?: Date;
   limit?: number;
+  client?: any;
+  recalculate?: (input: { agentId: string; now?: Date }) => Promise<any>;
 } = {}) {
-  const client = getSupabaseServiceClient();
+  const client = injectedClient || getSupabaseServiceClient();
   const effectiveLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 50;
 
   const summary: any = {
@@ -169,9 +173,10 @@ export async function runTrustScoreRecalcQueue({
   for (const row of rows) {
     const agentId = row?.agent_id;
     if (!agentId) continue;
+    const queueUpdatedAt = row?.updated_at;
     summary.scanned += 1;
     try {
-      const result: any = await recalculateTrustScoreForAgent({ agentId, now });
+      const result: any = await recalculate({ agentId, now });
       if (result?.ok && result.updated) {
         summary.updated += 1;
       } else {
@@ -179,9 +184,21 @@ export async function runTrustScoreRecalcQueue({
       }
 
       // Delete the queue row so future events can re-enqueue cleanly.
-      const { error: deleteError } = await client.from("trustscore_recalc_queue").delete().eq("agent_id", agentId);
-      if (deleteError) {
-        throw new Error(deleteError.message || "Failed to delete trustscore queue row");
+      //
+      // IMPORTANT: Guard deletion by `updated_at` to avoid dropping a concurrent enqueue
+      // that happens while this worker is processing the same `agent_id`.
+      if (queueUpdatedAt) {
+        const { error: deleteError } = await client
+          .from("trustscore_recalc_queue")
+          .delete()
+          .eq("agent_id", agentId)
+          .eq("updated_at", queueUpdatedAt);
+
+        if (deleteError) {
+          throw new Error(deleteError.message || "Failed to delete trustscore queue row");
+        }
+      } else {
+        console.warn("[trustscore-queue] missing updated_at; leaving queue row", { agent_id: agentId });
       }
     } catch (err) {
       summary.errors += 1;
@@ -194,4 +211,3 @@ export async function runTrustScoreRecalcQueue({
 
   return summary;
 }
-
