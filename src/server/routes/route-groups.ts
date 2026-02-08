@@ -177,14 +177,59 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/transactions\/[^/]+\/mark-completed$/
   },
   {
+    group: "escrows.create",
+    methods: ["POST"],
+    pattern: /^\/v1\/transactions\/[^/]+\/escrow:create$/
+  },
+  {
     group: "ratings.create",
     methods: ["POST"],
     pattern: /^\/v1\/transactions\/[^/]+\/ratings$/
   },
   {
+    group: "escrows.actions",
+    methods: ["POST"],
+    pattern: /^\/v1\/escrows\/[^/]+\/(?:pay|mark-delivered|confirm-received)$/
+  },
+  {
+    group: "evidence.write",
+    methods: ["POST"],
+    pattern: /^\/v1\/disputes\/[^/]+\/(?:evidence|evidence:confirm)$/
+  },
+  {
+    group: "evidence.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/disputes\/[^/]+\/evidence$/
+  },
+  {
     group: "offers.write",
     methods: ["POST", "PUT", "PATCH"],
     pattern: /^\/v1\/offers\/[^/]+(?:\/.*)?$/
+  },
+  {
+    group: "ops.psp.write",
+    methods: ["POST"],
+    pattern: /^\/v1\/ops\/psp\/configure$/
+  },
+  {
+    group: "ops.psp.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/ops\/psp\/status$/
+  },
+  {
+    group: "sellers.psp.write",
+    methods: ["POST"],
+    pattern: /^\/v1\/sellers\/psp:onboard$/
+  },
+  {
+    group: "sellers.psp.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/sellers\/psp:status$/
+  },
+  {
+    group: "psp.webhooks",
+    methods: ["POST"],
+    pattern: /^\/v1\/psp\/webhooks$/
   },
   {
     group: "reports.create",

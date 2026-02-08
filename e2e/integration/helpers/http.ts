@@ -228,3 +228,188 @@ export async function createTransactionRating(
     data
   });
 }
+
+export async function configurePsp(
+  api: APIRequestContext,
+  ownerId: string,
+  {
+    provider = "mock",
+    mode = "sandbox",
+    webhookSecretRef,
+    platformFeeBpsDefault = 400
+  }: {
+    provider?: string;
+    mode?: "sandbox" | "production";
+    webhookSecretRef: string;
+    platformFeeBpsDefault?: number;
+  },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post("/api/v1/ops/psp/configure", {
+    headers: {
+      "x-owner-id": ownerId,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {
+      provider,
+      mode,
+      webhook_secret_ref: webhookSecretRef,
+      platform_fee_bps_default: platformFeeBpsDefault
+    }
+  });
+}
+
+export async function pspOnboardSeller(
+  api: APIRequestContext,
+  ownerId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post("/api/v1/sellers/psp:onboard", {
+    headers: {
+      "x-owner-id": ownerId,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function getSellerPspStatus(api: APIRequestContext, ownerId: string): Promise<APIResponse> {
+  return api.get("/api/v1/sellers/psp:status", {
+    headers: { "x-owner-id": ownerId }
+  });
+}
+
+export async function postPspWebhook(
+  api: APIRequestContext,
+  {
+    signature,
+    body
+  }: {
+    signature: string;
+    body: any;
+  }
+): Promise<APIResponse> {
+  return api.post("/api/v1/psp/webhooks", {
+    headers: {
+      "x-psp-signature": signature
+    },
+    data: body
+  });
+}
+
+export async function createEscrow(
+  api: APIRequestContext,
+  apiKey: string,
+  txId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/transactions/${encodeURIComponent(txId)}/escrow:create`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function payEscrow(
+  api: APIRequestContext,
+  apiKey: string,
+  escrowId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/escrows/${encodeURIComponent(escrowId)}/pay`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function markDelivered(
+  api: APIRequestContext,
+  apiKey: string,
+  escrowId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/escrows/${encodeURIComponent(escrowId)}/mark-delivered`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function confirmReceived(
+  api: APIRequestContext,
+  apiKey: string,
+  escrowId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/escrows/${encodeURIComponent(escrowId)}/confirm-received`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function evidenceInit(
+  api: APIRequestContext,
+  apiKey: string,
+  disputeId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/disputes/${encodeURIComponent(disputeId)}/evidence`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function evidenceConfirm(
+  api: APIRequestContext,
+  apiKey: string,
+  disputeId: string,
+  {
+    bucket,
+    key,
+    sha256,
+    contentType,
+    bytes
+  }: {
+    bucket: string;
+    key: string;
+    sha256: string;
+    contentType: string;
+    bytes: number;
+  },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/disputes/${encodeURIComponent(disputeId)}/evidence:confirm`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {
+      bucket,
+      key,
+      sha256,
+      content_type: contentType,
+      bytes
+    }
+  });
+}
+
+export async function evidenceGet(api: APIRequestContext, apiKey: string, disputeId: string): Promise<APIResponse> {
+  return api.get(`/api/v1/disputes/${encodeURIComponent(disputeId)}/evidence`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`
+    }
+  });
+}

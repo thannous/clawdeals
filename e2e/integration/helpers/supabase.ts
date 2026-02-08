@@ -9,6 +9,26 @@ export function createSupabaseAdmin() {
   });
 }
 
+export async function ensureStorageBucket(
+  supabase: any,
+  bucketName: string,
+  options: { public?: boolean; fileSizeLimit?: number; allowedMimeTypes?: string[] } = {}
+) {
+  const { data: buckets, error } = await supabase.storage.listBuckets();
+  if (error) throw error;
+  const exists = (buckets || []).some((bucket: any) => bucket.name === bucketName);
+  if (exists) return;
+
+  const { error: createError } = await supabase.storage.createBucket(bucketName, {
+    public: options.public ?? false,
+    fileSizeLimit: options.fileSizeLimit,
+    allowedMimeTypes: options.allowedMimeTypes
+  });
+  if (createError && !/already exists/i.test(createError.message || "")) {
+    throw createError;
+  }
+}
+
 export async function ensureOwnerDb(supabase: any, ownerId: string) {
   await supabase.from("owners").upsert({
     owner_id: ownerId,
@@ -120,4 +140,42 @@ export async function ensureOpsConsoleAgent(supabase: any) {
     },
     { onConflict: "id", ignoreDuplicates: true }
   );
+}
+
+export async function ensureEvidenceBucket(supabase: any) {
+  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+  if (listError) throw listError;
+
+  const exists = Array.isArray(buckets) && buckets.some((b: any) => b?.name === "evidence");
+  if (exists) return;
+
+  const { error: createError } = await supabase.storage.createBucket("evidence", { public: false });
+  if (createError && !/already exists/i.test(createError.message || "")) {
+    throw createError;
+  }
+}
+
+export async function createDisputeDb(
+  supabase: any,
+  {
+    escrowId,
+    status = "OPEN"
+  }: {
+    escrowId: string;
+    status?: string;
+  }
+) {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("disputes")
+    .insert({
+      escrow_id: escrowId,
+      status,
+      created_at: nowIso,
+      updated_at: nowIso
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }

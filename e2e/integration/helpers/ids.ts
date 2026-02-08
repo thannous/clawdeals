@@ -4,11 +4,10 @@ export function randomId() {
   return crypto.randomUUID();
 }
 
-export function sha256Hex(value: string) {
+export function sha256Hex(value: string | Buffer | Uint8Array) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
 export function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
-

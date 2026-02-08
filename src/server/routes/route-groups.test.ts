@@ -32,4 +32,40 @@ describe("route groups", () => {
       "ratings.create"
     );
   });
+
+  it("matches PSP and escrow and evidence route groups (TI-210/TI-211/TI-214)", () => {
+    const sp = new URLSearchParams();
+
+    expect(matchRouteGroup("POST", "/api/v1/ops/psp/configure", sp)).toBe("ops.psp.write");
+    expect(matchRouteGroup("GET", "/api/v1/ops/psp/status", sp)).toBe("ops.psp.read");
+
+    expect(matchRouteGroup("POST", "/api/v1/sellers/psp:onboard", sp)).toBe("sellers.psp.write");
+    expect(matchRouteGroup("GET", "/api/v1/sellers/psp:status", sp)).toBe("sellers.psp.read");
+
+    expect(matchRouteGroup("POST", "/api/v1/psp/webhooks", sp)).toBe("psp.webhooks");
+
+    expect(
+      matchRouteGroup("POST", "/api/v1/transactions/00000000-0000-4000-a000-000000000123/escrow:create", sp)
+    ).toBe("escrows.create");
+
+    expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/pay", sp)).toBe(
+      "escrows.actions"
+    );
+    expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/mark-delivered", sp)).toBe(
+      "escrows.actions"
+    );
+    expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/confirm-received", sp)).toBe(
+      "escrows.actions"
+    );
+
+    expect(matchRouteGroup("POST", "/api/v1/disputes/00000000-0000-4000-a000-000000000123/evidence", sp)).toBe(
+      "evidence.write"
+    );
+    expect(
+      matchRouteGroup("POST", "/api/v1/disputes/00000000-0000-4000-a000-000000000123/evidence:confirm", sp)
+    ).toBe("evidence.write");
+    expect(matchRouteGroup("GET", "/api/v1/disputes/00000000-0000-4000-a000-000000000123/evidence", sp)).toBe(
+      "evidence.read"
+    );
+  });
 });

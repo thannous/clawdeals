@@ -116,8 +116,45 @@ export const RATE_LIMIT_PROFILES = {
   "transactions.actions": {
     buckets: [{ limit: 50, windowSeconds: DAY }],
   },
+  "escrows.create": {
+    buckets: [{ limit: 50, windowSeconds: DAY }],
+  },
+  "escrows.actions": {
+    buckets: [{ limit: 200, windowSeconds: DAY }],
+  },
   "ratings.create": {
     buckets: [{ limit: 20, windowSeconds: DAY }],
+  },
+  "ops.psp.write": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: HOUR }],
+  },
+  "ops.psp.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "sellers.psp.write": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: DAY }],
+  },
+  "sellers.psp.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "psp.webhooks": {
+    scope: "ip",
+    buckets: [{ limit: 600, windowSeconds: MINUTE }],
+  },
+  "evidence.write": {
+    scope: "owner",
+    buckets: [
+      { limit: 10, windowSeconds: MINUTE },
+      { limit: 100, windowSeconds: DAY },
+    ],
+  },
+  "evidence.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
   },
   "offers.write": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
