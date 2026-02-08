@@ -237,6 +237,15 @@ export async function handler(req, res, ctx) {
         const requiresApproval = policyDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL;
         nextStatus = quarantineApplied || requiresApproval ? "PENDING_APPROVAL" : "LIVE";
 
+        // Quarantined publish flows require an owner context so we can create an approval.
+        // Without an ownerId, we'd create an unresolvable PENDING_APPROVAL listing.
+        if (nextStatus === "PENDING_APPROVAL" && !ownerId) {
+          if (ctx) {
+            ctx.outcome = { type: "BLOCKED", reason: "trust" };
+          }
+          return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+        }
+
         if (nextStatus === "PENDING_APPROVAL" && ownerId) {
           const approval = await createApproval({
             ownerId,

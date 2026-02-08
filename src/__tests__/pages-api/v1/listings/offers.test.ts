@@ -229,6 +229,22 @@ suite("POST /v1/listings/{id}/offers (TI-199)", () => {
     expect(createOfferMock).not.toHaveBeenCalled();
   });
 
+  it("rejects amount values that exceed Postgres int range", async () => {
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1" },
+      query: { id: listingId },
+      body: { thread_id: threadId, amount: 2147483648, currency: "EUR", expires_at: validExpiresAt() }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(String(result.body.error.message)).toContain("2147483647");
+    expect(createOfferMock).not.toHaveBeenCalled();
+    expect(createApprovalMock).not.toHaveBeenCalled();
+  });
+
   it("returns 404 NOT_FOUND when listing does not exist", async () => {
     getListingMock.mockResolvedValue(null);
 

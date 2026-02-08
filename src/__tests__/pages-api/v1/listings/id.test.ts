@@ -254,6 +254,19 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
     expect(updateListingBySellerMock).not.toHaveBeenCalled();
   });
 
+  it("blocks quarantined publish when ownerId is missing", async () => {
+    getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "agent-1", owner_id: null, status: "DRAFT" } as any);
+    resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: true } as any);
+
+    const req: any = { method: "PATCH", headers: { "idempotency-key": "idem-1" }, query: { id: listingId }, body: { status: "LIVE" } };
+    const result: any = await handler(req, null, { ...baseCtx, ownerId: null });
+
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+    expect(createApprovalMock).not.toHaveBeenCalled();
+    expect(updateListingBySellerMock).not.toHaveBeenCalled();
+  });
+
   it("cancels listing_publish approval when PENDING_APPROVAL -> REMOVED", async () => {
     getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "agent-1", owner_id: "owner-1", status: "PENDING_APPROVAL" } as any);
     updateListingBySellerMock.mockResolvedValue({

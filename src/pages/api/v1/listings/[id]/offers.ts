@@ -20,6 +20,8 @@ import crypto from "crypto";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 import { publishSseEvent } from "../../../../../server/sse/store";
 
+const POSTGRES_INT4_MAX = 2147483647;
+
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
   if (Array.isArray(value)) return value[0];
@@ -122,6 +124,9 @@ export async function handler(req, res, ctx) {
   const amount = body.amount;
   if (typeof amount !== "number" || !Number.isFinite(amount) || !Number.isSafeInteger(amount) || amount < 0) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "amount must be an integer >= 0"));
+  }
+  if (amount > POSTGRES_INT4_MAX) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", `amount must be <= ${POSTGRES_INT4_MAX}`));
   }
 
   const rawCurrency = body.currency;

@@ -11,7 +11,7 @@ import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { createApproval } from "../../../../../server/services/approvals";
 import crypto from "crypto";
 import { resolveTrustContext } from "../../../../../server/trustscore/context";
-import { computeMessageBodyHmac, redactMessageText, TEXT_MESSAGE_TYPES } from "../../../../../server/messaging/redaction";
+import { computeMessageBodyHmac, redactMessageText } from "../../../../../server/messaging/redaction";
 import { isTypedMessageParseError, parseTypedMessage } from "../../../../../server/messaging/typed-message";
 import { publishSseEvent } from "../../../../../server/sse/store";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
