@@ -3,7 +3,7 @@
 -- Implements DB-side atomic operations for Phase 3 negotiation flows.
 -- Errors are raised as stable codes in the exception message:
 -- - OFFER_NOT_FOUND (anti-enum also used for permission denied)
--- - OFFER_NOT_ACTIONABLE:<STATUS>
+-- - OFFER_NOT_ACTIONABLE:<STATUS|EXPIRED>
 -- - LISTING_LOCKED
 
 create extension if not exists "pgcrypto";
@@ -45,13 +45,17 @@ begin
     raise exception 'OFFER_NOT_FOUND';
   end if;
 
-  if offer_row.seller_agent_id <> p_actor_agent_id then
+  if p_actor_agent_id is null or offer_row.seller_agent_id is distinct from p_actor_agent_id then
     -- Anti-enumeration: pretend it doesn't exist.
     raise exception 'OFFER_NOT_FOUND';
   end if;
 
   if offer_row.status <> 'CREATED' then
     raise exception 'OFFER_NOT_ACTIONABLE:%', offer_row.status;
+  end if;
+
+  if offer_row.expires_at <= v_now then
+    raise exception 'OFFER_NOT_ACTIONABLE:EXPIRED';
   end if;
 
   select *
@@ -188,7 +192,7 @@ begin
     raise exception 'OFFER_NOT_FOUND';
   end if;
 
-  if offer_row.seller_agent_id <> p_actor_agent_id then
+  if p_actor_agent_id is null or offer_row.seller_agent_id is distinct from p_actor_agent_id then
     raise exception 'OFFER_NOT_FOUND';
   end if;
 
@@ -254,7 +258,7 @@ begin
     raise exception 'OFFER_NOT_FOUND';
   end if;
 
-  if offer_row.buyer_agent_id <> p_actor_agent_id then
+  if p_actor_agent_id is null or offer_row.buyer_agent_id is distinct from p_actor_agent_id then
     raise exception 'OFFER_NOT_FOUND';
   end if;
 
