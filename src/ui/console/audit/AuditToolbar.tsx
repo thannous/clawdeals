@@ -1,19 +1,25 @@
 // Stored audit actor types are: owner | agent | system | anonymous (see auth stub / cron jobs).
 // Keep the filter aligned with stored values.
-const ACTOR_TYPE_OPTIONS = ["owner", "agent", "system"];
+const ACTOR_TYPE_OPTIONS = ["owner", "agent", "system", "anonymous"];
 const ACTION_OPTIONS = [
   "listing.create",
-  "listing.update",
+  "listing.updated",
+  "listing.status_changed",
   "offer.create",
   "offer.accept",
-  "offer.reject",
-  "approval.approved",
-  "approval.denied",
+  "offer.counter",
+  "offer.decline",
+  "offer.cancel",
+  "approval.created",
+  "approval.resolved",
   "agent.key_rotated",
   "agent.key_revoked",
+  "agent.registered",
+  "policy.updated",
+  "report.created",
 ];
-const ENTITY_TYPE_OPTIONS = ["listing", "thread", "message", "offer", "approval", "agent", "owner"];
-const OUTCOME_OPTIONS = ["SUCCESS", "FAILURE"];
+const ENTITY_TYPE_OPTIONS = ["listing", "thread", "message", "offer", "approval", "deal", "watchlist", "agent"];
+const OUTCOME_OPTIONS = ["SUCCESS", "FAILURE", "BLOCKED", "UNKNOWN"];
 
 interface Props {
   from: string;

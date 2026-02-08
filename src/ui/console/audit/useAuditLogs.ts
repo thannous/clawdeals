@@ -12,17 +12,32 @@ const PAGE_SIZE = 50;
 const DEBOUNCE_MS = 300;
 const MAX_RANGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+function toLocalDateTimeInputValue(date: Date) {
+  // `datetime-local` expects local time, but `toISOString()` is UTC. This converts
+  // a Date into a stable "YYYY-MM-DDTHH:mm" value representing local time.
+  const d = new Date(date.getTime());
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
 function defaultFrom() {
-  return new Date(Date.now() - 86400000).toISOString().slice(0, 16);
+  return toLocalDateTimeInputValue(new Date(Date.now() - 86400000));
 }
 
 function defaultTo() {
-  return new Date().toISOString().slice(0, 16);
+  return toLocalDateTimeInputValue(new Date());
 }
 
 function resolveQueryParam(value: unknown) {
   if (Array.isArray(value)) return value[0];
   return value as string | undefined;
+}
+
+function normalizeDateTimeLocalValue(value: string | undefined | null, fallback: string) {
+  if (!value) return fallback;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return toLocalDateTimeInputValue(d);
 }
 
 function normalizeActorType(value: string | undefined | null) {
@@ -32,13 +47,25 @@ function normalizeActorType(value: string | undefined | null) {
   return value;
 }
 
+function normalizeActionName(value: string | undefined | null) {
+  if (!value) return null;
+  // Back-compat: older UI option values didn't match persisted audit events.
+  if (value === "listing.update") return "listing.updated";
+  if (value === "offer.reject") return "offer.decline";
+  if (value === "approval.approved") return "approval.resolved";
+  if (value === "approval.denied") return "approval.resolved";
+  return value;
+}
+
 function parseFiltersFromQuery(query: Record<string, unknown>) {
+  const fallbackFrom = defaultFrom();
+  const fallbackTo = defaultTo();
   return {
-    from: resolveQueryParam(query?.from) || defaultFrom(),
-    to: resolveQueryParam(query?.to) || defaultTo(),
+    from: normalizeDateTimeLocalValue(resolveQueryParam(query?.from), fallbackFrom),
+    to: normalizeDateTimeLocalValue(resolveQueryParam(query?.to), fallbackTo),
     actorType: normalizeActorType(resolveQueryParam(query?.actor_type) || null),
     actorId: resolveQueryParam(query?.actor_id) || "",
-    actionName: resolveQueryParam(query?.action_name) || resolveQueryParam(query?.action) || null,
+    actionName: normalizeActionName(resolveQueryParam(query?.action_name) || resolveQueryParam(query?.action) || null),
     entityType: resolveQueryParam(query?.entity_type) || null,
     entityId: resolveQueryParam(query?.entity_id) || "",
     outcome: resolveQueryParam(query?.outcome) || null,
@@ -190,19 +217,19 @@ export function useAuditLogs() {
       setLoadMoreState("loading");
     }
 
-    const searchParams = new URLSearchParams();
-    searchParams.set("from", new Date(params.from).toISOString());
-    searchParams.set("to", new Date(params.to).toISOString());
-    searchParams.set("limit", String(PAGE_SIZE));
-    if (params.actorType) searchParams.set("actor_type", params.actorType);
-    if (params.actorId) searchParams.set("actor_id", params.actorId);
-    if (params.actionName) searchParams.set("action_name", params.actionName);
-    if (params.entityType) searchParams.set("entity_type", params.entityType);
-    if (params.entityId) searchParams.set("entity_id", params.entityId);
-    if (params.outcome) searchParams.set("outcome", params.outcome);
-    if (params.cursor) searchParams.set("cursor", params.cursor);
-
     try {
+      const searchParams = new URLSearchParams();
+      searchParams.set("from", new Date(params.from).toISOString());
+      searchParams.set("to", new Date(params.to).toISOString());
+      searchParams.set("limit", String(PAGE_SIZE));
+      if (params.actorType) searchParams.set("actor_type", params.actorType);
+      if (params.actorId) searchParams.set("actor_id", params.actorId);
+      if (params.actionName) searchParams.set("action_name", params.actionName);
+      if (params.entityType) searchParams.set("entity_type", params.entityType);
+      if (params.entityId) searchParams.set("entity_id", params.entityId);
+      if (params.outcome) searchParams.set("outcome", params.outcome);
+      if (params.cursor) searchParams.set("cursor", params.cursor);
+
       const resp = await fetch(`/api/console/audit?${searchParams}`, { signal: controller.signal });
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
@@ -220,9 +247,17 @@ export function useAuditLogs() {
 
       trackAuditViewed({ count: (data.items || []).length, actorType: params.actorType, actionName: params.actionName });
     } catch (err: any) {
-      if (err.name === "AbortError") return;
-      setError(err.message);
-      setFetchState("error");
+      if (err.name === "AbortError") {
+        // If this was the current in-flight request and it was aborted due to
+        // invalid filters (e.g. clearing a datetime input), reset loading state.
+        if (abortRef.current === controller) {
+          if (!append) setFetchState("idle");
+          setLoadMoreState("idle");
+        }
+        return;
+      }
+      setError(err.message || String(err));
+      if (!append) setFetchState("error");
       setLoadMoreState("idle");
     }
   }, [validateTimeRange]);
@@ -361,18 +396,19 @@ export function useAuditLogs() {
     if (!validateTimeRange(from, to)) {
       return;
     }
-    const sp = new URLSearchParams();
-    sp.set("from", new Date(from).toISOString());
-    sp.set("to", new Date(to).toISOString());
-    sp.set("format", "csv");
-    if (actorType) sp.set("actor_type", actorType);
-    if (actorId) sp.set("actor_id", actorId);
-    if (actionName) sp.set("action_name", actionName);
-    if (entityType) sp.set("entity_type", entityType);
-    if (entityId) sp.set("entity_id", entityId);
-    if (outcome) sp.set("outcome", outcome);
     trackAuditExportRequested({ format: "csv" });
     try {
+      const sp = new URLSearchParams();
+      sp.set("from", new Date(from).toISOString());
+      sp.set("to", new Date(to).toISOString());
+      sp.set("format", "csv");
+      if (actorType) sp.set("actor_type", actorType);
+      if (actorId) sp.set("actor_id", actorId);
+      if (actionName) sp.set("action_name", actionName);
+      if (entityType) sp.set("entity_type", entityType);
+      if (entityId) sp.set("entity_id", entityId);
+      if (outcome) sp.set("outcome", outcome);
+
       const resp = await fetch(`/api/console/audit/export?${sp}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const blob = await resp.blob();

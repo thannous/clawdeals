@@ -15,7 +15,9 @@ const COLUMNS: Column[] = [
 
 const ACTOR_TYPE_COLORS: Record<string, string> = {
   agent: "text-primary",
+  owner: "text-secondary",
   human: "text-secondary",
+  anonymous: "text-subtle",
   system: "text-muted",
 };
 
