@@ -91,3 +91,34 @@ export async function patchListing(
     data: patch
   });
 }
+
+export async function createOffer(
+  api: APIRequestContext,
+  apiKey: string,
+  listingId: string,
+  {
+    threadId,
+    amount,
+    currency,
+    expiresAt
+  }: { threadId?: string | null; amount: number; currency: string; expiresAt: string },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  const data: Record<string, unknown> = {
+    amount,
+    currency,
+    expires_at: expiresAt
+  };
+
+  if (threadId) {
+    data.thread_id = threadId;
+  }
+
+  return api.post(`/api/v1/listings/${encodeURIComponent(listingId)}/offers`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data
+  });
+}
