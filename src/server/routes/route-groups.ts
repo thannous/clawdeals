@@ -7,6 +7,16 @@ type RouteGroupMatcher = {
 
 const ROUTE_GROUPS: RouteGroupMatcher[] = [
   {
+    group: "audit.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/audit$/
+  },
+  {
+    group: "audit.export",
+    methods: ["GET"],
+    pattern: /^\/v1\/audit\/export$/
+  },
+  {
     group: "auth.register_ip",
     methods: ["POST"],
     pattern: /^\/v1\/agents$/

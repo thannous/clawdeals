@@ -1,33 +1,43 @@
 import { useState, useCallback } from "react";
 
 interface Props {
-  id: string;
+  id?: string | null;
   chars?: number;
 }
 
 export default function TruncatedId({ id, chars = 8 }: Props) {
   const [copied, setCopied] = useState(false);
+  const canCopy = typeof id === "string" && id.length > 0;
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
+      if (!canCopy || !id) return;
       e.stopPropagation();
-      navigator.clipboard.writeText(id).then(() => {
+      const promise = navigator.clipboard?.writeText(id);
+      if (!promise) return;
+      promise.then(() => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
+      }).catch(() => {
+        // Best-effort: clipboard may be unavailable in some contexts.
       });
     },
-    [id]
+    [canCopy, id]
   );
 
-  const truncated = id && id.length > chars ? id.slice(0, chars) : id || "\u2014";
+  const truncated = canCopy && id.length > chars ? id.slice(0, chars) : canCopy ? id : "\u2014";
 
   return (
     <span
-      title={id}
+      title={canCopy ? id : undefined}
       onClick={handleClick}
-      className="cursor-copy text-muted hover:text-text transition-colors"
+      className={
+        canCopy
+          ? "cursor-copy text-muted hover:text-text transition-colors"
+          : "text-subtle"
+      }
     >
-      {copied ? "Copied!" : truncated}
+      {canCopy && copied ? "Copied!" : truncated}
     </span>
   );
 }
