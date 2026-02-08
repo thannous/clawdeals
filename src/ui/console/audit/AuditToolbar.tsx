@@ -1,4 +1,6 @@
-const ACTOR_TYPE_OPTIONS = ["agent", "human", "system"];
+// Stored audit actor types are: owner | agent | system | anonymous (see auth stub / cron jobs).
+// Keep the filter aligned with stored values.
+const ACTOR_TYPE_OPTIONS = ["owner", "agent", "system"];
 const ACTION_OPTIONS = [
   "listing.create",
   "listing.update",

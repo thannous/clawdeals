@@ -1,5 +1,15 @@
 import { isUuid } from "../utils/validators";
 
+const ISO_TIMESTAMP_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+function isIsoTimestamp(value: string) {
+  if (typeof value !== "string") return false;
+  if (!ISO_TIMESTAMP_RE.test(value)) return false;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms);
+}
+
 function base64UrlEncode(value: string) {
   return Buffer.from(value, "utf8")
     .toString("base64")
@@ -54,6 +64,10 @@ export function decodeAuditCursor(raw: any) {
   }
 
   if (typeof (parsed as any).occurred_at !== "string") {
+    return { error: "Invalid cursor" };
+  }
+
+  if (!isIsoTimestamp((parsed as any).occurred_at)) {
     return { error: "Invalid cursor" };
   }
 

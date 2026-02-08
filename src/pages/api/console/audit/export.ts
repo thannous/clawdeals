@@ -42,7 +42,8 @@ export async function handler(req, res, ctx) {
 
   const actorType = resolveParam(req.query?.actor_type) || null;
   const actorId = resolveParam(req.query?.actor_id) || null;
-  const actionName = resolveParam(req.query?.action_name) || null;
+  // Back-compat: older UI used `action`, but the service expects `action_name`.
+  const actionName = resolveParam(req.query?.action_name) || resolveParam(req.query?.action) || null;
   const entityType = resolveParam(req.query?.entity_type) || null;
   const entityId = resolveParam(req.query?.entity_id) || null;
   const outcome = resolveParam(req.query?.outcome) || null;

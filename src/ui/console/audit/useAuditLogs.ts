@@ -25,13 +25,20 @@ function resolveQueryParam(value: unknown) {
   return value as string | undefined;
 }
 
+function normalizeActorType(value: string | undefined | null) {
+  if (!value) return null;
+  // Back-compat: older UI used "human" but persisted audit rows use "owner".
+  if (value === "human") return "owner";
+  return value;
+}
+
 function parseFiltersFromQuery(query: Record<string, unknown>) {
   return {
     from: resolveQueryParam(query?.from) || defaultFrom(),
     to: resolveQueryParam(query?.to) || defaultTo(),
-    actorType: resolveQueryParam(query?.actor_type) || null,
+    actorType: normalizeActorType(resolveQueryParam(query?.actor_type) || null),
     actorId: resolveQueryParam(query?.actor_id) || "",
-    actionName: resolveQueryParam(query?.action) || null,
+    actionName: resolveQueryParam(query?.action_name) || resolveQueryParam(query?.action) || null,
     entityType: resolveQueryParam(query?.entity_type) || null,
     entityId: resolveQueryParam(query?.entity_id) || "",
     outcome: resolveQueryParam(query?.outcome) || null,
@@ -129,7 +136,7 @@ export function useAuditLogs() {
       if (t) query.to = t;
       if (aType) query.actor_type = aType;
       if (aId) query.actor_id = aId;
-      if (action) query.action = action;
+      if (action) query.action_name = action;
       if (eType) query.entity_type = eType;
       if (eId) query.entity_id = eId;
       if (out) query.outcome = out;
@@ -139,8 +146,25 @@ export function useAuditLogs() {
   );
 
   const validateTimeRange = useCallback((f: string, t: string): boolean => {
-    const fromMs = new Date(f).getTime();
-    const toMs = new Date(t).getTime();
+    if (!f || !t) {
+      setTimeRangeError("Both from and to are required.");
+      return false;
+    }
+
+    const fromDate = new Date(f);
+    const toDate = new Date(t);
+    const fromMs = fromDate.getTime();
+    const toMs = toDate.getTime();
+    if (Number.isNaN(fromMs) || Number.isNaN(toMs)) {
+      setTimeRangeError("from and to must be valid dates.");
+      return false;
+    }
+
+    if (toMs <= fromMs) {
+      setTimeRangeError("to must be after from.");
+      return false;
+    }
+
     if (toMs - fromMs > MAX_RANGE_MS) {
       setTimeRangeError("Time range too large. Max 7 days allowed.");
       return false;
@@ -150,6 +174,11 @@ export function useAuditLogs() {
   }, []);
 
   const fetchItems = useCallback(async (params: any, append = false) => {
+    if (!validateTimeRange(params.from, params.to)) {
+      if (abortRef.current) abortRef.current.abort();
+      return;
+    }
+
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -167,7 +196,7 @@ export function useAuditLogs() {
     searchParams.set("limit", String(PAGE_SIZE));
     if (params.actorType) searchParams.set("actor_type", params.actorType);
     if (params.actorId) searchParams.set("actor_id", params.actorId);
-    if (params.actionName) searchParams.set("action", params.actionName);
+    if (params.actionName) searchParams.set("action_name", params.actionName);
     if (params.entityType) searchParams.set("entity_type", params.entityType);
     if (params.entityId) searchParams.set("entity_id", params.entityId);
     if (params.outcome) searchParams.set("outcome", params.outcome);
@@ -196,11 +225,14 @@ export function useAuditLogs() {
       setFetchState("error");
       setLoadMoreState("idle");
     }
-  }, []);
+  }, [validateTimeRange]);
 
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
-    if (!validateTimeRange(from, to)) return;
+    if (!validateTimeRange(from, to)) {
+      if (abortRef.current) abortRef.current.abort();
+      return;
+    }
     fetchItems({ from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome });
     return () => {
       if (abortRef.current) abortRef.current.abort();
@@ -326,13 +358,16 @@ export function useAuditLogs() {
   }, [routerReady, isInitializedFromQuery, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, fetchItems]);
 
   const exportCsv = useCallback(async () => {
+    if (!validateTimeRange(from, to)) {
+      return;
+    }
     const sp = new URLSearchParams();
     sp.set("from", new Date(from).toISOString());
     sp.set("to", new Date(to).toISOString());
     sp.set("format", "csv");
     if (actorType) sp.set("actor_type", actorType);
     if (actorId) sp.set("actor_id", actorId);
-    if (actionName) sp.set("action", actionName);
+    if (actionName) sp.set("action_name", actionName);
     if (entityType) sp.set("entity_type", entityType);
     if (entityId) sp.set("entity_id", entityId);
     if (outcome) sp.set("outcome", outcome);
@@ -351,7 +386,7 @@ export function useAuditLogs() {
     } catch (err: any) {
       trackAuditExportError({ error: err.message });
     }
-  }, [from, to, actorType, actorId, actionName, entityType, entityId, outcome]);
+  }, [from, to, actorType, actorId, actionName, entityType, entityId, outcome, validateTimeRange]);
 
   return {
     items,

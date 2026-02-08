@@ -14,6 +14,16 @@ describe("audit cursor", () => {
     expect(decoded?.value).toEqual(input);
   });
 
+  it("accepts occurred_at timestamps with offsets", () => {
+    const input = {
+      occurred_at: "2026-02-07T14:30:00+00:00",
+      id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
+    };
+    const encoded = encodeAuditCursor(input);
+    const decoded = decodeAuditCursor(encoded);
+    expect(decoded?.value).toEqual(input);
+  });
+
   it("returns null for null input", () => {
     expect(decodeAuditCursor(null)).toBeNull();
   });
@@ -42,6 +52,15 @@ describe("audit cursor", () => {
   it("returns error when occurred_at is not a string", () => {
     const encoded = encodeAuditCursor({
       occurred_at: 12345,
+      id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
+    });
+    const decoded = decodeAuditCursor(encoded);
+    expect(decoded?.error).toBe("Invalid cursor");
+  });
+
+  it("returns error when occurred_at is not a valid ISO timestamp", () => {
+    const encoded = encodeAuditCursor({
+      occurred_at: "not-a-timestamp",
       id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
     });
     const decoded = decodeAuditCursor(encoded);

@@ -93,6 +93,14 @@ export const RATE_LIMIT_PROFILES = {
   "threads.read": {
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
   },
+  "audit.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "audit.export": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
   "messages.send": {
     buckets: [
       { limit: 30, windowSeconds: 10 * MINUTE },

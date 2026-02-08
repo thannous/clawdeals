@@ -6,6 +6,11 @@ const DEFAULT_LIMIT = 50;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const EXPORT_BATCH_SIZE = 500;
 
+function formatFilterValue(value) {
+  if (typeof value !== "string") return String(value);
+  return `"${value.replace(/"/g, "\\\"")}"`;
+}
+
 function mapError(error) {
   const mapped = mapSupabaseError(error);
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
@@ -94,8 +99,10 @@ export async function listAuditLogs({
   query = applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome });
 
   if (cursor?.occurred_at && cursor?.id) {
+    const occurredAt = formatFilterValue(cursor.occurred_at);
+    const id = formatFilterValue(cursor.id);
     query = query.or(
-      `occurred_at.lt.${cursor.occurred_at},and(occurred_at.eq.${cursor.occurred_at},id.lt.${cursor.id})`
+      `occurred_at.lt.${occurredAt},and(occurred_at.eq.${occurredAt},id.lt.${id})`
     );
   }
 
@@ -169,8 +176,10 @@ export async function exportAuditLogsCsv({
     query = applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome });
 
     if (cursorState) {
+      const occurredAt = formatFilterValue(cursorState.occurred_at);
+      const id = formatFilterValue(cursorState.id);
       query = query.or(
-        `occurred_at.lt.${cursorState.occurred_at},and(occurred_at.eq.${cursorState.occurred_at},id.lt.${cursorState.id})`
+        `occurred_at.lt.${occurredAt},and(occurred_at.eq.${occurredAt},id.lt.${id})`
       );
     }
 

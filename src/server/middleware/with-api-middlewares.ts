@@ -19,6 +19,75 @@ function isWriteMethod(method) {
   return !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
 }
 
+function safeDecodeURIComponent(value) {
+  if (typeof value !== "string") return value;
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    return value;
+  }
+}
+
+function inferAuditEntityFromPath(path: string) {
+  if (!path || typeof path !== "string") {
+    return { entityType: null, entityId: null };
+  }
+
+  const patterns = [
+    { type: "listing", re: /^\/api\/(?:v1|console)\/listings\/([^/]+)/ },
+    { type: "thread", re: /^\/api\/(?:v1|console)\/threads\/([^/]+)/ },
+    { type: "message", re: /^\/api\/(?:v1|console)\/messages\/([^/]+)/ },
+    { type: "offer", re: /^\/api\/(?:v1|console)\/offers\/([^/]+)/ },
+    { type: "approval", re: /^\/api\/(?:v1|console)\/approvals\/([^/]+)/ },
+    { type: "deal", re: /^\/api\/(?:v1|console)\/deals\/([^/]+)/ },
+    { type: "watchlist", re: /^\/api\/(?:v1|console)\/watchlists\/([^/]+)/ },
+    { type: "agent", re: /^\/api\/(?:v1|console)\/agents\/([^/]+)/ },
+  ];
+
+  for (const pattern of patterns) {
+    const match = path.match(pattern.re);
+    if (!match?.[1]) continue;
+    return { entityType: pattern.type, entityId: safeDecodeURIComponent(match[1]) };
+  }
+
+  return { entityType: null, entityId: null };
+}
+
+function inferAuditEntityFromBody(body: any) {
+  if (!body || typeof body !== "object") {
+    return { entityType: null, entityId: null };
+  }
+
+  // Common pattern: { entity_type, entity_id } (e.g., reports.create).
+  const entityType = typeof body.entity_type === "string" ? body.entity_type : null;
+  const entityId = typeof body.entity_id === "string" ? body.entity_id : null;
+  if (entityType && entityId) {
+    return { entityType, entityId };
+  }
+
+  return { entityType: null, entityId: null };
+}
+
+function inferAuditEntity(ctx: any) {
+  const explicitType = typeof ctx.auditEntityType === "string" ? ctx.auditEntityType : null;
+  const explicitId = typeof ctx.auditEntityId === "string" ? ctx.auditEntityId : null;
+  if (explicitType || explicitId) {
+    return { entityType: explicitType, entityId: explicitId };
+  }
+
+  const fromPath = inferAuditEntityFromPath(ctx.path);
+  if (fromPath.entityType || fromPath.entityId) {
+    return fromPath;
+  }
+
+  const fromBody = inferAuditEntityFromBody(ctx.body);
+  if (fromBody.entityType || fromBody.entityId) {
+    return fromBody;
+  }
+
+  return { entityType: null, entityId: null };
+}
+
 // safeAuditLog is imported from ../audit/singleton.js
 
 function inferOutcome(ctx) {
@@ -30,6 +99,7 @@ function inferOutcome(ctx) {
 }
 
 function buildAuditEvent(ctx) {
+  const entity = inferAuditEntity(ctx);
   return {
     occurredAt: new Date().toISOString(),
     actor: ctx.actor,
@@ -51,7 +121,9 @@ function buildAuditEvent(ctx) {
       route_group: ctx.rateLimit?.group || null,
       method: ctx.method,
       path: ctx.path,
-      event: ctx.auditEvent || null
+      event: ctx.auditEvent || null,
+      entity_type: entity.entityType,
+      entity_id: entity.entityId
     },
     security: ctx.security || {},
     policy: ctx.policy || {},
