@@ -167,6 +167,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/listings\/[^/]+\/offers$/
   },
   {
+    group: "offers.actions",
+    methods: ["POST"],
+    pattern: /^\/v1\/offers\/[^/]+\/(?:accept|decline|cancel)$/
+  },
+  {
     group: "offers.write",
     methods: ["POST", "PUT", "PATCH"],
     pattern: /^\/v1\/offers\/[^/]+(?:\/.*)?$/

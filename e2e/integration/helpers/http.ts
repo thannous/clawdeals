@@ -142,3 +142,48 @@ export async function createCounterOffer(
     }
   });
 }
+
+export async function acceptOffer(
+  api: APIRequestContext,
+  apiKey: string,
+  offerId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/accept`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function declineOffer(
+  api: APIRequestContext,
+  apiKey: string,
+  offerId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/decline`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}
+
+export async function cancelOffer(
+  api: APIRequestContext,
+  apiKey: string,
+  offerId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/cancel`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}

@@ -45,6 +45,10 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 60, windowSeconds: HOUR }],
   },
+  "approvals.write": {
+    scope: "owner",
+    buckets: [{ limit: 60, windowSeconds: HOUR }],
+  },
   "deals.create": {
     buckets: [{ limit: 20, windowSeconds: DAY }],
   },
@@ -97,6 +101,9 @@ export const RATE_LIMIT_PROFILES = {
   },
   "offers.create": {
     buckets: [{ limit: 50, windowSeconds: DAY }],
+  },
+  "offers.actions": {
+    buckets: [{ limit: 100, windowSeconds: DAY }],
   },
   "offers.write": {
     buckets: [{ limit: 200, windowSeconds: DAY }],

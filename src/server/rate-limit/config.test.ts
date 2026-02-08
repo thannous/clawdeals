@@ -15,6 +15,12 @@ describe("getProfileForGroup", () => {
     expect(profile.buckets.length).toBeGreaterThan(0);
   });
 
+  it("returns offers.actions profile (TI-201)", () => {
+    const profile = getProfileForGroup("offers.actions");
+    expect(profile).not.toBeNull();
+    expect(profile.buckets).toEqual([{ limit: 100, windowSeconds: 86400 }]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

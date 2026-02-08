@@ -80,7 +80,7 @@ function isOfferNotCounterableError(error) {
 }
 
 function isOfferNotFoundError(error) {
-  return Boolean(error?.message) && /offer not found/i.test(error.message);
+  return Boolean(error?.message) && (/offer not found/i.test(error.message) || /OFFER_NOT_FOUND/i.test(error.message));
 }
 
 export async function counterOffer({
@@ -127,6 +127,88 @@ export async function counterOffer({
       });
     }
     mapError(error);
+  }
+
+  return data;
+}
+
+export function mapOfferActionError(error: any) {
+  const message = error?.message || "";
+
+  if (/OFFER_NOT_FOUND/i.test(message)) {
+    return { status: 404, code: "OFFER_NOT_FOUND", message: "Offer not found" };
+  }
+
+  if (/LISTING_LOCKED/i.test(message)) {
+    return { status: 409, code: "LISTING_LOCKED", message: "Listing locked" };
+  }
+
+  const notActionableMatch = /OFFER_NOT_ACTIONABLE:([A-Z_]+)/i.exec(message);
+  if (notActionableMatch) {
+    return {
+      status: 409,
+      code: "OFFER_NOT_ACTIONABLE",
+      message: "Offer not actionable",
+      details: { status: notActionableMatch[1].toUpperCase() }
+    };
+  }
+
+  const mapped = mapSupabaseError(error);
+  return { status: mapped.status, code: mapped.code, message: mapped.message };
+}
+
+function throwOfferActionError(error: any) {
+  const mapped = mapOfferActionError(error);
+  throw Object.assign(new Error(mapped.message), {
+    status: mapped.status,
+    code: mapped.code,
+    details: mapped.details
+  });
+}
+
+export async function acceptOffer({ offerId, actorAgentId }: any) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .rpc("offer_accept_v0", {
+      p_offer_id: offerId,
+      p_actor_agent_id: actorAgentId
+    })
+    .single();
+
+  if (error) {
+    throwOfferActionError(error);
+  }
+
+  return data;
+}
+
+export async function declineOffer({ offerId, actorAgentId }: any) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .rpc("offer_decline_v0", {
+      p_offer_id: offerId,
+      p_actor_agent_id: actorAgentId
+    })
+    .single();
+
+  if (error) {
+    throwOfferActionError(error);
+  }
+
+  return data;
+}
+
+export async function cancelOffer({ offerId, actorAgentId }: any) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .rpc("offer_cancel_v0", {
+      p_offer_id: offerId,
+      p_actor_agent_id: actorAgentId
+    })
+    .single();
+
+  if (error) {
+    throwOfferActionError(error);
   }
 
   return data;
