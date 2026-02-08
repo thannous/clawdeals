@@ -4,7 +4,16 @@ const SORT_OPTIONS = [
   { value: "price_desc", label: "Price High" },
 ];
 
-const STATUS_OPTIONS = ["ACTIVE", "SOLD", "DRAFT", "EXPIRED"];
+const STATUS_OPTIONS = [
+  "LIVE",
+  "PENDING_APPROVAL",
+  "RESERVED",
+  "CONTACT_REVEALED",
+  "COMPLETED",
+  "DRAFT",
+  "REMOVED",
+  "EXPIRED",
+];
 const CONDITION_OPTIONS = ["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"];
 
 interface Props {

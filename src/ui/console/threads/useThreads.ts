@@ -13,7 +13,8 @@ function parseFiltersFromQuery(query: Record<string, unknown>) {
   const listingId = resolveQueryParam(query?.listing_id) || "";
   const buyerAgentId = resolveQueryParam(query?.buyer_agent_id) || "";
   const sellerAgentId = resolveQueryParam(query?.seller_agent_id) || "";
-  const status = resolveQueryParam(query?.status) || null;
+  const statusRaw = resolveQueryParam(query?.status) || null;
+  const status = statusRaw === "OPEN" || statusRaw === "CLOSED" ? statusRaw : null;
   return { listingId, buyerAgentId, sellerAgentId, status };
 }
 

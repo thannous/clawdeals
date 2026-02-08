@@ -8,6 +8,17 @@ const DEFAULT_CONDITION: string | null = null;
 const PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 
+const LISTING_STATUS_VALUES = new Set([
+  "DRAFT",
+  "PENDING_APPROVAL",
+  "LIVE",
+  "RESERVED",
+  "CONTACT_REVEALED",
+  "COMPLETED",
+  "REMOVED",
+  "EXPIRED",
+]);
+
 function resolveQueryParam(value: unknown) {
   if (Array.isArray(value)) return value[0];
   return value as string | undefined;
@@ -21,7 +32,13 @@ function parseFiltersFromQuery(query: Record<string, unknown>) {
       ? sortCandidate
       : DEFAULT_SORT;
 
-  const status = resolveQueryParam(query?.status) || DEFAULT_STATUS;
+  const statusRaw = resolveQueryParam(query?.status) || DEFAULT_STATUS;
+  let status = statusRaw;
+  // Backwards-compat for pre-enum UI values.
+  if (status === "ACTIVE") status = "LIVE";
+  if (status === "SOLD") status = "COMPLETED";
+  if (status && !LISTING_STATUS_VALUES.has(status)) status = DEFAULT_STATUS;
+
   const condition = resolveQueryParam(query?.condition) || DEFAULT_CONDITION;
   const q = resolveQueryParam(query?.q) || "";
   const priceMin = resolveQueryParam(query?.price_min) || "";

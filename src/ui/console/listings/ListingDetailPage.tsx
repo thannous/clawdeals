@@ -55,9 +55,9 @@ export default function ListingDetailPage() {
                 {listing.title || "Untitled"}
               </h2>
 
-              {listing.price != null && (
+              {(listing.price_amount ?? listing.price) != null && (
                 <div className="text-lg font-mono font-bold text-primary">
-                  {listing.price}{" "}
+                  {listing.price_amount ?? listing.price}{" "}
                   <span className="text-sm text-muted">{listing.currency || "USD"}</span>
                 </div>
               )}

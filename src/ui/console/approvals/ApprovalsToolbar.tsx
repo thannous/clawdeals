@@ -1,5 +1,5 @@
 const STATE_OPTIONS = ["PENDING", "APPROVED", "DENIED"];
-const ACTION_TYPE_OPTIONS = ["listing.create", "listing.update", "listing.delete", "thread.message"];
+const ACTION_TYPE_OPTIONS = ["listing_publish", "thread.create", "message.send", "offer_over_budget"];
 
 interface Props {
   state: string;

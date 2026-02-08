@@ -37,9 +37,9 @@ export default function ListingsList({ items }: Props) {
       case "condition":
         return <span className="text-muted">{row.condition || "\u2014"}</span>;
       case "price":
-        return row.price != null ? (
+        return (row.price_amount ?? row.price) != null ? (
           <span className="text-primary tabular-nums">
-            {row.price} <span className="text-subtle">{row.currency || "USD"}</span>
+            {row.price_amount ?? row.price} <span className="text-subtle">{row.currency || "USD"}</span>
           </span>
         ) : (
           <span className="text-subtle">\u2014</span>

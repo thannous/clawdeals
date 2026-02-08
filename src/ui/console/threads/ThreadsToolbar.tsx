@@ -1,4 +1,4 @@
-const STATUS_OPTIONS = ["OPEN", "CLOSED", "ARCHIVED"];
+const STATUS_OPTIONS = ["OPEN", "CLOSED"];
 
 interface Props {
   listingId: string;

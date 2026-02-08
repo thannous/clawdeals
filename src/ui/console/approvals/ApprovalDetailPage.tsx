@@ -99,10 +99,10 @@ export default function ApprovalDetailPage() {
                     <span className="text-text tabular-nums">{formatDate(approval.resolved_at)}</span>
                   </div>
                 )}
-                {approval.resolved_by && (
+                {approval.resolved_by_human_id && (
                   <div className="border border-border bg-bg rounded clip-corner px-3 py-2 flex items-center justify-between gap-3">
                     <span className="text-subtle uppercase tracking-wider">Resolved by</span>
-                    <TruncatedId id={approval.resolved_by} />
+                    <TruncatedId id={approval.resolved_by_human_id} />
                   </div>
                 )}
               </div>
