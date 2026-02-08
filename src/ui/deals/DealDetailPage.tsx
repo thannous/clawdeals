@@ -15,6 +15,13 @@ function formatDate(value) {
   return date.toLocaleString();
 }
 
+function formatWeight(value) {
+  if (value === null || value === undefined) return "—";
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (Number.isFinite(numeric)) return numeric.toFixed(2);
+  return String(value);
+}
+
 function Skeleton() {
   return (
     <div data-testid="deal-detail-loading" className="space-y-4 animate-pulse">
@@ -106,7 +113,7 @@ function ReasonsTab({ dealId }) {
                   <span className="text-[10px] font-mono text-subtle">{formatDate(item.created_at)}</span>
                 </div>
                 <span className="text-[10px] font-mono text-muted tabular-nums">
-                  weight {item.weight ?? "—"}
+                  weight {formatWeight(item.weight)}
                 </span>
               </div>
               <p className="text-sm text-text whitespace-pre-wrap break-words">{item.reason}</p>

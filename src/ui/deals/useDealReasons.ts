@@ -2,6 +2,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const PAGE_SIZE = 30;
 
+function sleep(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const id = setTimeout(() => {
+      if (signal) signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      clearTimeout(id);
+      reject(Object.assign(new Error("Aborted"), { name: "AbortError" }));
+    };
+
+    if (signal) {
+      if (signal.aborted) return onAbort();
+      signal.addEventListener("abort", onAbort, { once: true });
+    }
+  });
+}
+
 type UseDealReasonsOptions = {
   dealId?: string;
 };
@@ -40,11 +59,36 @@ export function useDealReasons({ dealId }: UseDealReasonsOptions = {}) {
     if (cursor) searchParams.set("cursor", cursor);
 
     try {
-      const resp = await fetch(`/api/console/deals/${dealId}/votes?${searchParams}`, { signal: controller.signal });
+      const url = `/api/console/deals/${dealId}/votes?${searchParams}`;
+      const enableRetry = process.env.NODE_ENV !== "production";
+      const maxAttempts = enableRetry ? 2 : 1;
+
+      let resp: Response | null = null;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          resp = await fetch(url, { signal: controller.signal });
+        } catch (err) {
+          if (!enableRetry || attempt === maxAttempts) throw err;
+          if (err?.name === "AbortError") throw err;
+          await sleep(500, controller.signal);
+          continue;
+        }
+
+        if (resp.ok) break;
+        const shouldRetry = enableRetry && attempt < maxAttempts && (resp.status === 503 || resp.status === 504);
+        if (shouldRetry) {
+          await sleep(500, controller.signal);
+          continue;
+        }
+        break;
+      }
+
+      if (!resp) throw new Error("Failed to fetch reasons");
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body?.error?.message || `HTTP ${resp.status}`);
       }
+
       const data = await resp.json();
 
       const nextItems = data.items || [];
