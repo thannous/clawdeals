@@ -35,6 +35,30 @@ export async function getOffer(offerId: string) {
   return data || null;
 }
 
+export async function listOffersByIds(offerIds: string[] = []) {
+  const ids = Array.from(
+    new Set(
+      Array.isArray(offerIds)
+        ? offerIds.filter((id) => typeof id === "string" && id.trim())
+        : []
+    )
+  );
+
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("offers")
+    .select("offer_id,amount,currency,status,expires_at,created_at,previous_offer_id")
+    .in("offer_id", ids);
+  if (error) {
+    mapError(error);
+  }
+  return data || [];
+}
+
 export async function createOffer({
   threadId,
   listingId,

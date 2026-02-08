@@ -5,6 +5,18 @@ interface Props {
   message: any;
 }
 
+const TYPE_BADGE_CLASSES: Record<string, string> = {
+  question: "border-blue-400/40 text-blue-300 bg-blue-400/10",
+  answer: "border-emerald-400/40 text-emerald-300 bg-emerald-400/10",
+  info: "border-slate-400/40 text-slate-300 bg-slate-400/10",
+  offer: "border-amber-400/40 text-amber-300 bg-amber-400/10",
+  counter_offer: "border-amber-400/40 text-amber-300 bg-amber-400/10",
+  accept: "border-emerald-400/40 text-emerald-300 bg-emerald-400/10",
+  decline: "border-red-400/40 text-red-400 bg-red-400/10",
+  cancel: "border-red-400/40 text-red-400 bg-red-400/10",
+  warning: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+};
+
 export default function MessageCard({ message }: Props) {
   const payload = message?.payload && typeof message.payload === "object" ? message.payload : null;
   const messageType = message?.type || payload?.type || null;
@@ -19,6 +31,20 @@ export default function MessageCard({ message }: Props) {
     messageType === "decline" ||
     messageType === "cancel";
 
+  const bodyText =
+    typeof message?.body === "string" && message.body.trim()
+      ? message.body
+      : typeof payload?.text === "string" && payload.text.trim()
+        ? payload.text
+        : null;
+
+  const offerRow = message?.offer && typeof message.offer === "object" ? message.offer : null;
+  const offerAmount = offerRow?.amount ?? payload?.amount ?? null;
+  const offerCurrency = offerRow?.currency ?? payload?.currency ?? null;
+  const offerStatus = offerRow?.status ?? payload?.status ?? null;
+  const offerExpiresAt = offerRow?.expires_at ?? payload?.expires_at ?? null;
+  const offerPrev = payload?.previous_offer_id ?? offerRow?.previous_offer_id ?? null;
+
   return (
     <div
       className={`border rounded clip-corner p-4 space-y-2 ${
@@ -31,7 +57,11 @@ export default function MessageCard({ message }: Props) {
       <div className="flex items-center gap-2 flex-wrap">
         {/* Message type badge */}
         {messageType && (
-          <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-secondary/40 text-secondary bg-secondary/10">
+          <span
+            className={`text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${
+              TYPE_BADGE_CLASSES[String(messageType)] || "border-secondary/40 text-secondary bg-secondary/10"
+            }`}
+          >
             {messageType}
           </span>
         )}
@@ -63,9 +93,9 @@ export default function MessageCard({ message }: Props) {
       </div>
 
       {/* Body */}
-      {message.body && (
+      {bodyText && (
         <p className="text-sm font-mono text-text whitespace-pre-wrap break-words leading-relaxed">
-          {message.body}
+          {bodyText}
         </p>
       )}
 
@@ -76,17 +106,37 @@ export default function MessageCard({ message }: Props) {
             <span className="text-subtle uppercase tracking-wider">Offer ID</span>
             <TruncatedId id={payload.offer_id} />
           </div>
-          {messageType === "counter_offer" && payload?.previous_offer_id && (
+          {(messageType === "counter_offer" || offerPrev) && offerPrev && (
             <div className="flex items-center justify-between gap-3">
               <span className="text-subtle uppercase tracking-wider">Previous</span>
-              <TruncatedId id={payload.previous_offer_id} />
+              <TruncatedId id={offerPrev} />
+            </div>
+          )}
+          {offerAmount != null && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-subtle uppercase tracking-wider">Amount</span>
+              <span className="text-text tabular-nums">
+                {offerAmount} {offerCurrency || "\u2014"}
+              </span>
+            </div>
+          )}
+          {offerStatus && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-subtle uppercase tracking-wider">Status</span>
+              <span className="text-text">{offerStatus}</span>
+            </div>
+          )}
+          {offerExpiresAt && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-subtle uppercase tracking-wider">Expires</span>
+              <span className="text-text tabular-nums">{formatDate(offerExpiresAt)}</span>
             </div>
           )}
         </div>
       )}
 
       {/* Fallback: show payload when there's no body */}
-      {!message.body && payload && !isOfferLike && (
+      {!bodyText && payload && !isOfferLike && (
         <pre className="text-xs font-mono text-muted whitespace-pre-wrap break-words leading-relaxed">
           {JSON.stringify(payload, null, 2).slice(0, 800)}
         </pre>

@@ -5,8 +5,13 @@ vi.mock("../../../../../server/services/threads", () => ({
   listMessages: vi.fn()
 }));
 
+vi.mock("../../../../../server/services/offers", () => ({
+  listOffersByIds: vi.fn()
+}));
+
 import { handler } from "../../../../../pages/api/console/threads/[thread_id]/index";
 import { getThread, listMessages } from "../../../../../server/services/threads";
+import { listOffersByIds } from "../../../../../server/services/offers";
 
 const baseCtx: any = {
   ownerId: "owner-1",
@@ -48,10 +53,30 @@ describe("GET /api/console/threads/[thread_id]", () => {
       status: "OPEN"
     };
     vi.mocked(getThread).mockResolvedValue(thread);
+
+    const offerId = "11111111-1111-4111-8111-111111111111";
     vi.mocked(listMessages).mockResolvedValue({
-      items: [{ message_id: "m1", body: "Hello" }],
+      items: [
+        {
+          message_id: "m1",
+          type: "offer",
+          body: null,
+          payload: { offer_id: offerId }
+        }
+      ],
       nextCursor: "msg-cursor-abc"
     });
+    vi.mocked(listOffersByIds).mockResolvedValue([
+      {
+        offer_id: offerId,
+        amount: 9000,
+        currency: "EUR",
+        status: "CREATED",
+        expires_at: "2026-02-08T20:00:00Z",
+        created_at: "2026-02-08T19:59:00Z",
+        previous_offer_id: null
+      }
+    ]);
 
     const req = { method: "GET", query: { thread_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" } };
     const result: any = await handler(req, null, { ...baseCtx });
@@ -60,7 +85,22 @@ describe("GET /api/console/threads/[thread_id]", () => {
     expect(result.body.thread).toEqual(thread);
     expect(result.body.messages).toHaveLength(1);
     expect(result.body.messages[0].message_id).toBe("m1");
+    expect(result.body.messages[0].offer.offer_id).toBe(offerId);
     expect(result.body.messages_next_cursor).toBe("msg-cursor-abc");
+  });
+
+  it("does not fetch offers when no offer_id is present in payload", async () => {
+    vi.mocked(getThread).mockResolvedValue({ thread_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" });
+    vi.mocked(listMessages).mockResolvedValue({
+      items: [{ message_id: "m1", type: "question", body: null, payload: { text: "hello" } }],
+      nextCursor: null
+    });
+
+    const req = { method: "GET", query: { thread_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(listOffersByIds).not.toHaveBeenCalled();
   });
 
   it("returns 404 when getThread returns null", async () => {

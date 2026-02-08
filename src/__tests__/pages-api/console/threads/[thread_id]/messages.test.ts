@@ -4,12 +4,17 @@ vi.mock("../../../../../server/services/threads", () => ({
   listMessages: vi.fn()
 }));
 
+vi.mock("../../../../../server/services/offers", () => ({
+  listOffersByIds: vi.fn()
+}));
+
 vi.mock("../../../../../server/services/messages-cursor", () => ({
   decodeMessagesCursor: vi.fn()
 }));
 
 import { handler } from "../../../../../pages/api/console/threads/[thread_id]/messages";
 import { listMessages } from "../../../../../server/services/threads";
+import { listOffersByIds } from "../../../../../server/services/offers";
 import { decodeMessagesCursor } from "../../../../../server/services/messages-cursor";
 
 const baseCtx: any = {
@@ -46,10 +51,30 @@ describe("GET /api/console/threads/[thread_id]/messages", () => {
   });
 
   it("returns items and next_cursor", async () => {
+    const offerId = "11111111-1111-4111-8111-111111111111";
     vi.mocked(listMessages).mockResolvedValue({
-      items: [{ message_id: "m1", body: "Hello", sender_agent_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" }],
+      items: [
+        {
+          message_id: "m1",
+          type: "offer",
+          body: null,
+          payload: { offer_id: offerId },
+          sender_agent_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7"
+        }
+      ],
       nextCursor: "msg-cursor-abc"
     });
+    vi.mocked(listOffersByIds).mockResolvedValue([
+      {
+        offer_id: offerId,
+        amount: 9000,
+        currency: "EUR",
+        status: "CREATED",
+        expires_at: "2026-02-08T20:00:00Z",
+        created_at: "2026-02-08T19:59:00Z",
+        previous_offer_id: null
+      }
+    ]);
 
     const req = { method: "GET", query: { thread_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" } };
     const result: any = await handler(req, null, { ...baseCtx });
@@ -57,6 +82,7 @@ describe("GET /api/console/threads/[thread_id]/messages", () => {
     expect(result.status).toBe(200);
     expect(result.body.items).toHaveLength(1);
     expect(result.body.items[0].message_id).toBe("m1");
+    expect(result.body.items[0].offer.offer_id).toBe(offerId);
     expect(result.body.next_cursor).toBe("msg-cursor-abc");
   });
 

@@ -5,6 +5,7 @@ import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors";
 import { listListings } from "../../../server/services/listings";
 import { decodeListingsCursor } from "../../../server/services/listings-cursor";
+import { redactEmailsAndPhones } from "../../../server/utils/free-text-redaction";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -88,7 +89,18 @@ export async function handler(req, res, ctx) {
       q, category, condition, status, priceMin, priceMax, sort, limit, cursor
     });
 
-    return jsonResponse(200, { items: result.items, next_cursor: result.nextCursor });
+    const items = (result.items || []).map((item: any) => {
+      if (!item || typeof item !== "object") {
+        return item;
+      }
+      if (typeof item.title === "string") {
+        const redacted = redactEmailsAndPhones(item.title);
+        return { ...item, title: redacted.text, title_redacted: redacted.redacted };
+      }
+      return { ...item, title_redacted: false };
+    });
+
+    return jsonResponse(200, { items, next_cursor: result.nextCursor });
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }

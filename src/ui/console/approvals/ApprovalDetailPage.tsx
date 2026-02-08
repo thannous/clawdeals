@@ -116,6 +116,7 @@ export default function ApprovalDetailPage() {
               <ApprovalContextPreview
                 actionType={approval.action_type}
                 payload={approval.action_payload_redacted}
+                actionRef={approval.action_ref}
               />
             </section>
 

@@ -44,8 +44,9 @@ describe("GET /api/console/listings/[listing_id]", () => {
     const listing = {
       listing_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
       title: "Test Listing",
+      description: "Contact seller at test@leak.example.com or 0612345678",
       price: "49.99",
-      status: "ACTIVE"
+      status: "ACTIVE",
     };
     vi.mocked(getListing).mockResolvedValue(listing);
 
@@ -53,7 +54,29 @@ describe("GET /api/console/listings/[listing_id]", () => {
     const result: any = await handler(req, null, { ...baseCtx });
 
     expect(result.status).toBe(200);
-    expect(result.body.listing).toEqual(listing);
+    expect(result.body.listing.listing_id).toBe(listing.listing_id);
+    expect(result.body.listing.title).toBe("Test Listing");
+    expect(result.body.listing.title_redacted).toBe(false);
+    expect(result.body.listing.description).toBe("Contact seller at [REDACTED] or [REDACTED]");
+    expect(result.body.listing.description_redacted).toBe(true);
+  });
+
+  it("redacts PII in title", async () => {
+    const listing = {
+      listing_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
+      title: "Reach me test@leak.example.com",
+      description: null,
+    };
+    vi.mocked(getListing).mockResolvedValue(listing);
+
+    const req = { method: "GET", query: { listing_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(result.body.listing.title).toBe("Reach me [REDACTED]");
+    expect(result.body.listing.title_redacted).toBe(true);
+    expect(result.body.listing.description).toBeNull();
+    expect(result.body.listing.description_redacted).toBe(false);
   });
 
   it("returns 404 when getListing returns null", async () => {
