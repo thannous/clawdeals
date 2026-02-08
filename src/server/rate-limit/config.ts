@@ -116,6 +116,9 @@ export const RATE_LIMIT_PROFILES = {
   "transactions.actions": {
     buckets: [{ limit: 50, windowSeconds: DAY }],
   },
+  "ratings.create": {
+    buckets: [{ limit: 20, windowSeconds: DAY }],
+  },
   "offers.write": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
   },

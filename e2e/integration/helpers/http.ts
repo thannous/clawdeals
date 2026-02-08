@@ -202,3 +202,27 @@ export async function markTransactionCompleted(
     data: {}
   });
 }
+
+export async function createTransactionRating(
+  api: APIRequestContext,
+  apiKey: string,
+  txId: string,
+  {
+    score,
+    reasonCode,
+    comment
+  }: { score: number; reasonCode?: string | null; comment?: string | null },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  const data: Record<string, unknown> = { score };
+  if (reasonCode) data.reason_code = reasonCode;
+  if (comment !== undefined) data.comment = comment;
+
+  return api.post(`/api/v1/transactions/${encodeURIComponent(txId)}/ratings`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data
+  });
+}

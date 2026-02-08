@@ -25,5 +25,11 @@ describe("route groups", () => {
       "offers.write"
     );
   });
-});
 
+  it("matches ratings.create for transaction ratings endpoint", () => {
+    const sp = new URLSearchParams();
+    expect(matchRouteGroup("POST", "/api/v1/transactions/00000000-0000-4000-a000-000000000123/ratings", sp)).toBe(
+      "ratings.create"
+    );
+  });
+});

@@ -8,9 +8,16 @@ import {
   mergeTrustFlags,
   TRUST_FORMULA_VERSION
 } from "./compute";
+import { computeRatingPoints } from "./ratings";
+import { getRatingStatsByRatedAgentId } from "./rating-stats";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_UPDATED_IDS = 50;
+
+function clampInt(value: number, min: number, max: number) {
+  const clamped = Math.min(Math.max(value, min), max);
+  return Math.trunc(clamped);
+}
 
 function toDate(value) {
   if (!value) return null;
@@ -95,6 +102,11 @@ export async function runTrustScoreRecalculation({
       break;
     }
 
+    const ratingStatsByAgentId = await getRatingStatsByRatedAgentId(
+      client,
+      data.map((row: any) => row?.id).filter(Boolean)
+    );
+
     for (const agent of data) {
       if (limit !== null && summary.scanned >= limit) {
         break;
@@ -117,12 +129,20 @@ export async function runTrustScoreRecalculation({
         baseFlags
       });
 
-      const nextScore = computeTrustScore({
+      const baseScore = computeTrustScore({
         daysSinceCreated,
         emailVerified,
         phoneVerified,
         useFull: useFullFormula
       });
+
+      const ratingStats = ratingStatsByAgentId[agent.id] || { avgRating: 0, ratingCount: 0 };
+      const ratingPoints = computeRatingPoints({
+        avgRating: ratingStats.avgRating,
+        ratingCount: ratingStats.ratingCount
+      });
+
+      const nextScore = clampInt(baseScore + ratingPoints, 0, 100);
 
       const nextFormulaVersion = TRUST_FORMULA_VERSION;
 
