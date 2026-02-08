@@ -187,3 +187,18 @@ export async function cancelOffer(
     data: {}
   });
 }
+
+export async function markTransactionCompleted(
+  api: APIRequestContext,
+  apiKey: string,
+  txId: string,
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/transactions/${encodeURIComponent(txId)}/mark-completed`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {}
+  });
+}

@@ -16,6 +16,16 @@ function mapRpcError(error: any) {
     return { status: 404, code: "TX_NOT_FOUND", message: "Transaction not found" };
   }
 
+  const notReadyMatch = /TX_NOT_READY:([A-Z_]+)/i.exec(message);
+  if (notReadyMatch) {
+    return {
+      status: 409,
+      code: "TX_NOT_READY",
+      message: "Transaction not ready",
+      details: { status: notReadyMatch[1].toUpperCase() }
+    };
+  }
+
   const notAcceptedMatch = /TX_NOT_ACCEPTED:([A-Z_]+)/i.exec(message);
   if (notAcceptedMatch) {
     return {
@@ -79,6 +89,22 @@ export async function requestContactReveal({
       p_tx_id: txId,
       p_actor_agent_id: actorAgentId,
       p_auto_approve: autoApprove
+    })
+    .single();
+
+  if (error) {
+    throwRpcError(error);
+  }
+
+  return data;
+}
+
+export async function markTransactionCompleted({ txId, actorAgentId }: { txId: string; actorAgentId: string }) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .rpc("transaction_mark_completed_v0", {
+      p_tx_id: txId,
+      p_actor_agent_id: actorAgentId
     })
     .single();
 

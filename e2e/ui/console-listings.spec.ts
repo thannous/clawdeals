@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForApiGet } from "./helpers/api";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -81,7 +82,7 @@ function mockListingDetailApi(page: Page, listing = MOCK_LISTINGS[0]) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(listing),
+      body: JSON.stringify({ listing }),
     });
   });
 }
@@ -137,9 +138,7 @@ test.describe("Console Listings — US-1", () => {
   // -----------------------------------------------------------------------
   test.describe("Filters", () => {
     test("filters by status PENDING_APPROVAL", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/listings?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -150,17 +149,14 @@ test.describe("Console Listings — US-1", () => {
       await page.goto("/console/listings");
       await expect(page.getByTestId("listings-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "PENDING_APPROVAL" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("status=PENDING_APPROVAL"));
-      expect(filtered).toBeTruthy();
+      const reqPromise = waitForApiGet(page, "/api/console/listings", { status: "PENDING_APPROVAL" });
+      await page.getByTestId("listings-toolbar").getByRole("button", { name: /^PENDING_APPROVAL$/ }).click();
+      const req = await reqPromise;
+      expect(new URL(req.url()).searchParams.get("status")).toBe("PENDING_APPROVAL");
     });
 
     test("filters by condition NEW", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/listings?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -171,17 +167,14 @@ test.describe("Console Listings — US-1", () => {
       await page.goto("/console/listings");
       await expect(page.getByTestId("listings-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "NEW" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("condition=NEW"));
-      expect(filtered).toBeTruthy();
+      const reqPromise = waitForApiGet(page, "/api/console/listings", { condition: "NEW" });
+      await page.getByTestId("listings-toolbar").getByRole("button", { name: /^NEW$/ }).click();
+      const req = await reqPromise;
+      expect(new URL(req.url()).searchParams.get("condition")).toBe("NEW");
     });
 
     test("filters by price range", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/listings?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -192,18 +185,17 @@ test.describe("Console Listings — US-1", () => {
       await page.goto("/console/listings");
       await expect(page.getByTestId("listings-page")).toBeVisible();
 
+      const reqPromise = waitForApiGet(page, "/api/console/listings", { price_min: "0", price_max: "50" });
       await page.getByTestId("listings-price-min").fill("0");
       await page.getByTestId("listings-price-max").fill("50");
-      await page.waitForTimeout(500);
-
-      const filtered = requests.find((u) => u.includes("price_min=0") && u.includes("price_max=50"));
-      expect(filtered).toBeTruthy();
+      const req = await reqPromise;
+      const sp = new URL(req.url()).searchParams;
+      expect(sp.get("price_min")).toBe("0");
+      expect(sp.get("price_max")).toBe("50");
     });
 
     test("changes sort to price_asc", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/listings?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -214,17 +206,14 @@ test.describe("Console Listings — US-1", () => {
       await page.goto("/console/listings");
       await expect(page.getByTestId("listings-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "Price Low" }).click();
-      await page.waitForTimeout(400);
-
-      const sorted = requests.find((u) => u.includes("sort=price_asc"));
-      expect(sorted).toBeTruthy();
+      const reqPromise = waitForApiGet(page, "/api/console/listings", { sort: "price_asc" });
+      await page.getByTestId("listings-toolbar").getByRole("button", { name: "Price Low" }).click();
+      const req = await reqPromise;
+      expect(new URL(req.url()).searchParams.get("sort")).toBe("price_asc");
     });
 
     test("search input sends query param", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/listings?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -235,11 +224,10 @@ test.describe("Console Listings — US-1", () => {
       await page.goto("/console/listings");
       await expect(page.getByTestId("listings-page")).toBeVisible();
 
+      const reqPromise = waitForApiGet(page, "/api/console/listings", { q: "keyboard" });
       await page.getByTestId("listings-search").fill("keyboard");
-      await page.waitForTimeout(500);
-
-      const searched = requests.find((u) => u.includes("q=keyboard"));
-      expect(searched).toBeTruthy();
+      const req = await reqPromise;
+      expect(new URL(req.url()).searchParams.get("q")).toBe("keyboard");
     });
   });
 
@@ -277,7 +265,6 @@ test.describe("Console Listings — US-1", () => {
       await expect(page.locator("table tbody tr")).toHaveCount(2);
 
       await page.getByRole("button", { name: /load more/i }).click();
-      await page.waitForTimeout(400);
 
       await expect(page.locator("table tbody tr")).toHaveCount(3);
     });

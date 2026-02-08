@@ -61,7 +61,7 @@ export default function ThreadDetailPage() {
                     className="text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <TruncatedId id={thread.listing_id} />
+                    <TruncatedId id={thread.listing_id} stopPropagation={false} />
                   </Link>
                 </div>
                 <div className="border border-border bg-bg rounded clip-corner px-3 py-2 flex items-center justify-between gap-3">

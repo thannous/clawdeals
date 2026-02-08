@@ -113,6 +113,9 @@ export const RATE_LIMIT_PROFILES = {
   "offers.actions": {
     buckets: [{ limit: 100, windowSeconds: DAY }],
   },
+  "transactions.actions": {
+    buckets: [{ limit: 50, windowSeconds: DAY }],
+  },
   "offers.write": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
   },

@@ -38,6 +38,7 @@ function inferAuditEntityFromPath(path: string) {
     { type: "thread", re: /^\/api\/(?:v1|console)\/threads\/([^/]+)/ },
     { type: "message", re: /^\/api\/(?:v1|console)\/messages\/([^/]+)/ },
     { type: "offer", re: /^\/api\/(?:v1|console)\/offers\/([^/]+)/ },
+    { type: "transaction", re: /^\/api\/(?:v1|console)\/transactions\/([^/]+)/ },
     { type: "approval", re: /^\/api\/(?:v1|console)\/approvals\/([^/]+)/ },
     { type: "deal", re: /^\/api\/(?:v1|console)\/deals\/([^/]+)/ },
     { type: "watchlist", re: /^\/api\/(?:v1|console)\/watchlists\/([^/]+)/ },

@@ -62,13 +62,21 @@ export default function ConfirmModal({
   const colors = VARIANT_COLORS[variant] || VARIANT_COLORS.default;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      data-testid="confirm-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-modal-title"
+    >
       {/* Overlay */}
       <div className="absolute inset-0 modal-overlay" onClick={loading ? undefined : onCancel} />
 
       {/* Dialog */}
       <div className="relative bg-surface border border-border rounded clip-corner p-6 max-w-md w-full mx-4 space-y-4">
-        <h2 className="text-sm font-bold font-mono uppercase tracking-wider text-text">{title}</h2>
+        <h2 id="confirm-modal-title" className="text-sm font-bold font-mono uppercase tracking-wider text-text">
+          {title}
+        </h2>
         <p className="text-xs font-mono text-muted leading-relaxed">{message}</p>
         <div className="flex items-center justify-end gap-3">
           <button

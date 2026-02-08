@@ -91,7 +91,7 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(LISTING_WITH_URL),
+          body: JSON.stringify({ listing: LISTING_WITH_URL }),
         });
       });
 
@@ -111,7 +111,11 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(THREAD_WITH_MESSAGES),
+          body: JSON.stringify({
+            thread: THREAD_WITH_MESSAGES,
+            messages: MESSAGES_WITH_URL_AND_REDACTION,
+            messages_next_cursor: null,
+          }),
         });
       });
       await page.route(`**/api/console/threads/${THREAD_WITH_MESSAGES.thread_id}/messages*`, (route) => {
@@ -143,7 +147,7 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(LISTING_WITH_URL),
+          body: JSON.stringify({ listing: LISTING_WITH_URL }),
         });
       });
 
@@ -167,7 +171,11 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(THREAD_WITH_MESSAGES),
+          body: JSON.stringify({
+            thread: THREAD_WITH_MESSAGES,
+            messages: MESSAGES_WITH_URL_AND_REDACTION,
+            messages_next_cursor: null,
+          }),
         });
       });
       await page.route(`**/api/console/threads/${THREAD_WITH_MESSAGES.thread_id}/messages*`, (route) => {
@@ -190,7 +198,11 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(THREAD_WITH_MESSAGES),
+          body: JSON.stringify({
+            thread: THREAD_WITH_MESSAGES,
+            messages: MESSAGES_WITH_URL_AND_REDACTION,
+            messages_next_cursor: null,
+          }),
         });
       });
       await page.route(`**/api/console/threads/${THREAD_WITH_MESSAGES.thread_id}/messages*`, (route) => {
@@ -204,7 +216,7 @@ test.describe("Console Security — US-8", () => {
       await page.goto(`/console/threads/${THREAD_WITH_MESSAGES.thread_id}`);
 
       // WARNING badge visible
-      await expect(page.getByText("WARNING")).toBeVisible();
+      await expect(page.getByText("WARNING", { exact: true })).toBeVisible();
 
       // Yellow-bordered card exists
       const yellowCard = page.locator(".border-yellow-400\\/40");
@@ -228,7 +240,7 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(PENDING_APPROVAL),
+          body: JSON.stringify({ approval: PENDING_APPROVAL }),
         });
       });
 
@@ -262,7 +274,7 @@ test.describe("Console Security — US-8", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(PENDING_APPROVAL),
+          body: JSON.stringify({ approval: PENDING_APPROVAL }),
         });
       });
 
@@ -319,8 +331,9 @@ test.describe("Console Security — US-8", () => {
 
       // Set "from" to 10 days ago
       const tenDaysAgo = new Date(Date.now() - 10 * 86400000);
-      await page.getByTestId("audit-from").fill(tenDaysAgo.toISOString().slice(0, 16));
-      await page.waitForTimeout(400);
+      const fromInput = page.getByTestId("audit-from");
+      await fromInput.fill(tenDaysAgo.toISOString().slice(0, 16));
+      await fromInput.press("Tab");
 
       // Error should be visible
       await expect(page.getByText(/time range/i)).toBeVisible();

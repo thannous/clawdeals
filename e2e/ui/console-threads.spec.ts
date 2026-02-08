@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForApiGet } from "./helpers/api";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -119,12 +120,19 @@ function mockThreadsApi(
   });
 }
 
-function mockThreadDetailApi(page: Page) {
+function mockThreadDetailApi(
+  page: Page,
+  { thread = MOCK_THREAD_DETAIL, messages = MOCK_MESSAGES, messages_next_cursor = null as string | null } = {}
+) {
   return page.route(`**/api/console/threads/${THREAD_ID}`, (route) => {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(MOCK_THREAD_DETAIL),
+      body: JSON.stringify({
+        thread,
+        messages,
+        messages_next_cursor,
+      }),
     });
   });
 }
@@ -176,9 +184,7 @@ test.describe("Console Threads — US-2", () => {
     });
 
     test("filters by listing_id", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/threads?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -189,17 +195,13 @@ test.describe("Console Threads — US-2", () => {
       await page.goto("/console/threads");
       await expect(page.getByTestId("threads-page")).toBeVisible();
 
+      const filteredReq = waitForApiGet(page, "/api/console/threads", { listing_id: LISTING_ID });
       await page.getByTestId("threads-listing-id").fill(LISTING_ID);
-      await page.waitForTimeout(500);
-
-      const filtered = requests.find((u) => u.includes(`listing_id=${LISTING_ID}`));
-      expect(filtered).toBeTruthy();
+      await filteredReq;
     });
 
     test("filters by status OPEN", async ({ page }) => {
-      const requests: string[] = [];
       await page.route("**/api/console/threads?*", (route) => {
-        requests.push(route.request().url());
         route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -210,11 +212,10 @@ test.describe("Console Threads — US-2", () => {
       await page.goto("/console/threads");
       await expect(page.getByTestId("threads-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "OPEN" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("status=OPEN"));
-      expect(filtered).toBeTruthy();
+      // Next.js dev tools button has an aria-label starting with "Open ...", so avoid name substring collisions.
+      const filteredReq = waitForApiGet(page, "/api/console/threads", { status: "OPEN" });
+      await page.getByTestId("threads-toolbar").locator("button", { hasText: /^OPEN$/ }).click();
+      await filteredReq;
     });
   });
 
@@ -224,7 +225,6 @@ test.describe("Console Threads — US-2", () => {
   test.describe("Detail view", () => {
     test("displays thread metadata", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       await expect(page.getByTestId("thread-detail-page")).toBeVisible();
@@ -235,7 +235,6 @@ test.describe("Console Threads — US-2", () => {
 
     test("shows messages in chronological order with type badges", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       await expect(page.getByTestId("thread-detail-page")).toBeVisible();
@@ -251,11 +250,10 @@ test.describe("Console Threads — US-2", () => {
 
     test("warning messages are highlighted", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       // Warning badge visible
-      await expect(page.getByText("WARNING")).toBeVisible();
+      await expect(page.getByText("WARNING", { exact: true })).toBeVisible();
       // Warning message has yellow border (class check)
       const warningCard = page.locator(".border-yellow-400\\/40").first();
       await expect(warningCard).toBeVisible();
@@ -263,7 +261,6 @@ test.describe("Console Threads — US-2", () => {
 
     test("redacted messages show REDACTED badge, no original text", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       // REDACTED badge visible
@@ -272,7 +269,6 @@ test.describe("Console Threads — US-2", () => {
 
     test("URLs in messages are plain text, not clickable links", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       // URL text is visible
@@ -282,9 +278,8 @@ test.describe("Console Threads — US-2", () => {
       await expect(phishingLink).toHaveCount(0);
     });
 
-    test("offer messages display amount and currency", async ({ page }) => {
+    test("offer messages display offer card", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       // Offer card with Offer ID
@@ -293,7 +288,6 @@ test.describe("Console Threads — US-2", () => {
 
     test("listing link navigates to listing detail", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       const listingLink = page.locator(`a[href="/console/listings/${LISTING_ID}"]`);
@@ -302,7 +296,6 @@ test.describe("Console Threads — US-2", () => {
 
     test("Back link returns to threads list", async ({ page }) => {
       await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page);
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       const backLink = page.getByRole("link", { name: /back/i });
@@ -311,8 +304,7 @@ test.describe("Console Threads — US-2", () => {
     });
 
     test("shows empty timeline when no messages", async ({ page }) => {
-      await mockThreadDetailApi(page);
-      await mockThreadMessagesApi(page, { items: [] });
+      await mockThreadDetailApi(page, { messages: [] });
       await page.goto(`/console/threads/${THREAD_ID}`);
 
       await expect(page.getByText("No messages in this thread")).toBeVisible();

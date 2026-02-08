@@ -10,3 +10,7 @@ export const CONTACT_REVEAL_MIN_TRUST_SCORE = clamp(
   100
 );
 
+export const TRANSACTION_AUTO_CLOSE_DAYS = Math.max(
+  1,
+  Math.floor(getNumberEnv("TRANSACTION_AUTO_CLOSE_DAYS", { defaultValue: 7 }))
+);

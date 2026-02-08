@@ -3,16 +3,17 @@ import { useState, useCallback } from "react";
 interface Props {
   id?: string | null;
   chars?: number;
+  stopPropagation?: boolean;
 }
 
-export default function TruncatedId({ id, chars = 8 }: Props) {
+export default function TruncatedId({ id, chars = 8, stopPropagation = true }: Props) {
   const [copied, setCopied] = useState(false);
   const canCopy = typeof id === "string" && id.length > 0;
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (!canCopy || !id) return;
-      e.stopPropagation();
+      if (stopPropagation) e.stopPropagation();
       const promise = navigator.clipboard?.writeText(id);
       if (!promise) return;
       promise.then(() => {

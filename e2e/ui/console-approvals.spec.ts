@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForApiGet, waitForApiPostJson } from "./helpers/api";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -88,7 +89,7 @@ function mockApprovalDetailApi(page: Page, approval = MOCK_APPROVALS[0]) {
     route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(approval),
+      body: JSON.stringify({ approval }),
     });
   });
 }
@@ -148,87 +149,47 @@ test.describe("Console Approvals — US-3/US-4", () => {
     });
 
     test("filters by action type listing_publish", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/approvals?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_APPROVALS, next_cursor: null }),
-        });
-      });
+      await mockApprovalsApi(page);
 
       await page.goto("/console/approvals");
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
+      const filteredReq = waitForApiGet(page, "/api/console/approvals", { action_type: "listing_publish" });
       await page.getByRole("button", { name: "listing_publish" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("action_type=listing_publish"));
-      expect(filtered).toBeTruthy();
+      await filteredReq;
     });
 
     test("filters by action type offer_over_budget", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/approvals?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_APPROVALS, next_cursor: null }),
-        });
-      });
+      await mockApprovalsApi(page);
 
       await page.goto("/console/approvals");
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
+      const filteredReq = waitForApiGet(page, "/api/console/approvals", { action_type: "offer_over_budget" });
       await page.getByRole("button", { name: "offer_over_budget" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("action_type=offer_over_budget"));
-      expect(filtered).toBeTruthy();
+      await filteredReq;
     });
 
     test("filters by state APPROVED", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/approvals?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_APPROVALS, next_cursor: null }),
-        });
-      });
+      await mockApprovalsApi(page);
 
       await page.goto("/console/approvals");
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
+      const filteredReq = waitForApiGet(page, "/api/console/approvals", { state: "APPROVED" });
       await page.getByRole("button", { name: "APPROVED" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("state=APPROVED"));
-      expect(filtered).toBeTruthy();
+      await filteredReq;
     });
 
     test("filters by agent ID", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/approvals?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_APPROVALS, next_cursor: null }),
-        });
-      });
+      await mockApprovalsApi(page);
 
       await page.goto("/console/approvals");
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
+      const filteredReq = waitForApiGet(page, "/api/console/approvals", { agent_id: AGENT_ID });
       await page.getByTestId("approvals-agent-id").fill(AGENT_ID);
-      await page.waitForTimeout(500);
-
-      const filtered = requests.find((u) => u.includes(`agent_id=${AGENT_ID}`));
-      expect(filtered).toBeTruthy();
+      await filteredReq;
     });
   });
 
@@ -255,18 +216,16 @@ test.describe("Console Approvals — US-3/US-4", () => {
       await page.getByRole("button", { name: /^approve$/i }).click();
 
       // Modal appears
-      await expect(page.getByText("Approve this action?")).toBeVisible();
-      await expect(page.getByRole("button", { name: /cancel/i })).toBeVisible();
-      await expect(page.getByRole("button", { name: /^approve$/i })).toBeVisible();
+      const dialog = page.getByRole("dialog", { name: /approve this action\\?/i });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole("button", { name: /cancel/i })).toBeVisible();
+      await expect(dialog.getByRole("button", { name: /^approve$/i })).toBeVisible();
     });
 
     test("Confirm Approve sends POST request", async ({ page }) => {
-      let approveCallMade = false;
-
       await mockApprovalDetailApi(page, MOCK_APPROVALS[0]);
       await page.route(`**/api/console/approvals/${APPROVAL_ID}`, (route) => {
         if (route.request().method() === "POST") {
-          approveCallMade = true;
           route.fulfill({
             status: 200,
             contentType: "application/json",
@@ -283,11 +242,11 @@ test.describe("Console Approvals — US-3/US-4", () => {
       // Click Approve → modal → Confirm
       await page.getByRole("button", { name: /^approve$/i }).click();
       await expect(page.getByText("Approve this action?")).toBeVisible();
-      // Click confirm button in modal (second Approve button)
-      await page.locator(".fixed button").filter({ hasText: /approve/i }).click();
+      const dialog = page.getByRole("dialog", { name: /approve this action\\?/i });
+      const approveReq = waitForApiPostJson(page, `/api/console/approvals/${APPROVAL_ID}`, { action: "approve" });
+      await dialog.getByRole("button", { name: /^approve$/i }).click();
 
-      await page.waitForTimeout(500);
-      expect(approveCallMade).toBeTruthy();
+      await approveReq;
     });
 
     test("shows success toast after approve", async ({ page }) => {
@@ -298,7 +257,8 @@ test.describe("Console Approvals — US-3/US-4", () => {
       await expect(page.getByTestId("approval-detail-page")).toBeVisible();
 
       await page.getByRole("button", { name: /^approve$/i }).click();
-      await page.locator(".fixed button").filter({ hasText: /approve/i }).click();
+      const dialog = page.getByRole("dialog", { name: /approve this action\\?/i });
+      await dialog.getByRole("button", { name: /^approve$/i }).click();
 
       await expect(page.getByText(/action completed successfully/i)).toBeVisible();
     });
@@ -321,12 +281,9 @@ test.describe("Console Approvals — US-3/US-4", () => {
     });
 
     test("Confirm Deny sends POST request", async ({ page }) => {
-      let denyCallMade = false;
-
       await mockApprovalDetailApi(page, MOCK_APPROVALS[0]);
       await page.route(`**/api/console/approvals/${APPROVAL_ID}`, (route) => {
         if (route.request().method() === "POST") {
-          denyCallMade = true;
           route.fulfill({
             status: 200,
             contentType: "application/json",
@@ -342,10 +299,11 @@ test.describe("Console Approvals — US-3/US-4", () => {
 
       await page.getByRole("button", { name: /^deny$/i }).click();
       await expect(page.getByText("Deny this action?")).toBeVisible();
-      await page.locator(".fixed button").filter({ hasText: /deny/i }).click();
+      const dialog = page.getByRole("dialog", { name: /deny this action\\?/i });
+      const denyReq = waitForApiPostJson(page, `/api/console/approvals/${APPROVAL_ID}`, { action: "deny" });
+      await dialog.getByRole("button", { name: /^deny$/i }).click();
 
-      await page.waitForTimeout(500);
-      expect(denyCallMade).toBeTruthy();
+      await denyReq;
     });
   });
 
@@ -361,9 +319,11 @@ test.describe("Console Approvals — US-3/US-4", () => {
       await expect(page.getByTestId("approval-detail-page")).toBeVisible();
 
       await page.getByRole("button", { name: /^approve$/i }).click();
-      await page.locator(".fixed button").filter({ hasText: /approve/i }).click();
+      const dialog = page.getByRole("dialog", { name: /approve this action\\?/i });
+      const approveReq = waitForApiPostJson(page, `/api/console/approvals/${APPROVAL_ID}`, { action: "approve" });
+      await dialog.getByRole("button", { name: /^approve$/i }).click();
 
-      await page.waitForTimeout(500);
+      await approveReq;
       // Error should be displayed
       await expect(page.getByText(/internal server error|failed/i)).toBeVisible();
     });
@@ -392,7 +352,7 @@ test.describe("Console Approvals — US-3/US-4", () => {
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify(approved),
+          body: JSON.stringify({ approval: approved }),
         });
       });
 

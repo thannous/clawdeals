@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForApiGet } from "./helpers/api";
 
 // ---------------------------------------------------------------------------
 // Mock data — shared across features
@@ -104,7 +105,7 @@ function mockAllApis(page: Page) {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(MOCK_LISTING),
+        body: JSON.stringify({ listing: MOCK_LISTING }),
       });
     }),
     // Threads list
@@ -120,7 +121,11 @@ function mockAllApis(page: Page) {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(MOCK_THREAD),
+        body: JSON.stringify({
+          thread: MOCK_THREAD,
+          messages: MOCK_MESSAGES,
+          messages_next_cursor: null,
+        }),
       });
     }),
     // Thread messages
@@ -152,7 +157,7 @@ function mockAllApis(page: Page) {
       route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(MOCK_APPROVAL),
+        body: JSON.stringify({ approval: MOCK_APPROVAL }),
       });
     }),
     // Audit logs
@@ -179,21 +184,29 @@ test.describe("Console Cross-Feature — US-7", () => {
     await expect(page.getByTestId("listings-page")).toBeVisible();
 
     // 2. Click on listing row to go to detail
-    await page.locator("table tbody tr").first().click();
+    const listingRows = page.locator("table tbody tr");
+    await expect(listingRows).toHaveCount(1);
+    await listingRows.first().getByText("Cross-Feature Test Listing").click();
     await expect(page.getByTestId("listing-detail-page")).toBeVisible();
     await expect(page.getByText("Cross-Feature Test Listing")).toBeVisible();
 
     // 3. Click "Related Threads" link
     const threadsLink = page.getByRole("link", { name: /view threads for this listing/i });
     await expect(threadsLink).toBeVisible();
-    await threadsLink.click();
+    await Promise.all([
+      // Next.js client-side navigation won't necessarily fire a new `load` event.
+      page.waitForURL(new RegExp(`listing_id=${LISTING_ID}`), { waitUntil: "commit" }),
+      threadsLink.click(),
+    ]);
 
     // 4. Now on threads page, filtered by listing_id
     await expect(page.getByTestId("threads-page")).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`listing_id=${LISTING_ID}`));
 
-    // 5. Click on thread row
-    await page.locator("table tbody tr").first().click();
+    // 5. Click on thread row (avoid clicking TruncatedId which stops propagation)
+    const firstThreadRow = page.locator("table tbody tr").first();
+    await expect(firstThreadRow).toBeVisible();
+    await firstThreadRow.getByText("OPEN", { exact: true }).click();
 
     // 6. Thread detail page with messages
     await expect(page.getByTestId("thread-detail-page")).toBeVisible();
@@ -202,10 +215,14 @@ test.describe("Console Cross-Feature — US-7", () => {
     // 7. Click listing link to go back to listing detail
     const listingLink = page.locator(`a[href="/console/listings/${LISTING_ID}"]`);
     await expect(listingLink).toBeVisible();
-    await listingLink.click();
+    await Promise.all([
+      // Next.js client-side navigation won't necessarily fire a new `load` event.
+      page.waitForURL(new RegExp(`/console/listings/${LISTING_ID}$`), { waitUntil: "commit" }),
+      listingLink.click(),
+    ]);
 
     // 8. Back on listing detail
-    await expect(page.getByTestId("listing-detail-page")).toBeVisible();
+    await expect(page.getByText("Cross-Feature Test Listing")).toBeVisible();
   });
 
   test("Approvals → Review → Approve flow", async ({ page }) => {
@@ -225,7 +242,8 @@ test.describe("Console Cross-Feature — US-7", () => {
     // 4. Click Approve → modal → Confirm
     await page.getByRole("button", { name: /^approve$/i }).click();
     await expect(page.getByText("Approve this action?")).toBeVisible();
-    await page.locator(".fixed button").filter({ hasText: /approve/i }).click();
+    const dialog = page.getByRole("dialog", { name: /approve this action\\?/i });
+    await dialog.getByRole("button", { name: /^approve$/i }).click();
 
     // 5. Success toast
     await expect(page.getByText(/action completed successfully/i)).toBeVisible();
@@ -239,8 +257,9 @@ test.describe("Console Cross-Feature — US-7", () => {
     await expect(page.getByTestId("audit-page")).toBeVisible();
 
     // 2. Filter by entity_id
+    const filteredReq = waitForApiGet(page, "/api/console/audit", { entity_id: LISTING_ID });
     await page.getByTestId("audit-entity-id").fill(LISTING_ID);
-    await page.waitForTimeout(500);
+    await filteredReq;
 
     // 3. Verify audit logs are visible
     await expect(page.locator("table tbody tr").first()).toBeVisible();

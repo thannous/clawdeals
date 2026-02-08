@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForApiGet } from "./helpers/api";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -148,129 +149,73 @@ test.describe("Console Audit — US-5/US-6", () => {
   // -----------------------------------------------------------------------
   test.describe("Filters", () => {
     test("filters by actor type agent", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/audit?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_AUDIT_LOGS, next_cursor: null }),
-        });
-      });
+      await mockAuditApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "agent" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("actor_type=agent"));
-      expect(filtered).toBeTruthy();
+      const toolbar = page.getByTestId("audit-toolbar");
+      const actorRow = toolbar.locator("div").filter({ hasText: "Actor:" }).first();
+      const filteredReq = waitForApiGet(page, "/api/console/audit", { actor_type: "agent" });
+      await actorRow.getByRole("button", { name: /^agent$/ }).click();
+      await filteredReq;
     });
 
     test("filters by action name listing.create", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/audit?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_AUDIT_LOGS, next_cursor: null }),
-        });
-      });
+      await mockAuditApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "listing.create" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("action_name=listing.create"));
-      expect(filtered).toBeTruthy();
+      const filteredReq = waitForApiGet(page, "/api/console/audit", { action_name: "listing.create" });
+      await page.getByTestId("audit-toolbar").getByRole("button", { name: "listing.create" }).click();
+      await filteredReq;
     });
 
     test("filters by entity type listing", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/audit?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_AUDIT_LOGS, next_cursor: null }),
-        });
-      });
+      await mockAuditApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "listing" }).first().click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("entity_type=listing"));
-      expect(filtered).toBeTruthy();
+      const filteredReq = waitForApiGet(page, "/api/console/audit", { entity_type: "listing" });
+      await page.getByTestId("audit-toolbar").getByRole("button", { name: /^listing$/ }).click();
+      await filteredReq;
     });
 
     test("filters by actor ID", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/audit?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_AUDIT_LOGS, next_cursor: null }),
-        });
-      });
+      await mockAuditApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
-      await page.getByTestId("audit-actor-id").fill("aaaa-1111-2222-3333-444444444444");
-      await page.waitForTimeout(500);
-
-      const filtered = requests.find((u) => u.includes("actor_id=aaaa-1111"));
-      expect(filtered).toBeTruthy();
+      const actorId = "aaaa-1111-2222-3333-444444444444";
+      const filteredReq = waitForApiGet(page, "/api/console/audit", { actor_id: actorId });
+      await page.getByTestId("audit-actor-id").fill(actorId);
+      await filteredReq;
     });
 
     test("filters by entity ID", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/audit?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_AUDIT_LOGS, next_cursor: null }),
-        });
-      });
+      await mockAuditApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
-      await page.getByTestId("audit-entity-id").fill("llll-1111-2222-3333-444444444444");
-      await page.waitForTimeout(500);
-
-      const filtered = requests.find((u) => u.includes("entity_id=llll-1111"));
-      expect(filtered).toBeTruthy();
+      const entityId = "llll-1111-2222-3333-444444444444";
+      const filteredReq = waitForApiGet(page, "/api/console/audit", { entity_id: entityId });
+      await page.getByTestId("audit-entity-id").fill(entityId);
+      await filteredReq;
     });
 
     test("filters by outcome SUCCESS", async ({ page }) => {
-      const requests: string[] = [];
-      await page.route("**/api/console/audit?*", (route) => {
-        requests.push(route.request().url());
-        route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ items: MOCK_AUDIT_LOGS, next_cursor: null }),
-        });
-      });
+      await mockAuditApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
-      await page.getByRole("button", { name: "SUCCESS" }).click();
-      await page.waitForTimeout(400);
-
-      const filtered = requests.find((u) => u.includes("outcome=SUCCESS"));
-      expect(filtered).toBeTruthy();
+      const filteredReq = waitForApiGet(page, "/api/console/audit", { outcome: "SUCCESS" });
+      await page.getByTestId("audit-toolbar").getByRole("button", { name: "SUCCESS" }).click();
+      await filteredReq;
     });
   });
 
@@ -307,8 +252,9 @@ test.describe("Console Audit — US-5/US-6", () => {
       await page.goto("/console/audit");
       await expect(page.locator("table tbody tr")).toHaveCount(2);
 
+      const loadMoreReq = waitForApiGet(page, "/api/console/audit", { cursor: MOCK_CURSOR });
       await page.getByRole("button", { name: /load more/i }).click();
-      await page.waitForTimeout(400);
+      await loadMoreReq;
 
       await expect(page.locator("table tbody tr")).toHaveCount(3);
     });
@@ -328,10 +274,11 @@ test.describe("Console Audit — US-5/US-6", () => {
       await page.locator("table tbody tr").first().click();
 
       // Modal appears
-      await expect(page.getByText("Audit Entry")).toBeVisible();
-      await expect(page.getByText("listing.create")).toBeVisible();
-      await expect(page.getByText("Metadata Hash")).toBeVisible();
-      await expect(page.getByRole("button", { name: /close/i })).toBeVisible();
+      const dialog = page.getByRole("dialog", { name: /audit entry/i });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText("listing.create")).toBeVisible();
+      await expect(dialog.getByText("Metadata Hash")).toBeVisible();
+      await expect(dialog.getByRole("button", { name: /close/i })).toBeVisible();
     });
 
     test("modal closes on Close button", async ({ page }) => {
@@ -372,8 +319,9 @@ test.describe("Console Audit — US-5/US-6", () => {
       // Set from to 10 days ago
       const tenDaysAgo = new Date(Date.now() - 10 * 86400000);
       const fromStr = tenDaysAgo.toISOString().slice(0, 16);
-      await page.getByTestId("audit-from").fill(fromStr);
-      await page.waitForTimeout(400);
+      const fromInput = page.getByTestId("audit-from");
+      await fromInput.fill(fromStr);
+      await fromInput.press("Tab");
 
       // Error message should appear
       await expect(page.getByText(/time range/i)).toBeVisible();
@@ -392,24 +340,15 @@ test.describe("Console Audit — US-5/US-6", () => {
     });
 
     test("clicking Export CSV triggers API call", async ({ page }) => {
-      let exportCalled = false;
       await mockAuditApi(page);
-      await page.route("**/api/console/audit/export*", (route) => {
-        exportCalled = true;
-        route.fulfill({
-          status: 200,
-          contentType: "text/csv",
-          body: "audit_id,timestamp\naud-1111,2026-02-08\n",
-        });
-      });
+      await mockAuditExportApi(page);
 
       await page.goto("/console/audit");
       await expect(page.getByTestId("audit-page")).toBeVisible();
 
+      const exportReq = waitForApiGet(page, "/api/console/audit/export", { format: "csv" });
       await page.getByTestId("audit-export-csv").click();
-      await page.waitForTimeout(500);
-
-      expect(exportCalled).toBeTruthy();
+      await exportReq;
     });
   });
 });
