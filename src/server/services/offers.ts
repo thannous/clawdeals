@@ -26,6 +26,15 @@ export async function getOpenOfferForThread({ threadId }: any) {
   return data || null;
 }
 
+export async function getOffer(offerId: string) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("offers").select("*").eq("offer_id", offerId).maybeSingle();
+  if (error) {
+    mapError(error);
+  }
+  return data || null;
+}
+
 export async function createOffer({
   threadId,
   listingId,
@@ -58,6 +67,63 @@ export async function createOffer({
         status: 409,
         code: "OFFER_ALREADY_OPEN",
         details: { existing_offer_id: openOffer?.offer_id || null }
+      });
+    }
+    mapError(error);
+  }
+
+  return data;
+}
+
+function isOfferNotCounterableError(error) {
+  return Boolean(error?.message) && /offer not counterable/i.test(error.message);
+}
+
+function isOfferNotFoundError(error) {
+  return Boolean(error?.message) && /offer not found/i.test(error.message);
+}
+
+export async function counterOffer({
+  previousOfferId,
+  threadId,
+  amount,
+  currency,
+  expiresAt,
+  senderId
+}: any) {
+  const client = getSupabaseServiceClient();
+
+  const { data, error } = await client
+    .rpc("counter_offer_v0", {
+      p_previous_offer_id: previousOfferId,
+      p_amount: amount,
+      p_currency: currency,
+      p_expires_at: expiresAt,
+      p_sender_id: senderId
+    })
+    .single();
+
+  if (error) {
+    if (isDuplicateKeyError(error)) {
+      const openOffer = await getOpenOfferForThread({ threadId });
+      throw Object.assign(new Error("Offer already open"), {
+        status: 409,
+        code: "OFFER_ALREADY_OPEN",
+        details: { existing_offer_id: openOffer?.offer_id || null }
+      });
+    }
+    if (isOfferNotCounterableError(error)) {
+      const current = previousOfferId ? await getOffer(previousOfferId) : null;
+      throw Object.assign(new Error("Offer not counterable"), {
+        status: 409,
+        code: "OFFER_NOT_COUNTERABLE",
+        details: { status: current?.status || null }
+      });
+    }
+    if (isOfferNotFoundError(error)) {
+      throw Object.assign(new Error("Offer not found"), {
+        status: 404,
+        code: "OFFER_NOT_FOUND"
       });
     }
     mapError(error);

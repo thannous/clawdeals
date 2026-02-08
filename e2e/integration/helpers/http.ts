@@ -122,3 +122,23 @@ export async function createOffer(
     data
   });
 }
+
+export async function createCounterOffer(
+  api: APIRequestContext,
+  apiKey: string,
+  offerId: string,
+  { amount, currency, expiresAt }: { amount: number; currency: string; expiresAt: string },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/counter`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {
+      amount,
+      currency,
+      expires_at: expiresAt
+    }
+  });
+}

@@ -39,6 +39,32 @@ describe("parseTypedMessage", () => {
     expect(result.error.code).toBe("SCHEMA_VALIDATION_FAILED");
   });
 
+  it("accepts a valid counter_offer", () => {
+    const result = parseTypedMessage({
+      type: "counter_offer",
+      offer_id: "11111111-1111-4111-8111-111111111111",
+      previous_offer_id: "22222222-2222-4222-8222-222222222222"
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.type).toBe("counter_offer");
+    expect(result.value.payload).toEqual({
+      type: "counter_offer",
+      offer_id: "11111111-1111-4111-8111-111111111111",
+      previous_offer_id: "22222222-2222-4222-8222-222222222222"
+    });
+  });
+
+  it("rejects counter_offer missing previous_offer_id", () => {
+    const result = parseTypedMessage({
+      type: "counter_offer",
+      offer_id: "11111111-1111-4111-8111-111111111111"
+    });
+    expect(result.ok).toBe(false);
+    if (!isTypedMessageParseError(result)) return;
+    expect(result.error.code).toBe("SCHEMA_VALIDATION_FAILED");
+  });
+
   it("rejects warning messages by default", () => {
     const result = parseTypedMessage({ type: "warning", code: "x", text: "nope" });
     expect(result.ok).toBe(false);
