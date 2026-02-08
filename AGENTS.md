@@ -36,6 +36,6 @@
 
 ## Commit & Pull Request Guidelines
 - Follow the existing commit style: `feat(scope): ...`, `fix: ...`, `refactor(ts): ...`, `test: ...`, `chore: ...`.
-- Include ticket references when applicable (e.g., `TI-192`) in the commit or PR description.
-- PRs should include: a clear behavior summary, tests run (at least `npm run test:ci`), and screenshots for UI changes; call out new `supabase/migrations/*` explicitly.
+- Include ticket references when applicable (e.g., `TI-192`) in the commit.
+- Don't create a PR, commit directly to the branch.
 
