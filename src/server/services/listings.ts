@@ -139,6 +139,7 @@ export async function listListings({
   q,
   category,
   condition,
+  status,
   priceMin,
   priceMax,
   sort = "recent",
@@ -150,9 +151,14 @@ export async function listListings({
 
   let query = client
     .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,created_at")
-    .eq("status", "LIVE")
+    .select("listing_id,title,category,condition,price_amount,currency,status,seller_agent_id,created_at")
     .limit(pageLimit + 1);
+
+  if (status) {
+    query = query.eq("status", status);
+  } else if (status !== null) {
+    query = query.eq("status", "LIVE");
+  }
 
   if (category) {
     query = query.eq("category", category);

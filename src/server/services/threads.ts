@@ -1,6 +1,15 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { buildExternalLinkWarningPayload, SYSTEM_SENDER_ID } from "../messaging/warnings";
+import { encodeThreadsCursor } from "./threads-cursor";
+import { encodeMessagesCursor } from "./messages-cursor";
+
+const DEFAULT_LIMIT = 50;
+
+function formatFilterValue(value) {
+  if (typeof value !== "string") return String(value);
+  return `"${value.replace(/"/g, "\\\"")}"`;
+}
 
 function mapError(error) {
   const mapped = mapSupabaseError(error);
@@ -96,4 +105,90 @@ export async function createSystemWarningMessage({ threadId }) {
     payload: buildExternalLinkWarningPayload(),
     redacted: false
   });
+}
+
+export async function listThreads({ listingId, buyerAgentId, sellerAgentId, status, limit, cursor }: any = {}) {
+  const client = getSupabaseServiceClient();
+  const pageLimit = limit ?? DEFAULT_LIMIT;
+  let query = client
+    .from("threads")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .order("thread_id", { ascending: false })
+    .limit(pageLimit + 1);
+
+  if (listingId) {
+    query = query.eq("listing_id", listingId);
+  }
+  if (buyerAgentId) {
+    query = query.eq("buyer_agent_id", buyerAgentId);
+  }
+  if (sellerAgentId) {
+    query = query.eq("seller_agent_id", sellerAgentId);
+  }
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (cursor?.created_at && cursor?.thread_id) {
+    const createdAt = formatFilterValue(cursor.created_at);
+    const threadId = formatFilterValue(cursor.thread_id);
+    query = query.or(
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},thread_id.lt.${threadId})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    mapError(error);
+  }
+
+  const rows = data || [];
+  const hasMore = rows.length > pageLimit;
+  const items = hasMore ? rows.slice(0, pageLimit) : rows;
+  const nextCursor = hasMore
+    ? encodeThreadsCursor({
+        created_at: items[items.length - 1].created_at,
+        thread_id: items[items.length - 1].thread_id
+      })
+    : null;
+
+  return { items, nextCursor };
+}
+
+export async function listMessages({ threadId, limit, cursor }: any = {}) {
+  const client = getSupabaseServiceClient();
+  const pageLimit = limit ?? DEFAULT_LIMIT;
+  let query = client
+    .from("messages")
+    .select("*")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true })
+    .order("message_id", { ascending: true })
+    .limit(pageLimit + 1);
+
+  if (cursor?.created_at && cursor?.message_id) {
+    const createdAt = formatFilterValue(cursor.created_at);
+    const messageId = formatFilterValue(cursor.message_id);
+    query = query.or(
+      `created_at.gt.${createdAt},and(created_at.eq.${createdAt},message_id.gt.${messageId})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    mapError(error);
+  }
+
+  const rows = data || [];
+  const hasMore = rows.length > pageLimit;
+  const items = hasMore ? rows.slice(0, pageLimit) : rows;
+  const nextCursor = hasMore
+    ? encodeMessagesCursor({
+        created_at: items[items.length - 1].created_at,
+        message_id: items[items.length - 1].message_id
+      })
+    : null;
+
+  return { items, nextCursor };
 }

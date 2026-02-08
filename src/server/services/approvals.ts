@@ -219,4 +219,52 @@ export async function cancelPendingListingPublishApproval({ ownerId, listingId, 
   return data || existing;
 }
 
+export async function listAllApprovals({ state, actionType, createdByAgentId, limit, cursor }: any = {}) {
+  const client = getSupabaseServiceClient();
+  const pageLimit = limit ?? DEFAULT_LIMIT;
+  let query = client
+    .from("approvals")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .order("approval_id", { ascending: false })
+    .limit(pageLimit + 1);
+
+  if (state) {
+    query = query.eq("state", state);
+  }
+
+  if (actionType) {
+    query = query.eq("action_type", actionType);
+  }
+
+  if (createdByAgentId) {
+    query = query.eq("created_by_agent_id", createdByAgentId);
+  }
+
+  if (cursor?.created_at && cursor?.approval_id) {
+    const createdAt = formatFilterValue(cursor.created_at);
+    const approvalId = formatFilterValue(cursor.approval_id);
+    query = query.or(
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},approval_id.lt.${approvalId})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    mapError(error);
+  }
+
+  const approvals = data || [];
+  const hasMore = approvals.length > pageLimit;
+  const items = hasMore ? approvals.slice(0, pageLimit) : approvals;
+  const nextCursor = hasMore
+    ? encodeApprovalCursor({
+        created_at: items[items.length - 1].created_at,
+        approval_id: items[items.length - 1].approval_id
+      })
+    : null;
+
+  return { approvals: items, nextCursor };
+}
+
 export { MAX_LIMIT as APPROVALS_MAX_LIMIT };
