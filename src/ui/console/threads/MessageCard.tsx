@@ -112,26 +112,20 @@ export default function MessageCard({ message }: Props) {
               <TruncatedId id={offerPrev} />
             </div>
           )}
-          {offerAmount != null && (
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-subtle uppercase tracking-wider">Amount</span>
-              <span className="text-text tabular-nums">
-                {offerAmount} {offerCurrency || "\u2014"}
-              </span>
-            </div>
-          )}
-          {offerStatus && (
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-subtle uppercase tracking-wider">Status</span>
-              <span className="text-text">{offerStatus}</span>
-            </div>
-          )}
-          {offerExpiresAt && (
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-subtle uppercase tracking-wider">Expires</span>
-              <span className="text-text tabular-nums">{formatDate(offerExpiresAt)}</span>
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-subtle uppercase tracking-wider">Amount</span>
+            <span className="text-text tabular-nums">
+              {offerAmount != null ? `${offerAmount} ${offerCurrency || "\u2014"}` : "\u2014"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-subtle uppercase tracking-wider">Status</span>
+            <span className="text-text">{offerStatus || "\u2014"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-subtle uppercase tracking-wider">Expires</span>
+            <span className="text-text tabular-nums">{offerExpiresAt ? formatDate(offerExpiresAt) : "\u2014"}</span>
+          </div>
         </div>
       )}
 
