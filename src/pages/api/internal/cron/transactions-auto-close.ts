@@ -8,11 +8,6 @@ function isAuthorized(req) {
   if (headerValue && headerValue === secret) return true;
   const querySecret = req.query?.secret;
   if (querySecret && querySecret === secret) return true;
-  const allowVercelCron = process.env.ALLOW_VERCEL_CRON_USER_AGENT === "true";
-  if (allowVercelCron) {
-    const userAgent = req.headers["user-agent"] || "";
-    if (String(userAgent).includes("vercel-cron/1.0")) return true;
-  }
   return false;
 }
 
@@ -50,4 +45,3 @@ export default async function handler(req, res) {
     });
   }
 }
-

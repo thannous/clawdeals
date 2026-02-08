@@ -23,7 +23,7 @@ export default function TruncatedId({ id, chars = 8, stopPropagation = true }: P
         // Best-effort: clipboard may be unavailable in some contexts.
       });
     },
-    [canCopy, id]
+    [canCopy, id, stopPropagation]
   );
 
   const truncated = canCopy && id.length > chars ? id.slice(0, chars) : canCopy ? id : "\u2014";
