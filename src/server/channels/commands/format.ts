@@ -1,6 +1,6 @@
 function sanitizeText(value: string) {
-  // Strip ASCII control chars to avoid log/UI issues.
-  return value.replace(/[\u0000-\u001F\u007F]/g, "");
+  // Strip ASCII control chars to avoid log/UI issues, but keep newlines for readability in chat UIs.
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
 }
 
 export function buildTelegramSendMessage({
@@ -19,4 +19,3 @@ export function buildTelegramSendMessage({
     disable_web_page_preview: disableWebPagePreview
   };
 }
-

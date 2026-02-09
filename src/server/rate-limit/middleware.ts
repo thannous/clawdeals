@@ -8,6 +8,7 @@ import {
 import { createUpstashRedis, resolveUpstashConfig } from "./upstash";
 import { consumeTokenBucket } from "./token-bucket";
 import { matchRouteGroupFromRequest } from "../routes/route-groups";
+import { getNumberEnv } from "../config/env";
 
 function getHeaderValue(headers, name) {
   if (!headers) return null;
@@ -140,15 +141,14 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
 
   const redis = options.redis || createUpstashRedis(redisConfig);
   const nowMs = options.nowMs || Date.now();
-  // In non-production, relax limits to reduce local/dev test flakiness.
-  const isDevEnv = process.env.NODE_ENV !== "production";
+  const envMultiplier = getNumberEnv("RATE_LIMIT_MULTIPLIER");
   const limitMultiplier =
     typeof options.limitMultiplier === "number"
       ? options.limitMultiplier
       : typeof profile.limitMultiplier === "number"
         ? profile.limitMultiplier
-        : isDevEnv
-          ? 100
+        : typeof envMultiplier === "number"
+          ? envMultiplier
           : 1;
 
   try {

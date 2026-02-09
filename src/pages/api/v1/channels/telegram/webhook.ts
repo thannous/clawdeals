@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 import { withApiMiddlewares } from "../../../../../server/middleware/with-api-middlewares";
 import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
@@ -18,6 +20,14 @@ function readHeader(headers: any, name: string) {
   const lower = headers[String(name).toLowerCase()];
   if (Array.isArray(lower)) return lower[0] || null;
   return lower || null;
+}
+
+function timingSafeEquals(a: string, b: string) {
+  // timingSafeEqual throws on length mismatch.
+  const aa = Buffer.from(String(a), "utf8");
+  const bb = Buffer.from(String(b), "utf8");
+  if (aa.length !== bb.length) return false;
+  return crypto.timingSafeEqual(aa, bb);
 }
 
 function isEnabledFlag(value: any) {
@@ -136,7 +146,7 @@ export async function handler(req, res, ctx) {
   const secretHeader = readHeader(req.headers, "x-telegram-bot-api-secret-token");
   const shouldEnforceSecret = process.env.NODE_ENV === "production" || Boolean(expectedSecret);
   if (shouldEnforceSecret) {
-    if (!expectedSecret || !secretHeader || secretHeader !== expectedSecret) {
+    if (!expectedSecret || !secretHeader || !timingSafeEquals(secretHeader, expectedSecret)) {
       return jsonResponse(401, errorPayload("UNAUTHORIZED", "Invalid Telegram secret token"));
     }
   }

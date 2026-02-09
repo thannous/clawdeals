@@ -27,8 +27,19 @@ export function usePairingCodeLookup() {
       });
 
       if (!resp.ok) {
+        const status = resp.status;
         const body = await resp.json().catch(() => ({}));
-        throw new Error(body?.error?.message || `HTTP ${resp.status}`);
+
+        let message = body?.error?.message || `HTTP ${status}`;
+        if (status === 404) {
+          message = "Pairing code not found";
+        } else if (status === 410) {
+          message = "Pairing code expired";
+        }
+
+        setError(message);
+        setLookupState("error");
+        return { ok: false, status, error: message };
       }
 
       const data = await resp.json();
