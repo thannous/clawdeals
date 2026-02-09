@@ -18,9 +18,16 @@ import {
   createSupabaseAdmin,
   createAgentDbWithOverrides,
   createActiveApiKeyDb,
+  ensureEvidenceBucket,
   ensureOwnerDb,
   OPS_CONSOLE_OWNER_ID
 } from "./helpers/supabase";
+import {
+  confirmEvidenceUpload,
+  createEvidenceTestFixture,
+  initEvidenceUpload,
+  uploadEvidenceBytes
+} from "./helpers/evidence";
 
 import { canonicalJsonStringify } from "../../src/server/utils/canonical-json";
 import { hmacSha256 } from "../../src/server/utils/hmac";
@@ -259,6 +266,131 @@ test.describe.serial("Integration: Disputes (TI-212) + Ledger (TI-213)", () => {
     expect(refundEntry?.amount_minor).toBe(fixture.createBody.amount_gross_minor);
     expect(refundEntry?.currency).toBe(fixture.createBody.currency);
     expect(refundEntry?.psp_reference_id).toBe(refundId);
+  });
+
+  test("open dispute -> upload evidence -> resolve REFUND -> refund webhook -> REFUNDED + evidence + ledger (TI-294)", async ({ request }) => {
+    const fixture = await setupEscrowOnHold(request);
+    await ensureEvidenceBucket(fixture.supabase);
+
+    const openRes = await openDispute(
+      request,
+      fixture.buyerApiKey,
+      fixture.escrowId,
+      { reasonCode: "item_not_received", notes: "Submitting proof for refund." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(openRes, 201);
+    const openBody = await openRes.json();
+    expect(openBody.escrow_status).toBe("DISPUTE_OPEN");
+    const disputeId = openBody.dispute_id;
+    expect(typeof disputeId).toBe("string");
+
+    const upload = await initEvidenceUpload(request, { disputeId, apiKey: fixture.buyerApiKey });
+    const evidence = createEvidenceTestFixture();
+    await uploadEvidenceBytes(request, { url: upload.url, bytes: evidence.bytes, contentType: evidence.contentType });
+    await confirmEvidenceUpload(request, {
+      disputeId,
+      apiKey: fixture.buyerApiKey,
+      bucket: upload.bucket,
+      key: upload.key,
+      sha256: evidence.sha256,
+      contentType: evidence.contentType,
+      bytes: evidence.bytes.byteLength
+    });
+
+    const listRes = await request.get(`/api/v1/disputes/${encodeURIComponent(disputeId)}/evidence`, {
+      headers: { Authorization: `Bearer ${fixture.buyerApiKey}` }
+    });
+    await expectStatus(listRes, 200);
+    const listBody = await listRes.json();
+    expect(listBody.dispute_id).toBe(disputeId);
+    expect(Array.isArray(listBody.items)).toBe(true);
+    const matched = (listBody.items || []).find((item: any) => item.sha256 === evidence.sha256);
+    expect(matched).toBeTruthy();
+    expect(matched.storage_bucket).toBe(upload.bucket);
+    expect(matched.storage_key).toBe(upload.key);
+
+    const resolveRes = await resolveDispute(
+      request,
+      OPS_CONSOLE_OWNER_ID,
+      disputeId,
+      { resolution: "REFUND", notes: "Refund approved with evidence." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(resolveRes, 200);
+    const resolveBody = await resolveRes.json();
+    expect(resolveBody.escrow_status).toBe("REFUND_PENDING");
+    const refundId = resolveBody.psp?.refund_id;
+    expect(typeof refundId).toBe("string");
+
+    const refundWebhook = {
+      id: `evt_${randomId()}`,
+      type: "refund.succeeded",
+      created_at: new Date().toISOString(),
+      data: { refund_id: refundId }
+    };
+    const refundSig = signWebhook(refundWebhook);
+    await expectStatus(await postPspWebhook(request, { signature: refundSig, body: refundWebhook }), 200);
+
+    const { data: escrowAfterRefund, error: refundErr } = await fixture.supabase
+      .from("escrows")
+      .select("escrow_id,status,refunded_at,psp_refund_id")
+      .eq("escrow_id", fixture.escrowId)
+      .maybeSingle();
+    if (refundErr) throw refundErr;
+    expect(escrowAfterRefund?.status).toBe("REFUNDED");
+    expect(escrowAfterRefund?.refunded_at).toBeTruthy();
+    expect(escrowAfterRefund?.psp_refund_id).toBe(refundId);
+
+    const { data: refundLedger, error: refundLedgerErr } = await fixture.supabase
+      .from("ledger_entries")
+      .select("type,amount_minor,currency,psp_reference_id")
+      .eq("escrow_id", fixture.escrowId)
+      .in("type", ["GROSS", "REFUND"]);
+    if (refundLedgerErr) throw refundLedgerErr;
+    const types = new Set((refundLedger || []).map((row: any) => row.type));
+    expect(types.has("GROSS")).toBe(true);
+    expect(types.has("REFUND")).toBe(true);
+    const refundEntry = (refundLedger || []).find((row: any) => row.type === "REFUND");
+    expect(refundEntry?.amount_minor).toBe(fixture.createBody.amount_gross_minor);
+    expect(refundEntry?.currency).toBe(fixture.createBody.currency);
+    expect(refundEntry?.psp_reference_id).toBe(refundId);
+  });
+
+  test("opening a second dispute on same escrow is rejected (TI-294)", async ({ request }) => {
+    const fixture = await setupEscrowOnHold(request);
+
+    const openRes = await openDispute(
+      request,
+      fixture.buyerApiKey,
+      fixture.escrowId,
+      { reasonCode: "item_not_received", notes: "First dispute." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(openRes, 201);
+    const openBody = await openRes.json();
+    const disputeId = openBody.dispute_id;
+    expect(typeof disputeId).toBe("string");
+
+    // Try opening again from the seller owner context to avoid owner-scoped rate limiting.
+    const secondRes = await openDispute(
+      request,
+      fixture.sellerApiKey,
+      fixture.escrowId,
+      { reasonCode: "other", notes: "Second dispute attempt." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(secondRes, 409);
+    const secondBody = await secondRes.json();
+    expect(secondBody?.error?.code).toBe("DISPUTE_ALREADY_EXISTS");
+
+    const { data: disputes, error: disputesErr } = await fixture.supabase
+      .from("disputes")
+      .select("dispute_id")
+      .eq("escrow_id", fixture.escrowId);
+    if (disputesErr) throw disputesErr;
+    expect(disputes || []).toHaveLength(1);
+    expect(disputes?.[0]?.dispute_id).toBe(disputeId);
   });
 
   test("early refund webhook is replayed by resolve REFUND (TI-258)", async ({ request }) => {

@@ -12,7 +12,8 @@ import {
   markDelivered,
   payEscrow,
   confirmReceived,
-  postPspWebhook
+  postPspWebhook,
+  pspOnboardSeller
 } from "./helpers/http";
 import { createSupabaseAdmin, createAgentDbWithOverrides, createActiveApiKeyDb, ensureOwnerDb, OPS_CONSOLE_OWNER_ID } from "./helpers/supabase";
 
@@ -250,6 +251,249 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     await expectStatus(invalidFinal, 409);
     const invalidBody = await invalidFinal.json();
     expect(invalidBody?.error?.code).toBe("ESCROW_FINALIZED");
+  });
+
+  test("seller onboarding + KYC verified gates escrow:create in production mode (TI-294)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+
+    const sellerOwnerId = randomId();
+    await ensureOwnerDb(supabase, sellerOwnerId);
+    await setupPolicy(request, sellerOwnerId);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+    // Production mode enables KYC gating in escrow:create.
+    await expectStatus(
+      await configurePsp(
+        request,
+        OPS_CONSOLE_OWNER_ID,
+        { provider: "mock", mode: "production", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 },
+        { idempotencyKey: randomId() }
+      ),
+      200
+    );
+
+    const listingRes = await createListing(request, sellerApiKey, { title: `KYC escrow listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const offerRes = await createOffer(
+      request,
+      buyerApiKey,
+      listingId,
+      { threadId: null, amount: 350, currency: "EUR", expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(offerRes, 201);
+    const offerId = (await offerRes.json()).offer_id;
+
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    await expectStatus(acceptRes, 200);
+    const txId = (await acceptRes.json()).transaction?.tx_id;
+    expect(typeof txId).toBe("string");
+
+    // Without a VERIFIED PSP account, escrow:create must be blocked in production mode.
+    const blockedRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(blockedRes, 403);
+    const blockedBody = await blockedRes.json();
+    expect(blockedBody?.error?.code).toBe("SELLER_KYC_REQUIRED");
+
+    // Seller onboarding + KYC webhook -> VERIFIED.
+    const onboardRes = await pspOnboardSeller(request, sellerOwnerId, { idempotencyKey: randomId() });
+    await expectStatus(onboardRes, 200);
+
+    const kycEvent = {
+      id: `evt_${randomId()}`,
+      type: "account.updated",
+      created_at: new Date().toISOString(),
+      data: {
+        external_account_id: `mock_acct_${sellerOwnerId}`,
+        kyc_status: "VERIFIED",
+        requirements_due: { fields: [] }
+      }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(kycEvent), body: kycEvent }), 200);
+
+    // Now escrow:create should succeed.
+    const createRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(createRes, 201);
+    const createBody = await createRes.json();
+    const escrowId = createBody.escrow_id;
+    expect(typeof escrowId).toBe("string");
+
+    const payRes = await payEscrow(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(payRes, 200);
+    const paymentId = (await payRes.json()).psp?.payment_id;
+    expect(typeof paymentId).toBe("string");
+
+    const paymentWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payment.succeeded",
+      created_at: new Date().toISOString(),
+      data: {
+        payment_id: paymentId,
+        hold_id: `hold_${randomId()}`,
+        hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(paymentWebhook), body: paymentWebhook }), 200);
+
+    await expectStatus(await markDelivered(request, sellerApiKey, escrowId, { idempotencyKey: randomId() }), 200);
+
+    const confirmRes = await confirmReceived(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(confirmRes, 200);
+    const payoutId = (await confirmRes.json()).psp?.payout_id;
+    expect(typeof payoutId).toBe("string");
+
+    const payoutWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payout.succeeded",
+      created_at: new Date().toISOString(),
+      data: { payout_id: payoutId }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(payoutWebhook), body: payoutWebhook }), 200);
+
+    const { data: escrowAfterRelease, error: releaseErr } = await supabase
+      .from("escrows")
+      .select("escrow_id,status,released_at")
+      .eq("escrow_id", escrowId)
+      .maybeSingle();
+    if (releaseErr) throw releaseErr;
+    expect(escrowAfterRelease?.status).toBe("RELEASED");
+    expect(escrowAfterRelease?.released_at).toBeTruthy();
+  });
+
+  test("fee edge cases (0 bps / rounding / max) are reflected in escrow amounts + ledger (TI-294)", async ({ request }) => {
+    test.setTimeout(120000);
+
+    const cases = [
+      { feeBps: 0, amount: 250 },
+      { feeBps: 333, amount: 351 },
+      { feeBps: 2000, amount: 250 }
+    ];
+
+    for (const testCase of cases) {
+      const supabase = createSupabaseAdmin();
+
+      const sellerOwnerId = randomId();
+      await ensureOwnerDb(supabase, sellerOwnerId);
+      await setupPolicy(request, sellerOwnerId);
+
+      const buyerOwnerId = randomId();
+      await ensureOwnerDb(supabase, buyerOwnerId);
+      await setupPolicy(request, buyerOwnerId);
+
+      const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+      const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+      const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+      const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+      const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+      await expectStatus(
+        await configurePsp(
+          request,
+          OPS_CONSOLE_OWNER_ID,
+          { provider: "mock", mode: "sandbox", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: testCase.feeBps },
+          { idempotencyKey: randomId() }
+        ),
+        200
+      );
+
+      const listingRes = await createListing(request, sellerApiKey, { title: `Fee listing ${randomId()}`, publish: true });
+      await expectStatus(listingRes, 201);
+      const listingId = (await listingRes.json()).listing_id;
+
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      const offerRes = await createOffer(
+        request,
+        buyerApiKey,
+        listingId,
+        { threadId: null, amount: testCase.amount, currency: "EUR", expiresAt },
+        { idempotencyKey: randomId() }
+      );
+      await expectStatus(offerRes, 201);
+      const offerId = (await offerRes.json()).offer_id;
+
+      const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+      await expectStatus(acceptRes, 200);
+      const txId = (await acceptRes.json()).transaction?.tx_id;
+      expect(typeof txId).toBe("string");
+
+      const createRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+      await expectStatus(createRes, 201);
+      const createBody = await createRes.json();
+      const escrowId = createBody.escrow_id;
+      expect(typeof escrowId).toBe("string");
+      expect(createBody.platform_fee_bps).toBe(testCase.feeBps);
+
+      const expectedFee = Math.round((createBody.amount_gross_minor * testCase.feeBps) / 10000);
+      const expectedNet = createBody.amount_gross_minor - expectedFee;
+      expect(createBody.amount_platform_fee_minor).toBe(expectedFee);
+      expect(createBody.amount_net_minor).toBe(expectedNet);
+
+      const payRes = await payEscrow(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+      await expectStatus(payRes, 200);
+      const paymentId = (await payRes.json()).psp?.payment_id;
+      expect(typeof paymentId).toBe("string");
+
+      const paymentWebhook = {
+        id: `evt_${randomId()}`,
+        type: "payment.succeeded",
+        created_at: new Date().toISOString(),
+        data: {
+          payment_id: paymentId,
+          hold_id: `hold_${randomId()}`,
+          hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      };
+      await expectStatus(await postPspWebhook(request, { signature: signWebhook(paymentWebhook), body: paymentWebhook }), 200);
+
+      await expectStatus(await markDelivered(request, sellerApiKey, escrowId, { idempotencyKey: randomId() }), 200);
+
+      const confirmRes = await confirmReceived(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+      await expectStatus(confirmRes, 200);
+      const payoutId = (await confirmRes.json()).psp?.payout_id;
+      expect(typeof payoutId).toBe("string");
+
+      const payoutWebhook = {
+        id: `evt_${randomId()}`,
+        type: "payout.succeeded",
+        created_at: new Date().toISOString(),
+        data: { payout_id: payoutId }
+      };
+      await expectStatus(await postPspWebhook(request, { signature: signWebhook(payoutWebhook), body: payoutWebhook }), 200);
+
+      const { data: feeLedger, error: feeLedgerErr } = await supabase
+        .from("ledger_entries")
+        .select("type,amount_minor,currency,psp_reference_id")
+        .eq("escrow_id", escrowId)
+        .in("type", ["GROSS", "PLATFORM_FEE", "NET_TO_SELLER"]);
+      if (feeLedgerErr) throw feeLedgerErr;
+      const types = new Set((feeLedger || []).map((row: any) => row.type));
+      expect(types.has("GROSS")).toBe(true);
+      expect(types.has("PLATFORM_FEE")).toBe(true);
+      expect(types.has("NET_TO_SELLER")).toBe(true);
+
+      const platformFee = (feeLedger || []).find((row: any) => row.type === "PLATFORM_FEE");
+      const netToSeller = (feeLedger || []).find((row: any) => row.type === "NET_TO_SELLER");
+      expect(platformFee?.amount_minor).toBe(expectedFee);
+      expect(netToSeller?.amount_minor).toBe(expectedNet);
+      expect(platformFee?.currency).toBe(createBody.currency);
+      expect(netToSeller?.currency).toBe(createBody.currency);
+      expect(platformFee?.psp_reference_id).toBe(payoutId);
+      expect(netToSeller?.psp_reference_id).toBe(payoutId);
+    }
   });
 
   test("early payout webhook is replayed by confirm-received (TI-256)", async ({ request }) => {
