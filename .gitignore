@@ -31,3 +31,6 @@ test-results/
 # Editors
 .vscode/
 .idea/
+
+# Supabase CLI / local metadata
+supabase/.temp/

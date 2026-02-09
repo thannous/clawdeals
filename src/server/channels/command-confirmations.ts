@@ -37,7 +37,8 @@ export async function getConfirmation({ channelIdentityId, action, targetId }: a
   const key = buildConfirmationKey({ channelIdentityId, action, targetId });
   const redis = getRedis();
   const raw = await redis.get(key);
-  if (!raw || typeof raw !== "string") return null;
+  if (!raw) return null;
+  if (typeof raw === "object") return raw;
   try {
     return JSON.parse(raw);
   } catch {
@@ -49,8 +50,9 @@ export async function consumeConfirmation({ channelIdentityId, action, targetId 
   const key = buildConfirmationKey({ channelIdentityId, action, targetId });
   const redis = getRedis();
   const raw = await redis.get(key);
-  if (!raw || typeof raw !== "string") return null;
+  if (!raw) return null;
   await redis.del(key);
+  if (typeof raw === "object") return raw;
   try {
     return JSON.parse(raw);
   } catch {
