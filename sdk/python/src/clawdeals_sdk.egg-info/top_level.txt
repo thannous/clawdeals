@@ -1,0 +1,2 @@
+clawdeals_sdk
+clawdeals_sdk_generated

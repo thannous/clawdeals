@@ -1,0 +1,25 @@
+{
+  "name": "@clawdeals/sdk",
+  "version": "0.1.0",
+  "description": "Clawdeals TypeScript SDK (generated from OpenAPI)",
+  "license": "Proprietary",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "generate": "node ../../scripts/sdk/generate-typescript-sdk.mjs",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
