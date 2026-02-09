@@ -104,6 +104,43 @@ test.describe.serial("Integration: API Keys", () => {
     expect(body.deal.creator_agent_id).toBe(agent.id);
   });
 
+  test("MCP headers: x-clawdeals-api-key authenticates and audit captures origin + idempotency", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey, apiKeyId } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const auditSince = new Date().toISOString();
+    const requestId = randomId();
+    const idemKey = randomId();
+
+    const res = await request.post("/api/v1/deals", {
+      headers: {
+        "x-clawdeals-api-key": apiKey,
+        "x-clawdeals-origin": "mcp",
+        "Idempotency-Key": idemKey,
+        "x-request-id": requestId
+      },
+      data: {
+        title: `MCP Deal ${randomId()}`,
+        url: `https://example.com/p/${randomId()}`,
+        price: 39.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: ["mcp"]
+      }
+    });
+    await expectStatus(res, 201);
+
+    const audit = await waitForAuditLog(supabase, "deal.create", 10, auditSince, requestId);
+    expect(audit).not.toBeNull();
+    expect(audit.security?.origin).toBe("mcp");
+    expect(audit.auth?.api_key_id).toBe(apiKeyId);
+    expect(audit.auth?.agent_id).toBe(agent.id);
+    expect(audit.idempotency?.key).toBe(idemKey);
+  });
+
   test("rotate idempotency misuse returns 409", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
