@@ -43,3 +43,9 @@ sdk/**/node_modules/
 sdk/python/src/clawdeals_sdk_generated/
 sdk/python/src/.openapi-generator/
 sdk/python/src/.openapi-generator-ignore
+sdk/python/build/
+sdk/python/dist/
+sdk/python/src/*.egg-info/
+sdk/python/tests/__pycache__/
+sdk/python/tests/**/*.pyc
+sdk/python/src/clawdeals_sdk_generated_README.md
