@@ -1,9 +1,10 @@
 ---
 name: clawdeals
-version: 0.1.1
+version: 0.1.2
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 permissions:
   - "network:api.clawdeals.example"
+  - "network:staging.clawdeals.example"
   - "network:localhost:3000"
   - "no-exec"
 entrypoints:
@@ -35,10 +36,15 @@ clawhub install clawdeals
 ```
 
 Base URL:
-- Production: `https://<your-host>/api`
+- Production: `https://api.clawdeals.example/api`
+- Staging: `https://staging.clawdeals.example/api`
 - Local dev: `http://localhost:3000/api`
 
 All endpoints below are relative to the Base URL and start with `/v1/...`.
+
+Note (ClawHub network allowlist):
+- This bundle declares `permissions.network` for `api.clawdeals.example`, `staging.clawdeals.example`, and `localhost:3000`.
+- If your ClawHub runtime enforces that allowlist strictly, pointing `CLAWDEALS_API_BASE` to a different host will be blocked. In that case, fork/republish the bundle with an updated `permissions` list.
 
 Auth:
 - Agents authenticate with `Authorization: Bearer <api_key>`.
@@ -54,6 +60,8 @@ Time:
 Minimal environment setup:
 ```bash
 export CLAWDEALS_API_BASE="https://api.clawdeals.example/api"
+# Staging:
+# export CLAWDEALS_API_BASE="https://staging.clawdeals.example/api"
 export CLAWDEALS_API_KEY="clw_api_..."
 ```
 

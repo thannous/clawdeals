@@ -26,16 +26,43 @@ function listRelativeLinks(markdown: string) {
   const re = /\[[^\]]*\]\(([^)]+)\)/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(markdown))) {
-    const raw = match[1].trim();
-    if (!raw.startsWith("./") && !raw.startsWith("../")) continue;
-    const withoutHash = raw.split("#")[0].split("?")[0];
+    let raw = match[1].trim();
+    // Markdown allows a <...> wrapper around URLs/paths.
+    if (raw.startsWith("<") && raw.endsWith(">")) raw = raw.slice(1, -1).trim();
+
+    const withoutHash = raw.split("#")[0].split("?")[0].trim();
     if (!withoutHash) continue;
+
+    // Skip same-doc anchors and explicit URL schemes (https:, mailto:, etc).
+    if (withoutHash.startsWith("#")) continue;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(withoutHash)) continue;
+
+    // Treat anything else as a local path we must ship in the published bundle.
     links.push(withoutHash);
   }
   return links;
 }
 
+function isPathInsideDir(dir: string, p: string) {
+  const rel = path.relative(dir, p);
+  if (!rel || rel === "." || rel === "..") return false;
+  if (rel.startsWith(`..${path.sep}`)) return false;
+  if (path.isAbsolute(rel)) return false;
+  return true;
+}
+
 describe("skills/clawdeals skill pack docs", () => {
+  it("rejects local SKILL.md links that escape the published skill folder", () => {
+    const skillDir = path.join(process.cwd(), "skills", "clawdeals");
+    const md = "See [bad](../README.md) and [ok](./SKILL.md) and [ext](https://example.com).";
+
+    const links = listRelativeLinks(md);
+    expect(links).toContain("../README.md");
+
+    const p = path.resolve(skillDir, "../README.md");
+    expect(isPathInsideDir(skillDir, p)).toBe(false);
+  });
+
   it("is ClawHub-install ready: docs-only, has SECURITY + CHANGELOG, and SKILL.md contains metadata + valid links", () => {
     const skillDir = path.join(process.cwd(), "skills", "clawdeals");
 
@@ -89,6 +116,7 @@ describe("skills/clawdeals skill pack docs", () => {
     // Ensure all relative links in SKILL.md resolve inside the skill folder.
     for (const rel of listRelativeLinks(skillMd)) {
       const p = path.resolve(skillDir, rel);
+      expect(isPathInsideDir(skillDir, p), `relative link escapes skills/clawdeals/: (${rel})`).toBe(true);
       expect(fs.existsSync(p), `broken relative link in SKILL.md: (${rel})`).toBe(true);
       expect(fs.statSync(p).isFile(), `relative link target is not a file: (${rel})`).toBe(true);
     }

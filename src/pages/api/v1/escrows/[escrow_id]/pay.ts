@@ -6,6 +6,8 @@ import { isUuid } from "../../../../../server/utils/validators";
 import { getPspConfig } from "../../../../../server/services/psp-config";
 import { createPspAdapter } from "../../../../../server/psp";
 import { getEscrowById, setEscrowPayment } from "../../../../../server/services/escrows";
+import { claimOrphanedPspWebhookEvents } from "../../../../../server/services/psp-webhook-events";
+import { replayPendingEscrowEvents } from "../../../../../server/services/psp-webhook-replay";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -92,17 +94,43 @@ export async function handler(req, res, ctx) {
       paymentId: session.paymentId
     });
 
+    // Claim orphaned PENDING_RETRY payment webhooks that arrived before psp_payment_id was persisted,
+    // then replay them so the escrow can transition without waiting for a re-delivery.
+    let claimed = 0;
+    try {
+      claimed = await claimOrphanedPspWebhookEvents({ escrowId: escrow.escrow_id, paymentId: session.paymentId });
+      if (claimed > 0) {
+        await replayPendingEscrowEvents({ escrowId: escrow.escrow_id, adapter });
+      }
+    } catch (replayError) {
+      console.info("escrow.pay.replay_failed", {
+        escrowId: escrow.escrow_id,
+        error: replayError?.message || String(replayError)
+      });
+    }
+
+    // If we replayed anything, refresh to avoid returning a stale status.
+    let finalStatus = updated.status;
+    if (claimed > 0) {
+      try {
+        const refreshed = await getEscrowById(String(updated.escrow_id));
+        if (refreshed?.status) finalStatus = refreshed.status;
+      } catch (refreshError) {
+        // best-effort only.
+      }
+    }
+
     if (ctx) {
       ctx.body = {
         escrow_id: updated.escrow_id,
-        status: updated.status,
+        status: finalStatus,
         psp_payment_id: updated.psp_payment_id
       };
     }
 
     return jsonResponse(200, {
       escrow_id: updated.escrow_id,
-      status: updated.status,
+      status: finalStatus,
       psp: {
         payment_id: session.paymentId,
         checkout_url: session.checkoutUrl,
@@ -115,4 +143,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler, { routeGroup: "escrows.actions" });
-

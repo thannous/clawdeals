@@ -8,6 +8,8 @@ import { getPspConfig } from "../../../../../server/services/psp-config";
 import { createPspAdapter } from "../../../../../server/psp";
 import { getOpsConsoleOwnerId } from "../../../../../server/config/ops";
 import { getDisputeById, resolveDispute } from "../../../../../server/services/disputes";
+import { claimOrphanedPspWebhookEvents } from "../../../../../server/services/psp-webhook-events";
+import { replayPendingEscrowEvents } from "../../../../../server/services/psp-webhook-replay";
 import {
   confirmEvidenceUpload,
   getEscrow,
@@ -184,6 +186,25 @@ export async function handler(req, res, ctx) {
         resolutionNotesRedacted: notesRedacted,
         pspReferenceId
       });
+
+      // Claim orphaned PENDING_RETRY payout/refund webhooks that arrived before psp_payout_id/psp_refund_id was persisted,
+      // then replay them so the escrow transitions without waiting for a re-delivery.
+      try {
+        const claimed = await claimOrphanedPspWebhookEvents({
+          escrowId: escrow.escrow_id,
+          payoutId: resolutionRaw === "RELEASE" ? pspReferenceId : null,
+          refundId: resolutionRaw === "REFUND" ? pspReferenceId : null
+        });
+        if (claimed > 0) {
+          await replayPendingEscrowEvents({ escrowId: escrow.escrow_id, adapter });
+        }
+      } catch (replayError) {
+        console.info("dispute.resolve.replay_failed", {
+          escrowId: escrow.escrow_id,
+          disputeId: String(disputeId),
+          error: replayError?.message || String(replayError)
+        });
+      }
 
       if (ctx) {
         ctx.body = {

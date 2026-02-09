@@ -29,13 +29,29 @@ function listRelativeLinks(markdown) {
   const re = /\[[^\]]*\]\(([^)]+)\)/g;
   let match;
   while ((match = re.exec(markdown))) {
-    const raw = match[1].trim();
-    if (!raw.startsWith("./") && !raw.startsWith("../")) continue;
-    const withoutHash = raw.split("#")[0].split("?")[0];
+    let raw = match[1].trim();
+    // Markdown allows a <...> wrapper around URLs/paths.
+    if (raw.startsWith("<") && raw.endsWith(">")) raw = raw.slice(1, -1).trim();
+
+    const withoutHash = raw.split("#")[0].split("?")[0].trim();
     if (!withoutHash) continue;
+
+    // Skip same-doc anchors and explicit URL schemes (https:, mailto:, etc).
+    if (withoutHash.startsWith("#")) continue;
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(withoutHash)) continue;
+
+    // Treat anything else as a local path we must ship in the published bundle.
     links.push(withoutHash);
   }
   return links;
+}
+
+function isPathInsideDir(dir, p) {
+  const rel = path.relative(dir, p);
+  if (!rel || rel === "." || rel === "..") return false;
+  if (rel.startsWith(`..${path.sep}`)) return false;
+  if (path.isAbsolute(rel)) return false;
+  return true;
 }
 
 const skillDir = path.join(process.cwd(), "skills", "clawdeals");
@@ -111,6 +127,9 @@ if (!/^\s*-\s*("?no-exec"?)\s*$/m.test(fm)) {
 // Verify all relative links in SKILL.md resolve to a file on disk.
 for (const rel of listRelativeLinks(skillMd)) {
   const p = path.resolve(skillDir, rel);
+  if (!isPathInsideDir(skillDir, p)) {
+    fail(`relative link escapes skills/clawdeals/: (${rel})`);
+  }
   if (!existsFile(p)) {
     fail(`broken relative link in SKILL.md: (${rel})`);
   }
@@ -122,4 +141,3 @@ if (!changelog.includes(version)) {
 }
 
 console.log("validate-skill-pack: OK");
-

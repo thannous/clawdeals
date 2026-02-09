@@ -7,6 +7,9 @@ function mapError(error: any) {
 }
 
 function isDuplicateKeyError(error: any) {
+  // Prefer the Postgres error code for unique violation. Supabase/PostgREST uses "23505".
+  const code = error?.code ?? error?.cause?.code ?? null;
+  if (code === "23505" || code === 23505) return true;
   return Boolean(error?.message) && /duplicate key value/i.test(error.message);
 }
 
@@ -131,7 +134,7 @@ export async function listPendingPspWebhookEventsForEscrow({
 
 /**
  * Claim orphaned PENDING_RETRY webhook events whose payload contains a
- * matching payout_id or refund_id but were stored with escrow_id = null
+ * matching payment_id, payout_id or refund_id but were stored with escrow_id = null
  * (because the escrow didn't have the PSP reference yet at webhook time).
  *
  * Sets escrow_id on every matched row so that `listPendingPspWebhookEventsForEscrow`
@@ -141,34 +144,45 @@ export async function listPendingPspWebhookEventsForEscrow({
  */
 export async function claimOrphanedPspWebhookEvents({
   escrowId,
+  paymentId,
   payoutId,
   refundId
 }: {
   escrowId: string;
+  paymentId?: string | null;
   payoutId?: string | null;
   refundId?: string | null;
 }): Promise<number> {
-  if (!payoutId && !refundId) return 0;
-
   const client = getSupabaseServiceClient();
-  let query = client
-    .from("psp_webhook_events")
-    .update({ escrow_id: escrowId })
-    .is("escrow_id", null)
-    .eq("status", "PENDING_RETRY");
 
-  if (payoutId) {
-    query = query.contains("payload", { data: { payout_id: payoutId } });
-  } else if (refundId) {
-    query = query.contains("payload", { data: { refund_id: refundId } });
+  async function claimByDataField(field: "payment_id" | "payout_id" | "refund_id", value?: string | null) {
+    if (!value) return 0;
+
+    const { data, error } = await client
+      .from("psp_webhook_events")
+      .update({ escrow_id: escrowId })
+      .is("escrow_id", null)
+      .eq("status", "PENDING_RETRY")
+      .contains("payload", { data: { [field]: value } })
+      .select("id");
+
+    if (error) {
+      // Best-effort: don't fail upstream flows for a claim issue.
+      console.info("psp_webhook_events.claim_orphaned_failed", {
+        escrowId,
+        field,
+        value,
+        error: error?.message || String(error)
+      });
+      return 0;
+    }
+
+    return data?.length ?? 0;
   }
 
-  const { data, error, count } = await query.select("id");
-  if (error) {
-    // Best-effort: don't fail the confirm-received flow for a claim issue.
-    console.info("psp_webhook_events.claim_orphaned_failed", { escrowId, error: error?.message || String(error) });
-    return 0;
-  }
-  return data?.length ?? 0;
+  let claimed = 0;
+  claimed += await claimByDataField("payment_id", paymentId);
+  claimed += await claimByDataField("payout_id", payoutId);
+  claimed += await claimByDataField("refund_id", refundId);
+  return claimed;
 }
-
