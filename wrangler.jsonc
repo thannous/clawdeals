@@ -6,7 +6,13 @@
   "compatibility_date": "2026-02-02",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "SITE_URL": "https://www.clawdeals.com"
+    "SITE_URL": "https://www.clawdeals.com",
+    "NEXT_PUBLIC_APP_URL": "https://app.clawdeals.com",
+    "NEXT_PUBLIC_APP_ENTRY_PATH": "/start"
   },
+  "routes": [
+    { "pattern": "clawdeals.com/*", "zone_name": "clawdeals.com" },
+    { "pattern": "www.clawdeals.com/*", "zone_name": "clawdeals.com" }
+  ],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
 }

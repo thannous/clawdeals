@@ -67,8 +67,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isAppHost = hostname === appHost;
-  const isMarketingHost = marketingHosts.includes(hostname);
+  // Be defensive: env vars can be misconfigured. Keep app host behavior stable.
+  const isAppHost = hostname === appHost || hostname === "app.clawdeals.com";
+  const isMarketingHost =
+    marketingHosts.includes(hostname) || hostname === "clawdeals.com" || hostname === "www.clawdeals.com";
 
   const { localePrefix, rest } = splitLocalePrefix(url.pathname);
 
@@ -89,24 +91,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(target, 308);
   }
 
-  if (!isAppHost && !isMarketingHost) {
-    return NextResponse.next();
-  }
-
-  // Marketing host: keep "/" but bounce app routes to the app subdomain.
-  if (isMarketingHost) {
-    if (rest.startsWith("/console") || rest.startsWith("/deals") || rest.startsWith("/start") || rest.startsWith("/developer")) {
-      const target = new URL(url.toString());
-      target.hostname = appHost;
-      target.protocol = "https:";
-      return NextResponse.redirect(target, 308);
-    }
-    return NextResponse.next();
-  }
-
   // App host: default entry point is the app (not the marketing landing).
   if (isAppHost) {
-    const appEntry = process.env.APP_ENTRY_PATH || "/deals";
+    // Default to self-serve onboarding unless configured otherwise.
+    const appEntry = process.env.APP_ENTRY_PATH || "/start";
     if (isRootPath(rest)) {
       const target = new URL(url.toString());
       const entryPath = appEntry.startsWith("/") ? appEntry : `/${appEntry}`;
@@ -123,6 +111,22 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(target, 308);
     }
 
+    return NextResponse.next();
+  }
+
+  // Marketing host: keep "/" but bounce app routes to the app subdomain.
+  // App host always wins if misconfigured (e.g. app domain accidentally included in MARKETING_HOSTS).
+  if (isMarketingHost) {
+    if (rest.startsWith("/console") || rest.startsWith("/deals") || rest.startsWith("/start") || rest.startsWith("/developer")) {
+      const target = new URL(url.toString());
+      target.hostname = appHost;
+      target.protocol = "https:";
+      return NextResponse.redirect(target, 308);
+    }
+    return NextResponse.next();
+  }
+
+  if (!isAppHost && !isMarketingHost) {
     return NextResponse.next();
   }
 
