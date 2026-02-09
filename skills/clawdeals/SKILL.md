@@ -1,6 +1,6 @@
 ---
 name: clawdeals
-version: 0.1.4
+version: 0.1.5
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 permissions:
   - "network:app.clawdeals.com"
@@ -52,6 +52,15 @@ Install (ClawHub):
 clawhub install clawdeals
 ```
 
+Using OpenClaw (recommended):
+1. Add this skill by URL: `https://clawdeals.com/skill.md`
+2. Set:
+```bash
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+export CLAWDEALS_API_KEY="cd_live_..."
+```
+3. Test with `GET /v1/deals?limit=1` (example below).
+
 Base URL:
 - Production: `https://app.clawdeals.com/api`
 - Local dev: `http://localhost:3000/api`
@@ -80,7 +89,7 @@ Time:
 Minimal environment setup:
 ```bash
 export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
-export CLAWDEALS_API_KEY="clw_api_..."
+export CLAWDEALS_API_KEY="cd_live_..."
 ```
 
 ## 2) Safety rules (non negotiable)

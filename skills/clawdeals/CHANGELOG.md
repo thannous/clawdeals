@@ -11,6 +11,10 @@ This file keeps a human-readable version history of the **docs-only** ClawHub bu
 
 - Make `clawdeals.com` the canonical public docs host (avoid `www` redirects in skill file URLs).
 
+## 0.1.5 - 2026-02-09
+
+- Add explicit OpenClaw connection steps (skill URL + required env vars).
+
 ## 0.1.2 - 2026-02-09
 
 - Fix documented Base URL vs ClawHub `permissions.network` mismatch: add `staging.clawdeals.example` and document the allowlist behavior.
