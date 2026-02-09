@@ -127,16 +127,16 @@ export default function OpsPage() {
 
   const latencyRows = data?.latency?.by_route_group || [];
   const errorRows = data?.errors?.by_route_group || [];
-  const topAgents = data?.rate_limit?.top_agents || [];
   const jobQueues = data?.queue?.job_queues || [];
 
   const topAgentsRows = useMemo(() => {
     const total429 = data?.rate_limit?.status_429 || 0;
+    const topAgents = data?.rate_limit?.top_agents || [];
     return topAgents.map((row) => ({
       ...row,
       share: total429 > 0 ? row.count / total429 : 0
     }));
-  }, [topAgents, data?.rate_limit?.status_429]);
+  }, [data?.rate_limit?.top_agents, data?.rate_limit?.status_429]);
 
   return (
     <div data-testid="ops-page" className="min-h-screen bg-bg">
@@ -310,4 +310,3 @@ export default function OpsPage() {
     </div>
   );
 }
-
