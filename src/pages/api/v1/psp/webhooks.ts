@@ -7,7 +7,14 @@ import { resolveSecretRef } from "../../../../server/config/secrets";
 import { createPspAdapter } from "../../../../server/psp";
 import { insertPspWebhookEvent, listPendingPspWebhookEventsForEscrow, updatePspWebhookEventStatus } from "../../../../server/services/psp-webhook-events";
 import { updatePspAccountByExternalId } from "../../../../server/services/psp-accounts";
-import { getEscrowByPaymentId, getEscrowByPayoutId, markEscrowHold, markEscrowReleased } from "../../../../server/services/escrows";
+import {
+  getEscrowByPaymentId,
+  getEscrowByPayoutId,
+  getEscrowByRefundId,
+  markEscrowHold,
+  markEscrowRefunded,
+  markEscrowReleased
+} from "../../../../server/services/escrows";
 import { publishSseEvent } from "../../../../server/sse/store";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 
@@ -15,6 +22,10 @@ const MAX_WEBHOOK_BYTES = 1024 * 1024;
 
 function byteLength(value) {
   return Buffer.byteLength(String(value || ""), "utf8");
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function publishEscrowStateChanged(escrow: any, actor: any, type: string) {
@@ -92,6 +103,24 @@ function classifyApplyError(error: any) {
   return "FAILED";
 }
 
+async function retryOnEscrowNotFound<T>(fn: () => Promise<T>, { attempts, delayMs }: { attempts: number; delayMs: number }) {
+  let lastError: any = null;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (error?.code !== "ESCROW_NOT_FOUND") {
+        throw error;
+      }
+      if (i < attempts - 1) {
+        await sleep(delayMs);
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function applyWebhookEvent(event: any) {
   if (event.type === "account.updated") {
     const updated = await updatePspAccountByExternalId({
@@ -109,18 +138,39 @@ async function applyWebhookEvent(event: any) {
   }
 
   if (event.type === "payment.succeeded") {
-    const escrow = await markEscrowHold({
-      paymentId: event.data.payment_id,
-      holdId: event.data.hold_id ?? null,
-      holdExpiresAt: event.data.hold_expires_at ?? null
-    });
+    // Payment webhooks can arrive before `psp_payment_id` is fully persisted (rare, but possible in tests/CI).
+    // Retry briefly to avoid unnecessary PENDING_RETRY + flaky "CREATED" reads.
+    const escrow = await retryOnEscrowNotFound(
+      async () =>
+        markEscrowHold({
+          paymentId: event.data.payment_id,
+          holdId: event.data.hold_id ?? null,
+          holdExpiresAt: event.data.hold_expires_at ?? null
+        }),
+      { attempts: 5, delayMs: 75 }
+    );
     return { ok: true, escrow };
   }
 
   if (event.type === "payout.succeeded") {
-    const escrow = await markEscrowReleased({
-      payoutId: event.data.payout_id
-    });
+    const escrow = await retryOnEscrowNotFound(
+      async () =>
+        markEscrowReleased({
+          payoutId: event.data.payout_id
+        }),
+      { attempts: 5, delayMs: 75 }
+    );
+    return { ok: true, escrow };
+  }
+
+  if (event.type === "refund.succeeded") {
+    const escrow = await retryOnEscrowNotFound(
+      async () =>
+        markEscrowRefunded({
+          refundId: event.data.refund_id
+        }),
+      { attempts: 5, delayMs: 75 }
+    );
     return { ok: true, escrow };
   }
 
@@ -178,8 +228,24 @@ export async function handler(req, res, ctx) {
     return jsonResponse(413, errorPayload("PAYLOAD_TOO_LARGE", "Webhook payload too large"));
   }
 
-  const secret = resolveSecretRef(config.webhook_secret_ref);
-  const adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });
+  let secret: string;
+  try {
+    secret = resolveSecretRef(config.webhook_secret_ref);
+  } catch (error) {
+    console.info("psp.webhook_misconfigured", { reason: error?.message || String(error) });
+    return jsonResponse(409, errorPayload("PSP_WEBHOOK_MISCONFIGURED", "PSP webhook misconfigured"));
+  }
+
+  let adapter: any;
+  try {
+    adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });
+  } catch (error) {
+    console.info("psp.webhook_misconfigured", { reason: error?.message || String(error) });
+    return jsonResponse(
+      error.status || 409,
+      errorPayload(error.code || "PSP_WEBHOOK_MISCONFIGURED", error.message || "PSP webhook misconfigured", error.details)
+    );
+  }
 
   const verified = adapter.verifyWebhookSignature({
     canonicalBody,
@@ -204,6 +270,9 @@ export async function handler(req, res, ctx) {
       escrowIdHint = existing?.escrow_id || null;
     } else if (event.type === "payout.succeeded") {
       const existing = await getEscrowByPayoutId(event.data.payout_id);
+      escrowIdHint = existing?.escrow_id || null;
+    } else if (event.type === "refund.succeeded") {
+      const existing = await getEscrowByRefundId(event.data.refund_id);
       escrowIdHint = existing?.escrow_id || null;
     }
   } catch (error) {
@@ -243,7 +312,10 @@ export async function handler(req, res, ctx) {
       error: null
     });
 
-    if (result.escrow && (event.type === "payment.succeeded" || event.type === "payout.succeeded")) {
+    if (
+      result.escrow &&
+      (event.type === "payment.succeeded" || event.type === "payout.succeeded" || event.type === "refund.succeeded")
+    ) {
       await publishEscrowStateChanged(result.escrow, { type: "system", id: "psp" }, event.type);
       await replayPendingEscrowEvents({ escrowId: result.escrow.escrow_id, adapter });
     }
@@ -273,4 +345,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler, { enableIdempotency: false });
-

@@ -357,6 +357,56 @@ export async function confirmReceived(
   });
 }
 
+export async function openDispute(
+  api: APIRequestContext,
+  apiKey: string,
+  escrowId: string,
+  {
+    reasonCode,
+    notes
+  }: {
+    reasonCode: string;
+    notes?: string | null;
+  },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/escrows/${encodeURIComponent(escrowId)}/disputes`, {
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {
+      reason_code: reasonCode,
+      notes: notes ?? null
+    }
+  });
+}
+
+export async function resolveDispute(
+  api: APIRequestContext,
+  ownerId: string,
+  disputeId: string,
+  {
+    resolution,
+    notes
+  }: {
+    resolution: "REFUND" | "RELEASE";
+    notes?: string | null;
+  },
+  options: { idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post(`/api/v1/disputes/${encodeURIComponent(disputeId)}/resolve`, {
+    headers: {
+      "x-owner-id": ownerId,
+      "Idempotency-Key": options.idempotencyKey || randomId()
+    },
+    data: {
+      resolution,
+      notes: notes ?? null
+    }
+  });
+}
+
 export async function evidenceInit(
   api: APIRequestContext,
   apiKey: string,

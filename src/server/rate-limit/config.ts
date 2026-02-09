@@ -122,6 +122,17 @@ export const RATE_LIMIT_PROFILES = {
   "escrows.actions": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
   },
+  "disputes.open": {
+    scope: "owner",
+    buckets: [
+      { limit: 1, windowSeconds: 10 * MINUTE },
+      { limit: 3, windowSeconds: 30 * DAY },
+    ],
+  },
+  "disputes.resolve": {
+    scope: "owner",
+    buckets: [{ limit: 60, windowSeconds: HOUR }],
+  },
   "ratings.create": {
     buckets: [{ limit: 20, windowSeconds: DAY }],
   },
@@ -195,6 +206,38 @@ export const RATE_LIMIT_PROFILES = {
   },
   "sse.reconnect_ip": {
     scope: "ip",
+    buckets: [{ limit: 10, windowSeconds: 10 * MINUTE }],
+  },
+
+  // Phase 5: multi-canal (Telegram) + pairing allowlists.
+  "channels.pairings.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "channels.pairings.write": {
+    scope: "owner",
+    buckets: [{ limit: 60, windowSeconds: HOUR }],
+  },
+  "channels.pairing_confirm": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: HOUR }],
+  },
+  "channels.telegram.webhook": {
+    scope: "channel",
+    buckets: [
+      { limit: 5, windowSeconds: 10 },
+      { limit: 30, windowSeconds: MINUTE },
+    ],
+  },
+  "channels.pair": {
+    scope: "channel",
+    buckets: [
+      { limit: 3, windowSeconds: 10 * MINUTE },
+      { limit: 20, windowSeconds: DAY },
+    ],
+  },
+  "channels.confirm": {
+    scope: "channel",
     buckets: [{ limit: 10, windowSeconds: 10 * MINUTE }],
   },
 };

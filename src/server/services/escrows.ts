@@ -108,6 +108,15 @@ export async function getEscrowByPayoutId(payoutId: string) {
   return data || null;
 }
 
+export async function getEscrowByRefundId(refundId: string) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("escrows").select("*").eq("psp_refund_id", refundId).maybeSingle();
+  if (error) {
+    mapError(error);
+  }
+  return data || null;
+}
+
 export async function createEscrow({
   txId,
   actorAgentId,
@@ -235,3 +244,15 @@ export async function markEscrowReleased({ payoutId }: { payoutId: string }) {
   return data;
 }
 
+export async function markEscrowRefunded({ refundId }: { refundId: string }) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .rpc("escrow_mark_refunded_v0", {
+      p_psp_refund_id: refundId
+    })
+    .single();
+  if (error) {
+    throwEscrowRpcError(error);
+  }
+  return data;
+}

@@ -32,7 +32,20 @@ export type PspPayoutSucceededEvent = {
   };
 };
 
-export type PspWebhookEvent = PspAccountUpdatedEvent | PspPaymentSucceededEvent | PspPayoutSucceededEvent;
+export type PspRefundSucceededEvent = {
+  id: string;
+  type: "refund.succeeded";
+  created_at: string;
+  data: {
+    refund_id: string;
+  };
+};
+
+export type PspWebhookEvent =
+  | PspAccountUpdatedEvent
+  | PspPaymentSucceededEvent
+  | PspPayoutSucceededEvent
+  | PspRefundSucceededEvent;
 
 export type VerifyWebhookSignatureInput = {
   canonicalBody: string;
@@ -76,6 +89,17 @@ export type ReleaseResult = {
   payoutId: string;
 };
 
+export type RefundInput = {
+  escrowId: string;
+  paymentId: string;
+  amountMinor: number | bigint;
+  currency: string;
+};
+
+export type RefundResult = {
+  refundId: string;
+};
+
 export interface PSPAdapter {
   provider: PspProvider;
   mode: PspMode;
@@ -86,5 +110,5 @@ export interface PSPAdapter {
   createSellerOnboarding(input: CreateSellerOnboardingInput): Promise<CreateSellerOnboardingResult>;
   createCheckoutSession(input: CreateCheckoutSessionInput): Promise<CreateCheckoutSessionResult>;
   release(input: ReleaseInput): Promise<ReleaseResult>;
+  refund(input: RefundInput): Promise<RefundResult>;
 }
-

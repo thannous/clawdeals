@@ -33,7 +33,7 @@ describe("route groups", () => {
     );
   });
 
-  it("matches PSP and escrow and evidence route groups (TI-210/TI-211/TI-214)", () => {
+  it("matches PSP, escrow, dispute, and evidence route groups (TI-210/TI-211/TI-212/TI-214)", () => {
     const sp = new URLSearchParams();
 
     expect(matchRouteGroup("POST", "/api/v1/ops/psp/configure", sp)).toBe("ops.psp.write");
@@ -58,6 +58,14 @@ describe("route groups", () => {
       "escrows.actions"
     );
 
+    expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/disputes", sp)).toBe(
+      "disputes.open"
+    );
+
+    expect(matchRouteGroup("POST", "/api/v1/disputes/00000000-0000-4000-a000-000000000123/resolve", sp)).toBe(
+      "disputes.resolve"
+    );
+
     expect(matchRouteGroup("POST", "/api/v1/disputes/00000000-0000-4000-a000-000000000123/evidence", sp)).toBe(
       "evidence.write"
     );
@@ -67,5 +75,10 @@ describe("route groups", () => {
     expect(matchRouteGroup("GET", "/api/v1/disputes/00000000-0000-4000-a000-000000000123/evidence", sp)).toBe(
       "evidence.read"
     );
+  });
+
+  it("matches channels.telegram.webhook (TI-221)", () => {
+    const sp = new URLSearchParams();
+    expect(matchRouteGroup("POST", "/api/v1/channels/telegram/webhook", sp)).toBe("channels.telegram.webhook");
   });
 });

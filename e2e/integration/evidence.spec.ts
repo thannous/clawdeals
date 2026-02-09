@@ -102,7 +102,14 @@ async function setupDisputeFixture(request: any) {
 
   const { data: disputeRow, error: disputeErr } = await supabase
     .from("disputes")
-    .insert({ escrow_id: escrowRow.escrow_id, status: "OPEN" })
+    .insert({
+      escrow_id: escrowRow.escrow_id,
+      status: "OPEN",
+      opened_by: "BUYER",
+      reason_code: "item_not_received",
+      resolution: "NONE_YET",
+      opened_at: new Date().toISOString()
+    })
     .select("dispute_id")
     .single();
   if (disputeErr) throw disputeErr;

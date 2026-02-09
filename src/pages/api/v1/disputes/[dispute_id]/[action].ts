@@ -4,16 +4,19 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { isUuid } from "../../../../../server/utils/validators";
 import { getAgentById } from "../../../../../server/services/agents";
+import { getPspConfig } from "../../../../../server/services/psp-config";
+import { createPspAdapter } from "../../../../../server/psp";
 import { getOpsConsoleOwnerId } from "../../../../../server/config/ops";
+import { getDisputeById, resolveDispute } from "../../../../../server/services/disputes";
 import {
   confirmEvidenceUpload,
-  getDispute,
   getEscrow,
   initEvidenceUpload,
   isAllowedEvidenceContentType,
   isValidSha256Hex,
   listEvidenceBundle
 } from "../../../../../server/services/evidence";
+import { redactEmailsAndPhones } from "../../../../../server/utils/free-text-redaction";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -79,7 +82,7 @@ export async function handler(req, res, ctx) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  const dispute = await getDispute(String(disputeId));
+  const dispute = await getDisputeById(String(disputeId));
   if (!dispute) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
   }
@@ -87,6 +90,128 @@ export async function handler(req, res, ctx) {
   const escrow = await getEscrow(dispute.escrow_id);
   if (!escrow) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
+  }
+
+  if (action === "resolve" && req.method === "POST") {
+    const actorOwnerId = ctx?.ownerId || null;
+    if (!actorOwnerId || actorOwnerId !== getOpsConsoleOwnerId()) {
+      return jsonResponse(403, errorPayload("PERMISSION_DENIED", "Permission denied"));
+    }
+
+    const idempotencyKey = getHeaderValue(req, "idempotency-key");
+    if (!idempotencyKey) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+    }
+
+    const body = req.body || {};
+    const resolutionRaw = typeof body.resolution === "string" ? body.resolution.trim().toUpperCase() : "";
+    if (!["REFUND", "RELEASE"].includes(resolutionRaw)) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "resolution is invalid"));
+    }
+
+    const notesRaw = typeof body.notes === "string" ? body.notes.trim().slice(0, 2000) : "";
+    const notesRedacted = notesRaw ? redactEmailsAndPhones(notesRaw).text.slice(0, 500) : null;
+
+    if (ctx) {
+      ctx.auditEvent = "dispute.resolved";
+      ctx.auditEntityType = "dispute";
+      ctx.auditEntityId = String(disputeId);
+      ctx.body = {
+        dispute_id: String(disputeId),
+        action: "resolve",
+        resolution: resolutionRaw,
+        notes_redacted: notesRedacted
+      };
+    }
+
+    try {
+      // Fast idempotency: do not trigger PSP twice if already resolved.
+      if (dispute.status === "RESOLVED") {
+        if (String(dispute.resolution) !== resolutionRaw) {
+          return jsonResponse(409, errorPayload("DISPUTE_ALREADY_RESOLVED", "Dispute already resolved"));
+        }
+        return jsonResponse(200, {
+          dispute_id: dispute.dispute_id,
+          status: dispute.status,
+          resolution: dispute.resolution,
+          resolved_at: dispute.resolved_at,
+          escrow_status: escrow.status,
+          psp: {
+            payout_id: escrow.psp_payout_id || null,
+            refund_id: escrow.psp_refund_id || null
+          }
+        });
+      }
+
+      const config = await getPspConfig();
+      if (!config) {
+        return jsonResponse(409, errorPayload("PSP_NOT_CONFIGURED", "PSP not configured"));
+      }
+
+      if (escrow.status !== "DISPUTE_OPEN") {
+        return jsonResponse(409, errorPayload("INVALID_STATE", "Invalid escrow state", { status: escrow.status }));
+      }
+
+      const paymentId = escrow.psp_payment_id ? String(escrow.psp_payment_id) : null;
+      if (!paymentId) {
+        return jsonResponse(409, errorPayload("ESCROW_NOT_READY", "Escrow payment not initialized"));
+      }
+
+      const adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });
+
+      let pspReferenceId: string;
+      if (resolutionRaw === "RELEASE") {
+        const release = await adapter.release({
+          escrowId: escrow.escrow_id,
+          paymentId,
+          amountMinor: escrow.amount_gross_minor,
+          currency: escrow.currency
+        });
+        pspReferenceId = release.payoutId;
+      } else {
+        const refund = await adapter.refund({
+          escrowId: escrow.escrow_id,
+          paymentId,
+          amountMinor: escrow.amount_gross_minor,
+          currency: escrow.currency
+        });
+        pspReferenceId = refund.refundId;
+      }
+
+      const updated = await resolveDispute({
+        disputeId: String(disputeId),
+        resolution: resolutionRaw as any,
+        resolutionNotesRedacted: notesRedacted,
+        pspReferenceId
+      });
+
+      if (ctx) {
+        ctx.body = {
+          dispute_id: String(updated.dispute_id),
+          action: "resolve",
+          status: updated.status,
+          resolution: updated.resolution,
+          resolved_at: updated.resolved_at || null,
+          escrow_status: updated.escrow_status,
+          psp_reference_id: pspReferenceId,
+          notes_redacted: notesRedacted
+        };
+      }
+
+      return jsonResponse(200, {
+        dispute_id: updated.dispute_id,
+        status: updated.status,
+        resolution: updated.resolution,
+        resolved_at: updated.resolved_at,
+        escrow_status: updated.escrow_status,
+        psp: {
+          payout_id: updated.psp_payout_id || null,
+          refund_id: updated.psp_refund_id || null
+        }
+      });
+    } catch (error) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    }
   }
 
   const role = await resolveEvidenceRole({
@@ -200,6 +325,9 @@ export async function handler(req, res, ctx) {
     return methodNotAllowed(["GET", "POST"]);
   }
   if (action === "evidence:confirm") {
+    return methodNotAllowed(["POST"]);
+  }
+  if (action === "resolve") {
     return methodNotAllowed(["POST"]);
   }
   return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown dispute action"));

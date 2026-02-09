@@ -137,6 +137,40 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     expect(escrowAfterHold?.psp_payment_id).toBe(paymentId);
     expect(typeof escrowAfterHold?.psp_hold_id).toBe("string");
 
+    const { data: grossLedger, error: grossLedgerErr } = await supabase
+      .from("ledger_entries")
+      .select("ledger_entry_id,type,amount_minor,currency,psp_reference_id")
+      .eq("escrow_id", escrowId)
+      .eq("type", "GROSS");
+    if (grossLedgerErr) throw grossLedgerErr;
+    expect((grossLedger || []).length).toBe(1);
+    expect(grossLedger?.[0]?.amount_minor).toBe(createBody.amount_gross_minor);
+    expect(grossLedger?.[0]?.currency).toBe(createBody.currency);
+    expect(grossLedger?.[0]?.psp_reference_id).toBe(paymentId);
+
+    // Duplicate webhook event id (different psp_event_id) should not create a second ledger entry.
+    const duplicatePaymentWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payment.succeeded",
+      created_at: new Date().toISOString(),
+      data: {
+        payment_id: paymentId,
+        hold_id: `hold_${randomId()}`,
+        hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    };
+    const duplicateSig = signWebhook(duplicatePaymentWebhook);
+    const dupRes = await postPspWebhook(request, { signature: duplicateSig, body: duplicatePaymentWebhook });
+    await expectStatus(dupRes, 200);
+
+    const { data: grossLedgerAfterDup, error: grossLedgerDupErr } = await supabase
+      .from("ledger_entries")
+      .select("ledger_entry_id,type")
+      .eq("escrow_id", escrowId)
+      .eq("type", "GROSS");
+    if (grossLedgerDupErr) throw grossLedgerDupErr;
+    expect((grossLedgerAfterDup || []).length).toBe(1);
+
     const deliverKey1 = randomId();
     const deliverKey2 = randomId();
     const [deliverRes1, deliverRes2] = await Promise.all([
@@ -182,10 +216,28 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     expect(escrowAfterRelease?.status).toBe("RELEASED");
     expect(escrowAfterRelease?.released_at).toBeTruthy();
 
+    const { data: feeLedger, error: feeLedgerErr } = await supabase
+      .from("ledger_entries")
+      .select("type,amount_minor,currency,psp_reference_id")
+      .eq("escrow_id", escrowId)
+      .in("type", ["PLATFORM_FEE", "NET_TO_SELLER"]);
+    if (feeLedgerErr) throw feeLedgerErr;
+    const types = new Set((feeLedger || []).map((row: any) => row.type));
+    expect(types.has("PLATFORM_FEE")).toBe(true);
+    expect(types.has("NET_TO_SELLER")).toBe(true);
+
+    const platformFee = (feeLedger || []).find((row: any) => row.type === "PLATFORM_FEE");
+    const netToSeller = (feeLedger || []).find((row: any) => row.type === "NET_TO_SELLER");
+    expect(platformFee?.amount_minor).toBe(createBody.amount_platform_fee_minor);
+    expect(netToSeller?.amount_minor).toBe(createBody.amount_net_minor);
+    expect(platformFee?.currency).toBe(createBody.currency);
+    expect(netToSeller?.currency).toBe(createBody.currency);
+    expect(platformFee?.psp_reference_id).toBe(payoutId);
+    expect(netToSeller?.psp_reference_id).toBe(payoutId);
+
     const invalidFinal = await markDelivered(request, sellerApiKey, escrowId, { idempotencyKey: randomId() });
     await expectStatus(invalidFinal, 409);
     const invalidBody = await invalidFinal.json();
     expect(invalidBody?.error?.code).toBe("ESCROW_FINALIZED");
   });
 });
-

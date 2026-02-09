@@ -171,6 +171,10 @@ export async function createDisputeDb(
     .insert({
       escrow_id: escrowId,
       status,
+      opened_by: "SYSTEM",
+      reason_code: "other",
+      resolution: "NONE_YET",
+      opened_at: nowIso,
       created_at: nowIso,
       updated_at: nowIso
     })

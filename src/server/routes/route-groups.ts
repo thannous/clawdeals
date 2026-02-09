@@ -192,6 +192,16 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/escrows\/[^/]+\/(?:pay|mark-delivered|confirm-received)$/
   },
   {
+    group: "disputes.open",
+    methods: ["POST"],
+    pattern: /^\/v1\/escrows\/[^/]+\/disputes$/
+  },
+  {
+    group: "disputes.resolve",
+    methods: ["POST"],
+    pattern: /^\/v1\/disputes\/[^/]+\/resolve$/
+  },
+  {
     group: "evidence.write",
     methods: ["POST"],
     pattern: /^\/v1\/disputes\/[^/]+\/(?:evidence|evidence:confirm)$/
@@ -235,6 +245,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     group: "reports.create",
     methods: ["POST"],
     pattern: /^\/v1\/reports$/
+  },
+  {
+    group: "channels.telegram.webhook",
+    methods: ["POST"],
+    pattern: /^\/v1\/channels\/telegram\/webhook$/
   },
   {
     group: "sse.connect",

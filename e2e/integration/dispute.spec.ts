@@ -1,0 +1,328 @@
+import { test, expect } from "@playwright/test";
+
+import { assertIntegrationEnv } from "./helpers/env";
+import { randomId } from "./helpers/ids";
+import {
+  acceptOffer,
+  configurePsp,
+  createEscrow,
+  createListing,
+  createOffer,
+  expectStatus,
+  openDispute,
+  payEscrow,
+  postPspWebhook,
+  resolveDispute
+} from "./helpers/http";
+import {
+  createSupabaseAdmin,
+  createAgentDbWithOverrides,
+  createActiveApiKeyDb,
+  ensureOwnerDb,
+  OPS_CONSOLE_OWNER_ID
+} from "./helpers/supabase";
+
+import { canonicalJsonStringify } from "../../src/server/utils/canonical-json";
+import { hmacSha256 } from "../../src/server/utils/hmac";
+
+assertIntegrationEnv();
+
+async function setupPolicy(request: any, ownerId: string) {
+  const policyRes = await request.put("/api/v1/policies", {
+    headers: { "x-owner-id": ownerId },
+    data: {
+      budgets: { max_offer: 1000, currency: "EUR" },
+      approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
+      auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+      allowlist_agent_ids: [],
+      denylist_agent_ids: []
+    }
+  });
+  await expectStatus(policyRes, 200);
+}
+
+function signWebhook(body: any) {
+  const secret = process.env.IDEMPOTENCY_SECRET as string;
+  const canonicalBody = canonicalJsonStringify(body);
+  return hmacSha256(secret, canonicalBody);
+}
+
+async function setupEscrowOnHold(request: any) {
+  const supabase = createSupabaseAdmin();
+
+  const sellerOwnerId = randomId();
+  await ensureOwnerDb(supabase, sellerOwnerId);
+  await setupPolicy(request, sellerOwnerId);
+
+  const buyerOwnerId = randomId();
+  await ensureOwnerDb(supabase, buyerOwnerId);
+  await setupPolicy(request, buyerOwnerId);
+
+  const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+  const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, {
+    createdAt: agedCreatedAt,
+    trustScore: 90,
+    trustFlags: []
+  });
+  const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+  const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+    createdAt: agedCreatedAt,
+    trustScore: 90,
+    trustFlags: []
+  });
+  const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+  const configureRes = await configurePsp(
+    request,
+    OPS_CONSOLE_OWNER_ID,
+    { provider: "mock", mode: "sandbox", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 },
+    { idempotencyKey: randomId() }
+  );
+  await expectStatus(configureRes, 200);
+
+  const listingRes = await createListing(request, sellerApiKey, { title: `Dispute listing ${randomId()}`, publish: true });
+  await expectStatus(listingRes, 201);
+  const listingBody = await listingRes.json();
+  const listingId = listingBody.listing_id;
+
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const offerRes = await createOffer(
+    request,
+    buyerApiKey,
+    listingId,
+    { threadId: null, amount: 350, currency: "EUR", expiresAt },
+    { idempotencyKey: randomId() }
+  );
+  await expectStatus(offerRes, 201);
+  const offerBody = await offerRes.json();
+  const offerId = offerBody.offer_id;
+
+  const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+  await expectStatus(acceptRes, 200);
+  const acceptBody = await acceptRes.json();
+  const txId = acceptBody.transaction?.tx_id;
+  expect(typeof txId).toBe("string");
+
+  const createRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+  await expectStatus(createRes, 201);
+  const createBody = await createRes.json();
+  const escrowId = createBody.escrow_id;
+  expect(typeof escrowId).toBe("string");
+
+  const payRes = await payEscrow(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+  await expectStatus(payRes, 200);
+  const payBody = await payRes.json();
+  const paymentId = payBody.psp?.payment_id;
+  expect(typeof paymentId).toBe("string");
+
+  const paymentWebhook = {
+    id: `evt_${randomId()}`,
+    type: "payment.succeeded",
+    created_at: new Date().toISOString(),
+    data: {
+      payment_id: paymentId,
+      hold_id: `hold_${randomId()}`,
+      hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  };
+  const paymentSig = signWebhook(paymentWebhook);
+  const payHookRes = await postPspWebhook(request, { signature: paymentSig, body: paymentWebhook });
+  await expectStatus(payHookRes, 200);
+
+  const { data: escrowAfterHold, error: holdErr } = await supabase
+    .from("escrows")
+    .select("escrow_id,status,psp_payment_id")
+    .eq("escrow_id", escrowId)
+    .maybeSingle();
+  if (holdErr) throw holdErr;
+  expect(escrowAfterHold?.status).toBe("HOLD");
+
+  return {
+    supabase,
+    sellerApiKey,
+    buyerApiKey,
+    escrowId,
+    paymentId,
+    createBody
+  };
+}
+
+test.describe.serial("Integration: Disputes (TI-212) + Ledger (TI-213)", () => {
+  test.setTimeout(90000);
+
+  test("open dispute -> resolve REFUND -> refund webhook -> REFUNDED + ledger", async ({ request }) => {
+    const fixture = await setupEscrowOnHold(request);
+
+    const openPayload = {
+      reasonCode: "item_not_received",
+      notes: "Need a refund, contact me at test@example.com"
+    } as const;
+
+    const idemOpen = randomId();
+    const openRes = await openDispute(
+      request,
+      fixture.buyerApiKey,
+      fixture.escrowId,
+      openPayload,
+      { idempotencyKey: idemOpen }
+    );
+    await expectStatus(openRes, 201);
+    const openBody = await openRes.json();
+    expect(openBody.escrow_status).toBe("DISPUTE_OPEN");
+    const disputeId = openBody.dispute_id;
+    expect(typeof disputeId).toBe("string");
+
+    const replayOpen = await openDispute(
+      request,
+      fixture.buyerApiKey,
+      fixture.escrowId,
+      openPayload,
+      { idempotencyKey: idemOpen }
+    );
+    await expectStatus(replayOpen, 201);
+    expect(replayOpen.headers()["idempotency-replayed"]).toBe("true");
+
+    const { data: evidencePack, error: packErr } = await fixture.supabase
+      .from("evidence_packs")
+      .select("evidence_pack_id,dispute_id")
+      .eq("dispute_id", disputeId)
+      .maybeSingle();
+    if (packErr) throw packErr;
+    expect(evidencePack?.dispute_id).toBe(disputeId);
+
+    const resolvePayload = {
+      resolution: "REFUND",
+      notes: "Refund approved."
+    } as const;
+
+    const idemResolve = randomId();
+    const resolveRes = await resolveDispute(
+      request,
+      OPS_CONSOLE_OWNER_ID,
+      disputeId,
+      resolvePayload,
+      { idempotencyKey: idemResolve }
+    );
+    await expectStatus(resolveRes, 200);
+    const resolveBody = await resolveRes.json();
+    expect(resolveBody.escrow_status).toBe("REFUND_PENDING");
+    const refundId = resolveBody.psp?.refund_id;
+    expect(typeof refundId).toBe("string");
+
+    const replayResolve = await resolveDispute(
+      request,
+      OPS_CONSOLE_OWNER_ID,
+      disputeId,
+      resolvePayload,
+      { idempotencyKey: idemResolve }
+    );
+    await expectStatus(replayResolve, 200);
+    expect(replayResolve.headers()["idempotency-replayed"]).toBe("true");
+
+    const refundWebhook = {
+      id: `evt_${randomId()}`,
+      type: "refund.succeeded",
+      created_at: new Date().toISOString(),
+      data: {
+        refund_id: refundId
+      }
+    };
+    const refundSig = signWebhook(refundWebhook);
+    const refundRes = await postPspWebhook(request, { signature: refundSig, body: refundWebhook });
+    await expectStatus(refundRes, 200);
+
+    const { data: escrowAfterRefund, error: refundErr } = await fixture.supabase
+      .from("escrows")
+      .select("escrow_id,status,refunded_at,psp_refund_id")
+      .eq("escrow_id", fixture.escrowId)
+      .maybeSingle();
+    if (refundErr) throw refundErr;
+    expect(escrowAfterRefund?.status).toBe("REFUNDED");
+    expect(escrowAfterRefund?.refunded_at).toBeTruthy();
+    expect(escrowAfterRefund?.psp_refund_id).toBe(refundId);
+
+    const { data: refundLedger, error: refundLedgerErr } = await fixture.supabase
+      .from("ledger_entries")
+      .select("type,amount_minor,currency,psp_reference_id")
+      .eq("escrow_id", fixture.escrowId)
+      .in("type", ["GROSS", "REFUND"]);
+    if (refundLedgerErr) throw refundLedgerErr;
+    const refundTypes = new Set((refundLedger || []).map((row: any) => row.type));
+    expect(refundTypes.has("GROSS")).toBe(true);
+    expect(refundTypes.has("REFUND")).toBe(true);
+    const refundEntry = (refundLedger || []).find((row: any) => row.type === "REFUND");
+    expect(refundEntry?.amount_minor).toBe(fixture.createBody.amount_gross_minor);
+    expect(refundEntry?.currency).toBe(fixture.createBody.currency);
+    expect(refundEntry?.psp_reference_id).toBe(refundId);
+  });
+
+  test("open dispute -> resolve RELEASE -> payout webhook -> RELEASED + ledger", async ({ request }) => {
+    const fixture = await setupEscrowOnHold(request);
+
+    const openRes = await openDispute(
+      request,
+      fixture.buyerApiKey,
+      fixture.escrowId,
+      { reasonCode: "not_as_described", notes: "Please review." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(openRes, 201);
+    const openBody = await openRes.json();
+    expect(openBody.escrow_status).toBe("DISPUTE_OPEN");
+    const disputeId = openBody.dispute_id;
+    expect(typeof disputeId).toBe("string");
+
+    const resolveRes = await resolveDispute(
+      request,
+      OPS_CONSOLE_OWNER_ID,
+      disputeId,
+      { resolution: "RELEASE", notes: "Release approved." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(resolveRes, 200);
+    const resolveBody = await resolveRes.json();
+    expect(resolveBody.escrow_status).toBe("RELEASE_PENDING");
+    const payoutId = resolveBody.psp?.payout_id;
+    expect(typeof payoutId).toBe("string");
+
+    const payoutWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payout.succeeded",
+      created_at: new Date().toISOString(),
+      data: {
+        payout_id: payoutId
+      }
+    };
+    const payoutSig = signWebhook(payoutWebhook);
+    const payoutRes = await postPspWebhook(request, { signature: payoutSig, body: payoutWebhook });
+    await expectStatus(payoutRes, 200);
+
+    const { data: escrowAfterRelease, error: releaseErr } = await fixture.supabase
+      .from("escrows")
+      .select("escrow_id,status,released_at")
+      .eq("escrow_id", fixture.escrowId)
+      .maybeSingle();
+    if (releaseErr) throw releaseErr;
+    expect(escrowAfterRelease?.status).toBe("RELEASED");
+    expect(escrowAfterRelease?.released_at).toBeTruthy();
+
+    const { data: feeLedger, error: feeLedgerErr } = await fixture.supabase
+      .from("ledger_entries")
+      .select("type,amount_minor,psp_reference_id")
+      .eq("escrow_id", fixture.escrowId)
+      .in("type", ["GROSS", "PLATFORM_FEE", "NET_TO_SELLER"]);
+    if (feeLedgerErr) throw feeLedgerErr;
+    const feeTypes = new Set((feeLedger || []).map((row: any) => row.type));
+    expect(feeTypes.has("GROSS")).toBe(true);
+    expect(feeTypes.has("PLATFORM_FEE")).toBe(true);
+    expect(feeTypes.has("NET_TO_SELLER")).toBe(true);
+
+    const platformFee = (feeLedger || []).find((row: any) => row.type === "PLATFORM_FEE");
+    const netToSeller = (feeLedger || []).find((row: any) => row.type === "NET_TO_SELLER");
+    expect(platformFee?.amount_minor).toBe(fixture.createBody.amount_platform_fee_minor);
+    expect(netToSeller?.amount_minor).toBe(fixture.createBody.amount_net_minor);
+    expect(platformFee?.psp_reference_id).toBe(payoutId);
+    expect(netToSeller?.psp_reference_id).toBe(payoutId);
+  });
+});

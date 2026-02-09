@@ -4,6 +4,7 @@ import type {
   PSPAdapter,
   PspMode,
   PspWebhookEvent,
+  RefundInput,
   VerifyWebhookSignatureInput
 } from "./psp-adapter";
 
@@ -95,6 +96,18 @@ function parsePayoutSucceeded(body: any): PspWebhookEvent {
   };
 }
 
+function parseRefundSucceeded(body: any): PspWebhookEvent {
+  const refundId = assertNonEmptyString(body?.data?.refund_id, "data.refund_id");
+  return {
+    id: coerceEventId(body?.id),
+    type: "refund.succeeded",
+    created_at: coerceCreatedAt(body?.created_at),
+    data: {
+      refund_id: refundId
+    }
+  };
+}
+
 export class MockPspAdapter implements PSPAdapter {
   provider: "mock" = "mock";
   mode: PspMode;
@@ -113,7 +126,11 @@ export class MockPspAdapter implements PSPAdapter {
     }
 
     const expected = hmacSha256(secret, canonicalBody || "");
-    if (signature !== expected) {
+    const provided = signature.trim().toLowerCase();
+    if (provided.length !== expected.length) {
+      return { ok: false, error: "invalid_signature" } as const;
+    }
+    if (!crypto.timingSafeEqual(Buffer.from(provided, "utf8"), Buffer.from(expected, "utf8"))) {
       return { ok: false, error: "invalid_signature" } as const;
     }
     return { ok: true } as const;
@@ -128,6 +145,8 @@ export class MockPspAdapter implements PSPAdapter {
         return parsePaymentSucceeded(body);
       case "payout.succeeded":
         return parsePayoutSucceeded(body);
+      case "refund.succeeded":
+        return parseRefundSucceeded(body);
       default:
         throw new Error("type is invalid");
     }
@@ -157,5 +176,9 @@ export class MockPspAdapter implements PSPAdapter {
     const payoutId = `mock_payout_${escrowId}`;
     return { payoutId };
   }
-}
 
+  async refund({ escrowId }: RefundInput) {
+    const refundId = `mock_refund_${escrowId}`;
+    return { refundId };
+  }
+}
