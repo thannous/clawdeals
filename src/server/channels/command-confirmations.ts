@@ -3,6 +3,15 @@ import { getRedis } from "../redis/upstash";
 
 const DEFAULT_TTL_SECONDS = 600;
 
+const CONSUME_CONFIRMATION_LUA = `
+local key = KEYS[1]
+local v = redis.call("GET", key)
+if v then
+  redis.call("DEL", key)
+end
+return v
+`;
+
 export function getChannelConfirmationTtlSeconds() {
   return getNumberEnv("CHANNEL_CONFIRMATION_TTL_SECONDS", { defaultValue: DEFAULT_TTL_SECONDS }) ?? DEFAULT_TTL_SECONDS;
 }
@@ -49,9 +58,18 @@ export async function getConfirmation({ channelIdentityId, action, targetId }: a
 export async function consumeConfirmation({ channelIdentityId, action, targetId }: any) {
   const key = buildConfirmationKey({ channelIdentityId, action, targetId });
   const redis = getRedis();
-  const raw = await redis.get(key);
+  let raw: any = null;
+  try {
+    // Atomic: avoids double-consume under retries/races.
+    raw = await redis.eval(CONSUME_CONFIRMATION_LUA, [key], []);
+  } catch (error) {
+    // Fallback to non-atomic behavior if Redis/EVAL is unavailable.
+    raw = await redis.get(key);
+    if (raw) {
+      await redis.del(key);
+    }
+  }
   if (!raw) return null;
-  await redis.del(key);
   if (typeof raw === "object") return raw;
   try {
     return JSON.parse(raw);
@@ -59,4 +77,3 @@ export async function consumeConfirmation({ channelIdentityId, action, targetId 
     return null;
   }
 }
-

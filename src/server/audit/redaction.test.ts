@@ -3,11 +3,13 @@ import { redactValue } from "./redaction";
 
 describe("redactValue", () => {
   it("redacts known sensitive keys", () => {
-    const input = { authorization: "Bearer secret", nested: { api_key: "123" } };
+    const input = { authorization: "Bearer secret", nested: { api_key: "123", api_key_id: "id-123" } };
     const { value, redacted } = redactValue(input);
     expect(redacted).toBe(true);
     expect(value.authorization).toBe("[REDACTED]");
     expect(value.nested.api_key).toBe("[REDACTED]");
+    // IDs are not secrets; keep them for auditing.
+    expect(value.nested.api_key_id).toBe("id-123");
   });
 
   it("redacts email, phone, phone_e164, token, otp, code, pin", () => {

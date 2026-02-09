@@ -28,7 +28,12 @@ vi.mock("../utils/api-keys", async () => {
 const maybeSingle = vi.fn();
 const eq = vi.fn(() => ({ maybeSingle }));
 const select = vi.fn(() => ({ eq }));
-const from = vi.fn(() => ({ select }));
+
+const eq2ForRevoke = vi.fn(async () => ({ data: null, error: null }));
+const eq1ForRevoke = vi.fn(() => ({ eq: eq2ForRevoke }));
+const update = vi.fn(() => ({ eq: eq1ForRevoke }));
+
+const from = vi.fn(() => ({ select, update }));
 
 vi.mock("../db/supabase", () => ({
   getSupabaseServiceClient: () => ({
@@ -142,5 +147,47 @@ describe("authenticateApiKey (auth cache)", () => {
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("revoked");
     expect(mockRedis.set).not.toHaveBeenCalled();
+  });
+
+  it("accepts cached GRACE keys before expiry", async () => {
+    store.set(
+      "auth:api_key_prefix:abcdefgh",
+      JSON.stringify({
+        api_key_id: "key-1",
+        agent_id: "agent-1",
+        owner_id: "owner-1",
+        key_hash: "hash",
+        key_state: "GRACE",
+        grace_expires_at: new Date(Date.now() + 60_000).toISOString(),
+        revoked_at: null
+      })
+    );
+
+    const result: any = await authenticateApiKey(API_KEY);
+    expect(result.ok).toBe(true);
+    expect(result.keyState).toBe("GRACE");
+    expect(result.agentId).toBe("agent-1");
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("rejects cached GRACE keys after expiry and revokes the record", async () => {
+    store.set(
+      "auth:api_key_prefix:abcdefgh",
+      JSON.stringify({
+        api_key_id: "key-1",
+        agent_id: "agent-1",
+        owner_id: "owner-1",
+        key_hash: "hash",
+        key_state: "GRACE",
+        grace_expires_at: new Date(Date.now() - 60_000).toISOString(),
+        revoked_at: null
+      })
+    );
+
+    const result: any = await authenticateApiKey(API_KEY);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("expired");
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(mockRedis.del).toHaveBeenCalledWith("auth:api_key_prefix:abcdefgh");
   });
 });

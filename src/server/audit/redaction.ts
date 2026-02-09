@@ -33,7 +33,9 @@ const DEFAULT_REDACT_KEY_MATCHERS = [
   /password/i,
   /secret/i,
   /token/i,
-  /api[-_]?key/i,
+  // Redact API key material (api_key, x-api-key, apiKey...), but preserve identifiers like api_key_id
+  // needed for auditing and debugging.
+  /api[-_]?key(?![-_]?id\b)/i,
   /authorization/i,
   /cookie/i,
   /session/i,

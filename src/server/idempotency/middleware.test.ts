@@ -110,6 +110,8 @@ describe("beginIdempotency", () => {
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
     expect(result.action).toBe("replay");
+    expect(result.response.status).toBe(201);
+    expect(result.response.body).toEqual({ data: { id: "1" } });
     expect(result.response.headers["Idempotency-Replayed"]).toBe("true");
   });
 
