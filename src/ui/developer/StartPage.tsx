@@ -33,6 +33,8 @@ export default function StartPage() {
   const [storedKey, setStoredKey] = useState<string | null>(() => getStoredApiKey());
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
+  const [openClawCopyStatus, setOpenClawCopyStatus] = useState<"idle" | "success" | "error">("idle");
+  const [openClawCopyMessage, setOpenClawCopyMessage] = useState<string>("");
   const [agentId, setAgentId] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
 
@@ -50,12 +52,16 @@ export default function StartPage() {
     setAgentId(null);
     setStatus("idle");
     setMessage("");
+    setOpenClawCopyStatus("idle");
+    setOpenClawCopyMessage("");
     setPastedKey("");
   }, []);
 
   const handleGenerate = useCallback(async () => {
     setStatus("loading");
     setMessage("");
+    setOpenClawCopyStatus("idle");
+    setOpenClawCopyMessage("");
     setCreatedKey(null);
     setAgentId(null);
 
@@ -103,6 +109,8 @@ export default function StartPage() {
 
     setStatus("loading");
     setMessage("");
+    setOpenClawCopyStatus("idle");
+    setOpenClawCopyMessage("");
     try {
       await apiRequest({
         path: "/v1/deals?limit=1",
@@ -144,9 +152,11 @@ export default function StartPage() {
   const handleCopyOpenClaw = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(openClawSnippet);
-      setMessage("Copied OpenClaw settings to clipboard.");
+      setOpenClawCopyStatus("success");
+      setOpenClawCopyMessage("Copied OpenClaw settings to clipboard.");
     } catch {
-      setMessage("Copy failed. Select and copy manually.");
+      setOpenClawCopyStatus("error");
+      setOpenClawCopyMessage("Copy failed. Select and copy manually.");
     }
   }, [openClawSnippet]);
 
@@ -315,15 +325,22 @@ export default function StartPage() {
             <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-3 overflow-x-auto">
               {openClawSnippet}
             </pre>
-            <button
-              onClick={handleCopyOpenClaw}
-              className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
-              disabled={!activeKey}
-              aria-disabled={!activeKey}
-              title={activeKey ? "Copy OpenClaw settings" : "Generate or paste an API key first"}
-            >
-              Copy OpenClaw
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleCopyOpenClaw}
+                className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
+                disabled={!activeKey}
+                aria-disabled={!activeKey}
+                title={activeKey ? "Copy OpenClaw settings" : "Generate or paste an API key first"}
+              >
+                Copy OpenClaw
+              </button>
+              {openClawCopyMessage ? (
+                <span className={`text-xs font-mono ${openClawCopyStatus === "error" ? "text-red-400" : "text-emerald-400"}`}>
+                  {openClawCopyMessage}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 
