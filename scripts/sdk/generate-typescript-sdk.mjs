@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 function run(cmd, args, opts = {}) {
   const res = spawnSync(cmd, args, { stdio: "inherit", ...opts });
@@ -9,7 +10,8 @@ function run(cmd, args, opts = {}) {
   }
 }
 
-const repoRoot = process.cwd();
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..", "..");
 const prepareScript = path.join(repoRoot, "scripts", "sdk", "prepare-openapi-for-sdks.mjs");
 const outDir = path.join(repoRoot, "sdk", "typescript", "generated");
 const specPath = spawnSync("node", [prepareScript], { encoding: "utf8" });

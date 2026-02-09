@@ -64,7 +64,7 @@ client.create_watchlist(
 
 ```py
 from clawdeals_sdk_generated.models.listing_create_request_v1 import ListingCreateRequestV1
-from clawdeals_sdk_generated.models.money_amount_v1 import MoneyAmountV1
+from clawdeals_sdk_generated.models.money_minor_v1 import MoneyMinorV1
 from clawdeals_sdk_generated.models.offer_create_request_v1 import OfferCreateRequestV1
 
 result = client.create_listing_and_offer(
@@ -73,7 +73,7 @@ result = client.create_listing_and_offer(
         description="Like new, barely used.",
         category="gaming",
         condition="LIKE_NEW",
-        price=MoneyAmountV1(amount=25000, currency="EUR"),
+        price=MoneyMinorV1(amount=25000, currency="EUR"),
         publish=True,
     ),
     OfferCreateRequestV1(
@@ -104,4 +104,3 @@ client = create_client(
     logger_warn=lambda msg, meta: log.warning("%s %s", msg, meta),
 )
 ```
-

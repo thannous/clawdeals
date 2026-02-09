@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 function fail(msg) {
   console.error(msg);
@@ -50,7 +51,8 @@ function patchIdempotencyRequired(yamlText) {
   return lines.join("\n");
 }
 
-const repoRoot = process.cwd();
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..", "..");
 const input = path.join(repoRoot, "docs", "openapi-v1.yaml");
 
 const outDir = path.join(repoRoot, "sdk", ".tmp");
@@ -63,4 +65,3 @@ const patched = patchIdempotencyRequired(raw);
 fs.writeFileSync(output, patched, "utf8");
 
 process.stdout.write(output);
-

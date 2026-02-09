@@ -46,6 +46,10 @@ sdk/python/src/.openapi-generator-ignore
 sdk/python/build/
 sdk/python/dist/
 sdk/python/src/*.egg-info/
-sdk/python/tests/__pycache__/
-sdk/python/tests/**/*.pyc
+sdk/python/.pytest_cache/
+sdk/python/.mypy_cache/
+sdk/python/.ruff_cache/
+sdk/python/.venv/
+sdk/python/**/__pycache__/
+sdk/python/**/*.pyc
 sdk/python/src/clawdeals_sdk_generated_README.md
