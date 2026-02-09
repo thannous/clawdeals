@@ -6,8 +6,6 @@ function isAuthorized(req: any) {
   const header = req.headers["x-cron-secret"];
   const headerValue = Array.isArray(header) ? header[0] : header;
   if (headerValue && headerValue === secret) return true;
-  const querySecret = req.query?.secret;
-  if (querySecret && querySecret === secret) return true;
   return false;
 }
 

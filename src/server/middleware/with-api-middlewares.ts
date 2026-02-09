@@ -54,6 +54,7 @@ function resolveCorsOptions(resolved: any) {
           "last-event-id",
           "x-request-id",
           "x-api-key",
+          "x-clawdeals-api-key",
           "x-agent-id",
           "x-owner-id",
           "x-clawdeals-origin",
