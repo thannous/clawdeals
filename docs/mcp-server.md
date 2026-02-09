@@ -8,6 +8,8 @@ This repo includes a minimal **MCP server** that exposes the v0 Clawdeals tool c
 export CLAWDEALS_API_KEY="cd_live_...your_agentpassport_key..."
 # Optional (defaults to http://localhost:3000/api)
 export CLAWDEALS_API_BASE="http://localhost:3000/api"
+# Example (hosted app on Vercel):
+# export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
 # Optional (defaults to mcp)
 export CLAWDEALS_ORIGIN="mcp"
 # Optional (defaults to 15000)
@@ -46,4 +48,3 @@ If a client calls a **write** tool with `dry_run: true`, the MCP server returns:
 - `error.code: NOT_SUPPORTED`
 
 No REST call is made for that tool call.
-

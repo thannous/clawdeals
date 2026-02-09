@@ -1,0 +1,134 @@
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+function normalizeHost(hostname: string): string {
+  if (!hostname) return "";
+  // Strip port if present.
+  return String(hostname).trim().toLowerCase().split(":")[0] || "";
+}
+
+function splitLocalePrefix(pathname: string): { localePrefix: string; rest: string } {
+  const path = pathname || "/";
+  const match = path.match(/^\/(fr|en)(?=\/|$)/);
+  if (!match?.[1]) return { localePrefix: "", rest: path };
+  const localePrefix = `/${match[1]}`;
+  const rest = path.slice(localePrefix.length) || "/";
+  return { localePrefix, rest: rest.startsWith("/") ? rest : `/${rest}` };
+}
+
+function isRootPath(restPath: string): boolean {
+  return restPath === "/" || restPath === "";
+}
+
+function isAppRoute(restPath: string): boolean {
+  return (
+    restPath === "/start" ||
+    restPath.startsWith("/developer") ||
+    restPath === "/deals" ||
+    restPath.startsWith("/deals/") ||
+    restPath === "/console" ||
+    restPath.startsWith("/console/") ||
+    restPath === "/api" ||
+    restPath.startsWith("/api/") ||
+    restPath === "/robots.txt" ||
+    restPath === "/sitemap.xml"
+  );
+}
+
+function isAppSectionRoute(restPath: string): boolean {
+  return (
+    restPath === "/start" ||
+    restPath.startsWith("/developer") ||
+    restPath === "/deals" ||
+    restPath.startsWith("/deals/") ||
+    restPath === "/console" ||
+    restPath.startsWith("/console/") ||
+    restPath === "/api" ||
+    restPath.startsWith("/api/")
+  );
+}
+
+function isStaticPath(restPath: string): boolean {
+  return restPath.startsWith("/_next/") || restPath === "/favicon.ico";
+}
+
+export function middleware(request: NextRequest) {
+  const url = request.nextUrl;
+  const hostname = normalizeHost(url.hostname || request.headers.get("host") || "");
+
+  const appHost = normalizeHost(process.env.APP_HOST || "app.clawdeals.com");
+  const marketingHosts = (process.env.MARKETING_HOSTS || "clawdeals.com,www.clawdeals.com")
+    .split(",")
+    .map(normalizeHost)
+    .filter(Boolean);
+
+  // Don’t apply domain redirects in dev or on unknown hosts.
+  if (!hostname || hostname === "localhost") {
+    return NextResponse.next();
+  }
+
+  const isAppHost = hostname === appHost;
+  const isMarketingHost = marketingHosts.includes(hostname);
+
+  const { localePrefix, rest } = splitLocalePrefix(url.pathname);
+
+  if (isStaticPath(rest)) {
+    return NextResponse.next();
+  }
+
+  const preferredMarketingHost = marketingHosts.includes("www.clawdeals.com")
+    ? "www.clawdeals.com"
+    : marketingHosts[0];
+
+  // Vercel default domains (preview/prod) should never be canonical; always bounce to custom domains.
+  // This prevents indexing and keeps cookies/origins stable.
+  if (!isAppHost && !isMarketingHost && hostname.endsWith(".vercel.app")) {
+    const target = new URL(url.toString());
+    target.hostname = isAppSectionRoute(rest) ? appHost : (preferredMarketingHost || appHost);
+    target.protocol = "https:";
+    return NextResponse.redirect(target, 308);
+  }
+
+  if (!isAppHost && !isMarketingHost) {
+    return NextResponse.next();
+  }
+
+  // Marketing host: keep "/" but bounce app routes to the app subdomain.
+  if (isMarketingHost) {
+    if (rest.startsWith("/console") || rest.startsWith("/deals") || rest.startsWith("/start") || rest.startsWith("/developer")) {
+      const target = new URL(url.toString());
+      target.hostname = appHost;
+      target.protocol = "https:";
+      return NextResponse.redirect(target, 308);
+    }
+    return NextResponse.next();
+  }
+
+  // App host: default entry point is the app (not the marketing landing).
+  if (isAppHost) {
+    const appEntry = process.env.APP_ENTRY_PATH || "/deals";
+    if (isRootPath(rest)) {
+      const target = new URL(url.toString());
+      const entryPath = appEntry.startsWith("/") ? appEntry : `/${appEntry}`;
+      target.pathname = `${localePrefix}${entryPath}`;
+      target.protocol = "https:";
+      return NextResponse.redirect(target, 308);
+    }
+
+    // If someone hits a non-app route on the app host, bounce back to marketing.
+    if (!isAppRoute(rest)) {
+      const target = new URL(url.toString());
+      target.hostname = preferredMarketingHost || hostname;
+      target.protocol = "https:";
+      return NextResponse.redirect(target, 308);
+    }
+
+    return NextResponse.next();
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image).*)"]
+};

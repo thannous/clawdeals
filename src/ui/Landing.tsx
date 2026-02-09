@@ -21,6 +21,7 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
+import { getPublicApiBaseUrl, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -469,7 +470,9 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
     setMessage("");
 
     try {
-      const response = await fetch("/api/v1/watchlist-signups", {
+      const apiBaseUrl = getPublicApiBaseUrl();
+      const endpoint = apiBaseUrl ? joinUrl(apiBaseUrl, "/api/v1/watchlist-signups") : "/api/v1/watchlist-signups";
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: normalized, locale, source })
@@ -562,6 +565,8 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
 
 const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futureMode }) => {
   const router = useRouter();
+  const localePrefix = router.locale === "fr" ? "/fr" : "";
+  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
   const tabs = [
@@ -671,10 +676,13 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
           </div>
 
           {!futureMode && (
-            <button className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+            <Link
+              href={appEntryUrl}
+              className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
+            >
               <Terminal className="w-4 h-4" />
               {copy.connect}
-            </button>
+            </Link>
           )}
         </div>
       </div>
@@ -716,14 +724,15 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
             </div>
           ) : (
             <div className="flex flex-wrap gap-4">
-              <button
+              <Link
+                href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}`)}
                 className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
                 data-testid="hero-cta-primary"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
                 </span>
-              </button>
+              </Link>
               <button
                 className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
                 data-testid="hero-cta-secondary"

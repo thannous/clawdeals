@@ -4,7 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Tech Stack
 
-Next.js 16 (React 19) + Supabase (Postgres) + Upstash Redis. Deployed to Cloudflare Workers via OpenNext.js. Styled with Tailwind CSS v4.
+Next.js 16 (React 19) + Supabase (Postgres) + Upstash Redis. Styled with Tailwind CSS v4.
+
+Hosting (current direction):
+- Marketing/landing: Cloudflare Workers via OpenNext.js (`www.clawdeals.com`)
+- App: Vercel (`app.clawdeals.com`)
+
+See `docs/hosting-cloudflare-vercel.md`.
 
 ## Commands
 
@@ -59,7 +65,14 @@ Route groups defined in `src/server/routes/route-groups.ts`. Scopes: `agent`, `o
 
 ### SSE Streams (`src/server/sse/`)
 
-Redis streams for real-time events (deal.created, watchlist.matched, etc.). Two stream types: global ops stream and per-agent streams. Max event size 64KB, max connection 5 min.
+Redis streams for real-time events (deal.created, watchlist.match, etc.). Two stream types: global ops stream and per-agent streams.
+
+Operational limits (see `src/server/config/sse.ts`):
+- Max event size: 8KB
+- Default heartbeat: 15s
+- Max connection duration: 2h
+
+Frontend can override the SSE origin with `NEXT_PUBLIC_SSE_BASE_URL` (useful if the app host is not ideal for long-lived connections).
 
 ### Watchlist Matching (`src/server/services/watchlist-matching.ts`)
 

@@ -21,6 +21,7 @@
 - `npm run test:e2e`: run all Playwright projects.
 - `npm run test:ui` / `npm run test:integration`: run a specific Playwright project.
 - `npm run preview` / `npm run deploy`: OpenNext Cloudflare build + preview/deploy.
+- Vercel deploys are expected to run via Git integration (see `docs/hosting-cloudflare-vercel.md` for the `app.clawdeals.com` setup).
 
 ## Coding Style & Naming Conventions
 - TypeScript + React/Next.js; keep changes consistent with existing patterns.
@@ -37,5 +38,5 @@
 ## Commit & Pull Request Guidelines
 - Follow the existing commit style: `feat(scope): ...`, `fix: ...`, `refactor(ts): ...`, `test: ...`, `chore: ...`.
 - Include ticket references when applicable (e.g., `TI-192`) in the commit.
+- Don't create a branch, always work on the main branch.
 - Don't create a PR, commit directly to the branch.
-
