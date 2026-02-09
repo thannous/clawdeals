@@ -248,6 +248,29 @@ export const RATE_LIMIT_PROFILES = {
       { limit: 30, windowSeconds: MINUTE },
     ],
   },
+  "channels.telegram.start": {
+    scope: "channel",
+    buckets: [
+      { limit: 2, windowSeconds: 30 },
+      { limit: 5, windowSeconds: 10 * MINUTE },
+      { limit: 20, windowSeconds: DAY },
+    ],
+  },
+  "channels.telegram.callback": {
+    scope: "channel",
+    buckets: [
+      { limit: 10, windowSeconds: 30 },
+      { limit: 60, windowSeconds: MINUTE },
+    ],
+  },
+  "channels.telegram.text": {
+    scope: "channel",
+    buckets: [
+      { limit: 5, windowSeconds: 30 },
+      { limit: 20, windowSeconds: MINUTE },
+      { limit: 100, windowSeconds: DAY },
+    ],
+  },
   "channels.pair": {
     scope: "channel",
     buckets: [

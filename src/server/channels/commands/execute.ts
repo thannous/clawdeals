@@ -51,6 +51,7 @@ function requiresRole(role: string, required: string) {
 export function buildHelpText() {
   return [
     "Commands:",
+    "- start",
     "- help",
     "- status",
     "- approvals | approvals list",
@@ -58,12 +59,12 @@ export function buildHelpText() {
     "- deny <approval_id> [reason] (then: deny <approval_id> confirm)",
     "- policies show",
     "- deploy status",
-    "- pair",
+    "- connect (alias: pair)",
     "- unpair <channel_identity_id> (then: unpair <channel_identity_id> confirm)",
     "",
     "Security:",
     "- Sensitive actions require confirm.",
-    "- Unknown users must run `pair` first."
+    "- Unknown users must run `connect` first."
   ].join("\n");
 }
 
@@ -71,7 +72,7 @@ function notAllowlistedText() {
   return [
     "Blocked: not allowlisted.",
     "",
-    "Send `pair` to start pairing, then approve it in the console (/console/channels)."
+    "Send `connect` (alias: `pair`) to start pairing, then approve it in the console (/console/channels)."
   ].join("\n");
 }
 
@@ -86,7 +87,7 @@ export async function executeChannelCommand({
   command: ParsedCommand;
   ctx: any;
 }): Promise<{ text: string; blocked?: boolean; identity?: any }> {
-  if (command.kind === "help" || command.kind === "unknown") {
+  if (command.kind === "start" || command.kind === "help" || command.kind === "unknown") {
     return { text: buildHelpText() };
   }
 

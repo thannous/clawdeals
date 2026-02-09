@@ -254,7 +254,7 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
   {
     group: "channels.telegram.webhook",
     methods: ["POST"],
-    pattern: /^\/v1\/channels\/telegram\/webhook$/
+    pattern: /^\/v1\/channels\/telegram\/webhook(?:\/[^/]+)?$/
   },
   {
     group: "sse.connect",

@@ -1823,6 +1823,41 @@ paths:
         - in: header
           name: X-Telegram-Bot-Api-Secret-Token
           required: false
+          description: Optional in non-production environments, required in production.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: OK (Telegram expects 200)
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/channels/telegram/webhook/{secret}:
+    post:
+      tags: [Channels]
+      operationId: v1ChannelsTelegramWebhookSecret
+      summary: Telegram webhook receiver (external callback, secret path)
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: channels.telegram.webhook
+      security: []
+      parameters:
+        - in: path
+          name: secret
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Telegram-Bot-Api-Secret-Token
+          required: false
+          description: Optional in non-production environments, required in production.
           schema: { type: string }
       requestBody:
         required: true

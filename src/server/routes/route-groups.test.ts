@@ -80,5 +80,6 @@ describe("route groups", () => {
   it("matches channels.telegram.webhook (TI-221)", () => {
     const sp = new URLSearchParams();
     expect(matchRouteGroup("POST", "/api/v1/channels/telegram/webhook", sp)).toBe("channels.telegram.webhook");
+    expect(matchRouteGroup("POST", "/api/v1/channels/telegram/webhook/secret", sp)).toBe("channels.telegram.webhook");
   });
 });

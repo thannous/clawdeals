@@ -2,6 +2,7 @@ import { isUuid } from "../../utils/validators";
 
 export type ParsedCommand =
   | { kind: "help" }
+  | { kind: "start" }
   | { kind: "status" }
   | { kind: "approvals_list" }
   | { kind: "approve"; approvalId: string; confirm: boolean }
@@ -30,9 +31,11 @@ export function parseCommand(raw: unknown): ParsedCommand {
   const parts = trimmed.split(/\s+/);
   const cmd = normalizeCommandToken(parts[0]);
 
+  if (cmd === "start") return { kind: "start" };
   if (cmd === "help") return { kind: "help" };
   if (cmd === "status") return { kind: "status" };
   if (cmd === "approvals") return { kind: "approvals_list" };
+  if (cmd === "connect") return { kind: "pair" };
   if (cmd === "pair") return { kind: "pair" };
 
   if (cmd === "deploy") {
@@ -75,4 +78,3 @@ export function parseCommand(raw: unknown): ParsedCommand {
 
   return { kind: "unknown", raw: trimmed };
 }
-

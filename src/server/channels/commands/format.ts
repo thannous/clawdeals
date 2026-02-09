@@ -19,3 +19,20 @@ export function buildTelegramSendMessage({
     disable_web_page_preview: disableWebPagePreview
   };
 }
+
+export function buildTelegramAnswerCallbackQuery({
+  callbackQueryId,
+  text,
+  showAlert = false
+}: {
+  callbackQueryId: string;
+  text: string;
+  showAlert?: boolean;
+}) {
+  return {
+    method: "answerCallbackQuery",
+    callback_query_id: callbackQueryId,
+    text: sanitizeText(text || ""),
+    show_alert: Boolean(showAlert)
+  };
+}
