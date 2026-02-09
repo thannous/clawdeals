@@ -20,6 +20,12 @@
 - `npm run test:unit`: run Vitest suite.
 - `npm run test:e2e`: run all Playwright projects.
 - `npm run test:ui` / `npm run test:integration`: run a specific Playwright project.
+- Feature-scoped integration runs (faster than full integration suite):
+  - `npm run test:integration:deals`
+  - `npm run test:integration:listings`
+  - `npm run test:integration:transactions`
+  - `npm run test:integration:escrow`
+  - `npm run test:integration:dispute`
 - `npm run preview` / `npm run deploy`: OpenNext Cloudflare build + preview/deploy.
 - Vercel deploys are expected to run via Git integration (see `docs/hosting-cloudflare-vercel.md` for the `app.clawdeals.com` setup).
 

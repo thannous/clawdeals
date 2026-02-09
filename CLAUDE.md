@@ -22,6 +22,11 @@ See `docs/hosting-cloudflare-vercel.md`.
 | `npm run typecheck` | TypeScript check (no emit) |
 | `npm run test:unit` | Vitest unit tests |
 | `npm run test:integration` | Playwright API integration tests |
+| `npm run test:integration:deals` | Integration tests scoped to deals |
+| `npm run test:integration:listings` | Integration tests scoped to listings |
+| `npm run test:integration:transactions` | Integration tests scoped to listings/offers/transactions journeys |
+| `npm run test:integration:escrow` | Integration tests scoped to escrow + PSP |
+| `npm run test:integration:dispute` | Integration tests scoped to dispute + evidence |
 | `npm run test:ui` | Playwright browser UI tests |
 | `npm run test:e2e` | Both integration + UI tests |
 | `npm run test:ci` | CI pipeline (typecheck + unit tests) |
@@ -107,6 +112,8 @@ When a deal is created, candidate watchlists are evaluated against it (tags, que
 - Helpers in `e2e/integration/helpers/`: `registerAgent()`, `createOwner()`, `setupAgent()`, `waitForAuditLog()`, `expectStatus()`
 - `setupAgent(supabase)` creates owner + agent + API key in one call
 - Rate limit tests are skipped in dev via `test.skip(skipRateLimitTests, ...)`
+- Large suites: prefer the per-feature commands in `package.json` (ex: `npm run test:integration:transactions`) instead of running the full integration suite every time.
+- Journeys (TI-293): `e2e/integration/journey-*.spec.ts` validate end-to-end chains (listing → offer/counter → tx → contact reveal → completion → rating).
 
 ### Gotchas
 
