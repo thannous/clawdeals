@@ -11,6 +11,10 @@ vi.mock("../../../server/services/deals-list", () => ({
   DEALS_MAX_LIMIT: 100
 }));
 
+vi.mock("../../../server/services/deal-detail", () => ({
+  getDealById: vi.fn()
+}));
+
 vi.mock("../../../server/trustscore/context", () => ({
   resolveTrustContext: vi.fn().mockResolvedValue(null)
 }));
@@ -21,6 +25,7 @@ vi.mock("../../../server/services/watchlist-matching", () => ({
 
 import { handler } from "../../../pages/api/v1/deals";
 import { createDeal, findRecentDealDuplicate } from "../../../server/services/deals";
+import { getDealById } from "../../../server/services/deal-detail";
 import { listDeals } from "../../../server/services/deals-list";
 import { matchDealToWatchlists } from "../../../server/services/watchlist-matching";
 import { fingerprintUrl, normalizeDealUrl } from "../../../server/utils/deals";
@@ -28,6 +33,7 @@ import { fingerprintUrl, normalizeDealUrl } from "../../../server/utils/deals";
 const createDealMock = vi.mocked(createDeal);
 const findRecentDealDuplicateMock = vi.mocked(findRecentDealDuplicate);
 const listDealsMock = vi.mocked(listDeals);
+const getDealByIdMock = vi.mocked(getDealById);
 
 const baseCtx: any = {
   ownerId: "owner-1",
@@ -130,10 +136,24 @@ describe("POST /v1/deals", () => {
     );
   });
 
-  it("returns 409 DUPLICATE_SUSPECTED when recent fingerprint match exists", async () => {
+  it("returns 200 with existing deal when recent fingerprint match exists", async () => {
     const nowIso = new Date("2026-02-05T12:00:00.000Z").toISOString();
     findRecentDealDuplicateMock.mockResolvedValue({
       deal_id: "11111111-1111-1111-1111-111111111111",
+      created_at: nowIso
+    } as any);
+    getDealByIdMock.mockResolvedValue({
+      deal_id: "11111111-1111-1111-1111-111111111111",
+      title: "Existing deal",
+      source_url: "https://example.com/deal",
+      price: "399.00",
+      currency: "EUR",
+      expires_at: "2026-02-06T12:00:00Z",
+      tags: ["gpu", "nvidia"],
+      status: "NEW",
+      temperature: 10,
+      votes_up: 0,
+      votes_down: 0,
       created_at: nowIso
     } as any);
 
@@ -145,13 +165,14 @@ describe("POST /v1/deals", () => {
     const ctx: any = { ...baseCtx };
     const result: any = await handler(req, null, ctx);
 
-    expect(result.status).toBe(409);
-    expect(result.body.error.code).toBe("DUPLICATE_SUSPECTED");
-    expect(result.body.error.details.existing_deal_id).toBe("11111111-1111-1111-1111-111111111111");
+    expect(result.status).toBe(200);
+    expect(result.body.deal.deal_id).toBe("11111111-1111-1111-1111-111111111111");
+    expect(result.body.meta.duplicate).toBe(true);
+    expect(result.body.meta.existing_deal_id).toBe("11111111-1111-1111-1111-111111111111");
     expect(createDeal).not.toHaveBeenCalled();
     expect(matchDealToWatchlists).not.toHaveBeenCalled();
-    expect(ctx.auditEvent).toBe("deal.duplicate_detected");
-    expect(ctx.outcome?.type).toBe("BLOCKED");
+    expect(ctx.auditEvent).toBe("deal.duplicate_returned");
+    expect(ctx.outcome?.type).toBe("OK");
   });
 
   it("treats utm_* variants as duplicates (fingerprint normalization)", async () => {

@@ -138,7 +138,8 @@ Si vous recevez `429` avec `error.code=RATE_LIMITED`:
 ### DUPLICATE_SUSPECTED
 - Cause: anti-doublon détecte un deal similaire récemment publié (fingerprint URL).
 - Reproduire: POST `/v1/deals` avec une URL identique/similaire dans la fenêtre anti-duplicate.
-- Corriger: réutiliser le deal existant (ID fourni dans `details`) ou attendre la fin de la fenêtre.
+- Corriger: réutiliser le deal existant (ID) ou attendre la fin de la fenêtre.
+- Note: depuis le `2026-02-09`, `POST /v1/deals` renvoie par défaut `200` avec le deal existant et `meta.duplicate=true` au lieu d’un `409`.
 
 ### ERROR
 - Cause: erreur générique (fallback).

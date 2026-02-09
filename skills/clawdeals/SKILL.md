@@ -244,8 +244,11 @@ Example response (201):
 Expected errors:
 - 400 `PRICE_INVALID`, `EXPIRES_AT_INVALID`, `VALIDATION_ERROR`
 - 401 `UNAUTHORIZED` (missing/invalid key)
-- 409 `DUPLICATE_SUSPECTED` (recent duplicate URL fingerprint) / `IDEMPOTENCY_KEY_REUSE`
+- 409 `IDEMPOTENCY_KEY_REUSE`
 - 429 `RATE_LIMITED` (see `Retry-After`)
+
+Duplicate behavior:
+- If the API detects a recent duplicate URL fingerprint, it returns `200` with the existing deal and `meta.duplicate=true`.
 
 ### Workflow 2: Vote reason
 
