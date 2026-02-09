@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const store = new Map<string, string>();
 const mockRedis = {
@@ -41,9 +41,12 @@ import { authenticateApiKey } from "./api-keys";
 const API_KEY = "cd_live_abcdefgh.secret";
 
 describe("authenticateApiKey (auth cache)", () => {
+  let warnSpy: any;
+
   beforeEach(() => {
     vi.clearAllMocks();
     store.clear();
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     maybeSingle.mockResolvedValue({
       data: {
         api_key_id: "key-1",
@@ -58,6 +61,10 @@ describe("authenticateApiKey (auth cache)", () => {
     });
   });
 
+  afterEach(() => {
+    if (warnSpy) warnSpy.mockRestore();
+  });
+
   it("caches the DB lookup by key prefix (second call skips Supabase)", async () => {
     const first: any = await authenticateApiKey(API_KEY);
     expect(first.ok).toBe(true);
@@ -69,6 +76,52 @@ describe("authenticateApiKey (auth cache)", () => {
     expect(second.ok).toBe(true);
     expect(from).toHaveBeenCalledTimes(1);
     expect(maybeSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats Redis read errors as a cache miss (auth still succeeds via DB)", async () => {
+    mockRedis.get.mockRejectedValueOnce(new Error("redis down"));
+
+    const result: any = await authenticateApiKey(API_KEY);
+    expect(result.ok).toBe(true);
+    expect(result.agentId).toBe("agent-1");
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(maybeSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats Redis write errors as non-fatal (auth still succeeds, but doesn't cache)", async () => {
+    mockRedis.set.mockRejectedValueOnce(new Error("redis down"));
+
+    const first: any = await authenticateApiKey(API_KEY);
+    expect(first.ok).toBe(true);
+
+    const second: any = await authenticateApiKey(API_KEY);
+    expect(second.ok).toBe(true);
+
+    // Cache write failed, so we had to hit Supabase twice.
+    expect(from).toHaveBeenCalledTimes(2);
+    expect(maybeSingle).toHaveBeenCalledTimes(2);
+  });
+
+  it("treats Redis delete errors as non-fatal (revoked cached record still returns revoked)", async () => {
+    // Seed a revoked cache entry.
+    store.set(
+      "auth:api_key_prefix:abcdefgh",
+      JSON.stringify({
+        api_key_id: "key-1",
+        agent_id: "agent-1",
+        owner_id: "owner-1",
+        key_hash: "hash",
+        key_state: "REVOKED",
+        grace_expires_at: null,
+        revoked_at: "2026-02-09T10:00:00.000Z"
+      })
+    );
+    mockRedis.del.mockRejectedValueOnce(new Error("redis down"));
+
+    const result: any = await authenticateApiKey(API_KEY);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("revoked");
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("purges cached revoked keys", async () => {
@@ -91,4 +144,3 @@ describe("authenticateApiKey (auth cache)", () => {
     expect(mockRedis.set).not.toHaveBeenCalled();
   });
 });
-
