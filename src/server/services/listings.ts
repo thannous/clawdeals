@@ -9,6 +9,11 @@ function mapError(error) {
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
 }
 
+function isRpcParamMismatch(error: any, paramName: string) {
+  const message = error?.message || "";
+  return typeof message === "string" && message.includes(paramName) && message.includes("schema cache");
+}
+
 function buildServiceError(message, status = 500, code = "ERROR", meta?: any) {
   const error: any = new Error(message);
   error.status = status;
@@ -17,11 +22,6 @@ function buildServiceError(message, status = 500, code = "ERROR", meta?: any) {
     Object.assign(error, meta);
   }
   return error;
-}
-
-function formatFilterValue(value) {
-  if (typeof value !== "string") return String(value);
-  return `"${value.replace(/"/g, "\\\"")}"`;
 }
 
 export async function createListing({
@@ -169,10 +169,12 @@ export async function listListings({
   sort = "recent",
   limit = DEFAULT_LIMIT,
   cursor,
-  geo
+  geo,
+  includeHidden = false
 }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
+  const includeHiddenValue = Boolean(includeHidden);
 
   if (sort === "distance") {
     const lat = geo?.lat;
@@ -185,10 +187,11 @@ export async function listListings({
 
     const cappedLimit = Math.max(1, Math.min(100, pageLimit));
 
-    const { data, error } = await client.rpc("list_listings_geo_v1", {
+    const payload: any = {
       p_lat: lat,
       p_lng: lng,
       p_distance_km: distanceKm,
+      p_include_hidden: includeHiddenValue,
       p_limit: cappedLimit,
       p_cursor_distance_m: cursor?.distance_m ?? null,
       p_cursor_listing_id: cursor?.listing_id ?? null,
@@ -197,7 +200,15 @@ export async function listListings({
       p_condition: condition || null,
       p_price_min: typeof priceMin === "number" ? priceMin : null,
       p_price_max: typeof priceMax === "number" ? priceMax : null
-    });
+    };
+
+    let data;
+    let error;
+    ({ data, error } = await client.rpc("list_listings_geo_v1", payload));
+    if (error && payload.p_include_hidden !== undefined && isRpcParamMismatch(error, "p_include_hidden")) {
+      delete payload.p_include_hidden;
+      ({ data, error } = await client.rpc("list_listings_geo_v1", payload));
+    }
 
     if (error) {
       mapError(error);
@@ -223,73 +234,93 @@ export async function listListings({
     return { items, nextCursor };
   }
 
-  let query = client
-    .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,status,seller_agent_id,created_at")
-    .limit(pageLimit + 1);
+  const cappedLimit = Math.max(1, Math.min(100, pageLimit));
+  const fetchLimit = cappedLimit + 1;
 
-  if (status) {
-    query = query.eq("status", status);
-  } else if (status !== null) {
-    query = query.eq("status", "LIVE");
-  }
+  // Default behavior: when status isn't provided, behave like previous implementation and show LIVE only.
+  const normalizedStatus = status ? status : status === null ? null : "LIVE";
 
-  if (category) {
-    query = query.eq("category", category);
-  }
+  let data;
+  let error;
+  let rankAsOf: string | null = null;
 
-  if (condition) {
-    query = query.eq("condition", condition);
-  }
-
-  if (typeof priceMin === "number") {
-    query = query.gte("price_amount", priceMin);
-  }
-
-  if (typeof priceMax === "number") {
-    query = query.lte("price_amount", priceMax);
-  }
-
-  if (q) {
-    query = query.textSearch("search_tsv", q, { type: "websearch", config: "simple" });
-  }
-
-  if (sort === "price_asc") {
-    query = query.order("price_amount", { ascending: true }).order("listing_id", { ascending: true });
-    if (cursor?.price_amount != null && cursor?.listing_id) {
-      const priceAmount = formatFilterValue(cursor.price_amount);
-      const listingId = formatFilterValue(cursor.listing_id);
-      query = query.or(`price_amount.gt.${priceAmount},and(price_amount.eq.${priceAmount},listing_id.gt.${listingId})`);
-    }
+  if (sort === "rank") {
+    rankAsOf = cursor?.as_of || new Date().toISOString();
+    ({ data, error } = await client.rpc("list_listings_rank_v1", {
+      p_as_of: rankAsOf,
+      p_status: normalizedStatus,
+      p_q: q || null,
+      p_category: category || null,
+      p_condition: condition || null,
+      p_price_min: typeof priceMin === "number" ? priceMin : null,
+      p_price_max: typeof priceMax === "number" ? priceMax : null,
+      p_include_hidden: includeHiddenValue,
+      p_limit: fetchLimit,
+      p_cursor_rank_score: cursor?.rank_score ?? null,
+      p_cursor_created_at: cursor?.created_at ?? null,
+      p_cursor_listing_id: cursor?.listing_id ?? null
+    }));
+  } else if (sort === "price_asc") {
+    ({ data, error } = await client.rpc("list_listings_price_asc_v1", {
+      p_status: normalizedStatus,
+      p_q: q || null,
+      p_category: category || null,
+      p_condition: condition || null,
+      p_price_min: typeof priceMin === "number" ? priceMin : null,
+      p_price_max: typeof priceMax === "number" ? priceMax : null,
+      p_include_hidden: includeHiddenValue,
+      p_limit: fetchLimit,
+      p_cursor_price_amount: cursor?.price_amount ?? null,
+      p_cursor_listing_id: cursor?.listing_id ?? null
+    }));
   } else if (sort === "price_desc") {
-    query = query.order("price_amount", { ascending: false }).order("listing_id", { ascending: false });
-    if (cursor?.price_amount != null && cursor?.listing_id) {
-      const priceAmount = formatFilterValue(cursor.price_amount);
-      const listingId = formatFilterValue(cursor.listing_id);
-      query = query.or(`price_amount.lt.${priceAmount},and(price_amount.eq.${priceAmount},listing_id.lt.${listingId})`);
-    }
+    ({ data, error } = await client.rpc("list_listings_price_desc_v1", {
+      p_status: normalizedStatus,
+      p_q: q || null,
+      p_category: category || null,
+      p_condition: condition || null,
+      p_price_min: typeof priceMin === "number" ? priceMin : null,
+      p_price_max: typeof priceMax === "number" ? priceMax : null,
+      p_include_hidden: includeHiddenValue,
+      p_limit: fetchLimit,
+      p_cursor_price_amount: cursor?.price_amount ?? null,
+      p_cursor_listing_id: cursor?.listing_id ?? null
+    }));
   } else {
-    query = query.order("created_at", { ascending: false }).order("listing_id", { ascending: false });
-    if (cursor?.created_at && cursor?.listing_id) {
-      const createdAt = formatFilterValue(cursor.created_at);
-      const listingId = formatFilterValue(cursor.listing_id);
-      query = query.or(`created_at.lt.${createdAt},and(created_at.eq.${createdAt},listing_id.lt.${listingId})`);
-    }
+    ({ data, error } = await client.rpc("list_listings_recent_v1", {
+      p_status: normalizedStatus,
+      p_q: q || null,
+      p_category: category || null,
+      p_condition: condition || null,
+      p_price_min: typeof priceMin === "number" ? priceMin : null,
+      p_price_max: typeof priceMax === "number" ? priceMax : null,
+      p_include_hidden: includeHiddenValue,
+      p_limit: fetchLimit,
+      p_cursor_created_at: cursor?.created_at ?? null,
+      p_cursor_listing_id: cursor?.listing_id ?? null
+    }));
   }
 
-  const { data, error } = await query;
   if (error) {
     mapError(error);
   }
 
-  const rows = data || [];
-  const hasMore = rows.length > pageLimit;
-  const items = hasMore ? rows.slice(0, pageLimit) : rows;
+  const rows = Array.isArray(data) ? data : [];
+  const hasMore = rows.length > cappedLimit;
+  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
 
   let nextCursor = null;
   if (hasMore && items.length > 0) {
-    const last = items[items.length - 1];
-    if (sort === "price_asc" || sort === "price_desc") {
+    const last = items[items.length - 1] as any;
+    if (sort === "rank") {
+      nextCursor = encodeListingsCursor({
+        sort: "rank",
+        as_of: rankAsOf || cursor?.as_of || new Date().toISOString(),
+        rank_score: last.rank_score,
+        created_at: last.created_at,
+        listing_id: last.listing_id
+      });
+    } else if (sort === "price_asc" || sort === "price_desc") {
       nextCursor = encodeListingsCursor({
         sort,
         price_amount: last.price_amount,

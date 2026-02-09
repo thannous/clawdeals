@@ -244,6 +244,11 @@ paths:
                   expires_at: "2026-02-09T12:00:00Z"
                   tags: ["gpu", "nvidia"]
       responses:
+        "200":
+          description: OK (duplicate suspected - existing deal returned)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DealCreateResponseV1" }
         "201":
           description: Created
           content:
@@ -2443,6 +2448,15 @@ components:
       required: [deal]
       properties:
         deal: { $ref: "#/components/schemas/DealSummaryV1" }
+        meta:
+          type: object
+          nullable: true
+          properties:
+            duplicate:
+              type: boolean
+              description: True when an existing deal was returned instead of creating a new one.
+            existing_deal_id: { type: string, format: uuid }
+            existing_created_at: { type: string, format: date-time }
 
     DealGetResponseV1:
       type: object

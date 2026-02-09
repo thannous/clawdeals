@@ -29,6 +29,11 @@ function safeTagList(tags: string[]) {
     .filter(Boolean);
 }
 
+function withoutTrustFlag(flags: any, flag: string) {
+  const list = Array.isArray(flags) ? flags : [];
+  return list.filter((entry) => typeof entry === "string" && entry !== flag);
+}
+
 function buildDealFixture({
   title,
   url,
@@ -123,6 +128,30 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
   }
 
   const client = getSupabaseServiceClient();
+  const nowIso = toIso(now);
+
+  // Sandbox determinism: a fresh agent is quarantined for ~7 days, which blocks
+  // publish=true listing flows and can force approvals for offers/threads. Age
+  // the authenticated agent so sample flows work immediately after reset.
+  const agedCreatedAt = new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: agentRow, error: agentFetchError } = await client
+    .from("agents")
+    .select("trust_flags")
+    .eq("id", agentId)
+    .maybeSingle();
+  if (agentFetchError) mapError(agentFetchError);
+
+  const updatedTrustFlags = withoutTrustFlag(agentRow?.trust_flags, "quarantined");
+  const { error: agentUpdateError } = await client
+    .from("agents")
+    .update({
+      created_at: agedCreatedAt,
+      trust_flags: updatedTrustFlags,
+      trust_updated_at: nowIso,
+      updated_at: nowIso
+    })
+    .eq("id", agentId);
+  if (agentUpdateError) mapError(agentUpdateError);
 
   // Best-effort cleanup. These deletes are agent-scoped to support multi-tenant sandboxes.
   const { error: watchlistsDeleteError } = await client.from("watchlists").delete().eq("agent_id", agentId);

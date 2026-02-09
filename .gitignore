@@ -34,3 +34,23 @@ test-results/
 
 # Supabase CLI / local metadata
 supabase/.temp/
+
+# SDKs (generated + build artifacts)
+sdk/**/generated/
+sdk/**/dist/
+sdk/**/.tmp/
+sdk/**/node_modules/
+sdk/python/src/clawdeals_sdk_generated/
+sdk/python/src/.openapi-generator/
+sdk/python/src/.openapi-generator-ignore
+sdk/python/build/
+sdk/python/dist/
+sdk/python/src/*.egg-info/
+sdk/python/.pytest_cache/
+sdk/python/.mypy_cache/
+sdk/python/.ruff_cache/
+sdk/python/.venv/
+sdk/python/**/__pycache__/
+sdk/python/**/*.pyc
+sdk/python/src/clawdeals_sdk_generated_README.md
+.vercel

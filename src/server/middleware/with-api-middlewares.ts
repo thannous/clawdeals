@@ -172,6 +172,17 @@ function inferAuditEntity(ctx: any) {
 
 // safeAuditLog is imported from ../audit/singleton.js
 
+function toIsoString(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString();
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 function inferOutcome(ctx) {
   if (ctx.outcome?.type) return ctx.outcome.type;
   const status = ctx.response?.status;
@@ -205,7 +216,10 @@ function buildAuditEvent(ctx) {
       userAgent: ctx.userAgent,
       method: ctx.method,
       path: ctx.path,
-      query: ctx.query
+      query: ctx.query,
+      started_at: toIsoString(ctx.startedAt),
+      duration_ms: typeof ctx.durationMs === "number" && Number.isFinite(ctx.durationMs) ? ctx.durationMs : null,
+      status_code: typeof ctx.statusCode === "number" && Number.isFinite(ctx.statusCode) ? ctx.statusCode : null
     },
     action: {
       route_group: ctx.rateLimit?.group || null,
@@ -369,6 +383,19 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
         }
       }
     } finally {
+      const startedAtMs =
+        ctx?.startedAt instanceof Date && !Number.isNaN(ctx.startedAt.getTime()) ? ctx.startedAt.getTime() : null;
+      if (startedAtMs !== null) {
+        const durationMs = Date.now() - startedAtMs;
+        if (Number.isFinite(durationMs) && durationMs >= 0) {
+          ctx.durationMs = durationMs;
+        }
+      }
+      if (ctx?.response?.status && typeof ctx.response.status === "number") {
+        ctx.statusCode = ctx.response.status;
+      } else if (typeof res?.statusCode === "number" && Number.isFinite(res.statusCode) && res.statusCode > 0) {
+        ctx.statusCode = res.statusCode;
+      }
       if (resolved.enableAudit) {
         mergeTrustContextIntoPolicy(ctx);
         await safeAuditLog(buildAuditEvent(ctx));

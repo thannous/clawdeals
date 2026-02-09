@@ -15,7 +15,17 @@ function isRpcParamMismatch(error: any, paramName: string) {
   return typeof message === "string" && message.includes(paramName) && message.includes("schema cache");
 }
 
-export async function listDeals({ sort = "new", statuses, q, tags, priceMax, minTemperature = 0, limit, cursor }: any = {}) {
+export async function listDeals({
+  sort = "new",
+  statuses,
+  q,
+  tags,
+  priceMax,
+  minTemperature = 0,
+  limit,
+  cursor,
+  includeHidden = false
+}: any = {}) {
   const client = getSupabaseServiceClient();
 
   const pageLimit = typeof limit === "number" ? limit : DEFAULT_LIMIT;
@@ -25,6 +35,7 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
   let data;
   let error;
   let trendAsOf = null;
+  const includeHiddenValue = Boolean(includeHidden);
 
   // We always include p_price_max (even null) to disambiguate PostgREST RPC overloads when
   // both list_deals_* variants exist with and without p_price_max.
@@ -37,6 +48,7 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
       p_q: q || null,
       p_tags: tags && tags.length ? tags : null,
       p_price_max: normalizedPriceMax,
+      p_include_hidden: includeHiddenValue,
       p_limit: fetchLimit,
       p_cursor_status: cursor?.status || null,
       p_cursor_created_at: cursor?.created_at || null,
@@ -47,11 +59,16 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
       delete payload.p_price_max;
       ({ data, error } = await client.rpc("list_deals_new_v0", payload));
     }
+    if (error && payload.p_include_hidden !== undefined && isRpcParamMismatch(error, "p_include_hidden")) {
+      delete payload.p_include_hidden;
+      ({ data, error } = await client.rpc("list_deals_new_v0", payload));
+    }
   } else if (sort === "temp") {
     const payload: any = {
       p_q: q || null,
       p_tags: tags && tags.length ? tags : null,
       p_price_max: normalizedPriceMax,
+      p_include_hidden: includeHiddenValue,
       p_min_temperature: minTemperature ?? 0,
       p_limit: fetchLimit,
       p_cursor_temperature: cursor?.temperature ?? null,
@@ -63,6 +80,10 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
       delete payload.p_price_max;
       ({ data, error } = await client.rpc("list_deals_temp_v0", payload));
     }
+    if (error && payload.p_include_hidden !== undefined && isRpcParamMismatch(error, "p_include_hidden")) {
+      delete payload.p_include_hidden;
+      ({ data, error } = await client.rpc("list_deals_temp_v0", payload));
+    }
   } else if (sort === "trend") {
     trendAsOf = cursor?.as_of || new Date().toISOString();
     const payload: any = {
@@ -70,9 +91,11 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
       p_q: q || null,
       p_tags: tags && tags.length ? tags : null,
       p_price_max: normalizedPriceMax,
+      p_include_hidden: includeHiddenValue,
       p_min_temperature: minTemperature ?? 0,
       p_limit: fetchLimit,
       p_cursor_trend_score: cursor?.trend_score ?? null,
+      // Backwards compatibility: older cursor included active_at, but ranking v1 uses created_at/id tie-breakers.
       p_cursor_active_at: cursor?.active_at || null,
       p_cursor_created_at: cursor?.created_at || null,
       p_cursor_deal_id: cursor?.deal_id || null
@@ -80,6 +103,10 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
     ({ data, error } = await client.rpc("list_deals_trend_v0", payload));
     if (error && payload.p_price_max !== undefined && isRpcParamMismatch(error, "p_price_max")) {
       delete payload.p_price_max;
+      ({ data, error } = await client.rpc("list_deals_trend_v0", payload));
+    }
+    if (error && payload.p_include_hidden !== undefined && isRpcParamMismatch(error, "p_include_hidden")) {
+      delete payload.p_include_hidden;
       ({ data, error } = await client.rpc("list_deals_trend_v0", payload));
     }
   } else {
@@ -116,7 +143,8 @@ export async function listDeals({ sort = "new", statuses, q, tags, priceMax, min
         sort,
         as_of: trendAsOf || cursor?.as_of || new Date().toISOString(),
         trend_score: last.trend_score,
-        active_at: last.active_at,
+        // Backwards compatibility: some RPC variants still keyset paginate on active_at.
+        active_at: last.active_at || null,
         created_at: last.created_at,
         deal_id: last.deal_id
       });

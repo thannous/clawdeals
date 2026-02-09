@@ -194,6 +194,14 @@ export const RATE_LIMIT_PROFILES = {
       { limit: 5, windowSeconds: MINUTE },
     ],
   },
+  "console.reports.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "console.reports.write": {
+    scope: "owner",
+    buckets: [{ limit: 500, windowSeconds: HOUR }],
+  },
   "owner.verify_email_start": {
     scope: "owner",
     buckets: [{ limit: 5, windowSeconds: HOUR }],

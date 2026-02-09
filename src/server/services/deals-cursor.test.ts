@@ -32,13 +32,26 @@ describe("deals cursor", () => {
       sort: "trend",
       as_of: "2026-02-05T12:30:00Z",
       trend_score: "79.123456",
-      active_at: "2026-02-05T12:00:00Z",
       created_at: "2026-02-05T11:59:00Z",
       deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
     };
     const encoded = encodeDealsCursor(input);
     const decoded = decodeDealsCursor(encoded);
-    expect(decoded?.value).toEqual(input);
+    expect(decoded?.value).toEqual({ ...input, active_at: null });
+  });
+
+  it("decodes legacy trend cursor with active_at", () => {
+    const legacy = {
+      sort: "trend",
+      as_of: "2026-02-05T12:30:00Z",
+      trend_score: "79.123456",
+      active_at: "2026-02-05T12:00:00Z",
+      created_at: "2026-02-05T11:59:00Z",
+      deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
+    };
+    const encoded = encodeDealsCursor(legacy);
+    const decoded = decodeDealsCursor(encoded);
+    expect(decoded?.value).toEqual(legacy);
   });
 
   it("rejects invalid cursor payload", () => {
@@ -52,4 +65,3 @@ describe("deals cursor", () => {
     expect(decoded?.error).toBe("Invalid cursor");
   });
 });
-

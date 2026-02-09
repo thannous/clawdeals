@@ -1,6 +1,6 @@
 import { isUuid } from "../utils/validators";
 
-const SORTS = new Set(["recent", "price_asc", "price_desc", "distance"]);
+const SORTS = new Set(["recent", "price_asc", "price_desc", "distance", "rank"]);
 
 function base64UrlEncode(value: string) {
   return Buffer.from(value, "utf8")
@@ -66,6 +66,23 @@ export function decodeListingsCursor(raw: any) {
     return {
       value: {
         sort,
+        created_at: (parsed as any).created_at,
+        listing_id: (parsed as any).listing_id
+      }
+    };
+  }
+
+  if (sort === "rank") {
+    if (typeof (parsed as any).as_of !== "string") return { error: "Invalid cursor" };
+    const rankScore = (parsed as any).rank_score;
+    if (typeof rankScore !== "number" && typeof rankScore !== "string") return { error: "Invalid cursor" };
+    if (typeof (parsed as any).created_at !== "string") return { error: "Invalid cursor" };
+    if (!isUuid((parsed as any).listing_id)) return { error: "Invalid cursor" };
+    return {
+      value: {
+        sort,
+        as_of: (parsed as any).as_of,
+        rank_score: rankScore,
         created_at: (parsed as any).created_at,
         listing_id: (parsed as any).listing_id
       }

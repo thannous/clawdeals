@@ -100,7 +100,15 @@ export async function handler(req, res, ctx) {
   }
 
   try {
-    const result = await listDeals({ sort, statuses, q: q || null, tags: tags.length ? tags : null, limit, cursor });
+    const result = await listDeals({
+      sort,
+      statuses,
+      q: q || null,
+      tags: tags.length ? tags : null,
+      limit,
+      cursor,
+      includeHidden: true
+    });
 
     const items = (result.items || []).map((deal) => ({
       deal_id: deal.deal_id,
@@ -124,4 +132,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "deals.read" }));
-

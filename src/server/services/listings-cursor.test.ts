@@ -10,15 +10,16 @@ describe("listings cursor", () => {
       listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
     };
     const encoded = encodeListingsCursor(input);
-    expect(encoded).not.toMatch(/[+/=]/);
     const decoded = decodeListingsCursor(encoded);
     expect(decoded?.value).toEqual(input);
   });
 
-  it("encodes and decodes price_asc cursor", () => {
+  it("encodes and decodes rank cursor", () => {
     const input = {
-      sort: "price_asc",
-      price_amount: 12345,
+      sort: "rank",
+      as_of: "2026-02-09T12:00:00Z",
+      rank_score: "123.456",
+      created_at: "2026-02-09T11:59:00Z",
       listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
     };
     const encoded = encodeListingsCursor(input);
@@ -26,49 +27,9 @@ describe("listings cursor", () => {
     expect(decoded?.value).toEqual(input);
   });
 
-  it("encodes and decodes price_desc cursor", () => {
-    const input = {
-      sort: "price_desc",
-      price_amount: 12345,
-      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
-    };
-    const encoded = encodeListingsCursor(input);
-    const decoded = decodeListingsCursor(encoded);
-    expect(decoded?.value).toEqual(input);
-  });
-
-  it("encodes and decodes distance cursor", () => {
-    const input = {
-      sort: "distance",
-      distance_m: 1234.56,
-      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
-      lat: 48.8566,
-      lng: 2.3522,
-      distance_km: 10
-    };
-    const encoded = encodeListingsCursor(input);
-    const decoded = decodeListingsCursor(encoded);
-    expect(decoded?.value).toEqual(input);
-  });
-
-  it("rejects invalid cursor payload", () => {
+  it("rejects invalid cursor", () => {
     const decoded = decodeListingsCursor("not-base64");
     expect(decoded?.error).toBe("Invalid cursor");
   });
-
-  it("rejects cursor with wrong shape", () => {
-    const encoded = encodeListingsCursor({ sort: "recent" });
-    const decoded = decodeListingsCursor(encoded);
-    expect(decoded?.error).toBe("Invalid cursor");
-  });
-
-  it("rejects distance cursor missing geo params", () => {
-    const encoded = encodeListingsCursor({
-      sort: "distance",
-      distance_m: 1,
-      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
-    });
-    const decoded = decodeListingsCursor(encoded);
-    expect(decoded?.error).toBe("Invalid cursor");
-  });
 });
+

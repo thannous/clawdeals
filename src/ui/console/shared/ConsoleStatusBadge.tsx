@@ -38,19 +38,26 @@ const CHANNEL_VARIANTS: Record<string, string> = {
   REVOKED: "border-red-400/40 text-red-400 bg-red-400/10",
 };
 
+const REPORT_VARIANTS: Record<string, string> = {
+  UNCONFIRMED: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  CONFIRMED: "border-secondary/40 text-secondary bg-secondary/10",
+  REJECTED: "border-red-400/40 text-red-400 bg-red-400/10",
+};
+
 const VARIANT_MAPS: Record<string, Record<string, string>> = {
   listing: LISTING_VARIANTS,
   thread: THREAD_VARIANTS,
   approval: APPROVAL_VARIANTS,
   audit: AUDIT_VARIANTS,
   channel: CHANNEL_VARIANTS,
+  report: REPORT_VARIANTS,
 };
 
 const FALLBACK = "border-border text-muted bg-surface-alt";
 
 interface Props {
   value: string;
-  variant?: "listing" | "thread" | "approval" | "audit" | "channel";
+  variant?: "listing" | "thread" | "approval" | "audit" | "channel" | "report";
 }
 
 export default function ConsoleStatusBadge({ value, variant = "listing" }: Props) {

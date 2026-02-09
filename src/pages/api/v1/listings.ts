@@ -238,7 +238,7 @@ export async function handler(req, res, ctx) {
     const sortRaw = resolveParam(req.query?.sort);
     const sortProvided = sortRaw !== undefined && sortRaw !== null && String(sortRaw).trim() !== "";
     let sortValue = sortProvided ? String(sortRaw).trim().toLowerCase() : hasLat ? "distance" : "recent";
-    if (sortValue !== "recent" && sortValue !== "price_asc" && sortValue !== "price_desc" && sortValue !== "distance") {
+    if (sortValue !== "recent" && sortValue !== "price_asc" && sortValue !== "price_desc" && sortValue !== "distance" && sortValue !== "rank") {
       return jsonResponse(400, errorPayload("VALIDATION_ERROR", "sort is invalid"));
     }
 
@@ -412,6 +412,7 @@ export async function handler(req, res, ctx) {
         sort: sortValue,
         limit,
         cursor,
+        includeHidden: false,
         ...(sortIsDistance ? { geo: { lat, lng, distanceKm } } : {})
       });
 

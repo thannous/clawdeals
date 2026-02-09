@@ -33,6 +33,8 @@ export default function StartPage() {
   const [storedKey, setStoredKey] = useState<string | null>(() => getStoredApiKey());
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
+  const [openClawCopyStatus, setOpenClawCopyStatus] = useState<"idle" | "success" | "error">("idle");
+  const [openClawCopyMessage, setOpenClawCopyMessage] = useState<string>("");
   const [agentId, setAgentId] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
 
@@ -50,12 +52,16 @@ export default function StartPage() {
     setAgentId(null);
     setStatus("idle");
     setMessage("");
+    setOpenClawCopyStatus("idle");
+    setOpenClawCopyMessage("");
     setPastedKey("");
   }, []);
 
   const handleGenerate = useCallback(async () => {
     setStatus("loading");
     setMessage("");
+    setOpenClawCopyStatus("idle");
+    setOpenClawCopyMessage("");
     setCreatedKey(null);
     setAgentId(null);
 
@@ -103,6 +109,8 @@ export default function StartPage() {
 
     setStatus("loading");
     setMessage("");
+    setOpenClawCopyStatus("idle");
+    setOpenClawCopyMessage("");
     try {
       await apiRequest({
         path: "/v1/deals?limit=1",
@@ -132,11 +140,25 @@ export default function StartPage() {
   }, [activeKey]);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://app.clawdeals.com";
+  const apiBase = `${baseUrl}/api`;
+  const skillUrl = "https://clawdeals.com/skill.md";
   const curlSnippet = activeKey
     ? `curl -sS \\\n  -H "Authorization: Bearer ${activeKey}" \\\n  "${baseUrl}/api/v1/deals?limit=10"`
     : `curl -sS \\\n  -H "Authorization: Bearer <YOUR_API_KEY>" \\\n  "${baseUrl}/api/v1/deals?limit=10"`;
 
-  const mcpSnippet = `export CLAWDEALS_API_KEY="${activeKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${baseUrl}/api"\nnpm run mcp:stdio`;
+  const openClawSnippet = `Skill URL: ${skillUrl}\nCLAWDEALS_API_BASE=${apiBase}\nCLAWDEALS_API_KEY=${activeKey || "<YOUR_API_KEY>"}`;
+  const mcpSnippet = `export CLAWDEALS_API_KEY="${activeKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${apiBase}"\nnpm run mcp:stdio`;
+
+  const handleCopyOpenClaw = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(openClawSnippet);
+      setOpenClawCopyStatus("success");
+      setOpenClawCopyMessage("Copied OpenClaw settings to clipboard.");
+    } catch {
+      setOpenClawCopyStatus("error");
+      setOpenClawCopyMessage("Copy failed. Select and copy manually.");
+    }
+  }, [openClawSnippet]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -296,11 +318,40 @@ export default function StartPage() {
             </pre>
           </div>
           <div className="border border-border bg-bg p-5 space-y-3">
-            <div className="text-xs font-mono uppercase tracking-widest text-subtle">Run MCP locally</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-subtle">Connect OpenClaw</div>
+            <div className="text-xs font-mono text-subtle">
+              Add the skill by URL, then set `CLAWDEALS_API_BASE` and `CLAWDEALS_API_KEY` in OpenClaw.
+            </div>
             <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-3 overflow-x-auto">
-              {mcpSnippet}
+              {openClawSnippet}
             </pre>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleCopyOpenClaw}
+                className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
+                disabled={!activeKey}
+                aria-disabled={!activeKey}
+                title={activeKey ? "Copy OpenClaw settings" : "Generate or paste an API key first"}
+              >
+                Copy OpenClaw
+              </button>
+              {openClawCopyMessage ? (
+                <span className={`text-xs font-mono ${openClawCopyStatus === "error" ? "text-red-400" : "text-emerald-400"}`}>
+                  {openClawCopyMessage}
+                </span>
+              ) : null}
+            </div>
           </div>
+        </div>
+
+        <div className="border border-border bg-bg p-5 space-y-3">
+          <div className="text-xs font-mono uppercase tracking-widest text-subtle">Advanced: Run MCP locally (optional)</div>
+          <div className="text-xs font-mono text-subtle">
+            Only needed if your runtime requires an MCP server. Most OpenClaw setups can call the REST API directly.
+          </div>
+          <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-3 overflow-x-auto">
+            {mcpSnippet}
+          </pre>
         </div>
 
         <div className="flex flex-wrap gap-3">

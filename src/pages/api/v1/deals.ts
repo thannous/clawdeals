@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../server/http/response";
 import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors";
 import { createDeal, findRecentDealDuplicate } from "../../../server/services/deals";
+import { getDealById } from "../../../server/services/deal-detail";
 import { DEALS_DEFAULT_LIMIT, DEALS_MAX_LIMIT, listDeals } from "../../../server/services/deals-list";
 import { decodeDealsCursor } from "../../../server/services/deals-cursor";
 import { matchDealToWatchlists } from "../../../server/services/watchlist-matching";
@@ -184,7 +185,8 @@ export async function handler(req, res, ctx) {
         priceMax,
         minTemperature,
         limit,
-        cursor
+        cursor,
+        includeHidden: false
       });
 
       const items = (result.items || []).map((deal) => ({
@@ -295,22 +297,59 @@ export async function handler(req, res, ctx) {
       windowDays: DUPLICATE_WINDOW_DAYS
     });
     if (duplicate) {
+      // For OpenClaw (and other clients) we treat duplicate detection as an idempotent success:
+      // return the existing deal instead of failing the workflow with a 409.
+      let existingDeal = null;
+      try {
+        existingDeal = await getDealById({ dealId: duplicate.deal_id });
+      } catch (error) {
+        existingDeal = null;
+      }
+
       if (ctx) {
-        ctx.auditEvent = "deal.duplicate_detected";
-        ctx.outcome = { type: "BLOCKED", reason: "duplicate" };
+        ctx.auditEvent = "deal.duplicate_returned";
+        ctx.outcome = { type: "OK", reason: "duplicate" };
         ctx.security = {
           ...(ctx.security && typeof ctx.security === "object" ? ctx.security : {}),
           existing_deal_id: duplicate.deal_id,
           existing_created_at: duplicate.created_at
         };
       }
-      return jsonResponse(
-        409,
-        errorPayload("DUPLICATE_SUSPECTED", "A similar deal was recently posted.", {
+
+      if (!existingDeal) {
+        return jsonResponse(200, {
+          deal: { deal_id: duplicate.deal_id },
+          meta: {
+            duplicate: true,
+            existing_deal_id: duplicate.deal_id,
+            existing_created_at: duplicate.created_at
+          }
+        });
+      }
+
+      const responseDeal = {
+        deal_id: existingDeal.deal_id,
+        title: existingDeal.title,
+        source_url: existingDeal.source_url,
+        price: toNumber(existingDeal.price),
+        currency: existingDeal.currency,
+        expires_at: existingDeal.expires_at,
+        status: existingDeal.status,
+        temperature: existingDeal.status === "NEW" ? null : existingDeal.temperature,
+        votes_up: existingDeal.votes_up,
+        votes_down: existingDeal.votes_down,
+        tags: existingDeal.tags || [],
+        created_at: existingDeal.created_at
+      };
+
+      return jsonResponse(200, {
+        deal: responseDeal,
+        meta: {
+          duplicate: true,
           existing_deal_id: duplicate.deal_id,
           existing_created_at: duplicate.created_at
-        })
-      );
+        }
+      });
     }
 
     await resolveTrustContext({ ctx, actionType: "deal.create" });
