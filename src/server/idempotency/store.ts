@@ -16,7 +16,11 @@ export async function getIdempotencyRecord({ actorType, actorId, method, path, k
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to read idempotency record: ${error.message}`);
+    throw Object.assign(new Error(`Failed to read idempotency record: ${error.message}`), {
+      code: error.code || null,
+      details: error.details || null,
+      hint: error.hint || null
+    });
   }
   return data || null;
 }
@@ -25,7 +29,11 @@ export async function insertIdempotencyRecord(payload) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client.from(TABLE).insert(payload).select().single();
   if (error) {
-    throw new Error(`Failed to insert idempotency record: ${error.message}`);
+    throw Object.assign(new Error(`Failed to insert idempotency record: ${error.message}`), {
+      code: error.code || null,
+      details: error.details || null,
+      hint: error.hint || null
+    });
   }
   return data;
 }
@@ -39,7 +47,11 @@ export async function updateIdempotencyRecord(idempotencyId, updates) {
     .select()
     .single();
   if (error) {
-    throw new Error(`Failed to update idempotency record: ${error.message}`);
+    throw Object.assign(new Error(`Failed to update idempotency record: ${error.message}`), {
+      code: error.code || null,
+      details: error.details || null,
+      hint: error.hint || null
+    });
   }
   return data;
 }
@@ -48,7 +60,11 @@ export async function deleteIdempotencyRecord(idempotencyId) {
   const client = getSupabaseServiceClient();
   const { error } = await client.from(TABLE).delete().eq("idempotency_id", idempotencyId);
   if (error) {
-    throw new Error(`Failed to delete idempotency record: ${error.message}`);
+    throw Object.assign(new Error(`Failed to delete idempotency record: ${error.message}`), {
+      code: error.code || null,
+      details: error.details || null,
+      hint: error.hint || null
+    });
   }
 }
 
@@ -59,7 +75,11 @@ export async function deleteExpiredIdempotency({ now = new Date() } = {}) {
     .delete({ count: "exact" })
     .lt("expires_at", now.toISOString());
   if (error) {
-    throw new Error(`Failed to delete expired idempotency records: ${error.message}`);
+    throw Object.assign(new Error(`Failed to delete expired idempotency records: ${error.message}`), {
+      code: error.code || null,
+      details: error.details || null,
+      hint: error.hint || null
+    });
   }
   return { deleted: count };
 }

@@ -81,6 +81,23 @@ function buildErrorResponse(code, message, details, status = 409, headers = {}) 
   return jsonResponse(status, errorPayload(code, message, details), headers);
 }
 
+function tryGetRedisClient() {
+  try {
+    return getRedis();
+  } catch {
+    return null;
+  }
+}
+
+async function tryReleaseLock(redis, lockKey) {
+  if (!redis || !lockKey) return;
+  try {
+    await redis.del(lockKey);
+  } catch {
+    // Best-effort cleanup only.
+  }
+}
+
 async function pollForRecord({ actorType, actorId, method, path, key, maxWaitMs }) {
   const start = Date.now();
   while (Date.now() - start < maxWaitMs) {
@@ -133,12 +150,13 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
     canonicalBody
   });
 
-  const redis = getRedis();
+  const redis = tryGetRedisClient();
   const lockKey = buildLockKey({ actorType, actorId, method, path, key });
   const lockTtlMs = options.lockTtlMs || IDEMPOTENCY_LOCK_TTL_MS;
-  const lockAcquired = await redis.set(lockKey, "1", { nx: true, px: lockTtlMs });
+  const lockAcquired = redis ? await redis.set(lockKey, "1", { nx: true, px: lockTtlMs }) : null;
 
-  if (!lockAcquired) {
+  // Without Redis, we rely on the DB unique index to prevent multiple leaders per (actor, method, path, key).
+  if (redis && !lockAcquired) {
     const record = await pollForRecord({
       actorType,
       actorId,
@@ -183,7 +201,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
     if (isLegacy) {
       // Legacy behavior required IDEMPOTENCY_SECRET. If it's missing, we can't safely compare.
       if (!secret) {
-        await redis.del(lockKey);
+        await tryReleaseLock(redis, lockKey);
         return {
           action: "error",
           response: buildErrorResponse(
@@ -196,7 +214,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
       }
       const legacy = buildRequestHmac({ secret, method, path, query, canonicalBody });
       if (existingFp !== legacy) {
-        await redis.del(lockKey);
+        await tryReleaseLock(redis, lockKey);
         return {
           action: "error",
           response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
@@ -204,7 +222,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
       }
     } else if (isHmacFingerprint(existingFp)) {
       if (!secret) {
-        await redis.del(lockKey);
+        await tryReleaseLock(redis, lockKey);
         return {
           action: "error",
           response: buildErrorResponse(
@@ -217,7 +235,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
       }
       const hmac = buildRequestFingerprint({ secret, method, path, query, canonicalBody });
       if (existingFp !== hmac) {
-        await redis.del(lockKey);
+        await tryReleaseLock(redis, lockKey);
         return {
           action: "error",
           response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
@@ -226,14 +244,14 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
     } else if (isSha256Fingerprint(existingFp)) {
       const sha = buildRequestFingerprint({ secret: null, method, path, query, canonicalBody });
       if (existingFp !== sha) {
-        await redis.del(lockKey);
+        await tryReleaseLock(redis, lockKey);
         return {
           action: "error",
           response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
         };
       }
     } else if (existingFp !== requestHmac) {
-      await redis.del(lockKey);
+      await tryReleaseLock(redis, lockKey);
       return {
         action: "error",
         response: buildErrorResponse(
@@ -246,7 +264,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
     }
 
     if (existing.status === "COMPLETED" || existing.status === "FAILED") {
-      await redis.del(lockKey);
+      await tryReleaseLock(redis, lockKey);
       return {
         action: "replay",
         response: buildReplayResponse(existing),
@@ -258,13 +276,48 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
         }
       };
     }
+
+    // DB-only mode: if a record exists but is still in progress, wait briefly and replay if it completes.
+    if (!redis && existing.status === "IN_PROGRESS") {
+      const record = await pollForRecord({
+        actorType,
+        actorId,
+        method,
+        path,
+        key,
+        maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
+      });
+      if (record) {
+        return {
+          action: "replay",
+          response: buildReplayResponse(record),
+          context: {
+            key,
+            requestHmac,
+            record,
+            replayed: true
+          }
+        };
+      }
+      return {
+        action: "error",
+        response: buildErrorResponse(
+          "IDEMPOTENCY_IN_PROGRESS",
+          "Request with the same Idempotency-Key is still in progress",
+          { retry_after_seconds: 1 },
+          409,
+          { "Retry-After": "1" }
+        )
+      };
+    }
   }
 
   const ttlSeconds = options.ttlSeconds || IDEMPOTENCY_TTL_SECONDS;
   const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-  const record = existing
-    ? existing
-    : await insertIdempotencyRecord({
+  let record = existing;
+  if (!record) {
+    try {
+      record = await insertIdempotencyRecord({
         actor_type: actorType,
         actor_id: actorId,
         method,
@@ -274,6 +327,20 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
         status: "IN_PROGRESS",
         expires_at: expiresAt
       });
+    } catch (error: any) {
+      // Race: another request inserted first (DB unique index).
+      if (error?.code === "23505") {
+        record = await getIdempotencyRecord({ actorType, actorId, method, path, key });
+      } else {
+        await tryReleaseLock(redis, lockKey);
+        throw error;
+      }
+    }
+  }
+  if (!record) {
+    await tryReleaseLock(redis, lockKey);
+    throw new Error("Failed to resolve idempotency record");
+  }
 
   return {
     action: "continue",
@@ -284,7 +351,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
       actorId,
       method,
       path,
-      lockKey,
+      lockKey: redis ? lockKey : null,
       record,
       expiresAt
     }
@@ -324,9 +391,9 @@ function shouldPersistStatus(status) {
 export async function finalizeIdempotency(context, result) {
   if (!context || !context.record) return;
   if (!result || typeof result.status !== "number") return;
-  const redis = getRedis();
+  const redis = tryGetRedisClient();
   if (context.lockKey) {
-    await redis.del(context.lockKey);
+    await tryReleaseLock(redis, context.lockKey);
   }
 
   if (!shouldPersistStatus(result.status)) {
