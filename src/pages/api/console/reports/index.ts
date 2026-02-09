@@ -5,11 +5,20 @@ import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { listReports, decodeReportCursor } from "../../../../server/services/report-moderation";
 import { isUuid } from "../../../../server/utils/validators";
+import {
+  REPORT_ENTITY_TYPE_VALUES,
+  REPORT_REASON_CODE_VALUES,
+  REPORT_STATUS_VALUES
+} from "../../../../shared/reports";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
   return value;
 }
+
+const STATUS_SET = new Set(REPORT_STATUS_VALUES);
+const ENTITY_TYPE_SET = new Set(REPORT_ENTITY_TYPE_VALUES);
+const REASON_CODE_SET = new Set(REPORT_REASON_CODE_VALUES);
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -37,8 +46,24 @@ export async function handler(req, res, ctx) {
   const reporterOwnerId = resolveParam(req.query?.reporter_owner_id) || null;
   const reasonCode = resolveParam(req.query?.reason_code) || null;
 
+  if (status && !STATUS_SET.has(status)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "status is invalid"));
+  }
+
+  if (entityType && !ENTITY_TYPE_SET.has(entityType)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "entity_type is invalid"));
+  }
+
+  if (reasonCode && !REASON_CODE_SET.has(reasonCode)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "reason_code is invalid"));
+  }
+
   if (entityId && !isUuid(entityId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "entity_id must be a UUID"));
+  }
+
+  if (reporterOwnerId && !isUuid(reporterOwnerId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "reporter_owner_id must be a UUID"));
   }
 
   const limitRaw = resolveParam(req.query?.limit);

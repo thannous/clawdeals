@@ -52,8 +52,12 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "action must be 'confirm' or 'reject'"));
   }
 
-  const reason = body.reason || null;
-  if (reason && typeof reason === "string" && reason.length > 1000) {
+  let reason = body.reason;
+  if (reason === undefined || reason === null || reason === "") {
+    reason = null;
+  } else if (typeof reason !== "string") {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "reason must be a string"));
+  } else if (reason.length > 1000) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "reason must be at most 1000 characters"));
   }
 

@@ -117,6 +117,20 @@ describe("listReports", () => {
 
     await expect(listReports()).rejects.toThrow();
   });
+
+  it("clamps limit to MAX_LIMIT", async () => {
+    const reports = Array.from({ length: 101 }, (_, i) => ({
+      report_id: `r${i}`,
+      created_at: "2026-01-01T00:00:00Z"
+    }));
+    const chain = mockClient();
+    chain.limit.mockResolvedValue({ data: reports, error: null });
+
+    await listReports({ limit: 100000 });
+
+    // MAX_LIMIT (100) + 1 sentinel for pagination.
+    expect(chain.limit).toHaveBeenCalledWith(101);
+  });
 });
 
 describe("getReport", () => {

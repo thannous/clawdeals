@@ -1,6 +1,12 @@
-const STATUS_OPTIONS = ["UNCONFIRMED", "CONFIRMED", "REJECTED"];
-const ENTITY_TYPE_OPTIONS = ["deal", "listing", "agent", "thread", "message", "offer", "transaction"];
-const REASON_CODE_OPTIONS = ["spam", "scam", "offensive", "counterfeit", "other"];
+import {
+  REPORT_ENTITY_TYPE_VALUES,
+  REPORT_REASON_CODE_VALUES,
+  REPORT_STATUS_VALUES
+} from "../../../shared/reports";
+
+const STATUS_OPTIONS = REPORT_STATUS_VALUES;
+const ENTITY_TYPE_OPTIONS = REPORT_ENTITY_TYPE_VALUES;
+const REASON_CODE_OPTIONS = REPORT_REASON_CODE_VALUES;
 
 interface Props {
   status: string;

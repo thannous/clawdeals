@@ -54,7 +54,15 @@ function mapError(error) {
 
 export async function listReports({ status, entityType, entityId, reporterOwnerId, reasonCode, limit, cursor }: any = {}) {
   const client = getSupabaseServiceClient();
-  const pageLimit = limit ?? DEFAULT_LIMIT;
+  let pageLimit = DEFAULT_LIMIT;
+  if (typeof limit === "number" && Number.isFinite(limit)) {
+    pageLimit = Math.trunc(limit);
+  } else if (typeof limit === "string" && limit.trim() !== "") {
+    const parsed = Number.parseInt(limit, 10);
+    if (Number.isFinite(parsed)) pageLimit = parsed;
+  }
+  if (pageLimit < 1) pageLimit = 1;
+  if (pageLimit > MAX_LIMIT) pageLimit = MAX_LIMIT;
   let query = client
     .from("reports")
     .select("*")

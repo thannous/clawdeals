@@ -86,7 +86,7 @@ describe("GET /api/console/reports", () => {
         status: "CONFIRMED",
         entity_type: "deal",
         entity_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
-        reporter_owner_id: "owner-2",
+        reporter_owner_id: "3c089483-1b8b-5fb2-a4f1-2f37aea1f2e8",
         reason_code: "spam"
       }
     };
@@ -97,9 +97,40 @@ describe("GET /api/console/reports", () => {
       status: "CONFIRMED",
       entityType: "deal",
       entityId: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
-      reporterOwnerId: "owner-2",
+      reporterOwnerId: "3c089483-1b8b-5fb2-a4f1-2f37aea1f2e8",
       reasonCode: "spam"
     }));
+  });
+
+  it("validates status against enum values (invalid -> 400)", async () => {
+    const req = { method: "GET", query: { status: "NOT_A_STATUS" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toMatch(/status/i);
+  });
+
+  it("validates entity_type against enum values (invalid -> 400)", async () => {
+    const req = { method: "GET", query: { entity_type: "not-an-entity-type" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toMatch(/entity_type/i);
+  });
+
+  it("validates reason_code against enum values (invalid -> 400)", async () => {
+    const req = { method: "GET", query: { reason_code: "offensive" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toMatch(/reason_code/i);
+  });
+
+  it("validates reporter_owner_id as UUID when provided (invalid -> 400)", async () => {
+    const req = { method: "GET", query: { reporter_owner_id: "not-a-uuid" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("validates entity_id as UUID when provided (invalid -> 400)", async () => {
