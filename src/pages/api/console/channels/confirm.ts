@@ -46,18 +46,29 @@ export async function handler(req, res, ctx) {
 
     const identity = result.identity;
     if (ctx && identity) {
-      const hashes = createChannelFingerprints({
-        channelType: identity.channel_type,
-        channelUserId: identity.channel_user_id,
-        channelContextId: identity.channel_context_id
-      });
       ctx.auditEvent = "pairing.code_confirmed";
+      let hashes: any = null;
+      try {
+        hashes = createChannelFingerprints({
+          channelType: identity.channel_type,
+          channelUserId: identity.channel_user_id,
+          channelContextId: identity.channel_context_id
+        });
+      } catch (error) {
+        // Fingerprinting is best-effort. In local/dev AUDIT_HMAC_SECRET may be unset.
+        hashes = null;
+      }
+
       ctx.security = {
         ...(ctx.security || {}),
         channel_type: identity.channel_type,
         channel_identity_id: identity.channel_identity_id,
-        channel_user_id_hash: hashes.channel_user_id_hash,
-        channel_context_id_hash: hashes.channel_context_id_hash
+        ...(hashes
+          ? {
+              channel_user_id_hash: hashes.channel_user_id_hash,
+              channel_context_id_hash: hashes.channel_context_id_hash
+            }
+          : {})
       };
     }
 
@@ -71,4 +82,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "channels.pairing_confirm" }));
-

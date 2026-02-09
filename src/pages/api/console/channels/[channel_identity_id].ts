@@ -29,17 +29,28 @@ function sanitizeIdentity(row: any) {
 
 function attachChannelHashesToSecurity(ctx: any, identity: any) {
   if (!ctx || !identity) return;
-  const hashes = createChannelFingerprints({
-    channelType: identity.channel_type,
-    channelUserId: identity.channel_user_id,
-    channelContextId: identity.channel_context_id
-  });
+  let hashes: any = null;
+  try {
+    hashes = createChannelFingerprints({
+      channelType: identity.channel_type,
+      channelUserId: identity.channel_user_id,
+      channelContextId: identity.channel_context_id
+    });
+  } catch (error) {
+    // Fingerprinting is best-effort. In local/dev AUDIT_HMAC_SECRET may be unset.
+    hashes = null;
+  }
+
   ctx.security = {
     ...(ctx.security || {}),
     channel_type: identity.channel_type,
     channel_identity_id: identity.channel_identity_id,
-    channel_user_id_hash: hashes.channel_user_id_hash,
-    channel_context_id_hash: hashes.channel_context_id_hash
+    ...(hashes
+      ? {
+          channel_user_id_hash: hashes.channel_user_id_hash,
+          channel_context_id_hash: hashes.channel_context_id_hash
+        }
+      : {})
   };
 }
 
@@ -128,5 +139,11 @@ export async function handler(req, res, ctx) {
   }
 }
 
-export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "channels.pairings.write" }));
+const getHandler = injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "channels.pairings.read" }));
+const postHandler = injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "channels.pairings.write" }));
 
+export default async function consoleChannelPairing(req, res) {
+  if (req.method === "GET") return getHandler(req, res);
+  if (req.method === "POST") return postHandler(req, res);
+  return getHandler(req, res);
+}

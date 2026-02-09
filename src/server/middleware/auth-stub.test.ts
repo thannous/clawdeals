@@ -12,6 +12,18 @@ describe("applyAuthStub", () => {
     vi.clearAllMocks();
   });
 
+  it("rejects invalid Authorization header", async () => {
+    const req: any = { headers: { authorization: "Basic abc" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid Authorization header"
+    });
+  });
+
   it("authenticates via x-clawdeals-api-key header", async () => {
     vi.mocked(authenticateApiKey).mockResolvedValue({
       ok: true,
@@ -33,5 +45,32 @@ describe("applyAuthStub", () => {
     expect(ctx.apiKeyState).toBe("ACTIVE");
     expect(ctx.actor).toEqual({ type: "agent", id: "agent-1" });
   });
-});
 
+  it("returns 401 for invalid api key", async () => {
+    vi.mocked(authenticateApiKey).mockResolvedValue({ ok: false, reason: "not_found" } as any);
+
+    const req: any = { headers: { "x-clawdeals-api-key": "cd_live_abcdefgh.secret" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid API key"
+    });
+  });
+
+  it("returns 401 for revoked api key", async () => {
+    vi.mocked(authenticateApiKey).mockResolvedValue({ ok: false, reason: "revoked" } as any);
+
+    const req: any = { headers: { "x-clawdeals-api-key": "cd_live_abcdefgh.secret" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid API key"
+    });
+  });
+});
