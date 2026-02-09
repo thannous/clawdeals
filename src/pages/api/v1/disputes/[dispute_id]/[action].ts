@@ -7,7 +7,7 @@ import { getAgentById } from "../../../../../server/services/agents";
 import { getPspConfig } from "../../../../../server/services/psp-config";
 import { createPspAdapter } from "../../../../../server/psp";
 import { getOpsConsoleOwnerId } from "../../../../../server/config/ops";
-import { beginResolveDispute, getDisputeById, resolveDispute } from "../../../../../server/services/disputes";
+import { beginResolveDispute, getDisputeById, resolveDispute, rollbackResolveDisputeLock } from "../../../../../server/services/disputes";
 import { claimOrphanedPspWebhookEvents } from "../../../../../server/services/psp-webhook-events";
 import { replayPendingEscrowEvents } from "../../../../../server/services/psp-webhook-replay";
 import {
@@ -165,22 +165,36 @@ export async function handler(req, res, ctx) {
       const adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });
 
       let pspReferenceId: string;
-      if (resolutionRaw === "RELEASE") {
-        const release = await adapter.release({
-          escrowId: escrow.escrow_id,
-          paymentId,
-          amountMinor: escrow.amount_gross_minor,
-          currency: escrow.currency
-        });
-        pspReferenceId = release.payoutId;
-      } else {
-        const refund = await adapter.refund({
-          escrowId: escrow.escrow_id,
-          paymentId,
-          amountMinor: escrow.amount_gross_minor,
-          currency: escrow.currency
-        });
-        pspReferenceId = refund.refundId;
+      try {
+        if (resolutionRaw === "RELEASE") {
+          const release = await adapter.release({
+            escrowId: escrow.escrow_id,
+            paymentId,
+            amountMinor: escrow.amount_gross_minor,
+            currency: escrow.currency
+          });
+          pspReferenceId = release.payoutId;
+        } else {
+          const refund = await adapter.refund({
+            escrowId: escrow.escrow_id,
+            paymentId,
+            amountMinor: escrow.amount_gross_minor,
+            currency: escrow.currency
+          });
+          pspReferenceId = refund.refundId;
+        }
+      } catch (pspError) {
+        // PSP call failed: release the DB "resolving" lock so ops can retry.
+        try {
+          await rollbackResolveDisputeLock({ disputeId: String(disputeId) });
+        } catch (rollbackError) {
+          console.info("dispute.resolve.rollback_failed", {
+            disputeId: String(disputeId),
+            escrowId: escrow.escrow_id,
+            error: rollbackError?.message || String(rollbackError)
+          });
+        }
+        throw pspError;
       }
 
       const updated = await resolveDispute({

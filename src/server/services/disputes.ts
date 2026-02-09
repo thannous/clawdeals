@@ -164,3 +164,17 @@ export async function beginResolveDispute({ disputeId }: { disputeId: string }) 
     details: { status: current.status }
   });
 }
+
+export async function rollbackResolveDisputeLock({ disputeId }: { disputeId: string }) {
+  const client = getSupabaseServiceClient();
+  const nowIso = new Date().toISOString();
+  const { error } = await client
+    .from("disputes")
+    .update({ status: "OPEN", updated_at: nowIso })
+    .eq("dispute_id", disputeId)
+    .eq("status", "UNDER_REVIEW");
+  if (error) {
+    mapError(error);
+  }
+  return { ok: true as const };
+}
