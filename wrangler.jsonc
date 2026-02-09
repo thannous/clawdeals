@@ -11,7 +11,7 @@
     "NEXT_PUBLIC_APP_ENTRY_PATH": "/start"
   },
   "routes": [
-    { "pattern": "clawdeals.com/*", "zone_name": "clawdeals.com" },
+    { "pattern": "clawdeals.com", "zone_name": "clawdeals.com", "custom_domain": true },
     { "pattern": "www.clawdeals.com/*", "zone_name": "clawdeals.com" }
   ],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
