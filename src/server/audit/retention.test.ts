@@ -122,7 +122,7 @@ describe("runAuditRetention", () => {
         },
         now: new Date("2026-02-09T00:00:00Z")
       })
-    ).rejects.toThrow(/Audit retention DELETE failed: 400/);
+    ).rejects.toThrow(/Retention DELETE on audit_logs failed: 400/);
 
   });
 });
