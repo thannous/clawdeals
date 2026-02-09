@@ -184,7 +184,8 @@ export async function handler(req, res, ctx) {
         priceMax,
         minTemperature,
         limit,
-        cursor
+        cursor,
+        includeHidden: false
       });
 
       const items = (result.items || []).map((deal) => ({

@@ -34,8 +34,8 @@ export async function handler(req, res, ctx) {
 
   const sortRaw = resolveParam(req.query?.sort);
   const sort = sortRaw ? String(sortRaw).toLowerCase() : "recent";
-  if (sort !== "recent" && sort !== "price_asc" && sort !== "price_desc") {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "sort must be one of: recent, price_asc, price_desc"));
+  if (sort !== "recent" && sort !== "price_asc" && sort !== "price_desc" && sort !== "rank") {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "sort must be one of: recent, price_asc, price_desc, rank"));
   }
 
   const limitRaw = resolveParam(req.query?.limit);
@@ -86,7 +86,16 @@ export async function handler(req, res, ctx) {
 
   try {
     const result = await listListings({
-      q, category, condition, status, priceMin, priceMax, sort, limit, cursor
+      q,
+      category,
+      condition,
+      status,
+      priceMin,
+      priceMax,
+      sort,
+      limit,
+      cursor,
+      includeHidden: true
     });
 
     const items = (result.items || []).map((item: any) => {

@@ -66,7 +66,11 @@ export function decodeDealsCursor(raw) {
   if (sort === "trend") {
     if (typeof parsed.as_of !== "string") return { error: "Invalid cursor" };
     if (typeof parsed.trend_score !== "string" && typeof parsed.trend_score !== "number") return { error: "Invalid cursor" };
-    if (typeof parsed.active_at !== "string") return { error: "Invalid cursor" };
+    // Backwards compatibility: older cursors included active_at, but ranking v1 only requires
+    // score + created_at + id tie-breakers.
+    if (parsed.active_at !== undefined && parsed.active_at !== null && typeof parsed.active_at !== "string") {
+      return { error: "Invalid cursor" };
+    }
     if (typeof parsed.created_at !== "string") return { error: "Invalid cursor" };
     if (!isUuid(parsed.deal_id)) return { error: "Invalid cursor" };
     return {
@@ -74,7 +78,7 @@ export function decodeDealsCursor(raw) {
         sort,
         as_of: parsed.as_of,
         trend_score: parsed.trend_score,
-        active_at: parsed.active_at,
+        active_at: typeof parsed.active_at === "string" ? parsed.active_at : null,
         created_at: parsed.created_at,
         deal_id: parsed.deal_id
       }
@@ -83,4 +87,3 @@ export function decodeDealsCursor(raw) {
 
   return { error: "Invalid cursor" };
 }
-

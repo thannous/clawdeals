@@ -246,6 +246,7 @@ describe("GET /v1/deals", () => {
       q: null,
       tags: [],
       priceMax: null,
+      includeHidden: false,
       minTemperature: 0,
       limit: 30,
       cursor: null
