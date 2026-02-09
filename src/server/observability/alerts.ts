@@ -68,6 +68,7 @@ async function countAuditLogs({
   fromIso,
   toIso,
   pathLike,
+  requireStatusCode,
   statusEq,
   statusGte,
   statusLt
@@ -76,6 +77,7 @@ async function countAuditLogs({
   fromIso: string;
   toIso: string;
   pathLike: string;
+  requireStatusCode?: boolean;
   statusEq?: string | null;
   statusGte?: string | null;
   statusLt?: string | null;
@@ -86,6 +88,11 @@ async function countAuditLogs({
     .gte("occurred_at", fromIso)
     .lt("occurred_at", toIso)
     .like("action->>path", pathLike);
+
+  if (requireStatusCode) {
+    // Keep totals and numerator samples aligned: status-based filters exclude NULLs implicitly, but totals do not.
+    query = query.not("request->>status_code", "is", null);
+  }
 
   if (statusEq) {
     query = query.eq("request->>status_code", statusEq);
@@ -259,8 +266,8 @@ export async function runObservabilityAlerts({
     countAuditLogsByEvents({ client, fromIso: slowFromIso, toIso: nowIso, events: sloEvents }),
     countAuditLogsByEvents({ client, fromIso: fastFromIso, toIso: nowIso, events: sloEvents, outcomeEq: "SUCCESS" }),
     countAuditLogsByEvents({ client, fromIso: slowFromIso, toIso: nowIso, events: sloEvents, outcomeEq: "SUCCESS" }),
-    countAuditLogs({ client, fromIso: fastFromIso, toIso: nowIso, pathLike }),
-    countAuditLogs({ client, fromIso: slowFromIso, toIso: nowIso, pathLike }),
+    countAuditLogs({ client, fromIso: fastFromIso, toIso: nowIso, pathLike, requireStatusCode: true }),
+    countAuditLogs({ client, fromIso: slowFromIso, toIso: nowIso, pathLike, requireStatusCode: true }),
     countAuditLogs({ client, fromIso: fastFromIso, toIso: nowIso, pathLike, statusGte: "500", statusLt: "600" }),
     countAuditLogs({ client, fromIso: slowFromIso, toIso: nowIso, pathLike, statusGte: "500", statusLt: "600" }),
     countAuditLogs({ client, fromIso: fastFromIso, toIso: nowIso, pathLike, statusEq: "429" }),

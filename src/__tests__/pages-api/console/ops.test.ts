@@ -42,6 +42,20 @@ describe("GET /api/console/ops", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("rejects window_minutes with trailing characters (15abc -> 400)", async () => {
+    const req = { method: "GET", query: { window_minutes: "15abc" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects window_minutes decimals (15.5 -> 400)", async () => {
+    const req = { method: "GET", query: { window_minutes: "15.5" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
   it("validates window_minutes range (too small -> 400)", async () => {
     const req = { method: "GET", query: { window_minutes: "1" } };
     const result: any = await handler(req, null, { ...baseCtx });
@@ -101,4 +115,3 @@ describe("GET /api/console/ops", () => {
     expect(result.body.error.code).toBe("DB_ERROR");
   });
 });
-

@@ -14,6 +14,16 @@ function resolveParam(value: any) {
   return value;
 }
 
+function parseStrictIntParam(value: any): number | null {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (!/^-?\d+$/.test(raw)) return null;
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed)) return null;
+  return parsed;
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "GET") {
     return methodNotAllowed(["GET"]);
@@ -34,8 +44,8 @@ export async function handler(req: any, res: any, ctx: any) {
   const windowMinutesRaw = resolveParam(req.query?.window_minutes);
   let windowMinutes = CONSOLE_OPS_DEFAULT_WINDOW_MINUTES;
   if (windowMinutesRaw !== undefined && windowMinutesRaw !== null && windowMinutesRaw !== "") {
-    const parsed = Number.parseInt(String(windowMinutesRaw), 10);
-    if (Number.isNaN(parsed)) {
+    const parsed = parseStrictIntParam(windowMinutesRaw);
+    if (parsed === null) {
       return jsonResponse(400, errorPayload("VALIDATION_ERROR", "window_minutes must be an integer"));
     }
     if (parsed < CONSOLE_OPS_WINDOW_MINUTES_RANGE.min || parsed > CONSOLE_OPS_WINDOW_MINUTES_RANGE.max) {
@@ -59,4 +69,3 @@ export async function handler(req: any, res: any, ctx: any) {
 }
 
 export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "console.ops.read" }));
-

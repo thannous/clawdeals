@@ -35,6 +35,19 @@ function toFiniteNumber(value: any): number | null {
   return parsed;
 }
 
+function parseStrictInt(value: any): number | null {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || !Number.isInteger(value)) return null;
+    return value;
+  }
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  if (!/^-?\d+$/.test(raw)) return null;
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed)) return null;
+  return parsed;
+}
+
 function percentileFromSorted(sorted: number[], p: number): number | null {
   if (!Array.isArray(sorted) || sorted.length === 0) return null;
   if (sorted.length === 1) return sorted[0];
@@ -126,8 +139,8 @@ export async function getConsoleOpsDashboard({
   now = new Date(),
   client
 }: any = {}) {
-  const parsedWindow = Number.parseInt(String(windowMinutes ?? ""), 10);
-  if (!Number.isFinite(parsedWindow) || Number.isNaN(parsedWindow)) {
+  const parsedWindow = parseStrictInt(windowMinutes);
+  if (parsedWindow === null) {
     throw buildServiceError("windowMinutes must be an integer", 400, "VALIDATION_ERROR");
   }
   if (parsedWindow < MIN_WINDOW_MINUTES || parsedWindow > MAX_WINDOW_MINUTES) {
