@@ -64,4 +64,6 @@ const raw = fs.readFileSync(input, "utf8");
 const patched = patchIdempotencyRequired(raw);
 fs.writeFileSync(output, patched, "utf8");
 
-process.stdout.write(output);
+// `process.stdout.write(...)` can be async when stdout is a pipe. Use a sync write so
+// `spawnSync(..., { encoding: "utf8" })` reliably captures the path.
+fs.writeSync(1, `${output}\n`);
