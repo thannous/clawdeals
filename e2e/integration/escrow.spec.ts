@@ -240,4 +240,110 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     const invalidBody = await invalidFinal.json();
     expect(invalidBody?.error?.code).toBe("ESCROW_FINALIZED");
   });
+
+  test("early payout webhook is replayed by confirm-received (TI-256)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+
+    const sellerOwnerId = randomId();
+    await ensureOwnerDb(supabase, sellerOwnerId);
+    await setupPolicy(request, sellerOwnerId);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+    await expectStatus(
+      await configurePsp(request, OPS_CONSOLE_OWNER_ID, { provider: "mock", mode: "sandbox", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 }, { idempotencyKey: randomId() }),
+      200
+    );
+
+    // Build escrow through HOLD
+    const listingRes = await createListing(request, sellerApiKey, { title: `Early payout listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const offerRes = await createOffer(request, buyerApiKey, listingId, { threadId: null, amount: 250, currency: "EUR", expiresAt }, { idempotencyKey: randomId() });
+    await expectStatus(offerRes, 201);
+    const offerId = (await offerRes.json()).offer_id;
+
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    await expectStatus(acceptRes, 200);
+    const txId = (await acceptRes.json()).transaction?.tx_id;
+
+    const escrowRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(escrowRes, 201);
+    const escrowId = (await escrowRes.json()).escrow_id;
+
+    const payRes = await payEscrow(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(payRes, 200);
+    const paymentId = (await payRes.json()).psp?.payment_id;
+
+    const paymentWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payment.succeeded",
+      created_at: new Date().toISOString(),
+      data: { payment_id: paymentId, hold_id: `hold_${randomId()}`, hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(paymentWebhook), body: paymentWebhook }), 200);
+
+    // mark-delivered → DELIVERED
+    await expectStatus(await markDelivered(request, sellerApiKey, escrowId, { idempotencyKey: randomId() }), 200);
+
+    // Send payout.succeeded BEFORE confirm-received (the payout_id is predictable: mock_payout_{escrowId})
+    const earlyPayoutWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payout.succeeded",
+      created_at: new Date().toISOString(),
+      data: { payout_id: `mock_payout_${escrowId}` }
+    };
+    const earlyRes = await postPspWebhook(request, { signature: signWebhook(earlyPayoutWebhook), body: earlyPayoutWebhook });
+    await expectStatus(earlyRes, 200);
+    const earlyBody = await earlyRes.json();
+    expect(earlyBody.deferred).toBe(true); // webhook stored as PENDING_RETRY
+
+    // Escrow should still be DELIVERED (payout_id not set yet)
+    const { data: escrowBeforeConfirm } = await supabase.from("escrows").select("status").eq("escrow_id", escrowId).maybeSingle();
+    expect(escrowBeforeConfirm?.status).toBe("DELIVERED");
+
+    // confirm-received should claim the orphaned webhook and replay it → RELEASED
+    const confirmRes = await confirmReceived(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(confirmRes, 200);
+
+    // The escrow should now be RELEASED (confirm-received claimed + replayed the early payout webhook)
+    const { data: escrowAfter, error: escrowErr } = await supabase
+      .from("escrows")
+      .select("escrow_id,status,released_at")
+      .eq("escrow_id", escrowId)
+      .maybeSingle();
+    if (escrowErr) throw escrowErr;
+    expect(escrowAfter?.status).toBe("RELEASED");
+    expect(escrowAfter?.released_at).toBeTruthy();
+
+    // Verify the orphaned webhook event was claimed and applied
+    const { data: webhookEvents } = await supabase
+      .from("psp_webhook_events")
+      .select("psp_event_id,status,escrow_id")
+      .eq("psp_event_id", earlyPayoutWebhook.id)
+      .maybeSingle();
+    expect(webhookEvents?.status).toBe("APPLIED");
+    expect(webhookEvents?.escrow_id).toBe(escrowId);
+
+    // Verify ledger entries: PLATFORM_FEE + NET_TO_SELLER exist (payout was applied)
+    const { data: feeLedger } = await supabase
+      .from("ledger_entries")
+      .select("type")
+      .eq("escrow_id", escrowId)
+      .in("type", ["PLATFORM_FEE", "NET_TO_SELLER"]);
+    const types = new Set((feeLedger || []).map((r: any) => r.type));
+    expect(types.has("PLATFORM_FEE")).toBe(true);
+    expect(types.has("NET_TO_SELLER")).toBe(true);
+  });
 });

@@ -129,3 +129,46 @@ export async function listPendingPspWebhookEventsForEscrow({
   return (data as any) || [];
 }
 
+/**
+ * Claim orphaned PENDING_RETRY webhook events whose payload contains a
+ * matching payout_id or refund_id but were stored with escrow_id = null
+ * (because the escrow didn't have the PSP reference yet at webhook time).
+ *
+ * Sets escrow_id on every matched row so that `listPendingPspWebhookEventsForEscrow`
+ * can find them for replay.
+ *
+ * Returns the number of rows claimed.
+ */
+export async function claimOrphanedPspWebhookEvents({
+  escrowId,
+  payoutId,
+  refundId
+}: {
+  escrowId: string;
+  payoutId?: string | null;
+  refundId?: string | null;
+}): Promise<number> {
+  if (!payoutId && !refundId) return 0;
+
+  const client = getSupabaseServiceClient();
+  let query = client
+    .from("psp_webhook_events")
+    .update({ escrow_id: escrowId })
+    .is("escrow_id", null)
+    .eq("status", "PENDING_RETRY");
+
+  if (payoutId) {
+    query = query.contains("payload", { data: { payout_id: payoutId } });
+  } else if (refundId) {
+    query = query.contains("payload", { data: { refund_id: refundId } });
+  }
+
+  const { data, error, count } = await query.select("id");
+  if (error) {
+    // Best-effort: don't fail the confirm-received flow for a claim issue.
+    console.info("psp_webhook_events.claim_orphaned_failed", { escrowId, error: error?.message || String(error) });
+    return 0;
+  }
+  return data?.length ?? 0;
+}
+
