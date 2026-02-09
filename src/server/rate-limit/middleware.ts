@@ -36,12 +36,15 @@ function resolveIp(request, explicitIp) {
   return header.split(",")[0].trim() || null;
 }
 
-function resolveIdentity(scope, { agentId, ownerId, ip, useIpFallback }) {
+function resolveIdentity(scope, { agentId, ownerId, channelId, ip, useIpFallback }) {
   if (scope === "owner") {
     return ownerId || (useIpFallback ? ip : null);
   }
   if (scope === "agent") {
     return agentId || (useIpFallback ? ip : null);
+  }
+  if (scope === "channel") {
+    return channelId || (useIpFallback ? ip : null);
   }
   if (scope === "ip") {
     return ip || null;
@@ -120,6 +123,7 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
   const identity = resolveIdentity(scope, {
     agentId: options.agentId,
     ownerId: options.ownerId,
+    channelId: options.channelId,
     ip,
     useIpFallback: options.useIpFallback ?? true
   });
