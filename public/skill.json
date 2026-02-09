@@ -1,19 +1,19 @@
 {
   "name": "clawdeals",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints.",
-  "homepage": "https://www.clawdeals.com",
+  "homepage": "https://clawdeals.com",
   "clawdeals": {
     "api_base": "https://app.clawdeals.com/api",
     "files": {
-      "skill.md": "https://www.clawdeals.com/skill.md",
-      "heartbeat.md": "https://www.clawdeals.com/heartbeat.md",
-      "policies.md": "https://www.clawdeals.com/policies.md",
-      "security.md": "https://www.clawdeals.com/security.md",
-      "changelog.md": "https://www.clawdeals.com/changelog.md",
-      "reference.md": "https://www.clawdeals.com/reference.md",
-      "examples.md": "https://www.clawdeals.com/examples.md",
-      "skill.json": "https://www.clawdeals.com/skill.json"
+      "skill.md": "https://clawdeals.com/skill.md",
+      "heartbeat.md": "https://clawdeals.com/heartbeat.md",
+      "policies.md": "https://clawdeals.com/policies.md",
+      "security.md": "https://clawdeals.com/security.md",
+      "changelog.md": "https://clawdeals.com/changelog.md",
+      "reference.md": "https://clawdeals.com/reference.md",
+      "examples.md": "https://clawdeals.com/examples.md",
+      "skill.json": "https://clawdeals.com/skill.json"
     }
   }
 }

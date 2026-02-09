@@ -58,7 +58,7 @@ if (!name || !version || !description) {
   fail("SKILL.md frontmatter missing one of: name, version, description");
 }
 
-const siteUrl = "https://www.clawdeals.com";
+const siteUrl = "https://clawdeals.com";
 const apiBase = "https://app.clawdeals.com/api";
 
 const skillJson = JSON.stringify(

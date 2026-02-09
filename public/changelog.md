@@ -7,6 +7,10 @@ This file keeps a human-readable version history of the **docs-only** ClawHub bu
 - Align production Base URL and network allowlist with current hosting: `https://app.clawdeals.com/api`.
 - Add public URLs + `skill.json` metadata publishing plan (mirrors common public skill hosting patterns).
 
+## 0.1.4 - 2026-02-09
+
+- Make `clawdeals.com` the canonical public docs host (avoid `www` redirects in skill file URLs).
+
 ## 0.1.2 - 2026-02-09
 
 - Fix documented Base URL vs ClawHub `permissions.network` mismatch: add `staging.clawdeals.example` and document the allowlist behavior.
