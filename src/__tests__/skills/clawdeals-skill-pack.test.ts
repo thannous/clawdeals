@@ -6,6 +6,11 @@ function readFile(relPath: string) {
   return fs.readFileSync(path.join(process.cwd(), relPath), "utf8");
 }
 
+function extractFrontmatter(markdown: string) {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n/);
+  return match ? match[1] : null;
+}
+
 function extractFencedBlocks(markdown: string) {
   const blocks: Array<{ info: string; content: string }> = [];
   const re = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)\n```/g;
@@ -16,7 +21,83 @@ function extractFencedBlocks(markdown: string) {
   return blocks;
 }
 
+function listRelativeLinks(markdown: string) {
+  const links: string[] = [];
+  const re = /\[[^\]]*\]\(([^)]+)\)/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(markdown))) {
+    const raw = match[1].trim();
+    if (!raw.startsWith("./") && !raw.startsWith("../")) continue;
+    const withoutHash = raw.split("#")[0].split("?")[0];
+    if (!withoutHash) continue;
+    links.push(withoutHash);
+  }
+  return links;
+}
+
 describe("skills/clawdeals skill pack docs", () => {
+  it("is ClawHub-install ready: docs-only, has SECURITY + CHANGELOG, and SKILL.md contains metadata + valid links", () => {
+    const skillDir = path.join(process.cwd(), "skills", "clawdeals");
+
+    const requiredFiles = [
+      "SKILL.md",
+      "HEARTBEAT.md",
+      "POLICIES.md",
+      "SECURITY.md",
+      "CHANGELOG.md",
+      "reference.md",
+      "examples.md"
+    ];
+    for (const f of requiredFiles) {
+      const p = path.join(skillDir, f);
+      expect(fs.existsSync(p), `missing required file: skills/clawdeals/${f}`).toBe(true);
+    }
+
+    // Docs-only: only Markdown files, no subfolders, no executable bits.
+    for (const ent of fs.readdirSync(skillDir, { withFileTypes: true })) {
+      expect(ent.isDirectory(), `unexpected subdirectory in skills/clawdeals/: ${ent.name}`).toBe(false);
+      expect(ent.isFile(), `unexpected non-file entry in skills/clawdeals/: ${ent.name}`).toBe(true);
+      expect(ent.name.endsWith(".md"), `non-doc file found in skills/clawdeals/: ${ent.name}`).toBe(true);
+
+      const st = fs.statSync(path.join(skillDir, ent.name));
+      expect((st.mode & 0o111) === 0, `executable bit set on skills/clawdeals/${ent.name}`).toBe(true);
+    }
+
+    const skillMd = readFile("skills/clawdeals/SKILL.md");
+    expect(skillMd).toContain("clawhub install clawdeals");
+
+    const fm = extractFrontmatter(skillMd);
+    expect(fm, "SKILL.md must have YAML frontmatter").toBeTruthy();
+    expect(fm!).toContain("name:");
+    expect(fm!).toContain("version:");
+    expect(fm!).toContain("description:");
+    expect(fm!).toContain("permissions:");
+    expect(fm!).toContain("entrypoints:");
+    expect(fm!).toMatch(/^name:\s*clawdeals\s*$/m);
+
+    const versionLine = fm!
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.startsWith("version:"));
+    expect(versionLine, "SKILL.md frontmatter must include version").toBeTruthy();
+    const version = versionLine!.replace(/^version:\s*/, "").replace(/^"|"$/g, "");
+    expect(version, "SKILL.md version must be semver 0.x").toMatch(/^0\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/);
+
+    expect(fm!, "permissions must be a YAML list").toMatch(/permissions:\n(?:[ \t]*-[^\n]*\n)+/m);
+    expect(fm!, 'permissions must include "no-exec"').toMatch(/^\s*-\s*("?no-exec"?)\s*$/m);
+
+    // Ensure all relative links in SKILL.md resolve inside the skill folder.
+    for (const rel of listRelativeLinks(skillMd)) {
+      const p = path.resolve(skillDir, rel);
+      expect(fs.existsSync(p), `broken relative link in SKILL.md: (${rel})`).toBe(true);
+      expect(fs.statSync(p).isFile(), `relative link target is not a file: (${rel})`).toBe(true);
+    }
+
+    // CHANGELOG should mention current version.
+    const changelog = readFile("skills/clawdeals/CHANGELOG.md");
+    expect(changelog).toContain(version);
+  });
+
   it("SKILL.md includes required sections, links, and 6 workflows with curl+response+errors", () => {
     const md = readFile("skills/clawdeals/SKILL.md");
 

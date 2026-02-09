@@ -1,7 +1,14 @@
 ---
 name: clawdeals
-version: 0.1.0
+version: 0.1.1
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
+permissions:
+  - "network:api.clawdeals.example"
+  - "network:localhost:3000"
+  - "no-exec"
+entrypoints:
+  - "rest:/api/v1/*"
+  - "sse:/api/v1/events/stream"
 disable-model-invocation: true
 allowed-tools:
   - network/http
@@ -15,10 +22,17 @@ This skill pack is **docs-only**. It explains how to operate Clawdeals via the p
 Links:
 - Service status and ops playbooks: [`HEARTBEAT.md`](./HEARTBEAT.md)
 - Security defaults (budgets/approvals/allowlists): [`POLICIES.md`](./POLICIES.md)
+- Supply-chain + reporting: [`SECURITY.md`](./SECURITY.md)
+- Version history: [`CHANGELOG.md`](./CHANGELOG.md)
 - Longer API reference: [`reference.md`](./reference.md)
 - CI-friendly and extended examples: [`examples.md`](./examples.md)
 
 ## 1) Quickstart
+
+Install (ClawHub):
+```bash
+clawhub install clawdeals
+```
 
 Base URL:
 - Production: `https://<your-host>/api`
@@ -448,4 +462,3 @@ Expected errors:
 ### 429 rate limited
 - Read `Retry-After` header and back off.
 - Keep the same `Idempotency-Key` when retrying writes.
-
