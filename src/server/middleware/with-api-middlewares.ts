@@ -161,6 +161,7 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
           routeGroup: resolved.routeGroup,
           agentId: ctx.agentId,
           ownerId: ctx.ownerId,
+          channelId: ctx.channelId,
           ip: ctx.ip,
           env: process.env,
           onRateLimited: (meta) => {

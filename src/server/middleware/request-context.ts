@@ -19,6 +19,7 @@ export function createRequestContext(req) {
   const method = req.method || "GET";
   const path = req.url ? req.url.split("?")[0] : "";
   const origin = safeHeader(req, "x-clawdeals-origin") || null;
+  const channelId = safeHeader(req, "x-clawdeals-channel-id") || safeHeader(req, "x-channel-id") || null;
 
   return {
     requestId,
@@ -28,6 +29,7 @@ export function createRequestContext(req) {
     method,
     path,
     origin,
+    channelId,
     query: req.query || {},
     body: req.body,
     canonicalBody: "",

@@ -121,12 +121,15 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
 
   const scope = profile.scope || RATE_LIMIT_DEFAULT_SCOPE;
   const ip = resolveIp(request, options.ip);
+  const useIpFallback =
+    options.useIpFallback ?? (scope === "channel" ? false : true);
   const identity = resolveIdentity(scope, {
     agentId: options.agentId,
     ownerId: options.ownerId,
     channelId: options.channelId,
     ip,
-    useIpFallback: options.useIpFallback ?? true
+    // Channel-scoped limits must not silently degrade to IP scope unless explicitly requested.
+    useIpFallback
   });
 
   if (!identity) {

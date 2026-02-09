@@ -22,8 +22,19 @@ import { hmacSha256 } from "../../src/server/utils/hmac";
 assertIntegrationEnv();
 
 async function setupPolicy(request: any, ownerId: string) {
+  function randomTestIp() {
+    // Must be a valid inet for audit logs, but unique enough to avoid rate-limit key collisions.
+    const hex = randomId().replace(/-/g, "");
+    const a = (parseInt(hex.slice(0, 2), 16) % 250) + 1;
+    const b = (parseInt(hex.slice(2, 4), 16) % 250) + 1;
+    const c = (parseInt(hex.slice(4, 6), 16) % 250) + 1;
+    return `10.${a}.${b}.${c}`;
+  }
+
   const policyRes = await request.put("/api/v1/policies", {
-    headers: { "x-owner-id": ownerId },
+    // Many owner-scoped routes fall back to IP for rate limiting when no agentId is present.
+    // Use a unique IP per call to prevent cross-test interference when Upstash state persists.
+    headers: { "x-owner-id": ownerId, "x-forwarded-for": randomTestIp() },
     data: {
       budgets: { max_offer: 1000, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
@@ -345,5 +356,108 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     const types = new Set((feeLedger || []).map((r: any) => r.type));
     expect(types.has("PLATFORM_FEE")).toBe(true);
     expect(types.has("NET_TO_SELLER")).toBe(true);
+  });
+
+  test("early payment webhook is replayed by pay (TI-257)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+
+    const sellerOwnerId = randomId();
+    await ensureOwnerDb(supabase, sellerOwnerId);
+    await setupPolicy(request, sellerOwnerId);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
+    const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+    await expectStatus(
+      await configurePsp(
+        request,
+        OPS_CONSOLE_OWNER_ID,
+        { provider: "mock", mode: "sandbox", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 },
+        { idempotencyKey: randomId() }
+      ),
+      200
+    );
+
+    // Build escrow but DO NOT call /pay yet.
+    const listingRes = await createListing(request, sellerApiKey, { title: `Early payment listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const offerRes = await createOffer(request, buyerApiKey, listingId, { threadId: null, amount: 250, currency: "EUR", expiresAt }, { idempotencyKey: randomId() });
+    await expectStatus(offerRes, 201);
+    const offerId = (await offerRes.json()).offer_id;
+
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    await expectStatus(acceptRes, 200);
+    const txId = (await acceptRes.json()).transaction?.tx_id;
+
+    const escrowRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(escrowRes, 201);
+    const escrowId = (await escrowRes.json()).escrow_id;
+
+    // Send payment.succeeded BEFORE /pay (the payment_id is predictable: mock_pay_{escrowId})
+    const earlyPaymentWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payment.succeeded",
+      created_at: new Date().toISOString(),
+      data: { payment_id: `mock_pay_${escrowId}`, hold_id: `hold_${randomId()}`, hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString() }
+    };
+    const earlyRes = await postPspWebhook(request, { signature: signWebhook(earlyPaymentWebhook), body: earlyPaymentWebhook });
+    await expectStatus(earlyRes, 200);
+    const earlyBody = await earlyRes.json();
+    expect(earlyBody.deferred).toBe(true); // webhook stored as PENDING_RETRY
+
+    // Escrow should still be CREATED (payment_id not set yet)
+    const { data: escrowBeforePay } = await supabase.from("escrows").select("status,psp_payment_id").eq("escrow_id", escrowId).maybeSingle();
+    expect(escrowBeforePay?.status).toBe("CREATED");
+    expect(escrowBeforePay?.psp_payment_id).toBeNull();
+
+    // /pay should claim the orphaned webhook and replay it -> HOLD
+    const payRes = await payEscrow(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(payRes, 200);
+
+    const { data: escrowAfter, error: escrowErr } = await supabase
+      .from("escrows")
+      .select("escrow_id,status,psp_payment_id,psp_hold_id,hold_expires_at")
+      .eq("escrow_id", escrowId)
+      .maybeSingle();
+    if (escrowErr) throw escrowErr;
+    expect(escrowAfter?.status).toBe("HOLD");
+    expect(escrowAfter?.psp_payment_id).toBe(`mock_pay_${escrowId}`);
+    expect(escrowAfter?.psp_hold_id).toBeTruthy();
+
+    // Verify the orphaned webhook event was claimed and applied
+    const { data: webhookEvent } = await supabase
+      .from("psp_webhook_events")
+      .select("psp_event_id,status,escrow_id")
+      .eq("psp_event_id", earlyPaymentWebhook.id)
+      .maybeSingle();
+    expect(webhookEvent?.status).toBe("APPLIED");
+    expect(webhookEvent?.escrow_id).toBe(escrowId);
+
+    // Verify ledger entry: GROSS exists (hold was applied)
+    const { data: grossLedger } = await supabase
+      .from("ledger_entries")
+      .select("type")
+      .eq("escrow_id", escrowId)
+      .eq("type", "GROSS");
+    expect((grossLedger || []).length).toBe(1);
   });
 });

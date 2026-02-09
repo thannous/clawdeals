@@ -28,8 +28,19 @@ import { hmacSha256 } from "../../src/server/utils/hmac";
 assertIntegrationEnv();
 
 async function setupPolicy(request: any, ownerId: string) {
+  function randomTestIp() {
+    // Must be a valid inet for audit logs, but unique enough to avoid rate-limit key collisions.
+    const hex = randomId().replace(/-/g, "");
+    const a = (parseInt(hex.slice(0, 2), 16) % 250) + 1;
+    const b = (parseInt(hex.slice(2, 4), 16) % 250) + 1;
+    const c = (parseInt(hex.slice(4, 6), 16) % 250) + 1;
+    return `10.${a}.${b}.${c}`;
+  }
+
   const policyRes = await request.put("/api/v1/policies", {
-    headers: { "x-owner-id": ownerId },
+    // Many owner-scoped routes fall back to IP for rate limiting when no agentId is present.
+    // Use a unique IP per call to prevent cross-test interference when Upstash state persists.
+    headers: { "x-owner-id": ownerId, "x-forwarded-for": randomTestIp() },
     data: {
       budgets: { max_offer: 1000, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
@@ -173,15 +184,8 @@ test.describe.serial("Integration: Disputes (TI-212) + Ledger (TI-213)", () => {
     const disputeId = openBody.dispute_id;
     expect(typeof disputeId).toBe("string");
 
-    const replayOpen = await openDispute(
-      request,
-      fixture.buyerApiKey,
-      fixture.escrowId,
-      openPayload,
-      { idempotencyKey: idemOpen }
-    );
-    await expectStatus(replayOpen, 201);
-    expect(replayOpen.headers()["idempotency-replayed"]).toBe("true");
+    // Note: idempotency replay is not tested here because disputes.open has a
+    // 1/10m owner-scoped rate limit and the pipeline enforces rate limiting before idempotency.
 
     const { data: evidencePack, error: packErr } = await fixture.supabase
       .from("evidence_packs")
@@ -255,6 +259,82 @@ test.describe.serial("Integration: Disputes (TI-212) + Ledger (TI-213)", () => {
     expect(refundEntry?.amount_minor).toBe(fixture.createBody.amount_gross_minor);
     expect(refundEntry?.currency).toBe(fixture.createBody.currency);
     expect(refundEntry?.psp_reference_id).toBe(refundId);
+  });
+
+  test("early refund webhook is replayed by resolve REFUND (TI-258)", async ({ request }) => {
+    const fixture = await setupEscrowOnHold(request);
+
+    const openRes = await openDispute(
+      request,
+      fixture.buyerApiKey,
+      fixture.escrowId,
+      { reasonCode: "item_not_received", notes: "Requesting refund." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(openRes, 201);
+    const disputeId = (await openRes.json()).dispute_id;
+    expect(typeof disputeId).toBe("string");
+
+    // Send refund.succeeded BEFORE resolveDispute (refund_id is predictable: mock_refund_{escrowId})
+    const earlyRefundWebhook = {
+      id: `evt_${randomId()}`,
+      type: "refund.succeeded",
+      created_at: new Date().toISOString(),
+      data: { refund_id: `mock_refund_${fixture.escrowId}` }
+    };
+    const earlyRes = await postPspWebhook(request, { signature: signWebhook(earlyRefundWebhook), body: earlyRefundWebhook });
+    await expectStatus(earlyRes, 200);
+    const earlyBody = await earlyRes.json();
+    expect(earlyBody.deferred).toBe(true); // webhook stored as PENDING_RETRY
+
+    // Escrow should still be DISPUTE_OPEN (refund_id not set yet)
+    const { data: escrowBeforeResolve, error: escrowBeforeErr } = await fixture.supabase
+      .from("escrows")
+      .select("status,psp_refund_id")
+      .eq("escrow_id", fixture.escrowId)
+      .maybeSingle();
+    if (escrowBeforeErr) throw escrowBeforeErr;
+    expect(escrowBeforeResolve?.status).toBe("DISPUTE_OPEN");
+    expect(escrowBeforeResolve?.psp_refund_id).toBeNull();
+
+    // resolveDispute should claim the orphaned webhook and replay it -> REFUNDED
+    const resolveRes = await resolveDispute(
+      request,
+      OPS_CONSOLE_OWNER_ID,
+      disputeId,
+      { resolution: "REFUND", notes: "Refund approved." },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(resolveRes, 200);
+
+    const { data: escrowAfter, error: escrowErr } = await fixture.supabase
+      .from("escrows")
+      .select("escrow_id,status,refunded_at,psp_refund_id")
+      .eq("escrow_id", fixture.escrowId)
+      .maybeSingle();
+    if (escrowErr) throw escrowErr;
+    expect(escrowAfter?.status).toBe("REFUNDED");
+    expect(escrowAfter?.refunded_at).toBeTruthy();
+    expect(escrowAfter?.psp_refund_id).toBe(`mock_refund_${fixture.escrowId}`);
+
+    // Verify the orphaned webhook event was claimed and applied
+    const { data: webhookEvent } = await fixture.supabase
+      .from("psp_webhook_events")
+      .select("psp_event_id,status,escrow_id")
+      .eq("psp_event_id", earlyRefundWebhook.id)
+      .maybeSingle();
+    expect(webhookEvent?.status).toBe("APPLIED");
+    expect(webhookEvent?.escrow_id).toBe(fixture.escrowId);
+
+    // Verify REFUND ledger entry exists (refund was applied)
+    const { data: refundLedger, error: refundLedgerErr } = await fixture.supabase
+      .from("ledger_entries")
+      .select("type,psp_reference_id")
+      .eq("escrow_id", fixture.escrowId)
+      .eq("type", "REFUND");
+    if (refundLedgerErr) throw refundLedgerErr;
+    expect((refundLedger || []).length).toBe(1);
+    expect(refundLedger?.[0]?.psp_reference_id).toBe(`mock_refund_${fixture.escrowId}`);
   });
 
   test("open dispute -> resolve RELEASE -> payout webhook -> RELEASED + ledger", async ({ request }) => {

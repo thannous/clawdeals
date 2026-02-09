@@ -7,7 +7,7 @@ import { getAgentById } from "../../../../../server/services/agents";
 import { getPspConfig } from "../../../../../server/services/psp-config";
 import { createPspAdapter } from "../../../../../server/psp";
 import { getOpsConsoleOwnerId } from "../../../../../server/config/ops";
-import { getDisputeById, resolveDispute } from "../../../../../server/services/disputes";
+import { beginResolveDispute, getDisputeById, resolveDispute } from "../../../../../server/services/disputes";
 import { claimOrphanedPspWebhookEvents } from "../../../../../server/services/psp-webhook-events";
 import { replayPendingEscrowEvents } from "../../../../../server/services/psp-webhook-replay";
 import {
@@ -127,24 +127,6 @@ export async function handler(req, res, ctx) {
     }
 
     try {
-      // Fast idempotency: do not trigger PSP twice if already resolved.
-      if (dispute.status === "RESOLVED") {
-        if (String(dispute.resolution) !== resolutionRaw) {
-          return jsonResponse(409, errorPayload("DISPUTE_ALREADY_RESOLVED", "Dispute already resolved"));
-        }
-        return jsonResponse(200, {
-          dispute_id: dispute.dispute_id,
-          status: dispute.status,
-          resolution: dispute.resolution,
-          resolved_at: dispute.resolved_at,
-          escrow_status: escrow.status,
-          psp: {
-            payout_id: escrow.psp_payout_id || null,
-            refund_id: escrow.psp_refund_id || null
-          }
-        });
-      }
-
       const config = await getPspConfig();
       if (!config) {
         return jsonResponse(409, errorPayload("PSP_NOT_CONFIGURED", "PSP not configured"));
@@ -157,6 +139,27 @@ export async function handler(req, res, ctx) {
       const paymentId = escrow.psp_payment_id ? String(escrow.psp_payment_id) : null;
       if (!paymentId) {
         return jsonResponse(409, errorPayload("ESCROW_NOT_READY", "Escrow payment not initialized"));
+      }
+
+      // Concurrency guard: mark the dispute as in-progress before triggering any PSP side-effects.
+      // This prevents overlapping resolve requests from issuing duplicate payout/refund calls.
+      const begin = await beginResolveDispute({ disputeId: String(disputeId) });
+      if (begin.state === "already_resolved") {
+        const d: any = begin.dispute;
+        if (String(d.resolution) !== resolutionRaw) {
+          return jsonResponse(409, errorPayload("DISPUTE_ALREADY_RESOLVED", "Dispute already resolved"));
+        }
+        return jsonResponse(200, {
+          dispute_id: d.dispute_id,
+          status: d.status,
+          resolution: d.resolution,
+          resolved_at: d.resolved_at,
+          escrow_status: escrow.status,
+          psp: {
+            payout_id: escrow.psp_payout_id || null,
+            refund_id: escrow.psp_refund_id || null
+          }
+        });
       }
 
       const adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });

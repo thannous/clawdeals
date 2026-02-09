@@ -123,3 +123,44 @@ export async function resolveDispute({
   return data;
 }
 
+export async function beginResolveDispute({ disputeId }: { disputeId: string }) {
+  const client = getSupabaseServiceClient();
+  const nowIso = new Date().toISOString();
+
+  // Atomically "claim" the dispute for resolution so concurrent resolve calls
+  // can't both trigger PSP side-effects.
+  const { data: updated, error: updateError } = await client
+    .from("disputes")
+    .update({ status: "UNDER_REVIEW", updated_at: nowIso })
+    .eq("dispute_id", disputeId)
+    .eq("status", "OPEN")
+    .select("*")
+    .maybeSingle();
+
+  if (updateError) {
+    mapError(updateError);
+  }
+  if (updated) {
+    return { state: "locked" as const, dispute: updated };
+  }
+
+  const current = await getDisputeById(disputeId);
+  if (!current) {
+    throw Object.assign(new Error("Dispute not found"), { status: 404, code: "DISPUTE_NOT_FOUND" });
+  }
+  if (current.status === "RESOLVED") {
+    return { state: "already_resolved" as const, dispute: current };
+  }
+  if (current.status === "UNDER_REVIEW") {
+    throw Object.assign(new Error("Dispute resolution in progress"), {
+      status: 409,
+      code: "DISPUTE_RESOLUTION_IN_PROGRESS"
+    });
+  }
+
+  throw Object.assign(new Error("Dispute not resolvable in current state"), {
+    status: 409,
+    code: "INVALID_STATE",
+    details: { status: current.status }
+  });
+}
