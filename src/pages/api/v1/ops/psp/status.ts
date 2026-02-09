@@ -2,6 +2,7 @@ import { withApiMiddlewares } from "../../../../../server/middleware/with-api-mi
 import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
+import { getOpsConsoleOwnerId } from "../../../../../server/config/ops";
 import { getPspConfig } from "../../../../../server/services/psp-config";
 import { isUuid } from "../../../../../server/utils/validators";
 
@@ -21,6 +22,10 @@ export async function handler(req, res, ctx) {
   const ownerId = ctx?.ownerId || null;
   if (!ownerId || !isUuid(ownerId)) {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+  }
+
+  if (ownerId !== getOpsConsoleOwnerId()) {
+    return jsonResponse(403, errorPayload("PERMISSION_DENIED", "Permission denied"));
   }
 
   if (ctx) {
@@ -46,4 +51,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler, { routeGroup: "ops.psp.read" });
-

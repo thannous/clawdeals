@@ -2,6 +2,7 @@ import { withApiMiddlewares } from "../../../../../server/middleware/with-api-mi
 import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
+import { getOpsConsoleOwnerId } from "../../../../../server/config/ops";
 import { upsertPspConfig } from "../../../../../server/services/psp-config";
 import { isUuid } from "../../../../../server/utils/validators";
 
@@ -47,6 +48,10 @@ export async function handler(req, res, ctx) {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
   }
 
+  if (ownerId !== getOpsConsoleOwnerId()) {
+    return jsonResponse(403, errorPayload("PERMISSION_DENIED", "Permission denied"));
+  }
+
   const idempotencyKey = getHeaderValue(req, "idempotency-key");
   if (!idempotencyKey) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
@@ -54,35 +59,44 @@ export async function handler(req, res, ctx) {
 
   const body = req.body || {};
 
+  let provider: string;
+  let mode: string;
+  let webhookSecretRef: string;
+  let platformFeeBpsDefault: number;
+
   try {
-    const provider = parseNonEmptyString(body.provider, "provider");
-    const mode = parseNonEmptyString(body.mode, "mode");
-    const webhookSecretRef = parseNonEmptyString(body.webhook_secret_ref, "webhook_secret_ref");
-    const platformFeeBpsDefault = parseInteger(body.platform_fee_bps_default, "platform_fee_bps_default");
+    provider = parseNonEmptyString(body.provider, "provider");
+    mode = parseNonEmptyString(body.mode, "mode");
+    webhookSecretRef = parseNonEmptyString(body.webhook_secret_ref, "webhook_secret_ref");
+    platformFeeBpsDefault = parseInteger(body.platform_fee_bps_default, "platform_fee_bps_default");
+  } catch (error) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+  }
 
-    if (provider !== "mock") {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "provider must be 'mock'"));
-    }
-    if (mode !== "sandbox" && mode !== "production") {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mode must be 'sandbox' or 'production'"));
-    }
-    if (!webhookSecretRef.startsWith("env:")) {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "webhook_secret_ref must start with 'env:'"));
-    }
-    if (platformFeeBpsDefault < 0 || platformFeeBpsDefault > 2000) {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "platform_fee_bps_default must be between 0 and 2000"));
-    }
+  if (provider !== "mock") {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "provider must be 'mock'"));
+  }
+  if (mode !== "sandbox" && mode !== "production") {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mode must be 'sandbox' or 'production'"));
+  }
+  if (!webhookSecretRef.startsWith("env:")) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "webhook_secret_ref must start with 'env:'"));
+  }
+  if (platformFeeBpsDefault < 0 || platformFeeBpsDefault > 2000) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "platform_fee_bps_default must be between 0 and 2000"));
+  }
 
-    if (ctx) {
-      ctx.auditEvent = "psp.configured";
-      ctx.body = {
-        provider,
-        mode,
-        webhook_secret_ref: webhookSecretRef,
-        platform_fee_bps_default: platformFeeBpsDefault
-      };
-    }
+  if (ctx) {
+    ctx.auditEvent = "psp.configured";
+    ctx.body = {
+      provider,
+      mode,
+      webhook_secret_ref: webhookSecretRef,
+      platform_fee_bps_default: platformFeeBpsDefault
+    };
+  }
 
+  try {
     const config = await upsertPspConfig({
       provider,
       mode,
@@ -96,9 +110,8 @@ export async function handler(req, res, ctx) {
       mode: config.mode
     });
   } catch (error) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 }
 
 export default withApiMiddlewares(handler, { routeGroup: "ops.psp.write" });
-
