@@ -32,18 +32,25 @@ const AUDIT_VARIANTS: Record<string, string> = {
   UNKNOWN: "border-border-strong text-subtle bg-surface-alt",
 };
 
+const CHANNEL_VARIANTS: Record<string, string> = {
+  PENDING: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  ACTIVE: "border-secondary/40 text-secondary bg-secondary/10",
+  REVOKED: "border-red-400/40 text-red-400 bg-red-400/10",
+};
+
 const VARIANT_MAPS: Record<string, Record<string, string>> = {
   listing: LISTING_VARIANTS,
   thread: THREAD_VARIANTS,
   approval: APPROVAL_VARIANTS,
   audit: AUDIT_VARIANTS,
+  channel: CHANNEL_VARIANTS,
 };
 
 const FALLBACK = "border-border text-muted bg-surface-alt";
 
 interface Props {
   value: string;
-  variant?: "listing" | "thread" | "approval" | "audit";
+  variant?: "listing" | "thread" | "approval" | "audit" | "channel";
 }
 
 export default function ConsoleStatusBadge({ value, variant = "listing" }: Props) {
