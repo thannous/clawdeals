@@ -1,0 +1,94 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+
+const store = new Map<string, string>();
+const mockRedis = {
+  get: vi.fn(async (key: string) => store.get(key) ?? null),
+  set: vi.fn(async (key: string, value: string) => {
+    store.set(key, value);
+    return "OK";
+  }),
+  del: vi.fn(async (key: string) => {
+    store.delete(key);
+    return 1;
+  })
+};
+
+vi.mock("../redis/upstash", () => ({
+  getRedis: () => mockRedis
+}));
+
+vi.mock("../utils/api-keys", async () => {
+  const actual: any = await vi.importActual("../utils/api-keys");
+  return {
+    ...actual,
+    verifyApiKeySecret: vi.fn(async () => true)
+  };
+});
+
+const maybeSingle = vi.fn();
+const eq = vi.fn(() => ({ maybeSingle }));
+const select = vi.fn(() => ({ eq }));
+const from = vi.fn(() => ({ select }));
+
+vi.mock("../db/supabase", () => ({
+  getSupabaseServiceClient: () => ({
+    from
+  })
+}));
+
+import { authenticateApiKey } from "./api-keys";
+
+const API_KEY = "cd_live_abcdefgh.secret";
+
+describe("authenticateApiKey (auth cache)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    store.clear();
+    maybeSingle.mockResolvedValue({
+      data: {
+        api_key_id: "key-1",
+        agent_id: "agent-1",
+        key_hash: "hash",
+        key_state: "ACTIVE",
+        grace_expires_at: null,
+        revoked_at: null,
+        agents: { owner_id: "owner-1" }
+      },
+      error: null
+    });
+  });
+
+  it("caches the DB lookup by key prefix (second call skips Supabase)", async () => {
+    const first: any = await authenticateApiKey(API_KEY);
+    expect(first.ok).toBe(true);
+    expect(first.agentId).toBe("agent-1");
+    expect(first.ownerId).toBe("owner-1");
+    expect(first.apiKeyId).toBe("key-1");
+
+    const second: any = await authenticateApiKey(API_KEY);
+    expect(second.ok).toBe(true);
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(maybeSingle).toHaveBeenCalledTimes(1);
+  });
+
+  it("purges cached revoked keys", async () => {
+    maybeSingle.mockResolvedValueOnce({
+      data: {
+        api_key_id: "key-1",
+        agent_id: "agent-1",
+        key_hash: "hash",
+        key_state: "REVOKED",
+        grace_expires_at: null,
+        revoked_at: "2026-02-09T10:00:00.000Z",
+        agents: { owner_id: "owner-1" }
+      },
+      error: null
+    });
+
+    const result: any = await authenticateApiKey(API_KEY);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("revoked");
+    expect(mockRedis.set).not.toHaveBeenCalled();
+  });
+});
+

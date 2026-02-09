@@ -8,6 +8,11 @@ import {
   parseApiKey,
   verifyApiKeySecret
 } from "../utils/api-keys";
+import {
+  deleteCachedApiKeyAuthRecord,
+  getCachedApiKeyAuthRecord,
+  setCachedApiKeyAuthRecord
+} from "./api-key-auth-cache";
 
 const KEY_PREFIX_UNIQUE_CONSTRAINT = "api_keys_key_prefix_unique";
 const MAX_KEY_GENERATION_ATTEMPTS = 5;
@@ -92,11 +97,54 @@ export async function authenticateApiKey(apiKey) {
     return { ok: false, reason: "invalid_format" };
   }
 
+  const prefix = parsed.prefix;
+
+  const cached = await getCachedApiKeyAuthRecord(prefix);
+  if (cached) {
+    const matches = await verifyApiKeySecret(parsed.secret, cached.key_hash);
+    if (!matches) {
+      await deleteCachedApiKeyAuthRecord(prefix);
+      return { ok: false, reason: "mismatch" };
+    }
+
+    if (cached.key_state === "REVOKED" || cached.revoked_at) {
+      await deleteCachedApiKeyAuthRecord(prefix);
+      return { ok: false, reason: "revoked" };
+    }
+
+    if (cached.key_state === "GRACE") {
+      if (!cached.grace_expires_at) {
+        await revokeApiKeyRecord(cached.api_key_id);
+        await deleteCachedApiKeyAuthRecord(prefix);
+        return { ok: false, reason: "expired" };
+      }
+      const expiry = new Date(cached.grace_expires_at);
+      if (Number.isNaN(expiry.getTime()) || expiry.getTime() <= Date.now()) {
+        await revokeApiKeyRecord(cached.api_key_id);
+        await deleteCachedApiKeyAuthRecord(prefix);
+        return { ok: false, reason: "expired" };
+      }
+    }
+
+    if (cached.key_state !== "ACTIVE" && cached.key_state !== "GRACE") {
+      await deleteCachedApiKeyAuthRecord(prefix);
+      return { ok: false, reason: "invalid_state" };
+    }
+
+    return {
+      ok: true,
+      agentId: cached.agent_id,
+      ownerId: cached.owner_id || null,
+      apiKeyId: cached.api_key_id,
+      keyState: cached.key_state
+    };
+  }
+
   const client = getSupabaseServiceClient();
   const { data, error } = await client
     .from("api_keys")
     .select("api_key_id, agent_id, key_hash, key_state, grace_expires_at, revoked_at, agents ( owner_id )")
-    .eq("key_prefix", parsed.prefix)
+    .eq("key_prefix", prefix)
     .maybeSingle();
 
   if (error) {
@@ -131,6 +179,16 @@ export async function authenticateApiKey(apiKey) {
     return { ok: false, reason: "invalid_state" };
   }
 
+  await setCachedApiKeyAuthRecord(prefix, {
+    api_key_id: data.api_key_id,
+    agent_id: data.agent_id,
+    owner_id: data.agents?.owner_id || null,
+    key_hash: data.key_hash,
+    key_state: data.key_state,
+    grace_expires_at: data.grace_expires_at || null,
+    revoked_at: data.revoked_at || null
+  });
+
   return {
     ok: true,
     agentId: data.agent_id,
@@ -148,7 +206,7 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
   const client = getSupabaseServiceClient();
   const { data: keys, error } = await client
     .from("api_keys")
-    .select("api_key_id, key_state")
+    .select("api_key_id, key_state, key_prefix")
     .eq("agent_id", agentId)
     .in("key_state", ["ACTIVE", "GRACE"]);
 
@@ -166,6 +224,9 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
 
   const graceKey = keys?.find((key) => key.key_state === "GRACE");
   if (graceKey) {
+    if (graceKey.key_prefix) {
+      await deleteCachedApiKeyAuthRecord(graceKey.key_prefix);
+    }
     const { error: revokeError } = await client
       .from("api_keys")
       .update({
@@ -196,6 +257,9 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
   }
   if (!updated) {
     throw buildServiceError("API key rotation conflict", 409, "CONFLICT");
+  }
+  if (activeKey.key_prefix) {
+    await deleteCachedApiKeyAuthRecord(activeKey.key_prefix);
   }
 
   try {
@@ -243,7 +307,7 @@ export async function revokeApiKeyForAgent({ agentId, apiKeyId, revokedAt = new 
     })
     .eq("api_key_id", apiKeyId)
     .eq("agent_id", agentId)
-    .select("api_key_id, revoked_at")
+    .select("api_key_id, revoked_at, key_prefix")
     .maybeSingle();
 
   if (error) {
@@ -251,6 +315,10 @@ export async function revokeApiKeyForAgent({ agentId, apiKeyId, revokedAt = new 
   }
   if (!data) {
     throw buildServiceError("API key not found", 404, "NOT_FOUND");
+  }
+
+  if (data.key_prefix) {
+    await deleteCachedApiKeyAuthRecord(data.key_prefix);
   }
 
   return data;

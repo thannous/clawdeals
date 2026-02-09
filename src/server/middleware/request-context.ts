@@ -18,6 +18,7 @@ export function createRequestContext(req) {
   const requestId = safeHeader(req, "x-request-id") || crypto.randomUUID();
   const method = req.method || "GET";
   const path = req.url ? req.url.split("?")[0] : "";
+  const origin = safeHeader(req, "x-clawdeals-origin") || null;
 
   return {
     requestId,
@@ -26,6 +27,7 @@ export function createRequestContext(req) {
     userAgent: safeHeader(req, "user-agent") || "",
     method,
     path,
+    origin,
     query: req.query || {},
     body: req.body,
     canonicalBody: "",

@@ -103,6 +103,14 @@ function inferOutcome(ctx) {
 
 function buildAuditEvent(ctx) {
   const entity = inferAuditEntity(ctx);
+  const security: any = {
+    ...(ctx.security || {})
+  };
+  if (security.origin === undefined || security.origin === null) {
+    if (ctx.origin) {
+      security.origin = ctx.origin;
+    }
+  }
   return {
     occurredAt: new Date().toISOString(),
     actor: ctx.actor,
@@ -128,7 +136,7 @@ function buildAuditEvent(ctx) {
       entity_type: entity.entityType,
       entity_id: entity.entityId
     },
-    security: ctx.security || {},
+    security,
     policy: ctx.policy || {},
     payload: ctx.body || {},
     rateLimit: ctx.rateLimit || null,

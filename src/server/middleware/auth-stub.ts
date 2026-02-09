@@ -26,38 +26,40 @@ export async function applyAuthStub(req, ctx) {
   ctx.authError = null;
 
   const authHeader = safeHeader(req, "authorization");
-  if (authHeader) {
-    const bearer = parseBearerToken(authHeader);
-    if (!bearer) {
-      ctx.authError = {
-        status: 401,
-        code: "UNAUTHORIZED",
-        message: "Invalid Authorization header"
-      };
-      return ctx;
-    }
+  const apiKeyHeader = safeHeader(req, "x-clawdeals-api-key");
 
-    if (shouldTreatAsApiKey(bearer)) {
-      try {
-        const result = await authenticateApiKey(bearer);
-        if (result?.ok) {
-          ctx.agentId = result.agentId;
-          ctx.ownerId = result.ownerId || null;
-          ctx.apiKeyId = result.apiKeyId;
-          ctx.apiKeyState = result.keyState;
-          ctx.actor = { type: "agent", id: result.agentId };
-          return ctx;
-        }
-        ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid API key" };
-        return ctx;
-      } catch (error) {
-        ctx.authError = {
-          status: error.status || 500,
-          code: error.code || "ERROR",
-          message: error.message || "Authentication failed"
-        };
+  // Prefer Authorization when present, fall back to the explicit API key header.
+  const rawToken = authHeader ? parseBearerToken(authHeader) : apiKeyHeader;
+
+  if (authHeader && !rawToken) {
+    ctx.authError = {
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid Authorization header"
+    };
+    return ctx;
+  }
+
+  if (rawToken && shouldTreatAsApiKey(rawToken)) {
+    try {
+      const result = await authenticateApiKey(rawToken);
+      if (result?.ok) {
+        ctx.agentId = result.agentId;
+        ctx.ownerId = result.ownerId || null;
+        ctx.apiKeyId = result.apiKeyId;
+        ctx.apiKeyState = result.keyState;
+        ctx.actor = { type: "agent", id: result.agentId };
         return ctx;
       }
+      ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid API key" };
+      return ctx;
+    } catch (error) {
+      ctx.authError = {
+        status: error.status || 500,
+        code: error.code || "ERROR",
+        message: error.message || "Authentication failed"
+      };
+      return ctx;
     }
   }
 
