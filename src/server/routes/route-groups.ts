@@ -132,6 +132,26 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/watchlists(?:\/.*)?$/
   },
   {
+    group: "chat.commands.stage",
+    methods: ["POST"],
+    pattern: /^\/v1\/chat\/commands:stage$/
+  },
+  {
+    group: "chat.commands.confirm",
+    methods: ["POST"],
+    pattern: /^\/v1\/chat\/commands\/[^/]+:confirm$/
+  },
+  {
+    group: "chat.commands.cancel",
+    methods: ["POST"],
+    pattern: /^\/v1\/chat\/commands\/[^/]+:cancel$/
+  },
+  {
+    group: "chat.commands.undo",
+    methods: ["POST"],
+    pattern: /^\/v1\/chat\/commands\/[^/]+:undo$/
+  },
+  {
     group: "listings.create",
     methods: ["POST"],
     pattern: /^\/v1\/listings$/

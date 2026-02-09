@@ -83,6 +83,30 @@ export const RATE_LIMIT_PROFILES = {
   "watchlists.read": {
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+  "chat.commands.stage": {
+    buckets: [
+      { limit: 30, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
+  "chat.commands.confirm": {
+    buckets: [
+      { limit: 30, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
+  "chat.commands.cancel": {
+    buckets: [
+      { limit: 60, windowSeconds: MINUTE },
+      { limit: 300, windowSeconds: HOUR },
+    ],
+  },
+  "chat.commands.undo": {
+    buckets: [
+      { limit: 30, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
   "watchlist.match": {
     buckets: [{ limit: 60, windowSeconds: MINUTE }],
   },

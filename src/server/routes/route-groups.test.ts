@@ -82,4 +82,13 @@ describe("route groups", () => {
     expect(matchRouteGroup("POST", "/api/v1/channels/telegram/webhook", sp)).toBe("channels.telegram.webhook");
     expect(matchRouteGroup("POST", "/api/v1/channels/telegram/webhook/secret", sp)).toBe("channels.telegram.webhook");
   });
+
+  it("matches chat staged commands (TI-298)", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+    expect(matchRouteGroup("POST", "/api/v1/chat/commands:stage", sp)).toBe("chat.commands.stage");
+    expect(matchRouteGroup("POST", `/api/v1/chat/commands/${id}:confirm`, sp)).toBe("chat.commands.confirm");
+    expect(matchRouteGroup("POST", `/api/v1/chat/commands/${id}:cancel`, sp)).toBe("chat.commands.cancel");
+    expect(matchRouteGroup("POST", `/api/v1/chat/commands/${id}:undo`, sp)).toBe("chat.commands.undo");
+  });
 });
