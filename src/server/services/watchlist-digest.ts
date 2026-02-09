@@ -3,6 +3,8 @@ import { mapSupabaseError } from "./supabase-errors";
 import { publishSseEvent } from "../sse/store";
 import { WATCHLIST_MATCH_EVENT_MAX_IDS } from "../config/watchlists";
 
+const DELIVERED_AT_UPDATE_CHUNK_SIZE = 200;
+
 function buildServiceError(message, status = 500, code = "ERROR") {
   const error: any = new Error(message);
   error.status = status;
@@ -21,12 +23,45 @@ function toPositiveInt(value: any, fallback: number) {
   return n;
 }
 
-async function markDelivered({ client, matchIds, deliveredAt }: any = {}) {
-  if (!Array.isArray(matchIds) || matchIds.length === 0) return;
-  const { error } = await client.from("watchlist_matches").update({ delivered_at: deliveredAt }).in("watchlist_match_id", matchIds);
-  if (error) {
-    console.info("watchlist.digest_delivered_at_update_failed", { error: error.message || String(error) });
+function chunkArray<T>(items: T[], chunkSize: number) {
+  const size = Math.max(1, Number.isFinite(chunkSize) ? Math.floor(chunkSize) : 1);
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
   }
+  return chunks;
+}
+
+export async function markWatchlistMatchesDelivered({
+  client,
+  matchIds,
+  deliveredAt,
+  chunkSize = DELIVERED_AT_UPDATE_CHUNK_SIZE
+}: any = {}) {
+  const ids = Array.isArray(matchIds) ? matchIds.filter(Boolean) : [];
+  if (ids.length === 0) return { ok: true, updated: 0 };
+
+  const uniqueIds = Array.from(new Set(ids));
+  const chunks = chunkArray(uniqueIds, chunkSize);
+
+  let updated = 0;
+  for (const chunk of chunks) {
+    const { error } = await client
+      .from("watchlist_matches")
+      .update({ delivered_at: deliveredAt })
+      .in("watchlist_match_id", chunk);
+    if (error) {
+      console.info("watchlist.digest_delivered_at_update_failed", {
+        error: error.message || String(error),
+        chunk_size: chunk.length,
+        total_ids: uniqueIds.length
+      });
+      continue;
+    }
+    updated += chunk.length;
+  }
+
+  return { ok: true, updated };
 }
 
 export async function runWatchlistDigest({
@@ -135,9 +170,12 @@ export async function runWatchlistDigest({
     eventsSent += 1;
 
     if (result?.ok) {
-      const unique = Array.from(new Set(matchIdsToMark));
-      await markDelivered({ client: supabase, matchIds: unique, deliveredAt: nowIso });
-      deliveredCount += unique.length;
+      const delivered = await markWatchlistMatchesDelivered({
+        client: supabase,
+        matchIds: matchIdsToMark,
+        deliveredAt: nowIso
+      });
+      deliveredCount += delivered?.updated || 0;
     } else {
       console.info("watchlist.digest_sse_failed", { agent_id: agentId, result });
     }
@@ -145,4 +183,3 @@ export async function runWatchlistDigest({
 
   return { ok: true, rows: rows.length, agents: byAgent.size, events_sent: eventsSent, delivered: deliveredCount };
 }
-
