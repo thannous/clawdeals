@@ -23,15 +23,16 @@ Windows (defaults, configurable via env):
 
 SLO:
 
-- `v1_api_availability_5xx`: success is “not 5xx”, measured over `/api/v1/%`.
-- Burn rate is computed from the 5xx error rate vs the allowed error rate `(1 - SLO_TARGET)`.
+- `v1_write_journeys_success_rate`: success is `outcome='SUCCESS'` for audited write journeys
+  (`action.event` in `deal.create, listing.create, offer.create` by default).
+- Burn rate is computed from the **bad** rate (anything not `SUCCESS`) vs the allowed bad rate `(1 - SLO_TARGET)`.
 
 ## Alerts Implemented
 
 These alert names are emitted in logs and included in the JSON `alerts[]` array when triggered.
 
-1. `slo.burn_rate.v1_5xx` (severity: `critical`)
-   - Condition: burn rate is above threshold in both fast and slow windows.
+1. `slo.burn_rate.v1_write_success` (severity: `critical`)
+   - Condition: burn rate is above threshold in both fast and slow windows (write journeys success rate).
    - Default thresholds:
      - Fast: `ALERTING_SLO_FAST_BURN_THRESHOLD=14.4`
      - Slow: `ALERTING_SLO_SLOW_BURN_THRESHOLD=6`
@@ -40,7 +41,7 @@ These alert names are emitted in logs and included in the JSON `alerts[]` array 
      - `ALERTING_SLO_SLOW_MIN_REQUESTS=100`
 
 2. `anomaly.5xx_spike.v1` (severity: `critical`)
-   - Condition: fast-window 5xx rate crosses an absolute threshold and is “spiky” vs slow window.
+   - Condition: fast-window 5xx rate (over `/api/v1/%`) crosses an absolute threshold and is “spiky” vs slow window.
    - Defaults:
      - `ALERTING_5XX_SPIKE_RATE_THRESHOLD=0.02` (2%)
      - `ALERTING_5XX_SPIKE_MIN_REQUESTS=50`
@@ -78,17 +79,18 @@ General first steps:
 2. Identify whether this is new and acute (fast window) vs sustained (slow window).
 3. Check for a recent deploy/config change around the alert start time.
 
-### `slo.burn_rate.v1_5xx`
+### `slo.burn_rate.v1_write_success`
 
 Meaning:
 
-- The v1 API is producing enough 5xx responses that it is consuming error budget at an unsustainable rate.
+- Critical write journeys are failing/being blocked enough to consume error budget at an unsustainable rate.
 
 Immediate actions:
 
 1. Find the failing route groups:
-   - Query `audit_logs` for 5xx in the fast window and group by `action.route_group` and `action.path`.
-2. Check upstream dependencies commonly involved in 5xx:
+   - Query `audit_logs` in the fast window, filter on `action.event IN ('deal.create','listing.create','offer.create')`
+     and `outcome <> 'SUCCESS'`, then group by `action.route_group` and `action.path`.
+2. Check upstream dependencies commonly involved in write failures:
    - Supabase availability and query latency
    - Redis/rate limiting and idempotency paths
    - PSP/webhook integrations (if failures align with payment endpoints)
@@ -157,7 +159,8 @@ Actions:
 
 All variables are optional; defaults are used if unset.
 
-- `ALERTING_SLO_TARGET` (default `0.999`)
+- `ALERTING_SLO_TARGET` (default `0.99`)
+- `ALERTING_SLO_EVENTS` (default `deal.create,listing.create,offer.create`)
 - `ALERTING_FAST_WINDOW_SECONDS` (default `300`)
 - `ALERTING_SLOW_WINDOW_SECONDS` (default `3600`)
 - `ALERTING_SLO_FAST_BURN_THRESHOLD` (default `14.4`)

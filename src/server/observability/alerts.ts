@@ -104,6 +104,37 @@ async function countAuditLogs({
   return typeof count === "number" ? count : 0;
 }
 
+async function countAuditLogsByEvents({
+  client,
+  fromIso,
+  toIso,
+  events,
+  outcomeEq
+}: {
+  client: any;
+  fromIso: string;
+  toIso: string;
+  events: string[];
+  outcomeEq?: string | null;
+}) {
+  let query = client
+    .from("audit_logs")
+    .select("id", { count: "exact", head: true })
+    .gte("occurred_at", fromIso)
+    .lt("occurred_at", toIso)
+    .in("action->>event", events);
+
+  if (outcomeEq) {
+    query = query.eq("outcome", outcomeEq);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    mapError(error);
+  }
+  return typeof count === "number" ? count : 0;
+}
+
 async function countTableRows({
   client,
   table,
@@ -175,7 +206,7 @@ export async function runObservabilityAlerts({
 
   const client = injectedClient || getSupabaseServiceClient();
 
-  const sloTargetDefault = 0.999; // 99.9% success (0.1% error budget)
+  const sloTargetDefault = 0.99; // 99.0% success (1.0% error budget)
   const sloTarget = Math.max(0.9, Math.min(0.9999, envNumber(env, "ALERTING_SLO_TARGET", sloTargetDefault)));
 
   const fastWindowSeconds = clampInt(envNumber(env, "ALERTING_FAST_WINDOW_SECONDS", 5 * 60), 60, 60 * 60);
@@ -206,7 +237,28 @@ export async function runObservabilityAlerts({
 
   const pathLike = "/api/v1/%";
 
-  const [totalFast, totalSlow, errors5xxFast, errors5xxSlow, errors429Fast, errors429Slow] = await Promise.all([
+  const sloEventsDefault = ["deal.create", "listing.create", "offer.create"];
+  const sloEvents =
+    typeof env.ALERTING_SLO_EVENTS === "string" && env.ALERTING_SLO_EVENTS.trim()
+      ? env.ALERTING_SLO_EVENTS.split(",").map((p: string) => p.trim()).filter(Boolean)
+      : sloEventsDefault;
+
+  const [
+    sloTotalFast,
+    sloTotalSlow,
+    sloSuccessFast,
+    sloSuccessSlow,
+    apiTotalFast,
+    apiTotalSlow,
+    api5xxFast,
+    api5xxSlow,
+    api429Fast,
+    api429Slow
+  ] = await Promise.all([
+    countAuditLogsByEvents({ client, fromIso: fastFromIso, toIso: nowIso, events: sloEvents }),
+    countAuditLogsByEvents({ client, fromIso: slowFromIso, toIso: nowIso, events: sloEvents }),
+    countAuditLogsByEvents({ client, fromIso: fastFromIso, toIso: nowIso, events: sloEvents, outcomeEq: "SUCCESS" }),
+    countAuditLogsByEvents({ client, fromIso: slowFromIso, toIso: nowIso, events: sloEvents, outcomeEq: "SUCCESS" }),
     countAuditLogs({ client, fromIso: fastFromIso, toIso: nowIso, pathLike }),
     countAuditLogs({ client, fromIso: slowFromIso, toIso: nowIso, pathLike }),
     countAuditLogs({ client, fromIso: fastFromIso, toIso: nowIso, pathLike, statusGte: "500", statusLt: "600" }),
@@ -215,49 +267,56 @@ export async function runObservabilityAlerts({
     countAuditLogs({ client, fromIso: slowFromIso, toIso: nowIso, pathLike, statusEq: "429" })
   ]);
 
-  const errorRate5xxFast = ratio(errors5xxFast, totalFast);
-  const errorRate5xxSlow = ratio(errors5xxSlow, totalSlow);
-  const burnRateFast = computeBurnRate(errorRate5xxFast, sloTarget);
-  const burnRateSlow = computeBurnRate(errorRate5xxSlow, sloTarget);
+  const sloBadFast = Math.max(0, sloTotalFast - sloSuccessFast);
+  const sloBadSlow = Math.max(0, sloTotalSlow - sloSuccessSlow);
+  const sloBadRateFast = ratio(sloBadFast, sloTotalFast);
+  const sloBadRateSlow = ratio(sloBadSlow, sloTotalSlow);
+  const sloBurnRateFast = computeBurnRate(sloBadRateFast, sloTarget);
+  const sloBurnRateSlow = computeBurnRate(sloBadRateSlow, sloTarget);
 
-  const errorRate429Fast = ratio(errors429Fast, totalFast);
-  const errorRate429Slow = ratio(errors429Slow, totalSlow);
+  const errorRate5xxFast = ratio(api5xxFast, apiTotalFast);
+  const errorRate5xxSlow = ratio(api5xxSlow, apiTotalSlow);
+  const errorRate429Fast = ratio(api429Fast, apiTotalFast);
+  const errorRate429Slow = ratio(api429Slow, apiTotalSlow);
 
   const alerts: Alert[] = [];
 
   const sloBurnTriggered =
-    burnRateFast !== null &&
-    burnRateSlow !== null &&
-    totalFast >= sloFastMinRequests &&
-    totalSlow >= sloSlowMinRequests &&
-    burnRateFast >= sloFastBurnThreshold &&
-    burnRateSlow >= sloSlowBurnThreshold;
+    sloBurnRateFast !== null &&
+    sloBurnRateSlow !== null &&
+    sloTotalFast >= sloFastMinRequests &&
+    sloTotalSlow >= sloSlowMinRequests &&
+    sloBurnRateFast >= sloFastBurnThreshold &&
+    sloBurnRateSlow >= sloSlowBurnThreshold;
 
   if (sloBurnTriggered) {
     alerts.push({
-      name: "slo.burn_rate.v1_5xx",
+      name: "slo.burn_rate.v1_write_success",
       severity: "critical",
-      message: "v1 API is burning error budget too fast (5xx rate).",
+      message: "Write journeys are burning error budget too fast (success rate).",
       meta: {
         slo_target: sloTarget,
+        slo_events: sloEvents,
         window_fast_s: fastWindowSeconds,
         window_slow_s: slowWindowSeconds,
-        burn_rate_fast: burnRateFast,
-        burn_rate_slow: burnRateSlow,
-        error_rate_fast: errorRate5xxFast,
-        error_rate_slow: errorRate5xxSlow,
-        total_fast: totalFast,
-        total_slow: totalSlow,
-        errors_5xx_fast: errors5xxFast,
-        errors_5xx_slow: errors5xxSlow
+        burn_rate_fast: sloBurnRateFast,
+        burn_rate_slow: sloBurnRateSlow,
+        bad_rate_fast: sloBadRateFast,
+        bad_rate_slow: sloBadRateSlow,
+        total_fast: sloTotalFast,
+        total_slow: sloTotalSlow,
+        success_fast: sloSuccessFast,
+        success_slow: sloSuccessSlow,
+        bad_fast: sloBadFast,
+        bad_slow: sloBadSlow
       }
     });
   }
 
   const spike5xxTriggered = (() => {
     if (errorRate5xxFast === null) return false;
-    if (totalFast < spikeMinRequests5xx) return false;
-    if (errors5xxFast < spikeMinErrors5xx) return false;
+    if (apiTotalFast < spikeMinRequests5xx) return false;
+    if (api5xxFast < spikeMinErrors5xx) return false;
     if (errorRate5xxFast < spikeRateThreshold5xx) return false;
     if (errorRate5xxSlow === null || errorRate5xxSlow <= 0) return true;
     return errorRate5xxFast >= errorRate5xxSlow * spikeMultiplier5xx;
@@ -273,8 +332,8 @@ export async function runObservabilityAlerts({
         window_slow_s: slowWindowSeconds,
         rate_fast: errorRate5xxFast,
         rate_slow: errorRate5xxSlow,
-        total_fast: totalFast,
-        errors_5xx_fast: errors5xxFast,
+        total_fast: apiTotalFast,
+        errors_5xx_fast: api5xxFast,
         threshold_rate: spikeRateThreshold5xx,
         threshold_min_requests: spikeMinRequests5xx,
         threshold_min_errors: spikeMinErrors5xx,
@@ -285,8 +344,8 @@ export async function runObservabilityAlerts({
 
   const spike429Triggered = (() => {
     if (errorRate429Fast === null) return false;
-    if (totalFast < spikeMinRequests429) return false;
-    if (errors429Fast < spikeMinErrors429) return false;
+    if (apiTotalFast < spikeMinRequests429) return false;
+    if (api429Fast < spikeMinErrors429) return false;
     if (errorRate429Fast < spikeRateThreshold429) return false;
     if (errorRate429Slow === null || errorRate429Slow <= 0) return true;
     return errorRate429Fast >= errorRate429Slow * spikeMultiplier429;
@@ -302,8 +361,8 @@ export async function runObservabilityAlerts({
         window_slow_s: slowWindowSeconds,
         rate_fast: errorRate429Fast,
         rate_slow: errorRate429Slow,
-        total_fast: totalFast,
-        errors_429_fast: errors429Fast,
+        total_fast: apiTotalFast,
+        errors_429_fast: api429Fast,
         threshold_rate: spikeRateThreshold429,
         threshold_min_requests: spikeMinRequests429,
         threshold_min_errors: spikeMinErrors429,
@@ -390,12 +449,13 @@ export async function runObservabilityAlerts({
     generated_at: nowIso,
     inputs: {
       slo_target: sloTarget,
+      slo_events: sloEvents,
       path_like: pathLike,
       fast_window_s: fastWindowSeconds,
       slow_window_s: slowWindowSeconds
     },
     slo: {
-      name: "v1_api_availability_5xx",
+      name: "v1_write_journeys_success_rate",
       target: sloTarget,
       burn_rate_thresholds: {
         fast: sloFastBurnThreshold,
@@ -405,18 +465,20 @@ export async function runObservabilityAlerts({
         fast: {
           from: fastFromIso,
           to: nowIso,
-          total: totalFast,
-          errors_5xx: errors5xxFast,
-          error_rate_5xx: errorRate5xxFast,
-          burn_rate_5xx: burnRateFast
+          total: sloTotalFast,
+          success: sloSuccessFast,
+          bad: sloBadFast,
+          bad_rate: sloBadRateFast,
+          burn_rate: sloBurnRateFast
         },
         slow: {
           from: slowFromIso,
           to: nowIso,
-          total: totalSlow,
-          errors_5xx: errors5xxSlow,
-          error_rate_5xx: errorRate5xxSlow,
-          burn_rate_5xx: burnRateSlow
+          total: sloTotalSlow,
+          success: sloSuccessSlow,
+          bad: sloBadSlow,
+          bad_rate: sloBadRateSlow,
+          burn_rate: sloBurnRateSlow
         }
       },
       triggered: sloBurnTriggered
@@ -430,8 +492,8 @@ export async function runObservabilityAlerts({
           min_errors: spikeMinErrors5xx,
           multiplier_vs_slow: spikeMultiplier5xx
         },
-        fast: { total: totalFast, errors_5xx: errors5xxFast, rate: errorRate5xxFast },
-        slow: { total: totalSlow, errors_5xx: errors5xxSlow, rate: errorRate5xxSlow }
+        fast: { total: apiTotalFast, errors_5xx: api5xxFast, rate: errorRate5xxFast },
+        slow: { total: apiTotalSlow, errors_5xx: api5xxSlow, rate: errorRate5xxSlow }
       },
       "429_spike": {
         triggered: spike429Triggered,
@@ -441,8 +503,8 @@ export async function runObservabilityAlerts({
           min_errors: spikeMinErrors429,
           multiplier_vs_slow: spikeMultiplier429
         },
-        fast: { total: totalFast, errors_429: errors429Fast, rate: errorRate429Fast },
-        slow: { total: totalSlow, errors_429: errors429Slow, rate: errorRate429Slow }
+        fast: { total: apiTotalFast, errors_429: api429Fast, rate: errorRate429Fast },
+        slow: { total: apiTotalSlow, errors_429: api429Slow, rate: errorRate429Slow }
       }
     },
     queues: {

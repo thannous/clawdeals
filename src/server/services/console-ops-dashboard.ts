@@ -168,6 +168,10 @@ export async function getConsoleOpsDashboard({
 
   for (const row of auditRows) {
     const routeGroup = normalizeRouteGroup(row?.action?.route_group);
+    const status = toFiniteNumber(row?.request?.status_code);
+    // Exclude pre-instrumentation rows (missing status_code) so rates aren’t skewed.
+    if (status === null) continue;
+
     let bucket = buckets.get(routeGroup);
     if (!bucket) {
       bucket = {
@@ -185,11 +189,11 @@ export async function getConsoleOpsDashboard({
     totalRequests += 1;
 
     const duration = toFiniteNumber(row?.request?.duration_ms);
-    if (duration !== null && duration >= 0) {
+    // Keep latency percentiles aligned with our SLO definitions (success-only).
+    if (duration !== null && duration >= 0 && status >= 200 && status < 400) {
       bucket.durations.push(duration);
     }
 
-    const status = toFiniteNumber(row?.request?.status_code);
     if (status !== null) {
       if (status >= 200 && status < 300) status2xx += 1;
       else if (status >= 300 && status < 400) status3xx += 1;
