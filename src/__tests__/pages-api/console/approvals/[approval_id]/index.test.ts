@@ -116,7 +116,8 @@ describe("/api/console/approvals/[approval_id]", () => {
       approvalId: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
       ownerId: "owner-1",
       decision: "APPROVED",
-      resolvedBy: "owner-1"
+      resolvedBy: "owner-1",
+      reason: undefined
     });
   });
 
@@ -144,8 +145,52 @@ describe("/api/console/approvals/[approval_id]", () => {
       approvalId: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
       ownerId: "owner-1",
       decision: "DENIED",
-      resolvedBy: "owner-1"
+      resolvedBy: "owner-1",
+      reason: undefined
     });
+  });
+
+  it("POST: deny with reason → passes reason to resolveApproval", async () => {
+    const approval = {
+      approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
+      state: "PENDING",
+      owner_id: "owner-1"
+    };
+    vi.mocked(getApproval).mockResolvedValue(approval);
+    vi.mocked(resolveApproval).mockResolvedValue({ ...approval, state: "DENIED" });
+
+    const req = {
+      method: "POST",
+      query: { approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" },
+      body: { action: "deny", reason: "Violates policy" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(resolveApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "Violates policy" })
+    );
+  });
+
+  it("POST: reason is truncated at 500 chars", async () => {
+    const approval = {
+      approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
+      state: "PENDING",
+      owner_id: "owner-1"
+    };
+    vi.mocked(getApproval).mockResolvedValue(approval);
+    vi.mocked(resolveApproval).mockResolvedValue({ ...approval, state: "DENIED" });
+
+    const longReason = "x".repeat(600);
+    const req = {
+      method: "POST",
+      query: { approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" },
+      body: { action: "deny", reason: longReason }
+    };
+    await handler(req, null, { ...baseCtx });
+
+    const call = vi.mocked(resolveApproval).mock.calls[0][0] as any;
+    expect(call.reason).toHaveLength(500);
   });
 
   it("POST: returns 409 when approval.state !== 'PENDING'", async () => {

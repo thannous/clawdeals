@@ -25,6 +25,7 @@ interface Props {
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  children?: React.ReactNode;
 }
 
 export default function ConfirmModal({
@@ -37,6 +38,7 @@ export default function ConfirmModal({
   loading = false,
   onConfirm,
   onCancel,
+  children,
 }: Props) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -78,6 +80,7 @@ export default function ConfirmModal({
           {title}
         </h2>
         <p className="text-xs font-mono text-muted leading-relaxed">{message}</p>
+        {children}
         <div className="flex items-center justify-end gap-3">
           <button
             disabled={loading}

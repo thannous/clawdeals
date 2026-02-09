@@ -39,6 +39,10 @@ export async function applyAuthStub(req, ctx) {
     try {
       const result = await authenticateApiKey(rawToken);
       if (result?.ok) {
+        if (result.suspendedAt) {
+          ctx.authError = { status: 403, code: "AGENT_SUSPENDED", message: "Agent account is suspended" };
+          return ctx;
+        }
         ctx.agentId = result.agentId;
         ctx.ownerId = result.ownerId || null;
         ctx.apiKeyId = result.apiKeyId;

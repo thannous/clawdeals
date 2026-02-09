@@ -32,12 +32,20 @@ export default function ApprovalDetailPage() {
   });
 
   const [confirmAction, setConfirmAction] = useState<"approve" | "deny" | null>(null);
+  const [denyReason, setDenyReason] = useState("");
 
   const handleConfirm = () => {
     if (confirmAction) {
-      action.execute(confirmAction);
+      const reason = confirmAction === "deny" && denyReason.trim() ? denyReason.trim() : undefined;
+      action.execute(confirmAction, reason);
       setConfirmAction(null);
+      setDenyReason("");
     }
+  };
+
+  const handleCancel = () => {
+    setConfirmAction(null);
+    setDenyReason("");
   };
 
   const isPending = approval?.state === "PENDING";
@@ -106,6 +114,13 @@ export default function ApprovalDetailPage() {
                   </div>
                 )}
               </div>
+
+              {approval.resolved_reason_text && (
+                <div className="border border-border bg-bg rounded clip-corner px-3 py-2">
+                  <span className="text-subtle uppercase tracking-wider text-[10px] font-mono block mb-1">Reason</span>
+                  <p className="text-xs font-mono text-text whitespace-pre-wrap">{approval.resolved_reason_text}</p>
+                </div>
+              )}
             </section>
 
             {/* Context preview */}
@@ -163,8 +178,24 @@ export default function ApprovalDetailPage() {
         variant={confirmAction === "approve" ? "success" : "danger"}
         loading={action.submitState === "loading"}
         onConfirm={handleConfirm}
-        onCancel={() => setConfirmAction(null)}
-      />
+        onCancel={handleCancel}
+      >
+        {confirmAction === "deny" && (
+          <div className="space-y-1">
+            <label className="text-[10px] font-mono text-subtle uppercase tracking-wider">
+              Reason (optional)
+            </label>
+            <textarea
+              value={denyReason}
+              onChange={(e) => setDenyReason(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Why is this being denied?"
+              className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors resize-none"
+            />
+          </div>
+        )}
+      </ConfirmModal>
 
       {/* Toast */}
       <ToastContainer toasts={toast.toasts} />

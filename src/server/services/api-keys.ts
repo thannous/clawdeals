@@ -136,14 +136,15 @@ export async function authenticateApiKey(apiKey) {
       agentId: cached.agent_id,
       ownerId: cached.owner_id || null,
       apiKeyId: cached.api_key_id,
-      keyState: cached.key_state
+      keyState: cached.key_state,
+      suspendedAt: cached.suspended_at || null
     };
   }
 
   const client = getSupabaseServiceClient();
   const { data, error } = await client
     .from("api_keys")
-    .select("api_key_id, agent_id, key_hash, key_state, grace_expires_at, revoked_at, agents ( owner_id )")
+    .select("api_key_id, agent_id, key_hash, key_state, grace_expires_at, revoked_at, agents ( owner_id, suspended_at )")
     .eq("key_prefix", prefix)
     .maybeSingle();
 
@@ -186,7 +187,8 @@ export async function authenticateApiKey(apiKey) {
     key_hash: data.key_hash,
     key_state: data.key_state,
     grace_expires_at: data.grace_expires_at || null,
-    revoked_at: data.revoked_at || null
+    revoked_at: data.revoked_at || null,
+    suspended_at: data.agents?.suspended_at || null
   });
 
   return {
@@ -194,7 +196,8 @@ export async function authenticateApiKey(apiKey) {
     agentId: data.agent_id,
     ownerId: data.agents?.owner_id || null,
     apiKeyId: data.api_key_id,
-    keyState: data.key_state
+    keyState: data.key_state,
+    suspendedAt: data.agents?.suspended_at || null
   };
 }
 

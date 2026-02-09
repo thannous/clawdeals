@@ -56,6 +56,8 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "action must be 'approve' or 'deny'"));
   }
 
+  const reason = body.reason != null ? String(body.reason).slice(0, 500) : undefined;
+
   try {
     const approval = await getApproval(approvalId);
     if (!approval) {
@@ -70,7 +72,8 @@ export async function handler(req, res, ctx) {
       approvalId,
       ownerId: approval.owner_id,
       decision: action === "approve" ? "APPROVED" : "DENIED",
-      resolvedBy: ctx.ownerId
+      resolvedBy: ctx.ownerId,
+      reason
     });
 
     return jsonResponse(200, { approval: result });

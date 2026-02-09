@@ -1,29 +1,28 @@
 import { useState, useCallback } from "react";
 import { trackApprovalAction } from "./telemetry";
 
-interface UseApprovalActionOptions {
-  approvalId: string | undefined;
+interface UseBulkApprovalActionOptions {
   onSuccess?: () => void;
 }
 
-export function useApprovalAction({ approvalId, onSuccess }: UseApprovalActionOptions) {
+export function useBulkApprovalAction({ onSuccess }: UseBulkApprovalActionOptions = {}) {
   const [submitState, setSubmitState] = useState("idle");
   const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(
-    async (action: "approve" | "deny", reason?: string) => {
-      if (!approvalId || submitState === "loading") return;
+    async (approvalIds: string[], action: "approve" | "deny", reason?: string) => {
+      if (approvalIds.length === 0 || submitState === "loading") return;
 
       setSubmitState("loading");
       setError(null);
 
-      const idempotencyKey = `${approvalId}-${action}-${Date.now()}`;
+      const idempotencyKey = `bulk-${action}-${Date.now()}`;
 
       try {
-        const bodyPayload: any = { action };
+        const bodyPayload: any = { approval_ids: approvalIds, action };
         if (reason) bodyPayload.reason = reason;
 
-        const resp = await fetch(`/api/console/approvals/${approvalId}`, {
+        const resp = await fetch("/api/console/approvals/bulk", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -38,14 +37,14 @@ export function useApprovalAction({ approvalId, onSuccess }: UseApprovalActionOp
         }
 
         setSubmitState("done");
-        trackApprovalAction({ approvalId, action });
+        trackApprovalAction({ action, count: approvalIds.length, bulk: true });
         onSuccess?.();
       } catch (err: any) {
         setError(err.message);
         setSubmitState("error");
       }
     },
-    [approvalId, submitState, onSuccess]
+    [submitState, onSuccess]
   );
 
   return { execute, submitState, error };

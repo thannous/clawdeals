@@ -1,68 +1,18 @@
+import { parseRetentionDays, computeCutoffDate, restRequest } from "../retention/shared";
+
 const RETENTION_ENV = "AUDIT_RETENTION_DAYS";
 const PAYLOAD_RETENTION_ENV = "AUDIT_PAYLOAD_RETENTION_DAYS";
 const IP_RETENTION_ENV = "AUDIT_IP_FULL_RETENTION_DAYS";
 const UA_RETENTION_ENV = "AUDIT_USER_AGENT_RETENTION_DAYS";
 
-function parseRetentionDays(value) {
-  if (!value) {
-    return null;
-  }
-  const days = Number.parseInt(value, 10);
-  if (!Number.isFinite(days) || days <= 0) {
-    return null;
-  }
-  return days;
-}
-
-function computeCutoffDate(now, retentionDays) {
-  const windowMs = retentionDays * 24 * 60 * 60 * 1000;
-  return new Date(now.getTime() - windowMs);
-}
-
-function parseDeletedCount(contentRange) {
-  if (!contentRange) {
-    return null;
-  }
-  const parts = contentRange.split("/");
-  if (parts.length !== 2) {
-    return null;
-  }
-  const count = Number.parseInt(parts[1], 10);
-  return Number.isFinite(count) ? count : null;
-}
-
-async function restRequest({ supabaseUrl, serviceRoleKey, table, method, cutoff, body }: any) {
-  const baseUrl = supabaseUrl.replace(/\/$/, "");
-  const url = new URL(`${baseUrl}/rest/v1/${table}`);
-  url.searchParams.set("occurred_at", `lt.${cutoff.toISOString()}`);
-  url.searchParams.set("select", "id");
-
-  const response = await fetch(url.toString(), {
-    method,
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      Prefer: "count=exact,return=minimal",
-      "Content-Type": "application/json"
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Audit retention ${method} failed: ${response.status} ${text || response.statusText}`);
-  }
-
-  return {
-    affected: parseDeletedCount(response.headers.get("content-range"))
-  };
-}
+const TIME_COLUMN = "occurred_at";
 
 async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }: any) {
   return restRequest({
     supabaseUrl,
     serviceRoleKey,
     table,
+    timeColumn: TIME_COLUMN,
     cutoff,
     method: "DELETE"
   });
@@ -73,6 +23,7 @@ async function updateAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, upd
     supabaseUrl,
     serviceRoleKey,
     table,
+    timeColumn: TIME_COLUMN,
     cutoff,
     method: "PATCH",
     body: updates

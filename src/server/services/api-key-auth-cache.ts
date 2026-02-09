@@ -9,6 +9,7 @@ export type CachedApiKeyAuthRecord = {
   key_state: string;
   grace_expires_at: string | null;
   revoked_at: string | null;
+  suspended_at?: string | null;
 };
 
 const DEFAULT_TTL_SECONDS = 60;

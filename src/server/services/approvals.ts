@@ -157,20 +157,81 @@ export async function getApprovalForOwner(approvalId, ownerId) {
   return data || null;
 }
 
-export async function resolveApproval({ approvalId, ownerId, decision, resolvedBy }) {
+export async function resolveApproval({ approvalId, ownerId, decision, resolvedBy, reason }: any) {
   const client = getSupabaseServiceClient();
+  const rpcArgs: any = {
+    p_approval_id: approvalId,
+    p_owner_id: ownerId,
+    p_decision: decision,
+    p_resolved_by: resolvedBy
+  };
+  if (reason != null) {
+    rpcArgs.p_reason = reason;
+  }
   const { data, error } = await client
-    .rpc("resolve_approval", {
-      p_approval_id: approvalId,
-      p_owner_id: ownerId,
-      p_decision: decision,
-      p_resolved_by: resolvedBy
-    })
+    .rpc("resolve_approval", rpcArgs)
     .single();
   if (error) {
     mapError(error);
   }
   return data;
+}
+
+const DEFAULT_APPROVAL_SLA_HOURS = 24;
+
+export function computeApprovalAge(createdAt: string): { hours: number; days: number } {
+  const created = new Date(createdAt);
+  const now = Date.now();
+  const diffMs = now - created.getTime();
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return { hours, days };
+}
+
+export function isApprovalStale(createdAt: string, thresholdHours?: number): boolean {
+  const threshold = thresholdHours ?? (Number(process.env.APPROVAL_SLA_HOURS) || DEFAULT_APPROVAL_SLA_HOURS);
+  const { hours } = computeApprovalAge(createdAt);
+  return hours >= threshold;
+}
+
+const BULK_MAX_ITEMS = 50;
+
+export async function bulkResolveApprovals({ approvalIds, decision, resolvedBy, reason }: any) {
+  if (!Array.isArray(approvalIds) || approvalIds.length === 0) {
+    throw Object.assign(new Error("approval_ids must be a non-empty array"), { status: 400, code: "VALIDATION_ERROR" });
+  }
+  if (approvalIds.length > BULK_MAX_ITEMS) {
+    throw Object.assign(new Error(`Max ${BULK_MAX_ITEMS} approvals per bulk request`), { status: 400, code: "VALIDATION_ERROR" });
+  }
+
+  const resolved: any[] = [];
+  const errors: any[] = [];
+
+  for (const id of approvalIds) {
+    try {
+      const approval = await getApproval(id);
+      if (!approval) {
+        errors.push({ approval_id: id, error: "Not found" });
+        continue;
+      }
+      if (approval.state !== "PENDING") {
+        errors.push({ approval_id: id, error: "Already resolved" });
+        continue;
+      }
+      const result = await resolveApproval({
+        approvalId: id,
+        ownerId: approval.owner_id,
+        decision,
+        resolvedBy,
+        reason
+      });
+      resolved.push(result);
+    } catch (err: any) {
+      errors.push({ approval_id: id, error: err.message || "Unknown error" });
+    }
+  }
+
+  return { resolved, errors };
 }
 
 export async function cancelPendingListingPublishApproval({ ownerId, listingId, now = new Date() }: any = {}) {

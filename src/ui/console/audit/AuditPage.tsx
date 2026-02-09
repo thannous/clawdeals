@@ -14,6 +14,7 @@ export default function AuditPage() {
     actorType, setActorType, actorId, setActorId,
     actionName, setActionName, entityType, setEntityType,
     entityId, setEntityId, outcome, setOutcome,
+    requestId, setRequestId,
     timeRangeError, nextCursor, fetchState, loadMoreState, error,
     loadMore, refetch, exportCsv,
   } = useAuditLogs();
@@ -49,6 +50,8 @@ export default function AuditPage() {
           onEntityIdChange={setEntityId}
           outcome={outcome}
           onOutcomeChange={setOutcome}
+          requestId={requestId}
+          onRequestIdChange={setRequestId}
           onExportCsv={exportCsv}
         />
 

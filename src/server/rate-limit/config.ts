@@ -251,6 +251,14 @@ export const RATE_LIMIT_PROFILES = {
     scope: "channel",
     buckets: [{ limit: 10, windowSeconds: 10 * MINUTE }],
   },
+  "console.moderation.write": {
+    scope: "owner",
+    buckets: [{ limit: 200, windowSeconds: HOUR }],
+  },
+  "console.moderation.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
 };
 
 export function formatWindow(windowSeconds) {

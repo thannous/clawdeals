@@ -69,6 +69,7 @@ function parseFiltersFromQuery(query: Record<string, unknown>) {
     entityType: resolveQueryParam(query?.entity_type) || null,
     entityId: resolveQueryParam(query?.entity_id) || "",
     outcome: resolveQueryParam(query?.outcome) || null,
+    requestId: resolveQueryParam(query?.request_id) || "",
   };
 }
 
@@ -116,6 +117,14 @@ export function useAuditLogs() {
     if (!routerReady) return null;
     return parseFiltersFromQuery(router.query).outcome;
   });
+  const [requestId, setRequestIdState] = useState(() => {
+    if (!routerReady) return "";
+    return parseFiltersFromQuery(router.query).requestId;
+  });
+  const [debouncedRequestId, setDebouncedRequestId] = useState(() => {
+    if (!routerReady) return "";
+    return parseFiltersFromQuery(router.query).requestId;
+  });
   const [timeRangeError, setTimeRangeError] = useState<string | null>(null);
 
   const [isInitializedFromQuery, setIsInitializedFromQuery] = useState(() => routerReady);
@@ -128,9 +137,11 @@ export function useAuditLogs() {
 
   const actorIdDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const entityIdDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debouncedActorIdRef = useRef(debouncedActorId);
   const debouncedEntityIdRef = useRef(debouncedEntityId);
+  const debouncedRequestIdRef = useRef(debouncedRequestId);
 
   useEffect(() => {
     debouncedActorIdRef.current = debouncedActorId;
@@ -139,6 +150,10 @@ export function useAuditLogs() {
   useEffect(() => {
     debouncedEntityIdRef.current = debouncedEntityId;
   }, [debouncedEntityId]);
+
+  useEffect(() => {
+    debouncedRequestIdRef.current = debouncedRequestId;
+  }, [debouncedRequestId]);
 
   useEffect(() => {
     if (!routerReady || isInitializedFromQuery) return;
@@ -153,11 +168,13 @@ export function useAuditLogs() {
     setEntityIdState(parsed.entityId);
     setDebouncedEntityId(parsed.entityId);
     setOutcomeState(parsed.outcome);
+    setRequestIdState(parsed.requestId);
+    setDebouncedRequestId(parsed.requestId);
     setIsInitializedFromQuery(true);
   }, [routerReady, isInitializedFromQuery, router.query]);
 
   const syncUrl = useCallback(
-    (f: string, t: string, aType: string | null, aId: string, action: string | null, eType: string | null, eId: string, out: string | null) => {
+    (f: string, t: string, aType: string | null, aId: string, action: string | null, eType: string | null, eId: string, out: string | null, rId?: string) => {
       const query: Record<string, string> = {};
       if (f) query.from = f;
       if (t) query.to = t;
@@ -167,6 +184,7 @@ export function useAuditLogs() {
       if (eType) query.entity_type = eType;
       if (eId) query.entity_id = eId;
       if (out) query.outcome = out;
+      if (rId) query.request_id = rId;
       router.replace({ pathname: router.pathname, query }, undefined, { shallow: true });
     },
     [router]
@@ -228,6 +246,7 @@ export function useAuditLogs() {
       if (params.entityType) searchParams.set("entity_type", params.entityType);
       if (params.entityId) searchParams.set("entity_id", params.entityId);
       if (params.outcome) searchParams.set("outcome", params.outcome);
+      if (params.requestId) searchParams.set("request_id", params.requestId);
       if (params.cursor) searchParams.set("cursor", params.cursor);
 
       const resp = await fetch(`/api/console/audit?${searchParams}`, { signal: controller.signal });
@@ -268,21 +287,21 @@ export function useAuditLogs() {
       if (abortRef.current) abortRef.current.abort();
       return;
     }
-    fetchItems({ from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome });
+    fetchItems({ from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome, requestId: debouncedRequestId });
     return () => {
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [routerReady, isInitializedFromQuery, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, fetchItems, validateTimeRange]);
+  }, [routerReady, isInitializedFromQuery, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, debouncedRequestId, fetchItems, validateTimeRange]);
 
   const setFrom = useCallback(
     (val: string) => {
       setFromState(val);
       setItems([]);
       setNextCursor(null);
-      syncUrl(val, to, actorType, actorId, actionName, entityType, entityId, outcome);
+      syncUrl(val, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId);
       trackAuditFilterApplied({ from: val });
     },
-    [to, actorType, actorId, actionName, entityType, entityId, outcome, syncUrl]
+    [to, actorType, actorId, actionName, entityType, entityId, outcome, requestId, syncUrl]
   );
 
   const setTo = useCallback(
@@ -290,10 +309,10 @@ export function useAuditLogs() {
       setToState(val);
       setItems([]);
       setNextCursor(null);
-      syncUrl(from, val, actorType, actorId, actionName, entityType, entityId, outcome);
+      syncUrl(from, val, actorType, actorId, actionName, entityType, entityId, outcome, requestId);
       trackAuditFilterApplied({ to: val });
     },
-    [from, actorType, actorId, actionName, entityType, entityId, outcome, syncUrl]
+    [from, actorType, actorId, actionName, entityType, entityId, outcome, requestId, syncUrl]
   );
 
   const setActorType = useCallback(
@@ -301,10 +320,10 @@ export function useAuditLogs() {
       setActorTypeState(val);
       setItems([]);
       setNextCursor(null);
-      syncUrl(from, to, val, actorId, actionName, entityType, entityId, outcome);
+      syncUrl(from, to, val, actorId, actionName, entityType, entityId, outcome, requestId);
       trackAuditFilterApplied({ actorType: val });
     },
-    [from, to, actorId, actionName, entityType, entityId, outcome, syncUrl]
+    [from, to, actorId, actionName, entityType, entityId, outcome, requestId, syncUrl]
   );
 
   const setActorId = useCallback(
@@ -317,10 +336,10 @@ export function useAuditLogs() {
           setNextCursor(null);
           setDebouncedActorId(val);
         }
-        syncUrl(from, to, actorType, val, actionName, entityType, entityId, outcome);
+        syncUrl(from, to, actorType, val, actionName, entityType, entityId, outcome, requestId);
       }, DEBOUNCE_MS);
     },
-    [from, to, actorType, actionName, entityType, entityId, outcome, syncUrl]
+    [from, to, actorType, actionName, entityType, entityId, outcome, requestId, syncUrl]
   );
 
   const setActionName = useCallback(
@@ -328,10 +347,10 @@ export function useAuditLogs() {
       setActionNameState(val);
       setItems([]);
       setNextCursor(null);
-      syncUrl(from, to, actorType, actorId, val, entityType, entityId, outcome);
+      syncUrl(from, to, actorType, actorId, val, entityType, entityId, outcome, requestId);
       trackAuditFilterApplied({ actionName: val });
     },
-    [from, to, actorType, actorId, entityType, entityId, outcome, syncUrl]
+    [from, to, actorType, actorId, entityType, entityId, outcome, requestId, syncUrl]
   );
 
   const setEntityType = useCallback(
@@ -339,10 +358,10 @@ export function useAuditLogs() {
       setEntityTypeState(val);
       setItems([]);
       setNextCursor(null);
-      syncUrl(from, to, actorType, actorId, actionName, val, entityId, outcome);
+      syncUrl(from, to, actorType, actorId, actionName, val, entityId, outcome, requestId);
       trackAuditFilterApplied({ entityType: val });
     },
-    [from, to, actorType, actorId, actionName, entityId, outcome, syncUrl]
+    [from, to, actorType, actorId, actionName, entityId, outcome, requestId, syncUrl]
   );
 
   const setEntityId = useCallback(
@@ -355,10 +374,10 @@ export function useAuditLogs() {
           setNextCursor(null);
           setDebouncedEntityId(val);
         }
-        syncUrl(from, to, actorType, actorId, actionName, entityType, val, outcome);
+        syncUrl(from, to, actorType, actorId, actionName, entityType, val, outcome, requestId);
       }, DEBOUNCE_MS);
     },
-    [from, to, actorType, actorId, actionName, entityType, outcome, syncUrl]
+    [from, to, actorType, actorId, actionName, entityType, outcome, requestId, syncUrl]
   );
 
   const setOutcome = useCallback(
@@ -366,31 +385,48 @@ export function useAuditLogs() {
       setOutcomeState(val);
       setItems([]);
       setNextCursor(null);
-      syncUrl(from, to, actorType, actorId, actionName, entityType, entityId, val);
+      syncUrl(from, to, actorType, actorId, actionName, entityType, entityId, val, requestId);
       trackAuditFilterApplied({ outcome: val });
     },
-    [from, to, actorType, actorId, actionName, entityType, entityId, syncUrl]
+    [from, to, actorType, actorId, actionName, entityType, entityId, requestId, syncUrl]
+  );
+
+  const setRequestId = useCallback(
+    (val: string) => {
+      setRequestIdState(val);
+      if (requestIdDebounceRef.current) clearTimeout(requestIdDebounceRef.current);
+      requestIdDebounceRef.current = setTimeout(() => {
+        if (debouncedRequestIdRef.current !== val) {
+          setItems([]);
+          setNextCursor(null);
+          setDebouncedRequestId(val);
+        }
+        syncUrl(from, to, actorType, actorId, actionName, entityType, entityId, outcome, val);
+      }, DEBOUNCE_MS);
+    },
+    [from, to, actorType, actorId, actionName, entityType, entityId, outcome, syncUrl]
   );
 
   useEffect(() => {
     return () => {
       if (actorIdDebounceRef.current) clearTimeout(actorIdDebounceRef.current);
       if (entityIdDebounceRef.current) clearTimeout(entityIdDebounceRef.current);
+      if (requestIdDebounceRef.current) clearTimeout(requestIdDebounceRef.current);
     };
   }, []);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadMoreState === "loading") return;
     fetchItems(
-      { from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome, cursor: nextCursor },
+      { from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome, requestId: debouncedRequestId, cursor: nextCursor },
       true
     );
-  }, [nextCursor, loadMoreState, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, fetchItems]);
+  }, [nextCursor, loadMoreState, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, debouncedRequestId, fetchItems]);
 
   const refetch = useCallback(() => {
     if (!routerReady || !isInitializedFromQuery) return;
-    fetchItems({ from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome });
-  }, [routerReady, isInitializedFromQuery, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, fetchItems]);
+    fetchItems({ from, to, actorType, actorId: debouncedActorId, actionName, entityType, entityId: debouncedEntityId, outcome, requestId: debouncedRequestId });
+  }, [routerReady, isInitializedFromQuery, from, to, actorType, debouncedActorId, actionName, entityType, debouncedEntityId, outcome, debouncedRequestId, fetchItems]);
 
   const exportCsv = useCallback(async () => {
     if (!validateTimeRange(from, to)) {
@@ -408,6 +444,7 @@ export function useAuditLogs() {
       if (entityType) sp.set("entity_type", entityType);
       if (entityId) sp.set("entity_id", entityId);
       if (outcome) sp.set("outcome", outcome);
+      if (requestId) sp.set("request_id", requestId);
 
       const resp = await fetch(`/api/console/audit/export?${sp}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -422,7 +459,7 @@ export function useAuditLogs() {
     } catch (err: any) {
       trackAuditExportError({ error: err.message });
     }
-  }, [from, to, actorType, actorId, actionName, entityType, entityId, outcome, validateTimeRange]);
+  }, [from, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId, validateTimeRange]);
 
   return {
     items,
@@ -434,6 +471,7 @@ export function useAuditLogs() {
     entityType, setEntityType,
     entityId, setEntityId,
     outcome, setOutcome,
+    requestId, setRequestId,
     timeRangeError,
     nextCursor, fetchState, loadMoreState, error,
     loadMore, refetch, exportCsv,

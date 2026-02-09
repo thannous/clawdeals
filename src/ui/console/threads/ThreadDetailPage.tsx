@@ -2,10 +2,13 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useThreadDetail } from "./useThreadDetail";
+import { useModerationAction } from "../moderation/useModerationAction";
 import MessageCard from "./MessageCard";
 import ConsoleStatusBadge from "../shared/ConsoleStatusBadge";
 import TruncatedId from "../shared/TruncatedId";
 import Pagination from "../shared/Pagination";
+import ToastContainer from "../shared/Toast";
+import { useToast } from "../shared/useToast";
 import ErrorState from "../shared/ErrorState";
 import SkeletonTable from "../shared/SkeletonTable";
 import { formatDate } from "../shared/formatDate";
@@ -19,6 +22,12 @@ export default function ThreadDetailPage() {
 
   const { thread, messages, messagesNextCursor, fetchState, loadMoreState, error, loadMoreMessages } =
     useThreadDetail({ threadId });
+  const toast = useToast();
+  const moderation = useModerationAction({
+    onSuccess: () => {
+      toast.show("Moderation action completed", "success");
+    },
+  });
 
   return (
     <div data-testid="thread-detail-page" className="min-h-screen bg-bg">
@@ -100,9 +109,37 @@ export default function ThreadDetailPage() {
                 onLoadMore={loadMoreMessages}
               />
             </section>
+
+            {/* Moderation actions */}
+            <section className="border border-border bg-surface rounded clip-corner p-5 space-y-3">
+              <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">
+                Moderation
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => moderation.execute("hide", { entity_type: "thread", entity_id: thread.thread_id, reason: "Manual hide from console" })}
+                  disabled={moderation.submitState === "loading"}
+                  className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-red-400 text-red-400 rounded hover:bg-red-400/10 disabled:opacity-50 transition-colors"
+                >
+                  Hide
+                </button>
+                <button
+                  onClick={() => moderation.execute("unhide", { entity_type: "thread", entity_id: thread.thread_id, reason: "Manual unhide from console" })}
+                  disabled={moderation.submitState === "loading"}
+                  className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-secondary text-secondary rounded hover:bg-secondary/10 disabled:opacity-50 transition-colors"
+                >
+                  Unhide
+                </button>
+              </div>
+              {moderation.error && (
+                <p className="text-xs font-mono text-red-400">{moderation.error}</p>
+              )}
+            </section>
           </>
         )}
       </main>
+
+      <ToastContainer toasts={toast.toasts} />
     </div>
   );
 }

@@ -39,6 +39,8 @@ interface Props {
   onEntityIdChange: (v: string) => void;
   outcome: string | null;
   onOutcomeChange: (v: string | null) => void;
+  requestId: string;
+  onRequestIdChange: (v: string) => void;
   onExportCsv: () => void;
 }
 
@@ -52,6 +54,7 @@ export default function AuditToolbar({
   entityType, onEntityTypeChange,
   entityId, onEntityIdChange,
   outcome, onOutcomeChange,
+  requestId, onRequestIdChange,
   onExportCsv,
 }: Props) {
   return (
@@ -216,6 +219,17 @@ export default function AuditToolbar({
             onChange={(e) => onEntityIdChange(e.target.value)}
             placeholder="Entity ID..."
             aria-label="Entity ID"
+            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
+        <div className="relative max-w-[200px]">
+          <input
+            data-testid="audit-request-id"
+            type="text"
+            value={requestId}
+            onChange={(e) => onRequestIdChange(e.target.value)}
+            placeholder="Request ID..."
+            aria-label="Request ID"
             className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
           />
         </div>
