@@ -2,6 +2,7 @@ import { getRedis } from "../redis/upstash";
 import { jsonResponse } from "../http/response";
 import { errorPayload } from "../http/errors";
 import { canonicalJsonStringify } from "../utils/canonical-json";
+import crypto from "crypto";
 import {
   buildRequestHmac,
   decryptJson,
@@ -49,6 +50,27 @@ function serializeQuery(query) {
     }
   });
   return params.toString();
+}
+
+function buildRequestFingerprint({ secret, method, path, query, canonicalBody }) {
+  const data = `${method}\n${path}\n${query}\n${canonicalBody}`;
+  if (secret) {
+    return `hmac:${buildRequestHmac({ secret, method, path, query, canonicalBody })}`;
+  }
+  // Fallback mode: still enforce idempotency semantics without requiring a secret.
+  // We intentionally avoid storing the body itself and instead store a stable digest.
+  const digest = crypto.createHash("sha256").update(data).digest("hex");
+  return `sha256:${digest}`;
+}
+
+function isHmacFingerprint(value: any) {
+  if (!value || typeof value !== "string") return false;
+  return value.startsWith("hmac:");
+}
+
+function isSha256Fingerprint(value: any) {
+  if (!value || typeof value !== "string") return false;
+  return value.startsWith("sha256:");
 }
 
 function buildLockKey({ actorType, actorId, method, path, key }) {
@@ -103,10 +125,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
   const canonicalBody = ctx.canonicalBody || canonicalJsonStringify(ctx.body || {});
   const query = serializeQuery(req.query);
   const secret = process.env.IDEMPOTENCY_SECRET;
-  if (!secret) {
-    throw new Error("IDEMPOTENCY_SECRET is required.");
-  }
-  const requestHmac = buildRequestHmac({
+  const requestHmac = buildRequestFingerprint({
     secret,
     method,
     path,
@@ -156,7 +175,64 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
 
   const existing = await getIdempotencyRecord({ actorType, actorId, method, path, key });
   if (existing) {
-    if (existing.request_hmac !== requestHmac) {
+    // request_hmac is a fingerprint:
+    // - legacy values were raw HMAC hex (no prefix)
+    // - current values are prefixed: hmac:<hex> or sha256:<hex>
+    const existingFp = existing.request_hmac;
+    const isLegacy = typeof existingFp === "string" && !existingFp.includes(":");
+    if (isLegacy) {
+      // Legacy behavior required IDEMPOTENCY_SECRET. If it's missing, we can't safely compare.
+      if (!secret) {
+        await redis.del(lockKey);
+        return {
+          action: "error",
+          response: buildErrorResponse(
+            "IDEMPOTENCY_MISCONFIGURED",
+            "Server missing IDEMPOTENCY_SECRET for idempotency verification",
+            {},
+            500
+          )
+        };
+      }
+      const legacy = buildRequestHmac({ secret, method, path, query, canonicalBody });
+      if (existingFp !== legacy) {
+        await redis.del(lockKey);
+        return {
+          action: "error",
+          response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+        };
+      }
+    } else if (isHmacFingerprint(existingFp)) {
+      if (!secret) {
+        await redis.del(lockKey);
+        return {
+          action: "error",
+          response: buildErrorResponse(
+            "IDEMPOTENCY_MISCONFIGURED",
+            "Server missing IDEMPOTENCY_SECRET for idempotency verification",
+            {},
+            500
+          )
+        };
+      }
+      const hmac = buildRequestFingerprint({ secret, method, path, query, canonicalBody });
+      if (existingFp !== hmac) {
+        await redis.del(lockKey);
+        return {
+          action: "error",
+          response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+        };
+      }
+    } else if (isSha256Fingerprint(existingFp)) {
+      const sha = buildRequestFingerprint({ secret: null, method, path, query, canonicalBody });
+      if (existingFp !== sha) {
+        await redis.del(lockKey);
+        return {
+          action: "error",
+          response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+        };
+      }
+    } else if (existingFp !== requestHmac) {
       await redis.del(lockKey);
       return {
         action: "error",
