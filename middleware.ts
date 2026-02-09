@@ -49,7 +49,14 @@ function isAppSectionRoute(restPath: string): boolean {
 }
 
 function isStaticPath(restPath: string): boolean {
-  return restPath.startsWith("/_next/") || restPath === "/favicon.ico";
+  // Static assets must never be bounced across domains; that can trigger CORS errors
+  // (e.g., manifest fetch) and breaks browser caching.
+  return (
+    restPath.startsWith("/_next/") ||
+    restPath === "/favicon.ico" ||
+    restPath === "/favicon.svg" ||
+    restPath === "/site.webmanifest"
+  );
 }
 
 export function middleware(request: NextRequest) {

@@ -38,10 +38,17 @@ describe("middleware host routing", () => {
     expect(res?.headers.get("location")).toBe("https://www.clawdeals.com/pricing");
   });
 
+  it("does not redirect static assets on app host", () => {
+    const manifest = middleware(makeReq("https://app.clawdeals.com/site.webmanifest", "app.clawdeals.com"));
+    expect(manifest?.headers.get("x-middleware-next")).toBe("1");
+
+    const icon = middleware(makeReq("https://app.clawdeals.com/favicon.svg", "app.clawdeals.com"));
+    expect(icon?.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("bounces .vercel.app to custom domain", () => {
     const res = middleware(makeReq("https://clawdeals-git-main-foo.vercel.app/start", "clawdeals-git-main-foo.vercel.app"));
     expect(res?.status).toBe(308);
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
   });
 });
-
