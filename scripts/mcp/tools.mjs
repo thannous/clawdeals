@@ -557,10 +557,19 @@ export async function executeTool(toolName, input = {}, options = {}) {
   try {
     req = buildRequest(toolName, input);
   } catch (error) {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(error.message || "")
+        : String(error || "");
+
+    const isValidationError =
+      (typeof z?.ZodError === "function" && error instanceof z.ZodError) ||
+      message.startsWith("Input validation error:");
+
     return stableError({
       requestId,
-      code: "VALIDATION_ERROR",
-      message: error.message || "Invalid tool input"
+      code: isValidationError ? "VALIDATION_ERROR" : "ERROR",
+      message: message || (isValidationError ? "Invalid tool input" : "Tool execution error")
     });
   }
 
@@ -571,4 +580,3 @@ export async function executeTool(toolName, input = {}, options = {}) {
     fetchImpl: options.fetchImpl || fetch
   });
 }
-

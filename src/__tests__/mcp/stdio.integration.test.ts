@@ -48,14 +48,31 @@ describe("MCP stdio server (integration)", () => {
       res.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "not found", details: {} } }));
     });
 
-    await new Promise<void>((resolve) => apiServer.listen(0, "127.0.0.1", resolve));
+    await new Promise<void>((resolve, reject) => {
+      const onError = (err: unknown) => {
+        apiServer.off("listening", onListening);
+        reject(err);
+      };
+      const onListening = () => {
+        apiServer.off("error", onError);
+        resolve();
+      };
+
+      apiServer.once("error", onError);
+      apiServer.once("listening", onListening);
+      apiServer.listen(0, "127.0.0.1");
+    });
     const addr = apiServer.address();
     if (!addr || typeof addr === "string") throw new Error("Failed to bind test server");
     apiBase = `http://127.0.0.1:${addr.port}/api`;
   });
 
   afterAll(async () => {
-    await new Promise<void>((resolve) => apiServer.close(() => resolve()));
+    if (!apiServer) return;
+    if (!apiServer.listening) return;
+    await new Promise<void>((resolve, reject) => {
+      apiServer.close((err) => (err ? reject(err) : resolve()));
+    });
   });
 
   it("exposes 17 tools and forwards REST calls with origin + idempotency", async () => {
