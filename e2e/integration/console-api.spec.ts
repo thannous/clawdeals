@@ -126,6 +126,137 @@ test.describe.serial("Integration: Console API", () => {
     expect(body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  test("console deal detail returns temperature masking (NEW) and temperature value (ACTIVE)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    await ensureOpsConsoleAgent(supabase);
+    const { agent } = await setupAgent(supabase);
+
+    const runTag = `detail${randomId().split("-")[0]}`;
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+    const urlNew = `https://example.com/console-detail/${randomId()}`;
+    const urlActive = `https://example.com/console-detail/${randomId()}`;
+
+    const { data: inserted, error } = await supabase
+      .from("deals")
+      .insert([
+        {
+          title: "Console Detail NEW",
+          source_url: urlNew,
+          source_url_normalized: urlNew,
+          source_url_fingerprint: sha256Hex(urlNew),
+          price: 10,
+          currency: "EUR",
+          created_at: now.toISOString(),
+          expires_at: expiresAt,
+          tags: [runTag],
+          status: "NEW",
+          new_until: new Date(now.getTime() + 10 * 60 * 1000).toISOString(),
+          temperature: 99,
+          creator_agent_id: agent.id
+        },
+        {
+          title: "Console Detail ACTIVE",
+          source_url: urlActive,
+          source_url_normalized: urlActive,
+          source_url_fingerprint: sha256Hex(urlActive),
+          price: 20,
+          currency: "EUR",
+          created_at: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+          expires_at: expiresAt,
+          tags: [runTag],
+          status: "ACTIVE",
+          new_until: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
+          active_at: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
+          temperature: 72,
+          creator_agent_id: agent.id
+        }
+      ])
+      .select("deal_id,title");
+    expect(error).toBeNull();
+    const idsByTitle = new Map((inserted || []).map((row: any) => [row.title, row.deal_id]));
+    const newId = idsByTitle.get("Console Detail NEW");
+    const activeId = idsByTitle.get("Console Detail ACTIVE");
+    expect(newId).toBeTruthy();
+    expect(activeId).toBeTruthy();
+
+    const newRes = await request.get(`/api/console/deals/${newId}`);
+    await expectStatus(newRes, 200);
+    const newBody = await newRes.json();
+    expect(newBody.deal.deal_id).toBe(newId);
+    expect(newBody.deal.status).toBe("NEW");
+    expect(newBody.deal.temperature).toBeNull();
+
+    const activeRes = await request.get(`/api/console/deals/${activeId}`);
+    await expectStatus(activeRes, 200);
+    const activeBody = await activeRes.json();
+    expect(activeBody.deal.deal_id).toBe(activeId);
+    expect(activeBody.deal.status).toBe("ACTIVE");
+    expect(activeBody.deal.temperature).toBe(72);
+  });
+
+  test("console deal comments supports list + create and rejects URLs", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    await ensureOpsConsoleAgent(supabase);
+    const { agent } = await setupAgent(supabase);
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const url = `https://example.com/console-comments/${randomId()}`;
+
+    const { data: inserted, error } = await supabase
+      .from("deals")
+      .insert({
+        title: "Console Comments Deal",
+        source_url: url,
+        source_url_normalized: url,
+        source_url_fingerprint: sha256Hex(url),
+        price: 15,
+        currency: "EUR",
+        created_at: now.toISOString(),
+        expires_at: expiresAt,
+        tags: ["consolecomments"],
+        status: "ACTIVE",
+        new_until: new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+        active_at: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
+        temperature: 50,
+        creator_agent_id: agent.id
+      })
+      .select("deal_id")
+      .single();
+    expect(error).toBeNull();
+    const dealId = inserted.deal_id;
+
+    const list0 = await request.get(`/api/console/deals/${dealId}/comments?limit=10`);
+    await expectStatus(list0, 200);
+    const list0Body = await list0.json();
+    expect(Array.isArray(list0Body.items)).toBe(true);
+    expect(list0Body.items).toHaveLength(0);
+
+    const create = await request.post(`/api/console/deals/${dealId}/comments`, {
+      data: { comment_type: "note", body: "Ops note" }
+    });
+    await expectStatus(create, 201);
+    const createBody = await create.json();
+    expect(createBody.comment.deal_id).toBe(dealId);
+    expect(createBody.comment.comment_type).toBe("note");
+    expect(createBody.comment.body).toBe("Ops note");
+
+    const list1 = await request.get(`/api/console/deals/${dealId}/comments?limit=10`);
+    await expectStatus(list1, 200);
+    const list1Body = await list1.json();
+    expect((list1Body.items || []).length).toBeGreaterThanOrEqual(1);
+    expect((list1Body.items || []).some((item: any) => item.body === "Ops note")).toBe(true);
+
+    const createWithUrl = await request.post(`/api/console/deals/${dealId}/comments`, {
+      data: { comment_type: "note", body: "see https://example.com" }
+    });
+    expect(createWithUrl.status()).toBe(400);
+    const createWithUrlBody = await createWithUrl.json();
+    expect(createWithUrlBody.error.code).toBe("URLS_NOT_ALLOWED");
+  });
+
   test("console vote creates vote with hardcoded agent", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     await ensureOpsConsoleAgent(supabase);
@@ -263,4 +394,3 @@ test.describe.serial("Integration: Console API", () => {
     expect(noReasonRes.status()).toBe(400);
   });
 });
-

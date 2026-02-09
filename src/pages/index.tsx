@@ -91,8 +91,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
-      deploySha,
-      futureMode
+      futureMode,
+      ...(deploySha ? { deploySha } : {})
     }
   };
 };

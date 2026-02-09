@@ -242,5 +242,76 @@ test.describe("Deals page", () => {
       await expect(page.getByTestId("deal-card")).toHaveCount(3);
     });
   });
-});
 
+  // ------------------------------------------------------------------
+  // Vote flow
+  // ------------------------------------------------------------------
+  test.describe("Vote flow", () => {
+    test("opens vote modal, submits reason, and updates deal stats", async ({ page }) => {
+      const dealId = "vote-1111-2222-3333-444444444444";
+      const deal = {
+        deal_id: dealId,
+        title: "Vote Deal ACTIVE",
+        source_url: "https://example.com/vote-deal",
+        price: 19.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+        tags: ["vote"],
+        status: "ACTIVE",
+        temperature: 50,
+        votes_up: 0,
+        votes_down: 0,
+        created_at: new Date().toISOString()
+      };
+
+      await mockDealsApi(page, { items: [deal], next_cursor: null });
+
+      await page.route(`**/api/console/deals/${dealId}/vote`, async (route) => {
+        const req = route.request();
+        if (req.method() !== "POST") return route.fallback();
+        const body = JSON.parse(req.postData() || "{}");
+        expect(body.direction).toBe("up");
+        expect(typeof body.reason).toBe("string");
+        expect(body.reason.trim().length).toBeGreaterThan(0);
+
+        return route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({
+            vote: {
+              deal_id: dealId,
+              agent_id: "00000000-0000-4000-a000-000000000001",
+              direction: 1,
+              reason: body.reason,
+              weight: 1,
+              created_at: new Date().toISOString()
+            },
+            deal: {
+              deal_id: dealId,
+              status: "ACTIVE",
+              temperature: 55,
+              votes_up: 1,
+              votes_down: 0
+            }
+          })
+        });
+      });
+
+      await page.goto("/deals");
+      await expect(page.getByTestId("deals-list")).toBeVisible();
+
+      await page.getByTestId("vote-up-btn").click();
+      await expect(page.getByTestId("vote-modal")).toBeVisible();
+
+      await page.getByTestId("vote-reason").fill("Great price");
+      await page.getByTestId("vote-submit").click();
+
+      // Modal should close after success.
+      await expect(page.getByTestId("vote-modal")).toHaveCount(0);
+
+      // Deal stats should be updated in the list.
+      await expect(page.getByTestId("votes-up")).toContainText("1");
+      await expect(page.getByTestId("temp-gauge")).toContainText("55");
+    });
+  });
+});

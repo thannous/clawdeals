@@ -64,6 +64,60 @@ test.describe.serial("Integration: Deals API", () => {
     expect(audit.outcome).toBe("SUCCESS");
   });
 
+  test("duplicate detection returns existing deal (200 + meta.duplicate)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const dealSlug = randomId();
+    const urlA = `https://example.com/p/${dealSlug}?utm_source=x&b=2&a=1#frag`;
+    const urlB = `https://example.com/p/${dealSlug}?utm_source=y&utm_campaign=z&a=1&b=2#other`;
+
+    const payload = {
+      title: "Integration Duplicate Deal",
+      url: urlA,
+      price: 129.99,
+      currency: "EUR",
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      tags: ["duplicate", "ti-255"]
+    };
+
+    const create = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: payload
+    });
+    await expectStatus(create, 201);
+    const createdBody = await create.json();
+    const createdDealId = createdBody?.deal?.deal_id;
+    expect(createdDealId).toBeTruthy();
+
+    const { data: persisted, error: persistedError } = await supabase
+      .from("deals")
+      .select("source_url_fingerprint")
+      .eq("deal_id", createdDealId)
+      .single();
+    expect(persistedError).toBeNull();
+    const fingerprint = persisted?.source_url_fingerprint;
+    expect(fingerprint).toBeTruthy();
+
+    const dup = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { ...payload, url: urlB }
+    });
+    await expectStatus(dup, 200);
+    const dupBody = await dup.json();
+    expect(dupBody?.meta?.duplicate).toBe(true);
+    expect(dupBody?.meta?.existing_deal_id).toBe(createdDealId);
+    expect(dupBody?.deal?.deal_id).toBe(createdDealId);
+
+    // Ensure we didn't create a second row for the same fingerprint.
+    const { data: sameFingerprint, error: sameFingerprintError } = await supabase
+      .from("deals")
+      .select("deal_id")
+      .eq("source_url_fingerprint", fingerprint);
+    expect(sameFingerprintError).toBeNull();
+    expect((sameFingerprint || []).length).toBe(1);
+  });
+
   test("deal lifecycle transitions NEW to ACTIVE and ACTIVE to EXPIRED", async () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
