@@ -110,6 +110,104 @@ async function pollForRecord({ actorType, actorId, method, path, key, maxWaitMs 
   return null;
 }
 
+async function verifyIdempotencyFingerprint({
+  record,
+  requestHmac,
+  secret,
+  method,
+  path,
+  query,
+  canonicalBody,
+  redis,
+  lockKey
+}: {
+  record: any;
+  requestHmac: string;
+  secret: string | undefined;
+  method: string;
+  path: string;
+  query: string;
+  canonicalBody: string;
+  redis: any;
+  lockKey: string;
+}) {
+  // request_hmac is a fingerprint:
+  // - legacy values were raw HMAC hex (no prefix)
+  // - current values are prefixed: hmac:<hex> or sha256:<hex>
+  const existingFp = record?.request_hmac;
+  const isLegacy = typeof existingFp === "string" && !existingFp.includes(":");
+  if (isLegacy) {
+    // Legacy behavior required IDEMPOTENCY_SECRET. If it's missing, we can't safely compare.
+    if (!secret) {
+      await tryReleaseLock(redis, lockKey);
+      return {
+        action: "error",
+        response: buildErrorResponse(
+          "IDEMPOTENCY_MISCONFIGURED",
+          "Server missing IDEMPOTENCY_SECRET for idempotency verification",
+          {},
+          500
+        )
+      };
+    }
+    const legacy = buildRequestHmac({ secret, method, path, query, canonicalBody });
+    if (existingFp !== legacy) {
+      await tryReleaseLock(redis, lockKey);
+      return {
+        action: "error",
+        response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+      };
+    }
+    return null;
+  }
+
+  if (isHmacFingerprint(existingFp)) {
+    if (!secret) {
+      await tryReleaseLock(redis, lockKey);
+      return {
+        action: "error",
+        response: buildErrorResponse(
+          "IDEMPOTENCY_MISCONFIGURED",
+          "Server missing IDEMPOTENCY_SECRET for idempotency verification",
+          {},
+          500
+        )
+      };
+    }
+    const hmac = buildRequestFingerprint({ secret, method, path, query, canonicalBody });
+    if (existingFp !== hmac) {
+      await tryReleaseLock(redis, lockKey);
+      return {
+        action: "error",
+        response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+      };
+    }
+    return null;
+  }
+
+  if (isSha256Fingerprint(existingFp)) {
+    const sha = buildRequestFingerprint({ secret: null, method, path, query, canonicalBody });
+    if (existingFp !== sha) {
+      await tryReleaseLock(redis, lockKey);
+      return {
+        action: "error",
+        response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+      };
+    }
+    return null;
+  }
+
+  if (existingFp !== requestHmac) {
+    await tryReleaseLock(redis, lockKey);
+    return {
+      action: "error",
+      response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
+    };
+  }
+
+  return null;
+}
+
 export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
   if (!options.enabled) return { action: "skip" };
 
@@ -194,75 +292,18 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
 
   const existing = await getIdempotencyRecord({ actorType, actorId, method, path, key });
   if (existing) {
-    // request_hmac is a fingerprint:
-    // - legacy values were raw HMAC hex (no prefix)
-    // - current values are prefixed: hmac:<hex> or sha256:<hex>
-    const existingFp = existing.request_hmac;
-    const isLegacy = typeof existingFp === "string" && !existingFp.includes(":");
-    if (isLegacy) {
-      // Legacy behavior required IDEMPOTENCY_SECRET. If it's missing, we can't safely compare.
-      if (!secret) {
-        await tryReleaseLock(redis, lockKey);
-        return {
-          action: "error",
-          response: buildErrorResponse(
-            "IDEMPOTENCY_MISCONFIGURED",
-            "Server missing IDEMPOTENCY_SECRET for idempotency verification",
-            {},
-            500
-          )
-        };
-      }
-      const legacy = buildRequestHmac({ secret, method, path, query, canonicalBody });
-      if (existingFp !== legacy) {
-        await tryReleaseLock(redis, lockKey);
-        return {
-          action: "error",
-          response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
-        };
-      }
-    } else if (isHmacFingerprint(existingFp)) {
-      if (!secret) {
-        await tryReleaseLock(redis, lockKey);
-        return {
-          action: "error",
-          response: buildErrorResponse(
-            "IDEMPOTENCY_MISCONFIGURED",
-            "Server missing IDEMPOTENCY_SECRET for idempotency verification",
-            {},
-            500
-          )
-        };
-      }
-      const hmac = buildRequestFingerprint({ secret, method, path, query, canonicalBody });
-      if (existingFp !== hmac) {
-        await tryReleaseLock(redis, lockKey);
-        return {
-          action: "error",
-          response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
-        };
-      }
-    } else if (isSha256Fingerprint(existingFp)) {
-      const sha = buildRequestFingerprint({ secret: null, method, path, query, canonicalBody });
-      if (existingFp !== sha) {
-        await tryReleaseLock(redis, lockKey);
-        return {
-          action: "error",
-          response: buildErrorResponse("IDEMPOTENCY_KEY_REUSE", "Idempotency-Key reuse detected", {}, 409)
-        };
-      }
-    } else if (existingFp !== requestHmac) {
-      await tryReleaseLock(redis, lockKey);
-      return {
-        action: "error",
-        response: buildErrorResponse(
-          "IDEMPOTENCY_KEY_REUSE",
-          "Idempotency-Key reuse detected",
-          {},
-          409
-        )
-      };
-    }
+    const fingerprintError = await verifyIdempotencyFingerprint({
+      record: existing,
+      requestHmac,
+      secret,
+      method,
+      path,
+      query,
+      canonicalBody,
+      redis,
+      lockKey
+    });
+    if (fingerprintError) return fingerprintError;
 
     if (existing.status === "COMPLETED" || existing.status === "FAILED") {
       await tryReleaseLock(redis, lockKey);
@@ -315,33 +356,99 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
 
   const ttlSeconds = options.ttlSeconds || IDEMPOTENCY_TTL_SECONDS;
   const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-    let record = existing;
-    if (!record) {
-      try {
-        record = await insertIdempotencyRecord({
-          actor_type: actorType,
-          actor_id: actorId,
-          method,
-          path,
-          idempotency_key: key,
-          request_hmac: requestHmac,
-          status: "IN_PROGRESS",
-          expires_at: expiresAt
-        });
-      } catch (error: any) {
-        // Race: another request inserted first (DB unique index).
-        if (error?.code === "23505") {
-          record = await getIdempotencyRecord({ actorType, actorId, method, path, key });
-        } else {
-          await tryReleaseLock(redis, lockKey);
-          throw error;
-        }
+  let record = existing;
+  let recordFromUniqueViolation = false;
+  if (!record) {
+    try {
+      record = await insertIdempotencyRecord({
+        actor_type: actorType,
+        actor_id: actorId,
+        method,
+        path,
+        idempotency_key: key,
+        request_hmac: requestHmac,
+        status: "IN_PROGRESS",
+        expires_at: expiresAt
+      });
+    } catch (error: any) {
+      // Race: another request inserted first (DB unique index).
+      if (error?.code === "23505") {
+        record = await getIdempotencyRecord({ actorType, actorId, method, path, key });
+        recordFromUniqueViolation = true;
+      } else {
+        await tryReleaseLock(redis, lockKey);
+        throw error;
       }
     }
-    if (!record) {
+  }
+  if (!record) {
+    await tryReleaseLock(redis, lockKey);
+    throw new Error("Failed to resolve idempotency record");
+  }
+
+  // If we lost the insert race, behave like the normal "existing record" path:
+  // don't let multiple leaders execute side effects for the same Idempotency-Key.
+  if (recordFromUniqueViolation) {
+    const fingerprintError = await verifyIdempotencyFingerprint({
+      record,
+      requestHmac,
+      secret,
+      method,
+      path,
+      query,
+      canonicalBody,
+      redis,
+      lockKey
+    });
+    if (fingerprintError) return fingerprintError;
+
+    if (record.status === "COMPLETED" || record.status === "FAILED") {
       await tryReleaseLock(redis, lockKey);
-      throw new Error("Failed to resolve idempotency record");
+      return {
+        action: "replay",
+        response: buildReplayResponse(record),
+        context: {
+          key,
+          requestHmac,
+          record,
+          replayed: true
+        }
+      };
     }
+
+    if (!redis && record.status === "IN_PROGRESS") {
+      const completed = await pollForRecord({
+        actorType,
+        actorId,
+        method,
+        path,
+        key,
+        maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
+      });
+      if (completed) {
+        return {
+          action: "replay",
+          response: buildReplayResponse(completed),
+          context: {
+            key,
+            requestHmac,
+            record: completed,
+            replayed: true
+          }
+        };
+      }
+      return {
+        action: "error",
+        response: buildErrorResponse(
+          "IDEMPOTENCY_IN_PROGRESS",
+          "Request with the same Idempotency-Key is still in progress",
+          { retry_after_seconds: 1 },
+          409,
+          { "Retry-After": "1" }
+        )
+      };
+    }
+  }
 
     return {
       action: "continue",

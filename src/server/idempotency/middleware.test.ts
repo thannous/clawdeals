@@ -5,8 +5,12 @@ const mockRedis = {
   del: vi.fn()
 };
 
+let redisAvailable = true;
 vi.mock("../redis/upstash", () => ({
-  getRedis: () => mockRedis
+  getRedis: () => {
+    if (!redisAvailable) throw new Error("Redis unavailable");
+    return mockRedis;
+  }
 }));
 
 vi.mock("./store", () => ({
@@ -59,6 +63,8 @@ describe("beginIdempotency", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.IDEMPOTENCY_SECRET = "test-secret";
+    redisAvailable = true;
+    (buildRequestHmac as any).mockReturnValue("hmac-abc");
   });
 
   it("skips when not enabled", async () => {
@@ -144,6 +150,49 @@ describe("beginIdempotency", () => {
     expect(result.action).toBe("error");
     expect(result.response.status).toBe(409);
     expect(result.response.body.error.code).toBe("IDEMPOTENCY_IN_PROGRESS");
+  });
+
+  it("does not double-execute in DB-only mode when insert races (unique violation)", async () => {
+    redisAvailable = false;
+    (getIdempotencyRecord as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        idempotency_id: "idem-1",
+        status: "IN_PROGRESS",
+        request_hmac: "hmac:hmac-abc"
+      })
+      .mockResolvedValueOnce({
+        idempotency_id: "idem-1",
+        status: "COMPLETED",
+        request_hmac: "hmac:hmac-abc",
+        response_status: 201,
+        response_body: { ok: true },
+        response_headers: {}
+      });
+    (insertIdempotencyRecord as any).mockRejectedValue(Object.assign(new Error("duplicate"), { code: "23505" }));
+
+    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, maxWaitMs: 50 });
+    expect(result.action).toBe("replay");
+    expect(result.response.status).toBe(201);
+    expect(result.response.body).toEqual({ ok: true });
+  });
+
+  it("returns 409 KEY_REUSE in DB-only mode when insert races and fingerprint mismatches", async () => {
+    redisAvailable = false;
+    (buildRequestHmac as any).mockReturnValue("hmac-different");
+    (getIdempotencyRecord as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        idempotency_id: "idem-1",
+        status: "IN_PROGRESS",
+        request_hmac: "hmac:hmac-original"
+      });
+    (insertIdempotencyRecord as any).mockRejectedValue(Object.assign(new Error("duplicate"), { code: "23505" }));
+
+    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, maxWaitMs: 50 });
+    expect(result.action).toBe("error");
+    expect(result.response.status).toBe(409);
+    expect(result.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
   });
 
   it("skips when no actor id available", async () => {

@@ -626,7 +626,7 @@ paths:
           name: sort
           schema:
             type: string
-            enum: [recent, price_asc, price_desc, distance]
+            enum: [recent, rank, price_asc, price_desc, distance]
             default: recent
         - in: query
           name: limit
