@@ -16,6 +16,8 @@
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:skill": "node scripts/smoke-skill-examples.mjs",
     "test:skill:pack": "node scripts/validate-skill-pack.mjs",
+    "sync:skill:public": "node scripts/sync-skill-public.mjs",
+    "test:skill:public": "node scripts/sync-skill-public.mjs --check",
     "mcp:stdio": "node scripts/mcp-server.mjs",
     "cron:trustscore": "node scripts/cron-trustscore-recalc.mjs",
     "cron:trustscore:queue": "node scripts/cron-trustscore-recalc-queue.mjs",
@@ -25,9 +27,9 @@
     "test:integration": "PW_WEB_SERVER_MODE=prod playwright test --project=integration",
     "test:e2e:ui": "playwright test --project=ui --ui",
     "test:e2e:headed": "playwright test --project=ui --headed",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "test:ci": "npm run typecheck && npm run openapi:lint && npm run test:unit && npm run test:skill:pack"
+    "preview": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "test:ci": "npm run typecheck && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
