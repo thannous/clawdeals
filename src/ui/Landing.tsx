@@ -1011,10 +1011,19 @@ const TaskSelector = ({ copy }) => (
   </div>
 );
 
-export default function Landing({ locale = "en", buildTimeIso, appVersion, futureMode = false }) {
+type LandingProps = {
+  locale?: string;
+  buildTimeIso: string;
+  appVersion: string;
+  deploySha?: string;
+  futureMode?: boolean;
+};
+
+export default function Landing({ locale = "en", buildTimeIso, appVersion, deploySha, futureMode = false }: LandingProps) {
   const [activeTab, setActiveTab] = useState("gig");
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
+  const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
 
   const tabVariants = {
     gig: { Hero: GigHero, Panel: GigTabPanel, items: copy.cards.gig },
@@ -1088,6 +1097,12 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, futur
               {copy.footer.serverTime}: <span suppressHydrationWarning>{buildTimeIso}</span>
               <br />
               VERSION: <span>v{appVersion}</span>
+              {deployShaShort ? (
+                <>
+                  <br />
+                  DEPLOY: <span title={deploySha}>{deployShaShort}</span>
+                </>
+              ) : null}
             </p>
             <div className="mt-6 max-w-md">
               <WaitlistForm copy={copy} locale={locale} compact source="footer" />

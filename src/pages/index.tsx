@@ -51,6 +51,7 @@ type HomePageProps = {
   isPreviewHost: boolean;
   buildTimeIso: string;
   appVersion: string;
+  deploySha?: string;
   futureMode: boolean;
 };
 
@@ -60,6 +61,14 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
     process.env.npm_package_version ||
     packageJson?.version ||
     "0.0.1";
+  const deployShaRaw =
+    process.env.NEXT_PUBLIC_DEPLOY_SHA ||
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.CF_PAGES_COMMIT_SHA ||
+    process.env.CF_PAGES_COMMIT_HASH ||
+    process.env.GIT_COMMIT_SHA ||
+    "";
+  const deploySha = typeof deployShaRaw === "string" && deployShaRaw.length >= 7 ? deployShaRaw : undefined;
   const futureMode = String(process.env.NEXT_PUBLIC_FUTURE_MODE || "").toLowerCase() === "true";
 
   const isPreviewHost = isWorkersDevRequest(req);
@@ -82,12 +91,21 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
+      deploySha,
       futureMode
     }
   };
 };
 
-export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, appVersion, futureMode }: HomePageProps) {
+export default function Home({
+  locale,
+  baseUrl,
+  isPreviewHost,
+  buildTimeIso,
+  appVersion,
+  deploySha,
+  futureMode
+}: HomePageProps) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = COPY[currentLocale] || COPY.fr;
@@ -116,7 +134,13 @@ export default function Home({ locale, baseUrl, isPreviewHost, buildTimeIso, app
 
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
-      <Landing locale={currentLocale} buildTimeIso={buildTimeIso} appVersion={appVersion} futureMode={futureMode} />
+      <Landing
+        locale={currentLocale}
+        buildTimeIso={buildTimeIso}
+        appVersion={appVersion}
+        deploySha={deploySha}
+        futureMode={futureMode}
+      />
     </>
   );
 }
