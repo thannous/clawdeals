@@ -66,8 +66,8 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
     } as any);
   });
 
-  it("returns 405 for non-PATCH", async () => {
-    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+  it("returns 405 for non-GET/PATCH", async () => {
+    const req: any = { method: "POST", headers: {}, query: { id: listingId } };
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(405);
     expect(result.body.error.code).toBe("METHOD_NOT_ALLOWED");
@@ -285,5 +285,118 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
         listingId
       })
     );
+  });
+});
+
+describe("GET /v1/listings/{id} (TI-263)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 401 when agent authentication is missing", async () => {
+    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("validates listing id UUID", async () => {
+    const req: any = { method: "GET", headers: {}, query: { id: "not-a-uuid" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 404 when listing does not exist", async () => {
+    getListingMock.mockResolvedValue(null);
+    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 200 for LIVE listing (any authenticated agent)", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      owner_id: "owner-1",
+      agent_id: "agent-1",
+      seller_agent_id: "agent-2",
+      status: "LIVE",
+      title: "Nintendo Switch OLED",
+      description: "Like new",
+      category: "gaming",
+      condition: "LIKE_NEW",
+      price_amount: 25000,
+      currency: "EUR",
+      geo_lat: 48.85,
+      geo_lng: 2.35,
+      photos: [{ storage_key: "k1", mime: "image/png" }],
+      deal_id: null,
+      created_at: "2026-02-08T12:20:00Z",
+      updated_at: "2026-02-08T12:25:00Z"
+    } as any);
+
+    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+    const result: any = await handler(req, null, { ...baseCtx, agentId: "agent-x" });
+    expect(result.status).toBe(200);
+    expect(result.body.data.listing_id).toBe(listingId);
+    expect(result.body.data.status).toBe("LIVE");
+    expect(result.body.data.price.amount).toBe(25000);
+    expect(result.body.data.geo).toEqual({ lat: 48.85, lng: 2.35 });
+
+    expect(result.body.data.owner_id).toBeUndefined();
+    expect(result.body.data.agent_id).toBeUndefined();
+    expect(result.body.data.seller_agent_id).toBeUndefined();
+  });
+
+  it("returns 404 for non-LIVE listing when caller is not the seller (anti-enumeration)", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      seller_agent_id: "agent-2",
+      status: "DRAFT",
+      title: "T",
+      description: null,
+      category: "x",
+      condition: "GOOD",
+      price_amount: 100,
+      currency: "EUR",
+      geo_lat: null,
+      geo_lng: null,
+      photos: null,
+      deal_id: null,
+      created_at: "2026-02-08T12:20:00Z",
+      updated_at: null
+    } as any);
+
+    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+    const result: any = await handler(req, null, { ...baseCtx, agentId: "agent-x" });
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 200 for non-LIVE listing when caller is the seller", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      seller_agent_id: "agent-1",
+      status: "DRAFT",
+      title: "T",
+      description: null,
+      category: "x",
+      condition: "GOOD",
+      price_amount: 100,
+      currency: "EUR",
+      geo_lat: null,
+      geo_lng: null,
+      photos: null,
+      deal_id: "22222222-2222-4222-8222-222222222222",
+      created_at: "2026-02-08T12:20:00Z",
+      updated_at: null
+    } as any);
+
+    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+    const result: any = await handler(req, null, { ...baseCtx, agentId: "agent-1" });
+    expect(result.status).toBe(200);
+    expect(result.body.data.status).toBe("DRAFT");
+    expect(result.body.data.deal_id).toBe("22222222-2222-4222-8222-222222222222");
   });
 });

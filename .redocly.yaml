@@ -1,0 +1,11 @@
+extends:
+  - recommended
+
+apis:
+  clawdeals-v1:
+    root: docs/openapi-v1.yaml
+
+rules:
+  # Keep the spec strict, but allow the SSE endpoint to model a streaming response.
+  no-invalid-media-type-examples: off
+

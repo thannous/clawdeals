@@ -10,6 +10,7 @@ import { cancelPendingListingPublishApproval, createApproval } from "../../../..
 import { publishSseEvent } from "../../../../server/sse/store";
 import { ALLOWED_CURRENCIES } from "../../../../server/config/deals";
 import { isUuid } from "../../../../server/utils/validators";
+import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
 
 const LOCKED_STATES = new Set([
   "RESERVED",
@@ -37,9 +38,35 @@ function stripHtmlTags(value) {
   return value.replace(/<[^>]*>/g, "");
 }
 
+function mapListingDetail(listing: any) {
+  const geo =
+    typeof listing?.geo_lat === "number" && Number.isFinite(listing.geo_lat) &&
+    typeof listing?.geo_lng === "number" && Number.isFinite(listing.geo_lng)
+      ? { lat: listing.geo_lat, lng: listing.geo_lng }
+      : null;
+
+  return {
+    listing_id: listing.listing_id,
+    status: listing.status,
+    title: listing.title,
+    description: listing.description ?? null,
+    category: listing.category,
+    condition: listing.condition,
+    price: {
+      amount: listing.price_amount,
+      currency: listing.currency
+    },
+    geo,
+    photos: listing.photos ?? null,
+    deal_id: listing.deal_id ?? null,
+    created_at: listing.created_at,
+    updated_at: listing.updated_at ?? null
+  };
+}
+
 export async function handler(req, res, ctx) {
-  if (req.method !== "PATCH") {
-    return methodNotAllowed(["PATCH"]);
+  if (req.method !== "GET" && req.method !== "PATCH") {
+    return methodNotAllowed(["GET", "PATCH"]);
   }
 
   if (ctx?.authError) {
@@ -54,6 +81,29 @@ export async function handler(req, res, ctx) {
   const listingId = typeof rawId === "string" ? rawId : String(rawId || "");
   if (!isUuid(listingId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "listing id must be a UUID"));
+  }
+
+  if (req.method === "GET") {
+    if (ctx) {
+      ctx.auditEvent = "listing.viewed";
+      ctx.body = { listing_id: listingId };
+    }
+
+    try {
+      const listing = await getListing(listingId);
+      if (!listing) {
+        return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
+      }
+
+      if (listing.status !== "LIVE" && listing.seller_agent_id !== ctx.agentId) {
+        // Anti-enumeration: do not reveal listing status for non-sellers.
+        return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
+      }
+
+      return jsonResponse(200, { data: mapListingDetail(listing) });
+    } catch (error) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
+    }
   }
 
   const idempotencyKey = getHeaderValue(req, "idempotency-key");
@@ -347,6 +397,32 @@ export async function handler(req, res, ctx) {
       }
     }
 
+    if (currentStatus !== "LIVE" && updated.status === "LIVE") {
+      const effectiveTitle = title !== undefined ? title : listing.title;
+      const effectivePriceAmount = priceAmount !== undefined ? priceAmount : listing.price_amount;
+      const effectiveCurrency = currency !== undefined ? currency : listing.currency;
+
+      try {
+        await matchListingToWatchlists({
+          listing: {
+            listing_id: listingId,
+            title: effectiveTitle,
+            category: listing.category,
+            condition: listing.condition,
+            price_amount: effectivePriceAmount,
+            currency: effectiveCurrency,
+            geo_lat: listing.geo_lat ?? null,
+            geo_lng: listing.geo_lng ?? null
+          }
+        });
+      } catch (error) {
+        console.info("watchlist.match_listing_failed", {
+          listing_id: listingId,
+          error: error?.message || String(error)
+        });
+      }
+    }
+
     return jsonResponse(200, {
       listing_id: updated.listing_id,
       status: updated.status,
@@ -359,6 +435,5 @@ export async function handler(req, res, ctx) {
 
 export default withApiMiddlewares(handler, {
   enableIdempotency: true,
-  enableRateLimit: true,
-  routeGroup: "listings.write"
+  enableRateLimit: true
 });
