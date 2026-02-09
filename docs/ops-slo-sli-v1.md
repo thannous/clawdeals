@@ -44,10 +44,12 @@ Core write journeys are auditable through `public.audit_logs`:
   - `BLOCKED`: blocked by middleware (rate limit, idempotency gate, policy)
 
 Limitations (important):
-- We currently do **not** store `status_code` or `duration_ms` as first-class fields in `audit_logs`.
-- Therefore:
-  - “success rate” is measurable immediately.
-  - “p95 latency” requires either (a) adding `duration_ms` to `audit_logs.request` or (b) using platform metrics (Vercel/Cloudflare).
+- `request.status_code` and `request.duration_ms` are stored in the audit payload (added in TI-288).
+- Historical rows (before TI-288) may have `status_code/duration_ms = null` and should be excluded from latency calculations.
+
+Helper views (optional, in-repo):
+- `public.ops_sli_api_write_journeys_daily_v1`
+- `public.ops_sli_approvals_resolve_daily_v1`
 
 ### 3.2 Approvals SLIs: `public.approvals`
 
@@ -84,7 +86,8 @@ SLIs:
    - Good = `outcome = 'SUCCESS'`
    - Total = all audit rows where `action.event = 'deal.create'`
 2. Latency p95 (server-side):
-   - Requires instrumentation (see “Gaps” below).
+   - Good = `status_code` in `200..399`
+   - Measurement = p95 of `request.duration_ms` among good events.
 
 Targets (initial; tune after 2–4 weeks of baseline):
 - Success rate: **>= 99.0%** (rolling 30 days)
@@ -106,6 +109,18 @@ where occurred_at >= now() - interval '30 days'
   and action->>'event' = 'deal.create';
 ```
 
+Example SQL (p95 latency in ms for good events):
+
+```sql
+select
+  percentile_cont(0.95) within group (order by (request->>'duration_ms')::numeric) as p95_duration_ms
+from public.audit_logs
+where occurred_at >= now() - interval '30 days'
+  and action->>'event' = 'deal.create'
+  and (request->>'status_code')::int between 200 and 399
+  and (request->>'duration_ms') is not null;
+```
+
 ### SLO-API-02 — Create Listing + Create Offer (write journey)
 
 What:
@@ -118,7 +133,7 @@ What:
 
 SLIs:
 1. Success rate: same definition as SLO-API-01 (good = `SUCCESS`).
-2. Latency p95 (server-side): requires instrumentation or platform metrics.
+2. Latency p95 (server-side): p95 of `request.duration_ms` among good events.
 
 Targets (initial):
 - Success rate: **>= 99.0%** (rolling 30 days)
@@ -304,11 +319,10 @@ Minimum dashboard panels to implement:
 
 ## 7) Gaps / Next Steps (to make v1 measurable end-to-end)
 
-1. Add `duration_ms` and `status_code` to audit records (recommended):
-   - Add `request.duration_ms` and `request.status_code` (or `action.status_code`) in the audited payload.
-   - This unlocks p95 latency and 4xx/5xx segmentation directly from `audit_logs`.
+1. Backfill / baselining:
+   - `request.duration_ms/status_code` exist for new audit rows (TI-288), but historical rows may not include them.
+   - Establish baselines on “post-TI-288” data before tightening targets.
 2. Add durable SSE metrics:
    - Either ship log-based metrics to a queryable store, or emit lightweight counters to DB/Redis for dashboards.
 3. Add daily SLI export (optional but pragmatic):
    - A cron that computes daily SLI points into a small `sli_daily` table for cheap charts and budget math.
-
