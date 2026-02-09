@@ -1,9 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
+const { verifyApiKeySecret } = vi.hoisted(() => ({
+  verifyApiKeySecret: vi.fn(async (_secret: string, _hash: string) => true)
+}));
+
 const store = new Map<string, string>();
 const mockRedis = {
   get: vi.fn(async (key: string) => store.get(key) ?? null),
-  set: vi.fn(async (key: string, value: string) => {
+  set: vi.fn(async (key: string, value: string, _options?: any) => {
     store.set(key, value);
     return "OK";
   }),
@@ -21,7 +25,7 @@ vi.mock("../utils/api-keys", async () => {
   const actual: any = await vi.importActual("../utils/api-keys");
   return {
     ...actual,
-    verifyApiKeySecret: vi.fn(async () => true)
+    verifyApiKeySecret
   };
 });
 
@@ -51,6 +55,7 @@ describe("authenticateApiKey (auth cache)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     store.clear();
+    verifyApiKeySecret.mockImplementation(async () => true);
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     maybeSingle.mockResolvedValue({
       data: {
@@ -127,6 +132,53 @@ describe("authenticateApiKey (auth cache)", () => {
     expect(result.ok).toBe(false);
     expect(result.reason).toBe("revoked");
     expect(from).not.toHaveBeenCalled();
+  });
+
+  it("treats corrupted cached records as a cache miss (purges and falls back to DB)", async () => {
+    verifyApiKeySecret.mockImplementation(async (_secret: string, hash: any) => {
+      if (typeof hash !== "string" || !hash) {
+        throw new Error("invalid hash");
+      }
+      return true;
+    });
+
+    // Seed a cache entry missing required fields (e.g. key_hash).
+    store.set(
+      "auth:api_key_prefix:abcdefgh",
+      JSON.stringify({
+        api_key_id: "key-1",
+        agent_id: "agent-1",
+        owner_id: "owner-1",
+        key_state: "ACTIVE",
+        grace_expires_at: null,
+        revoked_at: null
+      })
+    );
+
+    const result: any = await authenticateApiKey(API_KEY);
+    expect(result.ok).toBe(true);
+    expect(result.agentId).toBe("agent-1");
+    expect(from).toHaveBeenCalledTimes(1);
+    expect(maybeSingle).toHaveBeenCalledTimes(1);
+    expect(mockRedis.del).toHaveBeenCalledWith("auth:api_key_prefix:abcdefgh");
+  });
+
+  it("treats invalid TTL config as non-fatal (uses default TTL)", async () => {
+    const prev = process.env.API_KEY_LOOKUP_CACHE_TTL_SECONDS;
+    process.env.API_KEY_LOOKUP_CACHE_TTL_SECONDS = "not-a-number";
+    try {
+      const result: any = await authenticateApiKey(API_KEY);
+      expect(result.ok).toBe(true);
+      expect(mockRedis.set).toHaveBeenCalled();
+      const [, , options] = mockRedis.set.mock.calls[0];
+      expect(options).toEqual({ ex: 60 });
+    } finally {
+      if (prev === undefined) {
+        delete process.env.API_KEY_LOOKUP_CACHE_TTL_SECONDS;
+      } else {
+        process.env.API_KEY_LOOKUP_CACHE_TTL_SECONDS = prev;
+      }
+    }
   });
 
   it("purges cached revoked keys", async () => {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { tokenize, evaluateWatchlistMatch, buildEntityTokensFromDeal } from "./matching";
+import {
+  tokenize,
+  evaluateWatchlistMatch,
+  buildEntityTokensFromDeal,
+  buildEntityTokensFromListing,
+  evaluateWatchlistMatchListing
+} from "./matching";
 
 describe("tokenize", () => {
   it("lowercases, splits, and de-dupes tokens", () => {
@@ -62,6 +68,56 @@ describe("evaluateWatchlistMatch", () => {
     const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399 };
     const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], geo_lat: 1, geo_lon: 2, distance_km: 10 };
     const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.geo_missing).toBe(true);
+  });
+});
+
+describe("buildEntityTokensFromListing", () => {
+  it("includes title tokens and category", () => {
+    const tokens = buildEntityTokensFromListing({ title: "RTX 4070", category: "gpu" });
+    expect(tokens).toContain("rtx");
+    expect(tokens).toContain("4070");
+    expect(tokens).toContain("gpu");
+  });
+});
+
+describe("evaluateWatchlistMatchListing", () => {
+  it("matches query tokens (AND)", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399 };
+    const watchlist = { active: true, query_text: "rtx 4070", tags: [] };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(true);
+  });
+
+  it("requires category inclusion when watchlist.tags is non-empty", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399 };
+    const watchlist = { active: true, query_text: null, tags: ["cpu"] };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.tags_ok).toBe(false);
+  });
+
+  it("enforces EUR currency when price_max is set", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "USD", price_amount: 399 };
+    const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], price_max: 450 };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.currency_mismatch).toBe(true);
+  });
+
+  it("enforces geo distance when geo criteria is present", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, geo_lat: 48.86, geo_lng: 2.35 };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], geo_lat: 48.86, geo_lon: 2.35, distance_km: 1 };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.geo_ok).toBe(true);
+  });
+
+  it("treats geo watchlists as non-match when listing has no geo", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, geo_lat: null, geo_lng: null };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], geo_lat: 48.86, geo_lon: 2.35, distance_km: 1 };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
     expect(result.matched).toBe(false);
     expect(result.reason.geo_missing).toBe(true);
   });

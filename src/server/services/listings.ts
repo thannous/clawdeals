@@ -36,6 +36,8 @@ export async function createListing({
   geoLng,
   photos,
   dealId,
+  duplicateFingerprint,
+  duplicateOverride,
   ownerId,
   agentId,
   sellerAgentId
@@ -55,16 +57,38 @@ export async function createListing({
     currency,
     geo_lat: geoLat ?? null,
     geo_lng: geoLng ?? null,
+    duplicate_fingerprint: duplicateFingerprint ?? null,
+    duplicate_override: Boolean(duplicateOverride),
     photos: photos ?? null
   };
-  const { data, error } = await client
-    .from("listings")
-    .insert(payload)
-    .select("listing_id,status,created_at")
-    .single();
+
+  const insert = async (row: any) =>
+    client
+      .from("listings")
+      .insert(row)
+      .select("listing_id,status,created_at")
+      .single();
+
+  let { data, error } = await insert(payload);
+
+  // Backwards-compatible fallback: allow running against DBs that haven't yet
+  // been migrated to support listing duplicate detection fields.
+  const message = error?.message ? String(error.message) : "";
+  const missingDuplicateCols =
+    error &&
+    (message.includes("duplicate_fingerprint") || message.includes("duplicate_override")) &&
+    (message.includes("does not exist") || message.toLowerCase().includes("schema cache"));
+  if (missingDuplicateCols) {
+    const fallbackPayload: any = { ...payload };
+    delete fallbackPayload.duplicate_fingerprint;
+    delete fallbackPayload.duplicate_override;
+    ({ data, error } = await insert(fallbackPayload));
+  }
+
   if (error) {
     mapError(error);
   }
+
   return data;
 }
 
@@ -144,10 +168,60 @@ export async function listListings({
   priceMax,
   sort = "recent",
   limit = DEFAULT_LIMIT,
-  cursor
+  cursor,
+  geo
 }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
+
+  if (sort === "distance") {
+    const lat = geo?.lat;
+    const lng = geo?.lng;
+    const distanceKm = geo?.distanceKm ?? null;
+
+    if (typeof lat !== "number" || !Number.isFinite(lat) || typeof lng !== "number" || !Number.isFinite(lng)) {
+      throw buildServiceError("geo.lat and geo.lng are required for sort=distance", 400, "VALIDATION_ERROR");
+    }
+
+    const cappedLimit = Math.max(1, Math.min(100, pageLimit));
+
+    const { data, error } = await client.rpc("list_listings_geo_v1", {
+      p_lat: lat,
+      p_lng: lng,
+      p_distance_km: distanceKm,
+      p_limit: cappedLimit,
+      p_cursor_distance_m: cursor?.distance_m ?? null,
+      p_cursor_listing_id: cursor?.listing_id ?? null,
+      p_q: q || null,
+      p_category: category || null,
+      p_condition: condition || null,
+      p_price_min: typeof priceMin === "number" ? priceMin : null,
+      p_price_max: typeof priceMax === "number" ? priceMax : null
+    });
+
+    if (error) {
+      mapError(error);
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+    const hasMore = rows.length > cappedLimit;
+    const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+
+    let nextCursor = null;
+    if (hasMore && items.length > 0) {
+      const last = items[items.length - 1] as any;
+      nextCursor = encodeListingsCursor({
+        sort: "distance",
+        distance_m: last.distance_m,
+        listing_id: last.listing_id,
+        lat,
+        lng,
+        distance_km: distanceKm
+      });
+    }
+
+    return { items, nextCursor };
+  }
 
   let query = client
     .from("listings")
@@ -176,77 +250,31 @@ export async function listListings({
     query = query.lte("price_amount", priceMax);
   }
 
-  const orParts: string[] = [];
-  const qPattern = q ? formatFilterValue(`%${q}%`) : null;
-  const qParts = qPattern ? [`title.ilike.${qPattern}`, `description.ilike.${qPattern}`] : null;
+  if (q) {
+    query = query.textSearch("search_tsv", q, { type: "websearch", config: "simple" });
+  }
 
   if (sort === "price_asc") {
     query = query.order("price_amount", { ascending: true }).order("listing_id", { ascending: true });
     if (cursor?.price_amount != null && cursor?.listing_id) {
       const priceAmount = formatFilterValue(cursor.price_amount);
       const listingId = formatFilterValue(cursor.listing_id);
-      const cursorConds = [
-        [`price_amount.gt.${priceAmount}`],
-        [`price_amount.eq.${priceAmount}`, `listing_id.gt.${listingId}`]
-      ];
-      if (qParts) {
-        qParts.forEach((qCond) => {
-          cursorConds.forEach((conj) => {
-            orParts.push(`and(${[qCond, ...conj].join(",")})`);
-          });
-        });
-      } else {
-        orParts.push(cursorConds[0][0], `and(${cursorConds[1].join(",")})`);
-      }
+      query = query.or(`price_amount.gt.${priceAmount},and(price_amount.eq.${priceAmount},listing_id.gt.${listingId})`);
     }
   } else if (sort === "price_desc") {
     query = query.order("price_amount", { ascending: false }).order("listing_id", { ascending: false });
     if (cursor?.price_amount != null && cursor?.listing_id) {
       const priceAmount = formatFilterValue(cursor.price_amount);
       const listingId = formatFilterValue(cursor.listing_id);
-      const cursorConds = [
-        [`price_amount.lt.${priceAmount}`],
-        [`price_amount.eq.${priceAmount}`, `listing_id.lt.${listingId}`]
-      ];
-      if (qParts) {
-        qParts.forEach((qCond) => {
-          cursorConds.forEach((conj) => {
-            orParts.push(`and(${[qCond, ...conj].join(",")})`);
-          });
-        });
-      } else {
-        orParts.push(cursorConds[0][0], `and(${cursorConds[1].join(",")})`);
-      }
+      query = query.or(`price_amount.lt.${priceAmount},and(price_amount.eq.${priceAmount},listing_id.lt.${listingId})`);
     }
   } else {
     query = query.order("created_at", { ascending: false }).order("listing_id", { ascending: false });
     if (cursor?.created_at && cursor?.listing_id) {
       const createdAt = formatFilterValue(cursor.created_at);
       const listingId = formatFilterValue(cursor.listing_id);
-      const cursorConds = [
-        [`created_at.lt.${createdAt}`],
-        [`created_at.eq.${createdAt}`, `listing_id.lt.${listingId}`]
-      ];
-      if (qParts) {
-        qParts.forEach((qCond) => {
-          cursorConds.forEach((conj) => {
-            orParts.push(`and(${[qCond, ...conj].join(",")})`);
-          });
-        });
-      } else {
-        orParts.push(cursorConds[0][0], `and(${cursorConds[1].join(",")})`);
-      }
-    } else if (qParts) {
-      orParts.push(...qParts);
+      query = query.or(`created_at.lt.${createdAt},and(created_at.eq.${createdAt},listing_id.lt.${listingId})`);
     }
-  }
-
-  // Supabase's PostgREST client only supports one `or` filter reliably (it sets a single query param),
-  // so we combine q-search + keyset pagination into a single expression when both are present.
-  if (orParts.length > 0) {
-    query = query.or(orParts.join(","));
-  } else if (qParts) {
-    query = query.or(qParts.join(","));
   }
 
   const { data, error } = await query;

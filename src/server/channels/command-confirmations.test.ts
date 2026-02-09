@@ -88,4 +88,31 @@ describe("command confirmations", () => {
     const peek = await getConfirmation({ channelIdentityId: "cid-1", action: "deny", targetId: "approval-1" });
     expect(peek).toEqual({ reason: "first" });
   });
+
+  it("consumes atomically under concurrency", async () => {
+    await createConfirmation({
+      channelIdentityId: "cid-1",
+      action: "approve",
+      targetId: "approval-2",
+      payload: { approvalId: "approval-2" },
+      ttlSeconds: 600
+    });
+
+    mockRedis.get.mockClear();
+    mockRedis.del.mockClear();
+    mockRedis.eval.mockClear();
+
+    const [a, b] = await Promise.all([
+      consumeConfirmation({ channelIdentityId: "cid-1", action: "approve", targetId: "approval-2" }),
+      consumeConfirmation({ channelIdentityId: "cid-1", action: "approve", targetId: "approval-2" })
+    ]);
+
+    const nonNull = [a, b].filter(Boolean);
+    expect(nonNull).toHaveLength(1);
+    expect(nonNull[0]).toEqual({ approvalId: "approval-2" });
+
+    expect(mockRedis.eval).toHaveBeenCalledTimes(2);
+    expect(mockRedis.get).toHaveBeenCalledTimes(0);
+    expect(mockRedis.del).toHaveBeenCalledTimes(0);
+  });
 });

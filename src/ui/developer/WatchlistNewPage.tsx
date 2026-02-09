@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { apiRequest } from "./api";
 import { getStoredApiKey } from "./storage";
 
@@ -11,17 +11,13 @@ function parseTags(input: string): string[] {
 }
 
 export default function WatchlistNewPage() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKey] = useState<string | null>(() => getStoredApiKey());
   const [query, setQuery] = useState("");
   const [tags, setTags] = useState("");
   const [priceMax, setPriceMax] = useState<string>("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [createdId, setCreatedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setApiKey(getStoredApiKey());
-  }, []);
 
   const canSubmit = useMemo(() => {
     if (!apiKey) return false;
@@ -182,4 +178,3 @@ export default function WatchlistNewPage() {
     </div>
   );
 }
-

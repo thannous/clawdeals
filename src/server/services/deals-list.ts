@@ -10,7 +10,12 @@ function mapError(error) {
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
 }
 
-export async function listDeals({ sort = "new", statuses, q, tags, minTemperature = 0, limit, cursor }: any = {}) {
+function isRpcParamMismatch(error: any, paramName: string) {
+  const message = error?.message || "";
+  return typeof message === "string" && message.includes(paramName) && message.includes("schema cache");
+}
+
+export async function listDeals({ sort = "new", statuses, q, tags, priceMax, minTemperature = 0, limit, cursor }: any = {}) {
   const client = getSupabaseServiceClient();
 
   const pageLimit = typeof limit === "number" ? limit : DEFAULT_LIMIT;
@@ -21,40 +26,62 @@ export async function listDeals({ sort = "new", statuses, q, tags, minTemperatur
   let error;
   let trendAsOf = null;
 
+  // We always include p_price_max (even null) to disambiguate PostgREST RPC overloads when
+  // both list_deals_* variants exist with and without p_price_max.
+  const normalizedPriceMax = Number.isFinite(priceMax) ? priceMax : null;
+
   if (sort === "new") {
     const statusesValue = Array.isArray(statuses) && statuses.length ? statuses : ["NEW", "ACTIVE"];
-    ({ data, error } = await client.rpc("list_deals_new_v0", {
+    const payload: any = {
       p_statuses: statusesValue,
       p_q: q || null,
       p_tags: tags && tags.length ? tags : null,
+      p_price_max: normalizedPriceMax,
       p_limit: fetchLimit,
       p_cursor_status: cursor?.status || null,
       p_cursor_created_at: cursor?.created_at || null,
       p_cursor_deal_id: cursor?.deal_id || null
-    }));
+    };
+    ({ data, error } = await client.rpc("list_deals_new_v0", payload));
+    if (error && payload.p_price_max !== undefined && isRpcParamMismatch(error, "p_price_max")) {
+      delete payload.p_price_max;
+      ({ data, error } = await client.rpc("list_deals_new_v0", payload));
+    }
   } else if (sort === "temp") {
-    ({ data, error } = await client.rpc("list_deals_temp_v0", {
+    const payload: any = {
       p_q: q || null,
       p_tags: tags && tags.length ? tags : null,
+      p_price_max: normalizedPriceMax,
       p_min_temperature: minTemperature ?? 0,
       p_limit: fetchLimit,
       p_cursor_temperature: cursor?.temperature ?? null,
       p_cursor_created_at: cursor?.created_at || null,
       p_cursor_deal_id: cursor?.deal_id || null
-    }));
+    };
+    ({ data, error } = await client.rpc("list_deals_temp_v0", payload));
+    if (error && payload.p_price_max !== undefined && isRpcParamMismatch(error, "p_price_max")) {
+      delete payload.p_price_max;
+      ({ data, error } = await client.rpc("list_deals_temp_v0", payload));
+    }
   } else if (sort === "trend") {
     trendAsOf = cursor?.as_of || new Date().toISOString();
-    ({ data, error } = await client.rpc("list_deals_trend_v0", {
+    const payload: any = {
       p_as_of: trendAsOf,
       p_q: q || null,
       p_tags: tags && tags.length ? tags : null,
+      p_price_max: normalizedPriceMax,
       p_min_temperature: minTemperature ?? 0,
       p_limit: fetchLimit,
       p_cursor_trend_score: cursor?.trend_score ?? null,
       p_cursor_active_at: cursor?.active_at || null,
       p_cursor_created_at: cursor?.created_at || null,
       p_cursor_deal_id: cursor?.deal_id || null
-    }));
+    };
+    ({ data, error } = await client.rpc("list_deals_trend_v0", payload));
+    if (error && payload.p_price_max !== undefined && isRpcParamMismatch(error, "p_price_max")) {
+      delete payload.p_price_max;
+      ({ data, error } = await client.rpc("list_deals_trend_v0", payload));
+    }
   } else {
     throw Object.assign(new Error("Invalid sort"), { status: 400, code: "VALIDATION_ERROR" });
   }

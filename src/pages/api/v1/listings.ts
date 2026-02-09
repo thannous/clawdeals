@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../server/http/response";
 import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors";
 import { createListing, listListings } from "../../../server/services/listings";
+import { findListingDuplicate } from "../../../server/services/listings-duplicates";
 import { resolveTrustContext } from "../../../server/trustscore/context";
 import { evaluatePolicyAction, POLICY_DECISION } from "../../../server/policy/evaluate";
 import { getPolicyOrDefault } from "../../../server/services/policies";
@@ -10,7 +11,9 @@ import { createApproval } from "../../../server/services/approvals";
 import { publishSseEvent } from "../../../server/sse/store";
 import { decodeListingsCursor } from "../../../server/services/listings-cursor";
 import { ALLOWED_CURRENCIES } from "../../../server/config/deals";
+import { computeListingDuplicateFingerprint } from "../../../server/utils/listings-duplicates";
 import { isUuid } from "../../../server/utils/validators";
+import { matchListingToWatchlists } from "../../../server/services/watchlist-matching";
 
 const CONDITIONS = new Set(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]);
 
@@ -40,6 +43,18 @@ function parseIntegerQueryParam(raw, name) {
   const n = Number(trimmed);
   if (!Number.isSafeInteger(n)) {
     throw new Error(`${name} must be an integer`);
+  }
+  return n;
+}
+
+function parseFloatQueryParam(raw, name) {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const asString = typeof raw === "string" ? raw : String(raw);
+  const trimmed = asString.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n)) {
+    throw new Error(`${name} must be a number`);
   }
   return n;
 }
@@ -129,6 +144,12 @@ function parsePhotos(value) {
 }
 
 function mapListingRow(row) {
+  const distanceM = typeof row?.distance_m === "number" && Number.isFinite(row.distance_m) ? row.distance_m : null;
+  const distanceKm =
+    distanceM === null
+      ? null
+      : Math.round((distanceM / 1000) * 1000) / 1000;
+
   return {
     listing_id: row.listing_id,
     title: row.title,
@@ -138,7 +159,7 @@ function mapListingRow(row) {
       amount: row.price_amount,
       currency: row.currency
     },
-    distance_km: null,
+    distance_km: distanceKm,
     created_at: row.created_at
   };
 }
@@ -199,12 +220,6 @@ export async function handler(req, res, ctx) {
 
   if (req.method === "GET") {
 
-    const sortRaw = resolveParam(req.query?.sort);
-    const sortValue = sortRaw ? String(sortRaw).trim().toLowerCase() : "recent";
-    if (sortValue !== "recent" && sortValue !== "price_asc" && sortValue !== "price_desc" && sortValue !== "distance") {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "sort is invalid"));
-    }
-
     const rawLat = resolveParam(req.query?.lat);
     const rawLng = resolveParam(req.query?.lng);
     const rawDistance = resolveParam(req.query?.distance_km);
@@ -212,7 +227,6 @@ export async function handler(req, res, ctx) {
     const hasLat = rawLat !== undefined && rawLat !== null && rawLat !== "";
     const hasLng = rawLng !== undefined && rawLng !== null && rawLng !== "";
     const hasDistance = rawDistance !== undefined && rawDistance !== null && rawDistance !== "";
-    const sortIsDistance = sortValue === "distance";
 
     if ((hasLat && !hasLng) || (hasLng && !hasLat)) {
       return jsonResponse(400, errorPayload("GEO_REQUIRED", "lat and lng are required together"));
@@ -220,11 +234,56 @@ export async function handler(req, res, ctx) {
     if (hasDistance && (!hasLat || !hasLng)) {
       return jsonResponse(400, errorPayload("GEO_REQUIRED", "lat and lng are required when distance_km is provided"));
     }
+
+    const sortRaw = resolveParam(req.query?.sort);
+    const sortProvided = sortRaw !== undefined && sortRaw !== null && String(sortRaw).trim() !== "";
+    let sortValue = sortProvided ? String(sortRaw).trim().toLowerCase() : hasLat ? "distance" : "recent";
+    if (sortValue !== "recent" && sortValue !== "price_asc" && sortValue !== "price_desc" && sortValue !== "distance") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "sort is invalid"));
+    }
+
+    if (hasLat && sortProvided && sortValue !== "distance") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "sort must be distance when using geo"));
+    }
+
+    const sortIsDistance = sortValue === "distance";
     if (sortIsDistance && (!hasLat || !hasLng)) {
       return jsonResponse(400, errorPayload("GEO_REQUIRED", "lat and lng are required when sort=distance"));
     }
-    if (hasLat || hasLng || hasDistance || sortIsDistance) {
-      return jsonResponse(501, errorPayload("GEO_NOT_SUPPORTED", "Geo search is not supported in v0"));
+
+    let lat = null;
+    let lng = null;
+    let distanceKm = null;
+    if (sortIsDistance) {
+      try {
+        lat = parseFloatQueryParam(rawLat, "lat");
+        lng = parseFloatQueryParam(rawLng, "lng");
+      } catch (error) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+      }
+      if (lat === null || lng === null) {
+        return jsonResponse(400, errorPayload("GEO_REQUIRED", "lat and lng are required when sort=distance"));
+      }
+      if (lat < -90 || lat > 90) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "lat must be between -90 and 90"));
+      }
+      if (lng < -180 || lng > 180) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "lng must be between -180 and 180"));
+      }
+
+      if (hasDistance) {
+        try {
+          distanceKm = parseIntegerQueryParam(rawDistance, "distance_km");
+        } catch (error) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+        }
+        if (distanceKm === null) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", "distance_km must be an integer"));
+        }
+        if (distanceKm < 1 || distanceKm > 300) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", "distance_km must be between 1 and 300"));
+        }
+      }
     }
 
     const rawLimit = resolveParam(req.query?.limit);
@@ -311,6 +370,21 @@ export async function handler(req, res, ctx) {
         return jsonResponse(400, errorPayload("VALIDATION_ERROR", "cursor does not match sort"));
       }
       cursor = parsed?.value || null;
+
+      if (sortIsDistance) {
+        const cursorLat = cursor?.lat;
+        const cursorLng = cursor?.lng;
+        const cursorDistanceKm = cursor?.distance_km ?? null;
+        const geoMatches =
+          typeof cursorLat === "number" &&
+          typeof cursorLng === "number" &&
+          Math.abs(cursorLat - lat) < 1e-9 &&
+          Math.abs(cursorLng - lng) < 1e-9 &&
+          (cursorDistanceKm === null ? distanceKm === null : cursorDistanceKm === distanceKm);
+        if (!geoMatches) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", "cursor does not match geo"));
+        }
+      }
     }
 
     if (ctx) {
@@ -322,7 +396,9 @@ export async function handler(req, res, ctx) {
         has_price_max: priceMax != null,
         sort: sortValue,
         limit,
-        has_cursor: Boolean(rawCursor)
+        has_cursor: Boolean(rawCursor),
+        has_geo: sortIsDistance,
+        has_distance_km: distanceKm != null
       };
     }
 
@@ -335,7 +411,8 @@ export async function handler(req, res, ctx) {
         priceMax,
         sort: sortValue,
         limit,
-        cursor
+        cursor,
+        ...(sortIsDistance ? { geo: { lat, lng, distanceKm } } : {})
       });
 
       return jsonResponse(200, {
@@ -362,6 +439,7 @@ export async function handler(req, res, ctx) {
   const rawPhotos = body.photos;
   const rawPublish = body.publish;
   const rawDealId = body.deal_id;
+  const rawForceCreate = body.force_create;
 
   let title;
   let description;
@@ -373,6 +451,7 @@ export async function handler(req, res, ctx) {
   let photos;
   let publish = true;
   let dealId = null;
+  let forceCreate = false;
 
   try {
     title = stripHtmlTags(parseNonEmptyString(rawTitle, "title")).trim();
@@ -421,6 +500,13 @@ export async function handler(req, res, ctx) {
       }
       dealId = rawDealId;
     }
+
+    if (rawForceCreate !== undefined && rawForceCreate !== null) {
+      if (typeof rawForceCreate !== "boolean") {
+        throw new Error("force_create must be a boolean");
+      }
+      forceCreate = rawForceCreate;
+    }
   } catch (error) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
   }
@@ -439,9 +525,10 @@ export async function handler(req, res, ctx) {
     const ownerId = ctx.ownerId || null;
     const agentId = ctx.agentId || null;
 
+    let policyRecord: any = null;
     let policyDecision: any = { decision: POLICY_DECISION.N_A, policy_version: null };
     if (ownerId) {
-      const policyRecord = await getPolicyOrDefault(ownerId);
+      policyRecord = await getPolicyOrDefault(ownerId);
       policyDecision = evaluatePolicyAction({
         policy: policyRecord?.policy_json || {},
         action: "listing.create"
@@ -459,6 +546,62 @@ export async function handler(req, res, ctx) {
     const quarantineApplied = Boolean(trust?.quarantine_applied);
     const requiresApproval = policyDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL;
 
+    const duplicateFingerprint = publish
+      ? computeListingDuplicateFingerprint({
+          title,
+          category,
+          priceAmount,
+          geoLat: geo ? geo.lat : null,
+          geoLng: geo ? geo.lng : null
+        })
+      : null;
+
+    const existingDuplicate = duplicateFingerprint
+      ? await findListingDuplicate({ fingerprint: duplicateFingerprint })
+      : null;
+
+    if (existingDuplicate && !forceCreate) {
+      if (ctx) {
+        ctx.auditEvent = "listing.duplicate_detected";
+        ctx.outcome = { type: "BLOCKED", reason: "duplicate" };
+      }
+      return jsonResponse(
+        409,
+        errorPayload("DUPLICATE_SUSPECTED", "A similar listing was recently created.", {
+          existing_listing_id: existingDuplicate.listing_id,
+          existing_created_at: existingDuplicate.created_at,
+          existing_status: existingDuplicate.status
+        })
+      );
+    }
+
+    let forceDecision: any = null;
+    let forceRequiresApproval = false;
+    const duplicateOverride = Boolean(existingDuplicate && forceCreate);
+
+    if (duplicateOverride) {
+      if (!ownerId) {
+        if (ctx) {
+          ctx.outcome = { type: "BLOCKED", reason: "ownership" };
+        }
+        return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+      }
+
+      forceDecision = evaluatePolicyAction({
+        policy: policyRecord?.policy_json || {},
+        action: "listing.force_create"
+      });
+      forceRequiresApproval = forceDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL;
+
+      if (ctx) {
+        ctx.policy = {
+          decision: forceDecision.decision,
+          policy_version: forceDecision.policy_version,
+          approval_id: null
+        };
+      }
+    }
+
     // Quarantined publish flows require an owner context so we can create an approval.
     // Without an ownerId, we'd create an unresolvable PENDING_APPROVAL listing.
     if (publish && quarantineApplied && !ownerId) {
@@ -468,13 +611,19 @@ export async function handler(req, res, ctx) {
       return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
     }
 
-    const status = !publish
+    let status = !publish
       ? "DRAFT"
       : quarantineApplied || requiresApproval
         ? "PENDING_APPROVAL"
         : "LIVE";
 
-    const listing = await createListing({
+    if (publish && duplicateOverride && forceRequiresApproval) {
+      status = "PENDING_APPROVAL";
+    }
+
+    let listing: any;
+    try {
+      listing = await createListing({
       title,
       description,
       category,
@@ -486,10 +635,32 @@ export async function handler(req, res, ctx) {
       geoLng: geo ? geo.lng : null,
       photos,
       dealId,
+      duplicateFingerprint,
+      duplicateOverride,
       ownerId,
       agentId,
       sellerAgentId: agentId
     });
+    } catch (error) {
+      if (duplicateFingerprint && error?.code === "CONFLICT" && !duplicateOverride) {
+        const dup = await findListingDuplicate({ fingerprint: duplicateFingerprint });
+        if (dup) {
+          if (ctx) {
+            ctx.auditEvent = "listing.duplicate_detected";
+            ctx.outcome = { type: "BLOCKED", reason: "duplicate" };
+          }
+          return jsonResponse(
+            409,
+            errorPayload("DUPLICATE_SUSPECTED", "A similar listing was recently created.", {
+              existing_listing_id: dup.listing_id,
+              existing_created_at: dup.created_at,
+              existing_status: dup.status
+            })
+          );
+        }
+      }
+      throw error;
+    }
 
     let approvalId = null;
     if (status === "PENDING_APPROVAL" && ownerId) {
@@ -504,9 +675,11 @@ export async function handler(req, res, ctx) {
       approvalId = approval.approval_id;
 
       if (ctx) {
+        const approvalPolicyDecision =
+          duplicateOverride && forceRequiresApproval && forceDecision ? forceDecision : policyDecision;
         ctx.policy = {
-          decision: policyDecision.decision,
-          policy_version: policyDecision.policy_version,
+          decision: approvalPolicyDecision.decision,
+          policy_version: approvalPolicyDecision.policy_version,
           approval_id: approvalId
         };
       }
@@ -524,6 +697,28 @@ export async function handler(req, res, ctx) {
     } catch (error) {
       // Best-effort: listing creation should not fail due to SSE infra.
       console.info("sse.publish_failed", { type: "listing.created", error: error?.message || String(error) });
+    }
+
+    if (status === "LIVE") {
+      try {
+        await matchListingToWatchlists({
+          listing: {
+            listing_id: listing.listing_id,
+            title,
+            category,
+            condition,
+            price_amount: priceAmount,
+            currency,
+            geo_lat: geo ? geo.lat : null,
+            geo_lng: geo ? geo.lng : null
+          }
+        });
+      } catch (error) {
+        console.info("watchlist.match_listing_failed", {
+          listing_id: listing.listing_id,
+          error: error?.message || String(error)
+        });
+      }
     }
 
     return jsonResponse(201, {

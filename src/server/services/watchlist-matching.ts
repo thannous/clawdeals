@@ -3,7 +3,12 @@ import { mapSupabaseError } from "./supabase-errors";
 import { publishSseEvent } from "../sse/store";
 import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { MAX_MATCHES_PER_DEAL, WATCHLIST_MATCH_EVENT_MAX_IDS } from "../config/watchlists";
-import { buildEntityTokensFromDeal, evaluateWatchlistMatch } from "../utils/matching";
+import {
+  buildEntityTokensFromDeal,
+  buildEntityTokensFromListing,
+  evaluateWatchlistMatch,
+  evaluateWatchlistMatchListing
+} from "../utils/matching";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
   const error: any = new Error(message);
@@ -68,6 +73,67 @@ async function fetchCandidateWatchlists({ deal, client }) {
   // Price-only watchlists (or query+price) need to be considered too.
   if (dealCurrency === "EUR" && Number.isFinite(dealPrice)) {
     queries.push(baseQuery().gte("price_max", dealPrice).limit(5000));
+  }
+
+  const results = await Promise.all(
+    queries.map(async (q) => {
+      const { data, error } = await q;
+      if (error) mapError(error);
+      return Array.isArray(data) ? data : [];
+    })
+  );
+
+  const unique = new Map();
+  for (const list of results) {
+    for (const row of list) {
+      if (!row?.watchlist_id) continue;
+      if (!unique.has(row.watchlist_id)) unique.set(row.watchlist_id, row);
+    }
+  }
+
+  return Array.from(unique.values());
+}
+
+async function fetchCandidateWatchlistsForListing({ listing, client }) {
+  const select =
+    "watchlist_id,agent_id,active,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+
+  const baseQuery = () =>
+    client
+      .from("watchlists")
+      .select(select)
+      .eq("active", true)
+      .is("deleted_at", null);
+
+  const category = typeof listing?.category === "string" ? listing.category.trim().toLowerCase() : null;
+  const listingTags = category ? [category] : [];
+
+  const listingPrice = toNumber(listing?.price_amount);
+  const listingCurrency = typeof listing?.currency === "string" ? listing.currency.trim().toUpperCase() : null;
+
+  const hasGeo =
+    typeof listing?.geo_lat === "number" &&
+    Number.isFinite(listing.geo_lat) &&
+    typeof listing?.geo_lng === "number" &&
+    Number.isFinite(listing.geo_lng);
+
+  const queries = [];
+
+  if (listingTags.length > 0) {
+    queries.push(baseQuery().overlaps("tags", listingTags).limit(5000));
+  }
+
+  // Any watchlist with a query is a candidate (query match happens in memory).
+  queries.push(baseQuery().not("query_text", "is", null).limit(5000));
+
+  // Price-only watchlists (or query+price) need to be considered too.
+  if (listingCurrency === "EUR" && Number.isFinite(listingPrice)) {
+    queries.push(baseQuery().gte("price_max", listingPrice).limit(5000));
+  }
+
+  // Geo-only watchlists need to be considered (listing geo match happens in memory).
+  if (hasGeo) {
+    queries.push(baseQuery().not("geo_lat", "is", null).not("geo_lon", "is", null).not("distance_km", "is", null).limit(5000));
   }
 
   const results = await Promise.all(
@@ -232,6 +298,118 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
       await markDelivered({ client: supabase, matchIds: state.matchIds, deliveredAt });
     } else {
       console.info("watchlist.match_sse_failed", { agent_id: agentId, deal_id: deal.deal_id, result });
+    }
+  }
+
+  return {
+    ok: true,
+    candidates_count: candidates.length,
+    matched_count: matches.length,
+    inserted_count: inserted.length
+  };
+}
+
+export async function matchListingToWatchlists({ listing, now = new Date(), client }: any = {}) {
+  if (!listing || typeof listing !== "object") {
+    throw buildServiceError("listing is required", 400, "VALIDATION_ERROR");
+  }
+  if (!listing.listing_id) {
+    throw buildServiceError("listing.listing_id is required", 400, "VALIDATION_ERROR");
+  }
+
+  const supabase = client || getSupabaseServiceClient();
+  const entityTokens = buildEntityTokensFromListing(listing);
+
+  const candidates = await fetchCandidateWatchlistsForListing({ listing, client: supabase });
+  if (candidates.length === 0) {
+    return { ok: true, candidates_count: 0, matched_count: 0, inserted_count: 0 };
+  }
+
+  const matches = [];
+  for (const watchlist of candidates) {
+    const evaluated = evaluateWatchlistMatchListing({ listing, watchlist, entityTokens });
+    if (evaluated.matched) {
+      matches.push({
+        watchlist,
+        reason: evaluated.reason
+      });
+      if (matches.length > MAX_MATCHES_PER_DEAL) {
+        console.info("watchlist.match_overflow", {
+          listing_id: listing.listing_id,
+          max_matches_per_entity: MAX_MATCHES_PER_DEAL
+        });
+        return { ok: false, reason: "overflow", candidates_count: candidates.length, matched_count: matches.length };
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    return { ok: true, candidates_count: candidates.length, matched_count: 0, inserted_count: 0 };
+  }
+
+  const matchedAt = now.toISOString();
+
+  const rows = matches.map(({ watchlist, reason }) => ({
+    watchlist_id: watchlist.watchlist_id,
+    agent_id: watchlist.agent_id,
+    entity_type: "listing",
+    entity_id: listing.listing_id,
+    matched_at: matchedAt,
+    reason: reason && typeof reason === "object" && Object.keys(reason).length > 0 ? reason : null
+  }));
+
+  const inserted = await upsertMatches({ client: supabase, rows });
+
+  if (inserted.length === 0) {
+    console.info("watchlist.match.duplicate_suppressed", { listing_id: listing.listing_id });
+    return {
+      ok: true,
+      candidates_count: candidates.length,
+      matched_count: matches.length,
+      inserted_count: 0
+    };
+  }
+
+  const insertedByAgent = new Map();
+  for (const row of inserted) {
+    const agentId = row.agent_id;
+    if (!agentId) continue;
+    const state = insertedByAgent.get(agentId) || { watchlistIds: [], matchIds: [] };
+    if (row.watchlist_id) state.watchlistIds.push(row.watchlist_id);
+    if (row.watchlist_match_id) state.matchIds.push(row.watchlist_match_id);
+    insertedByAgent.set(agentId, state);
+  }
+
+  const deliveredAt = new Date().toISOString();
+
+  for (const [agentId, state] of insertedByAgent.entries()) {
+    const canSend = await shouldSendSseForAgent({ agentId });
+    if (!canSend) {
+      console.info("watchlist.match.rate_limited", { agent_id: agentId, listing_id: listing.listing_id });
+      continue;
+    }
+
+    const allIds = Array.from(new Set(state.watchlistIds));
+    const watchlistIds = allIds.slice(0, WATCHLIST_MATCH_EVENT_MAX_IDS);
+    const watchlistIdsTruncated = allIds.length > WATCHLIST_MATCH_EVENT_MAX_IDS;
+
+    const result = await publishSseEvent({
+      audienceType: "agent",
+      audienceId: agentId,
+      type: "watchlist.match",
+      entity: { type: "listing", id: listing.listing_id },
+      payload: {
+        listing_id: listing.listing_id,
+        watchlist_ids: watchlistIds,
+        watchlist_ids_truncated: watchlistIdsTruncated
+      },
+      ts: matchedAt
+    });
+
+    if (result?.ok) {
+      await markDelivered({ client: supabase, matchIds: state.matchIds, deliveredAt });
+    } else {
+      console.info("watchlist.match_sse_failed", { agent_id: agentId, listing_id: listing.listing_id, result });
     }
   }
 

@@ -30,12 +30,17 @@ vi.mock("../../../../server/sse/store", () => ({
   publishSseEvent: vi.fn().mockResolvedValue({ ok: true })
 }));
 
+vi.mock("../../../../server/services/watchlist-matching", () => ({
+  matchListingToWatchlists: vi.fn()
+}));
+
 import { handler } from "../../../../pages/api/v1/listings/[id]";
 import { getListing, updateListingBySeller } from "../../../../server/services/listings";
 import { getPolicyOrDefault } from "../../../../server/services/policies";
 import { cancelPendingListingPublishApproval, createApproval } from "../../../../server/services/approvals";
 import { resolveTrustContext } from "../../../../server/trustscore/context";
 import { publishSseEvent } from "../../../../server/sse/store";
+import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
 
 const getListingMock = vi.mocked(getListing);
 const updateListingBySellerMock = vi.mocked(updateListingBySeller);
@@ -44,6 +49,7 @@ const createApprovalMock = vi.mocked(createApproval);
 const cancelPendingListingPublishApprovalMock = vi.mocked(cancelPendingListingPublishApproval);
 const resolveTrustContextMock = vi.mocked(resolveTrustContext);
 const publishSseEventMock = vi.mocked(publishSseEvent);
+const matchListingToWatchlistsMock = vi.mocked(matchListingToWatchlists);
 
 const listingId = "11111111-1111-4111-8111-111111111111";
 
@@ -59,6 +65,7 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
     vi.clearAllMocks();
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
     getPolicyOrDefaultMock.mockResolvedValue({ policy_json: { auto_approve: { actions: [] } } } as any);
+    matchListingToWatchlistsMock.mockResolvedValue(undefined as any);
     updateListingBySellerMock.mockResolvedValue({
       listing_id: listingId,
       status: "LIVE",

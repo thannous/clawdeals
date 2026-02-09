@@ -28,9 +28,11 @@ export const RATE_LIMIT_PROFILES = {
     buckets: [{ limit: 20, windowSeconds: HOUR }],
   },
   "policies.read": {
+    scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
   "policies.write": {
+    scope: "owner",
     buckets: [{ limit: 10, windowSeconds: HOUR }],
   },
   "approvals.read": {
@@ -48,6 +50,12 @@ export const RATE_LIMIT_PROFILES = {
   "approvals.write": {
     scope: "owner",
     buckets: [{ limit: 60, windowSeconds: HOUR }],
+  },
+  "console.approvals.write": {
+    // Ops console can legitimately perform many moderation actions in a short window.
+    // Keep this separate from owner-facing approvals.write to avoid relaxing production limits.
+    scope: "owner",
+    buckets: [{ limit: 500, windowSeconds: HOUR }],
   },
   "deals.create": {
     buckets: [{ limit: 20, windowSeconds: DAY }],
@@ -79,7 +87,7 @@ export const RATE_LIMIT_PROFILES = {
     buckets: [{ limit: 60, windowSeconds: MINUTE }],
   },
   "listings.create": {
-    buckets: [{ limit: 10, windowSeconds: DAY }],
+    buckets: [{ limit: 50, windowSeconds: DAY }],
   },
   "listings.write": {
     buckets: [{ limit: 30, windowSeconds: DAY }],
@@ -138,11 +146,14 @@ export const RATE_LIMIT_PROFILES = {
   },
   "ops.psp.write": {
     scope: "owner",
-    buckets: [{ limit: 30, windowSeconds: HOUR }],
+    buckets: [{ limit: 200, windowSeconds: HOUR }],
   },
   "ops.psp.read": {
     scope: "owner",
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "sandbox.reset": {
+    buckets: [{ limit: 20, windowSeconds: HOUR }],
   },
   "sellers.psp.write": {
     scope: "owner",
@@ -200,9 +211,9 @@ export const RATE_LIMIT_PROFILES = {
     buckets: [{ limit: 10, windowSeconds: HOUR }],
   },
   "sse.connect": {
-    // NOTE: This is a token-bucket approximation. True concurrency should use
-    // acquire/release helpers when SSE is implemented.
-    buckets: [{ limit: 2, windowSeconds: MINUTE }],
+    // SSE concurrency is enforced separately via acquire/release slots.
+    // Keep this as a (generous) connect-rate guard to avoid reconnect storms.
+    buckets: [{ limit: 60, windowSeconds: MINUTE }],
   },
   "sse.reconnect_ip": {
     scope: "ip",

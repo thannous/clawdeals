@@ -7,10 +7,10 @@ import { createSupabaseAdmin, ensureOwnerDb, createAgentDb, createActiveApiKeyDb
 
 assertIntegrationEnv();
 
-test.describe.serial("Integration: Listings (TI-193 + TI-194)", () => {
+test.describe.serial("Integration: Listings (TI-193 + TI-194 + TI-268 + TI-271)", () => {
   test.setTimeout(60000);
 
-  test("create (LIVE/DRAFT/PENDING_APPROVAL) + idempotency + search + geo errors", async ({ request }) => {
+  test("create (LIVE/DRAFT/PENDING_APPROVAL) + idempotency + search + geo + dedupe", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
@@ -196,9 +196,104 @@ test.describe.serial("Integration: Listings (TI-193 + TI-194)", () => {
     const geoUnsupported = await request.get("/api/v1/listings?lat=1&lng=2", {
       headers: { Authorization: `Bearer ${apiKey}` }
     });
-    expect(geoUnsupported.status()).toBe(501);
+    await expectStatus(geoUnsupported, 200);
     const geoUnsupportedBody = await geoUnsupported.json();
-    expect(geoUnsupportedBody.error.code).toBe("GEO_NOT_SUPPORTED");
+    expect(Array.isArray(geoUnsupportedBody.data)).toBe(true);
+
+    // Geo distance sort: create 2 LIVE listings with geo and ensure closest comes first.
+    const geoCategory = `ti268_${randomId()}`;
+    const nearRes = await createListing(request, apiKey, {
+      title: `TI-268 near ${randomId()}`,
+      category: geoCategory,
+      price: { amount: 10, currency: "EUR" },
+      geo: { lat: 48.8566, lng: 2.3522 },
+      publish: true
+    });
+    await expectStatus(nearRes, 201);
+    const nearBody = await nearRes.json();
+    expect(nearBody.status).toBe("LIVE");
+
+    const farRes = await createListing(request, apiKey, {
+      title: `TI-268 far ${randomId()}`,
+      category: geoCategory,
+      price: { amount: 20, currency: "EUR" },
+      geo: { lat: 47.0, lng: 2.0 },
+      publish: true
+    });
+    await expectStatus(farRes, 201);
+    const farBody = await farRes.json();
+    expect(farBody.status).toBe("LIVE");
+
+    const geoRes = await request.get(
+      `/api/v1/listings?sort=distance&lat=48.8566&lng=2.3522&distance_km=300&category=${encodeURIComponent(geoCategory)}&limit=50`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    await expectStatus(geoRes, 200);
+    const geoBody = await geoRes.json();
+    const geoIds = (geoBody.data || []).map((row: any) => row.listing_id);
+    expect(geoIds).toEqual([nearBody.listing_id, farBody.listing_id]);
+    expect(typeof geoBody.data[0].distance_km).toBe("number");
+    expect(typeof geoBody.data[1].distance_km).toBe("number");
+    expect(geoBody.data[0].distance_km).toBeLessThanOrEqual(geoBody.data[1].distance_km);
+
+    // Dedupe: second listing with same fingerprint should be blocked unless force_create=true.
+    const dupCategory = `ti271_${randomId()}`;
+    const dupTitle = `TI-271 dup ${randomId()}`;
+    const aRes = await createListing(request, apiKey, {
+      title: dupTitle,
+      category: dupCategory,
+      condition: "GOOD",
+      price: { amount: 12345, currency: "EUR" },
+      publish: true
+    });
+    await expectStatus(aRes, 201);
+    const aBody = await aRes.json();
+    expect(aBody.status).toBe("LIVE");
+
+    const bRes = await createListing(request, apiKey, {
+      title: dupTitle,
+      category: dupCategory,
+      condition: "GOOD",
+      price: { amount: 12345, currency: "EUR" },
+      publish: true
+    });
+    expect(bRes.status()).toBe(409);
+    const bBody = await bRes.json();
+    expect(bBody.error.code).toBe("DUPLICATE_SUSPECTED");
+
+    const cRes = await createListing(request, apiKey, {
+      title: dupTitle,
+      category: dupCategory,
+      condition: "GOOD",
+      price: { amount: 12345, currency: "EUR" },
+      publish: true,
+      force_create: true
+    });
+    await expectStatus(cRes, 201);
+    const cBody = await cRes.json();
+    expect(cBody.status).toBe("PENDING_APPROVAL");
+
+    const { data: forceApprovals, error: forceApprovalsError } = await supabase
+      .from("approvals")
+      .select("approval_id,action_type,action_ref_id,state")
+      .eq("owner_id", ownerId)
+      .eq("action_type", "listing_publish")
+      .eq("action_ref_id", cBody.listing_id)
+      .limit(1);
+    expect(forceApprovalsError).toBeNull();
+    expect((forceApprovals || []).length).toBe(1);
+
+    const forceApproveRes = await request.post(`/api/v1/approvals/${forceApprovals?.[0].approval_id}:approve`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(forceApproveRes, 200);
+
+    const { data: forcedRow } = await supabase
+      .from("listings")
+      .select("status")
+      .eq("listing_id", cBody.listing_id)
+      .single();
+    expect(forcedRow?.status).toBe("LIVE");
   });
 });
-

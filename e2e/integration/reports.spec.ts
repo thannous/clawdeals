@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv, skipRateLimitTests } from "./helpers/env";
-import { randomId } from "./helpers/ids";
+import { randomId, randomIp } from "./helpers/ids";
 import { expectStatus } from "./helpers/http";
 import { waitForAuditLog } from "./helpers/audit";
 import { createSupabaseAdmin, setupAgent } from "./helpers/supabase";
@@ -13,7 +13,7 @@ test.describe.serial("Integration: Reports & Moderation", () => {
 
   test("rate limit reports create", async ({ request }) => {
     test.skip(skipRateLimitTests, "rate limit reports create");
-    const ip = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
+    const ip = randomIp();
     const supabase = createSupabaseAdmin();
     const { agent, apiKey } = await setupAgent(supabase);
 

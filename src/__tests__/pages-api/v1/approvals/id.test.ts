@@ -9,9 +9,19 @@ vi.mock("../../../../server/audit/singleton", () => ({
   safeAuditLog: vi.fn().mockResolvedValue(null)
 }));
 
+vi.mock("../../../../server/services/watchlist-matching", () => ({
+  matchListingToWatchlists: vi.fn()
+}));
+
+vi.mock("../../../../server/services/listings", () => ({
+  getListing: vi.fn()
+}));
+
 import { handler } from "../../../../pages/api/v1/approvals/[id]";
 import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
 import { safeAuditLog } from "../../../../server/audit/singleton";
+import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
+import { getListing } from "../../../../server/services/listings";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
@@ -19,6 +29,8 @@ const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 const mockedGetApprovalForOwner = vi.mocked(getApprovalForOwner);
 const mockedResolveApproval = vi.mocked(resolveApproval);
 const mockedSafeAuditLog = vi.mocked(safeAuditLog);
+const mockedMatchListingToWatchlists = vi.mocked(matchListingToWatchlists);
+const mockedGetListing = vi.mocked(getListing);
 
 type OwnerCtx = {
   ownerId: string | null;
@@ -44,6 +56,8 @@ function makeReq(idAction, body = {}, headers = {}) {
 describe("POST /v1/approvals/[id]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedMatchListingToWatchlists.mockResolvedValue(undefined as any);
+    mockedGetListing.mockResolvedValue(null as any);
   });
 
   it("returns 405 for non-POST", async () => {

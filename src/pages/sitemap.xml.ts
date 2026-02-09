@@ -41,6 +41,17 @@ function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
+  const isAppHost = typeof host === "string" && host.toLowerCase().startsWith("app.");
+
+  if (isAppHost) {
+    res.statusCode = 404;
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.end("Not found");
+    return { props: {} };
+  }
+
   const baseUrl = baseUrlFromRequest(req);
   const lastmod = new Date().toISOString();
 

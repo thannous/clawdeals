@@ -17,24 +17,67 @@ function buildCacheKey(prefix: string) {
   return `auth:api_key_prefix:${prefix}`;
 }
 
-export function getApiKeyAuthCacheTtlSeconds() {
+function normalizeTtlSeconds(ttlSeconds: number) {
+  if (!Number.isFinite(ttlSeconds)) return DEFAULT_TTL_SECONDS;
+  if (ttlSeconds <= 0) return 0; // allow disabling the cache with 0/negative
+  return Math.floor(ttlSeconds);
+}
+
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isCachedApiKeyAuthRecord(value: unknown): value is CachedApiKeyAuthRecord {
+  if (!value || typeof value !== "object") return false;
+  const v: any = value;
   return (
-    getNumberEnv("API_KEY_LOOKUP_CACHE_TTL_SECONDS", { defaultValue: DEFAULT_TTL_SECONDS }) ?? DEFAULT_TTL_SECONDS
+    typeof v.api_key_id === "string" &&
+    v.api_key_id.length > 0 &&
+    typeof v.agent_id === "string" &&
+    v.agent_id.length > 0 &&
+    isStringOrNull(v.owner_id) &&
+    typeof v.key_hash === "string" &&
+    v.key_hash.length > 0 &&
+    typeof v.key_state === "string" &&
+    v.key_state.length > 0 &&
+    isStringOrNull(v.grace_expires_at) &&
+    isStringOrNull(v.revoked_at)
   );
+}
+
+export function getApiKeyAuthCacheTtlSeconds() {
+  try {
+    const raw =
+      getNumberEnv("API_KEY_LOOKUP_CACHE_TTL_SECONDS", { defaultValue: DEFAULT_TTL_SECONDS }) ?? DEFAULT_TTL_SECONDS;
+    return normalizeTtlSeconds(raw);
+  } catch (error) {
+    // Best-effort cache: misconfiguration must not take down authentication.
+    console.warn("[auth] invalid API_KEY_LOOKUP_CACHE_TTL_SECONDS; using default", error);
+    return DEFAULT_TTL_SECONDS;
+  }
 }
 
 export async function getCachedApiKeyAuthRecord(prefix: string): Promise<CachedApiKeyAuthRecord | null> {
   if (!prefix) return null;
+  if (getApiKeyAuthCacheTtlSeconds() <= 0) return null;
   try {
     const redis = getRedis();
-    const raw = await redis.get(buildCacheKey(prefix));
+    const key = buildCacheKey(prefix);
+    const raw = await redis.get(key);
     if (!raw) return null;
-    if (typeof raw !== "string") return null;
+    if (typeof raw !== "string") {
+      await redis.del(key);
+      return null;
+    }
     try {
       const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object") return null;
-      return parsed as CachedApiKeyAuthRecord;
+      if (!isCachedApiKeyAuthRecord(parsed)) {
+        await redis.del(key);
+        return null;
+      }
+      return parsed;
     } catch {
+      await redis.del(key);
       return null;
     }
   } catch (error) {
@@ -51,6 +94,7 @@ export async function setCachedApiKeyAuthRecord(
 ) {
   if (!prefix) return;
   if (!record) return;
+  if (ttlSeconds <= 0) return;
   try {
     const redis = getRedis();
     const key = buildCacheKey(prefix);

@@ -19,7 +19,7 @@
     "cron:transactions:auto-close": "node scripts/cron-transactions-auto-close.mjs",
     "test:e2e": "playwright test",
     "test:ui": "playwright test --project=ui",
-    "test:integration": "playwright test --project=integration",
+    "test:integration": "PW_WEB_SERVER_MODE=prod playwright test --project=integration",
     "test:e2e:ui": "playwright test --project=ui --ui",
     "test:e2e:headed": "playwright test --project=ui --headed",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",

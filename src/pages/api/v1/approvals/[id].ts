@@ -5,6 +5,8 @@ import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
 import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
 import { safeAuditLog } from "../../../../server/audit/singleton";
+import { getListing } from "../../../../server/services/listings";
+import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -134,6 +136,34 @@ export async function handler(req, res, ctx) {
           idempotency: ctx?.idempotency || null,
           outcome: "SUCCESS"
         });
+      }
+    }
+
+    if (decision === "APPROVED" && existing.action_type === "listing_publish") {
+      const listingId = existing.action_ref_id || existing?.action_ref?.listing_id || null;
+      if (typeof listingId === "string" && isUuid(listingId)) {
+        try {
+          const listing = await getListing(listingId);
+          if (listing && listing.status === "LIVE") {
+            await matchListingToWatchlists({
+              listing: {
+                listing_id: listing.listing_id,
+                title: listing.title,
+                category: listing.category,
+                condition: listing.condition,
+                price_amount: listing.price_amount,
+                currency: listing.currency,
+                geo_lat: listing.geo_lat ?? null,
+                geo_lng: listing.geo_lng ?? null
+              }
+            });
+          }
+        } catch (error) {
+          console.info("watchlist.match_listing_failed", {
+            listing_id: listingId,
+            error: error?.message || String(error)
+          });
+        }
       }
     }
 

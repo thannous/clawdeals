@@ -9,6 +9,14 @@ const uiBaseURL = process.env.E2E_BASE_URL || `http://localhost:${devPort}`;
 const integrationBaseURL = process.env.API_BASE_URL || uiBaseURL;
 // Only skip starting the dev server when explicitly told to.
 const useExistingServer = Boolean(process.env.E2E_BASE_URL);
+// Turbopack can be memory-hungry under long API-heavy suites; default to webpack for stability.
+const devBundler = process.env.PW_DEV_BUNDLER || "webpack";
+const devBundlerFlag = devBundler === "webpack" ? "--webpack" : "--turbo";
+const webServerMode = process.env.PW_WEB_SERVER_MODE || "dev";
+const webServerCommand =
+  webServerMode === "prod"
+    ? `CONSOLE_OPS_ENABLED=1 npm run build && CONSOLE_OPS_ENABLED=1 npm run start -- -p ${devPort}`
+    : `npm run dev -- --port ${devPort} ${devBundlerFlag}`;
 const integrationWorkers = (() => {
   const raw = process.env.PW_INTEGRATION_WORKERS;
   if (!raw) return 1;
@@ -28,7 +36,7 @@ export default defineConfig({
   webServer: useExistingServer
     ? undefined
     : {
-        command: `npm run dev -- --port ${devPort}`,
+        command: webServerCommand,
         url: uiBaseURL,
         reuseExistingServer: true
       },

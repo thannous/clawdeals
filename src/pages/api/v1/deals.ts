@@ -108,6 +108,19 @@ export async function handler(req, res, ctx) {
       }
     }
 
+    const rawPriceMax = resolveParam(req.query?.price_max);
+    let priceMax = null;
+    if (rawPriceMax !== undefined && rawPriceMax !== null && rawPriceMax !== "") {
+      const parsed = Number(rawPriceMax);
+      if (!Number.isFinite(parsed)) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "price_max must be a number"));
+      }
+      if (parsed < 0) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "price_max must be >= 0"));
+      }
+      priceMax = parsed;
+    }
+
     const rawMinTemp = resolveParam(req.query?.min_temperature);
     let minTemperature = 0;
     if (rawMinTemp !== undefined && rawMinTemp !== null && rawMinTemp !== "") {
@@ -168,6 +181,7 @@ export async function handler(req, res, ctx) {
         statuses,
         q,
         tags,
+        priceMax,
         minTemperature,
         limit,
         cursor

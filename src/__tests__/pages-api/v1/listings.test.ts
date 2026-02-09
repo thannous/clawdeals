@@ -213,7 +213,7 @@ describe("/v1/listings", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("DUPLICATE_SUSPECTED");
-    expect(result.body.error.meta).toEqual(
+    expect(result.body.error.details).toEqual(
       expect.objectContaining({
         existing_listing_id: "dup-1",
         existing_created_at: "2026-02-06T12:00:00Z",
@@ -452,4 +452,3 @@ describe("/v1/listings", () => {
     );
   });
 });
-

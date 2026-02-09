@@ -297,6 +297,70 @@ test.describe.serial("Integration: Deals API", () => {
     expect(audit.outcome).toBe("SUCCESS");
   });
 
+  test("FTS q filter + price_max filter (TI-269)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+    const agent = await createAgentDb(supabase, ownerId);
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const tokenA = `ti269_${sha256Hex(randomId()).slice(0, 10)}`;
+    const tokenB = `ti269_${sha256Hex(randomId()).slice(0, 10)}`;
+
+    const aRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: `TI-269 ${tokenA}`,
+        url: `https://example.com/ti-269/${randomId()}`,
+        price: 99.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: ["fts", tokenA]
+      }
+    });
+    await expectStatus(aRes, 201);
+    const aBody = await aRes.json();
+    const dealA = aBody.deal?.deal_id;
+    expect(dealA).toBeTruthy();
+
+    const bRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: `TI-269 ${tokenB}`,
+        url: `https://example.com/ti-269/${randomId()}`,
+        price: 199.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: ["fts", tokenB]
+      }
+    });
+    await expectStatus(bRes, 201);
+
+    const qRes = await request.get(`/api/v1/deals?sort=new&q=${encodeURIComponent(tokenA)}&limit=10`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    await expectStatus(qRes, 200);
+    const qBody = await qRes.json();
+    const ids = (qBody.items || []).map((item: any) => item.deal_id);
+    expect(ids).toEqual([dealA]);
+
+    const maxTooLow = await request.get(
+      `/api/v1/deals?sort=new&q=${encodeURIComponent(tokenA)}&price_max=50&limit=10`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    await expectStatus(maxTooLow, 200);
+    const maxTooLowBody = await maxTooLow.json();
+    expect((maxTooLowBody.items || []).length).toBe(0);
+
+    const maxOk = await request.get(
+      `/api/v1/deals?sort=new&q=${encodeURIComponent(tokenA)}&price_max=150&limit=10`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    await expectStatus(maxOk, 200);
+    const maxOkBody = await maxOk.json();
+    expect((maxOkBody.items || []).map((item: any) => item.deal_id)).toEqual([dealA]);
+  });
+
   test("deal vote with reason + unique vote", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();

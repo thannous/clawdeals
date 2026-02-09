@@ -121,3 +121,25 @@ export async function hydrateDealSummaries({ dealIds }: any = {}) {
   }
   return map;
 }
+
+export async function hydrateListingSummaries({ listingIds }: any = {}) {
+  const ids = Array.isArray(listingIds) ? listingIds.filter(Boolean) : [];
+  if (ids.length === 0) return new Map();
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("listings")
+    .select("listing_id,title,category,condition,price_amount,currency,status,created_at")
+    .in("listing_id", ids);
+
+  if (error) {
+    mapError(error);
+  }
+
+  const map = new Map();
+  for (const row of Array.isArray(data) ? data : []) {
+    if (!row?.listing_id) continue;
+    map.set(row.listing_id, row);
+  }
+  return map;
+}

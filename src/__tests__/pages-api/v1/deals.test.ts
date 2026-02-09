@@ -245,10 +245,51 @@ describe("GET /v1/deals", () => {
       statuses: ["NEW", "ACTIVE"],
       q: null,
       tags: [],
+      priceMax: null,
       minTemperature: 0,
       limit: 30,
       cursor: null
     });
+  });
+
+  it("passes price_max to listDeals", async () => {
+    listDealsMock.mockResolvedValue({ items: [], nextCursor: null } as any);
+
+    const req = {
+      method: "GET",
+      query: { sort: "new", price_max: "499.99" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(200);
+    expect(listDeals).toHaveBeenCalledWith(
+      expect.objectContaining({
+        priceMax: 499.99
+      })
+    );
+  });
+
+  it("validates price_max (non-number \u2192 400)", async () => {
+    const req = {
+      method: "GET",
+      query: { price_max: "xyz" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toBe("price_max must be a number");
+    expect(listDeals).not.toHaveBeenCalled();
+  });
+
+  it("validates price_max (negative \u2192 400)", async () => {
+    const req = {
+      method: "GET",
+      query: { price_max: "-1" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toBe("price_max must be >= 0");
+    expect(listDeals).not.toHaveBeenCalled();
   });
 
   it("rejects status filter for temp", async () => {

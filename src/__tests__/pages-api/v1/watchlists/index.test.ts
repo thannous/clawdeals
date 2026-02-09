@@ -8,12 +8,18 @@ vi.mock("../../../../server/services/watchlists", () => ({
   WATCHLISTS_MAX_LIMIT: 100
 }));
 
+vi.mock("../../../../server/services/watchlist-backfill-queue", () => ({
+  enqueueWatchlistBackfill: vi.fn().mockResolvedValue({ ok: true })
+}));
+
 import { handler } from "../../../../pages/api/v1/watchlists/index";
 import { createWatchlist, decodeWatchlistCursor, listWatchlists } from "../../../../server/services/watchlists";
+import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";
 
 const createWatchlistMock = vi.mocked(createWatchlist);
 const listWatchlistsMock = vi.mocked(listWatchlists);
 const decodeWatchlistCursorMock = vi.mocked(decodeWatchlistCursor);
+const enqueueWatchlistBackfillMock = vi.mocked(enqueueWatchlistBackfill);
 
 const baseCtx: any = {
   agentId: "agent-1",
@@ -157,5 +163,6 @@ describe("/v1/watchlists (index)", () => {
         tags: ["gpu"]
       })
     );
+    expect(enqueueWatchlistBackfillMock).toHaveBeenCalledWith({ watchlistId: "wl-1" });
   });
 });

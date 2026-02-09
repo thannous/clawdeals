@@ -12,11 +12,89 @@ const DEFAULT_OPTIONS = {
   enableRateLimit: true,
   enableIdempotency: true,
   enableAudit: true,
+  // Enable CORS only when explicitly configured (env or per-route option).
+  cors: null as null | {
+    allowOrigins?: string[];
+    allowMethods?: string[];
+    allowHeaders?: string[];
+    maxAgeSeconds?: number;
+  },
   idempotencyUseIpFallback: false
 };
 
 function isWriteMethod(method) {
   return !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
+}
+
+function parseCommaList(value: any): string[] {
+  if (!value || typeof value !== "string") return [];
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function resolveCorsOptions(resolved: any) {
+  const fromEnv = parseCommaList(process.env.CORS_ALLOW_ORIGINS);
+  const fromRoute = Array.isArray(resolved?.cors?.allowOrigins) ? resolved.cors.allowOrigins : [];
+  const allowOrigins = fromRoute.length > 0 ? fromRoute : fromEnv;
+  if (allowOrigins.length === 0) return null;
+
+  const allowMethods =
+    Array.isArray(resolved?.cors?.allowMethods) && resolved.cors.allowMethods.length > 0
+      ? resolved.cors.allowMethods
+      : ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
+
+  const allowHeaders =
+    Array.isArray(resolved?.cors?.allowHeaders) && resolved.cors.allowHeaders.length > 0
+      ? resolved.cors.allowHeaders
+      : [
+          "content-type",
+          "authorization",
+          "last-event-id",
+          "x-request-id",
+          "x-api-key",
+          "x-agent-id",
+          "x-owner-id",
+          "x-clawdeals-origin",
+          "idempotency-key"
+        ];
+
+  const maxAgeSeconds =
+    typeof resolved?.cors?.maxAgeSeconds === "number" && Number.isFinite(resolved.cors.maxAgeSeconds)
+      ? resolved.cors.maxAgeSeconds
+      : 600;
+
+  return { allowOrigins, allowMethods, allowHeaders, maxAgeSeconds };
+}
+
+function shouldApplyCors(path: string) {
+  // Keep this tight: only endpoints that we intentionally call cross-origin.
+  return (
+    path === "/api/v1/watchlist-signups" ||
+    path === "/api/console/events/stream" ||
+    path === "/api/v1/events/stream"
+  );
+}
+
+function applyCorsHeaders(req: any, res: any, cors: any, path: string) {
+  if (!cors || !shouldApplyCors(path)) return { applied: false };
+  const origin = req?.headers?.origin;
+  if (!origin || typeof origin !== "string") return { applied: false };
+
+  const allowed = cors.allowOrigins.includes(origin);
+  if (!allowed) return { applied: false };
+
+  try {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Methods", cors.allowMethods.join(", "));
+    res.setHeader("Access-Control-Allow-Headers", cors.allowHeaders.join(", "));
+    res.setHeader("Access-Control-Max-Age", String(cors.maxAgeSeconds));
+  } catch {
+    // If we can't set headers (non-standard res), just skip.
+  }
+  return { applied: true, origin };
 }
 
 function safeDecodeURIComponent(value) {
@@ -152,6 +230,15 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
     const ctx: any = createRequestContext(req);
     applyCanonicalBody(req, ctx);
     await applyAuthStub(req, ctx);
+
+    const cors = resolveCorsOptions(resolved);
+    const corsResult = applyCorsHeaders(req, res, cors, ctx.path);
+    if (ctx.method === "OPTIONS" && corsResult.applied && req?.headers?.["access-control-request-method"]) {
+      // Preflight requests should not be rate-limited, audited, or idempotent.
+      sendJson(res, 204, { ok: true }, {});
+      ctx.response = jsonResponse(204, { ok: true }, {});
+      return;
+    }
 
     let idempotencyContext = null;
 

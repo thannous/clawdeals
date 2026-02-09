@@ -73,4 +73,22 @@ describe("applyAuthStub", () => {
       message: "Invalid API key"
     });
   });
+
+  it("rejects api keys from a different namespace (fail closed)", async () => {
+    const req: any = {
+      headers: {
+        "x-clawdeals-api-key": "cd_sandbox_abcdefgh.secret",
+        "x-agent-id": "agent-should-not-be-used"
+      }
+    };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid API key"
+    });
+    expect(ctx.agentId).toBeUndefined();
+  });
 });

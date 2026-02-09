@@ -197,4 +197,175 @@ test.describe.serial("Integration: Watchlists", () => {
       controller.abort();
     }
   });
+
+	  test("watchlist matching on listing create + matches endpoint listing + sse (TI-272)", async ({ request }) => {
+	    const supabase = createSupabaseAdmin();
+
+	    const agentA = await setupAgent(supabase);
+	    const agentB = await setupAgent(supabase);
+	    // Ensure not quarantined so publish=true can go LIVE without approval (matches other integration tests).
+	    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+	    const { error: ageUpdateError } = await supabase
+	      .from("agents")
+	      .update({ created_at: eightDaysAgo })
+	      .eq("id", agentB.agent.id);
+	    expect(ageUpdateError).toBeNull();
+	
+	    const policyRes = await request.put("/api/v1/policies", {
+	      headers: { "x-owner-id": agentB.ownerId },
+	      data: {
+	        budgets: { max_offer: 400, currency: "EUR" },
+	        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+	        auto_approve: { message_types: [], actions: ["listing.create"] },
+	        allowlist_agent_ids: [],
+	        denylist_agent_ids: []
+	      }
+	    });
+	    await expectStatus(policyRes, 200);
+
+	    const matchCategory = `ti272_${sha256Hex(randomId()).slice(0, 12)}`;
+
+    const wlRes = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": randomId() },
+      data: { name: "TI-272 listing match", criteria: { tags: [matchCategory] }, active: true }
+    });
+    await expectStatus(wlRes, 201);
+    const wlBody = await wlRes.json();
+    const watchlistId = wlBody.watchlist_id;
+    expect(watchlistId).toBeTruthy();
+
+    const { res, controller } = await openSse("/api/v1/events/stream?heartbeat=1&types=watchlist.match", {
+      headers: {
+        Authorization: `Bearer ${agentA.apiKey}`,
+        Accept: "text/event-stream"
+      }
+    });
+
+    try {
+      await waitForSseFrame(res, {
+        timeoutMs: 2500,
+        onFrame: (entry) => (entry.type === "comment" && entry.comment === "ping" ? entry : undefined)
+      });
+
+      const listingRes = await request.post("/api/v1/listings", {
+        headers: { Authorization: `Bearer ${agentB.apiKey}`, "Idempotency-Key": randomId() },
+        data: {
+          title: `TI-272 ${matchCategory}`,
+          description: "",
+          category: matchCategory,
+          condition: "GOOD",
+          price: { amount: 100, currency: "EUR" },
+          publish: true
+        }
+      });
+      await expectStatus(listingRes, 201);
+      const listingBody = await listingRes.json();
+      const listingId = listingBody.listing_id;
+      expect(listingId).toBeTruthy();
+      expect(listingBody.status).toBe("LIVE");
+
+      const { data: matchRows, error: matchError } = await supabase
+        .from("watchlist_matches")
+        .select("watchlist_match_id,watchlist_id,entity_type,entity_id,matched_at")
+        .eq("watchlist_id", watchlistId)
+        .eq("entity_type", "listing")
+        .eq("entity_id", listingId);
+      expect(matchError).toBeNull();
+      expect(Array.isArray(matchRows) ? matchRows.length : 0).toBe(1);
+
+      const matchesRes = await request.get(`/api/v1/watchlists/${watchlistId}/matches?entity_type=listing&limit=50`, {
+        headers: { Authorization: `Bearer ${agentA.apiKey}` }
+      });
+      await expectStatus(matchesRes, 200);
+      const matchesBody = await matchesRes.json();
+      expect((matchesBody.items || []).length).toBeGreaterThan(0);
+      expect(matchesBody.items[0].entity_id).toBe(listingId);
+      expect(matchesBody.items[0].listing_summary.listing_id).toBe(listingId);
+      expect(matchesBody.items[0].deal_summary).toBeNull();
+
+      const eventFrame = await waitForSseFrame(res, {
+        timeoutMs: 5000,
+        onFrame: (entry) => (entry.type === "event" && entry.event === "watchlist.match" ? entry : undefined)
+      });
+
+      if (eventFrame.type !== "event") {
+        throw new Error("Expected SSE event frame");
+      }
+      const parsed = JSON.parse(eventFrame.data || "{}");
+      expect(parsed.type).toBe("watchlist.match");
+      expect(parsed.payload?.listing_id).toBe(listingId);
+      expect(parsed.payload?.watchlist_ids || []).toContain(watchlistId);
+    } finally {
+      controller.abort();
+    }
+  });
+
+	  test("backfill queue on watchlist create matches recent LIVE listings (TI-272)", async ({ request }) => {
+	    const supabase = createSupabaseAdmin();
+
+	    const agentA = await setupAgent(supabase);
+	    const agentB = await setupAgent(supabase);
+	    // Ensure not quarantined so publish=true can go LIVE without approval.
+	    await supabase
+	      .from("agents")
+	      .update({ created_at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() })
+	      .eq("id", agentB.agent.id);
+	
+	    const policyRes = await request.put("/api/v1/policies", {
+	      headers: { "x-owner-id": agentB.ownerId },
+	      data: {
+	        budgets: { max_offer: 400, currency: "EUR" },
+	        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+	        auto_approve: { message_types: [], actions: ["listing.create"] },
+	        allowlist_agent_ids: [],
+	        denylist_agent_ids: []
+	      }
+	    });
+	    await expectStatus(policyRes, 200);
+
+	    const matchCategory = `ti272_bf_${sha256Hex(randomId()).slice(0, 12)}`;
+
+    const listingRes = await request.post("/api/v1/listings", {
+      headers: { Authorization: `Bearer ${agentB.apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: `TI-272 backfill ${matchCategory}`,
+        description: "",
+        category: matchCategory,
+        condition: "GOOD",
+        price: { amount: 100, currency: "EUR" },
+        publish: true
+      }
+    });
+    await expectStatus(listingRes, 201);
+    const listingBody = await listingRes.json();
+    const listingId = listingBody.listing_id;
+    expect(listingBody.status).toBe("LIVE");
+
+    const wlRes = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": randomId() },
+      data: { name: "TI-272 backfill", criteria: { tags: [matchCategory] }, active: true }
+    });
+    await expectStatus(wlRes, 201);
+    const wlBody = await wlRes.json();
+    const watchlistId = wlBody.watchlist_id;
+    expect(watchlistId).toBeTruthy();
+
+    // Run the backfill queue cron once.
+    const secret = process.env.INTERNAL_CRON_SECRET;
+    expect(secret).toBeTruthy();
+
+    const cronRes = await request.post("/api/internal/cron/watchlist-backfill-queue?limit=20&deals_limit=100&listings_limit=100", {
+      headers: { "x-cron-secret": secret as string }
+    });
+    await expectStatus(cronRes, 200);
+
+    const { data: matchRows, error: matchError } = await supabase
+      .from("watchlist_matches")
+      .select("watchlist_match_id,watchlist_id,entity_type,entity_id,matched_at")
+      .eq("watchlist_id", watchlistId)
+      .eq("entity_type", "listing")
+      .eq("entity_id", listingId);
+    expect(matchError).toBeNull();
+    expect(Array.isArray(matchRows) ? matchRows.length : 0).toBe(1);
+  });
 });

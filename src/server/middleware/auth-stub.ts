@@ -1,5 +1,5 @@
 import { authenticateApiKey } from "../services/api-keys";
-import { API_KEY_NAMESPACE } from "../utils/api-keys";
+import { parseApiKey, parseApiKeyAnyNamespace } from "../utils/api-keys";
 
 function safeHeader(req, name) {
   const value = req.headers?.[name];
@@ -15,11 +15,6 @@ function parseBearerToken(value) {
   if (parts.length !== 2) return null;
   if (parts[0].toLowerCase() !== "bearer") return null;
   return parts[1];
-}
-
-function shouldTreatAsApiKey(token) {
-  if (!token || typeof token !== "string") return false;
-  return token.startsWith(`${API_KEY_NAMESPACE}_`);
 }
 
 export async function applyAuthStub(req, ctx) {
@@ -40,7 +35,7 @@ export async function applyAuthStub(req, ctx) {
     return ctx;
   }
 
-  if (rawToken && shouldTreatAsApiKey(rawToken)) {
+  if (rawToken && parseApiKey(rawToken)) {
     try {
       const result = await authenticateApiKey(rawToken);
       if (result?.ok) {
@@ -61,6 +56,13 @@ export async function applyAuthStub(req, ctx) {
       };
       return ctx;
     }
+  }
+
+  // If the token looks like an API key but doesn't match the configured namespace,
+  // fail closed instead of silently falling back to header-based stub auth.
+  if (rawToken && parseApiKeyAnyNamespace(rawToken)) {
+    ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid API key" };
+    return ctx;
   }
 
   const agentId = safeHeader(req, "x-agent-id");

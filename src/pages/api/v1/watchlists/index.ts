@@ -10,6 +10,7 @@ import {
   WATCHLISTS_DEFAULT_LIMIT,
   WATCHLISTS_MAX_LIMIT
 } from "../../../../server/services/watchlists";
+import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -187,6 +188,16 @@ export async function handler(req, res, ctx) {
       geoLon: criteria.geoLon,
       distanceKm: criteria.distanceKm
     });
+
+    try {
+      await enqueueWatchlistBackfill({ watchlistId: created.watchlist_id });
+    } catch (error) {
+      // Best-effort: watchlist creation should not fail if the async backfill queue is unavailable.
+      console.info("watchlist.backfill_enqueue_failed", {
+        watchlist_id: created.watchlist_id,
+        error: error?.message || String(error)
+      });
+    }
 
     return jsonResponse(201, mapWatchlistRow(created));
   } catch (error) {

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
-import { randomId } from "./helpers/ids";
+import { randomId, randomIp } from "./helpers/ids";
 import { waitForAuditLog } from "./helpers/audit";
 import { expectStatus, createOwner, registerAgent } from "./helpers/http";
 import {
@@ -167,7 +167,7 @@ test.describe.serial("Integration: API Keys", () => {
   test("idempotency: encrypted api_key is replayed correctly", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
-    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    const ip = randomIp();
     await createOwner(request, ownerId);
 
     const idemKey = randomId();

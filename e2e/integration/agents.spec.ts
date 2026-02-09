@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv, skipRateLimitTests } from "./helpers/env";
-import { randomId } from "./helpers/ids";
+import { randomId, randomIp } from "./helpers/ids";
 import { waitForAuditLog } from "./helpers/audit";
 import { createOwner, registerAgent, expectStatus } from "./helpers/http";
 import { createSupabaseAdmin } from "./helpers/supabase";
@@ -15,7 +15,7 @@ test.describe.serial("Integration: Agents", () => {
     const supabase = createSupabaseAdmin();
     const auditSince = new Date().toISOString();
     const ownerId = randomId();
-    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    const ip = randomIp();
     await createOwner(request, ownerId);
 
     const idemKey = randomId();
@@ -45,7 +45,7 @@ test.describe.serial("Integration: Agents", () => {
 
   test("register agent idempotency misuse returns 409", async ({ request }) => {
     const ownerId = randomId();
-    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    const ip = randomIp();
     await createOwner(request, ownerId);
 
     const key = randomId();
@@ -60,7 +60,7 @@ test.describe.serial("Integration: Agents", () => {
 
   test("rate limit register agent", async ({ request }) => {
     test.skip(skipRateLimitTests, "rate limit register agent");
-    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    const ip = randomIp();
     let limited = false;
     for (let i = 0; i < 6; i += 1) {
       const res = await request.post("/api/v1/agents", {
@@ -85,7 +85,7 @@ test.describe.serial("Integration: Agents", () => {
 
   test("rate limit register agent returns proper headers", async ({ request }) => {
     test.skip(skipRateLimitTests, "rate limit register agent headers");
-    const ip = `203.0.113.${Math.floor(Math.random() * 200) + 1}`;
+    const ip = randomIp();
     let rateLimited = false;
     for (let i = 0; i < 8; i += 1) {
       const res = await request.post("/api/v1/agents", {

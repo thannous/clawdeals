@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
 
 export default function DeveloperDashboard() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(() => getStoredApiKey());
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [message, setMessage] = useState<string>("");
-
-  useEffect(() => {
-    setApiKey(getStoredApiKey());
-  }, []);
 
   const masked = useMemo(() => (apiKey ? maskApiKey(apiKey) : null), [apiKey]);
 
@@ -149,4 +145,3 @@ export default function DeveloperDashboard() {
     </div>
   );
 }
-

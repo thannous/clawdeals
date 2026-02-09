@@ -1,6 +1,6 @@
 import { isUuid } from "../utils/validators";
 
-const SORTS = new Set(["recent", "price_asc", "price_desc"]);
+const SORTS = new Set(["recent", "price_asc", "price_desc", "distance"]);
 
 function base64UrlEncode(value: string) {
   return Buffer.from(value, "utf8")
@@ -68,6 +68,44 @@ export function decodeListingsCursor(raw: any) {
         sort,
         created_at: (parsed as any).created_at,
         listing_id: (parsed as any).listing_id
+      }
+    };
+  }
+
+  if (sort === "distance") {
+    const distanceM = (parsed as any).distance_m;
+    if (typeof distanceM !== "number" || !Number.isFinite(distanceM) || distanceM < 0) {
+      return { error: "Invalid cursor" };
+    }
+    if (!isUuid((parsed as any).listing_id)) return { error: "Invalid cursor" };
+
+    const lat = (parsed as any).lat;
+    const lng = (parsed as any).lng;
+    if (typeof lat !== "number" || !Number.isFinite(lat) || lat < -90 || lat > 90) {
+      return { error: "Invalid cursor" };
+    }
+    if (typeof lng !== "number" || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+      return { error: "Invalid cursor" };
+    }
+
+    const distanceKm = (parsed as any).distance_km;
+    if (distanceKm !== null && distanceKm !== undefined) {
+      if (typeof distanceKm !== "number" || !Number.isFinite(distanceKm) || !Number.isSafeInteger(distanceKm)) {
+        return { error: "Invalid cursor" };
+      }
+      if (distanceKm < 1 || distanceKm > 300) {
+        return { error: "Invalid cursor" };
+      }
+    }
+
+    return {
+      value: {
+        sort,
+        distance_m: distanceM,
+        listing_id: (parsed as any).listing_id,
+        lat,
+        lng,
+        distance_km: distanceKm ?? null
       }
     };
   }

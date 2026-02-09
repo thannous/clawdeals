@@ -79,4 +79,12 @@ export async function handler(req, res, ctx) {
   }
 }
 
-export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "approvals.write" }));
+// Rate limits should reflect the effective action. GET is read-only and should not consume
+// the write bucket; otherwise long integration suites can trip 429s on harmless fetches.
+const getHandler = injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "approvals.read" }));
+const postHandler = injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "console.approvals.write" }));
+
+export default function approvalsById(req, res) {
+  if (req.method === "GET") return getHandler(req, res);
+  return postHandler(req, res);
+}

@@ -70,6 +70,22 @@ function toNumber(value) {
   return null;
 }
 
+function toRadians(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  if (![lat1, lon1, lat2, lon2].every((n) => typeof n === "number" && Number.isFinite(n))) return null;
+  const R = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export type WatchlistMatchReason = Record<string, any>;
 export type WatchlistMatchResult = {
   matched: boolean;
@@ -165,6 +181,141 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens }: Evalua
       return { matched: false, reason: { ...reason, price_ok: false } };
     }
     reason.price_ok = true;
+  }
+
+  return { matched: true, reason };
+}
+
+export function buildEntityTokensFromListing(listing: any): string[] {
+  const tokens = [];
+
+  const title = coerceString(listing?.title);
+  if (title) {
+    tokens.push(...tokenize(title));
+  }
+
+  const category = coerceString(listing?.category);
+  if (category) {
+    const normalizedCategory = category.trim().toLowerCase();
+    if (normalizedCategory) tokens.push(normalizedCategory);
+    // Keep token-level access too (useful if categories contain multiple parts).
+    tokens.push(...tokenize(category));
+  }
+
+  return Array.from(new Set(tokens));
+}
+
+export type EvaluateWatchlistMatchListingArgs = {
+  listing?: any;
+  watchlist?: any;
+  entityTokens?: any;
+};
+
+export function evaluateWatchlistMatchListing({
+  listing,
+  watchlist,
+  entityTokens
+}: EvaluateWatchlistMatchListingArgs = {}): WatchlistMatchResult {
+  if (!listing || typeof listing !== "object") return { matched: false, reason: { invalid: true } };
+  if (!watchlist || typeof watchlist !== "object") return { matched: false, reason: { invalid: true } };
+
+  if (watchlist.active === false || watchlist.deleted_at) {
+    return { matched: false, reason: { inactive: true } };
+  }
+
+  const reason: WatchlistMatchReason = {};
+
+  const tokens = Array.isArray(entityTokens) ? entityTokens : buildEntityTokensFromListing(listing);
+  const tokenSet = new Set(tokens.map((t) => String(t || "").toLowerCase()).filter(Boolean));
+
+  const queryText = coerceString(watchlist.query_text) || coerceString(watchlist?.criteria?.query);
+  const queryTokens = tokenize(queryText);
+  if (queryTokens.length > 0) {
+    reason.query_tokens = queryTokens;
+    for (const token of queryTokens) {
+      if (!tokenSet.has(token)) {
+        return { matched: false, reason: { ...reason, query_ok: false } };
+      }
+    }
+    reason.query_ok = true;
+  }
+
+  const watchlistTags = Array.isArray(watchlist?.tags) ? watchlist.tags : [];
+  const listingCategory = coerceString(listing?.category);
+  const normalizedCategory = listingCategory ? listingCategory.trim().toLowerCase() : null;
+
+  if (watchlistTags.length > 0) {
+    const normalizedWatchlistTags = watchlistTags
+      .filter((t) => typeof t === "string")
+      .map((t) => t.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (!normalizedCategory || !normalizedWatchlistTags.includes(normalizedCategory)) {
+      return { matched: false, reason: { ...reason, tags_ok: false } };
+    }
+
+    reason.tags_ok = true;
+    reason.tags_matched = [normalizedCategory];
+  }
+
+  const priceMaxRaw =
+    watchlist.price_max !== null && watchlist.price_max !== undefined ? watchlist.price_max : watchlist?.criteria?.price_max;
+  const hasPrice = priceMaxRaw !== null && priceMaxRaw !== undefined;
+  if (hasPrice) {
+    const currency = coerceString(listing.currency);
+    const normalizedCurrency = currency ? currency.toUpperCase() : null;
+    if (normalizedCurrency !== "EUR") {
+      return { matched: false, reason: { ...reason, currency_mismatch: true } };
+    }
+
+    const priceMax = toNumber(priceMaxRaw);
+    const listingPrice = toNumber(listing.price_amount);
+    if (!Number.isFinite(priceMax) || !Number.isFinite(listingPrice)) {
+      return { matched: false, reason: { ...reason, price_invalid: true } };
+    }
+
+    if (listingPrice > priceMax) {
+      return { matched: false, reason: { ...reason, price_ok: false } };
+    }
+    reason.price_ok = true;
+  }
+
+  const geoLatRaw = watchlist.geo_lat !== null && watchlist.geo_lat !== undefined ? watchlist.geo_lat : watchlist?.criteria?.geo?.lat;
+  const geoLonRaw = watchlist.geo_lon !== null && watchlist.geo_lon !== undefined ? watchlist.geo_lon : watchlist?.criteria?.geo?.lon;
+  const distanceKmRaw =
+    watchlist.distance_km !== null && watchlist.distance_km !== undefined ? watchlist.distance_km : watchlist?.criteria?.distance_km;
+
+  const requiresGeo =
+    (geoLatRaw !== null && geoLatRaw !== undefined) ||
+    (geoLonRaw !== null && geoLonRaw !== undefined) ||
+    (distanceKmRaw !== null && distanceKmRaw !== undefined) ||
+    Boolean(watchlist?.criteria?.geo);
+  if (requiresGeo) {
+    const geoLat = toNumber(geoLatRaw);
+    const geoLon = toNumber(geoLonRaw);
+    const distanceKm = toNumber(distanceKmRaw);
+
+    const listingLat = toNumber(listing.geo_lat);
+    const listingLon = toNumber(listing.geo_lng);
+
+    if (!Number.isFinite(geoLat) || !Number.isFinite(geoLon) || !Number.isFinite(distanceKm)) {
+      return { matched: false, reason: { ...reason, geo_invalid: true } };
+    }
+
+    if (!Number.isFinite(listingLat) || !Number.isFinite(listingLon)) {
+      return { matched: false, reason: { ...reason, geo_missing: true } };
+    }
+
+    const km = haversineKm(geoLat, geoLon, listingLat, listingLon);
+    if (!Number.isFinite(km)) {
+      return { matched: false, reason: { ...reason, geo_invalid: true } };
+    }
+    reason.geo_km = km;
+
+    if (km > distanceKm) {
+      return { matched: false, reason: { ...reason, geo_ok: false } };
+    }
+    reason.geo_ok = true;
   }
 
   return { matched: true, reason };

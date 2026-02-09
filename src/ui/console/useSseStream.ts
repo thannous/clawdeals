@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getPublicSseBaseUrl, joinUrl } from "../../shared/urls";
 
 const MAX_EVENTS = 500;
 const MAX_RECONNECT_DELAY = 30000;
@@ -7,6 +8,7 @@ const LAST_EVENT_ID_STORAGE_KEY = "console_sse_last_event_id";
 const STREAM_ID_RE = /^\\d+-\\d+$/;
 
 type BuildUrlParams = {
+  baseUrl?: string;
   types?: string[];
   entityId?: string;
   replay?: boolean;
@@ -43,7 +45,7 @@ function safeSetStoredLastEventId(value) {
   }
 }
 
-function buildUrl({ types, entityId, replay, heartbeat, lastEventId, asMessage }: BuildUrlParams) {
+function buildUrl({ baseUrl, types, entityId, replay, heartbeat, lastEventId, asMessage }: BuildUrlParams) {
   const params = new URLSearchParams();
   if (types && types.length > 0) {
     params.set("types", types.join(","));
@@ -64,7 +66,8 @@ function buildUrl({ types, entityId, replay, heartbeat, lastEventId, asMessage }
     params.set("heartbeat", String(heartbeat));
   }
   const qs = params.toString();
-  return `/api/console/events/stream${qs ? `?${qs}` : ""}`;
+  const path = `/api/console/events/stream${qs ? `?${qs}` : ""}`;
+  return baseUrl ? joinUrl(baseUrl, path) : path;
 }
 
 export function useSseStream({ types, entityId, replay = true, heartbeat }: UseSseStreamOptions = {}) {
@@ -107,7 +110,9 @@ export function useSseStream({ types, entityId, replay = true, heartbeat }: UseS
     }
 
     const storedLastEventId = safeGetStoredLastEventId();
+    const sseBaseUrl = getPublicSseBaseUrl();
     const url = buildUrl({
+      baseUrl: sseBaseUrl || undefined,
       types,
       entityId,
       replay,

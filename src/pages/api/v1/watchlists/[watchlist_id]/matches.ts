@@ -7,6 +7,7 @@ import { getWatchlistForAgent } from "../../../../../server/services/watchlists"
 import {
   decodeWatchlistMatchesCursor,
   hydrateDealSummaries,
+  hydrateListingSummaries,
   listWatchlistMatches
 } from "../../../../../server/services/watchlist-matches";
 import { WATCHLIST_MATCHES_DEFAULT_LIMIT, WATCHLIST_MATCHES_MAX_LIMIT } from "../../../../../server/config/watchlists";
@@ -62,8 +63,8 @@ export async function handler(req, res, ctx) {
 
   const rawEntityType = resolveParam(req.query?.entity_type);
   const entityType = rawEntityType ? String(rawEntityType).trim().toLowerCase() : null;
-  if (entityType !== "deal") {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "entity_type must be 'deal'"));
+  if (entityType !== "deal" && entityType !== "listing") {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "entity_type must be 'deal' or 'listing'"));
   }
 
   const rawLimit = resolveParam(req.query?.limit);
@@ -111,23 +112,50 @@ export async function handler(req, res, ctx) {
     });
 
     const items = Array.isArray(result.items) ? result.items : [];
-    const dealIds = Array.from(new Set(items.map((row) => row.entity_id).filter(Boolean)));
-    const dealsById = await hydrateDealSummaries({ dealIds });
+    const entityIds = Array.from(new Set(items.map((row) => row.entity_id).filter(Boolean)));
+    const dealsById = entityType === "deal" ? await hydrateDealSummaries({ dealIds: entityIds }) : new Map();
+    const listingsById = entityType === "listing" ? await hydrateListingSummaries({ listingIds: entityIds }) : new Map();
 
     const responseItems = items.map((row) => {
-      const summary = row.entity_id ? dealsById.get(row.entity_id) || null : null;
-      const dealSummary = summary
-        ? {
-            deal_id: summary.deal_id,
-            title: summary.title,
-            price: toNumber(summary.price),
-            currency: summary.currency,
-            expires_at: summary.expires_at,
-            tags: summary.tags || [],
-            status: summary.status,
-            created_at: summary.created_at
-          }
-        : null;
+      const dealSummary =
+        entityType === "deal"
+          ? (() => {
+              const summary = row.entity_id ? dealsById.get(row.entity_id) || null : null;
+              return summary
+                ? {
+                    deal_id: summary.deal_id,
+                    title: summary.title,
+                    price: toNumber(summary.price),
+                    currency: summary.currency,
+                    expires_at: summary.expires_at,
+                    tags: summary.tags || [],
+                    status: summary.status,
+                    created_at: summary.created_at
+                  }
+                : null;
+            })()
+          : null;
+
+      const listingSummary =
+        entityType === "listing"
+          ? (() => {
+              const summary = row.entity_id ? listingsById.get(row.entity_id) || null : null;
+              return summary
+                ? {
+                    listing_id: summary.listing_id,
+                    title: summary.title,
+                    category: summary.category,
+                    condition: summary.condition,
+                    price: {
+                      amount: toNumber(summary.price_amount),
+                      currency: summary.currency
+                    },
+                    status: summary.status,
+                    created_at: summary.created_at
+                  }
+                : null;
+            })()
+          : null;
 
       return {
         watchlist_match_id: row.watchlist_match_id,
@@ -136,7 +164,8 @@ export async function handler(req, res, ctx) {
         entity_id: row.entity_id,
         matched_at: row.matched_at,
         reason: row.reason || null,
-        deal_summary: dealSummary
+        deal_summary: dealSummary,
+        listing_summary: listingSummary
       };
     });
 
@@ -153,4 +182,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler);
-

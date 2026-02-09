@@ -227,6 +227,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/ops\/psp\/status$/
   },
   {
+    group: "sandbox.reset",
+    methods: ["POST"],
+    pattern: /^\/v1\/sandbox\/reset$/
+  },
+  {
     group: "sellers.psp.write",
     methods: ["POST"],
     pattern: /^\/v1\/sellers\/psp:onboard$/

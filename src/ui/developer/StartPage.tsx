@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
 
@@ -30,15 +30,11 @@ export default function StartPage() {
   const [mode, setMode] = useState<"generate" | "paste">("generate");
   const [agentName, setAgentName] = useState("");
   const [pastedKey, setPastedKey] = useState("");
-  const [storedKey, setStoredKey] = useState<string | null>(null);
+  const [storedKey, setStoredKey] = useState<string | null>(() => getStoredApiKey());
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
   const [agentId, setAgentId] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
-
-  useEffect(() => {
-    setStoredKey(getStoredApiKey());
-  }, []);
 
   const activeKey = createdKey || storedKey;
 
@@ -337,4 +333,3 @@ export default function StartPage() {
     </div>
   );
 }
-

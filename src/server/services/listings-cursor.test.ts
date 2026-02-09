@@ -37,6 +37,20 @@ describe("listings cursor", () => {
     expect(decoded?.value).toEqual(input);
   });
 
+  it("encodes and decodes distance cursor", () => {
+    const input = {
+      sort: "distance",
+      distance_m: 1234.56,
+      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
+      lat: 48.8566,
+      lng: 2.3522,
+      distance_km: 10
+    };
+    const encoded = encodeListingsCursor(input);
+    const decoded = decodeListingsCursor(encoded);
+    expect(decoded?.value).toEqual(input);
+  });
+
   it("rejects invalid cursor payload", () => {
     const decoded = decodeListingsCursor("not-base64");
     expect(decoded?.error).toBe("Invalid cursor");
@@ -44,6 +58,16 @@ describe("listings cursor", () => {
 
   it("rejects cursor with wrong shape", () => {
     const encoded = encodeListingsCursor({ sort: "recent" });
+    const decoded = decodeListingsCursor(encoded);
+    expect(decoded?.error).toBe("Invalid cursor");
+  });
+
+  it("rejects distance cursor missing geo params", () => {
+    const encoded = encodeListingsCursor({
+      sort: "distance",
+      distance_m: 1,
+      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
+    });
     const decoded = decodeListingsCursor(encoded);
     expect(decoded?.error).toBe("Invalid cursor");
   });
