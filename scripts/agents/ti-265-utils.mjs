@@ -338,17 +338,27 @@ export async function waitForSseEvent(response, { timeoutMs = 15000, predicate }
 
   const start = Date.now();
 
-  while (Date.now() - start < timeoutMs) {
-    const extracted = extractSseFrames(state.buffer);
-    state.buffer = extracted.rest;
+  function takeMatchingFrameFromBuffer() {
+    let idx;
+    while ((idx = state.buffer.indexOf("\n\n")) !== -1) {
+      const raw = state.buffer.slice(0, idx);
+      state.buffer = state.buffer.slice(idx + 2);
+      const frame = parseSseFrame(raw);
+      if (!frame) continue;
 
-    for (const frame of extracted.frames) {
       if (typeof predicate === "function") {
         if (predicate(frame)) return frame;
         continue;
       }
+
       return frame;
     }
+    return undefined;
+  }
+
+  while (Date.now() - start < timeoutMs) {
+    const buffered = takeMatchingFrameFromBuffer();
+    if (buffered !== undefined) return buffered;
 
     const remainingMs = timeoutMs - (Date.now() - start);
     const readPromise = state.reader.read();
@@ -368,6 +378,8 @@ export async function waitForSseEvent(response, { timeoutMs = 15000, predicate }
     state.buffer += state.decoder.decode(value, { stream: true });
   }
 
+  const trailing = takeMatchingFrameFromBuffer();
+  if (trailing !== undefined) return trailing;
+
   throw new Error("Timed out waiting for SSE frame");
 }
-
