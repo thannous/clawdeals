@@ -7,6 +7,7 @@ import { jsonResponse, sendJson } from "../http/response";
 import { sendError } from "../http/errors";
 import { mergeTrustContextIntoPolicy } from "../trustscore/context";
 import { safeAuditLog } from "../audit/singleton";
+import { matchRouteGroupFromRequest } from "../routes/route-groups";
 
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,
@@ -222,7 +223,7 @@ function buildAuditEvent(ctx) {
       status_code: typeof ctx.statusCode === "number" && Number.isFinite(ctx.statusCode) ? ctx.statusCode : null
     },
     action: {
-      route_group: ctx.rateLimit?.group || null,
+      route_group: ctx.routeGroup || ctx.rateLimit?.group || null,
       method: ctx.method,
       path: ctx.path,
       event: ctx.auditEvent || null,
@@ -243,6 +244,7 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
 
   return async function apiHandler(req, res) {
     const ctx: any = createRequestContext(req);
+    ctx.routeGroup = resolved.routeGroup || matchRouteGroupFromRequest(req) || null;
     applyCanonicalBody(req, ctx);
     await applyAuthStub(req, ctx);
 
@@ -305,6 +307,9 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
             scope: meta.scope,
             identity: meta.identity
           };
+          if (!ctx.routeGroup) {
+            ctx.routeGroup = meta.group || resolved.routeGroup || null;
+          }
         }
       }
 

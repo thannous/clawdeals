@@ -82,6 +82,7 @@ describe("withApiMiddlewares audit fields", () => {
     expect(event.request.duration_ms).toEqual(expect.any(Number));
     expect(event.request.duration_ms).toBeGreaterThanOrEqual(0);
     expect(event.request.started_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(event.action.route_group).toBe("deals.create");
     expect(event.idempotency).toEqual(
       expect.objectContaining({
         key: "idem-1",

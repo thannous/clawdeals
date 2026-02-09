@@ -40,8 +40,9 @@ Core write journeys are auditable through `public.audit_logs`:
 - Filter by `action->>'event'` (stable semantic name, preferred)
 - Use `outcome`:
   - `SUCCESS`: request completed successfully
-  - `FAILURE`: request failed (any 4xx/5xx)
   - `BLOCKED`: blocked by middleware (rate limit, idempotency gate, policy)
+  - `FAILURE`: request failed (4xx/5xx not classified as `BLOCKED`)
+  - `UNKNOWN`: outcome could not be inferred (missing response status)
 
 Limitations (important):
 - `request.status_code` and `request.duration_ms` are stored in the audit payload (added in TI-288).
@@ -186,7 +187,7 @@ with resolved as (
     (resolved_at - created_at) as resolve_time
   from public.approvals
   where resolved_at is not null
-    and created_at >= now() - interval '30 days'
+    and resolved_at >= now() - interval '30 days'
 )
 select
   percentile_cont(0.95) within group (order by extract(epoch from resolve_time)) as p95_seconds,
