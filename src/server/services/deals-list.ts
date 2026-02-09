@@ -143,6 +143,8 @@ export async function listDeals({
         sort,
         as_of: trendAsOf || cursor?.as_of || new Date().toISOString(),
         trend_score: last.trend_score,
+        // Backwards compatibility: some RPC variants still keyset paginate on active_at.
+        active_at: last.active_at || null,
         created_at: last.created_at,
         deal_id: last.deal_id
       });
