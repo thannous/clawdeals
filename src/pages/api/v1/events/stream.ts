@@ -171,11 +171,12 @@ export async function handler(req, res, ctx) {
   }
 
   const isProd = process.env.NODE_ENV === "production";
+  const allowOwnerOps = !isProd || process.env.SSE_ALLOW_OWNER_OPS === "true";
 
   const opsAgentId = process.env.CONSOLE_OPS_AGENT_ID || SSE_OPS_AGENT_ID_DEFAULT;
 
   let audience = null;
-  if (ctx?.actor?.type === "owner" && ctx?.ownerId && !isProd) {
+  if (ctx?.actor?.type === "owner" && ctx?.ownerId && allowOwnerOps) {
     audience = "ops";
   } else if (ctx?.actor?.type === "agent" && ctx?.agentId) {
     audience = ctx.agentId === opsAgentId ? "ops" : "agent";

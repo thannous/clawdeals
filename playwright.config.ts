@@ -15,7 +15,7 @@ const devBundlerFlag = devBundler === "webpack" ? "--webpack" : "--turbo";
 const webServerMode = process.env.PW_WEB_SERVER_MODE || "dev";
 const webServerCommand =
   webServerMode === "prod"
-    ? `CONSOLE_OPS_ENABLED=1 npm run build && CONSOLE_OPS_ENABLED=1 npm run start -- -p ${devPort}`
+    ? `CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
     : `npm run dev -- --port ${devPort} ${devBundlerFlag}`;
 const integrationWorkers = (() => {
   const raw = process.env.PW_INTEGRATION_WORKERS;
