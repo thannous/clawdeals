@@ -165,16 +165,6 @@ body {
   );
 }
 
-/* Landing page — phone chat bubble animation */
-@keyframes chatFadeIn {
-  0% { opacity: 0; transform: translateY(12px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.chat-bubble {
-  opacity: 0;
-  animation: chatFadeIn 0.4s ease-out forwards;
-}
-
 /* Deals page — modal overlay */
 .modal-overlay {
   background: rgb(var(--theme-primary-rgb) / 0.02);
