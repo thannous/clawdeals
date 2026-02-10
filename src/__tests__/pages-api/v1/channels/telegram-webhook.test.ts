@@ -48,6 +48,16 @@ vi.mock("../../../../server/services/channel-pairing", () => ({
   pairChannelIdentityForOwner: vi.fn()
 }));
 
+vi.mock("../../../../server/services/notification-preferences", () => ({
+  NOTIFICATION_EVENT_TYPES: ["watchlist_match", "offer_received", "approval_required", "transaction_updates"],
+  getOrCreateNotificationPreferences: vi.fn(),
+  updateNotificationPreferences: vi.fn()
+}));
+
+vi.mock("../../../../server/channels/telegram/client", () => ({
+  sendTelegramMessage: vi.fn(async () => ({ ok: true }))
+}));
+
 vi.mock("../../../../server/services/approvals", () => ({
   listApprovals: vi.fn(),
   getApprovalForOwner: vi.fn(),
@@ -63,6 +73,29 @@ vi.mock("../../../../server/channels/command-confirmations", () => ({
   consumeConfirmation: vi.fn(async () => ({ approvalId: "x" }))
 }));
 
+vi.mock("../../../../server/config/listing-media", () => ({
+  getListingPhotosBucket: vi.fn(() => "listing-photos"),
+  getMaxPhotoBytes: vi.fn(() => 8 * 1024 * 1024),
+  getMaxPhotosPerListing: vi.fn(() => 8)
+}));
+
+vi.mock("../../../../server/services/listing-drafts", () => ({
+  ensureActiveListingDraftForChannel: vi.fn(),
+  appendDraftListingPhoto: vi.fn(),
+  setDraftListingGeo: vi.fn()
+}));
+
+vi.mock("../../../../server/services/listing-media-storage", () => ({
+  uploadListingPhoto: vi.fn()
+}));
+
+vi.mock("../../../../server/channels/telegram/media", () => ({
+  getTelegramFileInfo: vi.fn(),
+  downloadTelegramFileBytes: vi.fn(),
+  sniffImageMime: vi.fn(),
+  stripJpegExif: vi.fn((b: any) => b)
+}));
+
 import { handler } from "../../../../pages/api/v1/channels/telegram/webhook";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 import { rateLimitMiddleware } from "../../../../server/rate-limit/middleware";
@@ -73,8 +106,17 @@ import {
 } from "../../../../server/services/channel-identities";
 import { createPairToken, consumePairToken } from "../../../../server/services/pairing-tokens";
 import { pairChannelIdentityForOwner } from "../../../../server/services/channel-pairing";
+import { getOrCreateNotificationPreferences, updateNotificationPreferences } from "../../../../server/services/notification-preferences";
+import { sendTelegramMessage } from "../../../../server/channels/telegram/client";
 import { listApprovals, getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
 import { createConfirmation, consumeConfirmation } from "../../../../server/channels/command-confirmations";
+import {
+  ensureActiveListingDraftForChannel,
+  appendDraftListingPhoto,
+  setDraftListingGeo
+} from "../../../../server/services/listing-drafts";
+import { uploadListingPhoto } from "../../../../server/services/listing-media-storage";
+import { getTelegramFileInfo, downloadTelegramFileBytes, sniffImageMime } from "../../../../server/channels/telegram/media";
 
 const APPROVAL_ID = "00000000-0000-4000-a000-000000000123";
 
@@ -123,6 +165,71 @@ function makeReq(text: string, overrides: any = {}) {
   };
 }
 
+function makeCallbackReq(data: string, overrides: any = {}) {
+  const updateId = overrides.update_id ?? nextUpdateId++;
+  const messageId = overrides.message_id ?? nextMessageId++;
+  const nowSec = Math.floor(Date.now() / 1000);
+  return {
+    method: "POST",
+    headers: { "x-telegram-bot-api-secret-token": "secret", ...(overrides.headers || {}) },
+    query: overrides.query,
+    body: {
+      update_id: updateId,
+      callback_query: {
+        id: overrides.callback_query_id || `cb-${updateId}`,
+        from: { id: 123, username: "alice" },
+        data,
+        message: {
+          message_id: messageId,
+          date: overrides.date_seconds ?? nowSec,
+          chat: { id: 456, type: "private" }
+        }
+      }
+    }
+  };
+}
+
+function makeReqLocation({ lat, lng, overrides }: any) {
+  const updateId = overrides?.update_id ?? nextUpdateId++;
+  const messageId = overrides?.message_id ?? nextMessageId++;
+  return {
+    method: "POST",
+    headers: { "x-telegram-bot-api-secret-token": "secret", ...(overrides?.headers || {}) },
+    query: overrides?.query,
+    body: {
+      update_id: updateId,
+      message: {
+        message_id: messageId,
+        from: { id: 123, username: "alice" },
+        chat: { id: 456, type: overrides?.chat_type || "private" },
+        location: { latitude: lat, longitude: lng }
+      }
+    }
+  };
+}
+
+function makeReqPhoto({ overrides }: any = {}) {
+  const updateId = overrides?.update_id ?? nextUpdateId++;
+  const messageId = overrides?.message_id ?? nextMessageId++;
+  return {
+    method: "POST",
+    headers: { "x-telegram-bot-api-secret-token": "secret", ...(overrides?.headers || {}) },
+    query: overrides?.query,
+    body: {
+      update_id: updateId,
+      message: {
+        message_id: messageId,
+        from: { id: 123, username: "alice" },
+        chat: { id: 456, type: overrides?.chat_type || "private" },
+        photo: [
+          { file_id: "f1", width: 90, height: 90, file_size: 1000 },
+          { file_id: "f2", width: 800, height: 600, file_size: 2000 }
+        ]
+      }
+    }
+  };
+}
+
 describe("POST /api/v1/channels/telegram/webhook", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -138,6 +245,8 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
       seenKeys.add(key);
       return "OK";
     });
+
+    process.env.TELEGRAM_BOT_TOKEN = "token";
   });
 
   it("rejects missing or invalid secret token header", async () => {
@@ -223,6 +332,68 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
 
     expect(result.status).toBe(200);
     expect(result.body.text).toMatch(/\/pair\?token=tok-2/);
+  });
+
+  it("location update stores geo on the active draft and emits location.received", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "owner",
+      state: "ACTIVE"
+    } as any);
+
+    vi.mocked(ensureActiveListingDraftForChannel).mockResolvedValue({
+      listingId: "l-1",
+      listing: { listing_id: "l-1", title: "Untitled", photos: [] }
+    } as any);
+
+    vi.mocked(setDraftListingGeo).mockResolvedValue({
+      listing: { listing_id: "l-1", title: "Untitled", photos: [] },
+      photosCount: 0
+    } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReqLocation({ lat: 48.8566, lng: 2.3522 }), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.text).toMatch(/Location: set/);
+    expect(result.body.text).toMatch(/Status: DRAFT/);
+    expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+      action: expect.objectContaining({ event: "location.received" })
+    }));
+  });
+
+  it("photo update rejects when TELEGRAM_BOT_TOKEN is missing (media.rejected)", async () => {
+    process.env.TELEGRAM_BOT_TOKEN = "";
+
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "owner",
+      state: "ACTIVE"
+    } as any);
+
+    vi.mocked(ensureActiveListingDraftForChannel).mockResolvedValue({
+      listingId: "l-1",
+      listing: { listing_id: "l-1", title: "Untitled", photos: [] }
+    } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReqPhoto(), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.text).toMatch(/TELEGRAM_BOT_TOKEN/i);
+    expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+      action: expect.objectContaining({ event: "media.rejected" })
+    }));
+
+    expect(getTelegramFileInfo).not.toHaveBeenCalled();
+    expect(downloadTelegramFileBytes).not.toHaveBeenCalled();
+    expect(sniffImageMime).not.toHaveBeenCalled();
+    expect(uploadListingPhoto).not.toHaveBeenCalled();
+    expect(appendDraftListingPhoto).not.toHaveBeenCalled();
   });
 
   it("/start applies the channels.pair rate limit group", async () => {
@@ -344,6 +515,68 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     expect(result.body.text).toMatch(/CLAWDEALS status/);
     expect(ctx.ownerId).toBe("owner-1");
     expect(ctx.actor).toEqual({ type: "owner", id: "owner-1" });
+  });
+
+  it("notif returns a settings menu with reply_markup", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "viewer",
+      state: "ACTIVE"
+    } as any);
+    vi.mocked(touchLastSeen).mockResolvedValue(undefined as any);
+
+    vi.mocked(getOrCreateNotificationPreferences).mockResolvedValue({
+      owner_id: "owner-1",
+      mode: "DIGEST_HOURLY",
+      timezone: "UTC",
+      quiet_enabled: false,
+      event_types: ["watchlist_match"],
+      filters: {}
+    } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReq("notif"), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.reply_markup).toBeTruthy();
+    expect(result.body.text).toMatch(/Notifications settings/);
+  });
+
+  it("notif callbacks send an outbound message and return answerCallbackQuery", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "viewer",
+      state: "ACTIVE"
+    } as any);
+    vi.mocked(touchLastSeen).mockResolvedValue(undefined as any);
+
+    vi.mocked(getOrCreateNotificationPreferences).mockResolvedValue({
+      owner_id: "owner-1",
+      mode: "DIGEST_HOURLY",
+      timezone: "UTC",
+      quiet_enabled: false,
+      event_types: ["watchlist_match"],
+      filters: {}
+    } as any);
+
+    vi.mocked(updateNotificationPreferences).mockResolvedValue({
+      owner_id: "owner-1",
+      mode: "SILENT",
+      timezone: "UTC",
+      quiet_enabled: false,
+      event_types: ["watchlist_match"],
+      filters: {}
+    } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeCallbackReq("notif mode silent"), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("answerCallbackQuery");
+    expect(vi.mocked(sendTelegramMessage)).toHaveBeenCalledWith(expect.objectContaining({ chatId: "456" }));
   });
 
   it("approver approve flow requires confirm and confirm resolves", async () => {

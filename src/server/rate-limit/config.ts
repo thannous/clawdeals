@@ -110,6 +110,10 @@ export const RATE_LIMIT_PROFILES = {
   "watchlist.match": {
     buckets: [{ limit: 60, windowSeconds: MINUTE }],
   },
+  "notifications.prefs.update": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: HOUR }],
+  },
   "listings.create": {
     buckets: [{ limit: 50, windowSeconds: DAY }],
   },
@@ -294,6 +298,10 @@ export const RATE_LIMIT_PROFILES = {
       { limit: 20, windowSeconds: MINUTE },
       { limit: 100, windowSeconds: DAY },
     ],
+  },
+  "channels.telegram.media_upload": {
+    scope: "owner",
+    buckets: [{ limit: 100, windowSeconds: DAY }],
   },
   "channels.pair": {
     scope: "channel",

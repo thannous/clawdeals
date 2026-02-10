@@ -7,6 +7,7 @@ import { errorPayload } from "../../../../../../server/http/errors";
 import { rateLimitMiddleware } from "../../../../../../server/rate-limit/middleware";
 import { getNumberEnv } from "../../../../../../server/config/env";
 import { safeAuditLog } from "../../../../../../server/audit/singleton";
+import { DEFAULT_OPS_CONSOLE_AGENT_ID } from "../../../../../../server/config/ops";
 import { createChannelFingerprints } from "../../../../../../server/utils/channel-fingerprint";
 import { parseCommand } from "../../../../../../server/channels/commands/parser";
 import { executeChannelCommand } from "../../../../../../server/channels/commands/execute";
@@ -14,6 +15,21 @@ import {
   buildTelegramAnswerCallbackQuery,
   buildTelegramSendMessage
 } from "../../../../../../server/channels/commands/format";
+import { sendTelegramMessage } from "../../../../../../server/channels/telegram/client";
+import { getListingPhotosBucket, getMaxPhotoBytes, getMaxPhotosPerListing } from "../../../../../../server/config/listing-media";
+import {
+  ensureActiveListingDraftForChannel,
+  appendDraftListingPhoto,
+  setDraftListingGeo
+} from "../../../../../../server/services/listing-drafts";
+import { uploadListingPhoto } from "../../../../../../server/services/listing-media-storage";
+import {
+  downloadTelegramFileBytes,
+  getTelegramFileInfo,
+  sniffImageMime,
+  stripJpegExif
+} from "../../../../../../server/channels/telegram/media";
+import { findActiveIdentityByChannel, findPendingIdentityByChannel, touchLastSeen } from "../../../../../../server/services/channel-identities";
 import {
   getTelegramWebhookDedupeTtlSeconds,
   markTelegramWebhookSeen
@@ -187,6 +203,68 @@ async function applyChannelRateLimit({ req, ctx, group, channelId, callbackQuery
   return null;
 }
 
+async function applyOwnerRateLimit({ req, ctx, group, ownerId, callbackQueryId, chatId }: any) {
+  const result: any = await rateLimitMiddleware(req, {
+    routeGroup: group,
+    ownerId,
+    ip: ctx?.ip || null,
+    env: process.env,
+    onRateLimited: (meta: any) => {
+      if (!ctx) return;
+      ctx.rateLimit = {
+        group: meta.group,
+        scope: meta.scope,
+        identity: meta.identity,
+        limit: meta.limit,
+        windowSeconds: meta.windowSeconds,
+        retryAfterSeconds: meta.retryAfterSeconds,
+        remaining: meta.remaining,
+        resetSeconds: meta.resetSeconds
+      };
+    }
+  });
+
+  if (!result) return null;
+
+  if (result.status === 429) {
+    if (ctx) {
+      ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
+      ctx.security = {
+        ...(ctx.security || {}),
+        webhook_rate_limit_group: group
+      };
+      setWebhookRejected(ctx, "rate_limit");
+    }
+
+    if (callbackQueryId) {
+      return jsonResponse(200, buildTelegramAnswerCallbackQuery({ callbackQueryId, text: "Rate limited" }));
+    }
+
+    if (chatId) {
+      return jsonResponse(
+        200,
+        buildTelegramSendMessage({
+          chatId,
+          text: "Rate limited",
+          disableWebPagePreview: true
+        })
+      );
+    }
+
+    return jsonResponse(200, { ok: true, rate_limited: true });
+  }
+
+  if (result.meta && ctx) {
+    ctx.rateLimit = {
+      group: result.meta.group || group,
+      scope: result.meta.scope,
+      identity: result.meta.identity
+    };
+  }
+
+  return null;
+}
+
 function resolveTelegramMessage(update: any) {
   if (!update || typeof update !== "object") return null;
   return update.message || update.edited_message || null;
@@ -212,6 +290,54 @@ function truncateTelegramCallbackText(text: string, maxLen = 180) {
   const normalized = String(text).replace(/\s+/g, " ").trim();
   if (normalized.length <= maxLen) return normalized;
   return `${normalized.slice(0, Math.max(0, maxLen - 3))}...`;
+}
+
+function notPairedText() {
+  return [
+    "CHANNEL_NOT_PAIRED",
+    "Blocked: this Telegram account is not paired.",
+    "",
+    "Send `connect` (alias: `pair`) to get a web link, then confirm pairing."
+  ].join("\n");
+}
+
+function pendingApprovalText() {
+  return [
+    "CHANNEL_NOT_PAIRED",
+    "Blocked: pairing is pending approval.",
+    "",
+    "Approve the request in the console: /console/approvals"
+  ].join("\n");
+}
+
+function selectBestTelegramPhotoSize(sizes: any[]) {
+  if (!Array.isArray(sizes) || sizes.length === 0) return null;
+  let best = null as any;
+  let bestArea = -1;
+  let bestBytes = -1;
+  for (const s of sizes) {
+    const w = typeof s?.width === "number" ? s.width : 0;
+    const h = typeof s?.height === "number" ? s.height : 0;
+    const area = w > 0 && h > 0 ? w * h : 0;
+    const bytes = typeof s?.file_size === "number" && Number.isFinite(s.file_size) ? s.file_size : -1;
+    if (!best) {
+      best = s;
+      bestArea = area;
+      bestBytes = bytes;
+      continue;
+    }
+    if (area > bestArea) {
+      best = s;
+      bestArea = area;
+      bestBytes = bytes;
+      continue;
+    }
+    if (area === bestArea && bytes > bestBytes) {
+      best = s;
+      bestBytes = bytes;
+    }
+  }
+  return best;
 }
 
 export async function handler(req, res, ctx) {
@@ -368,15 +494,14 @@ export async function handler(req, res, ctx) {
   const rawData = typeof callback?.data === "string" ? callback.data : "";
   const rawCommand = callback ? rawData : rawText;
 
-  if (!rawCommand) {
-    // Non-text updates are ignored (ACK).
-    return jsonResponse(200, { ok: true });
-  }
-
   const channelType = "telegram";
   const channelContextId = chatId;
   const displayName = resolveTelegramDisplayName(from);
-  const command = parseCommand(rawCommand);
+  const photoSizes = !callback && Array.isArray((message as any)?.photo) ? (message as any).photo : null;
+  const location = !callback && (message as any)?.location ? (message as any).location : null;
+  const isPhotoUpdate = Boolean(photoSizes && Array.isArray(photoSizes) && photoSizes.length > 0);
+  const isLocationUpdate = Boolean(location && typeof location === "object");
+  let command: any = null;
 
   const hashes = createChannelFingerprints({
     channelType,
@@ -405,7 +530,7 @@ export async function handler(req, res, ctx) {
       channel_type: channelType,
       channel_user_id_hash: hashes.channel_user_id_hash,
       channel_context_id_hash: hashes.channel_context_id_hash,
-      command: command.kind
+      command: callback ? "callback" : isPhotoUpdate ? "photo" : isLocationUpdate ? "location" : rawCommand ? "text" : "non_text"
     };
   }
 
@@ -452,6 +577,281 @@ export async function handler(req, res, ctx) {
     callbackQueryId
   });
   if (webhookRl) return webhookRl;
+
+  if (isPhotoUpdate || isLocationUpdate) {
+    const now = new Date();
+
+    let identity: any = null;
+    try {
+      identity = await findActiveIdentityByChannel({ channelType, channelUserId, channelContextId });
+    } catch {
+      identity = null;
+    }
+
+    if (!identity) {
+      let pending: any = null;
+      try {
+        pending = await findPendingIdentityByChannel({ channelType, channelUserId, channelContextId });
+      } catch {
+        pending = null;
+      }
+
+      if (ctx) {
+        setWebhookRejected(ctx, "CHANNEL_NOT_PAIRED");
+        ctx.outcome = { type: "BLOCKED", reason: "not_paired" };
+      }
+      await safeAuditLog(buildAuditEventFromCtx(ctx, "command.blocked_not_paired", { type: "media" }, "BLOCKED"));
+
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: pending ? pendingApprovalText() : notPairedText(),
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    if (ctx) {
+      ctx.ownerId = identity.owner_id || null;
+      ctx.actor = { type: "owner", id: identity.owner_id || null };
+      ctx.security = {
+        ...(ctx.security || {}),
+        channel_identity_id: identity.channel_identity_id,
+        role: identity.role || null
+      };
+    }
+
+    try {
+      await touchLastSeen({ ownerId: identity.owner_id, channelIdentityId: identity.channel_identity_id });
+    } catch {
+      // Best-effort.
+    }
+
+    if (String(identity.role || "viewer") !== "owner") {
+      if (ctx) {
+        ctx.outcome = { type: "BLOCKED", reason: "forbidden_role" };
+      }
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: "Forbidden: owner role required.",
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    const sellerAgentId = process.env.CONSOLE_OPS_AGENT_ID || DEFAULT_OPS_CONSOLE_AGENT_ID;
+    let draft: any;
+    try {
+      draft = await ensureActiveListingDraftForChannel({
+        ownerId: identity.owner_id,
+        channelIdentityId: identity.channel_identity_id,
+        sellerAgentId,
+        now
+      });
+    } catch (error: any) {
+      if (ctx) {
+        ctx.outcome = { type: "FAILURE", reason: "draft" };
+      }
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: `Error: ${error?.message || "Draft error"}`,
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    const listingId = draft?.listingId ? String(draft.listingId) : null;
+    const maxPhotos = getMaxPhotosPerListing();
+
+    let listingTitle = typeof draft?.listing?.title === "string" ? draft.listing.title : "";
+    if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
+    let photosCount = Array.isArray(draft?.listing?.photos) ? draft.listing.photos.length : 0;
+
+    if (isLocationUpdate) {
+      const lat = typeof (location as any)?.latitude === "number" ? (location as any).latitude : NaN;
+      const lng = typeof (location as any)?.longitude === "number" ? (location as any).longitude : NaN;
+
+      try {
+        const updated = await setDraftListingGeo({
+          listingId,
+          sellerAgentId,
+          lat,
+          lng,
+          now
+        });
+        listingTitle = typeof updated?.listing?.title === "string" ? updated.listing.title : listingTitle;
+        if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
+        photosCount = typeof updated?.photosCount === "number" ? updated.photosCount : photosCount;
+
+        await safeAuditLog(
+          buildAuditEventFromCtx(ctx, "location.received", { listing_id: listingId, geo_set: true }, "SUCCESS")
+        );
+      } catch (error: any) {
+        await safeAuditLog(
+          buildAuditEventFromCtx(ctx, "location.received", { listing_id: listingId, geo_set: false }, "FAILURE")
+        );
+        const responseBody = buildTelegramSendMessage({
+          chatId,
+          text: `Error: ${error?.message || "Invalid location"}`,
+          disableWebPagePreview: true
+        });
+        return jsonResponse(200, responseBody);
+      }
+
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: [
+          "Draft updated.",
+          `Title: ${listingTitle}`,
+          `Photos: ${photosCount}/${maxPhotos}`,
+          "Location: set",
+          "Status: DRAFT"
+        ].join("\n"),
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    // Photo upload path.
+    const uploadRl = await applyOwnerRateLimit({
+      req,
+      ctx,
+      group: "channels.telegram.media_upload",
+      ownerId: identity.owner_id,
+      callbackQueryId: null,
+      chatId
+    });
+    if (uploadRl) {
+      await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "rate_limit" }, "BLOCKED"));
+      return uploadRl;
+    }
+
+    const token = process.env.TELEGRAM_BOT_TOKEN || "";
+    if (!token) {
+      await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "missing_token" }, "BLOCKED"));
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: "Photos are temporarily unavailable (missing TELEGRAM_BOT_TOKEN).",
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    const best = selectBestTelegramPhotoSize(photoSizes || []);
+    const fileId = typeof best?.file_id === "string" ? best.file_id : null;
+    const w = typeof best?.width === "number" && Number.isFinite(best.width) ? best.width : undefined;
+    const h = typeof best?.height === "number" && Number.isFinite(best.height) ? best.height : undefined;
+
+    if (!fileId) {
+      await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "invalid_photo" }, "FAILURE"));
+      return jsonResponse(
+        200,
+        buildTelegramSendMessage({ chatId, text: "Invalid photo payload.", disableWebPagePreview: true })
+      );
+    }
+
+    const maxBytes = getMaxPhotoBytes();
+    const declaredSize = typeof best?.file_size === "number" && Number.isFinite(best.file_size) ? best.file_size : null;
+    if (declaredSize != null && declaredSize > maxBytes) {
+      await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "too_large" }, "BLOCKED"));
+      return jsonResponse(
+        200,
+        buildTelegramSendMessage({ chatId, text: "Photo rejected: file too large.", disableWebPagePreview: true })
+      );
+    }
+
+    try {
+      const info = await getTelegramFileInfo({ token, fileId });
+      if (info.file_size != null && info.file_size > maxBytes) {
+        await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "too_large" }, "BLOCKED"));
+        return jsonResponse(
+          200,
+          buildTelegramSendMessage({ chatId, text: "Photo rejected: file too large.", disableWebPagePreview: true })
+        );
+      }
+
+      const bytes = await downloadTelegramFileBytes({ token, filePath: info.file_path, maxBytes });
+      const mime = sniffImageMime(bytes);
+      if (!mime) {
+        await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "invalid_type" }, "BLOCKED"));
+        return jsonResponse(
+          200,
+          buildTelegramSendMessage({ chatId, text: "Photo rejected: invalid type.", disableWebPagePreview: true })
+        );
+      }
+
+      const cleaned = mime === "image/jpeg" ? stripJpegExif(bytes) : bytes;
+      const bucket = getListingPhotosBucket();
+      const uploaded = await uploadListingPhoto({ bucket, listingId, bytes: cleaned, mime });
+
+      const appended = await appendDraftListingPhoto({
+        listingId,
+        sellerAgentId,
+        photoRef: {
+          storage_key: uploaded.storage_key,
+          mime,
+          ...(w != null ? { w } : {}),
+          ...(h != null ? { h } : {})
+        },
+        now
+      });
+
+      listingTitle = typeof appended?.listing?.title === "string" ? appended.listing.title : listingTitle;
+      if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
+      photosCount = typeof appended?.photosCount === "number" ? appended.photosCount : photosCount + 1;
+
+      await safeAuditLog(
+        buildAuditEventFromCtx(
+          ctx,
+          "media.uploaded",
+          { listing_id: listingId, bytes: cleaned.byteLength, mime, photos_count: photosCount },
+          "SUCCESS"
+        )
+      );
+    } catch (error: any) {
+      const code = String(error?.code || "");
+      const reason =
+        code === "PHOTO_LIMIT_EXCEEDED"
+          ? "limit_exceeded"
+          : code === "FILE_TOO_LARGE"
+            ? "too_large"
+          : code === "VALIDATION_ERROR"
+            ? "invalid"
+            : "error";
+
+      await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason }, "FAILURE"));
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: `Error: ${error?.message || "Upload failed"}`,
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    const responseBody = buildTelegramSendMessage({
+      chatId,
+      text: [
+        "Draft updated.",
+        `Title: ${listingTitle}`,
+        `Photos: ${photosCount}/${maxPhotos}`,
+        "Status: DRAFT"
+      ].join("\n"),
+      disableWebPagePreview: true
+    });
+    return jsonResponse(200, responseBody);
+  }
+
+  if (!rawCommand) {
+    // Non-text updates are ignored (ACK).
+    return jsonResponse(200, { ok: true });
+  }
+
+  command = parseCommand(rawCommand);
+  if (ctx) {
+    ctx.security = {
+      ...(ctx.security || {}),
+      command: command.kind
+    };
+  }
 
   if (callback) {
     const callbackRl = await applyChannelRateLimit({
@@ -534,6 +934,12 @@ export async function handler(req, res, ctx) {
     };
   }
 
+  if (result?.telemetry?.event && ctx) {
+    await safeAuditLog(
+      buildAuditEventFromCtx(ctx, String(result.telemetry.event), result.telemetry.payload || {}, result.telemetry.outcome || "SUCCESS")
+    );
+  }
+
   if (result.blocked && ctx) {
     setWebhookRejected(ctx, "CHANNEL_NOT_PAIRED");
     await safeAuditLog(buildAuditEventFromCtx(ctx, "command.blocked_not_paired", { command: command.kind }, "BLOCKED"));
@@ -584,6 +990,23 @@ export async function handler(req, res, ctx) {
   }
 
   if (callbackQueryId) {
+    // Preferences UX: callback queries should update the menu via an outbound sendMessage (not just a toast).
+    const isNotificationsCallback = typeof command.kind === "string" && command.kind.startsWith("notifications_");
+    if (isNotificationsCallback) {
+      const outbound = await sendTelegramMessage({
+        chatId,
+        text: result.text || "OK",
+        replyMarkup: result.replyMarkup || null
+      });
+      return jsonResponse(
+        200,
+        buildTelegramAnswerCallbackQuery({
+          callbackQueryId,
+          text: outbound?.ok ? "Updated" : "Failed"
+        })
+      );
+    }
+
     return jsonResponse(
       200,
       buildTelegramAnswerCallbackQuery({
