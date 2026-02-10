@@ -33,10 +33,19 @@ vi.mock("../../../../server/audit/singleton", () => ({
 }));
 
 vi.mock("../../../../server/services/channel-identities", () => ({
-  startPairing: vi.fn(),
-  findActiveIdentity: vi.fn(),
+  findActiveIdentityByChannel: vi.fn(),
+  findPendingIdentityByChannel: vi.fn(),
   touchLastSeen: vi.fn(),
   revokePairing: vi.fn(),
+}));
+
+vi.mock("../../../../server/services/pairing-tokens", () => ({
+  createPairToken: vi.fn(),
+  consumePairToken: vi.fn()
+}));
+
+vi.mock("../../../../server/services/channel-pairing", () => ({
+  pairChannelIdentityForOwner: vi.fn()
 }));
 
 vi.mock("../../../../server/services/approvals", () => ({
@@ -58,10 +67,12 @@ import { handler } from "../../../../pages/api/v1/channels/telegram/webhook";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 import { rateLimitMiddleware } from "../../../../server/rate-limit/middleware";
 import {
-  startPairing,
-  findActiveIdentity,
+  findActiveIdentityByChannel,
+  findPendingIdentityByChannel,
   touchLastSeen
 } from "../../../../server/services/channel-identities";
+import { createPairToken, consumePairToken } from "../../../../server/services/pairing-tokens";
+import { pairChannelIdentityForOwner } from "../../../../server/services/channel-pairing";
 import { listApprovals, getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
 import { createConfirmation, consumeConfirmation } from "../../../../server/channels/command-confirmations";
 
@@ -163,64 +174,70 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
   });
 
   it("blocks when not allowlisted (suggests connect)", async () => {
-    vi.mocked(findActiveIdentity).mockResolvedValue(null as any);
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue(null as any);
+    vi.mocked(findPendingIdentityByChannel).mockResolvedValue(null as any);
 
     const ctx = makeCtx();
     const result: any = await handler(makeReq("status"), null, ctx);
 
     expect(result.status).toBe(200);
     expect(result.body.method).toBe("sendMessage");
-    expect(result.body.text).toMatch(/not allowlisted/i);
+    expect(result.body.text).toMatch(/CHANNEL_NOT_PAIRED/);
     expect(result.body.text).toMatch(/\bconnect\b/i);
     expect(result.body.text).toMatch(/\bpair\b/i);
     expect(ctx.auditEvent).toBe("webhook.rejected");
-    expect(ctx.security?.webhook_reject_reason).toBe("unpaired");
+    expect(ctx.security?.webhook_reject_reason).toBe("CHANNEL_NOT_PAIRED");
     expect(ctx.outcome?.type).toBe("BLOCKED");
     expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-      action: expect.objectContaining({ event: "command.blocked_not_allowlisted" })
+      action: expect.objectContaining({ event: "command.blocked_not_paired" })
     }));
   });
 
-  it("pair returns a code and emits pairing.started", async () => {
-    vi.mocked(startPairing).mockResolvedValue({
-      identity: { channel_identity_id: "cid-1", state: "PENDING" },
-      code: "CD-AAAAAA",
-      expiresAt: new Date("2026-02-09T12:00:00Z"),
-      alreadyActive: false
-    } as any);
-
-    const ctx = makeCtx();
-    const result: any = await handler(makeReq("pair"), null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.body.text).toMatch(/CD-AAAAAA/);
-    expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
-      action: expect.objectContaining({ event: "pairing.started" })
-    }));
-  });
-
-  it("connect is an alias for pair", async () => {
-    vi.mocked(startPairing).mockResolvedValue({
-      identity: { channel_identity_id: "cid-1", state: "PENDING" },
-      code: "CD-BBBBBB",
-      expiresAt: new Date("2026-02-09T12:00:00Z"),
-      alreadyActive: false
+  it("connect returns a web link + button and emits channel.pair_started", async () => {
+    vi.mocked(createPairToken).mockResolvedValue({
+      pair_token: "tok-1",
+      expires_at: "2026-02-09T12:00:00Z",
+      token_type: "CHANNEL_TO_WEB"
     } as any);
 
     const ctx = makeCtx();
     const result: any = await handler(makeReq("connect"), null, ctx);
 
     expect(result.status).toBe(200);
-    expect(result.body.text).toMatch(/CD-BBBBBB/);
+    expect(result.body.text).toMatch(/\/pair\?token=tok-1/);
+    expect(result.body.reply_markup).toBeTruthy();
+    expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+      action: expect.objectContaining({ event: "channel.pair_started" })
+    }));
   });
 
-  it("/start applies the channels.telegram.start rate limit group", async () => {
+  it("pair is an alias for connect", async () => {
+    vi.mocked(createPairToken).mockResolvedValue({
+      pair_token: "tok-2",
+      expires_at: "2026-02-09T12:00:00Z",
+      token_type: "CHANNEL_TO_WEB"
+    } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReq("pair"), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.text).toMatch(/\/pair\?token=tok-2/);
+  });
+
+  it("/start applies the channels.pair rate limit group", async () => {
+    vi.mocked(consumePairToken).mockResolvedValue({ owner_id: "owner-1" } as any);
+    vi.mocked(pairChannelIdentityForOwner).mockResolvedValue({
+      identity: { channel_identity_id: "cid-1", owner_id: "owner-1", state: "ACTIVE" },
+      state: "PAIRED"
+    } as any);
+
     const ctx = makeCtx();
     const result: any = await handler(makeReq("/start"), null, ctx);
 
     expect(result.status).toBe(200);
     expect(result.body.method).toBe("sendMessage");
-    expect(vi.mocked(rateLimitMiddleware).mock.calls.some(([, opts]) => opts.routeGroup === "channels.telegram.start")).toBe(true);
+    expect(vi.mocked(rateLimitMiddleware).mock.calls.some(([, opts]) => opts.routeGroup === "channels.pair")).toBe(true);
   });
 
   it("blocks non-private chats (group spam guard)", async () => {
@@ -311,7 +328,7 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
   });
 
   it("allowlisted viewer can run status", async () => {
-    vi.mocked(findActiveIdentity).mockResolvedValue({
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
       channel_identity_id: "cid-1",
       owner_id: "owner-1",
       role: "viewer",
@@ -330,7 +347,7 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
   });
 
   it("approver approve flow requires confirm and confirm resolves", async () => {
-    vi.mocked(findActiveIdentity).mockResolvedValue({
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
       channel_identity_id: "cid-1",
       owner_id: "owner-1",
       role: "approver",

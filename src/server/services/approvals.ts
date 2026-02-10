@@ -159,22 +159,34 @@ export async function getApprovalForOwner(approvalId, ownerId) {
 
 export async function resolveApproval({ approvalId, ownerId, decision, resolvedBy, reason }: any) {
   const client = getSupabaseServiceClient();
-  const rpcArgs: any = {
+  const rpcArgsWithReason: any = {
     p_approval_id: approvalId,
     p_owner_id: ownerId,
     p_decision: decision,
-    p_resolved_by: resolvedBy
+    p_resolved_by: resolvedBy,
+    // Always target the 5-arg resolve_approval() overload (channel.pair support lives there).
+    // Keep a fallback to 4-arg for older DBs.
+    p_reason: reason ?? null
   };
-  if (reason != null) {
-    rpcArgs.p_reason = reason;
+  const { data, error } = await client.rpc("resolve_approval", rpcArgsWithReason).single();
+  if (!error) return data;
+
+  // Fallback: older DBs may not have the p_reason parameter yet.
+  if (typeof error.message === "string" && /p_reason/i.test(error.message)) {
+    const rpcArgsLegacy: any = {
+      p_approval_id: approvalId,
+      p_owner_id: ownerId,
+      p_decision: decision,
+      p_resolved_by: resolvedBy
+    };
+    const legacy = await client.rpc("resolve_approval", rpcArgsLegacy).single();
+    if (legacy.error) {
+      mapError(legacy.error);
+    }
+    return legacy.data;
   }
-  const { data, error } = await client
-    .rpc("resolve_approval", rpcArgs)
-    .single();
-  if (error) {
-    mapError(error);
-  }
-  return data;
+
+  mapError(error);
 }
 
 const DEFAULT_APPROVAL_SLA_HOURS = 24;

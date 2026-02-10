@@ -6,7 +6,6 @@ import { methodNotAllowed } from "../../../../../../server/http/methods";
 import { errorPayload } from "../../../../../../server/http/errors";
 import { rateLimitMiddleware } from "../../../../../../server/rate-limit/middleware";
 import { getNumberEnv } from "../../../../../../server/config/env";
-import { getOpsConsoleOwnerId } from "../../../../../../server/config/ops";
 import { safeAuditLog } from "../../../../../../server/audit/singleton";
 import { createChannelFingerprints } from "../../../../../../server/utils/channel-fingerprint";
 import { parseCommand } from "../../../../../../server/channels/commands/parser";
@@ -463,15 +462,6 @@ export async function handler(req, res, ctx) {
       callbackQueryId
     });
     if (callbackRl) return callbackRl;
-  } else if (command.kind === "start") {
-    const startRl = await applyChannelRateLimit({
-      req,
-      ctx,
-      group: "channels.telegram.start",
-      channelId: channelRateLimitId,
-      callbackQueryId: null
-    });
-    if (startRl) return startRl;
   } else if (command.kind === "unknown") {
     const textRl = await applyChannelRateLimit({
       req,
@@ -483,8 +473,8 @@ export async function handler(req, res, ctx) {
     if (textRl) return textRl;
   }
 
-  // Pairing start is more sensitive (abuse / brute force).
-  if (command.kind === "pair") {
+  // Pairing flows are more sensitive (abuse / brute force).
+  if (command.kind === "connect" || command.kind === "start") {
     const pairRl = await applyChannelRateLimit({
       req,
       ctx,
@@ -509,12 +499,9 @@ export async function handler(req, res, ctx) {
     if (confirmRl) return confirmRl;
   }
 
-  const ownerId = getOpsConsoleOwnerId();
-
   let result: any;
   try {
     result = await executeChannelCommand({
-      ownerId,
       channel: {
         channelType,
         channelUserId,
@@ -548,14 +535,23 @@ export async function handler(req, res, ctx) {
   }
 
   if (result.blocked && ctx) {
-    setWebhookRejected(ctx, "unpaired");
-    await safeAuditLog(buildAuditEventFromCtx(ctx, "command.blocked_not_allowlisted", { command: command.kind }, "BLOCKED"));
+    setWebhookRejected(ctx, "CHANNEL_NOT_PAIRED");
+    await safeAuditLog(buildAuditEventFromCtx(ctx, "command.blocked_not_paired", { command: command.kind }, "BLOCKED"));
   }
 
-  if (command.kind === "pair" && result.identity) {
+  if (command.kind === "connect") {
     await safeAuditLog(
-      buildAuditEventFromCtx(ctx, "pairing.started", {
-        channel_identity_id: result.identity.channel_identity_id
+      buildAuditEventFromCtx(ctx, "channel.pair_started", {
+        channel_type: channelType
+      })
+    );
+  }
+
+  if (command.kind === "start" && result.identity) {
+    await safeAuditLog(
+      buildAuditEventFromCtx(ctx, "channel.pair_confirmed", {
+        channel_identity_id: result.identity.channel_identity_id,
+        state: result.identity.state || null
       })
     );
   }
@@ -600,7 +596,8 @@ export async function handler(req, res, ctx) {
   const responseBody = buildTelegramSendMessage({
     chatId,
     text: result.text || "OK",
-    disableWebPagePreview: true
+    disableWebPagePreview: true,
+    replyMarkup: result.replyMarkup || null
   });
 
   return jsonResponse(200, responseBody);

@@ -12,5 +12,18 @@ describe("Telegram formatter", () => {
     // Keeps \n and \r, strips \u0001.
     expect(msg.text).toBe("first\nsecond\r\nthird");
   });
-});
 
+  it("passes reply_markup through when provided", () => {
+    const msg = buildTelegramSendMessage({
+      chatId: "chat-1",
+      text: "hi",
+      replyMarkup: {
+        inline_keyboard: [[{ text: "Open", url: "https://app.clawdeals.com/pair?token=x" }]]
+      }
+    });
+
+    expect(msg.reply_markup).toEqual({
+      inline_keyboard: [[{ text: "Open", url: "https://app.clawdeals.com/pair?token=x" }]]
+    });
+  });
+});

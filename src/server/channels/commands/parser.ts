@@ -2,14 +2,14 @@ import { isUuid } from "../../utils/validators";
 
 export type ParsedCommand =
   | { kind: "help" }
-  | { kind: "start" }
+  | { kind: "start"; pairToken: string | null }
   | { kind: "status" }
   | { kind: "approvals_list" }
   | { kind: "approve"; approvalId: string; confirm: boolean }
   | { kind: "deny"; approvalId: string; reason: string | null; confirm: boolean }
   | { kind: "policies_show" }
   | { kind: "deploy_status" }
-  | { kind: "pair" }
+  | { kind: "connect" }
   | { kind: "unpair"; channelIdentityId: string; confirm: boolean }
   | { kind: "unknown"; raw: string };
 
@@ -31,12 +31,15 @@ export function parseCommand(raw: unknown): ParsedCommand {
   const parts = trimmed.split(/\s+/);
   const cmd = normalizeCommandToken(parts[0]);
 
-  if (cmd === "start") return { kind: "start" };
+  if (cmd === "start") {
+    const token = parts[1] ? String(parts[1]).trim().slice(0, 200) : null;
+    return { kind: "start", pairToken: token || null };
+  }
   if (cmd === "help") return { kind: "help" };
   if (cmd === "status") return { kind: "status" };
   if (cmd === "approvals") return { kind: "approvals_list" };
-  if (cmd === "connect") return { kind: "pair" };
-  if (cmd === "pair") return { kind: "pair" };
+  if (cmd === "connect") return { kind: "connect" };
+  if (cmd === "pair") return { kind: "connect" };
 
   if (cmd === "deploy") {
     if (normalizeCommandToken(parts[1] || "") === "status") {

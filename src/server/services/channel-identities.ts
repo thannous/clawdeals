@@ -420,6 +420,123 @@ export async function findActiveIdentity({ ownerId, channelType, channelUserId, 
   return data || null;
 }
 
+export async function findActiveIdentityByChannel({ channelType, channelUserId, channelContextId }: any) {
+  const type = normalizeChannelType(channelType);
+  if (!type) throw buildServiceError("channelType is invalid", 400, "VALIDATION_ERROR");
+
+  const userId = normalizeNonEmptyString(channelUserId);
+  if (!userId) throw buildServiceError("channelUserId is required", 400, "VALIDATION_ERROR");
+
+  const ctxId = normalizeChannelContextId(channelContextId);
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("channel_identities")
+    .select("*")
+    .eq("channel_type", type)
+    .eq("channel_user_id", userId)
+    .eq("channel_context_id", ctxId)
+    .eq("state", "ACTIVE")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  return data || null;
+}
+
+export async function findPendingIdentityByChannel({ channelType, channelUserId, channelContextId }: any) {
+  const type = normalizeChannelType(channelType);
+  if (!type) throw buildServiceError("channelType is invalid", 400, "VALIDATION_ERROR");
+
+  const userId = normalizeNonEmptyString(channelUserId);
+  if (!userId) throw buildServiceError("channelUserId is required", 400, "VALIDATION_ERROR");
+
+  const ctxId = normalizeChannelContextId(channelContextId);
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("channel_identities")
+    .select("*")
+    .eq("channel_type", type)
+    .eq("channel_user_id", userId)
+    .eq("channel_context_id", ctxId)
+    .eq("state", "PENDING")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  return data || null;
+}
+
+export async function upsertIdentityForPairing({
+  ownerId,
+  channelType,
+  channelUserId,
+  channelContextId,
+  displayName,
+  role = "owner",
+  state,
+  approvedBy,
+  now = new Date()
+}: any) {
+  if (!ownerId) throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
+
+  const type = normalizeChannelType(channelType);
+  if (!type) throw buildServiceError("channelType is invalid", 400, "VALIDATION_ERROR");
+
+  const userId = normalizeNonEmptyString(channelUserId);
+  if (!userId) throw buildServiceError("channelUserId is required", 400, "VALIDATION_ERROR");
+
+  const ctxId = normalizeChannelContextId(channelContextId);
+  const name = normalizeDisplayName(displayName);
+  const resolvedRole = normalizeRole(role, "owner");
+
+  const resolvedState = normalizeNonEmptyString(state);
+  if (!resolvedState || (resolvedState !== "ACTIVE" && resolvedState !== "PENDING")) {
+    throw buildServiceError("state is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const payload: any = {
+    owner_id: ownerId,
+    channel_type: type,
+    channel_user_id: userId,
+    channel_context_id: ctxId,
+    display_name: name ?? null,
+    role: resolvedRole,
+    state: resolvedState,
+    pairing_code_hash: null,
+    pairing_expires_at: null,
+    revoked_at: null
+  };
+
+  if (resolvedState === "ACTIVE") {
+    payload.approved_at = now.toISOString();
+    payload.approved_by_human_id = approvedBy || ownerId;
+  } else {
+    payload.approved_at = null;
+    payload.approved_by_human_id = null;
+  }
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("channel_identities")
+    .upsert(payload, { onConflict: "channel_type,channel_user_id,channel_context_id,owner_id" })
+    .select("*")
+    .single();
+
+  if (error) {
+    // When the channel is already linked to another owner (non-REVOKED), the partial unique index will fail.
+    if (typeof error.message === "string" && /channel_identities_unique_channel_non_revoked_idx/i.test(error.message)) {
+      throw buildServiceError("Channel identity is already paired to another owner", 409, "CHANNEL_ALREADY_PAIRED");
+    }
+    throw mapSupabaseServiceError(error);
+  }
+
+  return data;
+}
+
 export async function touchLastSeen({ ownerId, channelIdentityId, now = new Date() }: any) {
   if (!ownerId) throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
   if (!channelIdentityId) throw buildServiceError("channelIdentityId is required", 400, "VALIDATION_ERROR");
@@ -435,4 +552,3 @@ export async function touchLastSeen({ ownerId, channelIdentityId, now = new Date
     throw mapSupabaseServiceError(error);
   }
 }
-

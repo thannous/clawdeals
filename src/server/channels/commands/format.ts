@@ -6,18 +6,24 @@ function sanitizeText(value: string) {
 export function buildTelegramSendMessage({
   chatId,
   text,
-  disableWebPagePreview = true
+  disableWebPagePreview = true,
+  replyMarkup
 }: {
   chatId: string;
   text: string;
   disableWebPagePreview?: boolean;
+  replyMarkup?: any;
 }) {
-  return {
+  const payload: any = {
     method: "sendMessage",
     chat_id: chatId,
     text: sanitizeText(text || ""),
     disable_web_page_preview: disableWebPagePreview
   };
+  if (replyMarkup) {
+    payload.reply_markup = replyMarkup;
+  }
+  return payload;
 }
 
 export function buildTelegramAnswerCallbackQuery({

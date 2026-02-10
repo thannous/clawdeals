@@ -13,6 +13,9 @@ interface Props {
   onPairingCodeChange: (v: string) => void;
   onLookupCode: () => void;
   lookupDisabled?: boolean;
+  onConnectTelegram?: () => void;
+  connectTelegramDisabled?: boolean;
+  connectTelegramLoading?: boolean;
 }
 
 export default function ChannelsToolbar({
@@ -26,25 +29,41 @@ export default function ChannelsToolbar({
   onPairingCodeChange,
   onLookupCode,
   lookupDisabled = false,
+  onConnectTelegram,
+  connectTelegramDisabled = false,
+  connectTelegramLoading = false,
 }: Props) {
   return (
     <div data-testid="channels-toolbar" className="space-y-4">
       {/* State pills */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">State:</span>
-        {STATE_OPTIONS.map((s) => (
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[10px] font-mono text-subtle uppercase mr-1">State:</span>
+          {STATE_OPTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => onStateChange(s)}
+              className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+                state === s
+                  ? "border-primary/40 text-primary bg-primary/10"
+                  : "border-border text-subtle hover:border-border-strong"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
+        {onConnectTelegram && (
           <button
-            key={s}
-            onClick={() => onStateChange(s)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
-              state === s
-                ? "border-primary/40 text-primary bg-primary/10"
-                : "border-border text-subtle hover:border-border-strong"
-            }`}
+            data-testid="channels-connect-telegram"
+            disabled={connectTelegramDisabled || connectTelegramLoading}
+            onClick={onConnectTelegram}
+            className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
           >
-            {s}
+            {connectTelegramLoading ? "Starting..." : "Connect Telegram"}
           </button>
-        ))}
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -107,4 +126,3 @@ export default function ChannelsToolbar({
     </div>
   );
 }
-

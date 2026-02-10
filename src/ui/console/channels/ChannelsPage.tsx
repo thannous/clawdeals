@@ -5,6 +5,7 @@ import ChannelsList from "./ChannelsList";
 import { useChannelIdentities } from "./useChannelIdentities";
 import { usePairingCodeLookup } from "./usePairingCodeLookup";
 import { useChannelIdentityAction } from "./useChannelIdentityAction";
+import { useTelegramPairStart } from "./useTelegramPairStart";
 import SkeletonTable from "../shared/SkeletonTable";
 import EmptyState from "../shared/EmptyState";
 import ErrorState from "../shared/ErrorState";
@@ -19,6 +20,8 @@ type PendingAction = "approve" | "deny" | "revoke";
 
 export default function ChannelsPage() {
   const { toasts, show } = useToast();
+
+  const { start: startTelegramPairing, startState: telegramStartState, error: telegramStartError } = useTelegramPairStart();
 
   const {
     items,
@@ -113,11 +116,24 @@ export default function ChannelsPage() {
     }
   }, [lookup, pairingCode, show]);
 
+  const onConnectTelegram = useCallback(async () => {
+    const result: any = await startTelegramPairing();
+    if (!result?.ok) {
+      show(result?.error || "Failed to start Telegram pairing", "error");
+      return;
+    }
+    try {
+      window.location.assign(result.telegram_deeplink);
+    } catch {
+      show("Redirect failed", "error");
+    }
+  }, [startTelegramPairing, show]);
+
   const onApprove = useCallback((identity: any) => openConfirm(identity, "approve"), [openConfirm]);
   const onDeny = useCallback((identity: any) => openConfirm(identity, "deny"), [openConfirm]);
   const onRevoke = useCallback((identity: any) => openConfirm(identity, "revoke"), [openConfirm]);
 
-  const effectiveError = actionError || lookupError || error;
+  const effectiveError = actionError || telegramStartError || lookupError || error;
 
   return (
     <div data-testid="channels-page" className="min-h-screen bg-bg">
@@ -141,6 +157,8 @@ export default function ChannelsPage() {
           onPairingCodeChange={setPairingCode}
           onLookupCode={onLookupCode}
           lookupDisabled={lookupState === "loading"}
+          onConnectTelegram={onConnectTelegram}
+          connectTelegramLoading={telegramStartState === "loading"}
         />
 
         {lookupIdentity && (

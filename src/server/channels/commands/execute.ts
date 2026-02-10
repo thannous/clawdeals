@@ -3,11 +3,14 @@ import { listApprovals, getApprovalForOwner, resolveApproval } from "../../servi
 import { getPolicyOrDefault } from "../../services/policies";
 import { getOpsStatusSnapshot } from "../../services/ops-status";
 import {
-  findActiveIdentity,
+  findActiveIdentityByChannel,
+  findPendingIdentityByChannel,
   revokePairing,
-  startPairing,
   touchLastSeen
 } from "../../services/channel-identities";
+import { createPairToken, consumePairToken } from "../../services/pairing-tokens";
+import { pairChannelIdentityForOwner } from "../../services/channel-pairing";
+import { getPublicAppUrl, joinUrl } from "../../../shared/urls";
 import { createConfirmation, consumeConfirmation } from "../command-confirmations";
 import type { ParsedCommand } from "./parser";
 
@@ -16,6 +19,13 @@ type ChannelCtx = {
   channelUserId: string;
   channelContextId: string;
   displayName: string | null;
+};
+
+type ExecuteResult = {
+  text: string;
+  blocked?: boolean;
+  identity?: any;
+  replyMarkup?: any;
 };
 
 const TELEGRAM_MAX_LEN = 3500;
@@ -51,7 +61,6 @@ function requiresRole(role: string, required: string) {
 export function buildHelpText() {
   return [
     "Commands:",
-    "- start",
     "- help",
     "- status",
     "- approvals | approvals list",
@@ -62,73 +71,186 @@ export function buildHelpText() {
     "- connect (alias: pair)",
     "- unpair <channel_identity_id> (then: unpair <channel_identity_id> confirm)",
     "",
+    "Pairing:",
+    "- Web -> Telegram: click Connect Telegram in the console, then press Start.",
+    "- Telegram -> Web: send `connect` to get a web link.",
+    "",
     "Security:",
     "- Sensitive actions require confirm.",
-    "- Unknown users must run `connect` first."
+    "- Write commands require pairing (CHANNEL_NOT_PAIRED)."
   ].join("\n");
 }
 
-function notAllowlistedText() {
+function notPairedText() {
   return [
-    "Blocked: not allowlisted.",
+    "CHANNEL_NOT_PAIRED",
+    "Blocked: this Telegram account is not paired.",
     "",
-    "Send `connect` (alias: `pair`) to start pairing, then approve it in the console (/console/channels)."
+    "Send `connect` (alias: `pair`) to get a web link, then confirm pairing.",
+    "If you started from the web console, click Connect Telegram again and press Start."
   ].join("\n");
+}
+
+function pendingApprovalText() {
+  return [
+    "CHANNEL_NOT_PAIRED",
+    "Blocked: pairing is pending approval.",
+    "",
+    "Approve the request in the console: /console/approvals"
+  ].join("\n");
+}
+
+function buildConnectReplyMarkup(pairUrl: string) {
+  return {
+    inline_keyboard: [[{ text: "Associer mon compte", url: pairUrl }]]
+  };
+}
+
+function formatTokenError(err: any) {
+  const code = err?.code || "ERROR";
+  if (code === "PAIR_TOKEN_EXPIRED") {
+    return [
+      "PAIR_TOKEN_EXPIRED",
+      "This pairing token has expired.",
+      "",
+      "Restart pairing from the web console (Connect Telegram) or send `connect` to get a new link."
+    ].join("\n");
+  }
+  if (code === "PAIR_TOKEN_USED") {
+    return [
+      "PAIR_TOKEN_USED",
+      "This pairing token was already used.",
+      "",
+      "Restart pairing from the web console (Connect Telegram) or send `connect` to get a new link."
+    ].join("\n");
+  }
+  if (code === "PAIR_TOKEN_INVALID") {
+    return [
+      "PAIR_TOKEN_INVALID",
+      "Invalid pairing token.",
+      "",
+      "Restart pairing from the web console (Connect Telegram) or send `connect` to get a new link."
+    ].join("\n");
+  }
+  if (code === "CHANNEL_ALREADY_PAIRED") {
+    return [
+      "CHANNEL_ALREADY_PAIRED",
+      "This Telegram account is already paired to another owner.",
+      "",
+      "If you need to transfer ownership, revoke the existing pairing first."
+    ].join("\n");
+  }
+  return `Error: ${err?.message || "Unexpected error"}`;
 }
 
 export async function executeChannelCommand({
-  ownerId,
   channel,
   command,
   ctx
 }: {
-  ownerId: string;
   channel: ChannelCtx;
   command: ParsedCommand;
   ctx: any;
-}): Promise<{ text: string; blocked?: boolean; identity?: any }> {
-  if (command.kind === "start" || command.kind === "help" || command.kind === "unknown") {
+}): Promise<ExecuteResult> {
+  if (command.kind === "help" || command.kind === "unknown") {
     return { text: buildHelpText() };
   }
 
-  if (command.kind === "pair") {
-    const result: any = await startPairing({
-      ownerId,
+  // Telegram deep-link entrypoint.
+  if (command.kind === "start") {
+    if (!command.pairToken) {
+      return { text: buildHelpText() };
+    }
+
+    try {
+      const consumed: any = await consumePairToken({
+        pairToken: command.pairToken,
+        expectedType: "WEB_TO_CHANNEL",
+        now: new Date()
+      });
+
+      const ownerId = consumed.owner_id;
+      if (!ownerId) {
+        return { text: "PAIR_TOKEN_INVALID\nInvalid pairing token." };
+      }
+
+      const result = await pairChannelIdentityForOwner({
+        ownerId,
+        channelType: channel.channelType,
+        channelUserId: channel.channelUserId,
+        channelContextId: channel.channelContextId,
+        displayName: channel.displayName,
+        now: new Date()
+      });
+
+      if (ctx) {
+        ctx.ownerId = ownerId;
+        ctx.actor = { type: "owner", id: ownerId };
+        ctx.policy = {
+          ...(ctx.policy || {}),
+          action: "channel.pair",
+          state: result.state
+        };
+      }
+
+      const text =
+        result.state === "PAIRED"
+          ? "Paired: PAIRED"
+          : "Paired: PENDING_APPROVAL\nApprove it in /console/approvals to enable write commands.";
+
+      return { text, identity: result.identity };
+    } catch (error: any) {
+      return { text: truncate(formatTokenError(error)) };
+    }
+  }
+
+  // Telegram-first entrypoint.
+  if (command.kind === "connect") {
+    const token = await createPairToken({
+      tokenType: "CHANNEL_TO_WEB",
       channelType: channel.channelType,
       channelUserId: channel.channelUserId,
       channelContextId: channel.channelContextId,
-      displayName: channel.displayName
+      displayName: channel.displayName,
+      now: new Date()
     });
 
-    if (result.alreadyActive) {
-      const role = result.identity?.role || "viewer";
-      return { text: `Already paired. role=${role} state=ACTIVE`, identity: result.identity };
-    }
+    const pairUrl = joinUrl(getPublicAppUrl(), `/pair?token=${encodeURIComponent(token.pair_token)}`);
+    const expires = formatDate(token.expires_at);
 
-    const expires = result.expiresAt ? formatDate(result.expiresAt.toISOString()) : "\u2014";
     return {
       text: truncate(
         [
-          "Pairing started.",
-          `Code: ${result.code}`,
+          "Connect your Clawdeals account:",
+          pairUrl,
           `Expires: ${expires}`,
           "",
-          "Open the console and approve the pairing request: /console/channels"
+          "If pairing requires approval, the channel will be PENDING_APPROVAL until approved."
         ].join("\n")
       ),
-      identity: result.identity
+      replyMarkup: buildConnectReplyMarkup(pairUrl)
     };
   }
 
-  const identity: any = await findActiveIdentity({
-    ownerId,
+  // All other commands require an ACTIVE pairing.
+  const identity: any = await findActiveIdentityByChannel({
     channelType: channel.channelType,
     channelUserId: channel.channelUserId,
     channelContextId: channel.channelContextId
   });
 
   if (!identity) {
-    return { text: notAllowlistedText(), blocked: true };
+    const pending: any = await findPendingIdentityByChannel({
+      channelType: channel.channelType,
+      channelUserId: channel.channelUserId,
+      channelContextId: channel.channelContextId
+    });
+
+    if (pending) {
+      return { text: pendingApprovalText(), blocked: true, identity: pending };
+    }
+
+    return { text: notPairedText(), blocked: true };
   }
 
   if (ctx) {
@@ -141,7 +263,7 @@ export async function executeChannelCommand({
     };
   }
 
-  await touchLastSeen({ ownerId, channelIdentityId: identity.channel_identity_id });
+  await touchLastSeen({ ownerId: identity.owner_id, channelIdentityId: identity.channel_identity_id });
 
   const role = identity.role || "viewer";
 
@@ -223,14 +345,7 @@ export async function executeChannelCommand({
         payload: { targetId }
       });
       return {
-        text: truncate(
-          [
-            "Unpair requested.",
-            `Target: ${targetId}`,
-            "",
-            `Confirm with: unpair ${targetId} confirm`
-          ].join("\n")
-        ),
+        text: truncate(["Unpair requested.", `Target: ${targetId}`, "", `Confirm with: unpair ${targetId} confirm`].join("\n")),
         identity
       };
     }
@@ -245,7 +360,7 @@ export async function executeChannelCommand({
     }
 
     await revokePairing({
-      ownerId,
+      ownerId: identity.owner_id,
       channelIdentityId: targetId,
       revokedBy: identity.owner_id
     });
@@ -343,7 +458,9 @@ export async function executeChannelCommand({
             reasonLine,
             "",
             `Confirm with: deny ${approvalId} confirm`
-          ].filter(Boolean).join("\n")
+          ]
+            .filter(Boolean)
+            .join("\n")
         ),
         identity
       };
