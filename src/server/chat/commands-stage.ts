@@ -1,15 +1,14 @@
-import { withApiMiddlewares } from "../../../../server/middleware/with-api-middlewares";
-import { jsonResponse } from "../../../../server/http/response";
-import { methodNotAllowed } from "../../../../server/http/methods";
-import { errorPayload } from "../../../../server/http/errors";
-import { isUuid } from "../../../../server/utils/validators";
-import { getStagedCommandTtlSeconds } from "../../../../server/config/chat-commands";
-import { createStagedCommand } from "../../../../server/services/staged-commands";
-import { parseWatchlistCriteria } from "../../../../server/utils/watchlists";
-import { getPolicyOrDefault } from "../../../../server/services/policies";
-import { evaluatePolicyAction } from "../../../../server/policy/evaluate";
-import { getListing } from "../../../../server/services/listings";
-import { getOffer } from "../../../../server/services/offers";
+import { jsonResponse } from "../http/response";
+import { methodNotAllowed } from "../http/methods";
+import { errorPayload } from "../http/errors";
+import { isUuid } from "../utils/validators";
+import { getStagedCommandTtlSeconds } from "../config/chat-commands";
+import { createStagedCommand } from "../services/staged-commands";
+import { parseWatchlistCriteria } from "../utils/watchlists";
+import { getPolicyOrDefault } from "../services/policies";
+import { evaluatePolicyAction } from "../policy/evaluate";
+import { getListing } from "../services/listings";
+import { getOffer } from "../services/offers";
 
 const ACTION_TYPES = new Set([
   "watchlist.create",
@@ -168,7 +167,12 @@ export async function handler(req: any, res: any, ctx: any) {
       : typeof channelIdentityIdRaw === "string"
         ? channelIdentityIdRaw
         : null;
-  if (channelIdentityIdRaw !== undefined && channelIdentityIdRaw !== null && channelIdentityIdRaw !== "" && !channelIdentityId) {
+  if (
+    channelIdentityIdRaw !== undefined &&
+    channelIdentityIdRaw !== null &&
+    channelIdentityIdRaw !== "" &&
+    !channelIdentityId
+  ) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "channel_identity_id must be a UUID"));
   }
   if (channelIdentityId && !isUuid(channelIdentityId)) {
@@ -373,6 +377,13 @@ export async function handler(req: any, res: any, ctx: any) {
         return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
       }
 
+      const isBuyer = previous.buyer_agent_id === ctx.agentId;
+      const isSeller = previous.seller_agent_id === ctx.agentId;
+      if (!isBuyer && !isSeller) {
+        // Anti-enumeration: pretend it doesn't exist.
+        return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
+      }
+
       const listing = await getListing(previous.listing_id);
       if (!listing) {
         return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
@@ -480,4 +491,3 @@ export async function handler(req: any, res: any, ctx: any) {
   });
 }
 
-export default withApiMiddlewares(handler, { routeGroup: "chat.commands.stage" });

@@ -4,10 +4,16 @@ vi.mock("../../../../server/services/staged-commands", () => ({
   createStagedCommand: vi.fn()
 }));
 
-import { handler } from "../../../../pages/api/v1/chat/commands:stage";
+vi.mock("../../../../server/services/offers", () => ({
+  getOffer: vi.fn()
+}));
+
+import { handler } from "../../../../pages/api/v1/chat/[command]";
 import { createStagedCommand } from "../../../../server/services/staged-commands";
+import { getOffer } from "../../../../server/services/offers";
 
 const createStagedCommandMock = vi.mocked(createStagedCommand);
+const getOfferMock = vi.mocked(getOffer);
 
 const baseCtx: any = {
   agentId: "00000000-0000-4000-a000-000000000111",
@@ -22,7 +28,12 @@ describe("POST /v1/chat/commands:stage", () => {
   });
 
   it("requires agent auth", async () => {
-    const req: any = { method: "POST", body: { action_type: "watchlist.create", payload: {} }, headers: {} };
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      body: { action_type: "watchlist.create", payload: {} },
+      headers: {}
+    };
     const result: any = await handler(req, null, { ...baseCtx, agentId: null });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
@@ -38,6 +49,7 @@ describe("POST /v1/chat/commands:stage", () => {
 
     const req: any = {
       method: "POST",
+      query: { command: "commands:stage" },
       headers: {},
       body: {
         action_type: "watchlist.create",
@@ -68,5 +80,33 @@ describe("POST /v1/chat/commands:stage", () => {
     expect(ctx.auditEntityType).toBe("staged_command");
     expect(ctx.auditEntityId).toBe("00000000-0000-4000-a000-000000000333");
   });
-});
 
+  it("offer.counter staging is anti-enumeration safe (404 for non-party)", async () => {
+    getOfferMock.mockResolvedValue({
+      offer_id: "00000000-0000-4000-a000-000000000333",
+      listing_id: "00000000-0000-4000-a000-000000000444",
+      buyer_agent_id: "00000000-0000-4000-a000-000000000555",
+      seller_agent_id: "00000000-0000-4000-a000-000000000666"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      headers: {},
+      body: {
+        action_type: "offer.counter",
+        payload: {
+          offer_id: "00000000-0000-4000-a000-000000000333",
+          amount: 123,
+          currency: "EUR",
+          expires_at: new Date(Date.now() + 60_000).toISOString()
+        }
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("OFFER_NOT_FOUND");
+    expect(createStagedCommandMock).not.toHaveBeenCalled();
+  });
+});

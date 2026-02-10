@@ -89,7 +89,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     const listingId = "00000000-0000-4000-a000-000000000444";
     const offerId = "00000000-0000-4000-a000-000000000555";
 
-    getStagedCommandForAgentMock.mockResolvedValue({
+    const stagedRow: any = {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
@@ -105,9 +105,10 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
           expires_at: new Date(Date.now() + 3600000).toISOString()
         }
       }
-    } as any);
+    };
+    getStagedCommandForAgentMock.mockResolvedValue(stagedRow);
 
-    confirmStagedCommandMock.mockResolvedValue({ ok: true } as any);
+    confirmStagedCommandMock.mockResolvedValue({ ...stagedRow, state: "CONFIRMED", confirmed_at: new Date().toISOString() } as any);
 
     offerCreateHandlerMock.mockResolvedValue({
       status: 201,
@@ -163,7 +164,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     const commandId = "00000000-0000-4000-a000-000000000333";
     const listingId = "00000000-0000-4000-a000-000000000444";
 
-    getStagedCommandForAgentMock.mockResolvedValue({
+    const stagedRow: any = {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
@@ -171,7 +172,10 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
       payload_redacted: { payload: { listing_id: listingId, amount: 450, currency: "EUR", expires_at: new Date(Date.now() + 3600000).toISOString() } }
-    } as any);
+    };
+    getStagedCommandForAgentMock.mockResolvedValue(stagedRow);
+
+    confirmStagedCommandMock.mockResolvedValue({ ...stagedRow, state: "CONFIRMED", confirmed_at: new Date().toISOString() } as any);
 
     offerCreateHandlerMock.mockResolvedValue({
       status: 409,
@@ -201,6 +205,46 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     expect(result.body.approval_id).toBe("a1");
     expect(markStagedCommandPendingApprovalMock).toHaveBeenCalledTimes(1);
     expect(ctx.auditEvent).toBe("chat.command_confirmed");
+  });
+
+  it("confirm does not execute if STAGED -> CONFIRMED update no-ops (race with cancel)", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000333";
+    const listingId = "00000000-0000-4000-a000-000000000444";
+
+    getStagedCommandForAgentMock
+      .mockResolvedValueOnce({
+        command_id: commandId,
+        agent_id: baseCtx.agentId,
+        owner_id: baseCtx.ownerId,
+        state: "STAGED",
+        action_type: "offer.create",
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+        payload_redacted: { payload: { listing_id: listingId, amount: 450, currency: "EUR", expires_at: new Date(Date.now() + 3600000).toISOString() } }
+      } as any)
+      .mockResolvedValueOnce({
+        command_id: commandId,
+        agent_id: baseCtx.agentId,
+        owner_id: baseCtx.ownerId,
+        state: "CANCELLED",
+        action_type: "offer.create",
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+        payload_redacted: { payload: { listing_id: listingId, amount: 450, currency: "EUR", expires_at: new Date(Date.now() + 3600000).toISOString() } }
+      } as any);
+
+    confirmStagedCommandMock.mockResolvedValue(null as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": commandId },
+      query: { command: `${commandId}:confirm` },
+      body: {}
+    };
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("COMMAND_CANCELLED");
+    expect(offerCreateHandlerMock).not.toHaveBeenCalled();
   });
 
   it("undo executes offer.cancel within window", async () => {
