@@ -104,7 +104,12 @@ function loadOrInitConfig(filePath, defaultKey) {
   if (!existsFile(filePath)) return { [defaultKey]: {} };
 
   const raw = readUtf8(filePath);
-  const parsed = parseJsonLike(raw);
+  // Treat an existing-but-empty file as "no config yet" so onboarding works.
+  // parseJsonLike("") throws, which would otherwise cause a misleading "skip".
+  const cleaned = String(raw || "").replace(/^\uFEFF/, "");
+  if (!cleaned.trim()) return { [defaultKey]: {} };
+
+  const parsed = parseJsonLike(cleaned);
   if (!parsed || typeof parsed !== "object") return { [defaultKey]: {} };
   return parsed;
 }
@@ -201,6 +206,7 @@ async function main() {
     })
   );
 
+  const ok = results.filter((r) => r.ok);
   const wrote = results.filter((r) => r.ok && r.wrote);
   const skipped = results.filter((r) => !r.ok && r.skipped);
 
@@ -212,10 +218,26 @@ async function main() {
     console.log(`mcp:install: Skipped ${r.filePath} (${r.reason})`);
   }
 
+  if (!ok.length) {
+    console.error("mcp:install: No files were updated. All targets were skipped.");
+    process.exit(1);
+  }
+  if (!dryRun && wrote.length === 0) {
+    console.error("mcp:install: No files were updated.");
+    process.exit(1);
+  }
+
   console.log("");
-  console.log("mcp:install: Next steps:");
-  console.log("mcp:install: 1) Restart your IDE so it reloads MCP servers.");
-  console.log('mcp:install: 2) In your IDE, call "clawdeals.deals.list" with { "limit": 1 }.');
+  if (skipped.length) {
+    console.log(`mcp:install: Warning: ${skipped.length} target file(s) were skipped (see above).`);
+    console.log("");
+  }
+
+  if (dryRun ? ok.length : wrote.length) {
+    console.log(dryRun ? "mcp:install: Next steps (after running without --dry-run):" : "mcp:install: Next steps:");
+    console.log("mcp:install: 1) Restart your IDE so it reloads MCP servers.");
+    console.log('mcp:install: 2) In your IDE, call "clawdeals.deals.list" with { "limit": 1 }.');
+  }
 }
 
 main().catch((err) => fail(String(err?.stack || err?.message || err)));
