@@ -70,6 +70,10 @@ describe("parseCommand", () => {
     expect(parseCommand("cd:menu.notifications")).toEqual({ kind: "notifications_menu" });
     expect(parseCommand("cd:menu.help")).toEqual({ kind: "menu_help" });
 
+    expect(parseCommand("cd:approvals.page:c=abc")).toEqual({ kind: "approvals_page", cursor: "abc" });
+    expect(parseCommand(`cd:approvals.approve:id=${UUID}`)).toEqual({ kind: "approve", approvalId: UUID, confirm: false });
+    expect(parseCommand(`cd:approvals.deny:id=${UUID}`)).toEqual({ kind: "deny", approvalId: UUID, reason: null, confirm: false });
+
     expect(parseCommand("cd:notifications.mode:m=realtime")).toEqual({ kind: "notifications_mode", mode: "REALTIME" });
     expect(parseCommand("cd:notifications.quiet.off")).toEqual({ kind: "notifications_quiet_off" });
     expect(parseCommand("cd:notifications.quiet.set:s=22%3A00&e=08%3A00")).toEqual({
@@ -99,5 +103,10 @@ describe("parseCommand", () => {
     });
     expect(parseCommand("notif strong price off")).toEqual({ kind: "notifications_strong_price", maxPriceEur: null });
     expect(parseCommand("notif strong trust 80")).toEqual({ kind: "notifications_strong_trust", minSellerTrustScore: 80 });
+  });
+
+  it("parses CONFIRM <code>", () => {
+    expect(parseCommand("CONFIRM abc123")).toEqual({ kind: "confirm", code: "abc123" });
+    expect(parseCommand("confirm abc123")).toEqual({ kind: "confirm", code: "abc123" });
   });
 });

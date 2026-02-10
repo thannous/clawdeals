@@ -14,9 +14,11 @@ export type ParsedCommand =
   | { kind: "menu_help" }
   | { kind: "menu_watchlists"; page: number }
   | { kind: "watchlists_create" }
+  | { kind: "approvals_page"; cursor: string | null }
   | { kind: "approvals_list" }
   | { kind: "approve"; approvalId: string; confirm: boolean }
   | { kind: "deny"; approvalId: string; reason: string | null; confirm: boolean }
+  | { kind: "confirm"; code: string }
   | { kind: "policies_show" }
   | { kind: "deploy_status" }
   | { kind: "connect" }
@@ -90,6 +92,22 @@ export function parseCommand(raw: unknown): ParsedCommand {
     if (cmd === CARD_COMMAND_IDS.MENU_MATCHES) return { kind: "menu_matches" };
     if (cmd === CARD_COMMAND_IDS.MENU_PUBLISH) return { kind: "menu_publish" };
     if (cmd === CARD_COMMAND_IDS.MENU_THREADS) return { kind: "menu_threads" };
+
+    // Stable callbacks for approvals (compact callbacks, no action_id).
+    if (cmd === "approvals.page") {
+      const c = String(args.c ?? "").trim();
+      return { kind: "approvals_page", cursor: c || null };
+    }
+    if (cmd === "approvals.approve") {
+      const id = String(args.id ?? "").trim();
+      if (!isUuid(id)) return { kind: "unknown", raw: trimmed };
+      return { kind: "approve", approvalId: id, confirm: false };
+    }
+    if (cmd === "approvals.deny") {
+      const id = String(args.id ?? "").trim();
+      if (!isUuid(id)) return { kind: "unknown", raw: trimmed };
+      return { kind: "deny", approvalId: id, reason: null, confirm: false };
+    }
 
     // Stable callbacks for notifications (avoid parsing fragile text payloads).
     if (cmd === "notifications.menu") return { kind: "notifications_menu" };
@@ -250,6 +268,12 @@ export function parseCommand(raw: unknown): ParsedCommand {
     const reasonTokens = parts.slice(2, confirm ? -1 : undefined);
     const reason = reasonTokens.length ? reasonTokens.join(" ").trim() : null;
     return { kind: "deny", approvalId, reason: reason || null, confirm };
+  }
+
+  if (cmd === "confirm") {
+    const code = parts[1] ? String(parts[1]).trim().slice(0, 200) : "";
+    if (!code) return { kind: "unknown", raw: trimmed };
+    return { kind: "confirm", code };
   }
 
   if (cmd === "unpair") {

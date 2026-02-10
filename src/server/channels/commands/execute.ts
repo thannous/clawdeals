@@ -24,7 +24,13 @@ import { createConfirmation, consumeConfirmation } from "../command-confirmation
 import { CARD_ACTION_IDS, CARD_COMMAND_IDS } from "../cards/ids";
 import type { Card } from "../cards/types";
 import { renderCardPlainText } from "../cards/types";
+import { buildApprovalsCard, type ApprovalCardItem } from "./approvals-telegram";
+import { encodeApprovalsCursorToken, decodeApprovalsCursorToken } from "./approvals-cursor";
+import { getTransaction } from "../../services/transactions";
+import { createMessage } from "../../services/threads";
+import { SYSTEM_SENDER_ID } from "../../messaging/warnings";
 import type { ParsedCommand } from "./parser";
+import crypto from "node:crypto";
 
 type ChannelCtx = {
   channelType: string;
@@ -98,6 +104,235 @@ export function buildHelpText() {
 }
 
 const WATCHLISTS_PAGE_SIZE = 8;
+const APPROVALS_PAGE_SIZE = 3;
+
+function shortUuid(value: string | null | undefined) {
+  const s = typeof value === "string" ? value : "";
+  if (!s) return "\u2014";
+  return s.slice(0, 8);
+}
+
+function computeApprovalRiskLevel(approval: any): "LOW" | "MED" | "HIGH" {
+  const t = String(approval?.action_type || "");
+  if (t === "contact_reveal") return "HIGH";
+  if (t === "offer_over_budget") return "MED";
+  if (t === "channel.pair") return "MED";
+  return "LOW";
+}
+
+function formatApprovalActionText(approval: any) {
+  const t = String(approval?.action_type || "");
+  if (t === "offer_over_budget") {
+    const amount = approval?.action_ref?.amount ?? approval?.action_payload_redacted?.offer?.amount ?? null;
+    const currency = approval?.action_ref?.currency ?? approval?.action_payload_redacted?.offer?.currency ?? null;
+    if (typeof amount === "number" && Number.isFinite(amount) && typeof currency === "string" && currency) {
+      return `Offer ${amount} ${currency}`;
+    }
+    return "Offer over budget";
+  }
+  if (t === "contact_reveal") return "Contact reveal";
+  if (t === "listing_publish") return "Publish listing";
+  if (t === "message.send") {
+    const mt = approval?.action_ref?.message_type ?? approval?.action_payload_redacted?.payload?.type ?? null;
+    return mt ? `Send message (${String(mt)})` : "Send message";
+  }
+  if (t === "thread.create") return "Create thread";
+  if (t === "channel.pair") return "Pair Telegram channel";
+  return t || "Approval";
+}
+
+function formatApprovalReasonText(approval: any) {
+  if (approval?.action_ref?.quarantine_applied === true) return "quarantine_applied";
+  const refReason = approval?.action_ref?.policy_reason;
+  if (typeof refReason === "string" && refReason.trim()) return refReason.trim();
+  const payloadReason = approval?.action_payload_redacted?.policy?.reason;
+  if (typeof payloadReason === "string" && payloadReason.trim()) return payloadReason.trim();
+  return null;
+}
+
+async function formatApprovalContextText(approval: any) {
+  const t = String(approval?.action_type || "");
+  const listingId = approval?.action_ref?.listing_id ? String(approval.action_ref.listing_id) : null;
+  const threadId = approval?.action_ref?.thread_id ? String(approval.action_ref.thread_id) : null;
+
+  if (t === "contact_reveal") {
+    const txId = approval?.action_ref_id ? String(approval.action_ref_id) : null;
+    if (!txId || !isUuid(txId)) return txId ? `tx=${shortUuid(txId)}` : null;
+    try {
+      const tx = await getTransaction(txId);
+      const txThreadId = tx?.thread_id ? String(tx.thread_id) : null;
+      const txListingId = tx?.listing_id ? String(tx.listing_id) : null;
+      const parts = [`tx=${shortUuid(txId)}`];
+      if (txListingId) parts.push(`listing=${shortUuid(txListingId)}`);
+      if (txThreadId) parts.push(`thread=${shortUuid(txThreadId)}`);
+      return parts.join(" ");
+    } catch {
+      return `tx=${shortUuid(txId)}`;
+    }
+  }
+
+  const parts: string[] = [];
+  if (listingId) parts.push(`listing=${shortUuid(listingId)}`);
+  if (threadId) parts.push(`thread=${shortUuid(threadId)}`);
+  return parts.length ? parts.join(" ") : null;
+}
+
+function generateStepUpCode(len = 6) {
+  const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const bytes = crypto.randomBytes(len);
+  let out = "";
+  for (let i = 0; i < len; i += 1) {
+    out += alphabet[bytes[i] % alphabet.length];
+  }
+  return out;
+}
+
+async function createStepUpConfirmation({
+  channelIdentityId,
+  approvalId,
+  decision
+}: {
+  channelIdentityId: string;
+  approvalId: string;
+  decision: "APPROVED" | "DENIED";
+}) {
+  for (let i = 0; i < 6; i += 1) {
+    const code = generateStepUpCode(6);
+    const res = await createConfirmation({
+      channelIdentityId,
+      action: "approvals.stepup",
+      targetId: code,
+      payload: { approvalId, decision }
+    });
+    if (res.ok) return code;
+  }
+  throw new Error("Failed to create step-up confirmation (retry)");
+}
+
+async function postApprovalDecisionThreadMessage({
+  approval,
+  decision
+}: {
+  approval: any;
+  decision: "APPROVED" | "DENIED";
+}) {
+  const actionType = String(approval?.action_type || "");
+  let threadId: string | null = null;
+
+  if (actionType === "offer_over_budget" || actionType === "message.send") {
+    const raw = approval?.action_ref?.thread_id ? String(approval.action_ref.thread_id) : null;
+    if (raw && isUuid(raw)) threadId = raw;
+  } else if (actionType === "contact_reveal") {
+    const txId = approval?.action_ref_id ? String(approval.action_ref_id) : null;
+    if (txId && isUuid(txId)) {
+      try {
+        const tx = await getTransaction(txId);
+        const raw = tx?.thread_id ? String(tx.thread_id) : null;
+        if (raw && isUuid(raw)) threadId = raw;
+      } catch {
+        threadId = null;
+      }
+    }
+  }
+
+  if (!threadId) return { ok: false as const, reason: "no_thread" };
+
+  const payload =
+    decision === "APPROVED"
+      ? { type: "info", text: "Approval approved by owner (Telegram)." }
+      : { type: "warning", text: "Approval denied by owner (Telegram)." };
+
+  try {
+    await createMessage({
+      threadId,
+      senderId: SYSTEM_SENDER_ID,
+      senderType: "system",
+      type: payload.type,
+      payload,
+      redacted: false
+    });
+    return { ok: true as const };
+  } catch (error: any) {
+    return { ok: false as const, reason: error?.message || "error" };
+  }
+}
+
+async function buildApprovalsPage({
+  ownerId,
+  identity,
+  cursorToken,
+  flash,
+  ctx
+}: {
+  ownerId: string;
+  identity: any;
+  cursorToken?: string | null;
+  flash?: string | null;
+  ctx: any;
+}): Promise<ExecuteResult> {
+  let cursor: any = null;
+  if (cursorToken) {
+    const decoded: any = decodeApprovalsCursorToken(cursorToken);
+    if (!decoded || decoded.error || !decoded.value) {
+      return { text: "Invalid cursor. Send /approvals again.", identity };
+    }
+    cursor = decoded.value;
+  }
+
+  const result = await listApprovals({ ownerId, state: "PENDING", limit: APPROVALS_PAGE_SIZE, cursor });
+  const approvals = Array.isArray(result?.approvals) ? result.approvals : [];
+  const hasNext = Boolean(result?.nextCursor);
+  const last = approvals.length ? approvals[approvals.length - 1] : null;
+  const nextToken =
+    hasNext && last?.created_at && last?.approval_id
+      ? encodeApprovalsCursorToken({ createdAt: String(last.created_at), approvalId: String(last.approval_id) })
+      : null;
+
+  const items: ApprovalCardItem[] = [];
+  for (let i = 0; i < approvals.length; i += 1) {
+    const ap = approvals[i];
+    const riskLevel = computeApprovalRiskLevel(ap);
+    const actionText = formatApprovalActionText(ap);
+    const reasonText = formatApprovalReasonText(ap);
+    const contextText = await formatApprovalContextText(ap);
+    items.push({
+      approvalId: String(ap.approval_id),
+      index: i + 1,
+      actionText,
+      reasonText,
+      contextText,
+      riskLevel
+    });
+  }
+
+  const card = buildApprovalsCard({ items, nextCursorToken: nextToken, flash: flash || null });
+
+  if (ctx) {
+    try {
+      const policy = await getPolicyOrDefault(ownerId);
+      ctx.policy = {
+        ...(ctx.policy || {}),
+        action: "chat.approvals",
+        policy_version: policy?.version ?? null
+      };
+    } catch {
+      // Best-effort.
+    }
+  }
+
+  return {
+    text: renderCardPlainText(card),
+    card,
+    identity,
+    telemetryEvents: [
+      {
+        event: "chat.approvals_listed",
+        payload: { count: approvals.length, page_size: APPROVALS_PAGE_SIZE, has_next: Boolean(nextToken) },
+        outcome: "SUCCESS"
+      }
+    ]
+  };
+}
 
 function buildHomeCard(): Card {
   return {
@@ -695,33 +930,7 @@ export async function executeChannelCommand({
     if (!requiresRole(role, "viewer")) {
       return { text: "Forbidden: viewer role required.", identity };
     }
-    const result = await listApprovals({ ownerId: identity.owner_id, state: "PENDING", limit: 10 });
-    const approvals = result.approvals || [];
-    const bullets =
-      approvals.length === 0
-        ? ["Aucune approval en attente."]
-        : approvals.slice(0, 10).map((ap: any) => `${ap.approval_id} | ${ap.action_type}`);
-
-    const card: Card = {
-      title: "Approvals",
-      subtitle: `En attente: ${approvals.length}`,
-      bullets,
-      actions: [
-        {
-          action_id: "approvals.back",
-          label: "Retour",
-          command_id: CARD_COMMAND_IDS.MENU_HOME,
-          row: 0
-        }
-      ]
-    };
-
-    return {
-      text: renderCardPlainText(card),
-      card,
-      identity,
-      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "approvals", count: approvals.length }, outcome: "SUCCESS" }]
-    };
+    return buildApprovalsPage({ ownerId: identity.owner_id, identity, cursorToken: null, ctx });
   }
 
   if (
@@ -869,13 +1078,78 @@ export async function executeChannelCommand({
     if (!requiresRole(role, "viewer")) {
       return { text: "Forbidden: viewer role required.", identity };
     }
-    const result = await listApprovals({ ownerId: identity.owner_id, state: "PENDING", limit: 10 });
-    const approvals = result.approvals || [];
-    if (approvals.length === 0) {
-      return { text: "No pending approvals.", identity };
+    return buildApprovalsPage({ ownerId: identity.owner_id, identity, cursorToken: null, ctx });
+  }
+
+  if (command.kind === "approvals_page") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
     }
-    const lines = approvals.map((ap: any) => `- ${ap.approval_id} ${ap.action_type} ${ap.action_ref_id}`);
-    return { text: truncate(["Pending approvals:", ...lines].join("\n")), identity };
+    return buildApprovalsPage({ ownerId: identity.owner_id, identity, cursorToken: command.cursor || null, ctx });
+  }
+
+  if (command.kind === "confirm") {
+    if (!requiresRole(role, "approver")) {
+      return { text: "Forbidden: approver role required.", identity };
+    }
+    const code = String(command.code || "").trim().toUpperCase();
+    if (!code) return { text: "Invalid code. Use: CONFIRM <code>", identity };
+
+    const pending: any = await consumeConfirmation({
+      channelIdentityId: identity.channel_identity_id,
+      action: "approvals.stepup",
+      targetId: code
+    });
+    if (!pending?.approvalId || !pending?.decision) {
+      return { text: "Expired. Run /approvals again.", identity };
+    }
+
+    const approvalId = String(pending.approvalId);
+    const decision = pending.decision === "DENIED" ? "DENIED" : "APPROVED";
+
+    const approval = await getApprovalForOwner(approvalId, identity.owner_id);
+    if (!approval) {
+      return buildApprovalsPage({ ownerId: identity.owner_id, identity, cursorToken: null, flash: "Approval not found.", ctx });
+    }
+    if (approval.state !== "PENDING") {
+      return buildApprovalsPage({
+        ownerId: identity.owner_id,
+        identity,
+        cursorToken: null,
+        flash: `Already resolved (state=${approval.state}).`,
+        ctx
+      });
+    }
+
+    const riskLevel = computeApprovalRiskLevel(approval);
+    const resolved = await resolveApproval({
+      approvalId,
+      ownerId: identity.owner_id,
+      decision,
+      resolvedBy: identity.owner_id,
+      reason: null
+    });
+
+    await postApprovalDecisionThreadMessage({ approval, decision });
+
+    const ev = decision === "APPROVED" ? "chat.approval_approved" : "chat.approval_denied";
+    return buildApprovalsPage({
+      ownerId: identity.owner_id,
+      identity,
+      cursorToken: null,
+      flash: `${decision === "APPROVED" ? "Approved" : "Denied"}: ${shortUuid(resolved?.approval_id || approvalId)}`,
+      ctx
+    }).then((page) => ({
+      ...page,
+      telemetryEvents: [
+        ...(page.telemetryEvents || []),
+        {
+          event: ev,
+          payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, step_up: true },
+          outcome: "SUCCESS"
+        }
+      ]
+    }));
   }
 
   if (command.kind === "policies_show") {
@@ -931,6 +1205,85 @@ export async function executeChannelCommand({
     }
     const approvalId = command.approvalId;
     if (!isUuid(approvalId)) return { text: "Invalid approval_id", identity };
+
+    const isCallback = Boolean(ctx?.body?.telegram?.callback_query_id);
+    if (isCallback && !command.confirm) {
+      const approval = await getApprovalForOwner(approvalId, identity.owner_id);
+      if (!approval) {
+        return buildApprovalsPage({ ownerId: identity.owner_id, identity, cursorToken: null, flash: "Approval not found.", ctx });
+      }
+      if (approval.state !== "PENDING") {
+        return buildApprovalsPage({
+          ownerId: identity.owner_id,
+          identity,
+          cursorToken: null,
+          flash: `Already resolved (state=${approval.state}).`,
+          ctx
+        });
+      }
+
+      const riskLevel = computeApprovalRiskLevel(approval);
+      const actionText = formatApprovalActionText(approval);
+
+      if (riskLevel === "HIGH") {
+        const code = await createStepUpConfirmation({
+          channelIdentityId: identity.channel_identity_id,
+          approvalId,
+          decision: "APPROVED"
+        });
+
+        const card: Card = {
+          title: "Confirmation required",
+          subtitle: `HIGH risk: ${actionText}`,
+          bullets: [`Type: CONFIRM ${code}`],
+          actions: [
+            { action_id: "approvals.back", label: "Back", command_id: CARD_COMMAND_IDS.MENU_APPROVALS, row: 0 },
+            { action_id: "home.back", label: "Home", command_id: CARD_COMMAND_IDS.MENU_HOME, row: 1 }
+          ]
+        };
+
+        return {
+          text: renderCardPlainText(card),
+          card,
+          identity,
+          telemetryEvents: [
+            {
+              event: "chat.approval_stepup_required",
+              payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, decision: "APPROVED" },
+              outcome: "SUCCESS"
+            }
+          ]
+        };
+      }
+
+      const resolved = await resolveApproval({
+        approvalId,
+        ownerId: identity.owner_id,
+        decision: "APPROVED",
+        resolvedBy: identity.owner_id,
+        reason: null
+      });
+
+      await postApprovalDecisionThreadMessage({ approval, decision: "APPROVED" });
+
+      return buildApprovalsPage({
+        ownerId: identity.owner_id,
+        identity,
+        cursorToken: null,
+        flash: `Approved: ${shortUuid(resolved?.approval_id || approvalId)}`,
+        ctx
+      }).then((page) => ({
+        ...page,
+        telemetryEvents: [
+          ...(page.telemetryEvents || []),
+          {
+            event: "chat.approval_approved",
+            payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, step_up: false },
+            outcome: "SUCCESS"
+          }
+        ]
+      }));
+    }
 
     if (!command.confirm) {
       const approval = await getApprovalForOwner(approvalId, identity.owner_id);
@@ -990,6 +1343,85 @@ export async function executeChannelCommand({
 
     const approvalId = command.approvalId;
     if (!isUuid(approvalId)) return { text: "Invalid approval_id", identity };
+
+    const isCallback = Boolean(ctx?.body?.telegram?.callback_query_id);
+    if (isCallback && !command.confirm) {
+      const approval = await getApprovalForOwner(approvalId, identity.owner_id);
+      if (!approval) {
+        return buildApprovalsPage({ ownerId: identity.owner_id, identity, cursorToken: null, flash: "Approval not found.", ctx });
+      }
+      if (approval.state !== "PENDING") {
+        return buildApprovalsPage({
+          ownerId: identity.owner_id,
+          identity,
+          cursorToken: null,
+          flash: `Already resolved (state=${approval.state}).`,
+          ctx
+        });
+      }
+
+      const riskLevel = computeApprovalRiskLevel(approval);
+      const actionText = formatApprovalActionText(approval);
+
+      if (riskLevel === "HIGH") {
+        const code = await createStepUpConfirmation({
+          channelIdentityId: identity.channel_identity_id,
+          approvalId,
+          decision: "DENIED"
+        });
+
+        const card: Card = {
+          title: "Confirmation required",
+          subtitle: `HIGH risk: ${actionText}`,
+          bullets: [`Type: CONFIRM ${code}`],
+          actions: [
+            { action_id: "approvals.back", label: "Back", command_id: CARD_COMMAND_IDS.MENU_APPROVALS, row: 0 },
+            { action_id: "home.back", label: "Home", command_id: CARD_COMMAND_IDS.MENU_HOME, row: 1 }
+          ]
+        };
+
+        return {
+          text: renderCardPlainText(card),
+          card,
+          identity,
+          telemetryEvents: [
+            {
+              event: "chat.approval_stepup_required",
+              payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, decision: "DENIED" },
+              outcome: "SUCCESS"
+            }
+          ]
+        };
+      }
+
+      const resolved = await resolveApproval({
+        approvalId,
+        ownerId: identity.owner_id,
+        decision: "DENIED",
+        resolvedBy: identity.owner_id,
+        reason: null
+      });
+
+      await postApprovalDecisionThreadMessage({ approval, decision: "DENIED" });
+
+      return buildApprovalsPage({
+        ownerId: identity.owner_id,
+        identity,
+        cursorToken: null,
+        flash: `Denied: ${shortUuid(resolved?.approval_id || approvalId)}`,
+        ctx
+      }).then((page) => ({
+        ...page,
+        telemetryEvents: [
+          ...(page.telemetryEvents || []),
+          {
+            event: "chat.approval_denied",
+            payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, step_up: false },
+            outcome: "SUCCESS"
+          }
+        ]
+      }));
+    }
 
     if (!command.confirm) {
       const approval = await getApprovalForOwner(approvalId, identity.owner_id);

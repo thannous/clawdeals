@@ -912,7 +912,20 @@ export async function handler(req, res, ctx) {
   // Confirmation actions (approve/deny/unpair) get an extra bucket.
   const isConfirmAction =
     (command.kind === "approve" || command.kind === "deny" || command.kind === "unpair") && command.confirm === true;
+  const isApprovalsConfirm =
+    command.kind === "confirm" ||
+    (callback && (command.kind === "approve" || command.kind === "deny") && command.confirm === false);
   if (isConfirmAction) {
+    const confirmRl = await applyChannelRateLimit({
+      req,
+      ctx,
+      group: "channels.confirm",
+      channelId: channelRateLimitId,
+      callbackQueryId
+    });
+    if (confirmRl) return confirmRl;
+  }
+  if (isApprovalsConfirm) {
     const confirmRl = await applyChannelRateLimit({
       req,
       ctx,
@@ -932,6 +945,8 @@ export async function handler(req, res, ctx) {
     command.kind === "menu_publish" ||
     command.kind === "menu_threads" ||
     command.kind === "menu_approvals" ||
+    command.kind === "approvals_list" ||
+    command.kind === "approvals_page" ||
     command.kind === "menu_help";
   if (isChatMenu) {
     const menuRl = await applyChannelRateLimit({
