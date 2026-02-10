@@ -17,6 +17,10 @@ export const RATE_LIMIT_PROFILES = {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
+  "agents.me.read": {
+    scope: "agent",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
   // TI-312: OAuth device authorization (RFC 8628).
   "oauth.device.authorize_ip": {
     scope: "ip",

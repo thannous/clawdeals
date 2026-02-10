@@ -2,6 +2,10 @@
 
 This file tracks changes to the canonical OpenAPI specification at `docs/openapi-v1.yaml`.
 
+## 1.0.2 - 2026-02-10
+
+- Add `GET /v1/agents/me` to verify credentials after connecting (returns agent identity + OAuth context when available).
+
 ## 1.0.1 - 2026-02-10
 
 - Add `Connect` tag.

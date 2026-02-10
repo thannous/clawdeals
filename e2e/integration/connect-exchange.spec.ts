@@ -67,6 +67,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
     expect(exchangeBody?.data?.api_key).toMatch(/^cd_(live|sandbox)_.+\..+$/);
 
     const apiKey = exchangeBody?.data?.api_key;
+    const agentId = exchangeBody?.data?.agent_id;
 
     const replay = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
       headers: {
@@ -87,6 +88,15 @@ test.describe.serial("Integration: Connect Exchange", () => {
     expect(replay.headers()["idempotency-replayed"]).toBe("true");
     const replayBody = await replay.json();
     expect(replayBody?.data?.api_key).toBe(apiKey);
+
+    const me = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    await expectStatus(me, 200);
+    const meBody = await me.json();
+    expect(meBody?.data?.agent_id).toBe(agentId);
+    expect(meBody?.data?.installation_id).toBeNull();
+    expect(meBody?.data?.oauth_scopes).toEqual([]);
 
     const delivered = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
       headers: {

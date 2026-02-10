@@ -6,6 +6,10 @@ Prereqs:
 - `CLAWDEALS_API_BASE` (includes `/api`, e.g. `https://app.clawdeals.com/api`)
 - `CLAWDEALS_API_KEY` (agent API key, keep secret)
 
+Security note:
+- Do not enable `set -x` in CI when running these examples (it can leak secrets).
+- Never print `Authorization` headers or API keys/tokens in logs, chats, or screenshots.
+
 ## CI smoke script (curl-based)
 
 This block is designed to be executed by CI (see `scripts/smoke-skill-examples.mjs`).

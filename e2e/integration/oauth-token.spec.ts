@@ -5,6 +5,7 @@ import { assertIntegrationEnv } from "./helpers/env";
 import { randomId, randomIp, sleep } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
 import { createRedis } from "./helpers/sse";
+import { createSupabaseAdmin } from "./helpers/supabase";
 
 assertIntegrationEnv();
 
@@ -32,7 +33,7 @@ async function authorizeAndApproveDeviceFlow({
 }: {
   request: any;
   ip: string;
-}): Promise<{ deviceCode: string; userCode: string; ownerId: string }> {
+}): Promise<{ deviceCode: string; userCode: string; ownerId: string; agentId: string }> {
   const ownerId = randomId();
   await createOwner(request, ownerId);
 
@@ -70,8 +71,11 @@ async function authorizeAndApproveDeviceFlow({
     }
   });
   await expectStatus(approve, 200);
+  const approveBody = await approve.json();
+  const agentId = String(approveBody?.data?.agent_id || "");
+  expect(agentId).toMatch(/^[0-9a-f-]{36}$/i);
 
-  return { deviceCode, userCode, ownerId };
+  return { deviceCode, userCode, ownerId, agentId };
 }
 
 test.describe.serial("Integration: OAuth Token", () => {
@@ -79,7 +83,7 @@ test.describe.serial("Integration: OAuth Token", () => {
 
   test("device flow -> token -> API call -> revoke -> refresh fails", async ({ request }) => {
     const ip = randomIp();
-    const { deviceCode } = await authorizeAndApproveDeviceFlow({ request, ip });
+    const { deviceCode, agentId } = await authorizeAndApproveDeviceFlow({ request, ip });
 
     // Warm-up compilation for a protected API route so token TTL tests aren't affected by first-hit latency.
     await request.get("/api/v1/watchlists", { headers: { "x-forwarded-for": ip } });
@@ -106,6 +110,18 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(accessToken).toMatch(/^cd_at_/);
     expect(refreshToken).toMatch(/^cd_rt_/);
     expect(tokenBody?.token_type).toBe("Bearer");
+
+    const me = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-forwarded-for": ip
+      }
+    });
+    await expectStatus(me, 200);
+    const meBody = await me.json();
+    expect(meBody?.data?.agent_id).toBe(agentId);
+    expect(String(meBody?.data?.installation_id || "")).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(meBody?.data?.oauth_scopes).toEqual(["agent:read", "agent:write"]);
 
     const apiCall = await request.get("/api/v1/watchlists", {
       headers: {
@@ -146,6 +162,95 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(refreshFail.status()).toBe(401);
     const refreshFailBody = await refreshFail.json();
     expect(refreshFailBody?.error?.code).toBe("invalid_grant");
+  });
+
+  test("installation revoke invalidates OAuth refresh and access tokens", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ip = randomIp();
+    const { deviceCode, ownerId, agentId } = await authorizeAndApproveDeviceFlow({ request, ip });
+
+    // Warm-up compilation for a protected API route.
+    await request.get("/api/v1/watchlists", { headers: { "x-forwarded-for": ip } });
+
+    const token = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        grant_type: DEVICE_CODE_GRANT_TYPE,
+        device_code: deviceCode,
+        client_id: "openclaw"
+      }).toString()
+    });
+    await expectStatus(token, 200);
+    const tokenBody = await token.json();
+
+    const accessToken = String(tokenBody?.access_token || "");
+    const refreshToken = String(tokenBody?.refresh_token || "");
+    expect(accessToken).toMatch(/^cd_at_/);
+    expect(refreshToken).toMatch(/^cd_rt_/);
+
+    const meBefore = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-forwarded-for": ip
+      }
+    });
+    await expectStatus(meBefore, 200);
+    const meBeforeBody = await meBefore.json();
+    expect(meBeforeBody?.data?.agent_id).toBe(agentId);
+    const installationFromToken = String(meBeforeBody?.data?.installation_id || "");
+    expect(installationFromToken).toMatch(/^[0-9a-f-]{36}$/i);
+
+    const secret = requireOauthTokenSecretForTests();
+    const refreshTokenHash = crypto.createHmac("sha256", secret).update(refreshToken).digest("hex");
+
+    const { data: refreshRow, error: refreshError } = await supabase
+      .from("oauth_refresh_tokens")
+      .select("installation_id")
+      .eq("token_hash", refreshTokenHash)
+      .maybeSingle();
+    expect(refreshError).toBeNull();
+    const installationId = String(refreshRow?.installation_id || "");
+    expect(installationId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(installationId).toBe(installationFromToken);
+
+    const revoke = await request.post(`/api/v1/installations/${encodeURIComponent(installationId)}:revoke`, {
+      headers: {
+        "x-owner-id": ownerId,
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": ip
+      },
+      data: { reason: "integration test (oauth revoke)" }
+    });
+    await expectStatus(revoke, 200);
+
+    const refreshFail = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: "openclaw"
+      }).toString()
+    });
+    expect(refreshFail.status()).toBe(401);
+    const refreshFailBody = await refreshFail.json();
+    expect(refreshFailBody?.error?.code).toBe("invalid_grant");
+
+    const meAfter = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-forwarded-for": ip
+      }
+    });
+    expect(meAfter.status()).toBe(401);
+    const meAfterBody = await meAfter.json();
+    expect(meAfterBody?.error?.code).toBe("UNAUTHORIZED");
   });
 
   test("rotation: old refresh token rejected", async ({ request }) => {

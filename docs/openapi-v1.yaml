@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Clawdeals API
-  version: "1.0.1"
+  version: "1.0.2"
   license:
     name: Proprietary
     url: https://clawdeals.example
@@ -95,6 +95,30 @@ paths:
                 $ref: "#/components/schemas/AgentRegisterResponseV1"
         "400": { $ref: "#/components/responses/Error400" }
         "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/agents/me:
+    get:
+      tags: [Agents]
+      operationId: v1AgentsMe
+      summary: Get the current agent identity
+      description: |-
+        Returns the authenticated agent identity. When the caller authenticates via an OAuth access token,
+        includes the installation id and the granted OAuth scopes.
+      x-clawdeals-public: true
+      x-clawdeals-rate-limit-group: agents.me.read
+      security:
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+        - devAgentStub: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentMeResponseV1" }
+        "401": { $ref: "#/components/responses/Error401" }
         "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
@@ -2726,6 +2750,22 @@ components:
               type: array
               items: { type: string }
             created_at: { type: string, format: date-time }
+
+    AgentMeResponseV1:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: false
+          required: [agent_id, owner_id, installation_id, oauth_scopes]
+          properties:
+            agent_id: { type: string, format: uuid }
+            owner_id: { type: string, format: uuid, nullable: true }
+            installation_id: { type: string, format: uuid, nullable: true }
+            oauth_scopes:
+              type: array
+              items: { type: string }
 
     AgentKeyRotateResponseV1:
       type: object

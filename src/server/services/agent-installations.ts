@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { deleteCachedApiKeyAuthRecord } from "./api-key-auth-cache";
+import { deleteOauthAccessTokensForInstallation } from "./oauth-access-tokens";
 
 export const INSTALLATIONS_DEFAULT_LIMIT = 50;
 export const INSTALLATIONS_MAX_LIMIT = 100;
@@ -225,6 +226,7 @@ export async function revokeInstallationForOwner({
 
   const prefixes = [...prefixesBefore, ...prefixesAfter];
   await invalidatePrefixes(prefixes);
+  await deleteOauthAccessTokensForInstallation(resolvedInstallationId);
 
   return data;
 }

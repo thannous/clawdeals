@@ -2,6 +2,11 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.7 - 2026-02-10
+
+- Document OpenClaw dual connect guidance (OAuth device flow preferred; claim link fallback) and safe storage rules.
+- Add a recommended verification call: `GET /v1/agents/me`.
+
 ## 0.1.3 - 2026-02-09
 
 - Align production Base URL and network allowlist with current hosting: `https://app.clawdeals.com/api`.

@@ -22,6 +22,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/agents$/
   },
   {
+    group: "agents.me.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/agents\/me$/
+  },
+  {
     group: "connect.sessions.create_ip",
     methods: ["POST"],
     pattern: /^\/v1\/connect\/sessions$/

@@ -5,6 +5,7 @@ import { getRedis } from "../redis/upstash";
 
 const ACCESS_TOKEN_PREFIX = "cd_at_";
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+const ACCESS_TOKEN_INSTALLATION_INDEX_PREFIX = "auth:oauth:access_installation:v1:";
 
 function buildServiceError(message: string, status = 500, code = "ERROR", details?: any) {
   const error: any = new Error(message);
@@ -64,6 +65,10 @@ function buildRedisKey(accessTokenHash: string) {
   return `auth:oauth:access:v1:${accessTokenHash}`;
 }
 
+function buildInstallationIndexKey(installationId: string) {
+  return `${ACCESS_TOKEN_INSTALLATION_INDEX_PREFIX}${installationId}`;
+}
+
 export function isOauthAccessToken(token: any) {
   return typeof token === "string" && token.startsWith(ACCESS_TOKEN_PREFIX);
 }
@@ -77,6 +82,82 @@ export async function deleteOauthAccessTokenByHash(accessTokenHash: string) {
   } catch (error) {
     // Best-effort cleanup only.
     console.warn("[oauth] failed to delete access token from redis", error);
+  }
+}
+
+async function indexAccessTokenHashByInstallation({
+  installationId,
+  accessTokenHash,
+  ttlSeconds
+}: {
+  installationId: string;
+  accessTokenHash: string;
+  ttlSeconds: number;
+}) {
+  const resolvedInstallationId = normalizeNonEmptyString(installationId);
+  const resolvedHash = normalizeNonEmptyString(accessTokenHash);
+  if (!resolvedInstallationId || !resolvedHash) return;
+
+  const resolvedTtlSeconds =
+    typeof ttlSeconds === "number" && Number.isFinite(ttlSeconds) ? Math.max(1, Math.floor(ttlSeconds)) : 60;
+
+  const key = buildInstallationIndexKey(resolvedInstallationId);
+  try {
+    const redis = getRedis();
+    await redis.sadd(key, resolvedHash);
+    // Keep the index slightly longer than access token TTL so revocation can delete all active tokens.
+    await redis.expire(key, resolvedTtlSeconds + 60);
+  } catch (error) {
+    // Best-effort only: never break token issuance if Redis Set operations fail.
+    console.warn("[oauth] failed to index access token by installation", error);
+  }
+}
+
+export async function deleteOauthAccessTokensForInstallation(installationId: string) {
+  const resolvedInstallationId = normalizeNonEmptyString(installationId);
+  if (!resolvedInstallationId) return;
+
+  let redis: any;
+  try {
+    redis = getRedis();
+  } catch (error) {
+    // Best-effort cleanup only.
+    console.warn("[oauth] failed to initialize redis client for access-token purge", error);
+    return;
+  }
+
+  const indexKey = buildInstallationIndexKey(resolvedInstallationId);
+
+  let hashes: any = null;
+  try {
+    hashes = await redis.smembers(indexKey);
+  } catch (error) {
+    // Best-effort cleanup only.
+    try {
+      await redis.del(indexKey);
+    } catch {
+      // ignore
+    }
+    console.warn("[oauth] failed to list access tokens for installation", error);
+    return;
+  }
+
+  const members = Array.isArray(hashes) ? hashes : [];
+  const unique = Array.from(new Set(members.map((h) => String(h)).filter(Boolean)));
+  for (const hash of unique) {
+    try {
+      await redis.del(buildRedisKey(hash));
+    } catch (error) {
+      // Best-effort cleanup only.
+      console.warn("[oauth] failed to delete access token from redis", error);
+    }
+  }
+
+  try {
+    await redis.del(indexKey);
+  } catch (error) {
+    // Best-effort cleanup only.
+    console.warn("[oauth] failed to delete access-token installation index from redis", error);
   }
 }
 
@@ -132,6 +213,12 @@ export async function issueOauthAccessToken({
   } catch (error) {
     throw buildServiceError("Failed to issue access token", 503, "AUTH_UNAVAILABLE");
   }
+
+  await indexAccessTokenHashByInstallation({
+    installationId: resolvedInstallationId,
+    accessTokenHash,
+    ttlSeconds
+  });
 
   return {
     access_token: accessToken,
