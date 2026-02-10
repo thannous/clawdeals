@@ -1,5 +1,5 @@
 import { getRedis } from "../redis/upstash";
-import { jsonResponse } from "../http/response";
+import { jsonResponse, type JsonResponse } from "../http/response";
 import { errorPayload } from "../http/errors";
 import { canonicalJsonStringify } from "../utils/canonical-json";
 import crypto from "crypto";
@@ -21,6 +21,45 @@ import {
   insertIdempotencyRecord,
   updateIdempotencyRecord
 } from "./store";
+
+type AnyJsonResponse = JsonResponse<any>;
+
+export type BeginIdempotencyReplayContext = {
+  key: string;
+  requestHmac: string;
+  record: any;
+  replayed: true;
+};
+
+export type BeginIdempotencyContinueContext = {
+  key: string;
+  requestHmac: string;
+  actorType: string;
+  actorId: string;
+  method: string;
+  path: string;
+  lockKey: string | null;
+  record: any;
+  expiresAt: string;
+};
+
+type BeginIdempotencySkipResult = { action: "skip" };
+type BeginIdempotencyErrorResult = { action: "error"; response: AnyJsonResponse };
+type BeginIdempotencyReplayResult = {
+  action: "replay";
+  response: AnyJsonResponse;
+  context: BeginIdempotencyReplayContext;
+};
+type BeginIdempotencyContinueResult = {
+  action: "continue";
+  context: BeginIdempotencyContinueContext;
+};
+
+export type BeginIdempotencyResult =
+  | BeginIdempotencySkipResult
+  | BeginIdempotencyErrorResult
+  | BeginIdempotencyReplayResult
+  | BeginIdempotencyContinueResult;
 
 function getHeaderValue(headers, name) {
   if (!headers) return null;
@@ -130,7 +169,7 @@ async function verifyIdempotencyFingerprint({
   canonicalBody: string;
   redis: any;
   lockKey: string;
-}) {
+}): Promise<BeginIdempotencyErrorResult | null> {
   // request_hmac is a fingerprint:
   // - legacy values were raw HMAC hex (no prefix)
   // - current values are prefixed: hmac:<hex> or sha256:<hex>
@@ -208,7 +247,7 @@ async function verifyIdempotencyFingerprint({
   return null;
 }
 
-export async function beginIdempotency(req: any, ctx: any, options: any = {}) {
+export async function beginIdempotency(req: any, ctx: any, options: any = {}): Promise<BeginIdempotencyResult> {
   if (!options.enabled) return { action: "skip" };
 
   const key = getHeaderValue(req.headers, "idempotency-key");

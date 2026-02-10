@@ -70,15 +70,16 @@ export async function hideEntity({ entityType, entityId, reason, performedBy }: 
 
   if (error) mapError(error);
 
-  await logModerationAction({
-    actionType: "hide",
-    entityType,
-    entityId,
-    performedBy,
-    reason
-  });
-
-  await publishModerationEvent("moderation.entity_hidden", { type: entityType, id: entityId }, performedBy);
+  await Promise.allSettled([
+    logModerationAction({
+      actionType: "hide",
+      entityType,
+      entityId,
+      performedBy,
+      reason
+    }),
+    publishModerationEvent("moderation.entity_hidden", { type: entityType, id: entityId }, performedBy)
+  ]);
 
   return data;
 }
@@ -109,15 +110,16 @@ export async function unhideEntity({ entityType, entityId, reason, performedBy }
     throw buildError("Entity moderation state not found", 404, "NOT_FOUND");
   }
 
-  await logModerationAction({
-    actionType: "unhide",
-    entityType,
-    entityId,
-    performedBy,
-    reason
-  });
-
-  await publishModerationEvent("moderation.entity_unhidden", { type: entityType, id: entityId }, performedBy);
+  await Promise.allSettled([
+    logModerationAction({
+      actionType: "unhide",
+      entityType,
+      entityId,
+      performedBy,
+      reason
+    }),
+    publishModerationEvent("moderation.entity_unhidden", { type: entityType, id: entityId }, performedBy)
+  ]);
 
   return data;
 }

@@ -31,6 +31,12 @@ export default function EventList({ events, connectionState, paused, onEventClic
       ref={scrollRef}
       data-testid="event-list"
       className="overflow-y-auto max-h-[calc(100vh-200px)] border border-border rounded bg-surface"
+      style={
+        {
+          contentVisibility: "auto",
+          containIntrinsicSize: "0 800px"
+        } as any
+      }
     >
       {events.map((event) => (
         <EventRow key={event.id} event={event} onClick={onEventClick} />

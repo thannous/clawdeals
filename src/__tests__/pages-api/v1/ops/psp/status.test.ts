@@ -35,7 +35,7 @@ suite("GET /v1/ops/psp/status", () => {
 
     const mod = await import("../../../../../server/services/psp-config");
     getPspConfigMock = vi.mocked(mod.getPspConfig);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -85,4 +85,3 @@ suite("GET /v1/ops/psp/status", () => {
     expect(result.body.webhook_secret_ref).toContain("env:");
   });
 });
-

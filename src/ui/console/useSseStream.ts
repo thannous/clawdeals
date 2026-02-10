@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { getPublicSseBaseUrl, joinUrl } from "../../shared/urls";
 
 const MAX_EVENTS = 500;
@@ -86,12 +86,14 @@ export function useSseStream({ types, entityId, replay = true, heartbeat }: UseS
   const connectRef = useRef(null);
 
   const addEvents = useCallback((newEvents) => {
-    setEvents((prev) => {
-      const merged = [...prev, ...newEvents];
-      if (merged.length > MAX_EVENTS) {
-        return merged.slice(merged.length - MAX_EVENTS);
-      }
-      return merged;
+    startTransition(() => {
+      setEvents((prev) => {
+        const merged = [...prev, ...newEvents];
+        if (merged.length > MAX_EVENTS) {
+          return merged.slice(merged.length - MAX_EVENTS);
+        }
+        return merged;
+      });
     });
   }, []);
 

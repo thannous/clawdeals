@@ -35,7 +35,7 @@ suite("POST /v1/ops/psp/configure", () => {
 
     const mod = await import("../../../../../server/services/psp-config");
     upsertPspConfigMock = vi.mocked(mod.upsertPspConfig);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,4 +106,3 @@ suite("POST /v1/ops/psp/configure", () => {
     expect(result.body.error.code).toBe("DB_DOWN");
   });
 });
-

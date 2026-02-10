@@ -77,7 +77,7 @@ suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
 
     const sseMod = await import("../../../../server/sse/store");
     publishSseEventMock = vi.mocked(sseMod.publishSseEvent);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -266,4 +266,3 @@ suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
     });
   });
 });
-

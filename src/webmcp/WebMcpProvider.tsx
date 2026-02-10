@@ -54,7 +54,8 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
         confirm: requestConfirmation,
         requestId,
         timeoutMs: 60_000,
-        idempotencyKey: tool.scope === "read" ? null : null
+        // Stable per tool invocation; allows server-side dedup for write/admin calls.
+        idempotencyKey: tool.scope === "read" ? null : requestId
       });
 
       if (!stable.ok) {
@@ -94,25 +95,30 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       }
     }));
 
-    try {
-      const result = registerTools(registerable);
+    function applySuccess(result: { registered: number; errors: number }) {
       didRegisterRef.current = true;
-
       // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
       Promise.resolve().then(() => {
         if (!alive) return;
         setRegistered(result.registered > 0);
         // WebMCP registration might partially fail depending on API shape; keep the full list for visibility.
         setRegisteredToolNames(registerable.map((t) => t.name));
-        if (result.errors > 0) {
-          setLastRegisterError(`${result.errors} tool(s) failed to register`);
-        }
+        setLastRegisterError(result.errors > 0 ? `${result.errors} tool(s) failed to register` : null);
       });
-    } catch (error: any) {
+    }
+
+    function applyFailure(error: any) {
       Promise.resolve().then(() => {
         if (!alive) return;
         setLastRegisterError(error?.message || "Tool registration failed");
       });
+    }
+
+    try {
+      const result = registerTools(registerable);
+      applySuccess(result);
+    } catch (error: any) {
+      applyFailure(error);
     }
 
     return () => {

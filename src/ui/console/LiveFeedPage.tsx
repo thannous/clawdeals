@@ -8,7 +8,7 @@ export default function LiveFeedPage() {
   const [types, setTypes] = useState([]);
   const [entityId, setEntityId] = useState("");
 
-  const stream = useSseStream({
+  const { events, paused, pause, resume, connectionState, missedCount } = useSseStream({
     types: types.length > 0 ? types : undefined,
     entityId: entityId || undefined,
     replay: true,
@@ -30,12 +30,12 @@ export default function LiveFeedPage() {
   }, [types]);
 
   const handlePauseToggle = useCallback(() => {
-    if (stream.paused) {
-      stream.resume();
+    if (paused) {
+      resume();
     } else {
-      stream.pause();
+      pause();
     }
-  }, [stream]);
+  }, [paused, resume, pause]);
 
   const handleEventClick = useCallback((event) => {
     trackLiveFeedEventClicked({
@@ -63,16 +63,16 @@ export default function LiveFeedPage() {
           onTypesChange={handleTypesChange}
           entityId={entityId}
           onEntityIdChange={handleEntityIdChange}
-          paused={stream.paused}
+          paused={paused}
           onPauseToggle={handlePauseToggle}
-          connectionState={stream.connectionState}
-          missedCount={stream.missedCount}
+          connectionState={connectionState}
+          missedCount={missedCount}
         />
 
         <EventList
-          events={stream.events}
-          connectionState={stream.connectionState}
-          paused={stream.paused}
+          events={events}
+          connectionState={connectionState}
+          paused={paused}
           onEventClick={handleEventClick}
         />
       </main>

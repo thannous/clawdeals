@@ -31,7 +31,7 @@ vi.mock("../utils/canonical-json", () => ({
   canonicalJsonStringify: vi.fn(() => "{}")
 }));
 
-import { beginIdempotency, finalizeIdempotency } from "./middleware";
+import { beginIdempotency, finalizeIdempotency, type BeginIdempotencyResult } from "./middleware";
 import {
   getIdempotencyRecord,
   insertIdempotencyRecord,
@@ -39,6 +39,17 @@ import {
   deleteIdempotencyRecord
 } from "./store";
 import { buildRequestHmac, shouldEncryptResponseBody, encryptJson } from "./crypto";
+
+function expectBeginIdempotencyAction<T extends BeginIdempotencyResult["action"]>(
+  result: BeginIdempotencyResult,
+  action: T
+): Extract<BeginIdempotencyResult, { action: T }> {
+  expect(result.action).toBe(action);
+  if (result.action !== action) {
+    throw new Error(`Expected beginIdempotency action=${action}; got ${result.action}`);
+  }
+  return result as any;
+}
 
 function makeReq(headers = {}, query = {}) {
   return {
@@ -81,16 +92,16 @@ describe("beginIdempotency", () => {
   it("returns error for invalid key format", async () => {
     const req = { headers: { "idempotency-key": "\x00bad" }, query: {} };
     const result = await beginIdempotency(req, makeCtx(), { enabled: true });
-    expect(result.action).toBe("error");
-    expect(result.response.status).toBe(400);
-    expect(result.response.body.error.code).toBe("INVALID_IDEMPOTENCY_KEY");
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(400);
+    expect(errorResult.response.body.error.code).toBe("INVALID_IDEMPOTENCY_KEY");
   });
 
   it("returns error for key exceeding max length", async () => {
     const req = { headers: { "idempotency-key": "a".repeat(200) }, query: {} };
     const result = await beginIdempotency(req, makeCtx(), { enabled: true });
-    expect(result.action).toBe("error");
-    expect(result.response.status).toBe(400);
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(400);
   });
 
   it("continues when lock acquired and no existing record", async () => {
@@ -99,8 +110,8 @@ describe("beginIdempotency", () => {
     (insertIdempotencyRecord as any).mockResolvedValue({ idempotency_id: "idem-1", status: "IN_PROGRESS" });
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
-    expect(result.action).toBe("continue");
-    expect((result as any).context.key).toBe("test-key");
+    const continueResult = expectBeginIdempotencyAction(result, "continue");
+    expect(continueResult.context.key).toBe("test-key");
   });
 
   it("replays when COMPLETED record exists with matching HMAC", async () => {
@@ -115,10 +126,10 @@ describe("beginIdempotency", () => {
     });
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
-    expect(result.action).toBe("replay");
-    expect(result.response.status).toBe(201);
-    expect(result.response.body).toEqual({ data: { id: "1" } });
-    expect(result.response.headers["Idempotency-Replayed"]).toBe("true");
+    const replayResult = expectBeginIdempotencyAction(result, "replay");
+    expect(replayResult.response.status).toBe(201);
+    expect(replayResult.response.body).toEqual({ data: { id: "1" } });
+    expect(replayResult.response.headers["Idempotency-Replayed"]).toBe("true");
   });
 
   it("returns 409 KEY_REUSE on HMAC mismatch", async () => {
@@ -134,9 +145,9 @@ describe("beginIdempotency", () => {
     });
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
-    expect(result.action).toBe("error");
-    expect(result.response.status).toBe(409);
-    expect(result.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(409);
+    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
   });
 
   it("returns IN_PROGRESS when lock not acquired and poll times out", async () => {
@@ -147,9 +158,9 @@ describe("beginIdempotency", () => {
       enabled: true,
       maxWaitMs: 100
     });
-    expect(result.action).toBe("error");
-    expect(result.response.status).toBe(409);
-    expect(result.response.body.error.code).toBe("IDEMPOTENCY_IN_PROGRESS");
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(409);
+    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_IN_PROGRESS");
   });
 
   it("does not double-execute in DB-only mode when insert races (unique violation)", async () => {
@@ -172,9 +183,9 @@ describe("beginIdempotency", () => {
     (insertIdempotencyRecord as any).mockRejectedValue(Object.assign(new Error("duplicate"), { code: "23505" }));
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, maxWaitMs: 50 });
-    expect(result.action).toBe("replay");
-    expect(result.response.status).toBe(201);
-    expect(result.response.body).toEqual({ ok: true });
+    const replayResult = expectBeginIdempotencyAction(result, "replay");
+    expect(replayResult.response.status).toBe(201);
+    expect(replayResult.response.body).toEqual({ ok: true });
   });
 
   it("returns 409 KEY_REUSE in DB-only mode when insert races and fingerprint mismatches", async () => {
@@ -190,9 +201,9 @@ describe("beginIdempotency", () => {
     (insertIdempotencyRecord as any).mockRejectedValue(Object.assign(new Error("duplicate"), { code: "23505" }));
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, maxWaitMs: 50 });
-    expect(result.action).toBe("error");
-    expect(result.response.status).toBe(409);
-    expect(result.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(409);
+    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
   });
 
   it("skips when no actor id available", async () => {

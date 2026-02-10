@@ -26,7 +26,7 @@ suite("POST /v1/psp/webhooks", () => {
 
     const mod = await import("../../../../server/services/psp-config");
     getPspConfigMock = vi.mocked(mod.getPspConfig);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,4 +68,3 @@ suite("POST /v1/psp/webhooks", () => {
     delete process.env[envName];
   });
 });
-

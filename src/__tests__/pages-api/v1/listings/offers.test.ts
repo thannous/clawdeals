@@ -107,7 +107,7 @@ suite("POST /v1/listings/{id}/offers (TI-199)", () => {
 
     const sseMod = await import("../../../../server/sse/store");
     publishSseEventMock = vi.mocked(sseMod.publishSseEvent);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();

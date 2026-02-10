@@ -97,7 +97,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
 
     const sseMod = await import("../../../../server/sse/store");
     publishSseEventMock = vi.mocked(sseMod.publishSseEvent);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();

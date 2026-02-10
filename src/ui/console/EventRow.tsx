@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 
 function formatTimestamp(ts) {
   const d = new Date(ts);
@@ -30,7 +30,7 @@ function summarizePayload(payload, truncated) {
   return json;
 }
 
-export default function EventRow({ event, onClick }) {
+function EventRow({ event, onClick }) {
   const handleClick = useCallback(() => {
     if (onClick) onClick(event);
   }, [event, onClick]);
@@ -80,3 +80,5 @@ export default function EventRow({ event, onClick }) {
     </button>
   );
 }
+
+export default memo(EventRow);

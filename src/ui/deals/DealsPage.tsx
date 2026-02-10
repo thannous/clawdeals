@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useDeals } from "./useDeals";
 import { useVote } from "./useVote";
 import DealsToolbar from "./DealsToolbar";
@@ -11,19 +12,25 @@ export default function DealsPage() {
     refetch
   } = useDeals();
 
-  const vote = useVote({ onVoteSuccess: updateDealInList });
+  const {
+    isOpen,
+    targetDeal,
+    direction,
+    submitState,
+    error: voteError,
+    retryIn,
+    openVote,
+    closeVote,
+    submitVote
+  } = useVote({ onVoteSuccess: updateDealInList });
 
-  const handleVote = (deal, direction) => {
-    vote.openVote(deal, direction);
-  };
+  const handleVote = useCallback((deal, dir) => {
+    openVote(deal, dir);
+  }, [openVote]);
 
-  const handleTagRemove = (tag) => {
+  const handleTagRemove = useCallback((tag) => {
     setTags(tags.filter((t) => t !== tag));
-  };
-
-  const handleRetry = () => {
-    refetch();
-  };
+  }, [setTags, tags]);
 
   return (
     <div data-testid="deals-page" className="min-h-screen bg-bg">
@@ -55,24 +62,24 @@ export default function DealsPage() {
           loadMoreState={loadMoreState}
           error={error}
           nextCursor={nextCursor}
-          retryIn={vote.retryIn}
-          onRetry={handleRetry}
+          retryIn={retryIn}
+          onRetry={refetch}
           onLoadMore={loadMore}
           onVote={handleVote}
         />
       </main>
 
       {/* Vote Modal */}
-      {vote.isOpen && (
+      {isOpen && (
         <VoteModal
-          isOpen={vote.isOpen}
-          targetDeal={vote.targetDeal}
-          direction={vote.direction}
-          submitState={vote.submitState}
-          error={vote.error}
-          retryIn={vote.retryIn}
-          onClose={vote.closeVote}
-          onSubmit={vote.submitVote}
+          isOpen={isOpen}
+          targetDeal={targetDeal}
+          direction={direction}
+          submitState={submitState}
+          error={voteError}
+          retryIn={retryIn}
+          onClose={closeVote}
+          onSubmit={submitVote}
         />
       )}
     </div>

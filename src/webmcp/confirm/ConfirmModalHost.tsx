@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { canonicalJsonStringify } from "../utils";
-import { sanitizeToolOutput } from "../security/sanitize";
 import { useWebMcpConfirm } from "./context";
+import type { ConfirmDecision, ConfirmHistoryEntry, ConfirmRequest } from "./types";
 
 function formatSeconds(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -11,32 +11,58 @@ function formatSeconds(ms: number): string {
 
 export default function ConfirmModalHost() {
   const { pending, decide, history, cooldownUntilMs } = useWebMcpConfirm();
+  const [cooldownRemainingMs, setCooldownRemainingMs] = useState<number>(0);
+  useEffect(() => {
+    const tick = () => {
+      const left = cooldownUntilMs ? Math.max(0, cooldownUntilMs - Date.now()) : 0;
+      setCooldownRemainingMs(left);
+    };
+
+    tick();
+    if (!cooldownUntilMs) return;
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [cooldownUntilMs]);
+
+  if (!pending) {
+    return (
+      <>
+        {cooldownRemainingMs > 0 ? (
+          <div className="fixed bottom-4 right-4 z-50 border border-border bg-surface px-3 py-2 text-xs font-mono text-muted">
+            WebMCP cooldown active ({formatSeconds(cooldownRemainingMs)})
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
+  // Keyed render resets local UI state when a new request arrives without using an effect.
+  return <ConfirmModal key={pending.requestId} pending={pending} decide={decide} history={history} />;
+}
+
+function ConfirmModal({
+  pending,
+  decide,
+  history
+}: {
+  pending: ConfirmRequest;
+  decide: (decision: ConfirmDecision) => void;
+  history: ConfirmHistoryEntry[];
+}) {
   const [mode, setMode] = useState<"preview" | "edit">("preview");
-  const [edited, setEdited] = useState<string>("");
+  const [edited, setEdited] = useState<string>(() => {
+    try {
+      // Confirmations should show the exact payload that will be approved/executed.
+      return JSON.stringify(pending.args, null, 2);
+    } catch {
+      // Fallback for any unexpected non-JSON args shape.
+      return canonicalJsonStringify(pending.args);
+    }
+  });
   const [error, setError] = useState<string>("");
   const [remainingMs, setRemainingMs] = useState<number>(0);
-  const [cooldownRemainingMs, setCooldownRemainingMs] = useState<number>(0);
 
   useEffect(() => {
-    if (!pending) return;
-    const safe = sanitizeToolOutput(pending.args);
-    const nextEdited = JSON.stringify(safe, null, 2);
-
-    // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
-    let alive = true;
-    Promise.resolve().then(() => {
-      if (!alive) return;
-      setMode("preview");
-      setError("");
-      setEdited(nextEdited);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [pending]);
-
-  useEffect(() => {
-    if (!pending) return;
     const start = Date.now();
     const tick = () => {
       const elapsed = Date.now() - start;
@@ -46,36 +72,9 @@ export default function ConfirmModalHost() {
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-  }, [pending]);
+  }, [pending.timeoutMs]);
 
   useEffect(() => {
-    let alive = true;
-    if (!cooldownUntilMs) {
-      // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
-      Promise.resolve().then(() => {
-        if (!alive) return;
-        setCooldownRemainingMs(0);
-      });
-      return () => {
-        alive = false;
-      };
-    }
-
-    const tick = () => {
-      if (!alive) return;
-      setCooldownRemainingMs(Math.max(0, cooldownUntilMs - Date.now()));
-    };
-
-    tick();
-    const id = setInterval(tick, 250);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [cooldownUntilMs]);
-
-  useEffect(() => {
-    if (!pending) return;
     document.body.style.overflow = "hidden";
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -87,17 +86,15 @@ export default function ConfirmModalHost() {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [pending, decide]);
+  }, [decide]);
 
-  const safeArgs = useMemo(() => (pending ? sanitizeToolOutput(pending.args) : null), [pending]);
-  const canonicalArgs = useMemo(() => (safeArgs ? canonicalJsonStringify(safeArgs) : ""), [safeArgs]);
+  const canonicalArgs = useMemo(() => canonicalJsonStringify(pending.args), [pending.args]);
 
   const handleDeny = useCallback(() => {
     decide({ kind: "deny", code: "USER_DENIED", reason: "user_denied" });
   }, [decide]);
 
   const handleApprove = useCallback(() => {
-    if (!pending) return;
     setError("");
     if (mode === "edit") {
       try {
@@ -110,20 +107,7 @@ export default function ConfirmModalHost() {
       }
     }
     decide({ kind: "approve", args: pending.args });
-  }, [decide, edited, mode, pending]);
-
-  const show = Boolean(pending);
-  if (!show) {
-    return (
-      <>
-        {cooldownUntilMs && cooldownRemainingMs > 0 ? (
-          <div className="fixed bottom-4 right-4 z-50 border border-border bg-surface px-3 py-2 text-xs font-mono text-muted">
-            WebMCP cooldown active ({formatSeconds(cooldownRemainingMs)})
-          </div>
-        ) : null}
-      </>
-    );
-  }
+  }, [decide, edited, mode, pending.args]);
 
   return (
     <>
@@ -187,9 +171,7 @@ export default function ConfirmModalHost() {
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <div className="text-[10px] font-mono text-subtle">
-              Recent actions: {history.length}
-            </div>
+            <div className="text-[10px] font-mono text-subtle">Recent actions: {history.length}</div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setMode((m) => (m === "preview" ? "edit" : "preview"))}

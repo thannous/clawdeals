@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import StatusBadge from "./StatusBadge";
 import TemperatureGauge from "./TemperatureGauge";
 
-export default function DealCard({ deal, retryIn, onVote }) {
+function DealCard({ deal, retryIn, onVote }) {
   const isExpired = deal.status === "EXPIRED";
   const voteDisabled = isExpired || retryIn > 0;
 
@@ -99,3 +100,5 @@ export default function DealCard({ deal, retryIn, onVote }) {
     </article>
   );
 }
+
+export default memo(DealCard);
