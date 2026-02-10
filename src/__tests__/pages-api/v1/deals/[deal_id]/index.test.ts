@@ -4,12 +4,20 @@ vi.mock("../../../../../server/services/deal-detail", () => ({
   getDealById: vi.fn()
 }));
 
+vi.mock("../../../../../server/services/deal-update", () => ({
+  getDealForUpdate: vi.fn(),
+  applyDealUpdate: vi.fn()
+}));
+
 import { handler } from "../../../../../pages/api/v1/deals/[deal_id]/index";
 import { getDealById } from "../../../../../server/services/deal-detail";
+import { applyDealUpdate, getDealForUpdate } from "../../../../../server/services/deal-update";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
 
 const getDealByIdMock = vi.mocked(getDealById);
+const getDealForUpdateMock = vi.mocked(getDealForUpdate);
+const applyDealUpdateMock = vi.mocked(applyDealUpdate);
 
 const baseCtx: any = {
   ownerId: "00000000-0000-4000-a000-000000000000",
@@ -71,5 +79,104 @@ describe("GET /v1/deals/:deal_id", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("DEAL_NOT_FOUND");
+  });
+});
+
+describe("PATCH /v1/deals/:deal_id", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const agentCtx: any = {
+    agentId: "d5dd3a9d-9c1e-4e46-8759-7f502c0449a1",
+    actor: { type: "agent", id: "d5dd3a9d-9c1e-4e46-8759-7f502c0449a1" },
+    authError: null
+  };
+
+  it("requires agent authentication", async () => {
+    const req = { method: "PATCH", query: { deal_id: dealId }, body: { price: 10 } };
+    const result: any = await handler(req, null, { ...agentCtx, agentId: null, actor: { type: "anonymous", id: null } });
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("requires at least one field", async () => {
+    getDealForUpdateMock.mockResolvedValue({
+      deal_id: dealId,
+      creator_agent_id: agentCtx.agentId,
+      status: "NEW",
+      votes_up: 0,
+      votes_down: 0,
+      created_at: "2026-02-05T12:00:00Z",
+      new_until: "2026-02-05T12:10:00Z"
+    } as any);
+
+    const req = { method: "PATCH", query: { deal_id: dealId }, body: {} };
+    const result: any = await handler(req, null, agentCtx);
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("forbids editing for non-creator agent", async () => {
+    getDealForUpdateMock.mockResolvedValue({
+      deal_id: dealId,
+      creator_agent_id: "11111111-1111-1111-1111-111111111111",
+      status: "NEW",
+      votes_up: 0,
+      votes_down: 0,
+      created_at: "2026-02-05T12:00:00Z",
+      new_until: "2026-02-05T12:10:00Z"
+    } as any);
+
+    applyDealUpdateMock.mockRejectedValue(Object.assign(new Error("Only the creating agent can edit this deal"), { status: 403, code: "FORBIDDEN" }));
+
+    const req = { method: "PATCH", query: { deal_id: dealId }, body: { price: 9.99 } };
+    const result: any = await handler(req, null, agentCtx);
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("FORBIDDEN");
+  });
+
+  it("updates deal fields", async () => {
+    getDealForUpdateMock.mockResolvedValue({
+      deal_id: dealId,
+      creator_agent_id: agentCtx.agentId,
+      status: "NEW",
+      votes_up: 0,
+      votes_down: 0,
+      created_at: "2026-02-05T12:00:00Z",
+      new_until: "2026-02-05T12:10:00Z"
+    } as any);
+
+    applyDealUpdateMock.mockResolvedValue({
+      deal_id: dealId,
+      title: "Updated Deal",
+      source_url: "https://example.com/deal",
+      price: "9.99",
+      currency: "EUR",
+      expires_at: "2026-02-06T12:00:00Z",
+      status: "NEW",
+      temperature: 55,
+      votes_up: 0,
+      votes_down: 0,
+      tags: ["gpu"],
+      created_at: "2026-02-05T12:00:00Z"
+    } as any);
+
+    const ctx: any = { ...agentCtx };
+    const req = { method: "PATCH", query: { deal_id: dealId }, body: { title: " Updated Deal ", price: 9.99 } };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(ctx.auditEvent).toBe("deal.updated");
+    expect(result.body.deal.title).toBe("Updated Deal");
+    expect(result.body.deal.price).toBe(9.99);
+    expect(result.body.deal.temperature).toBeNull();
+    expect(applyDealUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dealId,
+        agentId: agentCtx.agentId,
+        patch: expect.objectContaining({ title: "Updated Deal", price: 9.99 })
+      })
+    );
   });
 });

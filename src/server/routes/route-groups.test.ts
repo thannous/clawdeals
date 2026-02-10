@@ -91,4 +91,10 @@ describe("route groups", () => {
     expect(matchRouteGroup("POST", `/api/v1/chat/commands/${id}:cancel`, sp)).toBe("chat.commands.cancel");
     expect(matchRouteGroup("POST", `/api/v1/chat/commands/${id}:undo`, sp)).toBe("chat.commands.undo");
   });
+
+  it("matches deals.update for PATCH /v1/deals/:deal_id", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+    expect(matchRouteGroup("PATCH", `/api/v1/deals/${id}`, sp)).toBe("deals.update");
+  });
 });

@@ -73,6 +73,19 @@ const DealsCreateSchema = z
   })
   .strict();
 
+const DealsUpdateSchema = z
+  .object({
+    idempotency_key: z.string().min(1).max(128),
+    deal_id: uuid,
+    title: z.string().min(1).max(140).optional(),
+    price: z.number().positive().optional(),
+    currency: z.string().min(3).max(3).optional(),
+    expires_at: z.string().datetime().optional(),
+    tags: z.array(z.string()).max(20).optional(),
+    dry_run: dryRun
+  })
+  .strict();
+
 const DealsVoteSchema = z
   .object({
     idempotency_key: z.string().min(1).max(128),
@@ -250,6 +263,12 @@ export const TOOLS = [
     isWrite: true
   },
   {
+    name: "clawdeals.deals.update",
+    description: "REST: PATCH /v1/deals/{deal_id} (rate_limit_group=deals.update)",
+    inputSchema: DealsUpdateSchema,
+    isWrite: true
+  },
+  {
     name: "clawdeals.deals.vote",
     description: "REST: POST /v1/deals/{deal_id}/vote (rate_limit_group=deals.vote)",
     inputSchema: DealsVoteSchema,
@@ -387,6 +406,17 @@ export function buildRequest(toolName, input = {}) {
         path: "/v1/deals",
         query: {},
         body: omitKeys(clean, ["idempotency_key"]),
+        idempotencyKey
+      };
+    }
+    case "clawdeals.deals.update": {
+      const idempotencyKey = clean.idempotency_key;
+      const { deal_id: dealId } = clean;
+      return {
+        method: "PATCH",
+        path: `/v1/deals/${dealId}`,
+        query: {},
+        body: omitKeys(clean, ["idempotency_key", "deal_id"]),
         idempotencyKey
       };
     }

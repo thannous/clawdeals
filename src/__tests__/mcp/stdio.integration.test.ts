@@ -75,7 +75,7 @@ describe("MCP stdio server (integration)", () => {
     });
   });
 
-  it("exposes 17 tools and forwards REST calls with origin + idempotency", async () => {
+  it("exposes 18 tools and forwards REST calls with origin + idempotency", async () => {
     const transport = new StdioClientTransport({
       command: "node",
       args: ["scripts/mcp-server.mjs"],
@@ -94,7 +94,7 @@ describe("MCP stdio server (integration)", () => {
 
     try {
       const list = await client.listTools();
-      expect(list.tools.length).toBe(17);
+      expect(list.tools.length).toBe(18);
 
       const dealsList = await client.callTool({
         name: "clawdeals.deals.list",
