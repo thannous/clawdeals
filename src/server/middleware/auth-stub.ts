@@ -1,4 +1,5 @@
 import { authenticateApiKey } from "../services/api-keys";
+import { authenticateOauthAccessToken, isOauthAccessToken } from "../services/oauth-access-tokens";
 import { parseApiKey, parseApiKeyAnyNamespace } from "../utils/api-keys";
 
 function safeHeader(req, name) {
@@ -67,6 +68,29 @@ export async function applyAuthStub(req, ctx) {
   if (rawToken && parseApiKeyAnyNamespace(rawToken)) {
     ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid API key" };
     return ctx;
+  }
+
+  if (rawToken && isOauthAccessToken(rawToken)) {
+    try {
+      const result = await authenticateOauthAccessToken(rawToken);
+      if (result?.ok) {
+        ctx.agentId = result.agentId;
+        ctx.ownerId = result.ownerId || null;
+        ctx.installationId = result.installationId || null;
+        ctx.oauthScopes = result.scopes || [];
+        ctx.actor = { type: "agent", id: result.agentId };
+        return ctx;
+      }
+      ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid access token" };
+      return ctx;
+    } catch (error) {
+      ctx.authError = {
+        status: error.status || 503,
+        code: error.code || "ERROR",
+        message: error.message || "Authentication failed"
+      };
+      return ctx;
+    }
   }
 
   const agentId = safeHeader(req, "x-agent-id");

@@ -246,6 +246,115 @@ export async function getOauthDeviceAuthorizationByUserCode({
   return expirePendingIfNeeded({ row: data, userCodeHash, now });
 }
 
+export async function getOauthDeviceAuthorizationByDeviceCode({
+  deviceCode,
+  now = new Date()
+}: any): Promise<OauthDeviceAuthorizationRow> {
+  const resolved = normalizeNonEmptyString(deviceCode);
+  if (!resolved || !resolved.startsWith(DEVICE_CODE_PREFIX)) {
+    throw buildServiceError("deviceCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const secret = requireOauthDeviceSecret();
+  const deviceCodeHash = hashWithSecret(resolved, secret);
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("oauth_device_authorizations")
+    .select("*")
+    .eq("device_code_hash", deviceCodeHash)
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  if (!data) {
+    throw buildServiceError("Device authorization not found", 404, "DEVICE_AUTHORIZATION_NOT_FOUND");
+  }
+
+  // Device-code exchange should still reflect pending expiry in the UI/polling surface.
+  // If the request is still PENDING and has expired, mark it EXPIRED.
+  if (data.status === "PENDING") {
+    return expirePendingIfNeeded({ row: data, userCodeHash: data.user_code_hash, now });
+  }
+
+  return data;
+}
+
+export async function markOauthDeviceAuthorizationExchanged({
+  authorizationId,
+  deviceCode,
+  now = new Date()
+}: any): Promise<OauthDeviceAuthorizationRow> {
+  const resolvedAuthId = normalizeNonEmptyString(authorizationId);
+  if (!resolvedAuthId) {
+    throw buildServiceError("authorizationId is required", 400, "VALIDATION_ERROR");
+  }
+
+  const resolvedCode = normalizeNonEmptyString(deviceCode);
+  if (!resolvedCode || !resolvedCode.startsWith(DEVICE_CODE_PREFIX)) {
+    throw buildServiceError("deviceCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const secret = requireOauthDeviceSecret();
+  const deviceCodeHash = hashWithSecret(resolvedCode, secret);
+  const nowIso = now.toISOString();
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("oauth_device_authorizations")
+    .update({
+      exchanged_at: nowIso,
+      updated_at: nowIso
+    })
+    .eq("authorization_id", resolvedAuthId)
+    .eq("device_code_hash", deviceCodeHash)
+    .eq("status", "AUTHORIZED")
+    .is("exchanged_at", null)
+    .gt("expires_at", nowIso)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  if (data) {
+    return data;
+  }
+
+  const { data: existing, error: lookupError } = await client
+    .from("oauth_device_authorizations")
+    .select("*")
+    .eq("authorization_id", resolvedAuthId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw mapSupabaseServiceError(lookupError);
+  }
+
+  if (!existing) {
+    throw buildServiceError("Device authorization not found", 404, "DEVICE_AUTHORIZATION_NOT_FOUND");
+  }
+
+  if (existing.exchanged_at) {
+    throw buildServiceError("Device code already exchanged", 409, "DEVICE_CODE_ALREADY_EXCHANGED");
+  }
+  if (existing.status === "DENIED") {
+    throw buildServiceError("Device authorization denied", 409, "DEVICE_AUTHORIZATION_DENIED");
+  }
+  if (existing.status === "EXPIRED") {
+    throw buildServiceError("Device authorization expired", 409, "DEVICE_AUTHORIZATION_EXPIRED");
+  }
+
+  const expiresAt = existing?.expires_at ? new Date(existing.expires_at) : null;
+  const expired = !expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime();
+  if (expired) {
+    throw buildServiceError("Device authorization expired", 409, "DEVICE_AUTHORIZATION_EXPIRED");
+  }
+
+  throw buildServiceError("Device authorization cannot be exchanged", 409, "DEVICE_AUTHORIZATION_NOT_EXCHANGEABLE");
+}
+
 export async function approveOauthDeviceAuthorization({
   userCode,
   ownerId,
@@ -381,4 +490,3 @@ export async function denyOauthDeviceAuthorization({
 
   throw buildServiceError("Device authorization cannot be denied", 409, "DEVICE_AUTHORIZATION_NOT_DENIABLE");
 }
-

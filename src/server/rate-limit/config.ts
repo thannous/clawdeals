@@ -12,6 +12,7 @@ export const RATE_LIMIT_PROFILES = {
     scope: "agent",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+
   "auth.register_ip": {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
@@ -44,6 +45,15 @@ export const RATE_LIMIT_PROFILES = {
       { limit: 20, windowSeconds: MINUTE },
       { limit: 200, windowSeconds: HOUR },
     ],
+  },
+  // TI-313: OAuth token issuance/refresh + revocation (RFC 7009).
+  "oauth.token": {
+    scope: "agent",
+    buckets: [{ limit: 30, windowSeconds: 10 * MINUTE }],
+  },
+  "oauth.revoke": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: HOUR }],
   },
   // TI-309/TI-310: OpenClaw connect (claim link) sessions.
   "connect.sessions.create_ip": {
@@ -83,6 +93,13 @@ export const RATE_LIMIT_PROFILES = {
     // Scoped by poll_token_hash (not raw token).
     scope: "agent",
     buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
+  "connect.sessions.exchange_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 30, windowSeconds: MINUTE },
+      { limit: 300, windowSeconds: HOUR },
+    ],
   },
   "agents.keys.rotate": {
     scope: "owner",
