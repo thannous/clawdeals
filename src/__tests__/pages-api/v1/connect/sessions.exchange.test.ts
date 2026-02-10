@@ -153,6 +153,60 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
     expect(ctx.idempotency).toEqual(expect.objectContaining({ key: "idem", replayed: true }));
   });
 
+  it("returns 409 when Idempotency-Key reuse is detected", async () => {
+    beginIdempotencyMock.mockResolvedValue({
+      action: "error",
+      response: jsonResponse(409, { error: { code: "IDEMPOTENCY_KEY_REUSE", message: "Idempotency-Key reuse detected" } })
+    } as any);
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "idempotency" });
+    expect(exchangeMock).not.toHaveBeenCalled();
+    expect(finalizeIdempotencyMock).not.toHaveBeenCalled();
+  });
+
+  it("validates requested_key_scope must be agent_write", async () => {
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_read", installation: { client_type: "openclaw" } }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(exchangeMock).not.toHaveBeenCalled();
+    expect(finalizeIdempotencyMock).toHaveBeenCalled();
+  });
+
+  it("requires installation.client_type", async () => {
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: {} }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(exchangeMock).not.toHaveBeenCalled();
+    expect(finalizeIdempotencyMock).toHaveBeenCalled();
+  });
+
   it("exchanges session and returns api_key once", async () => {
     exchangeMock.mockResolvedValue({
       session_id: "11111111-1111-4111-8111-111111111111",
