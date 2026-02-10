@@ -13,6 +13,16 @@ function resolveParam(value) {
   return value;
 }
 
+function getHeaderValue(headers, name) {
+  if (!headers) return null;
+  if (typeof headers.get === "function") {
+    return headers.get(name);
+  }
+  const value = headers[name.toLowerCase()] ?? headers[name];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
 function toNumber(value) {
   if (value === null || value === undefined) return value;
   const numeric = Number(value);
@@ -32,11 +42,18 @@ export async function handler(req, res, ctx) {
   }
 
   if (ctx) {
-    ctx.auditEvent = req.method === "PATCH" ? "deal.updated" : "deal.viewed";
+    ctx.auditEvent = req.method === "PATCH" ? "deal.update_rejected" : "deal.viewed";
   }
 
   if (ctx?.authError) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
+  }
+
+  if (req.method === "PATCH") {
+    const idempotencyKey = getHeaderValue(req.headers, "idempotency-key");
+    if (!idempotencyKey) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+    }
   }
 
   if (req.method === "GET") {
@@ -135,6 +152,10 @@ export async function handler(req, res, ctx) {
         patch,
         existing
       });
+
+      if (ctx) {
+        ctx.auditEvent = "deal.updated";
+      }
 
       const responseDeal = {
         deal_id: updated.deal_id,
