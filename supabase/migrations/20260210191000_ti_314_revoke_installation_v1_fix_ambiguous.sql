@@ -63,6 +63,13 @@ begin
 
   get diagnostics v_revoked_keys = row_count;
 
+  update public.oauth_refresh_tokens as ort
+     -- Ensure `revoked_at >= created_at` (see oauth_refresh_tokens_revoked_after_created_check),
+     -- even if a refresh token was created slightly after the installation's revoke timestamp.
+     set revoked_at = greatest(v_revoked_at, ort.created_at)
+   where ort.installation_id = installation_row.installation_id
+     and ort.revoked_at is null;
+
   return query
     select installation_row.installation_id,
            'REVOKED'::agent_installation_status,
@@ -74,4 +81,3 @@ $$;
 -- Supabase security lint: pin function search_path explicitly.
 alter function public.revoke_installation_v1(uuid, uuid, timestamp with time zone)
   set search_path = pg_catalog, public, extensions;
-
