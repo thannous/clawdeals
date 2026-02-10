@@ -361,6 +361,51 @@ paths:
         "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/connect/sessions/{session_id}/exchange:
+    post:
+      tags: [Connect]
+      operationId: v1ConnectSessionsExchange
+      summary: Exchange a claimed connect session for an API key (per installation)
+      description: |-
+        Exchanges a `CLAIMED` connect session for an API key tied to a client installation.
+
+        The API key secret is returned **once**; retries must reuse the same `Idempotency-Key`
+        within a short replay window.
+      x-clawdeals-public: true
+      x-clawdeals-rate-limit-group: connect.sessions.exchange
+      security:
+        - connectPollToken: []
+      parameters:
+        - $ref: "#/components/parameters/ConnectSessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConnectSessionExchangeRequestV1" }
+            examples:
+              basic:
+                value:
+                  requested_key_scope: agent_write
+                  installation:
+                    client_type: openclaw
+                    client_version: 1.0.0
+                    device_name: laptop
+                    fingerprint: abc123
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConnectSessionExchangeResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "410": { $ref: "#/components/responses/Error410" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
   /v1/deals:
     get:
       tags: [Deals]
@@ -2472,6 +2517,11 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Error410:
+      description: Gone
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
     Error413:
       description: Payload Too Large
       content:
@@ -2794,6 +2844,43 @@ components:
             session_id: { type: string, format: uuid }
             status: { $ref: "#/components/schemas/ConnectSessionStatusV1" }
             cancelled_at: { type: string, format: date-time, nullable: true }
+
+    ConnectSessionExchangeRequestV1:
+      type: object
+      additionalProperties: false
+      required: [requested_key_scope, installation]
+      properties:
+        requested_key_scope:
+          type: string
+          enum: [agent_write]
+        installation:
+          type: object
+          additionalProperties: false
+          required: [client_type]
+          properties:
+            client_type: { type: string, minLength: 1, maxLength: 40 }
+            client_version: { type: string, nullable: true, minLength: 1, maxLength: 40 }
+            device_name: { type: string, nullable: true, minLength: 1, maxLength: 80 }
+            fingerprint: { type: string, nullable: true, minLength: 1, maxLength: 512 }
+
+    ConnectSessionExchangeResponseV1:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [session_id, status, agent_id, installation_id, api_key, api_key_id, issued_at]
+          properties:
+            session_id: { type: string, format: uuid }
+            status: { $ref: "#/components/schemas/ConnectSessionStatusV1" }
+            agent_id: { type: string, format: uuid }
+            installation_id: { type: string, format: uuid }
+            api_key:
+              type: string
+              description: Secret API key (returned once).
+              example: cd_live_ABCDEF12.abcdefghijklmnopqrstuvwxyz0123456789_-ABCDEFGHIJKLMNOPQRSTUVWXYZ
+            api_key_id: { type: string, format: uuid }
+            issued_at: { type: string, format: date-time }
 
     DealSummaryV1:
       type: object

@@ -27,6 +27,13 @@ describe("getProfileForGroup", () => {
     expect(profile.buckets).toEqual([{ limit: 50, windowSeconds: 86400 }]);
   });
 
+  it("returns connect.sessions.exchange profile (TI-311)", () => {
+    const profile = getProfileForGroup("connect.sessions.exchange");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("agent");
+    expect(profile.buckets).toEqual([{ limit: 10, windowSeconds: 3600 }]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

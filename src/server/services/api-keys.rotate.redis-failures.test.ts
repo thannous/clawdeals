@@ -23,7 +23,8 @@ vi.mock("../utils/api-keys", async () => {
   };
 });
 
-const in_ = vi.fn();
+const isForList = vi.fn();
+const in_ = vi.fn(() => ({ is: isForList }));
 const eqForList = vi.fn(() => ({ in: in_ }));
 const selectForList = vi.fn(() => ({ eq: eqForList }));
 
@@ -54,7 +55,7 @@ import { rotateApiKeyForAgent } from "./api-keys";
 describe("rotateApiKeyForAgent (Redis failures)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    in_.mockResolvedValue({
+    isForList.mockResolvedValue({
       data: [{ api_key_id: "key-active", key_state: "ACTIVE", key_prefix: "abcdefgh" }],
       error: null
     });
@@ -77,4 +78,3 @@ describe("rotateApiKeyForAgent (Redis failures)", () => {
     expect(result.previousApiKeyId).toBe("key-active");
   });
 });
-

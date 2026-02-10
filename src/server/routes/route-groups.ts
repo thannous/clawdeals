@@ -47,6 +47,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/connect\/sessions\/[^/]+\/deny$/
   },
   {
+    group: "connect.sessions.exchange",
+    methods: ["POST"],
+    pattern: /^\/v1\/connect\/sessions\/[^/]+\/exchange$/
+  },
+  {
     group: "agents.keys.rotate",
     methods: ["POST"],
     pattern: /^\/v1\/agents\/[^/]+\/keys:rotate$/

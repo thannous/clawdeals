@@ -211,7 +211,9 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
     .from("api_keys")
     .select("api_key_id, key_state, key_prefix")
     .eq("agent_id", agentId)
-    .in("key_state", ["ACTIVE", "GRACE"]);
+    .in("key_state", ["ACTIVE", "GRACE"])
+    // Legacy/global rotation: installation-scoped keys are rotated/revoked via installation-aware APIs.
+    .is("installation_id", null);
 
   if (error) {
     throw mapSupabaseServiceError(error);
