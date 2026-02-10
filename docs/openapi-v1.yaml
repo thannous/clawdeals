@@ -1832,13 +1832,12 @@ paths:
             schema: { type: object, additionalProperties: true }
       responses:
         "200":
-          description: OK (Telegram expects 200)
+          description: OK (Telegram expects 200; rate limiting also returns 200 to avoid retries)
           content:
             application/json:
               schema: { type: object, additionalProperties: true }
         "401": { $ref: "#/components/responses/Error401" }
         "404": { $ref: "#/components/responses/Error404" }
-        "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
   /v1/channels/telegram/webhook/{secret}:
@@ -1866,13 +1865,12 @@ paths:
             schema: { type: object, additionalProperties: true }
       responses:
         "200":
-          description: OK (Telegram expects 200)
+          description: OK (Telegram expects 200; rate limiting also returns 200 to avoid retries)
           content:
             application/json:
               schema: { type: object, additionalProperties: true }
         "401": { $ref: "#/components/responses/Error401" }
         "404": { $ref: "#/components/responses/Error404" }
-        "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
   /v1/escrows/{escrow_id}/pay:
