@@ -17,8 +17,13 @@ import {
   updateNotificationPreferences,
   NOTIFICATION_EVENT_TYPES
 } from "../../services/notification-preferences";
+import { getAgentIdByOwnerId } from "../../services/agents";
+import { listWatchlistsPage } from "../../services/watchlists";
 import { buildNotificationsKeyboard } from "../telegram/keyboard";
 import { createConfirmation, consumeConfirmation } from "../command-confirmations";
+import { CARD_ACTION_IDS, CARD_COMMAND_IDS } from "../cards/ids";
+import type { Card } from "../cards/types";
+import { renderCardPlainText } from "../cards/types";
 import type { ParsedCommand } from "./parser";
 
 type ChannelCtx = {
@@ -30,10 +35,12 @@ type ChannelCtx = {
 
 type ExecuteResult = {
   text: string;
+  card?: Card | null;
   blocked?: boolean;
   identity?: any;
   replyMarkup?: any;
   telemetry?: { event: string; payload: any; outcome?: string };
+  telemetryEvents?: { event: string; payload: any; outcome?: string }[];
 };
 
 const TELEGRAM_MAX_LEN = 3500;
@@ -71,6 +78,7 @@ export function buildHelpText() {
     "Commands:",
     "- help",
     "- status",
+    "- menu (or /menu)",
     "- approvals | approvals list",
     "- approve <approval_id> (then: approve <approval_id> confirm)",
     "- deny <approval_id> [reason] (then: deny <approval_id> confirm)",
@@ -87,6 +95,176 @@ export function buildHelpText() {
     "- Sensitive actions require confirm.",
     "- Write commands require pairing (CHANNEL_NOT_PAIRED)."
   ].join("\n");
+}
+
+const WATCHLISTS_PAGE_SIZE = 8;
+
+function buildHomeCard(): Card {
+  return {
+    title: "Clawdeals",
+    subtitle: "Menu",
+    bullets: ["Navigation via boutons (pas de commandes a memoriser)."],
+    actions: [
+      {
+        action_id: CARD_ACTION_IDS.HOME_WATCHLISTS,
+        label: "Watchlists",
+        command_id: CARD_COMMAND_IDS.MENU_WATCHLISTS,
+        args: { p: 0 },
+        row: 0
+      },
+      {
+        action_id: CARD_ACTION_IDS.HOME_MATCHES,
+        label: "Matches / alertes",
+        command_id: CARD_COMMAND_IDS.MENU_MATCHES,
+        row: 1
+      },
+      {
+        action_id: CARD_ACTION_IDS.HOME_PUBLISH,
+        label: "Publier une annonce",
+        command_id: CARD_COMMAND_IDS.MENU_PUBLISH,
+        row: 2
+      },
+      {
+        action_id: CARD_ACTION_IDS.HOME_THREADS,
+        label: "Mes threads / negociations",
+        command_id: CARD_COMMAND_IDS.MENU_THREADS,
+        row: 3
+      },
+      {
+        action_id: CARD_ACTION_IDS.HOME_APPROVALS,
+        label: "Approvals",
+        command_id: CARD_COMMAND_IDS.MENU_APPROVALS,
+        row: 4
+      },
+      {
+        action_id: CARD_ACTION_IDS.HOME_NOTIFICATIONS,
+        label: "Notifications",
+        command_id: CARD_COMMAND_IDS.MENU_NOTIFICATIONS,
+        row: 5
+      },
+      {
+        action_id: CARD_ACTION_IDS.HOME_HELP,
+        label: "Help",
+        command_id: CARD_COMMAND_IDS.MENU_HELP,
+        row: 6
+      }
+    ]
+  };
+}
+
+function buildWatchlistsCard({
+  page,
+  pageSize,
+  items,
+  hasPrev,
+  hasNext
+}: {
+  page: number;
+  pageSize: number;
+  items: any[];
+  hasPrev: boolean;
+  hasNext: boolean;
+}): Card {
+  const bullets: string[] = [];
+  const rows = Array.isArray(items) ? items : [];
+
+  if (rows.length === 0) {
+    bullets.push("Aucune watchlist pour le moment.");
+  } else {
+    for (const wl of rows) {
+      const active = wl?.active === true ? "ON" : "OFF";
+      const name = typeof wl?.name === "string" && wl.name.trim() ? wl.name.trim() : "(sans nom)";
+      const query = typeof wl?.query_text === "string" && wl.query_text.trim() ? wl.query_text.trim() : "";
+      const price = typeof wl?.price_max === "number" && Number.isFinite(wl.price_max) ? wl.price_max : null;
+
+      const parts = [`${active}: ${name}`];
+      if (query) parts.push(`q=${query}`);
+      if (price != null) parts.push(`max=${price}EUR`);
+      bullets.push(parts.join(" | "));
+    }
+  }
+
+  const actions: any[] = [
+    {
+      action_id: CARD_ACTION_IDS.WATCHLISTS_CREATE,
+      label: "Creer une watchlist",
+      command_id: CARD_COMMAND_IDS.WATCHLISTS_CREATE,
+      row: 0
+    },
+    {
+      action_id: CARD_ACTION_IDS.WATCHLISTS_BACK,
+      label: "Retour",
+      command_id: CARD_COMMAND_IDS.MENU_HOME,
+      row: 1
+    }
+  ];
+
+  const navRow = 2;
+  if (hasPrev) {
+    actions.push({
+      action_id: CARD_ACTION_IDS.WATCHLISTS_PREV,
+      label: "Prec",
+      command_id: CARD_COMMAND_IDS.MENU_WATCHLISTS,
+      args: { p: Math.max(0, page - 1) },
+      row: navRow
+    });
+  }
+  if (hasNext) {
+    actions.push({
+      action_id: CARD_ACTION_IDS.WATCHLISTS_NEXT,
+      label: "Suiv",
+      command_id: CARD_COMMAND_IDS.MENU_WATCHLISTS,
+      args: { p: page + 1 },
+      row: navRow
+    });
+  }
+
+  return {
+    title: "Watchlists",
+    subtitle: `Page ${page + 1}`,
+    bullets,
+    actions,
+    entity_ref: { type: "watchlists.page", id: `${page}:${pageSize}` }
+  };
+}
+
+function buildCreateWatchlistStubCard(): Card {
+  const url = joinUrl(getPublicAppUrl(), "/developer/watchlists/new");
+  return {
+    title: "Creer une watchlist",
+    subtitle: "Pas encore disponible dans Telegram. Utilise le web pour la creer.",
+    actions: [
+      {
+        action_id: "watchlists.create.open_web",
+        label: "Ouvrir sur le web",
+        command_id: CARD_COMMAND_IDS.WATCHLISTS_CREATE,
+        url,
+        row: 0
+      },
+      {
+        action_id: CARD_ACTION_IDS.CREATE_BACK,
+        label: "Retour",
+        command_id: CARD_COMMAND_IDS.MENU_WATCHLISTS,
+        args: { p: 0 },
+        row: 1
+      }
+    ]
+  };
+}
+
+function buildComingSoonCard({ title, subtitle }: { title: string; subtitle?: string }) : Card {
+  return {
+    title,
+    subtitle: subtitle || "Bientot disponible.",
+    actions: [
+      {
+        action_id: "menu.back",
+        label: "Retour",
+        command_id: CARD_COMMAND_IDS.MENU_HOME,
+        row: 0
+      }
+    ]
+  };
 }
 
 function notPairedText() {
@@ -332,6 +510,219 @@ export async function executeChannelCommand({
   await touchLastSeen({ ownerId: identity.owner_id, channelIdentityId: identity.channel_identity_id });
 
   const role = identity.role || "viewer";
+
+  if (command.kind === "menu") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+
+    if (ctx) {
+      try {
+        const policy = await getPolicyOrDefault(identity.owner_id);
+        ctx.policy = {
+          ...(ctx.policy || {}),
+          action: "chat.menu",
+          policy_version: policy?.version ?? null
+        };
+      } catch {
+        // Best-effort.
+      }
+    }
+
+    const card = buildHomeCard();
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [
+        { event: "chat.menu_opened", payload: { card: "home" }, outcome: "SUCCESS" },
+        { event: "chat.card_rendered", payload: { card: "home" }, outcome: "SUCCESS" }
+      ]
+    };
+  }
+
+  if (command.kind === "menu_watchlists") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+
+    if (ctx) {
+      try {
+        const policy = await getPolicyOrDefault(identity.owner_id);
+        ctx.policy = {
+          ...(ctx.policy || {}),
+          action: "chat.nav",
+          policy_version: policy?.version ?? null
+        };
+      } catch {
+        // Best-effort.
+      }
+    }
+
+    const agentId = await getAgentIdByOwnerId(identity.owner_id);
+    if (!agentId) {
+      return { text: "Error: missing agent for this owner.", identity };
+    }
+
+    const page = Math.max(0, Number.isInteger(command.page) ? command.page : 0);
+    const pageResult = await listWatchlistsPage({
+      agentId,
+      page,
+      pageSize: WATCHLISTS_PAGE_SIZE
+    });
+
+    const card = buildWatchlistsCard({
+      page: pageResult.page,
+      pageSize: pageResult.pageSize,
+      items: pageResult.items || [],
+      hasPrev: Boolean(pageResult.hasPrev),
+      hasNext: Boolean(pageResult.hasNext)
+    });
+
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [
+        {
+          event: "chat.card_rendered",
+          payload: {
+            card: "watchlists",
+            page: pageResult.page,
+            page_size: pageResult.pageSize,
+            count: (pageResult.items || []).length
+          },
+          outcome: "SUCCESS"
+        }
+      ]
+    };
+  }
+
+  if (command.kind === "watchlists_create") {
+    if (!requiresRole(role, "owner")) {
+      return { text: "Forbidden: owner role required.", identity };
+    }
+
+    if (ctx) {
+      try {
+        const policy = await getPolicyOrDefault(identity.owner_id);
+        ctx.policy = {
+          ...(ctx.policy || {}),
+          action: "chat.nav",
+          policy_version: policy?.version ?? null
+        };
+      } catch {
+        // Best-effort.
+      }
+    }
+
+    const card = buildCreateWatchlistStubCard();
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [
+        { event: "chat.card_rendered", payload: { card: "watchlists.create", stub: true }, outcome: "SUCCESS" }
+      ]
+    };
+  }
+
+  if (command.kind === "menu_matches") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+    const card = buildComingSoonCard({ title: "Matches / alertes" });
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "matches" }, outcome: "SUCCESS" }]
+    };
+  }
+
+  if (command.kind === "menu_publish") {
+    if (!requiresRole(role, "owner")) {
+      return { text: "Forbidden: owner role required.", identity };
+    }
+    const card = buildComingSoonCard({ title: "Publier une annonce" });
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "publish" }, outcome: "SUCCESS" }]
+    };
+  }
+
+  if (command.kind === "menu_threads") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+    const card = buildComingSoonCard({ title: "Mes threads / negociations" });
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "threads" }, outcome: "SUCCESS" }]
+    };
+  }
+
+  if (command.kind === "menu_help") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+    const card: Card = {
+      title: "Help",
+      subtitle: "Raccourcis",
+      bullets: ["menu", "watchlists", "notifications", "approvals", "connect", "help"],
+      actions: [
+        {
+          action_id: "help.back",
+          label: "Retour",
+          command_id: CARD_COMMAND_IDS.MENU_HOME,
+          row: 0
+        }
+      ]
+    };
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "help" }, outcome: "SUCCESS" }]
+    };
+  }
+
+  if (command.kind === "menu_approvals") {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+    const result = await listApprovals({ ownerId: identity.owner_id, state: "PENDING", limit: 10 });
+    const approvals = result.approvals || [];
+    const bullets =
+      approvals.length === 0
+        ? ["Aucune approval en attente."]
+        : approvals.slice(0, 10).map((ap: any) => `${ap.approval_id} | ${ap.action_type}`);
+
+    const card: Card = {
+      title: "Approvals",
+      subtitle: `En attente: ${approvals.length}`,
+      bullets,
+      actions: [
+        {
+          action_id: "approvals.back",
+          label: "Retour",
+          command_id: CARD_COMMAND_IDS.MENU_HOME,
+          row: 0
+        }
+      ]
+    };
+
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "approvals", count: approvals.length }, outcome: "SUCCESS" }]
+    };
+  }
 
   if (
     command.kind === "notifications_menu" ||

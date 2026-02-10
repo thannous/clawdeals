@@ -314,6 +314,30 @@ export const RATE_LIMIT_PROFILES = {
     scope: "channel",
     buckets: [{ limit: 10, windowSeconds: 10 * MINUTE }],
   },
+
+  // Chat UI navigation (Telegram inline keyboard).
+  "chat.menu": {
+    scope: "channel",
+    buckets: [
+      { limit: 6, windowSeconds: 30 },
+      { limit: 120, windowSeconds: DAY },
+    ],
+  },
+  "chat.nav": {
+    scope: "channel",
+    buckets: [
+      { limit: 20, windowSeconds: 30 },
+      { limit: 500, windowSeconds: DAY },
+    ],
+  },
+  "chat.search": {
+    scope: "channel",
+    buckets: [
+      { limit: 10, windowSeconds: 30 },
+      { limit: 200, windowSeconds: DAY },
+    ],
+  },
+
   "console.moderation.write": {
     scope: "owner",
     buckets: [{ limit: 200, windowSeconds: HOUR }],

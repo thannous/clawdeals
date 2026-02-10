@@ -437,6 +437,53 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     expect(ctx2.auditEvent).toBe("webhook.replay_detected");
   });
 
+  it("dedupes callback query replays (same callback_query_id)", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "viewer",
+      state: "ACTIVE"
+    } as any);
+    vi.mocked(touchLastSeen).mockResolvedValue(undefined as any);
+
+    vi.mocked(getOrCreateNotificationPreferences).mockResolvedValue({
+      owner_id: "owner-1",
+      mode: "DIGEST_HOURLY",
+      timezone: "UTC",
+      quiet_enabled: false,
+      event_types: ["watchlist_match"],
+      filters: {}
+    } as any);
+
+    vi.mocked(updateNotificationPreferences).mockResolvedValue({
+      owner_id: "owner-1",
+      mode: "SILENT",
+      timezone: "UTC",
+      quiet_enabled: false,
+      event_types: ["watchlist_match"],
+      filters: {}
+    } as any);
+
+    const req = makeCallbackReq("cd:notifications.mode:m=silent", { callback_query_id: "cb-replay", update_id: 999 });
+
+    const ctx1 = makeCtx();
+    const first: any = await handler(req, null, ctx1);
+    expect(first.status).toBe(200);
+    expect(first.body.method).toBe("editMessageText");
+    expect(first.body.reply_markup).toBeTruthy();
+    expect(vi.mocked(sendTelegramMessage)).toHaveBeenCalledTimes(0);
+    expect(vi.mocked(updateNotificationPreferences)).toHaveBeenCalledTimes(1);
+
+    const ctx2 = makeCtx();
+    const second: any = await handler(req, null, ctx2);
+    expect(second.status).toBe(200);
+    expect(second.body.method).toBe("answerCallbackQuery");
+    expect(second.body.text).toBe("Already handled");
+    expect(vi.mocked(sendTelegramMessage)).toHaveBeenCalledTimes(0);
+    expect(vi.mocked(updateNotificationPreferences)).toHaveBeenCalledTimes(1);
+    expect(ctx2.auditEvent).toBe("webhook.replay_detected");
+  });
+
   it("rejects too-old callback queries (TTL)", async () => {
     const nowSec = Math.floor(Date.now() / 1000);
     const ctx = makeCtx();
@@ -469,6 +516,47 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     expect(ctx.security?.webhook_reject_reason).toBe("callback_too_old");
   });
 
+  it("enforces TELEGRAM_WEBHOOK_PATH_SECRET when configured (404 on missing/invalid)", async () => {
+    process.env.TELEGRAM_WEBHOOK_PATH_SECRET = "path-secret";
+
+    const ctxMissing = makeCtx();
+    const missing: any = await handler(makeReq("help", { query: {} }), null, ctxMissing);
+    expect(missing.status).toBe(404);
+    expect(missing.body.error.code).toBe("NOT_FOUND");
+    expect(ctxMissing.auditEvent).toBe("webhook.rejected");
+    expect(ctxMissing.security?.webhook_reject_reason).toBe("path_secret_invalid");
+
+    const ctxBad = makeCtx();
+    const bad: any = await handler(makeReq("help", { query: { secret: "wrong" } }), null, ctxBad);
+    expect(bad.status).toBe(404);
+    expect(bad.body.error.code).toBe("NOT_FOUND");
+    expect(ctxBad.auditEvent).toBe("webhook.rejected");
+    expect(ctxBad.security?.webhook_reject_reason).toBe("path_secret_invalid");
+
+    const ctxOk = makeCtx();
+    const ok: any = await handler(makeReq("help", { query: { secret: "path-secret" } }), null, ctxOk);
+    expect(ok.status).toBe(200);
+    expect(ok.body.method).toBe("sendMessage");
+    expect(ctxOk.auditEvent).toBe("webhook.verified");
+  });
+
+  it("returns 404 when channel commands are disabled in production", async () => {
+    const prevNodeEnv = process.env.NODE_ENV;
+    try {
+      (process.env as any).NODE_ENV = "production";
+      delete process.env.CHANNEL_COMMANDS_ENABLED;
+
+      const ctx = makeCtx();
+      const result: any = await handler(makeReq("help"), null, ctx);
+      expect(result.status).toBe(404);
+      expect(result.body.error.code).toBe("NOT_FOUND");
+      expect(ctx.auditEvent).toBe("webhook.rejected");
+      expect(ctx.security?.webhook_reject_reason).toBe("disabled");
+    } finally {
+      (process.env as any).NODE_ENV = prevNodeEnv;
+    }
+  });
+
   it("answers callback queries when recent", async () => {
     const nowSec = Math.floor(Date.now() / 1000);
     const ctx = makeCtx();
@@ -495,7 +583,7 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     );
 
     expect(result.status).toBe(200);
-    expect(result.body.method).toBe("answerCallbackQuery");
+    expect(result.body.method).toBe("editMessageText");
   });
 
   it("allowlisted viewer can run status", async () => {
@@ -544,7 +632,28 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     expect(result.body.text).toMatch(/Notifications settings/);
   });
 
-  it("notif callbacks send an outbound message and return answerCallbackQuery", async () => {
+  it("/menu returns the Home card with reply_markup", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "viewer",
+      state: "ACTIVE"
+    } as any);
+    vi.mocked(touchLastSeen).mockResolvedValue(undefined as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReq("/menu"), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.reply_markup).toBeTruthy();
+    expect(result.body.text).toMatch(/^Clawdeals/);
+    expect(result.body.text).toMatch(/\bMenu\b/);
+    expect(result.body.reply_markup.inline_keyboard?.[0]?.[0]?.text).toBe("Watchlists");
+    expect(result.body.reply_markup.inline_keyboard?.[0]?.[0]?.callback_data).toBe("cd:menu.watchlists:home.watchlists:p=0");
+  });
+
+  it("notif callbacks edit the message to refresh the menu", async () => {
     vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
       channel_identity_id: "cid-1",
       owner_id: "owner-1",
@@ -572,11 +681,13 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     } as any);
 
     const ctx = makeCtx();
-    const result: any = await handler(makeCallbackReq("notif mode silent"), null, ctx);
+    const result: any = await handler(makeCallbackReq("cd:notifications.mode:m=silent"), null, ctx);
 
     expect(result.status).toBe(200);
-    expect(result.body.method).toBe("answerCallbackQuery");
-    expect(vi.mocked(sendTelegramMessage)).toHaveBeenCalledWith(expect.objectContaining({ chatId: "456" }));
+    expect(result.body.method).toBe("editMessageText");
+    expect(result.body.reply_markup).toBeTruthy();
+    expect(vi.mocked(sendTelegramMessage)).toHaveBeenCalledTimes(0);
+    expect(vi.mocked(updateNotificationPreferences)).toHaveBeenCalledTimes(1);
   });
 
   it("approver approve flow requires confirm and confirm resolves", async () => {

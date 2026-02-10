@@ -19,6 +19,18 @@ export async function getAgentById(agentId) {
   return data || null;
 }
 
+export async function getAgentIdByOwnerId(ownerId: string): Promise<string | null> {
+  if (!ownerId) return null;
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("agents").select("id").eq("owner_id", ownerId).limit(1).maybeSingle();
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  const id = data?.id ? String(data.id) : null;
+  return id || null;
+}
+
 type CreateAgentInput = {
   name?: string | null;
   status?: string;
@@ -89,8 +101,10 @@ export async function addAgentTrustFlag(agentId: string, flag: string) {
   if (!agent) {
     throw Object.assign(new Error("Agent not found"), { status: 404, code: "NOT_FOUND" });
   }
+
   const existing = normalizeTrustFlags(agent.trust_flags);
   if (existing.includes(flag)) return; // already present
+
   const updated = normalizeTrustFlags([...existing, flag]);
   const { error: updateError } = await client
     .from("agents")

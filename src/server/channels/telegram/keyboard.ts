@@ -1,3 +1,5 @@
+import { encodeTelegramCardCallbackData } from "../cards/telegram";
+
 const MODE_BUTTONS = [
   { mode: "REALTIME", label: "Realtime", value: "realtime" },
   { mode: "DIGEST_HOURLY", label: "Hourly", value: "digest_hourly" },
@@ -23,31 +25,38 @@ export function buildNotificationsKeyboard(prefs: any) {
 
   const modeRow = MODE_BUTTONS.map((b) => ({
     text: mode === b.mode ? `[${b.label}]` : b.label,
-    callback_data: `notif mode ${b.value}`
+    callback_data: encodeTelegramCardCallbackData({ commandId: "notifications.mode", args: { m: b.value } })
   }));
 
   const quietEnabled = Boolean(prefs?.quiet_enabled);
   const quietRow = [
     {
       text: quietEnabled ? "Quiet: ON" : "Quiet: OFF",
-      callback_data: quietEnabled ? "notif quiet off" : "notif quiet 22:00 08:00"
+      callback_data: quietEnabled
+        ? encodeTelegramCardCallbackData({ commandId: "notifications.quiet.off" })
+        : encodeTelegramCardCallbackData({ commandId: "notifications.quiet.set", args: { s: "22:00", e: "08:00" } })
     },
-    { text: "22-08", callback_data: "notif quiet 22:00 08:00" },
-    { text: "23-07", callback_data: "notif quiet 23:00 07:00" }
+    {
+      text: "22-08",
+      callback_data: encodeTelegramCardCallbackData({ commandId: "notifications.quiet.set", args: { s: "22:00", e: "08:00" } })
+    },
+    {
+      text: "23-07",
+      callback_data: encodeTelegramCardCallbackData({ commandId: "notifications.quiet.set", args: { s: "23:00", e: "07:00" } })
+    }
   ];
 
   const typesRowA = EVENT_TYPE_BUTTONS.slice(0, 2).map((t) => ({
     text: `${t.label}:${isEnabled(eventTypes, t.key) ? "ON" : "OFF"}`,
-    callback_data: `notif types toggle ${t.key}`
+    callback_data: encodeTelegramCardCallbackData({ commandId: "notifications.types.toggle", args: { t: t.key } })
   }));
 
   const typesRowB = EVENT_TYPE_BUTTONS.slice(2).map((t) => ({
     text: `${t.label}:${isEnabled(eventTypes, t.key) ? "ON" : "OFF"}`,
-    callback_data: `notif types toggle ${t.key}`
+    callback_data: encodeTelegramCardCallbackData({ commandId: "notifications.types.toggle", args: { t: t.key } })
   }));
 
   return {
     inline_keyboard: [modeRow, quietRow, typesRowA, typesRowB]
   };
 }
-

@@ -13,8 +13,10 @@ import { parseCommand } from "../../../../../../server/channels/commands/parser"
 import { executeChannelCommand } from "../../../../../../server/channels/commands/execute";
 import {
   buildTelegramAnswerCallbackQuery,
+  buildTelegramEditMessageText,
   buildTelegramSendMessage
 } from "../../../../../../server/channels/commands/format";
+import { decodeTelegramCardCallbackData, renderCardToTelegram } from "../../../../../../server/channels/cards/telegram";
 import { sendTelegramMessage } from "../../../../../../server/channels/telegram/client";
 import { getListingPhotosBucket, getMaxPhotoBytes, getMaxPhotosPerListing } from "../../../../../../server/config/listing-media";
 import {
@@ -899,6 +901,36 @@ export async function handler(req, res, ctx) {
     if (confirmRl) return confirmRl;
   }
 
+  // Card-based menus/nav (TI-297): keep separate buckets to avoid flooding edits.
+  const isChatMenu = command.kind === "menu";
+  const isChatNav =
+    command.kind === "menu_watchlists" ||
+    command.kind === "watchlists_create" ||
+    command.kind === "menu_matches" ||
+    command.kind === "menu_publish" ||
+    command.kind === "menu_threads" ||
+    command.kind === "menu_approvals" ||
+    command.kind === "menu_help";
+  if (isChatMenu) {
+    const menuRl = await applyChannelRateLimit({
+      req,
+      ctx,
+      group: "chat.menu",
+      channelId: channelRateLimitId,
+      callbackQueryId
+    });
+    if (menuRl) return menuRl;
+  } else if (isChatNav) {
+    const navRl = await applyChannelRateLimit({
+      req,
+      ctx,
+      group: "chat.nav",
+      channelId: channelRateLimitId,
+      callbackQueryId
+    });
+    if (navRl) return navRl;
+  }
+
   let result: any;
   try {
     result = await executeChannelCommand({
@@ -938,6 +970,13 @@ export async function handler(req, res, ctx) {
     await safeAuditLog(
       buildAuditEventFromCtx(ctx, String(result.telemetry.event), result.telemetry.payload || {}, result.telemetry.outcome || "SUCCESS")
     );
+  }
+
+  if (Array.isArray(result?.telemetryEvents) && ctx) {
+    for (const ev of result.telemetryEvents) {
+      if (!ev?.event) continue;
+      await safeAuditLog(buildAuditEventFromCtx(ctx, String(ev.event), ev.payload || {}, ev.outcome || "SUCCESS"));
+    }
   }
 
   if (result.blocked && ctx) {
@@ -990,19 +1029,43 @@ export async function handler(req, res, ctx) {
   }
 
   if (callbackQueryId) {
-    // Preferences UX: callback queries should update the menu via an outbound sendMessage (not just a toast).
-    const isNotificationsCallback = typeof command.kind === "string" && command.kind.startsWith("notifications_");
-    if (isNotificationsCallback) {
-      const outbound = await sendTelegramMessage({
-        chatId,
-        text: result.text || "OK",
-        replyMarkup: result.replyMarkup || null
-      });
+    const numericMessageId = messageId ? Number(messageId) : NaN;
+
+    const click = decodeTelegramCardCallbackData(rawData);
+    if (click && ctx) {
+      await safeAuditLog(
+        buildAuditEventFromCtx(
+          ctx,
+          "chat.action_clicked",
+          { action_name: click.actionId || click.commandId, command_id: click.commandId },
+          "SUCCESS"
+        )
+      );
+    }
+
+    if (result?.card && chatId && Number.isFinite(numericMessageId)) {
+      const rendered = renderCardToTelegram(result.card);
       return jsonResponse(
         200,
-        buildTelegramAnswerCallbackQuery({
-          callbackQueryId,
-          text: outbound?.ok ? "Updated" : "Failed"
+        buildTelegramEditMessageText({
+          chatId,
+          messageId: String(numericMessageId),
+          text: rendered.text || "OK",
+          disableWebPagePreview: true,
+          replyMarkup: rendered.replyMarkup || null
+        })
+      );
+    }
+
+    if (chatId && Number.isFinite(numericMessageId) && (result?.replyMarkup || result?.text)) {
+      return jsonResponse(
+        200,
+        buildTelegramEditMessageText({
+          chatId,
+          messageId: String(numericMessageId),
+          text: result.text || "OK",
+          disableWebPagePreview: true,
+          replyMarkup: result.replyMarkup || null
         })
       );
     }
@@ -1014,6 +1077,17 @@ export async function handler(req, res, ctx) {
         text: truncateTelegramCallbackText(result.text || "OK")
       })
     );
+  }
+
+  if (result?.card) {
+    const rendered = renderCardToTelegram(result.card);
+    const responseBody = buildTelegramSendMessage({
+      chatId,
+      text: rendered.text || "OK",
+      disableWebPagePreview: true,
+      replyMarkup: rendered.replyMarkup || null
+    });
+    return jsonResponse(200, responseBody);
   }
 
   const responseBody = buildTelegramSendMessage({

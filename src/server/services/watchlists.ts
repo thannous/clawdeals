@@ -209,6 +209,57 @@ export async function listWatchlists({ agentId, active, limit, cursor }: any = {
   return { items, nextCursor };
 }
 
+export async function listWatchlistsPage({
+  agentId,
+  active,
+  page = 0,
+  pageSize = 10
+}: {
+  agentId: string;
+  active?: boolean;
+  page?: number;
+  pageSize?: number;
+}) {
+  if (!agentId) {
+    throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
+  }
+
+  const resolvedSize = Math.max(1, Math.min(100, Number.isInteger(pageSize) ? pageSize : 10));
+  const resolvedPage = Math.max(0, Number.isInteger(page) ? page : 0);
+  const offset = resolvedPage * resolvedSize;
+
+  const client = getSupabaseServiceClient();
+  let query = client
+    .from("watchlists")
+    .select("*")
+    .eq("agent_id", agentId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .order("watchlist_id", { ascending: false })
+    .range(offset, offset + resolvedSize); // inclusive; fetch one extra to detect next page
+
+  if (typeof active === "boolean") {
+    query = query.eq("active", active);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    mapError(error);
+  }
+
+  const rows = data || [];
+  const hasMore = rows.length > resolvedSize;
+  const items = hasMore ? rows.slice(0, resolvedSize) : rows;
+
+  return {
+    items,
+    page: resolvedPage,
+    pageSize: resolvedSize,
+    hasPrev: resolvedPage > 0,
+    hasNext: hasMore
+  };
+}
+
 export async function getWatchlistForAgent({ watchlistId, agentId }: any = {}) {
   const record = await getWatchlistById(watchlistId);
   if (!record) return null;

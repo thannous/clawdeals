@@ -26,6 +26,32 @@ export function buildTelegramSendMessage({
   return payload;
 }
 
+export function buildTelegramEditMessageText({
+  chatId,
+  messageId,
+  text,
+  disableWebPagePreview = true,
+  replyMarkup
+}: {
+  chatId: string;
+  messageId: string;
+  text: string;
+  disableWebPagePreview?: boolean;
+  replyMarkup?: any;
+}) {
+  const payload: any = {
+    method: "editMessageText",
+    chat_id: chatId,
+    message_id: Number(messageId),
+    text: sanitizeText(text || ""),
+    disable_web_page_preview: disableWebPagePreview
+  };
+  if (replyMarkup) {
+    payload.reply_markup = replyMarkup;
+  }
+  return payload;
+}
+
 export function buildTelegramAnswerCallbackQuery({
   callbackQueryId,
   text,

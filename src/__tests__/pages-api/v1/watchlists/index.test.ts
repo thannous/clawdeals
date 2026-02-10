@@ -80,6 +80,40 @@ describe("/v1/watchlists (index)", () => {
     });
   });
 
+  it("GET passes decoded cursor into listWatchlists (pagination)", async () => {
+    decodeWatchlistCursorMock.mockReturnValue({
+      value: { created_at: "2026-02-01T00:00:00Z", watchlist_id: "wl-0" }
+    } as any);
+
+    listWatchlistsMock.mockResolvedValue({
+      items: [
+        {
+          watchlist_id: "wl-1",
+          agent_id: "agent-1",
+          name: "GPU deals",
+          active: true,
+          criteria: { query: "rtx", tags: ["gpu"], price_max: null, geo: null, distance_km: null },
+          created_at: "2026-02-06T12:00:00Z",
+          updated_at: "2026-02-06T12:00:00Z"
+        }
+      ],
+      nextCursor: null
+    } as any);
+
+    const req = { method: "GET", query: { cursor: "cursor-encoded", limit: "1" } };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(200);
+    expect(result.body.items).toHaveLength(1);
+    expect(result.body.next_cursor).toBeNull();
+    expect(decodeWatchlistCursor).toHaveBeenCalledWith("cursor-encoded");
+    expect(listWatchlists).toHaveBeenCalledWith({
+      agentId: "agent-1",
+      active: true,
+      limit: 1,
+      cursor: { created_at: "2026-02-01T00:00:00Z", watchlist_id: "wl-0" }
+    });
+  });
+
   it("GET rejects non-integer limit encodings", async () => {
     const req1 = { method: "GET", query: { limit: "10.5" } };
     const res1: any = await handler(req1, null, { ...baseCtx });

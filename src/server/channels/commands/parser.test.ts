@@ -56,6 +56,33 @@ describe("parseCommand", () => {
     expect(parseCommand(`unpair ${UUID} confirm`)).toEqual({ kind: "unpair", channelIdentityId: UUID, confirm: true });
   });
 
+  it("parses /menu (and menu alias) to the Telegram menu", () => {
+    expect(parseCommand("/menu")).toEqual({ kind: "menu" });
+    expect(parseCommand("menu")).toEqual({ kind: "menu" });
+    expect(parseCommand("/menu@clawdeals_bot")).toEqual({ kind: "menu" });
+  });
+
+  it("parses stable card callbacks (cd:...)", () => {
+    expect(parseCommand("cd:menu.home")).toEqual({ kind: "menu" });
+    expect(parseCommand("cd:menu.watchlists:p=2")).toEqual({ kind: "menu_watchlists", page: 2 });
+    expect(parseCommand("cd:watchlists.create")).toEqual({ kind: "watchlists_create" });
+    expect(parseCommand("cd:menu.approvals")).toEqual({ kind: "menu_approvals" });
+    expect(parseCommand("cd:menu.notifications")).toEqual({ kind: "notifications_menu" });
+    expect(parseCommand("cd:menu.help")).toEqual({ kind: "menu_help" });
+
+    expect(parseCommand("cd:notifications.mode:m=realtime")).toEqual({ kind: "notifications_mode", mode: "REALTIME" });
+    expect(parseCommand("cd:notifications.quiet.off")).toEqual({ kind: "notifications_quiet_off" });
+    expect(parseCommand("cd:notifications.quiet.set:s=22%3A00&e=08%3A00")).toEqual({
+      kind: "notifications_quiet_set",
+      start: "22:00",
+      end: "08:00"
+    });
+    expect(parseCommand("cd:notifications.types.toggle:t=watchlist_match")).toEqual({
+      kind: "notifications_types_toggle",
+      eventType: "watchlist_match"
+    });
+  });
+
   it("parses notifications commands", () => {
     expect(parseCommand("notif")).toEqual({ kind: "notifications_menu" });
     expect(parseCommand("notifications")).toEqual({ kind: "notifications_menu" });
