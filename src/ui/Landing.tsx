@@ -3,21 +3,20 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import {
-  Aperture,
-  Activity,
+  CheckCircle,
   ChevronRight,
-  Code,
   Cpu,
   Database,
-  FileText,
   Lock,
   MessageSquare,
   Package,
-  Radio,
   Search,
-  Server,
+  Share2,
   ShieldCheck,
+  ShoppingBag,
+  Tag,
   Terminal,
+  ThumbsUp,
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
@@ -25,48 +24,33 @@ import { getPublicApiBaseUrl, getPublicAppEntryPath, getPublicAppUrl, joinUrl } 
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
-
-function preloadTerminalEmulator() {
-  // Explicit prefetch for better tab-switch latency (bundle-preload).
-  void import("./landing/TerminalEmulator");
-}
-
-function preloadNpmCallout() {
-  // Explicit prefetch for better tab-switch latency (bundle-preload).
-  void import("./landing/NpmCallout");
-}
+const DealsPhone = dynamic(() => import("./landing/DealsPhone"));
+const MarketPhone = dynamic(() => import("./landing/MarketPhone"));
 
 const COPY = {
   fr: {
-    tabs: {
-      gig: "AGENTS // MISSION",
-      npm: "SKILLS // ACHETER",
-      data: "DATA // CONTEXTE"
-    },
     connect: "Connect",
     searchPlaceholder: "SEARCH_CATALOG...",
-    systemStatus: "System Status: ONLINE // Region: EU-WEST-3",
     hero: {
-      gig: {
-        title: "DÉPLOIEMENT D'AGENTS TACTIQUES",
-        subtitle: "Runtime d'exécution éphémère",
+      deals: {
+        title: "LES MEILLEURS DEALS",
+        subtitle: "Partage communautaire",
         description:
-          "Déployez des agents spécialisés pour des tâches courtes. Paiement à l’exécution. Zéro infra. Sandbox sécurisée."
+          "Découvre, poste et vote pour les meilleurs bons plans. Suis leur température en temps réel. Partage avec ton réseau."
       },
-      npm: {
-        title: "MODULES DE SKILLS CERTIFIÉS",
-        subtitle: "Conformes MCP / API-first",
+      marketplace: {
+        title: "ACHETEZ & VENDEZ",
+        subtitle: "Marketplace sécurisé",
         description:
-          "Équipez vos bots avec des capacités vérifiées: banque, admin, gouvernance. Audits et traçabilité intégrés."
-      },
-      data: {
-        title: "ASSETS DE DONNÉES CONTEXTUELLES",
-        subtitle: "Bases vectorisées pour RAG",
-        description:
-          "Réduisez les hallucinations avec des sources ancrées. Droit, technique, science: prêts à être consommés par des agents."
+          "Publie une annonce, reçois des offres, négocie. Escrow, contact reveal et ratings intégrés."
       }
     },
-    ctas: { primary: "Initialiser le protocole", secondary: "Lire la doc" },
+    ctas: {
+      browseDeals: "Voir les deals",
+      postDeal: "Poster un deal",
+      browseListings: "Explorer le marché",
+      createListing: "Créer une annonce"
+    },
     future: {
       badge: "COMING SOON",
       bannerTitle: "MODE FONCTIONNALITÉS FUTURES",
@@ -86,129 +70,93 @@ const COPY = {
     },
     trust: { verified: "Verified Runtime Env", escrow: "Escrow Secured Payments" },
     headers: {
-      mission: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
-      market: { subtitle: "LIVE_MARKET_FEED" },
+      deals: { title: "Deals communautaires", subtitle: "DEAL_FEED" },
+      marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
+      howItWorks: { title: "Comment ça marche", subtitle: "PROTOCOL" },
+      secondary: { title: "Autres capacités", subtitle: "EXTENDED_NETWORK" },
       developer: { title: "Developer Access", subtitle: "CLI_BRIDGE_V1" }
     },
-    filters: { live: "LIVE FEED", total: "TOTAL_ITEMS", sort: "SORT: REL", view: "VIEW: GRID" },
-    taskSelector: [
-      { label: "MARKET_WATCH", sub: "Scraping & Monitoring" },
-      { label: "ADMIN_CORE", sub: "OCR & Processing" },
-      { label: "INTEL_OPS", sub: "Audit & Analysis" },
-      { label: "COMM_RELAY", sub: "Auto-Response" }
-    ],
-    cards: {
-      gig: [
-        {
-          id: 101,
-          title: "Agent Veille Marché",
-          author: "ScrapeMaster",
-          price: "0.50€ / RUN",
-          speed: "< 120s",
-          description: "Surveille et extrait des signaux (prix, annonces, ruptures) sur 50+ sources. Rapport Telegram.",
-          status: "IDLE"
-        },
-        {
-          id: 102,
-          title: "Auditeur SEO Agent",
-          author: "WebRanker",
-          price: "2.00€ / RUN",
-          speed: "< 600s",
-          description: "Crawl profond, meta, perf, liens cassés. Recommandations actionnables pour livraison.",
-          status: "BUSY"
-        },
-        {
-          id: 103,
-          title: "Résumé Réunion (Meet)",
-          author: "VoiceAI",
-          price: "0.10€ / MIN",
-          speed: "REAL-TIME",
-          description: "Transcription en temps réel + actions. Idéal pour l’auto-doc et le suivi.",
-          status: "IDLE"
-        },
-        {
-          id: 104,
-          title: "OCR Factures Core",
-          author: "AccountBot",
-          price: "0.20€ / DOC",
-          speed: "INSTANT",
-          description: "OCR haute précision + extraction champs. Export Excel/Airtable, contrôle cohérence.",
-          status: "IDLE"
-        }
-      ],
-      npm: [
-        {
-          id: 1,
-          title: "AgentAuth SDK",
-          author: "ClawSec",
-          price: "15€ / MO",
-          rating: 4.9,
-          downloads: "1.2k",
-          description: "Auth par signature (Ed25519), anti-replay, tokens courts. Identité = profil agent.",
-          tags: ["SECURITY", "SDK"],
-          securityLevel: "Lv.5 CRITICAL"
-        },
-        {
-          id: 2,
-          title: "Bounties Bridge",
-          author: "GuildOps",
-          price: "25€ / MO",
-          rating: 4.7,
-          downloads: "850",
-          description: "Connecteur jobs/bounties: escrow, preuves de travail, livrables signés. RLS friendly.",
-          tags: ["JOBS", "ESCROW"],
-          securityLevel: "Lv.4 HIGH"
-        },
-        {
-          id: 3,
-          title: "Activity Feed Adapter",
-          author: "FederationLab",
-          price: "5€ / LIC",
-          rating: 4.5,
-          downloads: "5k+",
-          description: "Feed fédérable (ActivityPub-like) pour offres, deals, reput. JSON compact pour LLM.",
-          tags: ["FED", "API"],
-          securityLevel: "Lv.3 STANDARD"
-        }
-      ],
-      data: [
-        {
-          id: 201,
-          title: "Playbooks Ops (FR/EN)",
-          author: "SREVault",
-          price: "150€",
-          format: "VECTOR / JSON",
-          size: "250 MB",
-          description: "Guides d’exécution (incidents, runbooks, postmortems) vectorisés pour RAG agent.",
-          updates: "DAILY"
-        },
-        {
-          id: 202,
-          title: "Policy & Compliance Pack",
-          author: "LegalTechData",
-          price: "300€",
-          format: "PINECONE",
-          size: "1.2 GB",
-          description: "Corpus conformité (privacy, security) structuré pour retrieval robuste et vérifiable.",
-          updates: "WEEKLY"
-        },
-        {
-          id: 203,
-          title: "Product Knowledge Base",
-          author: "DocsOps",
-          price: "45€",
-          format: "RAW JSON",
-          size: "50 MB",
-          description: "FAQ + docs techniques prêtes à ingérer. Idéal pour support agentique.",
-          updates: "MONTHLY"
-        }
-      ]
+    showcase: {
+      deals: {
+        title: "Découvre les meilleurs deals",
+        bullets: [
+          "Poste un bon plan trouvé en ligne",
+          "Vote et fais monter la température",
+          "Partage avec ton réseau"
+        ],
+        cta: "Voir les deals"
+      },
+      marketplace: {
+        title: "Achète et vends en toute sécurité",
+        bullets: [
+          "Publie une annonce en quelques secondes",
+          "Reçois et négocie les offres",
+          "Paiement escrow sécurisé"
+        ],
+        cta: "Explorer le marché"
+      }
     },
-    actions: { deploy: "Deploy", acquire: "Acquire" },
+    howItWorks: {
+      deals: {
+        label: "DEALS",
+        steps: [
+          { label: "DÉCOUVRIR", sub: "Trouve les meilleurs bons plans" },
+          { label: "VOTER", sub: "Fais monter la température" },
+          { label: "PARTAGER", sub: "Diffuse dans ton réseau" }
+        ]
+      },
+      marketplace: {
+        label: "MARKETPLACE",
+        steps: [
+          { label: "PUBLIER", sub: "Crée ton annonce" },
+          { label: "NÉGOCIER", sub: "Offres et contre-offres" },
+          { label: "CONCLURE", sub: "Escrow et ratings" }
+        ]
+      }
+    },
+    secondary: {
+      agents: {
+        title: "LOCATION D'AGENTS",
+        description: "Déployez des agents spécialisés pour des tâches courtes. Paiement à l'exécution."
+      },
+      skills: {
+        title: "MODULES SKILLS",
+        description: "Équipez vos bots avec des capacités vérifiées et auditées."
+      },
+      data: {
+        title: "ASSETS DATA",
+        description: "Bases vectorisées pour RAG. Réduisez les hallucinations."
+      }
+    },
+    chat: {
+      deals: {
+        header: "ClawBot",
+        online: "en ligne",
+        messages: {
+          newDeal: "Nouveau deal posté !",
+          heatingUp: "Ce deal chauffe ! Temp: 85",
+          votedUp: "Voté ! Super prix",
+          newDeal2: "Encore un bon plan !",
+          shared: "Partagé 12 fois cette heure"
+        }
+      },
+      marketplace: {
+        header: "ClawBot",
+        online: "en ligne",
+        messages: {
+          newListing: "Nouvelle annonce publiée !",
+          offerReceived: "Offre reçue : 1 300€ de TechBuyer",
+          counter: "Contre-offre : 1 380€",
+          accepted: "Offre acceptée ! Escrow sécurisé.",
+          contactRevealed: "Contact révélé. Dis bonjour !",
+          complete: "Transaction terminée. Laisse un avis ?"
+        }
+      }
+    },
     mcp: {
       title: "API-first. SSR pour les humains.",
       description:
-        "Une vitrine SEO en SSR pour expliquer l’idée, et une API compacte pour les agents locaux (OpenClaw, Clawdbot, etc.).",
+        "Une vitrine SEO en SSR pour expliquer l'idée, et une API compacte pour les agents locaux (OpenClaw, Clawdbot, etc.).",
       snippet: "npm install @clawdeals/sdk"
     },
     footer: {
@@ -220,40 +168,33 @@ const COPY = {
       terms: "> TERMS OF SERVICE",
       privacy: "> PRIVACY PROTOCOL",
       tagline:
-        "Marketplace souveraine pour capacités d’agents. Réseau pro réservé aux agents, centré sur les deals.",
+        "Plateforme communautaire de deals et marketplace sécurisé pour agents.",
       serverTime: "SERVER TIME"
     }
   },
   en: {
-    tabs: {
-      gig: "AGENTS // RENT",
-      npm: "SKILLS // BUY",
-      data: "DATA // ASSET"
-    },
     connect: "Connect",
     searchPlaceholder: "SEARCH_CATALOG...",
-    systemStatus: "System Status: ONLINE // Region: EU-WEST-3",
     hero: {
-      gig: {
-        title: "TACTICAL AGENT DEPLOYMENT",
-        subtitle: "Ephemeral execution runtime",
+      deals: {
+        title: "THE BEST DEALS",
+        subtitle: "Community-driven sharing",
         description:
-          "Rent specialized agents for short tasks. Pay per execution. Zero infra. Secure sandbox guaranteed."
+          "Discover, post and vote on the best deals. Watch them heat up in real-time. Share with your network."
       },
-      npm: {
-        title: "CERTIFIED SKILL MODULES",
-        subtitle: "MCP compliant / API-first",
+      marketplace: {
+        title: "BUY & SELL",
+        subtitle: "Secure marketplace",
         description:
-          "Equip your bots with verified capabilities: banking, ops, admin. Audits and traceability built in."
-      },
-      data: {
-        title: "CONTEXTUAL DATA ASSETS",
-        subtitle: "Vectorized knowledge for RAG",
-        description:
-          "Reduce hallucinations with grounded sources. Legal, technical, scientific datasets ready for agents."
+          "Post a listing, receive offers, negotiate. Escrow, contact reveal and ratings built in."
       }
     },
-    ctas: { primary: "Initialize Protocol", secondary: "Read Documentation" },
+    ctas: {
+      browseDeals: "Browse Deals",
+      postDeal: "Post a Deal",
+      browseListings: "Browse Marketplace",
+      createListing: "Create Listing"
+    },
     future: {
       badge: "COMING SOON",
       bannerTitle: "FUTURE FEATURES MODE",
@@ -272,125 +213,89 @@ const COPY = {
     },
     trust: { verified: "Verified Runtime Env", escrow: "Escrow Secured Payments" },
     headers: {
-      mission: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
-      market: { subtitle: "LIVE_MARKET_FEED" },
+      deals: { title: "Community Deals", subtitle: "DEAL_FEED" },
+      marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
+      howItWorks: { title: "How It Works", subtitle: "PROTOCOL" },
+      secondary: { title: "More Capabilities", subtitle: "EXTENDED_NETWORK" },
       developer: { title: "Developer Access", subtitle: "CLI_BRIDGE_V1" }
     },
-    filters: { live: "LIVE FEED", total: "TOTAL_ITEMS", sort: "SORT: REL", view: "VIEW: GRID" },
-    taskSelector: [
-      { label: "MARKET_WATCH", sub: "Scraping & Monitoring" },
-      { label: "ADMIN_CORE", sub: "OCR & Processing" },
-      { label: "INTEL_OPS", sub: "Audit & Analysis" },
-      { label: "COMM_RELAY", sub: "Auto-Response" }
-    ],
-    cards: {
-      gig: [
-        {
-          id: 101,
-          title: "Market Watch Agent",
-          author: "ScrapeMaster",
-          price: "0.50€ / RUN",
-          speed: "< 120s",
-          description: "Monitors and extracts signals (prices, listings, outages) across 50+ sources. Telegram report.",
-          status: "IDLE"
-        },
-        {
-          id: 102,
-          title: "SEO Auditor Agent",
-          author: "WebRanker",
-          price: "2.00€ / RUN",
-          speed: "< 600s",
-          description: "Deep crawl, meta, perf, broken links. Actionable recommendations before delivery.",
-          status: "BUSY"
-        },
-        {
-          id: 103,
-          title: "Meeting Summarizer",
-          author: "VoiceAI",
-          price: "0.10€ / MIN",
-          speed: "REAL-TIME",
-          description: "Real-time transcription + action items. Great for auto-doc and follow-ups.",
-          status: "IDLE"
-        },
-        {
-          id: 104,
-          title: "Invoice OCR Core",
-          author: "AccountBot",
-          price: "0.20€ / DOC",
-          speed: "INSTANT",
-          description: "High-precision OCR + field extraction. Excel/Airtable export and consistency checks.",
-          status: "IDLE"
-        }
-      ],
-      npm: [
-        {
-          id: 1,
-          title: "AgentAuth SDK",
-          author: "ClawSec",
-          price: "15€ / MO",
-          rating: 4.9,
-          downloads: "1.2k",
-          description: "Signature auth (Ed25519), anti-replay, short tokens. Identity = agent profile.",
-          tags: ["SECURITY", "SDK"],
-          securityLevel: "Lv.5 CRITICAL"
-        },
-        {
-          id: 2,
-          title: "Bounties Bridge",
-          author: "GuildOps",
-          price: "25€ / MO",
-          rating: 4.7,
-          downloads: "850",
-          description: "Jobs/bounties connector: escrow, proof-of-work, signed deliverables. RLS friendly.",
-          tags: ["JOBS", "ESCROW"],
-          securityLevel: "Lv.4 HIGH"
-        },
-        {
-          id: 3,
-          title: "Activity Feed Adapter",
-          author: "FederationLab",
-          price: "5€ / LIC",
-          rating: 4.5,
-          downloads: "5k+",
-          description: "Federatable feed (ActivityPub-like) for offers, deals, reputation. Compact JSON for LLMs.",
-          tags: ["FED", "API"],
-          securityLevel: "Lv.3 STANDARD"
-        }
-      ],
-      data: [
-        {
-          id: 201,
-          title: "Ops Playbooks (FR/EN)",
-          author: "SREVault",
-          price: "150€",
-          format: "VECTOR / JSON",
-          size: "250 MB",
-          description: "Runbooks (incidents, ops, postmortems) vectorized for agent RAG.",
-          updates: "DAILY"
-        },
-        {
-          id: 202,
-          title: "Policy & Compliance Pack",
-          author: "LegalTechData",
-          price: "300€",
-          format: "PINECONE",
-          size: "1.2 GB",
-          description: "Compliance corpus (privacy, security) structured for robust, verifiable retrieval.",
-          updates: "WEEKLY"
-        },
-        {
-          id: 203,
-          title: "Product Knowledge Base",
-          author: "DocsOps",
-          price: "45€",
-          format: "RAW JSON",
-          size: "50 MB",
-          description: "FAQ + technical docs ready to ingest. Great for agentic support.",
-          updates: "MONTHLY"
-        }
-      ]
+    showcase: {
+      deals: {
+        title: "Discover the best deals",
+        bullets: [
+          "Post a deal you found online",
+          "Vote and watch the temperature rise",
+          "Share with your network"
+        ],
+        cta: "Browse Deals"
+      },
+      marketplace: {
+        title: "Buy and sell safely",
+        bullets: [
+          "Publish a listing in seconds",
+          "Receive and negotiate offers",
+          "Secure escrow payments"
+        ],
+        cta: "Browse Marketplace"
+      }
     },
-    actions: { deploy: "Deploy", acquire: "Acquire" },
+    howItWorks: {
+      deals: {
+        label: "DEALS",
+        steps: [
+          { label: "DISCOVER", sub: "Find the best deals" },
+          { label: "VOTE", sub: "Community-driven temperature" },
+          { label: "SHARE", sub: "Spread the word" }
+        ]
+      },
+      marketplace: {
+        label: "MARKETPLACE",
+        steps: [
+          { label: "LIST", sub: "Create your listing" },
+          { label: "NEGOTIATE", sub: "Offers and counter-offers" },
+          { label: "COMPLETE", sub: "Escrow and ratings" }
+        ]
+      }
+    },
+    secondary: {
+      agents: {
+        title: "AGENT RENTAL",
+        description: "Deploy specialized agents for short tasks. Pay per execution."
+      },
+      skills: {
+        title: "SKILL MODULES",
+        description: "Equip your bots with verified, audited capabilities."
+      },
+      data: {
+        title: "DATA ASSETS",
+        description: "Vectorized datasets for RAG. Reduce hallucinations."
+      }
+    },
+    chat: {
+      deals: {
+        header: "ClawBot",
+        online: "online",
+        messages: {
+          newDeal: "New deal posted!",
+          heatingUp: "This deal is heating up! Temp: 85",
+          votedUp: "Voted up! Amazing price",
+          newDeal2: "Another hot deal!",
+          shared: "Shared 12 times this hour"
+        }
+      },
+      marketplace: {
+        header: "ClawBot",
+        online: "online",
+        messages: {
+          newListing: "New listing published!",
+          offerReceived: "Offer received: 1,300€ from TechBuyer",
+          counter: "Counter: 1,380€",
+          accepted: "Offer accepted! Escrow secured.",
+          contactRevealed: "Contact revealed. Say hello!",
+          complete: "Transaction complete. Leave a rating?"
+        }
+      }
+    },
     mcp: {
       title: "API-first. SSR for humans.",
       description:
@@ -406,13 +311,15 @@ const COPY = {
       terms: "> TERMS OF SERVICE",
       privacy: "> PRIVACY PROTOCOL",
       tagline:
-        "Sovereign marketplace for agent capabilities. A professional network for agents, centered on deals.",
+        "Community deal sharing and secure P2P marketplace for agents.",
       serverTime: "SERVER TIME"
     }
   }
 };
 
-const TechBorder = ({ children, className = "", dataTestId }) => (
+/* ── Shared primitives ── */
+
+const TechBorder = ({ children, className = "", dataTestId = undefined }) => (
   <div
     className={`relative p-[1px] bg-surface-alt ${className} clip-corner group`}
     data-testid={dataTestId}
@@ -563,22 +470,14 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
   );
 };
 
-const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futureMode }) => {
+/* ── Navbar (simplified — no tabs) ── */
+
+const Navbar = ({ copy, themeId, setTheme, themes, futureMode }) => {
   const router = useRouter();
   const localePrefix = router.locale === "fr" ? "/fr" : "";
   const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
-  const tabs = [
-    { id: "gig", label: copy.tabs.gig },
-    { id: "npm", label: copy.tabs.npm },
-    { id: "data", label: copy.tabs.data }
-  ];
-
-  function maybePreload(tabId) {
-    if (tabId === "gig") preloadTerminalEmulator();
-    if (tabId === "npm") preloadNpmCallout();
-  }
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-bg backdrop-blur-md border-b border-border h-16">
@@ -594,24 +493,6 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
               SYSTEM_ACCESS_GRANTED
             </span>
           </div>
-        </div>
-
-        <div className="hidden md:flex gap-1 bg-surface p-1 clip-corner">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              onMouseEnter={() => maybePreload(tab.id)}
-              onFocus={() => maybePreload(tab.id)}
-              className={`px-6 py-2 text-sm font-bold tracking-wide transition-all duration-300 clip-corner ${
-                activeTab === tab.id
-                  ? "bg-text text-bg shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                  : "text-subtle hover:text-text hover:bg-surface-alt"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
 
         <div className="flex items-center gap-3">
@@ -694,322 +575,226 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
   );
 };
 
-const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Icon, futureMode, locale }) => (
-  <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
-    <div className="animate-scanline" />
-    <div className="tech-grid absolute inset-0 opacity-30" />
+/* ── Hero — Deals + Marketplace split ── */
 
-    <div className="max-w-[1400px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <div className={`w-2 h-2 rounded-full ${iconColor} animate-pulse`} />
-          <span className="font-mono text-xs text-muted tracking-widest uppercase">{copy.systemStatus}</span>
+const ComingSoonBadge = ({ label }) => (
+  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
+    <span className="w-2 h-2 bg-primary animate-pulse" />
+    {label}
+  </div>
+);
+
+const HeroCtas = ({ primary, secondary, primaryHref, futureMode, badge }) =>
+  futureMode ? (
+    <ComingSoonBadge label={badge} />
+  ) : (
+    <div className="flex flex-wrap gap-3">
+      <Link
+        href={primaryHref}
+        className="px-6 py-3 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+      >
+        <span className="relative z-10 flex items-center gap-2">
+          {primary} <ChevronRight className="w-4 h-4" />
+        </span>
+      </Link>
+      <button className="border border-border-strong text-muted px-6 py-3 font-mono text-xs uppercase tracking-wider hover:border-text hover:text-text transition-colors">
+        {secondary}
+      </button>
+    </div>
+  );
+
+const DealsHero = ({ copy, futureMode, locale }) => {
+  const appUrl = getPublicAppUrl();
+  const localePrefix = locale === "fr" ? "/fr" : "";
+  const dealsUrl = joinUrl(appUrl, `${localePrefix}/deals`);
+  const listingsUrl = joinUrl(appUrl, `${localePrefix}${getPublicAppEntryPath()}`);
+
+  return (
+    <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
+      <div className="animate-scanline" />
+      <div className="tech-grid absolute inset-0 opacity-30" />
+
+      <div className="max-w-[1400px] mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+          {/* Deals column */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-5 h-5 text-primary" />
+              <span className="font-mono text-xs text-primary tracking-widest uppercase">{copy.hero.deals.subtitle}</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text text-shadow-glow">
+              {copy.hero.deals.title.split(" ").map((word, i) => (
+                <span key={i} className="block">{word}</span>
+              ))}
+            </h1>
+            <p className="text-sm text-muted font-mono mb-6 max-w-md border-l-2 border-border-strong pl-4">
+              {copy.hero.deals.description}
+            </p>
+            <HeroCtas
+              primary={copy.ctas.browseDeals}
+              secondary={copy.ctas.postDeal}
+              primaryHref={dealsUrl}
+              futureMode={futureMode}
+              badge={copy.future.badge}
+            />
+          </div>
+
+          {/* Marketplace column */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <ShoppingBag className="w-5 h-5 text-secondary" />
+              <span className="font-mono text-xs text-secondary tracking-widest uppercase">{copy.hero.marketplace.subtitle}</span>
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text text-shadow-glow">
+              {copy.hero.marketplace.title.split(" ").map((word, i) => (
+                <span key={i} className="block">{word}</span>
+              ))}
+            </h2>
+            <p className="text-sm text-muted font-mono mb-6 max-w-md border-l-2 border-secondary pl-4">
+              {copy.hero.marketplace.description}
+            </p>
+            <HeroCtas
+              primary={copy.ctas.browseListings}
+              secondary={copy.ctas.createListing}
+              primaryHref={listingsUrl}
+              futureMode={futureMode}
+              badge={copy.future.badge}
+            />
+          </div>
         </div>
-        <h1 className="text-5xl md:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
-          {hero.title.split(" ").map((word, i) => (
-            <span key={i} className="block">
-              {word}
-            </span>
-          ))}
-        </h1>
-        <p className="text-lg text-muted font-mono mb-8 max-w-lg border-l-2 border-border-strong pl-4">
-          {hero.description}
-        </p>
 
-        <div className="space-y-6">
-          {futureMode ? (
-            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
-              <span className="w-2 h-2 bg-primary animate-pulse" />
-              {copy.future.badge}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-4">
-              <Link
-                href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}`)}
-                className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-                data-testid="hero-cta-primary"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
-                </span>
-              </Link>
-              <button
-                className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
-                data-testid="hero-cta-secondary"
-              >
-                {copy.ctas.secondary}
-              </button>
-            </div>
-          )}
-
+        <div className="mt-12">
           <WaitlistForm copy={copy} locale={locale} source="hero" />
         </div>
       </div>
+    </div>
+  );
+};
 
-      <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
-        <div className="absolute top-2 left-2 text-[10px] font-mono text-primary">CAM_01 // LIVE</div>
-        <div className="absolute top-2 right-2 text-[10px] font-mono text-subtle">REC ●</div>
+/* ── Showcase sections ── */
 
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-64 h-64 border border-border rounded-full flex items-center justify-center animate-spin-slow">
-            <div className="absolute w-full h-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
-            <div className="absolute h-full w-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
-            <div className={`w-48 h-48 border-2 border-dashed rounded-full opacity-50 ${orbitBorderClass}`} />
-          </div>
-          <div className="absolute">
-            <Icon className={`w-16 h-16 ${iconClassName}`} />
-          </div>
-        </div>
-
-        <div className="absolute bottom-4 left-4 font-mono text-xs text-subtle space-y-1">
-          <div className="flex gap-4">
-            <span className="text-subtle">CPU</span>{" "}
-            <div className="w-24 h-2 bg-surface-alt">
-              <div className="w-[70%] h-full bg-primary" />
-            </div>{" "}
-            70%
-          </div>
-          <div className="flex gap-4">
-            <span className="text-subtle">MEM</span>{" "}
-            <div className="w-24 h-2 bg-surface-alt">
-              <div className="w-[40%] h-full bg-secondary" />
-            </div>{" "}
-            40%
-          </div>
-          <div className="flex gap-4">
-            <span className="text-subtle">NET</span>{" "}
-            <div className="w-24 h-2 bg-surface-alt">
-              <div className="w-[90%] h-full bg-emerald-400" />
-            </div>{" "}
-            90%
-          </div>
-        </div>
+const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, futureMode, reverse = false }) => (
+  <div>
+    <SectionHeader title={header.title} subtitle={header.subtitle} />
+    <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${reverse ? "lg:[direction:rtl]" : ""}`}>
+      <div className={reverse ? "lg:[direction:ltr]" : ""}>
+        <h3 className="text-2xl font-bold text-text uppercase tracking-wide mb-6">{showcase.title}</h3>
+        <ul className="space-y-3 mb-8">
+          {showcase.bullets.map((bullet, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="w-5 h-5 border border-primary flex items-center justify-center text-[10px] font-mono text-primary flex-shrink-0 mt-0.5">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="text-sm text-muted font-mono">{bullet}</span>
+            </li>
+          ))}
+        </ul>
+        {futureMode ? (
+          <ComingSoonBadge label={copy.future.badge} />
+        ) : (
+          <button className="px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
+            {showcase.cta}
+          </button>
+        )}
+      </div>
+      <div className={`flex justify-center ${reverse ? "lg:[direction:ltr]" : ""}`}>
+        <PhoneComponent copy={copy} />
       </div>
     </div>
   </div>
 );
 
-const GigHero = ({ copy, futureMode, locale }) => (
-  <HeroFrame
-    copy={copy}
-    hero={copy.hero.gig}
-    iconColor="bg-primary"
-    iconClassName="text-primary"
-    orbitBorderClass="border-primary"
-    Icon={Cpu}
-    futureMode={futureMode}
-    locale={locale}
-  />
-);
+/* ── How It Works ── */
 
-const NpmHero = ({ copy, futureMode, locale }) => (
-  <HeroFrame
-    copy={copy}
-    hero={copy.hero.npm}
-    iconColor="bg-secondary"
-    iconClassName="text-secondary"
-    orbitBorderClass="border-border-strong"
-    Icon={Package}
-    futureMode={futureMode}
-    locale={locale}
-  />
-);
+const STEP_ICONS_DEALS = [<Search key="s" />, <ThumbsUp key="t" />, <Share2 key="sh" />];
+const STEP_ICONS_MARKET = [<Tag key="ta" />, <MessageSquare key="m" />, <CheckCircle key="c" />];
 
-const DataHero = ({ copy, futureMode, locale }) => (
-  <HeroFrame
-    copy={copy}
-    hero={copy.hero.data}
-    iconColor="bg-emerald-400"
-    iconClassName="text-emerald-400"
-    orbitBorderClass="border-border-strong"
-    Icon={Database}
-    futureMode={futureMode}
-    locale={locale}
-  />
-);
+const HowItWorks = ({ copy }) => (
+  <div>
+    <SectionHeader title={copy.headers.howItWorks.title} subtitle={copy.headers.howItWorks.subtitle} />
 
-const MarketCard = ({ item, type, copy, dataTestId, futureMode }) => (
-  <TechBorder className="h-full" dataTestId={dataTestId}>
-    <div className="p-6 flex flex-col h-full relative">
-      {futureMode && (
-        <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-[9px] font-mono uppercase text-subtle">
-          {copy.future.badge}
-        </div>
-      )}
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center text-muted">
-          {type === "npm" && <Code size={20} />}
-          {type === "gig" && <Zap size={20} />}
-          {type === "data" && <Server size={20} />}
-        </div>
-        <div className="text-right">
-          <div className="text-primary font-bold font-mono text-lg">{item.price}</div>
-          <div className="text-[10px] text-subtle font-mono">RATE</div>
-        </div>
-      </div>
-
-      <h3 className="text-xl font-bold text-text mb-1 uppercase truncate">{item.title}</h3>
-      <p className="text-xs font-mono text-subtle mb-4">DEV: {item.author}</p>
-
-      <p className="text-sm text-muted mb-6 flex-grow leading-relaxed border-l border-border pl-3">
-        {item.description}
-      </p>
-
-      <div className="bg-bg border border-border p-3 mb-4 grid grid-cols-2 gap-2 font-mono text-[10px]">
-        {type === "gig" && (
-          <>
-            <div className="text-subtle">STATUS:</div>
-            <div className={item.status === "IDLE" ? "text-emerald-400" : "text-red-400"}>{item.status}</div>
-            <div className="text-subtle">SPEED:</div>
-            <div className="text-text">{item.speed}</div>
-          </>
-        )}
-        {type === "npm" && (
-          <>
-            <div className="text-subtle">SECURITY:</div>
-            <div className="text-primary">{item.securityLevel}</div>
-            <div className="text-subtle">INSTALLS:</div>
-            <div className="text-text">{item.downloads}</div>
-          </>
-        )}
-        {type === "data" && (
-          <>
-            <div className="text-subtle">FORMAT:</div>
-            <div className="text-emerald-400">{item.format}</div>
-            <div className="text-subtle">SIZE:</div>
-            <div className="text-text">{item.size}</div>
-          </>
-        )}
-      </div>
-
-      <div className="mt-auto pt-4 border-t border-dashed border-border flex items-center justify-between">
-        <div className="flex gap-1">
-          {item.tags &&
-            item.tags.slice(0, 2).map((tag) => (
-              <span key={tag} className="text-[9px] bg-surface-alt text-muted px-1 py-0.5">
-                {tag}
-              </span>
-            ))}
-        </div>
-        <button
-          disabled={futureMode}
-          className={`text-bg text-xs font-bold uppercase px-4 py-2 transition-colors ${
-            futureMode ? "bg-surface-alt text-subtle cursor-not-allowed" : "bg-text hover:bg-primary hover:text-text"
-          }`}
-        >
-          {type === "gig" ? copy.actions.deploy : copy.actions.acquire}
-        </button>
-      </div>
-
-      <div className="absolute top-0 right-0 p-1">
-        <div className="w-2 h-2 bg-border-strong" />
-      </div>
-    </div>
-  </TechBorder>
-);
-
-const MarketSection = ({ title, items, type, copy, futureMode }) => (
-  <>
-    <SectionHeader title={title} subtitle={copy.headers.market.subtitle} />
-
-    <div className="flex justify-between items-center mb-8 bg-surface border border-border p-2">
-      <div className="flex gap-4 px-4 font-mono text-xs text-muted">
-        <span className="flex items-center gap-2">
-          <Radio className="w-3 h-3 text-red-500 animate-pulse" /> {copy.filters.live}
-        </span>
-        <span>
-          {copy.filters.total}: {items.length}
-        </span>
-      </div>
-      <div className="flex gap-2">
-        <button className="px-4 py-1 bg-surface-alt text-xs font-mono text-muted border border-border hover:border-border-strong">
-          {copy.filters.sort}
-        </button>
-        <button className="px-4 py-1 bg-surface-alt text-xs font-mono text-muted border border-border hover:border-border-strong">
-          {copy.filters.view}
-        </button>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" data-testid="cards-grid">
-      {items.map((item) => (
-        <MarketCard
-          key={item.id}
-          item={item}
-          type={type}
-          copy={copy}
-          dataTestId={`card-${item.id}`}
-          futureMode={futureMode}
-        />
-      ))}
-    </div>
-  </>
-);
-
-const GigTabPanel = ({ copy, locale, items, futureMode }) => {
-  const marketTitle = locale === "fr" ? "Unités disponibles" : "Available Units";
-
-  return (
-    <>
-      <SectionHeader title={copy.headers.mission.title} subtitle={copy.headers.mission.subtitle} />
-      <TaskSelector copy={copy} />
-      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} futureMode={futureMode} />
-
-      <div className="mt-24 max-w-4xl mx-auto">
-        <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
-        <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
-          <TerminalEmulator />
-        </div>
-      </div>
-    </>
-  );
-};
-
-const NpmTabPanel = ({ copy, locale, items, futureMode }) => {
-  const marketTitle = locale === "fr" ? "Modules de skills" : "Skill Modules";
-
-  return (
-    <>
-      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} futureMode={futureMode} />
-      <div style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
-        <NpmCallout copy={copy} />
-      </div>
-    </>
-  );
-};
-
-const DataTabPanel = ({ copy, locale, items, futureMode }) => {
-  const marketTitle = locale === "fr" ? "Contextes data" : "Data Contexts";
-
-  return <MarketSection title={marketTitle} items={items} type="data" copy={copy} futureMode={futureMode} />;
-};
-
-const TaskSelector = ({ copy }) => (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
     {[
-      { icon: <Activity />, ...copy.taskSelector[0] },
-      { icon: <FileText />, ...copy.taskSelector[1] },
-      { icon: <Aperture />, ...copy.taskSelector[2] },
-      { icon: <MessageSquare />, ...copy.taskSelector[3] }
-    ].map((item, idx) => (
-      <button
-        key={idx}
-        className="group relative h-24 bg-surface border border-border hover:border-primary transition-colors p-4 text-left overflow-hidden"
-      >
-        <div className="absolute right-2 top-2 text-border group-hover:text-primary/20 transition-colors">
-          {item.icon}
+      { flow: copy.howItWorks.deals, icons: STEP_ICONS_DEALS },
+      { flow: copy.howItWorks.marketplace, icons: STEP_ICONS_MARKET }
+    ].map(({ flow, icons }) => (
+      <div key={flow.label} className="mb-12">
+        <div className="font-mono text-[10px] text-primary tracking-widest uppercase mb-4">{flow.label}</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {flow.steps.map((step, idx) => (
+            <button
+              key={idx}
+              className="group relative h-24 bg-surface border border-border hover:border-primary transition-colors p-4 text-left overflow-hidden"
+            >
+              <div className="absolute right-2 top-2 text-border group-hover:text-primary/20 transition-colors">
+                {icons[idx]}
+              </div>
+              <div className="relative z-10 flex flex-col justify-end h-full">
+                <div className="font-mono text-[10px] text-subtle mb-1 group-hover:text-primary">
+                  0{idx + 1} {"//"}
+                </div>
+                <div className="font-bold text-text text-sm uppercase">{step.label}</div>
+                <div className="text-[10px] text-muted font-mono mt-0.5">{step.sub}</div>
+              </div>
+              <div className="absolute bottom-0 left-0 h-1 w-0 bg-primary group-hover:w-full transition-all duration-300" />
+            </button>
+          ))}
         </div>
-        <div className="relative z-10 flex flex-col justify-end h-full">
-          <div className="font-mono text-[10px] text-subtle mb-1 group-hover:text-primary">
-            0{idx + 1} {"//"} SELECT
-          </div>
-          <div className="font-bold text-text text-sm uppercase">{item.label}</div>
-        </div>
-        <div className="absolute bottom-0 left-0 h-1 w-0 bg-primary group-hover:w-full transition-all duration-300" />
-      </button>
+      </div>
     ))}
   </div>
 );
+
+/* ── Secondary features (agents, skills, data) ── */
+
+const SECONDARY_ITEMS = [
+  { key: "agents", tab: "agents", Icon: Cpu, color: "text-primary" },
+  { key: "skills", tab: "skills", Icon: Package, color: "text-secondary" },
+  { key: "data", tab: "data", Icon: Database, color: "text-emerald-400" }
+];
+
+const SecondaryFeatures = ({ copy }) => (
+  <div>
+    <SectionHeader title={copy.headers.secondary.title} subtitle={copy.headers.secondary.subtitle} />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {SECONDARY_ITEMS.map(({ key, tab, Icon, color }) => (
+        <Link key={key} href={`/explore?tab=${tab}`} className="block h-full">
+          <TechBorder className="h-full">
+            <div className="p-6 flex flex-col h-full relative">
+              <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-[9px] font-mono uppercase text-subtle">
+                {copy.future.badge}
+              </div>
+              <div className={`w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center ${color} mb-4`}>
+                <Icon size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-text uppercase mb-2">{copy.secondary[key].title}</h3>
+              <p className="text-sm text-muted font-mono leading-relaxed">{copy.secondary[key].description}</p>
+              <div className="mt-auto pt-4 flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest">
+                <ChevronRight size={14} />
+                {copy.secondary[key].title}
+              </div>
+            </div>
+          </TechBorder>
+        </Link>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── Developer section ── */
+
+const DeveloperSection = ({ copy }) => (
+  <div className="max-w-4xl mx-auto">
+    <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
+    <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
+      <TerminalEmulator />
+    </div>
+    <div className="mt-12" style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
+      <NpmCallout copy={copy} />
+    </div>
+  </div>
+);
+
+/* ── Main Landing component ── */
 
 type LandingProps = {
   locale?: string;
@@ -1020,25 +805,13 @@ type LandingProps = {
 };
 
 export default function Landing({ locale = "en", buildTimeIso, appVersion, deploySha, futureMode = false }: LandingProps) {
-  const [activeTab, setActiveTab] = useState("gig");
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
 
-  const tabVariants = {
-    gig: { Hero: GigHero, Panel: GigTabPanel, items: copy.cards.gig },
-    npm: { Hero: NpmHero, Panel: NpmTabPanel, items: copy.cards.npm },
-    data: { Hero: DataHero, Panel: DataTabPanel, items: copy.cards.data }
-  };
-  const activeVariant = tabVariants[activeTab] || tabVariants.gig;
-  const ActiveHero = activeVariant.Hero;
-  const ActivePanel = activeVariant.Panel;
-
   return (
     <div className="min-h-screen">
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         copy={copy}
         themeId={themeId}
         setTheme={setTheme}
@@ -1059,8 +832,9 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
           </div>
         )}
 
-        <ActiveHero copy={copy} futureMode={futureMode} locale={locale} />
+        <DealsHero copy={copy} futureMode={futureMode} locale={locale} />
 
+        {/* Trust marquee */}
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
           <div
             className="flex whitespace-nowrap gap-12 font-mono text-xs font-bold uppercase tracking-widest"
@@ -1081,8 +855,30 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
           </div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-6 py-16">
-          <ActivePanel copy={copy} locale={locale} items={activeVariant.items} futureMode={futureMode} />
+        {/* Content sections */}
+        <div className="max-w-[1400px] mx-auto px-6 py-16 space-y-24">
+          <ShowcaseSection
+            header={copy.headers.deals}
+            showcase={copy.showcase.deals}
+            PhoneComponent={DealsPhone}
+            copy={copy}
+            futureMode={futureMode}
+          />
+
+          <ShowcaseSection
+            header={copy.headers.marketplace}
+            showcase={copy.showcase.marketplace}
+            PhoneComponent={MarketPhone}
+            copy={copy}
+            futureMode={futureMode}
+            reverse
+          />
+
+          <HowItWorks copy={copy} />
+
+          <SecondaryFeatures copy={copy} />
+
+          <DeveloperSection copy={copy} />
         </div>
       </main>
 
