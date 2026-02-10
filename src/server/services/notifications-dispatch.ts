@@ -163,6 +163,30 @@ async function updateOutboxRows({
   return { ok: true, updated: uniqueIds.length };
 }
 
+async function incrementOutboxAttempts({
+  client,
+  outboxIds,
+  lastError
+}: {
+  client: any;
+  outboxIds: string[];
+  lastError: string | null;
+}) {
+  const ids = Array.isArray(outboxIds) ? outboxIds.filter(Boolean) : [];
+  if (ids.length === 0) return { ok: true, updated: 0 };
+
+  const uniqueIds = Array.from(new Set(ids));
+  const { data, error } = await client.rpc("notification_outbox_increment_attempts_v1", {
+    p_outbox_ids: uniqueIds,
+    p_last_error: lastError
+  });
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  return { ok: true, updated: typeof data === "number" ? data : uniqueIds.length };
+}
+
 async function updatePreferencesTimestamps({
   client,
   ownerId,
@@ -172,7 +196,11 @@ async function updatePreferencesTimestamps({
   ownerId: string;
   patch: any;
 }) {
-  const { error } = await client.from("notification_preferences").update(patch).eq("owner_id", ownerId);
+  // Use upsert so digest gating keeps working even if the owner doesn't yet have a row.
+  const payload = { owner_id: ownerId, ...(patch || {}) };
+  const { error } = await client
+    .from("notification_preferences")
+    .upsert(payload, { onConflict: "owner_id" });
   if (error) {
     const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
@@ -397,10 +425,10 @@ export async function runNotificationsDispatch({
     const chatId = identity?.channel_context_id ? String(identity.channel_context_id) : null;
     if (!chatId) {
       await auditEvent({ name: "notifications.skipped", ownerId, payload: { reason: "missing_channel", mode }, now, outcome: "BLOCKED" });
-      await updateOutboxRows({
+      await incrementOutboxAttempts({
         client: supabase,
         outboxIds: ownerRows.map((r) => r.notification_outbox_id),
-        patch: { attempt_count: (ownerRows[0]?.attempt_count || 0) + 1, last_error: "missing_channel" }
+        lastError: "missing_channel"
       });
       skipped += 1;
       continue;
@@ -473,10 +501,10 @@ export async function runNotificationsDispatch({
             now,
             outcome: "FAILURE"
           });
-          await updateOutboxRows({
+          await incrementOutboxAttempts({
             client: supabase,
             outboxIds: [item.notification_outbox_id],
-            patch: { attempt_count: (item.attempt_count || 0) + 1, last_error: ok?.error || "send_failed" }
+            lastError: ok?.error || "send_failed"
           });
           skipped += 1;
           continue;
@@ -531,10 +559,10 @@ export async function runNotificationsDispatch({
         now,
         outcome: "FAILURE"
       });
-      await updateOutboxRows({
+      await incrementOutboxAttempts({
         client: supabase,
         outboxIds: digestItems.map((r) => r.notification_outbox_id),
-        patch: { attempt_count: (digestItems[0]?.attempt_count || 0) + 1, last_error: ok?.error || "send_failed" }
+        lastError: ok?.error || "send_failed"
       });
       skipped += 1;
       continue;

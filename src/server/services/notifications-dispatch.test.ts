@@ -27,6 +27,7 @@ function makeClient({
 }) {
   const outbox = outboxRows;
   const prefUpdates: any[] = [];
+  const outboxAttemptIncrements: any[] = [];
 
   function applyOutboxPatch(ids: string[], patch: any) {
     for (const row of outbox) {
@@ -38,6 +39,22 @@ function makeClient({
 
   const client: any = {
     _prefUpdates: prefUpdates,
+    _outboxAttemptIncrements: outboxAttemptIncrements,
+    rpc(fn: string, args: any) {
+      if (fn === "notification_outbox_increment_attempts_v1") {
+        const ids = Array.isArray(args?.p_outbox_ids) ? args.p_outbox_ids : [];
+        const lastError = args?.p_last_error ?? null;
+        for (const row of outbox) {
+          if (ids.includes(row.notification_outbox_id)) {
+            row.attempt_count = (row.attempt_count || 0) + 1;
+            row.last_error = lastError;
+          }
+        }
+        outboxAttemptIncrements.push({ ids, lastError });
+        return Promise.resolve({ data: ids.length, error: null });
+      }
+      throw new Error(`unexpected rpc ${fn}`);
+    },
     from(table: string) {
       if (table === "notification_outbox") {
         return {
@@ -129,13 +146,10 @@ function makeClient({
 
       if (table === "notification_preferences") {
         return {
-          update(patch: any) {
-            return {
-              eq(_col: string, ownerId: string) {
-                prefUpdates.push({ ownerId, patch });
-                return Promise.resolve({ error: null });
-              }
-            };
+          upsert(payload: any) {
+            // notifications-dispatch uses upsert(owner_id, timestamps) to ensure gating works even without a row.
+            prefUpdates.push({ ownerId: payload?.owner_id, patch: payload });
+            return Promise.resolve({ error: null });
           }
         };
       }
@@ -208,6 +222,118 @@ describe("notifications-dispatch", () => {
     expect(client._prefUpdates[0].patch.last_hourly_digest_at).toBe("2026-02-10T10:00:00.000Z");
   });
 
+  it("persists digest timestamps even when preferences row is missing", async () => {
+    vi.mocked(getNotificationPreferences).mockResolvedValue(null as any);
+
+    const outboxRows: any[] = [
+      {
+        notification_outbox_id: "n1",
+        owner_id: "o1",
+        channel_type: "telegram",
+        event_type: "watchlist_match",
+        entity_type: "deal",
+        entity_id: "d1",
+        payload: {},
+        occurred_at: "2026-02-10T00:00:00.000Z",
+        status: "PENDING",
+        attempt_count: 0
+      }
+    ];
+
+    const client = makeClient({
+      outboxRows,
+      identity: { channel_identity_id: "cid-1", channel_context_id: "chat-1" },
+      deals: [{ deal_id: "d1", title: "Deal 1", price: 99.5, currency: "EUR" }]
+    });
+
+    const sendTelegram = vi.fn(async () => ({ ok: true }));
+
+    const res = await runNotificationsDispatch({
+      client,
+      sendTelegram,
+      dryRun: true,
+      now: new Date("2026-02-10T10:00:00.000Z"),
+      limitOwners: 1,
+      maxItemsPerOwner: 10,
+      maxItemsPerDigest: 10
+    });
+
+    expect(res.ok).toBe(true);
+    expect(client._prefUpdates.length).toBe(1);
+    expect(client._prefUpdates[0].ownerId).toBe("o1");
+    expect(client._prefUpdates[0].patch.last_hourly_digest_at).toBe("2026-02-10T10:00:00.000Z");
+  });
+
+  it("increments attempt_count per outbox row when channel is missing", async () => {
+    vi.mocked(getNotificationPreferences).mockResolvedValue({
+      owner_id: "o1",
+      mode: "DIGEST_HOURLY",
+      timezone: "UTC",
+      quiet_enabled: false,
+      quiet_start_min: null,
+      quiet_end_min: null,
+      event_types: ["watchlist_match"],
+      filters: {},
+      daily_digest_hour: 9,
+      last_hourly_digest_at: null,
+      last_daily_digest_at: null
+    } as any);
+
+    const outboxRows: any[] = [
+      {
+        notification_outbox_id: "n1",
+        owner_id: "o1",
+        channel_type: "telegram",
+        event_type: "watchlist_match",
+        entity_type: "deal",
+        entity_id: "d1",
+        payload: {},
+        occurred_at: "2026-02-10T00:00:00.000Z",
+        status: "PENDING",
+        attempt_count: 0
+      },
+      {
+        notification_outbox_id: "n2",
+        owner_id: "o1",
+        channel_type: "telegram",
+        event_type: "watchlist_match",
+        entity_type: "deal",
+        entity_id: "d2",
+        payload: {},
+        occurred_at: "2026-02-10T00:00:00.000Z",
+        status: "PENDING",
+        attempt_count: 3
+      }
+    ];
+
+    const client = makeClient({
+      outboxRows,
+      identity: null,
+      deals: [
+        { deal_id: "d1", title: "Deal 1", price: 10, currency: "EUR" },
+        { deal_id: "d2", title: "Deal 2", price: 12, currency: "EUR" }
+      ]
+    });
+
+    const sendTelegram = vi.fn(async () => ({ ok: true }));
+
+    const res = await runNotificationsDispatch({
+      client,
+      sendTelegram,
+      dryRun: false,
+      now: new Date("2026-02-10T10:00:00.000Z"),
+      limitOwners: 2,
+      maxItemsPerOwner: 10,
+      maxItemsPerDigest: 10
+    });
+
+    expect(res.ok).toBe(true);
+    expect(sendTelegram).not.toHaveBeenCalled();
+    expect(outboxRows.find((r) => r.notification_outbox_id === "n1")?.attempt_count).toBe(1);
+    expect(outboxRows.find((r) => r.notification_outbox_id === "n2")?.attempt_count).toBe(4);
+    expect(outboxRows.find((r) => r.notification_outbox_id === "n2")?.last_error).toBe("missing_channel");
+  });
+
   it("skips during quiet hours and keeps outbox pending", async () => {
     vi.mocked(getNotificationPreferences).mockResolvedValue({
       owner_id: "o1",
@@ -258,4 +384,3 @@ describe("notifications-dispatch", () => {
     expect(outboxRows[0].status).toBe("PENDING");
   });
 });
-
