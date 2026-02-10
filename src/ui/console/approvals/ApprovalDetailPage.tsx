@@ -182,16 +182,20 @@ export default function ApprovalDetailPage() {
       >
         {confirmAction === "deny" && (
           <div className="space-y-1">
-            <label className="text-[10px] font-mono text-subtle uppercase tracking-wider">
+            <label className="text-[10px] font-mono text-subtle uppercase tracking-wider" htmlFor="approval-deny-reason">
               Reason (optional)
             </label>
             <textarea
+              id="approval-deny-reason"
               value={denyReason}
               onChange={(e) => setDenyReason(e.target.value)}
               maxLength={500}
               rows={3}
               placeholder="Why is this being denied?"
-              className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors resize-none"
+              name="deny_reason"
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors resize-none"
             />
           </div>
         )}

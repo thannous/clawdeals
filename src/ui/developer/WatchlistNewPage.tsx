@@ -107,7 +107,10 @@ export default function WatchlistNewPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="rtx 4070"
-                className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+                name="query"
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 disabled={status === "loading"}
               />
             </div>
@@ -120,7 +123,10 @@ export default function WatchlistNewPage() {
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="gpu,nvidia"
-                className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+                name="tags"
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 disabled={status === "loading"}
               />
             </div>
@@ -133,7 +139,11 @@ export default function WatchlistNewPage() {
                 value={priceMax}
                 onChange={(e) => setPriceMax(e.target.value)}
                 placeholder="500"
-                className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+                type="number"
+                inputMode="numeric"
+                name="price_max"
+                autoComplete="off"
+                className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 disabled={status === "loading"}
               />
             </div>

@@ -8,17 +8,29 @@ import { useDealDetail } from "./useDealDetail";
 import { useDealReasons } from "./useDealReasons";
 import { useDealNotes } from "./useDealNotes";
 
+const DATE_FMT = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: "UTC",
+});
+const WEIGHT_FMT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString();
+  return DATE_FMT.format(date);
 }
 
 function formatWeight(value) {
   if (value === null || value === undefined) return "—";
   const numeric = typeof value === "number" ? value : Number(value);
-  if (Number.isFinite(numeric)) return numeric.toFixed(2);
+  if (Number.isFinite(numeric)) return WEIGHT_FMT.format(numeric);
   return String(value);
 }
 
@@ -122,19 +134,19 @@ function ReasonsTab({ dealId }) {
 
           {reasons.nextCursor && (
             <div className="flex justify-center pt-2">
-              <button
-                data-testid="reasons-load-more"
-                onClick={reasons.loadMore}
-                disabled={reasons.loadMoreState === "loading"}
-                className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
-              >
-                {reasons.loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
-                {reasons.loadMoreState === "loading" ? "Loading..." : "Load More"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+                <button
+                  data-testid="reasons-load-more"
+                  onClick={reasons.loadMore}
+                  disabled={reasons.loadMoreState === "loading"}
+                  className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {reasons.loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
+                  {reasons.loadMoreState === "loading" ? "Loading…" : "Load More"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
     </section>
   );
 }
@@ -166,6 +178,7 @@ function NotesTab({ dealId }) {
         </div>
 
         <textarea
+          id="note-body"
           data-testid="note-body"
           value={body}
           onChange={(e) => {
@@ -173,8 +186,12 @@ function NotesTab({ dealId }) {
             if (notes.submitError) notes.clearSubmitError();
           }}
           rows={4}
-          placeholder="Add a note (no links)..."
-          className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary resize-none transition-colors"
+          placeholder="Add a note (no links)…"
+          aria-label="Ops note"
+          name="note_body"
+          autoComplete="off"
+          spellCheck={false}
+          className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg resize-none transition-colors"
         />
 
         {notes.submitError && (
@@ -191,7 +208,7 @@ function NotesTab({ dealId }) {
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {notes.submitState === "submitting" && <Loader2 size={14} className="animate-spin" />}
-            {notes.submitState === "submitting" ? "Saving..." : "Save note"}
+            {notes.submitState === "submitting" ? "Saving…" : "Save note"}
           </button>
         </div>
       </form>
@@ -229,19 +246,19 @@ function NotesTab({ dealId }) {
 
           {notes.nextCursor && (
             <div className="flex justify-center pt-2">
-              <button
-                data-testid="notes-load-more"
-                onClick={notes.loadMore}
-                disabled={notes.loadMoreState === "loading"}
-                className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
-              >
-                {notes.loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
-                {notes.loadMoreState === "loading" ? "Loading..." : "Load More"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+                <button
+                  data-testid="notes-load-more"
+                  onClick={notes.loadMore}
+                  disabled={notes.loadMoreState === "loading"}
+                  className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {notes.loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
+                  {notes.loadMoreState === "loading" ? "Loading…" : "Load More"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
     </section>
   );
 }

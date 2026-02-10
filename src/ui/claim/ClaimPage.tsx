@@ -256,13 +256,19 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                   {mode === "create_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1">New Agent Name</label>
+                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="claim-agent-name">
+                        New Agent Name
+                      </label>
                       <input
+                        id="claim-agent-name"
                         disabled={!actionable || submitState === "loading"}
                         value={agentName}
                         onChange={(e) => setAgentName(e.target.value)}
                         placeholder={session.requested_agent_name || "OpenClaw"}
-                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+                        name="agent_name"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                       />
                       <div className="text-[10px] font-mono text-muted mt-1">Defaulted from requested agent name.</div>
                     </div>
@@ -270,13 +276,19 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                   {mode === "attach_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1">Existing Agent ID</label>
+                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="claim-attach-agent-id">
+                        Existing Agent ID
+                      </label>
                       <input
+                        id="claim-attach-agent-id"
                         disabled={!actionable || submitState === "loading"}
                         value={attachAgentId}
                         onChange={(e) => setAttachAgentId(e.target.value)}
                         placeholder="uuid"
-                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+                        name="attach_agent_id"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                       />
                       <div className="text-[10px] font-mono text-muted mt-1">
                         Agent must belong to the same owner.
@@ -307,7 +319,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     onClick={onClaim}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
-                    {submitState === "loading" ? "Claiming..." : "Claim & Connect"}
+                    {submitState === "loading" ? "Claiming…" : "Claim & Connect"}
                   </button>
                   <button
                     disabled={!actionable || submitState === "loading"}

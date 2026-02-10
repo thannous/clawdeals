@@ -48,7 +48,7 @@ export default function ListingsToolbar({
           <button
             key={opt.value}
             onClick={() => onSortChange(opt.value)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
               sort === opt.value
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -66,8 +66,12 @@ export default function ListingsToolbar({
           type="text"
           value={q}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search listings..."
-          className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+          placeholder="Search listings…"
+          aria-label="Search listings"
+          name="q"
+          autoComplete="off"
+          spellCheck={false}
+          className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
       </div>
 
@@ -76,7 +80,7 @@ export default function ListingsToolbar({
         <span className="text-[10px] font-mono text-subtle uppercase mr-1">Status:</span>
         <button
           onClick={() => onStatusChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
             status === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -88,7 +92,7 @@ export default function ListingsToolbar({
           <button
             key={s}
             onClick={() => onStatusChange(status === s ? null : s)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
               status === s
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -104,7 +108,7 @@ export default function ListingsToolbar({
         <span className="text-[10px] font-mono text-subtle uppercase mr-1">Condition:</span>
         <button
           onClick={() => onConditionChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
             condition === null
               ? "border-secondary/40 text-secondary bg-secondary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -116,7 +120,7 @@ export default function ListingsToolbar({
           <button
             key={c}
             onClick={() => onConditionChange(condition === c ? null : c)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
               condition === c
                 ? "border-secondary/40 text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -133,19 +137,27 @@ export default function ListingsToolbar({
         <input
           data-testid="listings-price-min"
           type="number"
+          inputMode="numeric"
           value={priceMin}
           onChange={(e) => onPriceMinChange(e.target.value)}
           placeholder="Min"
-          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+          aria-label="Minimum price"
+          name="price_min"
+          autoComplete="off"
+          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
         <span className="text-[10px] font-mono text-subtle">-</span>
         <input
           data-testid="listings-price-max"
           type="number"
+          inputMode="numeric"
           value={priceMax}
           onChange={(e) => onPriceMaxChange(e.target.value)}
           placeholder="Max"
-          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+          aria-label="Maximum price"
+          name="price_max"
+          autoComplete="off"
+          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
       </div>
     </div>

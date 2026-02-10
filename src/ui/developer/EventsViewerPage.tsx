@@ -260,7 +260,11 @@ export default function EventsViewerPage() {
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               placeholder="filter: watchlist.match"
-              className="h-8 px-3 bg-bg border border-border text-text font-mono text-xs focus:outline-none focus:border-primary"
+              aria-label="Filter event type"
+              name="type_filter"
+              autoComplete="off"
+              spellCheck={false}
+              className="h-8 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             />
           </div>
         </div>

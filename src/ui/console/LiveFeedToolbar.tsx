@@ -79,7 +79,11 @@ export default function LiveFeedToolbar({
             value={entityId}
             onChange={(e) => onEntityIdChange(e.target.value)}
             placeholder="Filter by entity ID…"
-            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+            aria-label="Filter by entity ID"
+            name="entity_id"
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
           />
         </div>
 
@@ -87,7 +91,7 @@ export default function LiveFeedToolbar({
         <button
           data-testid="pause-toggle"
           onClick={onPauseToggle}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
             paused
               ? "border-yellow-400/40 text-yellow-400 bg-yellow-400/10"
               : "border-border text-muted hover:border-border-strong hover:text-text"
@@ -106,6 +110,7 @@ export default function LiveFeedToolbar({
         <button
           data-testid="filters-toggle"
           onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-label="Toggle filters"
           className="sm:hidden px-3 py-1.5 text-xs font-mono border border-border rounded text-muted hover:text-text"
         >
           <Filter size={14} />
@@ -120,7 +125,7 @@ export default function LiveFeedToolbar({
             key={type}
             data-testid={`type-filter-${type}`}
             onClick={() => toggleType(type)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
               types.includes(type)
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"

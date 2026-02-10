@@ -43,7 +43,7 @@ export default function ChannelsToolbar({
             <button
               key={s}
               onClick={() => onStateChange(s)}
-              className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+              className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
                 state === s
                   ? "border-primary/40 text-primary bg-primary/10"
                   : "border-border text-subtle hover:border-border-strong"
@@ -61,7 +61,7 @@ export default function ChannelsToolbar({
             onClick={onConnectTelegram}
             className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
           >
-            {connectTelegramLoading ? "Starting..." : "Connect Telegram"}
+            {connectTelegramLoading ? "Starting…" : "Connect Telegram"}
           </button>
         )}
       </div>
@@ -69,12 +69,16 @@ export default function ChannelsToolbar({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Channel type select */}
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1">Channel</label>
+          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="channels-channel-type">
+            Channel
+          </label>
           <select
+            id="channels-channel-type"
             data-testid="channels-channel-type"
+            name="channel_type"
             value={channelType}
             onChange={(e) => onChannelTypeChange(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text focus:outline-none focus:border-primary transition-colors"
+            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
           >
             {CHANNEL_TYPE_OPTIONS.map((opt) => (
               <option key={opt || "all"} value={opt}>
@@ -86,12 +90,16 @@ export default function ChannelsToolbar({
 
         {/* Default approve role */}
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1">Approve Role</label>
+          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="channels-approve-role">
+            Approve Role
+          </label>
           <select
+            id="channels-approve-role"
             data-testid="channels-approve-role"
+            name="approve_role"
             value={approveRole}
             onChange={(e) => onApproveRoleChange(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text focus:outline-none focus:border-primary transition-colors"
+            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
           >
             {ROLE_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
@@ -103,15 +111,22 @@ export default function ChannelsToolbar({
 
         {/* Pairing code lookup */}
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1">Find by Pairing Code</label>
+          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="channels-pairing-code">
+            Find by Pairing Code
+          </label>
           <div className="flex items-center gap-2">
             <input
+              id="channels-pairing-code"
               data-testid="channels-pairing-code"
               type="text"
               value={pairingCode}
               onChange={(e) => onPairingCodeChange(e.target.value)}
               placeholder="CD-XXXXXX"
-              className="flex-1 px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+              aria-label="Pairing code"
+              name="pairing_code"
+              autoComplete="off"
+              spellCheck={false}
+              className="flex-1 px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
             />
             <button
               disabled={lookupDisabled}

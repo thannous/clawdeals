@@ -35,7 +35,7 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
               key={opt.value}
               data-testid={`sort-${opt.value}`}
               onClick={() => onSortChange(opt.value)}
-              className={`px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-all ${
+              className={`px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
                 sort === opt.value
                   ? "border-primary text-primary bg-primary/10 shadow-[0_0_8px_rgb(var(--theme-primary-rgb)/0.2)]"
                   : "border-border text-muted hover:border-border-strong hover:text-text"
@@ -54,8 +54,12 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
             type="text"
             value={q}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search deals..."
-            className="w-full pl-8 pr-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+            placeholder="Search deals…"
+            aria-label="Search deals"
+            name="q"
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full pl-8 pr-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
           />
         </div>
 
@@ -63,6 +67,7 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
         <button
           data-testid="filters-toggle"
           onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-label="Toggle filters"
           className="sm:hidden px-3 py-1.5 text-xs font-mono border border-border rounded text-muted hover:text-text"
         >
           <SlidersHorizontal size={14} />
@@ -79,7 +84,7 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
             data-testid={`status-filter-${status}`}
             onClick={() => !isStatusLocked && toggleStatus(status)}
             disabled={isStatusLocked}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded border transition-colors ${
               statuses.includes(status)
                 ? "border-secondary text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"

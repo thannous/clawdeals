@@ -72,7 +72,14 @@ export default function ConfirmModal({
       aria-labelledby="confirm-modal-title"
     >
       {/* Overlay */}
-      <div className="absolute inset-0 modal-overlay" onClick={loading ? undefined : onCancel} />
+      <button
+        type="button"
+        aria-label="Close dialog"
+        tabIndex={-1}
+        disabled={loading}
+        className="absolute inset-0 modal-overlay"
+        onClick={onCancel}
+      />
 
       {/* Dialog */}
       <div className="relative bg-surface border border-border rounded clip-corner p-6 max-w-md w-full mx-4 space-y-4">
@@ -94,7 +101,7 @@ export default function ConfirmModal({
             onClick={onConfirm}
             className={`px-4 py-2 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${colors.confirm}`}
           >
-            {loading ? "Processing..." : confirmLabel}
+            {loading ? "Processing…" : confirmLabel}
           </button>
         </div>
       </div>

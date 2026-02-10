@@ -31,7 +31,7 @@ export default function ModerationToolbar({
         <span className="text-[10px] font-mono text-subtle uppercase mr-1">Action:</span>
         <button
           onClick={() => onActionTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
             actionType === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -43,7 +43,7 @@ export default function ModerationToolbar({
           <button
             key={opt}
             onClick={() => onActionTypeChange(actionType === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
               actionType === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -59,7 +59,7 @@ export default function ModerationToolbar({
         <span className="text-[10px] font-mono text-subtle uppercase mr-1">Entity:</span>
         <button
           onClick={() => onEntityTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
             entityType === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -71,7 +71,7 @@ export default function ModerationToolbar({
           <button
             key={opt}
             onClick={() => onEntityTypeChange(entityType === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-all ${
+            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
               entityType === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -90,9 +90,12 @@ export default function ModerationToolbar({
             type="text"
             value={entityId}
             onChange={(e) => onEntityIdChange(e.target.value)}
-            placeholder="Entity ID..."
+            placeholder="Entity ID…"
             aria-label="Entity ID"
-            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+            name="entity_id"
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
           />
         </div>
       </div>

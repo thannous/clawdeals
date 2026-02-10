@@ -79,6 +79,6 @@ export async function apiRequest<T = any>({
 
 export function maskApiKey(apiKey: string): string {
   const key = String(apiKey || "");
-  if (key.length <= 10) return `${key.slice(0, 2)}...`;
-  return `${key.slice(0, 6)}...${key.slice(-4)}`;
+  if (key.length <= 10) return `${key.slice(0, 2)}…`;
+  return `${key.slice(0, 6)}…${key.slice(-4)}`;
 }

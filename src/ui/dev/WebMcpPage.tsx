@@ -134,17 +134,23 @@ export default function WebMcpPage() {
                 onClick={handleRun}
                 className="border border-primary px-4 py-2 text-xs font-mono font-bold uppercase text-primary hover:bg-primary hover:text-bg disabled:opacity-60"
               >
-                {running ? "Running..." : "Run"}
+                {running ? "Running…" : "Run"}
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Args (JSON)</div>
+                <label className="text-[10px] font-mono uppercase tracking-widest text-subtle" htmlFor="webmcp-args">
+                  Args (JSON)
+                </label>
                 <textarea
+                  id="webmcp-args"
                   value={args}
                   onChange={(e) => setArgs(e.target.value)}
-                  className="w-full min-h-[220px] text-xs font-mono bg-bg border border-border rounded p-2 text-text focus:outline-none focus:border-primary"
+                  name="args"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full min-h-[220px] text-xs font-mono bg-bg border border-border rounded p-2 text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                 />
               </div>
               <div className="space-y-2">
@@ -165,4 +171,3 @@ export default function WebMcpPage() {
     </div>
   );
 }
-

@@ -52,7 +52,14 @@ function ReportActionModalInner({
       aria-labelledby="report-action-modal-title"
     >
       {/* Overlay */}
-      <div className="absolute inset-0 modal-overlay" onClick={loading ? undefined : onCancel} />
+      <button
+        type="button"
+        aria-label="Close dialog"
+        tabIndex={-1}
+        disabled={loading}
+        className="absolute inset-0 modal-overlay"
+        onClick={onCancel}
+      />
 
       {/* Dialog */}
       <div className="relative bg-surface border border-border rounded clip-corner p-6 max-w-md w-full mx-4 space-y-4">
@@ -62,14 +69,20 @@ function ReportActionModalInner({
         <p className="text-xs font-mono text-muted leading-relaxed">{message}</p>
 
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1">Reason</label>
+          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="report-action-reason">
+            Reason
+          </label>
           <textarea
+            id="report-action-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value.slice(0, 1000))}
             maxLength={1000}
             rows={3}
-            placeholder="Optional reason for this action..."
-            className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors resize-none"
+            placeholder="Optional reason for this action…"
+            name="reason"
+            autoComplete="off"
+            spellCheck={false}
+            className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors resize-none"
           />
           <span className="text-[10px] font-mono text-subtle">{reason.length}/1000</span>
         </div>
@@ -87,7 +100,7 @@ function ReportActionModalInner({
             onClick={() => onSubmit(reason)}
             className={`px-4 py-2 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${confirmColors}`}
           >
-            {loading ? "Processing..." : action === "confirm" ? "Confirm" : "Reject"}
+            {loading ? "Processing…" : action === "confirm" ? "Confirm" : "Reject"}
           </button>
         </div>
       </div>

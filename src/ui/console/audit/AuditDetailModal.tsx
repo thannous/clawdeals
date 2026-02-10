@@ -42,7 +42,13 @@ export default function AuditDetailModal({ open, entry, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title">
       {/* Overlay */}
-      <div className="absolute inset-0 modal-overlay" onClick={onClose} />
+      <button
+        type="button"
+        aria-label="Close dialog"
+        tabIndex={-1}
+        className="absolute inset-0 modal-overlay"
+        onClick={onClose}
+      />
 
       {/* Dialog */}
       <div className="relative bg-surface border border-border rounded clip-corner p-6 max-w-lg w-full mx-4 space-y-4 max-h-[80vh] overflow-y-auto">

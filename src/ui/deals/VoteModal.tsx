@@ -89,9 +89,10 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
           <button
             data-testid="vote-modal-close"
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1 text-subtle hover:text-text transition-colors"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" focusable="false" />
           </button>
         </div>
 
@@ -105,15 +106,22 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
           )}
 
           <div>
+            <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="vote-reason">
+              Reason
+            </label>
             <textarea
+              id="vote-reason"
               ref={textareaRef}
               data-testid="vote-reason"
+              name="reason"
+              autoComplete="off"
+              spellCheck={false}
               value={reason}
               onChange={(e) => setReason(e.target.value.slice(0, MAX_REASON))}
-              placeholder="Why are you voting this way?"
+              placeholder="e.g. Too expensive for the specs…"
               rows={4}
               maxLength={MAX_REASON}
-              className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary resize-none transition-colors"
+              className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg resize-none transition-colors"
             />
             <div className={`text-right text-[10px] font-mono mt-1 ${isOverWarn ? "text-primary" : "text-subtle"}`}>
               {charCount}/{MAX_REASON}
@@ -135,10 +143,10 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
             data-testid="vote-submit"
             onClick={handleSubmit}
             disabled={isSubmitting || retryIn > 0}
-            className="px-4 py-1.5 text-xs font-mono font-bold uppercase bg-primary text-bg rounded hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            className="px-4 py-1.5 text-xs font-mono font-bold uppercase bg-primary text-bg rounded hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center gap-2"
           >
             {isSubmitting && <Loader2 size={12} className="animate-spin" />}
-            {isSubmitting ? "Submitting..." : retryIn > 0 ? `Wait ${retryIn}s` : "Submit"}
+            {isSubmitting ? "Submitting…" : retryIn > 0 ? `Wait ${retryIn}s` : "Submit"}
           </button>
         </div>
       </div>

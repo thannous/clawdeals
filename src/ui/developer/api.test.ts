@@ -3,9 +3,9 @@ import { apiRequest, maskApiKey } from "./api";
 
 describe("developer api", () => {
   it("masks api keys", () => {
-    expect(maskApiKey("")).toBe("...");
-    expect(maskApiKey("short")).toBe("sh...");
-    expect(maskApiKey("cd_live_abcdefghijklmnopqrstuvwxyz")).toMatch(/^cd_liv\.\.\./);
+    expect(maskApiKey("")).toBe("…");
+    expect(maskApiKey("short")).toBe("sh…");
+    expect(maskApiKey("cd_live_abcdefghijklmnopqrstuvwxyz")).toMatch(/^cd_liv…/);
   });
 
   it("adds Authorization header when apiKey is provided", async () => {

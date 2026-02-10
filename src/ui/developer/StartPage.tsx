@@ -160,7 +160,7 @@ export default function StartPage() {
   const openClawSnippet = `Skill URL: ${skillUrl}\nCLAWDEALS_API_BASE=${apiBase}\nCLAWDEALS_API_KEY=${activeKey || "<YOUR_API_KEY>"}`;
   const mcpInstallSnippet = `export CLAWDEALS_API_KEY="${activeKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${mcpApiBase}"\n\nnpm run mcp:install`;
   const mcpVerifyPrompt = `List tools, then call:\nclawdeals.deals.list { "limit": 1 }`;
-  const mcpManualJson = `{\n  "servers": {\n    "clawdeals": {\n      "type": "stdio",\n      "command": "node",\n      "args": [\"/ABS/PATH/TO/clawdeals/scripts/mcp-server.mjs\"],\n      "env": {\n        "CLAWDEALS_API_KEY": "${activeKey || "cd_live_..."}",\n        "CLAWDEALS_API_BASE": "${mcpApiBase}",\n        "CLAWDEALS_ORIGIN": "mcp",\n        "CLAWDEALS_TIMEOUT_MS": "15000"\n      }\n    }\n  }\n}`;
+  const mcpManualJson = `{\n  "servers": {\n    "clawdeals": {\n      "type": "stdio",\n      "command": "node",\n      "args": [\"/ABS/PATH/TO/clawdeals/scripts/mcp-server.mjs\"],\n      "env": {\n        "CLAWDEALS_API_KEY": "${activeKey || "cd_live_…"}",\n        "CLAWDEALS_API_BASE": "${mcpApiBase}",\n        "CLAWDEALS_ORIGIN": "mcp",\n        "CLAWDEALS_TIMEOUT_MS": "15000"\n      }\n    }\n  }\n}`;
 
   const handleCopyOpenClaw = useCallback(async () => {
     try {
@@ -275,7 +275,10 @@ export default function StartPage() {
                     value={agentName}
                     onChange={(e) => setAgentName(e.target.value)}
                     placeholder="My Trading Bot"
-                    className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+                    name="agent_name"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                     disabled={status === "loading"}
                   />
                 </div>
@@ -305,8 +308,11 @@ export default function StartPage() {
                     id="api-key"
                     value={pastedKey}
                     onChange={(e) => setPastedKey(e.target.value)}
-                    placeholder="cd_live_..."
-                    className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+                    placeholder="cd_live_…"
+                    name="api_key"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
                     disabled={status === "loading"}
                   />
                 </div>

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import DealCard from "./DealCard";
 
@@ -18,7 +19,7 @@ function SkeletonCard() {
   );
 }
 
-export default function DealsList({ deals, fetchState, loadMoreState, error, nextCursor, retryIn, onRetry, onLoadMore, onVote }) {
+function DealsList({ deals, fetchState, loadMoreState, error, nextCursor, retryIn, onRetry, onLoadMore, onVote }) {
   if (fetchState === "loading") {
     return (
       <div data-testid="deals-loading" className="space-y-3">
@@ -70,10 +71,12 @@ export default function DealsList({ deals, fetchState, loadMoreState, error, nex
             className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
-            {loadMoreState === "loading" ? "Loading..." : "Load More"}
+            {loadMoreState === "loading" ? "Loading…" : "Load More"}
           </button>
         </div>
       )}
     </div>
   );
 }
+
+export default memo(DealsList);

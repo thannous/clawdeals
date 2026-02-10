@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 function randomIdempotencyKey(): string {
   try {
@@ -135,22 +136,22 @@ export default function PairPage() {
             onClick={onConfirm}
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
           >
-            {submitState === "loading" ? "Confirming..." : "Confirm Pairing"}
+            {submitState === "loading" ? "Confirming…" : "Confirm Pairing"}
           </button>
 
-          <button
-            onClick={() => router.push("/console/channels")}
+          <Link
+            href="/console/channels"
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
           >
             Console Channels
-          </button>
+          </Link>
 
-          <button
-            onClick={() => router.push("/console/approvals")}
+          <Link
+            href="/console/approvals"
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
           >
             Console Approvals
-          </button>
+          </Link>
         </div>
 
         <div className="text-[10px] font-mono text-subtle">

@@ -193,14 +193,23 @@ export default function DevicePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-subtle uppercase">User Code</label>
+              <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="device-user-code">
+                User Code
+              </label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
+                  id="device-user-code"
                   data-testid="device-user-code"
                   value={userCode}
                   onChange={(e) => setUserCode(e.target.value)}
                   placeholder="ABCD-EFGH"
-                  className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+                  name="user_code"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  inputMode="text"
+                  className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
                 />
                 <button
                   data-testid="device-lookup"
@@ -291,13 +300,19 @@ export default function DevicePage() {
 
                   {mode === "create_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1">New Agent Name</label>
+                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="device-agent-name">
+                        New Agent Name
+                      </label>
                       <input
+                        id="device-agent-name"
                         value={agentName}
                         onChange={(e) => setAgentName(e.target.value)}
                         disabled={!actionable || submitState === "loading"}
                         placeholder={request.requested_agent_name || "OpenClaw"}
-                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+                        name="agent_name"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                       />
                       <div className="text-[10px] font-mono text-muted mt-1">Defaulted from requested agent name.</div>
                     </div>
@@ -305,13 +320,19 @@ export default function DevicePage() {
 
                   {mode === "attach_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1">Existing Agent ID</label>
+                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="device-attach-agent-id">
+                        Existing Agent ID
+                      </label>
                       <input
+                        id="device-attach-agent-id"
                         value={attachAgentId}
                         onChange={(e) => setAttachAgentId(e.target.value)}
                         disabled={!actionable || submitState === "loading"}
                         placeholder="uuid"
-                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors disabled:opacity-50"
+                        name="attach_agent_id"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                       />
                       <div className="text-[10px] font-mono text-muted mt-1">
                         Agent must belong to the same owner.
@@ -343,7 +364,7 @@ export default function DevicePage() {
                     onClick={onApprove}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
-                    {submitState === "loading" ? "Approving..." : "Approve"}
+                    {submitState === "loading" ? "Approving…" : "Approve"}
                   </button>
                   <button
                     data-testid="device-deny"

@@ -14,7 +14,7 @@ export default function Pagination({ nextCursor, loading = false, onLoadMore }: 
         disabled={loading}
         className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors"
       >
-        {loading ? "Loading..." : "Load More"}
+        {loading ? "Loading…" : "Load More"}
       </button>
     </div>
   );

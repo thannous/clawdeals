@@ -1,4 +1,5 @@
 import Document, { Head, Html, Main, NextScript } from "next/document";
+import Script from "next/script";
 import { DEFAULT_THEME_ID, THEMES } from "../theme/themes";
 
 const THEME_COLOR_MAP = THEMES.reduce<Record<string, string>>((acc, theme) => {
@@ -21,10 +22,20 @@ export default class MyDocument extends Document {
           <meta name="color-scheme" content="dark" />
           <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
           <link rel="manifest" href="/site.webmanifest" />
-          <script dangerouslySetInnerHTML={{ __html: PREPAINT_THEME_SCRIPT }} />
+          <Script id="prepaint-theme" strategy="beforeInteractive">
+            {PREPAINT_THEME_SCRIPT}
+          </Script>
         </Head>
         <body>
-          <Main />
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[1000] focus:bg-bg focus:text-text focus:border focus:border-primary focus:px-3 focus:py-2 focus:rounded"
+          >
+            Skip to content
+          </a>
+          <div id="main-content" role="main" tabIndex={-1}>
+            <Main />
+          </div>
           <NextScript />
         </body>
       </Html>
