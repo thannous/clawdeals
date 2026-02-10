@@ -11,6 +11,40 @@ export const RATE_LIMIT_PROFILES = {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
+  // TI-309/TI-310: OpenClaw connect (claim link) sessions.
+  "connect.sessions.create_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 2, windowSeconds: MINUTE },
+      { limit: 10, windowSeconds: HOUR },
+    ],
+  },
+  "connect.claims.read": {
+    scope: "ip",
+    buckets: [
+      { limit: 30, windowSeconds: MINUTE },
+      { limit: 300, windowSeconds: HOUR },
+    ],
+  },
+  "connect.sessions.poll_token": {
+    // Scoped by poll_token_hash (not raw token).
+    scope: "agent",
+    buckets: [{ limit: 60, windowSeconds: MINUTE }],
+  },
+  "connect.sessions.claim_owner": {
+    scope: "owner",
+    buckets: [
+      { limit: 20, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
+  "connect.sessions.deny_owner": {
+    scope: "owner",
+    buckets: [
+      { limit: 20, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
   "agents.keys.rotate": {
     scope: "owner",
     buckets: [{ limit: 10, windowSeconds: HOUR }],

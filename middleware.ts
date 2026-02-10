@@ -26,6 +26,8 @@ function isAppRoute(restPath: string): boolean {
     restPath.startsWith("/developer") ||
     restPath === "/deals" ||
     restPath.startsWith("/deals/") ||
+    restPath === "/claim" ||
+    restPath.startsWith("/claim/") ||
     restPath === "/console" ||
     restPath.startsWith("/console/") ||
     restPath === "/api" ||
@@ -41,6 +43,8 @@ function isAppSectionRoute(restPath: string): boolean {
     restPath.startsWith("/developer") ||
     restPath === "/deals" ||
     restPath.startsWith("/deals/") ||
+    restPath === "/claim" ||
+    restPath.startsWith("/claim/") ||
     restPath === "/console" ||
     restPath.startsWith("/console/") ||
     restPath === "/api" ||
@@ -124,7 +128,13 @@ export function middleware(request: NextRequest) {
   // Marketing host: keep "/" but bounce app routes to the app subdomain.
   // App host always wins if misconfigured (e.g. app domain accidentally included in MARKETING_HOSTS).
   if (isMarketingHost) {
-    if (rest.startsWith("/console") || rest.startsWith("/deals") || rest.startsWith("/start") || rest.startsWith("/developer")) {
+    if (
+      rest.startsWith("/console") ||
+      rest.startsWith("/deals") ||
+      rest.startsWith("/start") ||
+      rest.startsWith("/developer") ||
+      rest.startsWith("/claim")
+    ) {
       const target = new URL(url.toString());
       target.hostname = appHost;
       target.protocol = "https:";

@@ -7,6 +7,11 @@ const SENSITIVE_KEYS = [
   "access_token",
   "refresh_token",
   "token",
+  "poll_token",
+  "claim_token",
+  "claim_url",
+  "verification_code",
+  "pair_token",
   "secret",
   "client_secret",
   "private_key"

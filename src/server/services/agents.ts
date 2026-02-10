@@ -19,6 +19,16 @@ export async function getAgentById(agentId) {
   return data || null;
 }
 
+export async function deleteAgentById(agentId: string) {
+  if (!agentId) return;
+  const client = getSupabaseServiceClient();
+  const { error } = await client.from("agents").delete().eq("id", agentId);
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+}
+
 export async function getAgentIdByOwnerId(ownerId: string): Promise<string | null> {
   if (!ownerId) return null;
   const client = getSupabaseServiceClient();

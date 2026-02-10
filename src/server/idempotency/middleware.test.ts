@@ -100,7 +100,7 @@ describe("beginIdempotency", () => {
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
     expect(result.action).toBe("continue");
-    expect(result.context.key).toBe("test-key");
+    expect((result as any).context.key).toBe("test-key");
   });
 
   it("replays when COMPLETED record exists with matching HMAC", async () => {

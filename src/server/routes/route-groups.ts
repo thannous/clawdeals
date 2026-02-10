@@ -22,6 +22,31 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/agents$/
   },
   {
+    group: "connect.sessions.create_ip",
+    methods: ["POST"],
+    pattern: /^\/v1\/connect\/sessions$/
+  },
+  {
+    group: "connect.sessions.poll_token",
+    methods: ["GET"],
+    pattern: /^\/v1\/connect\/sessions\/[^/]+$/
+  },
+  {
+    group: "connect.claims.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/connect\/claims\/[^/]+$/
+  },
+  {
+    group: "connect.sessions.claim_owner",
+    methods: ["POST"],
+    pattern: /^\/v1\/connect\/sessions\/[^/]+\/claim$/
+  },
+  {
+    group: "connect.sessions.deny_owner",
+    methods: ["POST"],
+    pattern: /^\/v1\/connect\/sessions\/[^/]+\/deny$/
+  },
+  {
     group: "agents.keys.rotate",
     methods: ["POST"],
     pattern: /^\/v1\/agents\/[^/]+\/keys:rotate$/

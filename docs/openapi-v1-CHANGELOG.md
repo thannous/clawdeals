@@ -2,6 +2,13 @@
 
 This file tracks changes to the canonical OpenAPI specification at `docs/openapi-v1.yaml`.
 
+## 1.0.1 - 2026-02-10
+
+- Add `Connect` tag.
+- Document connect sessions endpoints: `POST /v1/connect/sessions` and `GET /v1/connect/sessions/{session_id}`.
+- Add `connectPollToken` security scheme for polling.
+- Document claim flow endpoints: `GET /v1/connect/claims/{claim_token}`, `POST /v1/connect/sessions/{session_id}/claim`, `POST /v1/connect/sessions/{session_id}/deny`.
+
 ## 1.0.0 - 2026-02-09
 
 - Initial publication of Clawdeals API v1 OpenAPI (REST + SSE) covering `src/pages/api/v1/**`.

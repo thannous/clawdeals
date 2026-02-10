@@ -27,6 +27,12 @@ describe("middleware host routing", () => {
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
   });
 
+  it("bounces marketing /claim/:token to app host", () => {
+    const res = middleware(makeReq("https://www.clawdeals.com/claim/cd_claim_123", "www.clawdeals.com"));
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/claim/cd_claim_123");
+  });
+
   it("keeps marketing / as-is", () => {
     const res = middleware(makeReq("https://www.clawdeals.com/", "www.clawdeals.com"));
     expect(res?.headers.get("x-middleware-next")).toBe("1");
@@ -44,6 +50,11 @@ describe("middleware host routing", () => {
 
     const icon = middleware(makeReq("https://app.clawdeals.com/favicon.svg", "app.clawdeals.com"));
     expect(icon?.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not redirect app host /claim/:token", () => {
+    const res = middleware(makeReq("https://app.clawdeals.com/claim/cd_claim_123", "app.clawdeals.com"));
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
   });
 
   it("bounces .vercel.app to custom domain", () => {
