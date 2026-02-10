@@ -35,6 +35,8 @@ export default function StartPage() {
   const [message, setMessage] = useState<string>("");
   const [openClawCopyStatus, setOpenClawCopyStatus] = useState<"idle" | "success" | "error">("idle");
   const [openClawCopyMessage, setOpenClawCopyMessage] = useState<string>("");
+  const [mcpCopyStatus, setMcpCopyStatus] = useState<"idle" | "success" | "error">("idle");
+  const [mcpCopyMessage, setMcpCopyMessage] = useState<string>("");
   const [agentId, setAgentId] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
 
@@ -54,6 +56,8 @@ export default function StartPage() {
     setMessage("");
     setOpenClawCopyStatus("idle");
     setOpenClawCopyMessage("");
+    setMcpCopyStatus("idle");
+    setMcpCopyMessage("");
     setPastedKey("");
   }, []);
 
@@ -62,6 +66,8 @@ export default function StartPage() {
     setMessage("");
     setOpenClawCopyStatus("idle");
     setOpenClawCopyMessage("");
+    setMcpCopyStatus("idle");
+    setMcpCopyMessage("");
     setCreatedKey(null);
     setAgentId(null);
 
@@ -111,6 +117,8 @@ export default function StartPage() {
     setMessage("");
     setOpenClawCopyStatus("idle");
     setOpenClawCopyMessage("");
+    setMcpCopyStatus("idle");
+    setMcpCopyMessage("");
     try {
       await apiRequest({
         path: "/v1/deals?limit=1",
@@ -141,13 +149,18 @@ export default function StartPage() {
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://app.clawdeals.com";
   const apiBase = `${baseUrl}/api`;
+  const hostedApiBase = "https://app.clawdeals.com/api";
+  const localApiBase = "http://localhost:3000/api";
+  const [mcpApiBase, setMcpApiBase] = useState<string>(hostedApiBase);
   const skillUrl = "https://clawdeals.com/skill.md";
   const curlSnippet = activeKey
     ? `curl -sS \\\n  -H "Authorization: Bearer ${activeKey}" \\\n  "${baseUrl}/api/v1/deals?limit=10"`
     : `curl -sS \\\n  -H "Authorization: Bearer <YOUR_API_KEY>" \\\n  "${baseUrl}/api/v1/deals?limit=10"`;
 
   const openClawSnippet = `Skill URL: ${skillUrl}\nCLAWDEALS_API_BASE=${apiBase}\nCLAWDEALS_API_KEY=${activeKey || "<YOUR_API_KEY>"}`;
-  const mcpSnippet = `export CLAWDEALS_API_KEY="${activeKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${apiBase}"\nnpm run mcp:stdio`;
+  const mcpInstallSnippet = `export CLAWDEALS_API_KEY="${activeKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${mcpApiBase}"\n\nnpm run mcp:install`;
+  const mcpVerifyPrompt = `List tools, then call:\nclawdeals.deals.list { "limit": 1 }`;
+  const mcpManualJson = `{\n  "servers": {\n    "clawdeals": {\n      "type": "stdio",\n      "command": "node",\n      "args": [\"/ABS/PATH/TO/clawdeals/scripts/mcp-server.mjs\"],\n      "env": {\n        "CLAWDEALS_API_KEY": "${activeKey || "cd_live_..."}",\n        "CLAWDEALS_API_BASE": "${mcpApiBase}",\n        "CLAWDEALS_ORIGIN": "mcp",\n        "CLAWDEALS_TIMEOUT_MS": "15000"\n      }\n    }\n  }\n}`;
 
   const handleCopyOpenClaw = useCallback(async () => {
     try {
@@ -159,6 +172,39 @@ export default function StartPage() {
       setOpenClawCopyMessage("Copy failed. Select and copy manually.");
     }
   }, [openClawSnippet]);
+
+  const handleCopyMcpInstall = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(mcpInstallSnippet);
+      setMcpCopyStatus("success");
+      setMcpCopyMessage("Copied MCP install command.");
+    } catch {
+      setMcpCopyStatus("error");
+      setMcpCopyMessage("Copy failed. Select and copy manually.");
+    }
+  }, [mcpInstallSnippet]);
+
+  const handleCopyMcpManual = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(mcpManualJson);
+      setMcpCopyStatus("success");
+      setMcpCopyMessage("Copied manual MCP JSON.");
+    } catch {
+      setMcpCopyStatus("error");
+      setMcpCopyMessage("Copy failed. Select and copy manually.");
+    }
+  }, [mcpManualJson]);
+
+  const handleCopyMcpVerify = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(mcpVerifyPrompt);
+      setMcpCopyStatus("success");
+      setMcpCopyMessage("Copied MCP verify prompt.");
+    } catch {
+      setMcpCopyStatus("error");
+      setMcpCopyMessage("Copy failed. Select and copy manually.");
+    }
+  }, [mcpVerifyPrompt]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -345,13 +391,106 @@ export default function StartPage() {
         </div>
 
         <div className="border border-border bg-bg p-5 space-y-3">
-          <div className="text-xs font-mono uppercase tracking-widest text-subtle">Advanced: Run MCP locally (optional)</div>
-          <div className="text-xs font-mono text-subtle">
-            Only needed if your runtime requires an MCP server. Most OpenClaw setups can call the REST API directly.
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="space-y-2">
+              <div className="text-xs font-mono uppercase tracking-widest text-subtle">Connect your IDE (MCP)</div>
+              <div className="text-xs font-mono text-subtle">
+                One command installs the Clawdeals MCP server into supported IDE configs (Cursor, Claude Desktop). Then restart your IDE.
+              </div>
+              <div className="text-xs font-mono text-subtle">
+                If your IDE uses a custom path, run: <span className="text-text">npm run mcp:install -- --file /path/to/mcp.json</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setMcpApiBase(hostedApiBase)}
+                className={`px-3 py-2 text-xs font-bold uppercase tracking-widest border ${
+                  mcpApiBase === hostedApiBase ? "border-primary text-primary" : "border-border text-subtle hover:border-border-strong hover:text-text"
+                }`}
+              >
+                Hosted
+              </button>
+              <button
+                type="button"
+                onClick={() => setMcpApiBase(localApiBase)}
+                className={`px-3 py-2 text-xs font-bold uppercase tracking-widest border ${
+                  mcpApiBase === localApiBase ? "border-primary text-primary" : "border-border text-subtle hover:border-border-strong hover:text-text"
+                }`}
+                title="Requires `npm run dev` in another terminal"
+              >
+                Local
+              </button>
+              <button
+                type="button"
+                onClick={() => setMcpApiBase(apiBase)}
+                className={`px-3 py-2 text-xs font-bold uppercase tracking-widest border ${
+                  mcpApiBase === apiBase ? "border-primary text-primary" : "border-border text-subtle hover:border-border-strong hover:text-text"
+                }`}
+                title="Use the API of the current site you are browsing"
+              >
+                This site
+              </button>
+            </div>
           </div>
+
           <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-3 overflow-x-auto">
-            {mcpSnippet}
+            {mcpInstallSnippet}
           </pre>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleCopyMcpInstall}
+              className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
+              disabled={!activeKey}
+              aria-disabled={!activeKey}
+              title={activeKey ? "Copy MCP install command" : "Generate or paste an API key first"}
+            >
+              Copy install
+            </button>
+            <button
+              onClick={handleCopyMcpVerify}
+              className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
+              disabled={!activeKey}
+              aria-disabled={!activeKey}
+              title={activeKey ? "Copy MCP verify prompt" : "Generate or paste an API key first"}
+            >
+              Copy verify
+            </button>
+            <button
+              onClick={handleCopyMcpManual}
+              className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
+              disabled={!activeKey}
+              aria-disabled={!activeKey}
+              title={activeKey ? "Copy manual MCP JSON" : "Generate or paste an API key first"}
+            >
+              Copy manual JSON
+            </button>
+
+            {mcpCopyMessage ? (
+              <span className={`text-xs font-mono ${mcpCopyStatus === "error" ? "text-red-400" : "text-emerald-400"}`}>
+                {mcpCopyMessage}
+              </span>
+            ) : (
+              <span className="text-xs font-mono text-subtle">Run `npm run mcp:install` from the repo root.</span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="border border-border bg-bg p-4 space-y-2">
+              <div className="text-xs font-mono uppercase tracking-widest text-subtle">Verify inside your IDE</div>
+              <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-3 overflow-x-auto">
+                {mcpVerifyPrompt}
+              </pre>
+            </div>
+            <div className="border border-border bg-bg p-4 space-y-2">
+              <div className="text-xs font-mono uppercase tracking-widest text-subtle">Manual (fallback)</div>
+              <div className="text-xs font-mono text-subtle">If install fails, paste this and replace the absolute path.</div>
+              <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-3 overflow-x-auto">
+                {mcpManualJson}
+              </pre>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-3">

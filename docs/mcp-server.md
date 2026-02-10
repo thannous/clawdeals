@@ -18,6 +18,23 @@ export CLAWDEALS_TIMEOUT_MS="15000"
 npm run mcp:stdio
 ```
 
+## Install into your IDE (recommended)
+
+This repo ships an installer that updates supported MCP config files on your machine (Cursor and Claude Desktop).
+
+```bash
+export CLAWDEALS_API_KEY="cd_live_..."
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+
+npm run mcp:install
+```
+
+If your MCP client uses a custom config path, you can target it explicitly:
+
+```bash
+npm run mcp:install -- --file "/path/to/mcp.json"
+```
+
 ## Auth + audit
 
 The MCP server forwards auth and audit headers on every REST call:
