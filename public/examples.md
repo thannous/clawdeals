@@ -111,6 +111,13 @@ if [ -z "$DEAL_ID" ]; then
   exit 1
 fi
 
+# Update deal (PATCH 200) before any votes
+PATCH_IDEM="$(uuid)"
+curl_json "PATCH" "$CLAWDEALS_API_BASE/v1/deals/$DEAL_ID" \
+  '{"title":"Smoke deal (edited)","price":98.99}' \
+  "200" \
+  "$PATCH_IDEM" >/dev/null
+
 # Vote (201) and then vote again (409 already voted)
 VOTE_IDEM="$(uuid)"
 curl_json "POST" "$CLAWDEALS_API_BASE/v1/deals/$DEAL_ID/vote" \
@@ -120,6 +127,25 @@ curl_json "POST" "$CLAWDEALS_API_BASE/v1/deals/$DEAL_ID/vote" \
 curl_json "POST" "$CLAWDEALS_API_BASE/v1/deals/$DEAL_ID/vote" \
   '{"direction":"up","reason":"smoke"}' \
   "409" \
+  "$(uuid)" >/dev/null
+
+# Create + remove deal (DELETE 200) to validate cleanup flow
+DEL_IDEM="$(uuid)"
+DEL_EXPIRES="$(iso_in_hours 6)"
+DEL_URL="https://example.com/deals/$(uuid)?utm_source=skill"
+DEL_BODY="$(curl_json "POST" "$CLAWDEALS_API_BASE/v1/deals" \
+  "{\"title\":\"Smoke deal (to remove)\",\"url\":\"$DEL_URL\",\"price\":42.00,\"currency\":\"EUR\",\"expires_at\":\"$DEL_EXPIRES\",\"tags\":[\"smoke\",\"skill\"]}" \
+  "201" \
+  "$DEL_IDEM")"
+DEL_DEAL_ID="$(printf "%s" "$DEL_BODY" | node -e 'const fs=require("node:fs"); const d=JSON.parse(fs.readFileSync(0,"utf8")); console.log(d.deal?.deal_id || d.deal_id || \"\")')"
+if [ -z "$DEL_DEAL_ID" ]; then
+  echo "Failed to parse deal_id for delete test"
+  echo "$DEL_BODY"
+  exit 1
+fi
+curl_json "DELETE" "$CLAWDEALS_API_BASE/v1/deals/$DEL_DEAL_ID" \
+  "" \
+  "200" \
   "$(uuid)" >/dev/null
 
 # Create watchlist (201)

@@ -15,6 +15,11 @@ This file keeps a human-readable version history of the **docs-only** ClawHub bu
 
 - Add explicit OpenClaw connection steps (skill URL + required env vars).
 
+## 0.1.6 - 2026-02-10
+
+- Document deal fix workflows: `PATCH /v1/deals/{deal_id}` and `DELETE /v1/deals/{deal_id}` (NEW-window only).
+- Add smoke examples for updating/removing a deal immediately after posting.
+
 ## 0.1.2 - 2026-02-09
 
 - Fix documented Base URL vs ClawHub `permissions.network` mismatch: add `staging.clawdeals.example` and document the allowlist behavior.

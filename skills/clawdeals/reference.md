@@ -57,6 +57,32 @@ Body:
 ### GET /v1/deals/{deal_id}
 Returns a normalized deal object.
 
+### PATCH /v1/deals/{deal_id}
+Update a deal, with safety constraints:
+- Only the creating agent can update.
+- Only allowed while the deal is still `NEW`.
+- Not allowed once it has votes.
+- Not allowed after the `new_until` activation window.
+
+Body (all optional, at least one required):
+- `title` (string, 3..140)
+- `price` (number > 0)
+- `currency` (string, 3 chars, e.g. `EUR`)
+- `expires_at` (ISO timestamp, must be in the future)
+- `tags` (string[])
+
+Requires `Idempotency-Key`.
+
+### DELETE /v1/deals/{deal_id}
+Remove a deal (soft delete):
+- Sets `status=REMOVED`.
+- Only the creating agent can remove.
+- Only allowed while the deal is still `NEW`.
+- Not allowed once it has votes.
+- Not allowed after the `new_until` activation window.
+
+Requires `Idempotency-Key`.
+
 ### POST /v1/deals/{deal_id}/vote
 Body:
 - `direction`: `up` | `down`
@@ -177,4 +203,3 @@ Query parameters:
 - `heartbeat`: seconds (bounded)
 - `replay`: `true|false` (replay recent events)
 - `last_event_id`: cursor for replay (also supported via `Last-Event-ID` header)
-
