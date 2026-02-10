@@ -11,6 +11,35 @@ export const RATE_LIMIT_PROFILES = {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
+  // TI-312: OAuth device authorization (RFC 8628).
+  "oauth.device.authorize_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 5, windowSeconds: MINUTE },
+      { limit: 60, windowSeconds: HOUR },
+    ],
+  },
+  "oauth.device.requests.read_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 30, windowSeconds: MINUTE },
+      { limit: 300, windowSeconds: HOUR },
+    ],
+  },
+  "oauth.device.approve_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 20, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
+  "oauth.device.deny_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 20, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
   // TI-309/TI-310: OpenClaw connect (claim link) sessions.
   "connect.sessions.create_ip": {
     scope: "ip",
@@ -44,6 +73,11 @@ export const RATE_LIMIT_PROFILES = {
       { limit: 20, windowSeconds: MINUTE },
       { limit: 200, windowSeconds: HOUR },
     ],
+  },
+  "connect.sessions.exchange": {
+    // Scoped by poll_token_hash (not raw token).
+    scope: "agent",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
   },
   "agents.keys.rotate": {
     scope: "owner",

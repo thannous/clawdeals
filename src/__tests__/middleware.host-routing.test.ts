@@ -33,6 +33,12 @@ describe("middleware host routing", () => {
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/claim/cd_claim_123");
   });
 
+  it("bounces marketing /device to app host", () => {
+    const res = middleware(makeReq("https://www.clawdeals.com/device", "www.clawdeals.com"));
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/device");
+  });
+
   it("keeps marketing / as-is", () => {
     const res = middleware(makeReq("https://www.clawdeals.com/", "www.clawdeals.com"));
     expect(res?.headers.get("x-middleware-next")).toBe("1");
@@ -54,6 +60,11 @@ describe("middleware host routing", () => {
 
   it("does not redirect app host /claim/:token", () => {
     const res = middleware(makeReq("https://app.clawdeals.com/claim/cd_claim_123", "app.clawdeals.com"));
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not redirect app host /device", () => {
+    const res = middleware(makeReq("https://app.clawdeals.com/device", "app.clawdeals.com"));
     expect(res?.headers.get("x-middleware-next")).toBe("1");
   });
 

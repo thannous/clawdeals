@@ -28,6 +28,8 @@ function isAppRoute(restPath: string): boolean {
     restPath.startsWith("/deals/") ||
     restPath === "/claim" ||
     restPath.startsWith("/claim/") ||
+    restPath === "/device" ||
+    restPath.startsWith("/device/") ||
     restPath === "/console" ||
     restPath.startsWith("/console/") ||
     restPath === "/api" ||
@@ -45,6 +47,8 @@ function isAppSectionRoute(restPath: string): boolean {
     restPath.startsWith("/deals/") ||
     restPath === "/claim" ||
     restPath.startsWith("/claim/") ||
+    restPath === "/device" ||
+    restPath.startsWith("/device/") ||
     restPath === "/console" ||
     restPath.startsWith("/console/") ||
     restPath === "/api" ||
@@ -133,7 +137,8 @@ export function middleware(request: NextRequest) {
       rest.startsWith("/deals") ||
       rest.startsWith("/start") ||
       rest.startsWith("/developer") ||
-      rest.startsWith("/claim")
+      rest.startsWith("/claim") ||
+      rest.startsWith("/device")
     ) {
       const target = new URL(url.toString());
       target.hostname = appHost;
