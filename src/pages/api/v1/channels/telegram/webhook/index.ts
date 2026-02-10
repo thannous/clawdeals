@@ -24,7 +24,7 @@ import {
   appendDraftListingPhoto,
   setDraftListingGeo
 } from "../../../../../../server/services/listing-drafts";
-import { uploadListingPhoto } from "../../../../../../server/services/listing-media-storage";
+import { deleteListingPhoto, uploadListingPhoto } from "../../../../../../server/services/listing-media-storage";
 import {
   downloadTelegramFileBytes,
   getTelegramFileInfo,
@@ -713,6 +713,18 @@ export async function handler(req, res, ctx) {
       return jsonResponse(200, responseBody);
     }
 
+    if (photosCount >= maxPhotos) {
+      await safeAuditLog(
+        buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "limit_exceeded" }, "BLOCKED")
+      );
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: "Error: Photo limit exceeded.",
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
     // Photo upload path.
     const uploadRl = await applyOwnerRateLimit({
       req,
@@ -761,6 +773,8 @@ export async function handler(req, res, ctx) {
       );
     }
 
+    let uploaded: any = null;
+    let appended: any = null;
     try {
       const info = await getTelegramFileInfo({ token, fileId });
       if (info.file_size != null && info.file_size > maxBytes) {
@@ -783,9 +797,9 @@ export async function handler(req, res, ctx) {
 
       const cleaned = mime === "image/jpeg" ? stripJpegExif(bytes) : bytes;
       const bucket = getListingPhotosBucket();
-      const uploaded = await uploadListingPhoto({ bucket, listingId, bytes: cleaned, mime });
+      uploaded = await uploadListingPhoto({ bucket, listingId, bytes: cleaned, mime });
 
-      const appended = await appendDraftListingPhoto({
+      appended = await appendDraftListingPhoto({
         listingId,
         sellerAgentId,
         photoRef: {
@@ -810,6 +824,14 @@ export async function handler(req, res, ctx) {
         )
       );
     } catch (error: any) {
+      if (uploaded && !appended) {
+        try {
+          await deleteListingPhoto({ bucket: uploaded.bucket, storageKey: uploaded.storage_key });
+        } catch {
+          // Best-effort cleanup.
+        }
+      }
+
       const code = String(error?.code || "");
       const reason =
         code === "PHOTO_LIMIT_EXCEEDED"

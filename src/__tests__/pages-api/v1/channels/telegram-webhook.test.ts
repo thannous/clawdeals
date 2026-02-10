@@ -86,7 +86,8 @@ vi.mock("../../../../server/services/listing-drafts", () => ({
 }));
 
 vi.mock("../../../../server/services/listing-media-storage", () => ({
-  uploadListingPhoto: vi.fn()
+  uploadListingPhoto: vi.fn(),
+  deleteListingPhoto: vi.fn()
 }));
 
 vi.mock("../../../../server/channels/telegram/media", () => ({
@@ -115,7 +116,7 @@ import {
   appendDraftListingPhoto,
   setDraftListingGeo
 } from "../../../../server/services/listing-drafts";
-import { uploadListingPhoto } from "../../../../server/services/listing-media-storage";
+import { deleteListingPhoto, uploadListingPhoto } from "../../../../server/services/listing-media-storage";
 import { getTelegramFileInfo, downloadTelegramFileBytes, sniffImageMime } from "../../../../server/channels/telegram/media";
 
 const APPROVAL_ID = "00000000-0000-4000-a000-000000000123";
@@ -394,6 +395,80 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     expect(sniffImageMime).not.toHaveBeenCalled();
     expect(uploadListingPhoto).not.toHaveBeenCalled();
     expect(appendDraftListingPhoto).not.toHaveBeenCalled();
+  });
+
+  it("photo update short-circuits when draft is already at max photos (no download/upload)", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "owner",
+      state: "ACTIVE"
+    } as any);
+
+    vi.mocked(ensureActiveListingDraftForChannel).mockResolvedValue({
+      listingId: "l-1",
+      listing: {
+        listing_id: "l-1",
+        title: "Untitled",
+        photos: new Array(8).fill(null).map((_, i) => ({ storage_key: `k${i}`, mime: "image/jpeg" }))
+      }
+    } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReqPhoto(), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.text).toMatch(/photo limit exceeded/i);
+    expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+      action: expect.objectContaining({ event: "media.rejected" })
+    }));
+
+    expect(getTelegramFileInfo).not.toHaveBeenCalled();
+    expect(downloadTelegramFileBytes).not.toHaveBeenCalled();
+    expect(sniffImageMime).not.toHaveBeenCalled();
+    expect(uploadListingPhoto).not.toHaveBeenCalled();
+    expect(appendDraftListingPhoto).not.toHaveBeenCalled();
+    expect(deleteListingPhoto).not.toHaveBeenCalled();
+  });
+
+  it("cleans up uploaded storage objects when appendDraftListingPhoto fails", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "owner",
+      state: "ACTIVE"
+    } as any);
+
+    vi.mocked(ensureActiveListingDraftForChannel).mockResolvedValue({
+      listingId: "l-1",
+      listing: { listing_id: "l-1", title: "Untitled", photos: [] }
+    } as any);
+
+    vi.mocked(getTelegramFileInfo).mockResolvedValue({ file_path: "p.jpg", file_size: 2000 } as any);
+    vi.mocked(downloadTelegramFileBytes).mockResolvedValue(Buffer.from("jpeg") as any);
+    vi.mocked(sniffImageMime).mockReturnValue("image/jpeg" as any);
+
+    vi.mocked(uploadListingPhoto).mockResolvedValue({
+      bucket: "listing-photos",
+      storage_key: "listings/l-1/x.jpg",
+      bytes: 4,
+      mime: "image/jpeg"
+    } as any);
+
+    vi.mocked(appendDraftListingPhoto).mockRejectedValue(
+      Object.assign(new Error("Photo limit exceeded"), { code: "PHOTO_LIMIT_EXCEEDED" })
+    );
+
+    vi.mocked(deleteListingPhoto).mockResolvedValue({ ok: true } as any);
+
+    const ctx = makeCtx();
+    const result: any = await handler(makeReqPhoto(), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.text).toMatch(/photo limit exceeded/i);
+    expect(deleteListingPhoto).toHaveBeenCalledWith({ bucket: "listing-photos", storageKey: "listings/l-1/x.jpg" });
   });
 
   it("/start applies the channels.pair rate limit group", async () => {

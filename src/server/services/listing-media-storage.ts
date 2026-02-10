@@ -77,3 +77,24 @@ export async function uploadListingPhoto({
     mime: String(mime).trim().toLowerCase()
   };
 }
+
+export async function deleteListingPhoto({
+  storageKey,
+  bucket
+}: {
+  storageKey: string;
+  bucket?: string;
+}) {
+  const key = typeof storageKey === "string" ? storageKey.trim() : "";
+  if (!key) {
+    throw buildServiceError("storageKey is required", 400, "VALIDATION_ERROR");
+  }
+
+  const resolvedBucket = (bucket && typeof bucket === "string" ? bucket.trim() : "") || getListingPhotosBucket();
+  const client = getSupabaseServiceClient();
+  const { error } = await client.storage.from(resolvedBucket).remove([key]);
+  if (error) {
+    mapError(error);
+  }
+  return { ok: true };
+}

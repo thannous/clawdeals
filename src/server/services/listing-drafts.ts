@@ -167,46 +167,67 @@ export async function appendDraftListingPhoto({
   if (!storageKey) throw buildServiceError("photoRef.storage_key is required", 400, "VALIDATION_ERROR");
   if (!mime) throw buildServiceError("photoRef.mime is required", 400, "VALIDATION_ERROR");
 
-  const listing = await getListing(listingId);
-  if (!listing) throw buildServiceError("Listing not found", 404, "NOT_FOUND");
-  if (listing.status !== "DRAFT") throw buildServiceError("Listing is not a draft", 409, "LISTING_LOCKED");
-  if (String(listing.seller_agent_id || "") !== String(sellerAgentId)) {
-    throw buildServiceError("Forbidden", 403, "FORBIDDEN");
-  }
-
-  const existing = Array.isArray(listing.photos) ? listing.photos : [];
   const max = getMaxPhotosPerListing();
-  if (existing.length >= max) {
-    throw buildServiceError("Photo limit exceeded", 400, "PHOTO_LIMIT_EXCEEDED", { max_photos: max });
-  }
+  const photo = {
+    storage_key: storageKey,
+    mime,
+    ...(photoRef.w != null ? { w: photoRef.w } : {}),
+    ...(photoRef.h != null ? { h: photoRef.h } : {})
+  };
 
-  const next = existing.concat([
-    {
-      storage_key: storageKey,
-      mime,
-      ...(photoRef.w != null ? { w: photoRef.w } : {}),
-      ...(photoRef.h != null ? { h: photoRef.h } : {})
-    }
-  ]);
-
+  // Concurrency-safe append:
+  // - fetch current photos
+  // - attempt conditional update using updated_at as an optimistic concurrency token
+  // - retry on conflict to avoid dropping concurrent photo appends
   const client = getSupabaseServiceClient();
-  const { data, error } = await client
-    .from("listings")
-    .update({ photos: next, updated_at: now.toISOString() })
-    .eq("listing_id", listingId)
-    .eq("seller_agent_id", sellerAgentId)
-    .eq("status", "DRAFT")
-    .select("listing_id,photos,title,status")
-    .maybeSingle();
-  if (error) {
-    mapError(error);
-  }
-  if (!data) {
-    throw buildServiceError("Listing update conflict", 409, "CONFLICT");
+  const maxAttempts = 5;
+  const requestedMs = now instanceof Date ? now.getTime() : Date.now();
+  let lastListing: any = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const listing = await getListing(listingId);
+    lastListing = listing;
+    if (!listing) throw buildServiceError("Listing not found", 404, "NOT_FOUND");
+    if (listing.status !== "DRAFT") throw buildServiceError("Listing is not a draft", 409, "LISTING_LOCKED");
+    if (String(listing.seller_agent_id || "") !== String(sellerAgentId)) {
+      throw buildServiceError("Forbidden", 403, "FORBIDDEN");
+    }
+
+    const existing = Array.isArray(listing.photos) ? listing.photos : [];
+    if (existing.length >= max) {
+      throw buildServiceError("Photo limit exceeded", 400, "PHOTO_LIMIT_EXCEEDED", { max_photos: max });
+    }
+
+    const prevUpdatedAt = typeof listing.updated_at === "string" && listing.updated_at.trim() ? listing.updated_at.trim() : null;
+    const prevMs = prevUpdatedAt ? Date.parse(prevUpdatedAt) : NaN;
+    const nextMs = Number.isFinite(prevMs) ? Math.max(requestedMs, prevMs + 1) : requestedMs;
+    const nextUpdatedAt = new Date(nextMs).toISOString();
+
+    const next = existing.concat([photo]);
+
+    let query: any = client
+      .from("listings")
+      .update({ photos: next, updated_at: nextUpdatedAt })
+      .eq("listing_id", listingId)
+      .eq("seller_agent_id", sellerAgentId)
+      .eq("status", "DRAFT");
+
+    if (prevUpdatedAt) {
+      query = query.eq("updated_at", prevUpdatedAt);
+    }
+
+    const { data, error } = await query.select("listing_id,photos,title,status,updated_at").maybeSingle();
+    if (error) {
+      mapError(error);
+    }
+    if (data) {
+      const photosCount = Array.isArray((data as any).photos) ? (data as any).photos.length : next.length;
+      return { listing: data, photosCount };
+    }
   }
 
-  const photosCount = Array.isArray((data as any).photos) ? (data as any).photos.length : next.length;
-  return { listing: data, photosCount };
+  // If we exhausted retries, surface a conflict so callers can decide whether to retry.
+  if (lastListing && lastListing.status !== "DRAFT") throw buildServiceError("Listing is not a draft", 409, "LISTING_LOCKED");
+  throw buildServiceError("Listing update conflict", 409, "CONFLICT");
 }
 
 export async function setDraftListingGeo({
