@@ -5,7 +5,7 @@ import { errorPayload } from "../../../../../../server/http/errors";
 import { isUuid } from "../../../../../../server/utils/validators";
 import { rateLimitMiddleware } from "../../../../../../server/rate-limit/middleware";
 import { beginIdempotency, finalizeIdempotency } from "../../../../../../server/idempotency/middleware";
-import { hashConnectSessionPollToken } from "../../../../../../server/services/connect-sessions";
+import { getConnectSessionForPoll, hashConnectSessionPollToken } from "../../../../../../server/services/connect-sessions";
 import { exchangeConnectSessionForInstallationApiKey } from "../../../../../../server/services/connect-session-exchange";
 
 function getHeaderValue(req: any, name: string) {
@@ -45,6 +45,33 @@ export async function handler(req: any, _res: any, ctx: any) {
 
   if (ctx?.authError) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
+  }
+
+  // This endpoint is internet-facing; apply an IP-scoped limiter first so callers can't bypass
+  // protections by varying untrusted poll tokens / hashes.
+  const ipRateLimitResult = await rateLimitMiddleware(req, {
+    routeGroup: "connect.sessions.exchange_ip",
+    env: process.env,
+    onRateLimited: (meta: any) => {
+      if (!ctx) return;
+      ctx.rateLimit = {
+        group: meta.group,
+        scope: meta.scope,
+        identity: meta.identity,
+        limit: meta.limit,
+        windowSeconds: meta.windowSeconds,
+        retryAfterSeconds: meta.retryAfterSeconds,
+        remaining: meta.remaining,
+        resetSeconds: meta.resetSeconds
+      };
+    }
+  });
+
+  if (ipRateLimitResult && ipRateLimitResult.status === 429) {
+    if (ctx) {
+      ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
+    }
+    return jsonResponse(ipRateLimitResult.status, ipRateLimitResult.body, ipRateLimitResult.headers);
   }
 
   const idempotencyKey = getHeaderValue(req, "idempotency-key");
@@ -122,6 +149,19 @@ export async function handler(req: any, _res: any, ctx: any) {
       }
     }
     return jsonResponse(rateLimitResult.status, rateLimitResult.body, rateLimitResult.headers);
+  }
+
+  // Validate that (session_id, poll_token) matches a real connect session before creating an
+  // idempotency record. Otherwise an attacker can fill the idempotency store by varying tokens.
+  const now = new Date();
+  try {
+    await getConnectSessionForPoll({
+      sessionId: String(sessionId),
+      pollToken,
+      now
+    });
+  } catch (error: any) {
+    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 
   let idempotencyContext: any = null;
@@ -210,7 +250,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         deviceName,
         fingerprint
       },
-      now: new Date()
+      now
     });
 
     if (ctx) {
@@ -261,4 +301,3 @@ export default withApiMiddlewares(handler, {
   enableRateLimit: false,
   enableIdempotency: false
 });
-

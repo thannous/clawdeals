@@ -10,6 +10,10 @@ vi.mock("../../../../server/idempotency/middleware", () => ({
 }));
 
 vi.mock("../../../../server/services/connect-sessions", () => ({
+  getConnectSessionForPoll: vi.fn().mockResolvedValue({
+    session_id: "11111111-1111-4111-8111-111111111111",
+    status: "CLAIMED"
+  }),
   hashConnectSessionPollToken: vi.fn().mockReturnValue("poll_token_hash")
 }));
 
@@ -21,12 +25,13 @@ import { jsonResponse } from "../../../../server/http/response";
 import { handler } from "../../../../pages/api/v1/connect/sessions/[session_id]/exchange";
 import { rateLimitMiddleware } from "../../../../server/rate-limit/middleware";
 import { beginIdempotency, finalizeIdempotency } from "../../../../server/idempotency/middleware";
-import { hashConnectSessionPollToken } from "../../../../server/services/connect-sessions";
+import { getConnectSessionForPoll, hashConnectSessionPollToken } from "../../../../server/services/connect-sessions";
 import { exchangeConnectSessionForInstallationApiKey } from "../../../../server/services/connect-session-exchange";
 
 const rateLimitMiddlewareMock = vi.mocked(rateLimitMiddleware);
 const beginIdempotencyMock = vi.mocked(beginIdempotency);
 const finalizeIdempotencyMock = vi.mocked(finalizeIdempotency);
+const getConnectSessionForPollMock = vi.mocked(getConnectSessionForPoll);
 const hashConnectSessionPollTokenMock = vi.mocked(hashConnectSessionPollToken);
 const exchangeMock = vi.mocked(exchangeConnectSessionForInstallationApiKey);
 
@@ -36,6 +41,10 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     rateLimitMiddlewareMock.mockResolvedValue(null as any);
+    getConnectSessionForPollMock.mockResolvedValue({
+      session_id: "11111111-1111-4111-8111-111111111111",
+      status: "CLAIMED"
+    } as any);
     hashConnectSessionPollTokenMock.mockReturnValue("poll_token_hash");
     beginIdempotencyMock.mockResolvedValue({
       action: "continue",
@@ -97,12 +106,14 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
   });
 
   it("returns 429 when rate-limited", async () => {
-    rateLimitMiddlewareMock.mockResolvedValue({
+    rateLimitMiddlewareMock
+      .mockResolvedValueOnce(null as any) // connect.sessions.exchange_ip
+      .mockResolvedValueOnce({
       status: 429,
       body: { error: { code: "RATE_LIMITED", message: "Too many requests" } },
       headers: { "Retry-After": "10" },
       meta: { group: "connect.sessions.exchange", scope: "agent", identity: "poll_token_hash" }
-    } as any);
+    } as any); // connect.sessions.exchange
 
     const req = {
       method: "POST",

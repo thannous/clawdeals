@@ -11,15 +11,23 @@ function getHeaderValue(req: any, name: string) {
 
 function requireSameOrigin(req: any, res: any) {
   const origin = getHeaderValue(req, "origin");
-  if (!origin) return null;
+  const referer = getHeaderValue(req, "referer");
+  const source = origin || referer;
+  if (!source) {
+    res.status(403).json(errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+    return true;
+  }
 
   const forwardedHost = getHeaderValue(req, "x-forwarded-host");
   const hostHeader = forwardedHost ? String(forwardedHost).split(",")[0].trim() : getHeaderValue(req, "host");
-  if (!hostHeader) return null;
+  if (!hostHeader) {
+    res.status(403).json(errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+    return true;
+  }
 
   try {
-    const originHost = new URL(String(origin)).host;
-    if (originHost && originHost !== String(hostHeader)) {
+    const sourceHost = new URL(String(source)).host;
+    if (sourceHost && sourceHost !== String(hostHeader)) {
       res.status(403).json(errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
       return true;
     }
@@ -28,7 +36,7 @@ function requireSameOrigin(req: any, res: any) {
     return true;
   }
 
-  return null;
+  return false;
 }
 
 async function handler(req: any, res: any) {
@@ -39,4 +47,3 @@ async function handler(req: any, res: any) {
 
 // Browser-friendly wrapper: owner identity is injected server-side for console usage.
 export default injectConsoleOpsOwner(handler);
-

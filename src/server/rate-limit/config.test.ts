@@ -34,6 +34,16 @@ describe("getProfileForGroup", () => {
     expect(profile.buckets).toEqual([{ limit: 10, windowSeconds: 3600 }]);
   });
 
+  it("returns connect.sessions.exchange_ip profile (TI-311)", () => {
+    const profile = getProfileForGroup("connect.sessions.exchange_ip");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("ip");
+    expect(profile.buckets).toEqual([
+      { limit: 30, windowSeconds: 60 },
+      { limit: 300, windowSeconds: 3600 }
+    ]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

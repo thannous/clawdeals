@@ -106,6 +106,11 @@ test.describe.serial("Integration: Connect Claim", () => {
   });
 
   test("claim via console wrapper (ops) works", async ({ request }) => {
+    const baseUrl =
+      process.env.API_BASE_URL ||
+      process.env.E2E_BASE_URL ||
+      `http://localhost:${process.env.E2E_DEV_PORT || 3000}`;
+
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
       data: { requested_agent_name: "Integration Console Claim", requested_scopes: [] }
@@ -117,7 +122,11 @@ test.describe.serial("Integration: Connect Claim", () => {
     const claimToken = extractClaimToken(body?.data?.claim_url);
 
     const claim = await request.post(`/api/console/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
-      headers: { "Idempotency-Key": randomId() },
+      headers: {
+        "Idempotency-Key": randomId(),
+        origin: baseUrl,
+        referer: `${baseUrl}/console`
+      },
       data: { claim_token: claimToken, mode: "create_agent", agent_name: "Ops Claimed Agent" }
     });
     await expectStatus(claim, 200);
@@ -127,4 +136,3 @@ test.describe.serial("Integration: Connect Claim", () => {
     expect(claimBody?.data?.agent_id).toBeTruthy();
   });
 });
-
