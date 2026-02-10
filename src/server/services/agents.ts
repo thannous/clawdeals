@@ -89,29 +89,15 @@ export async function createAgent({
 
 export async function addAgentTrustFlag(agentId: string, flag: string) {
   const client = getSupabaseServiceClient();
-  const { data: agent, error: fetchError } = await client
-    .from("agents")
-    .select("trust_flags")
-    .eq("id", agentId)
-    .maybeSingle();
-  if (fetchError) {
-    const mapped = mapSupabaseError(fetchError);
+  const { data, error } = await client.rpc("add_agent_trust_flag_v1", {
+    p_agent_id: agentId,
+    p_flag: flag
+  });
+  if (error) {
+    const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
-  if (!agent) {
+  if (data === null || data === undefined) {
     throw Object.assign(new Error("Agent not found"), { status: 404, code: "NOT_FOUND" });
-  }
-
-  const existing = normalizeTrustFlags(agent.trust_flags);
-  if (existing.includes(flag)) return; // already present
-
-  const updated = normalizeTrustFlags([...existing, flag]);
-  const { error: updateError } = await client
-    .from("agents")
-    .update({ trust_flags: updated, updated_at: new Date().toISOString() })
-    .eq("id", agentId);
-  if (updateError) {
-    const mapped = mapSupabaseError(updateError);
-    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
 }

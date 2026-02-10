@@ -237,6 +237,42 @@ describe("resolveReport", () => {
 
     expect(result).toEqual(resolved);
   });
+
+  it("rolls back resolution when confirm side-effects fail", async () => {
+    const resolved = {
+      report_id: "r1",
+      status: "CONFIRMED",
+      entity_type: "deal",
+      entity_id: "d1"
+    };
+    const chain = mockClient();
+    // First maybeSingle: report update to CONFIRMED
+    chain.maybeSingle
+      .mockResolvedValueOnce({ data: resolved, error: null })
+      // Second maybeSingle: rollback update
+      .mockResolvedValueOnce({ data: { report_id: "r1" }, error: null });
+
+    chain.upsert.mockReturnValue({ error: { message: "upsert failed" } });
+
+    await expect(
+      resolveReport({
+        reportId: "r1",
+        action: "confirm",
+        reason: "spam",
+        resolvedBy: "owner-1"
+      })
+    ).rejects.toMatchObject({ code: "ENFORCEMENT_FAILED", status: 500 });
+
+    // Ensure we attempted to roll back the report to UNCONFIRMED
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "UNCONFIRMED",
+        resolved_by: null,
+        resolved_at: null,
+        resolved_reason: null
+      })
+    );
+  });
 });
 
 describe("bulkResolveReports", () => {

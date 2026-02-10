@@ -156,7 +156,13 @@ async function maybeUnhideEntity(report) {
 
   await client
     .from("moderation_states")
-    .update({ hidden: false, updated_at: new Date().toISOString() })
+    .update({
+      hidden: false,
+      hidden_at: null,
+      hidden_reason: null,
+      hidden_by: null,
+      updated_at: new Date().toISOString()
+    })
     .eq("entity_type", report.entity_type)
     .eq("entity_id", report.entity_id);
 }
@@ -184,10 +190,41 @@ export async function resolveReport({ reportId, action, reason, resolvedBy }) {
     throw Object.assign(new Error("Report already resolved or not found"), { status: 409, code: "CONFLICT" });
   }
 
-  if (action === "confirm") {
-    await applyReportPenalty(data);
-  } else {
-    await maybeUnhideEntity(data);
+  try {
+    if (action === "confirm") {
+      await applyReportPenalty(data);
+    } else {
+      await maybeUnhideEntity(data);
+    }
+  } catch (err: any) {
+    // If the side-effect fails, revert the resolution so ops can retry.
+    // Side effects are designed to be idempotent (upserts / "add-if-missing" flagging).
+    try {
+      const { error: rollbackError } = await client
+        .from("reports")
+        .update({
+          status: "UNCONFIRMED",
+          resolved_by: null,
+          resolved_at: null,
+          resolved_reason: null
+        })
+        .eq("report_id", reportId)
+        .eq("status", newStatus)
+        .eq("resolved_at", nowIso)
+        .select("report_id")
+        .maybeSingle();
+      if (rollbackError) {
+        console.error("[reports] failed to rollback report resolution after side-effect error", rollbackError);
+      }
+    } catch (rollbackThrown) {
+      console.error("[reports] rollback attempt threw after side-effect error", rollbackThrown);
+    }
+
+    const message = err?.message ? String(err.message) : "Unknown error";
+    throw Object.assign(new Error(`Failed to ${action} report: ${message}`), {
+      status: 500,
+      code: "ENFORCEMENT_FAILED"
+    });
   }
 
   return data;
