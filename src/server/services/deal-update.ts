@@ -34,7 +34,7 @@ function assertDealEditable({ existing, agentId, now }: any = {}) {
     throw buildServiceError("Deal is not editable in its current status", 409, "DEAL_NOT_EDITABLE", {
       isBlocked: true,
       reason: "status",
-      status: existing.status
+      deal_status: existing.status
     });
   }
 

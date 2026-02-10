@@ -67,7 +67,7 @@ export async function removeDeal({
     throw buildServiceError("Deal is not removable in its current status", 409, "DEAL_NOT_REMOVABLE", {
       isBlocked: true,
       reason: "status",
-      status: existing.status
+      deal_status: existing.status
     });
   }
 
@@ -115,4 +115,3 @@ export async function removeDeal({
 
   return data;
 }
-
