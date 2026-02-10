@@ -75,7 +75,8 @@ describe("POST /oauth/revoke", () => {
       expect.anything(),
       expect.objectContaining({
         routeGroup: "oauth.revoke",
-        ownerId: "owner-1"
+        ownerId: "owner-1",
+        ip: "203.0.113.1"
       })
     );
   });

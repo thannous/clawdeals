@@ -84,6 +84,14 @@ describe("POST /oauth/token", () => {
     const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("authorization_pending");
+
+    expect(rateLimitMiddleware).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        routeGroup: "oauth.token",
+        ip: "203.0.113.1"
+      })
+    );
   });
 
   it("exchanges an authorized device_code for access+refresh tokens (and sanitizes ctx.body)", async () => {
@@ -235,8 +243,39 @@ describe("POST /oauth/token", () => {
       expect.objectContaining({
         routeGroup: "oauth.token",
         agentId: "inst-1",
-        useIpFallback: false
+        useIpFallback: false,
+        ip: "203.0.113.1"
       })
     );
+  });
+
+  it("does not rotate refresh token when access-token issuance fails", async () => {
+    getRefreshMock.mockResolvedValue({
+      tokenHash: "hash",
+      record: {
+        token_id: "old",
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        installation_id: "inst-1"
+      }
+    } as any);
+
+    issueAccessMock.mockRejectedValue({
+      status: 503,
+      code: "AUTH_UNAVAILABLE",
+      message: "Failed to issue access token"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: { client_id: "openclaw", grant_type: "refresh_token", refresh_token: "cd_rt_old" }
+    };
+    const ctx: any = { authError: null, ip: "203.0.113.1", body: req.body };
+
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("AUTH_UNAVAILABLE");
+    expect(rotateRefreshToken).not.toHaveBeenCalled();
   });
 });

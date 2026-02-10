@@ -146,6 +146,7 @@ export async function handler(req: any, res: any, ctx: any) {
 
     const rateLimitResult = await rateLimitMiddleware(req, {
       routeGroup: "oauth.token",
+      ip: ctx?.ip,
       env: process.env,
       onRateLimited: (meta: any) => applyRateLimitResultToCtx(ctx, meta)
     });
@@ -285,9 +286,11 @@ export async function handler(req: any, res: any, ctx: any) {
     }
 
     let existing: any;
+    let existingTokenHash: string | null = null;
     try {
       const found = await getOauthRefreshTokenRecordByToken({ refreshToken });
       existing = found?.record || null;
+      existingTokenHash = found?.tokenHash || null;
     } catch (error: any) {
       if (error?.status && error.status >= 500) {
         return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
@@ -312,6 +315,7 @@ export async function handler(req: any, res: any, ctx: any) {
       routeGroup: "oauth.token",
       agentId: existing.installation_id,
       useIpFallback: false,
+      ip: ctx?.ip,
       env: process.env,
       onRateLimited: (meta: any) => applyRateLimitResultToCtx(ctx, meta)
     });
@@ -323,25 +327,46 @@ export async function handler(req: any, res: any, ctx: any) {
 
     let accessToken: any = null;
     try {
-      const rotated = await rotateRefreshToken({ refreshToken, now });
-
       accessToken = await issueOauthAccessToken({
-        ownerId: rotated.owner_id || null,
-        agentId: rotated.agent_id,
-        installationId: rotated.installation_id,
-        scopes: normalizeScope(rotated.scopes.join(" ")),
+        ownerId: existing.owner_id || null,
+        agentId: existing.agent_id,
+        installationId: existing.installation_id,
+        scopes: normalizeScope((Array.isArray(existing.scopes) ? existing.scopes : []).join(" ")),
         now
       });
 
+      // Rotate after access-token issuance. This prevents "refresh token lockout" when access issuance
+      // transiently fails (e.g. Redis outage) and the client never receives the new refresh token.
+      let rotated: any = null;
+      try {
+        rotated = await rotateRefreshToken({ refreshToken, now });
+      } catch (rotateError: any) {
+        // If we lost the refresh race (already rotated/revoked), do not allow the access token to stand.
+        if (rotateError?.status === 401 && rotateError?.code === "invalid_grant") {
+          if (accessToken?.access_token_hash) {
+            await deleteOauthAccessTokenByHash(accessToken.access_token_hash);
+          }
+          return invalidGrant();
+        }
+
+        // Otherwise fail open: return the access token and keep the existing refresh token valid.
+        console.warn("[oauth] refresh-token rotation failed; returning access token with existing refresh token", {
+          code: rotateError?.code,
+          status: rotateError?.status
+        });
+      }
+
+      const effectiveScopes = rotated?.scopes ?? (Array.isArray(existing.scopes) ? existing.scopes : []);
+
       if (ctx) {
         ctx.auditEntityType = "oauth_refresh_token";
-        ctx.auditEntityId = rotated.new_token_id;
+        ctx.auditEntityId = rotated?.new_token_id || existing?.token_id || null;
         ctx.security = {
           ...(ctx.security || {}),
-          old_refresh_token_id: rotated.old_token_id || null,
-          refresh_token_id: rotated.new_token_id || null,
-          refresh_token_hash: rotated.new_token_hash || null,
-          installation_id: rotated.installation_id || null,
+          old_refresh_token_id: rotated?.old_token_id || null,
+          refresh_token_id: rotated?.new_token_id || existing?.token_id || null,
+          refresh_token_hash: rotated?.new_token_hash || existingTokenHash || null,
+          installation_id: rotated?.installation_id || existing?.installation_id || null,
           access_token_hash: accessToken.access_token_hash || null
         };
       }
@@ -350,8 +375,8 @@ export async function handler(req: any, res: any, ctx: any) {
         access_token: accessToken.access_token,
         token_type: "Bearer",
         expires_in: accessToken.expires_in,
-        refresh_token: rotated.new_refresh_token,
-        scope: normalizeScope(rotated.scopes.join(" ")).join(" ")
+        refresh_token: rotated?.new_refresh_token || refreshToken,
+        scope: normalizeScope(effectiveScopes.join(" ")).join(" ")
       });
     } catch (error: any) {
       if (accessToken?.access_token_hash) {
@@ -371,4 +396,3 @@ export default withApiMiddlewares(handler, {
   routeGroup: "oauth.token",
   enableRateLimit: false
 });
-

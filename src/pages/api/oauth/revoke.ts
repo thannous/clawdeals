@@ -117,6 +117,7 @@ export async function handler(req: any, res: any, ctx: any) {
   const rateLimitResult = await rateLimitMiddleware(req, {
     routeGroup: "oauth.revoke",
     ownerId,
+    ip: ctx?.ip,
     env: process.env,
     onRateLimited: (meta: any) => applyRateLimitResultToCtx(ctx, meta)
   });
@@ -155,4 +156,3 @@ export default withApiMiddlewares(handler, {
   enableRateLimit: false,
   enableIdempotency: false
 });
-

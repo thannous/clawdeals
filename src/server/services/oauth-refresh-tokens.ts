@@ -206,25 +206,10 @@ export async function rotateRefreshToken({
   const nowIso = now.toISOString();
   const client = getSupabaseServiceClient();
 
-  const { data: revoked, error: revokeError } = await client
-    .from("oauth_refresh_tokens")
-    .update({ revoked_at: nowIso })
-    .eq("token_id", row.token_id)
-    .is("revoked_at", null)
-    .gt("expires_at", nowIso)
-    .select("*")
-    .maybeSingle();
-
-  if (revokeError) throw mapSupabaseServiceError(revokeError);
-  if (!revoked) {
-    // Lost the rotation race or token is no longer valid.
-    throw buildServiceError("Invalid refresh token", 401, "invalid_grant");
-  }
-
-  const ownerId = revoked.owner_id;
-  const agentId = revoked.agent_id;
-  const installationId = revoked.installation_id;
-  const scopes = Array.isArray(revoked.scopes) ? revoked.scopes : [];
+  const ownerId = row.owner_id;
+  const agentId = row.agent_id;
+  const installationId = row.installation_id;
+  const scopes = Array.isArray(row.scopes) ? row.scopes : [];
 
   const secret = requireOauthTokenSecret();
   const expiresAt = computeRefreshExpiry(now);
@@ -244,14 +229,45 @@ export async function rotateRefreshToken({
         created_at: nowIso,
         expires_at: expiresAt.toISOString(),
         revoked_at: null,
-        rotated_from_token_id: revoked.token_id
+        rotated_from_token_id: row.token_id
       })
       .select("*")
       .single();
 
     if (!insertError) {
+      // Revoke the old token after the replacement token exists.
+      // This avoids "lockout" if token generation/insert succeeds but revocation fails mid-flight.
+      const { data: revoked, error: revokeError } = await client
+        .from("oauth_refresh_tokens")
+        .update({ revoked_at: nowIso })
+        .eq("token_id", row.token_id)
+        .is("revoked_at", null)
+        .gt("expires_at", nowIso)
+        .select("*")
+        .maybeSingle();
+
+      if (!revokeError && !revoked) {
+        // Lost the rotation race or token is no longer valid.
+        // Best-effort cleanup: don't leave an "orphan" token the client never received.
+        try {
+          await client.from("oauth_refresh_tokens").delete().eq("token_id", inserted.token_id);
+        } catch {
+          // ignore
+        }
+        throw buildServiceError("Invalid refresh token", 401, "invalid_grant");
+      }
+
+      if (revokeError) {
+        // Fail open to avoid lockout: return the new token even if we couldn't confirm revocation.
+        // Worst case: both tokens remain valid temporarily.
+        console.warn("[oauth] refresh-token revocation failed during rotation; returning new token anyway", {
+          code: revokeError?.code,
+          message: revokeError?.message
+        });
+      }
+
       return {
-        old_token_id: revoked.token_id,
+        old_token_id: row.token_id,
         new_refresh_token: nextToken,
         new_token_id: inserted.token_id,
         new_token_hash: inserted.token_hash,
@@ -320,4 +336,3 @@ export async function revokeRefreshToken({
     token_hash: tokenHash
   };
 }
-
