@@ -22,6 +22,7 @@
     "cron:trustscore": "node scripts/cron-trustscore-recalc.mjs",
     "cron:trustscore:queue": "node scripts/cron-trustscore-recalc-queue.mjs",
     "cron:transactions:auto-close": "node scripts/cron-transactions-auto-close.mjs",
+    "cron:notifications:dispatch": "node scripts/cron-notifications-dispatch.mjs",
     "test:e2e": "playwright test",
     "test:ui": "playwright test --project=ui",
     "test:integration": "PW_WEB_SERVER_MODE=prod playwright test --project=integration",

@@ -11,6 +11,13 @@ import {
 import { createPairToken, consumePairToken } from "../../services/pairing-tokens";
 import { pairChannelIdentityForOwner } from "../../services/channel-pairing";
 import { getPublicAppUrl, joinUrl } from "../../../shared/urls";
+import { rateLimitMiddleware } from "../../rate-limit/middleware";
+import {
+  getOrCreateNotificationPreferences,
+  updateNotificationPreferences,
+  NOTIFICATION_EVENT_TYPES
+} from "../../services/notification-preferences";
+import { buildNotificationsKeyboard } from "../telegram/keyboard";
 import { createConfirmation, consumeConfirmation } from "../command-confirmations";
 import type { ParsedCommand } from "./parser";
 
@@ -26,6 +33,7 @@ type ExecuteResult = {
   blocked?: boolean;
   identity?: any;
   replyMarkup?: any;
+  telemetry?: { event: string; payload: any; outcome?: string };
 };
 
 const TELEGRAM_MAX_LEN = 3500;
@@ -104,6 +112,64 @@ function buildConnectReplyMarkup(pairUrl: string) {
   return {
     inline_keyboard: [[{ text: "Associer mon compte", url: pairUrl }]]
   };
+}
+
+function parseTimeHHMM(value: string) {
+  const m = String(value || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const hh = Number.parseInt(m[1], 10);
+  const mm = Number.parseInt(m[2], 10);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+  if (hh < 0 || hh > 23) return null;
+  if (mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+
+function formatQuietHours(prefs: any) {
+  if (!prefs?.quiet_enabled) return "OFF";
+  const s = Number.isInteger(prefs.quiet_start_min) ? prefs.quiet_start_min : null;
+  const e = Number.isInteger(prefs.quiet_end_min) ? prefs.quiet_end_min : null;
+  if (s == null || e == null) return "ON";
+  const sh = String(Math.floor(s / 60)).padStart(2, "0");
+  const sm = String(s % 60).padStart(2, "0");
+  const eh = String(Math.floor(e / 60)).padStart(2, "0");
+  const em = String(e % 60).padStart(2, "0");
+  return `ON (${sh}:${sm}-${eh}:${em})`;
+}
+
+function formatStrongFilters(prefs: any) {
+  const strong = prefs?.filters && typeof prefs.filters === "object" ? prefs.filters.strong : null;
+  const maxPrice = strong && typeof strong === "object" ? strong.max_price_eur : null;
+  const minTrust = strong && typeof strong === "object" ? strong.min_seller_trust_score : null;
+  const parts = [];
+  if (typeof maxPrice === "number" && Number.isFinite(maxPrice)) parts.push(`price<=${maxPrice}EUR`);
+  if (Number.isInteger(minTrust)) parts.push(`trust>=${minTrust}`);
+  return parts.length ? parts.join(" OR ") : "OFF";
+}
+
+function buildNotificationsText(prefs: any) {
+  const mode = typeof prefs?.mode === "string" ? prefs.mode : "DIGEST_HOURLY";
+  const tz = typeof prefs?.timezone === "string" ? prefs.timezone : "UTC";
+  const eventTypes = Array.isArray(prefs?.event_types) ? prefs.event_types : ["watchlist_match"];
+  const types = eventTypes.length ? eventTypes.join(", ") : "\u2014";
+
+  return [
+    "Notifications settings",
+    `- mode: ${mode}`,
+    `- timezone: ${tz}`,
+    `- quiet hours: ${formatQuietHours(prefs)}`,
+    `- types: ${types}`,
+    `- strong: ${formatStrongFilters(prefs)}`,
+    "",
+    "Commands:",
+    "- notif (show menu)",
+    "- notif mode realtime|digest_hourly|digest_daily|silent",
+    "- notif quiet off | notif quiet 22:00 08:00",
+    "- notif tz <IANA timezone>",
+    `- notif types toggle <${NOTIFICATION_EVENT_TYPES.join("|")}>`,
+    "- notif strong price <EUR|off>",
+    "- notif strong trust <0..100|off>"
+  ].join("\n");
 }
 
 function formatTokenError(err: any) {
@@ -266,6 +332,106 @@ export async function executeChannelCommand({
   await touchLastSeen({ ownerId: identity.owner_id, channelIdentityId: identity.channel_identity_id });
 
   const role = identity.role || "viewer";
+
+  if (
+    command.kind === "notifications_menu" ||
+    command.kind === "notifications_mode" ||
+    command.kind === "notifications_quiet_off" ||
+    command.kind === "notifications_quiet_set" ||
+    command.kind === "notifications_tz" ||
+    command.kind === "notifications_types_toggle" ||
+    command.kind === "notifications_strong_price" ||
+    command.kind === "notifications_strong_trust"
+  ) {
+    if (!requiresRole(role, "viewer")) {
+      return { text: "Forbidden: viewer role required.", identity };
+    }
+
+    const ownerId = identity.owner_id;
+
+    const prefs = await getOrCreateNotificationPreferences({
+      ownerId,
+      channelIdentityId: identity.channel_identity_id,
+      now: new Date()
+    });
+
+    if (command.kind === "notifications_menu") {
+      return { text: truncate(buildNotificationsText(prefs)), replyMarkup: buildNotificationsKeyboard(prefs), identity };
+    }
+
+    // Writes are rate limited per owner.
+    try {
+      const rl: any = await rateLimitMiddleware(null, {
+        routeGroup: "notifications.prefs.update",
+        ownerId,
+        env: process.env
+      });
+      if (rl && rl.status === 429) {
+        return { text: "Rate limited. Try again later.", identity };
+      }
+    } catch {
+      // Fail-open.
+    }
+
+    let patch: any = {};
+    let change: any = {};
+
+    if (command.kind === "notifications_mode") {
+      patch.mode = command.mode;
+      change.mode = command.mode;
+    } else if (command.kind === "notifications_quiet_off") {
+      patch.quiet_enabled = false;
+      patch.quiet_start_min = null;
+      patch.quiet_end_min = null;
+      change.quiet = "OFF";
+    } else if (command.kind === "notifications_quiet_set") {
+      const startMin = parseTimeHHMM(command.start);
+      const endMin = parseTimeHHMM(command.end);
+      if (startMin == null || endMin == null) {
+        return { text: "Invalid quiet hours. Use HH:MM HH:MM (ex: notif quiet 22:00 08:00).", identity };
+      }
+      patch.quiet_enabled = true;
+      patch.quiet_start_min = startMin;
+      patch.quiet_end_min = endMin;
+      change.quiet = `${command.start}-${command.end}`;
+    } else if (command.kind === "notifications_tz") {
+      patch.timezone = command.timezone;
+      change.timezone = command.timezone;
+    } else if (command.kind === "notifications_types_toggle") {
+      const t = String(command.eventType || "").trim().toLowerCase();
+      const allowed = new Set(NOTIFICATION_EVENT_TYPES);
+      if (!allowed.has(t as any)) {
+        return { text: `Invalid event type. Allowed: ${NOTIFICATION_EVENT_TYPES.join(", ")}`, identity };
+      }
+      const current = Array.isArray(prefs.event_types) ? prefs.event_types.map((x: any) => String(x).trim().toLowerCase()) : [];
+      const set = new Set(current);
+      if (set.has(t)) set.delete(t);
+      else set.add(t);
+      patch.event_types = Array.from(set);
+      change.event_types = patch.event_types;
+    } else if (command.kind === "notifications_strong_price") {
+      const strong = prefs.filters && typeof prefs.filters === "object" ? (prefs.filters as any).strong : {};
+      const nextStrong: any = { ...(strong && typeof strong === "object" ? strong : {}) };
+      nextStrong.max_price_eur = command.maxPriceEur === null ? null : command.maxPriceEur;
+      patch.filters = { strong: nextStrong };
+      change.strong_max_price_eur = command.maxPriceEur;
+    } else if (command.kind === "notifications_strong_trust") {
+      const strong = prefs.filters && typeof prefs.filters === "object" ? (prefs.filters as any).strong : {};
+      const nextStrong: any = { ...(strong && typeof strong === "object" ? strong : {}) };
+      nextStrong.min_seller_trust_score = command.minSellerTrustScore === null ? null : command.minSellerTrustScore;
+      patch.filters = { strong: nextStrong };
+      change.strong_min_seller_trust_score = command.minSellerTrustScore;
+    }
+
+    const updated = await updateNotificationPreferences({ ownerId, patch });
+
+    return {
+      text: truncate(buildNotificationsText(updated)),
+      replyMarkup: buildNotificationsKeyboard(updated),
+      identity,
+      telemetry: { event: "notifications.preference_updated", payload: { changes: change }, outcome: "SUCCESS" }
+    };
+  }
 
   if (command.kind === "status") {
     if (!requiresRole(role, "viewer")) {

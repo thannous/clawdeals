@@ -3,6 +3,7 @@ import { mapSupabaseError } from "./supabase-errors";
 import { publishSseEvent } from "../sse/store";
 import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { MAX_MATCHES_PER_DEAL, WATCHLIST_MATCH_EVENT_MAX_IDS } from "../config/watchlists";
+import { enqueueWatchlistMatchOutbox } from "./notification-outbox";
 import {
   buildEntityTokensFromDeal,
   buildEntityTokensFromListing,
@@ -268,6 +269,26 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
     insertedByAgent.set(agentId, state);
   }
 
+  try {
+    const map = new Map<string, { watchlistIds: string[] }>();
+    for (const [agentId, st] of insertedByAgent.entries()) {
+      map.set(agentId, { watchlistIds: st.watchlistIds || [] });
+    }
+    await enqueueWatchlistMatchOutbox({
+      client: supabase,
+      entityType: "deal",
+      entityId: deal.deal_id,
+      insertedByAgent: map,
+      occurredAt: matchedAt
+    });
+  } catch (error: any) {
+    console.info("notifications.outbox_enqueue_failed", {
+      entity_type: "deal",
+      entity_id: deal.deal_id,
+      error: error?.message || String(error)
+    });
+  }
+
   const deliveredAt = new Date().toISOString();
 
   for (const [agentId, state] of insertedByAgent.entries()) {
@@ -378,6 +399,26 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     if (row.watchlist_id) state.watchlistIds.push(row.watchlist_id);
     if (row.watchlist_match_id) state.matchIds.push(row.watchlist_match_id);
     insertedByAgent.set(agentId, state);
+  }
+
+  try {
+    const map = new Map<string, { watchlistIds: string[] }>();
+    for (const [agentId, st] of insertedByAgent.entries()) {
+      map.set(agentId, { watchlistIds: st.watchlistIds || [] });
+    }
+    await enqueueWatchlistMatchOutbox({
+      client: supabase,
+      entityType: "listing",
+      entityId: listing.listing_id,
+      insertedByAgent: map,
+      occurredAt: matchedAt
+    });
+  } catch (error: any) {
+    console.info("notifications.outbox_enqueue_failed", {
+      entity_type: "listing",
+      entity_id: listing.listing_id,
+      error: error?.message || String(error)
+    });
   }
 
   const deliveredAt = new Date().toISOString();

@@ -55,4 +55,22 @@ describe("parseCommand", () => {
     expect(parseCommand(`unpair ${UUID}`)).toEqual({ kind: "unpair", channelIdentityId: UUID, confirm: false });
     expect(parseCommand(`unpair ${UUID} confirm`)).toEqual({ kind: "unpair", channelIdentityId: UUID, confirm: true });
   });
+
+  it("parses notifications commands", () => {
+    expect(parseCommand("notif")).toEqual({ kind: "notifications_menu" });
+    expect(parseCommand("notifications")).toEqual({ kind: "notifications_menu" });
+    expect(parseCommand("notif mode realtime")).toEqual({ kind: "notifications_mode", mode: "REALTIME" });
+    expect(parseCommand("notif mode digest_hourly")).toEqual({ kind: "notifications_mode", mode: "DIGEST_HOURLY" });
+    expect(parseCommand("notif mode digest_daily")).toEqual({ kind: "notifications_mode", mode: "DIGEST_DAILY" });
+    expect(parseCommand("notif mode silent")).toEqual({ kind: "notifications_mode", mode: "SILENT" });
+    expect(parseCommand("notif quiet off")).toEqual({ kind: "notifications_quiet_off" });
+    expect(parseCommand("notif quiet 22:00 08:00")).toEqual({ kind: "notifications_quiet_set", start: "22:00", end: "08:00" });
+    expect(parseCommand("notif tz Europe/Paris")).toEqual({ kind: "notifications_tz", timezone: "Europe/Paris" });
+    expect(parseCommand("notif types toggle watchlist_match")).toEqual({
+      kind: "notifications_types_toggle",
+      eventType: "watchlist_match"
+    });
+    expect(parseCommand("notif strong price off")).toEqual({ kind: "notifications_strong_price", maxPriceEur: null });
+    expect(parseCommand("notif strong trust 80")).toEqual({ kind: "notifications_strong_trust", minSellerTrustScore: 80 });
+  });
 });

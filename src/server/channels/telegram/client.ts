@@ -5,10 +5,12 @@ function sanitizeText(value: string) {
 
 export async function sendTelegramMessage({
   chatId,
-  text
+  text,
+  replyMarkup
 }: {
   chatId: string;
   text: string;
+  replyMarkup?: any;
 }): Promise<{ ok: boolean; status?: number; error?: string }> {
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   if (!token) {
@@ -24,7 +26,8 @@ export async function sendTelegramMessage({
       body: JSON.stringify({
         chat_id: chatId,
         text: sanitizeText(text || ""),
-        disable_web_page_preview: true
+        disable_web_page_preview: true,
+        ...(replyMarkup ? { reply_markup: replyMarkup } : {})
       })
     });
 
@@ -38,4 +41,3 @@ export async function sendTelegramMessage({
     return { ok: false, error: error?.message || "TELEGRAM_SEND_FAILED" };
   }
 }
-
