@@ -8,6 +8,7 @@ export const CARD_COMMAND_IDS = {
   MENU_NOTIFICATIONS: "menu.notifications",
   MENU_HELP: "menu.help",
   WATCHLISTS_CREATE: "watchlists.create",
+  RESET: "reset"
 } as const;
 
 export const CARD_ACTION_IDS = {
@@ -22,5 +23,10 @@ export const CARD_ACTION_IDS = {
   WATCHLISTS_BACK: "watchlists.back",
   WATCHLISTS_PREV: "watchlists.prev",
   WATCHLISTS_NEXT: "watchlists.next",
-  CREATE_BACK: "watchlists.create.back"
+  CREATE_BACK: "watchlists.create.back",
+  HELP_MENU: "help.menu",
+  HELP_CONNECT: "help.connect",
+  HELP_APPROVALS: "help.approvals",
+  HELP_NOTIFICATIONS: "help.notifications",
+  HELP_RESET: "help.reset"
 } as const;

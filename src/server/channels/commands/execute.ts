@@ -29,6 +29,8 @@ import { encodeApprovalsCursorToken, decodeApprovalsCursorToken } from "./approv
 import { getTransaction } from "../../services/transactions";
 import { createMessage } from "../../services/threads";
 import { SYSTEM_SENDER_ID } from "../../messaging/warnings";
+import { clearActiveListingDraftForChannel } from "../../services/listing-drafts";
+import { cancelStagedCommandsForChannelIdentity } from "../../services/staged-commands";
 import type { ParsedCommand } from "./parser";
 import crypto from "node:crypto";
 
@@ -83,6 +85,7 @@ export function buildHelpText() {
   return [
     "Commands:",
     "- help",
+    "- reset",
     "- status",
     "- menu (or /menu)",
     "- approvals | approvals list",
@@ -101,6 +104,57 @@ export function buildHelpText() {
     "- Sensitive actions require confirm.",
     "- Write commands require pairing (CHANNEL_NOT_PAIRED)."
   ].join("\n");
+}
+
+function buildHelpCard({ includeBackToMenu }: { includeBackToMenu: boolean }): Card {
+  const actions: any[] = [
+    {
+      action_id: CARD_ACTION_IDS.HELP_MENU,
+      label: "Menu",
+      command_id: CARD_COMMAND_IDS.MENU_HOME,
+      row: 0
+    },
+    {
+      action_id: CARD_ACTION_IDS.HELP_CONNECT,
+      label: "Connect",
+      command_id: "connect",
+      row: 1
+    },
+    {
+      action_id: CARD_ACTION_IDS.HELP_APPROVALS,
+      label: "Approvals",
+      command_id: CARD_COMMAND_IDS.MENU_APPROVALS,
+      row: 2
+    },
+    {
+      action_id: CARD_ACTION_IDS.HELP_NOTIFICATIONS,
+      label: "Notifications",
+      command_id: CARD_COMMAND_IDS.MENU_NOTIFICATIONS,
+      row: 3
+    },
+    {
+      action_id: CARD_ACTION_IDS.HELP_RESET,
+      label: "Reset",
+      command_id: CARD_COMMAND_IDS.RESET,
+      row: 4
+    }
+  ];
+
+  if (includeBackToMenu) {
+    actions.push({
+      action_id: "help.back",
+      label: "Retour",
+      command_id: CARD_COMMAND_IDS.MENU_HOME,
+      row: 5
+    });
+  }
+
+  return {
+    title: "Help",
+    subtitle: "Raccourcis",
+    bullets: ["Utilise les boutons ci-dessous.", "Tu peux aussi taper: menu, connect, approvals, notif, reset."],
+    actions
+  };
 }
 
 const WATCHLISTS_PAGE_SIZE = 8;
@@ -631,7 +685,15 @@ export async function executeChannelCommand({
   command: ParsedCommand;
   ctx: any;
 }): Promise<ExecuteResult> {
-  if (command.kind === "help" || command.kind === "unknown") {
+  if (command.kind === "help") {
+    const card = buildHelpCard({ includeBackToMenu: false });
+    return {
+      text: renderCardPlainText(card),
+      card,
+      telemetryEvents: [{ event: "chat.card_rendered", payload: { card: "help" }, outcome: "SUCCESS" }]
+    };
+  }
+  if (command.kind === "unknown") {
     return { text: buildHelpText() };
   }
 
@@ -745,6 +807,48 @@ export async function executeChannelCommand({
   await touchLastSeen({ ownerId: identity.owner_id, channelIdentityId: identity.channel_identity_id });
 
   const role = identity.role || "viewer";
+
+  if (command.kind === "reset") {
+    if (!requiresRole(role, "owner")) {
+      return { text: "Forbidden: owner role required.", identity };
+    }
+
+    const ownerId = identity.owner_id;
+    const now = new Date();
+
+    // Best-effort: clear any active listing draft pointers and cancel staged commands tied to this channel.
+    try {
+      await clearActiveListingDraftForChannel({ ownerId, channelIdentityId: identity.channel_identity_id, now });
+    } catch {
+      // Ignore.
+    }
+    try {
+      await cancelStagedCommandsForChannelIdentity({ channelIdentityId: identity.channel_identity_id, now });
+    } catch {
+      // Ignore.
+    }
+
+    const card: Card = {
+      title: "Reset",
+      subtitle: "Done",
+      bullets: ["Wizard state cleared (draft/staged).", "Nothing was deleted."],
+      actions: [
+        {
+          action_id: CARD_ACTION_IDS.HELP_MENU,
+          label: "Menu",
+          command_id: CARD_COMMAND_IDS.MENU_HOME,
+          row: 0
+        }
+      ]
+    };
+
+    return {
+      text: renderCardPlainText(card),
+      card,
+      identity,
+      telemetryEvents: [{ event: "chat.reset", payload: { channel_identity_id: identity.channel_identity_id }, outcome: "SUCCESS" }]
+    };
+  }
 
   if (command.kind === "menu") {
     if (!requiresRole(role, "viewer")) {
@@ -905,19 +1009,7 @@ export async function executeChannelCommand({
     if (!requiresRole(role, "viewer")) {
       return { text: "Forbidden: viewer role required.", identity };
     }
-    const card: Card = {
-      title: "Help",
-      subtitle: "Raccourcis",
-      bullets: ["menu", "watchlists", "notifications", "approvals", "connect", "help"],
-      actions: [
-        {
-          action_id: "help.back",
-          label: "Retour",
-          command_id: CARD_COMMAND_IDS.MENU_HOME,
-          row: 0
-        }
-      ]
-    };
+    const card = buildHelpCard({ includeBackToMenu: true });
     return {
       text: renderCardPlainText(card),
       card,

@@ -22,6 +22,7 @@ export type ParsedCommand =
   | { kind: "policies_show" }
   | { kind: "deploy_status" }
   | { kind: "connect" }
+  | { kind: "reset" }
   | { kind: "notifications_menu" }
   | { kind: "notifications_mode"; mode: "REALTIME" | "DIGEST_HOURLY" | "DIGEST_DAILY" | "SILENT" }
   | { kind: "notifications_quiet_off" }
@@ -81,6 +82,8 @@ export function parseCommand(raw: unknown): ParsedCommand {
     const cmd = decoded.commandId;
     const args = decoded.args || {};
     if (cmd === CARD_COMMAND_IDS.MENU_HOME) return { kind: "menu" };
+    if (cmd === "connect") return { kind: "connect" };
+    if (cmd === CARD_COMMAND_IDS.RESET || cmd === "reset") return { kind: "reset" };
     if (cmd === CARD_COMMAND_IDS.MENU_WATCHLISTS) {
       const p = Number.parseInt(String(args.p ?? "0"), 10);
       return { kind: "menu_watchlists", page: Number.isFinite(p) ? Math.max(0, p) : 0 };
@@ -164,6 +167,7 @@ export function parseCommand(raw: unknown): ParsedCommand {
     return { kind: "start", pairToken: token || null };
   }
   if (cmd === "help") return { kind: "help" };
+  if (cmd === "reset") return { kind: "reset" };
   if (cmd === "status") return { kind: "status" };
   if (cmd === "menu" || cmd === "menu.home") return { kind: "menu" };
   if (cmd === "menu.matches") return { kind: "menu_matches" };

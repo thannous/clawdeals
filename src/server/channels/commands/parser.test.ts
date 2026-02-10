@@ -8,6 +8,11 @@ describe("parseCommand", () => {
     expect(parseCommand("help")).toEqual({ kind: "help" });
   });
 
+  it("parses reset", () => {
+    expect(parseCommand("reset")).toEqual({ kind: "reset" });
+    expect(parseCommand("/reset")).toEqual({ kind: "reset" });
+  });
+
   it("parses /start with optional token", () => {
     expect(parseCommand("/start")).toEqual({ kind: "start", pairToken: null });
     expect(parseCommand("/start abc123")).toEqual({ kind: "start", pairToken: "abc123" });
@@ -69,6 +74,8 @@ describe("parseCommand", () => {
     expect(parseCommand("cd:menu.approvals")).toEqual({ kind: "menu_approvals" });
     expect(parseCommand("cd:menu.notifications")).toEqual({ kind: "notifications_menu" });
     expect(parseCommand("cd:menu.help")).toEqual({ kind: "menu_help" });
+    expect(parseCommand("cd:connect")).toEqual({ kind: "connect" });
+    expect(parseCommand("cd:reset")).toEqual({ kind: "reset" });
 
     expect(parseCommand("cd:approvals.page:c=abc")).toEqual({ kind: "approvals_page", cursor: "abc" });
     expect(parseCommand(`cd:approvals.approve:id=${UUID}`)).toEqual({ kind: "approve", approvalId: UUID, confirm: false });

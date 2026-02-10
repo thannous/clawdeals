@@ -112,6 +112,29 @@ export async function cancelStagedCommand({ commandId, agentId, now = new Date()
   return data || null;
 }
 
+export async function cancelStagedCommandsForChannelIdentity({ channelIdentityId, now = new Date() }: any) {
+  if (!channelIdentityId) {
+    throw Object.assign(new Error("channelIdentityId is required"), { status: 400, code: "VALIDATION_ERROR" });
+  }
+
+  const client = getSupabaseServiceClient();
+  const nowIso = now.toISOString();
+
+  const { data, error } = await client
+    .from("staged_commands")
+    .update({
+      state: "CANCELLED",
+      cancelled_at: nowIso,
+      updated_at: nowIso
+    })
+    .eq("channel_identity_id", channelIdentityId)
+    .in("state", ["STAGED", "CONFIRMED"])
+    .select("command_id");
+
+  if (error) mapError(error);
+  return { cancelled: Array.isArray(data) ? data.length : 0 };
+}
+
 export async function confirmStagedCommand({ commandId, agentId, now = new Date() }: any) {
   const client = getSupabaseServiceClient();
   const nowIso = now.toISOString();
@@ -206,4 +229,3 @@ export async function markStagedCommandUndone({ commandId, agentId, now = new Da
   if (error) mapError(error);
   return data || null;
 }
-

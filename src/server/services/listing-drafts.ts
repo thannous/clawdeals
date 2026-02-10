@@ -147,6 +147,39 @@ export async function ensureActiveListingDraftForChannel({
   return { listingId, listing };
 }
 
+export async function clearActiveListingDraftForChannel({
+  ownerId,
+  channelIdentityId,
+  now = new Date()
+}: {
+  ownerId: string;
+  channelIdentityId: string;
+  now?: Date;
+}) {
+  if (!ownerId) throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
+  if (!channelIdentityId) throw buildServiceError("channelIdentityId is required", 400, "VALIDATION_ERROR");
+
+  const client = getSupabaseServiceClient();
+  const payload: any = {
+    active_listing_draft_id: null,
+    active_listing_draft_updated_at: now.toISOString()
+  };
+
+  let { data, error } = await client
+    .from("channel_identities")
+    .update(payload)
+    .eq("owner_id", ownerId)
+    .eq("channel_identity_id", channelIdentityId)
+    .select("channel_identity_id,active_listing_draft_id,active_listing_draft_updated_at")
+    .maybeSingle();
+
+  if (error && isMissingActiveDraftColumn(error)) {
+    return null;
+  }
+  if (error) mapError(error);
+  return data || null;
+}
+
 export async function appendDraftListingPhoto({
   listingId,
   sellerAgentId,
