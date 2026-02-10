@@ -1144,6 +1144,11 @@ export async function executeChannelCommand({
       telemetryEvents: [
         ...(page.telemetryEvents || []),
         {
+          event: "approval.resolved",
+          payload: { approval_id: approvalId, decision },
+          outcome: "SUCCESS"
+        },
+        {
           event: ev,
           payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, step_up: true },
           outcome: "SUCCESS"
@@ -1277,6 +1282,11 @@ export async function executeChannelCommand({
         telemetryEvents: [
           ...(page.telemetryEvents || []),
           {
+            event: "approval.resolved",
+            payload: { approval_id: approvalId, decision: "APPROVED" },
+            outcome: "SUCCESS"
+          },
+          {
             event: "chat.approval_approved",
             payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, step_up: false },
             outcome: "SUCCESS"
@@ -1333,7 +1343,17 @@ export async function executeChannelCommand({
       resolvedBy: identity.owner_id
     });
 
-    return { text: `Approved: ${resolved.approval_id}`, identity };
+    return {
+      text: `Approved: ${resolved.approval_id}`,
+      identity,
+      telemetryEvents: [
+        {
+          event: "approval.resolved",
+          payload: { approval_id: approvalId, decision: "APPROVED" },
+          outcome: "SUCCESS"
+        }
+      ]
+    };
   }
 
   if (command.kind === "deny") {
@@ -1415,6 +1435,11 @@ export async function executeChannelCommand({
         telemetryEvents: [
           ...(page.telemetryEvents || []),
           {
+            event: "approval.resolved",
+            payload: { approval_id: approvalId, decision: "DENIED" },
+            outcome: "SUCCESS"
+          },
+          {
             event: "chat.approval_denied",
             payload: { approval_id: approvalId, action_type: approval.action_type, risk_level: riskLevel, step_up: false },
             outcome: "SUCCESS"
@@ -1476,7 +1501,17 @@ export async function executeChannelCommand({
     });
 
     const reason = pending.reason || command.reason || null;
-    return { text: truncate(`Denied: ${resolved.approval_id}${reason ? `\nreason: ${reason}` : ""}`), identity };
+    return {
+      text: truncate(`Denied: ${resolved.approval_id}${reason ? `\nreason: ${reason}` : ""}`),
+      identity,
+      telemetryEvents: [
+        {
+          event: "approval.resolved",
+          payload: { approval_id: approvalId, decision: "DENIED" },
+          outcome: "SUCCESS"
+        }
+      ]
+    };
   }
 
   return { text: buildHelpText(), identity };

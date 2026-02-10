@@ -1039,20 +1039,6 @@ export async function handler(req, res, ctx) {
   }
 
   if (
-    (command.kind === "approve" || command.kind === "deny") &&
-    command.confirm === true &&
-    typeof result.text === "string" &&
-    (result.text.startsWith("Approved:") || result.text.startsWith("Denied:"))
-  ) {
-    await safeAuditLog(
-      buildAuditEventFromCtx(ctx, "approval.resolved", {
-        approval_id: command.approvalId,
-        decision: command.kind === "approve" ? "APPROVED" : "DENIED"
-      })
-    );
-  }
-
-  if (
     command.kind === "unpair" &&
     command.confirm === true &&
     typeof result.text === "string" &&
