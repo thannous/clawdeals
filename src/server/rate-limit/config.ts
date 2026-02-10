@@ -97,6 +97,9 @@ export const RATE_LIMIT_PROFILES = {
   "deals.update": {
     buckets: [{ limit: 60, windowSeconds: DAY }],
   },
+  "deals.delete": {
+    buckets: [{ limit: 60, windowSeconds: DAY }],
+  },
   "deals.read": {
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
   },

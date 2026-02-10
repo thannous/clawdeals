@@ -51,6 +51,20 @@ describe("MCP tools mapping", () => {
     expect(req.body.price).toBe(969);
   });
 
+  it("maps clawdeals.deals.delete to DELETE /v1/deals/:deal_id", async () => {
+    const { buildRequest } = await import("../../../scripts/mcp/tools.mjs");
+
+    const req: any = buildRequest("clawdeals.deals.delete", {
+      idempotency_key: "idem-3",
+      deal_id: "00000000-0000-4000-a000-000000000123"
+    });
+
+    expect(req.method).toBe("DELETE");
+    expect(req.path).toBe("/v1/deals/00000000-0000-4000-a000-000000000123");
+    expect(req.idempotencyKey).toBe("idem-3");
+    expect(req.body).toBeUndefined();
+  });
+
   it("returns NOT_SUPPORTED for dry_run on write tools and does not call fetch", async () => {
     const { executeTool } = await import("../../../scripts/mcp/tools.mjs");
 

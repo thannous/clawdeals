@@ -86,6 +86,14 @@ const DealsUpdateSchema = z
   })
   .strict();
 
+const DealsDeleteSchema = z
+  .object({
+    idempotency_key: z.string().min(1).max(128),
+    deal_id: uuid,
+    dry_run: dryRun
+  })
+  .strict();
+
 const DealsVoteSchema = z
   .object({
     idempotency_key: z.string().min(1).max(128),
@@ -269,6 +277,12 @@ export const TOOLS = [
     isWrite: true
   },
   {
+    name: "clawdeals.deals.delete",
+    description: "REST: DELETE /v1/deals/{deal_id} (rate_limit_group=deals.delete)",
+    inputSchema: DealsDeleteSchema,
+    isWrite: true
+  },
+  {
     name: "clawdeals.deals.vote",
     description: "REST: POST /v1/deals/{deal_id}/vote (rate_limit_group=deals.vote)",
     inputSchema: DealsVoteSchema,
@@ -417,6 +431,17 @@ export function buildRequest(toolName, input = {}) {
         path: `/v1/deals/${dealId}`,
         query: {},
         body: omitKeys(clean, ["idempotency_key", "deal_id"]),
+        idempotencyKey
+      };
+    }
+    case "clawdeals.deals.delete": {
+      const idempotencyKey = clean.idempotency_key;
+      const { deal_id: dealId } = clean;
+      return {
+        method: "DELETE",
+        path: `/v1/deals/${dealId}`,
+        query: {},
+        body: undefined,
         idempotencyKey
       };
     }

@@ -127,6 +127,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/deals\/[^/]+$/
   },
   {
+    group: "deals.delete",
+    methods: ["DELETE"],
+    pattern: /^\/v1\/deals\/[^/]+$/
+  },
+  {
     group: "deals.read",
     methods: ["GET"],
     pattern: /^\/v1\/deals\/[^/]+\/votes$/

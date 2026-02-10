@@ -97,4 +97,10 @@ describe("route groups", () => {
     const id = "00000000-0000-4000-a000-000000000123";
     expect(matchRouteGroup("PATCH", `/api/v1/deals/${id}`, sp)).toBe("deals.update");
   });
+
+  it("matches deals.delete for DELETE /v1/deals/:deal_id", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+    expect(matchRouteGroup("DELETE", `/api/v1/deals/${id}`, sp)).toBe("deals.delete");
+  });
 });

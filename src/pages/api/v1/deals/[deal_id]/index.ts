@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getDealById } from "../../../../../server/services/deal-detail";
 import { applyDealUpdate, getDealForUpdate } from "../../../../../server/services/deal-update";
+import { getDealForRemove, removeDeal } from "../../../../../server/services/deal-remove";
 import { isUuid } from "../../../../../server/utils/validators";
 import { ALLOWED_CURRENCIES, DEAL_MAX_TTL_DAYS } from "../../../../../server/config/deals";
 import { normalizeTags } from "../../../../../server/utils/deals";
@@ -37,19 +38,22 @@ function parseDate(value) {
 }
 
 export async function handler(req, res, ctx) {
-  if (req.method !== "GET" && req.method !== "PATCH") {
-    return methodNotAllowed(["GET", "PATCH"]);
+  if (req.method !== "GET" && req.method !== "PATCH" && req.method !== "DELETE") {
+    return methodNotAllowed(["GET", "PATCH", "DELETE"]);
   }
 
   if (ctx) {
-    ctx.auditEvent = req.method === "PATCH" ? "deal.update_rejected" : "deal.viewed";
+    ctx.auditEvent =
+      req.method === "PATCH" ? "deal.update_rejected" :
+      req.method === "DELETE" ? "deal.remove_rejected" :
+      "deal.viewed";
   }
 
   if (ctx?.authError) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  if (req.method === "PATCH") {
+  if (req.method === "PATCH" || req.method === "DELETE") {
     const idempotencyKey = getHeaderValue(req.headers, "idempotency-key");
     if (!idempotencyKey) {
       return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
@@ -173,6 +177,27 @@ export async function handler(req, res, ctx) {
       };
 
       return jsonResponse(200, { deal: responseDeal });
+    }
+
+    if (req.method === "DELETE") {
+      const existing = await getDealForRemove({ dealId });
+      const removed = await removeDeal({
+        dealId,
+        agentId: ctx.agentId,
+        existing
+      });
+
+      if (ctx) {
+        ctx.auditEvent = "deal.removed";
+      }
+
+      return jsonResponse(200, {
+        deal: {
+          deal_id: removed.deal_id,
+          status: removed.status,
+          updated_at: removed.updated_at
+        }
+      });
     }
 
     const deal = await getDealById({ dealId });

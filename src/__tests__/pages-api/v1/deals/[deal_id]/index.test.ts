@@ -9,15 +9,23 @@ vi.mock("../../../../../server/services/deal-update", () => ({
   applyDealUpdate: vi.fn()
 }));
 
+vi.mock("../../../../../server/services/deal-remove", () => ({
+  getDealForRemove: vi.fn(),
+  removeDeal: vi.fn()
+}));
+
 import { handler } from "../../../../../pages/api/v1/deals/[deal_id]/index";
 import { getDealById } from "../../../../../server/services/deal-detail";
 import { applyDealUpdate, getDealForUpdate } from "../../../../../server/services/deal-update";
+import { getDealForRemove, removeDeal } from "../../../../../server/services/deal-remove";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
 
 const getDealByIdMock = vi.mocked(getDealById);
 const getDealForUpdateMock = vi.mocked(getDealForUpdate);
 const applyDealUpdateMock = vi.mocked(applyDealUpdate);
+const getDealForRemoveMock = vi.mocked(getDealForRemove);
+const removeDealMock = vi.mocked(removeDeal);
 
 const baseCtx: any = {
   ownerId: "00000000-0000-4000-a000-000000000000",
@@ -192,5 +200,59 @@ describe("PATCH /v1/deals/:deal_id", () => {
         patch: expect.objectContaining({ title: "Updated Deal", price: 9.99 })
       })
     );
+  });
+});
+
+describe("DELETE /v1/deals/:deal_id", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const agentCtx: any = {
+    agentId: "d5dd3a9d-9c1e-4e46-8759-7f502c0449a1",
+    actor: { type: "agent", id: "d5dd3a9d-9c1e-4e46-8759-7f502c0449a1" },
+    authError: null
+  };
+
+  it("requires Idempotency-Key", async () => {
+    const ctx: any = { ...agentCtx };
+    const req = { method: "DELETE", query: { deal_id: dealId }, headers: {} };
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(400);
+    expect(ctx.auditEvent).toBe("deal.remove_rejected");
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("requires agent authentication", async () => {
+    const req = { method: "DELETE", query: { deal_id: dealId }, headers: { "idempotency-key": "idem-1" } };
+    const result: any = await handler(req, null, { ...agentCtx, agentId: null, actor: { type: "anonymous", id: null } });
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("removes deal", async () => {
+    getDealForRemoveMock.mockResolvedValue({
+      deal_id: dealId,
+      creator_agent_id: agentCtx.agentId,
+      status: "NEW",
+      votes_up: 0,
+      votes_down: 0,
+      created_at: "2026-02-05T12:00:00Z",
+      new_until: "2026-02-05T12:10:00Z"
+    } as any);
+
+    removeDealMock.mockResolvedValue({
+      deal_id: dealId,
+      status: "REMOVED",
+      updated_at: "2026-02-05T12:05:00Z"
+    } as any);
+
+    const ctx: any = { ...agentCtx };
+    const req = { method: "DELETE", query: { deal_id: dealId }, headers: { "idempotency-key": "idem-1" } };
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(200);
+    expect(ctx.auditEvent).toBe("deal.removed");
+    expect(result.body.deal.deal_id).toBe(dealId);
+    expect(result.body.deal.status).toBe("REMOVED");
   });
 });
