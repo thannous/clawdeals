@@ -60,8 +60,8 @@ describe("POST /v1/approvals/[id]", () => {
     mockedGetListing.mockResolvedValue(null as any);
   });
 
-  it("returns 405 for non-POST", async () => {
-    const req = { method: "GET", headers: {}, query: { id: `${approvalId}:approve` } };
+  it("returns 405 for unsupported methods", async () => {
+    const req = { method: "PUT", headers: {}, query: { id: `${approvalId}:approve` } };
     const result: any = await handler(req, null, ownerCtx());
     expect(result.status).toBe(405);
   });
@@ -73,6 +73,15 @@ describe("POST /v1/approvals/[id]", () => {
       { actor: { type: "agent" }, authError: null }
     );
     expect(result.status).toBe(401);
+  });
+
+  it("allows agent actor when ownerId is present (WebMCP in-browser)", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({ approval_id: approvalId, state: "PENDING" } as any);
+    mockedResolveApproval.mockResolvedValue({ approval_id: approvalId, state: "APPROVED" } as any);
+
+    const ctx: any = { ownerId, actor: { type: "agent" }, authError: null };
+    const result: any = await handler(makeReq(`${approvalId}:approve`), null, ctx);
+    expect(result.status).toBe(200);
   });
 
   it("returns 400 when approval_id is not a UUID", async () => {
@@ -142,6 +151,15 @@ describe("POST /v1/approvals/[id]", () => {
     expect((result.body as any).error.code).toBe("NOT_FOUND");
   });
 
+  it("passes note through as resolveApproval reason", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({ approval_id: approvalId, state: "PENDING" } as any);
+    mockedResolveApproval.mockResolvedValue({ approval_id: approvalId, state: "APPROVED" } as any);
+
+    const result: any = await handler(makeReq(`${approvalId}:approve`, { note: "looks good" }), null, ownerCtx());
+    expect(result.status).toBe(200);
+    expect(resolveApproval).toHaveBeenCalledWith(expect.objectContaining({ reason: "looks good" }));
+  });
+
   it("sets ctx.auditEvent and ctx.policy on resolve", async () => {
     mockedGetApprovalForOwner.mockResolvedValue({ approval_id: approvalId, state: "PENDING" } as any);
     mockedResolveApproval.mockResolvedValue({ approval_id: approvalId, state: "APPROVED" } as any);
@@ -169,5 +187,36 @@ describe("POST /v1/approvals/[id]", () => {
         payload: expect.objectContaining({ approval_id: approvalId, thread_id: "t1", message_type: "question" })
       })
     );
+  });
+});
+
+describe("GET /v1/approvals/[id] (detail)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 400 when approval_id is not a UUID", async () => {
+    const req: any = { method: "GET", headers: {}, query: { id: "not-uuid" } };
+    const result: any = await handler(req, null, ownerCtx());
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 404 when approval not found", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue(null as any);
+    const req: any = { method: "GET", headers: {}, query: { id: approvalId } };
+    const result: any = await handler(req, null, ownerCtx());
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 200 with approval data", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({ approval_id: approvalId, state: "PENDING" } as any);
+    const ctx: any = ownerCtx();
+    const req: any = { method: "GET", headers: {}, query: { id: approvalId } };
+    const result: any = await handler(req, null, ctx);
+    expect(result.status).toBe(200);
+    expect(result.body.data.approval_id).toBe(approvalId);
+    expect(ctx.auditEvent).toBe("approval.viewed");
   });
 });

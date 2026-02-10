@@ -7,13 +7,14 @@ function readFile(relPath: string) {
 }
 
 function extractFrontmatter(markdown: string) {
-  const match = markdown.match(/^---\n([\s\S]*?)\n---\n/);
+  const match = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
   return match ? match[1] : null;
 }
 
 function extractFencedBlocks(markdown: string) {
   const blocks: Array<{ info: string; content: string }> = [];
-  const re = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)\n```/g;
+  // Support both LF and CRLF line endings.
+  const re = /```([a-zA-Z0-9_-]*)\r?\n([\s\S]*?)\r?\n```/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(markdown))) {
     blocks.push({ info: match[1] || "", content: match[2] || "" });
@@ -65,6 +66,8 @@ describe("skills/clawdeals skill pack docs", () => {
 
   it("is ClawHub-install ready: docs-only, has SECURITY + CHANGELOG, and SKILL.md contains metadata + valid links", () => {
     const skillDir = path.join(process.cwd(), "skills", "clawdeals");
+    // When running on WSL against the Windows mount (/mnt/*), executable bits are not reliable (often 777).
+    const isWslDrvfs = Boolean(process.env.WSL_DISTRO_NAME) && skillDir.startsWith(`${path.sep}mnt${path.sep}`);
 
     const requiredFiles = [
       "SKILL.md",
@@ -87,7 +90,9 @@ describe("skills/clawdeals skill pack docs", () => {
       expect(ent.name.endsWith(".md"), `non-doc file found in skills/clawdeals/: ${ent.name}`).toBe(true);
 
       const st = fs.statSync(path.join(skillDir, ent.name));
-      expect((st.mode & 0o111) === 0, `executable bit set on skills/clawdeals/${ent.name}`).toBe(true);
+      if (!isWslDrvfs) {
+        expect((st.mode & 0o111) === 0, `executable bit set on skills/clawdeals/${ent.name}`).toBe(true);
+      }
     }
 
     const skillMd = readFile("skills/clawdeals/SKILL.md");
@@ -110,8 +115,8 @@ describe("skills/clawdeals skill pack docs", () => {
     const version = versionLine!.replace(/^version:\s*/, "").replace(/^"|"$/g, "");
     expect(version, "SKILL.md version must be semver 0.x").toMatch(/^0\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/);
 
-    expect(fm!, "permissions must be a YAML list").toMatch(/permissions:\n(?:[ \t]*-[^\n]*\n)+/m);
-    expect(fm!, 'permissions must include "no-exec"').toMatch(/^\s*-\s*("?no-exec"?)\s*$/m);
+    expect(fm!, "permissions must be a YAML list").toMatch(/permissions:\r?\n(?:[ \t]*-[^\r\n]*\r?\n)+/m);
+    expect(fm!, 'permissions must include "no-exec"').toMatch(/^\s*-\s*("?no-exec"?)\s*\r?$/m);
 
     // Ensure all relative links in SKILL.md resolve inside the skill folder.
     for (const rel of listRelativeLinks(skillMd)) {

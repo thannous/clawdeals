@@ -7,6 +7,11 @@ export const RATE_LIMIT_DEFAULT_SCOPE = "agent";
 export const RATE_LIMIT_KEY_PREFIX = "rl";
 
 export const RATE_LIMIT_PROFILES = {
+  "webmcp.tool_invoke": {
+    // Additional safety bucket for in-browser agent tool invocation to prevent noisy loops.
+    scope: "agent",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
   "auth.register_ip": {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],

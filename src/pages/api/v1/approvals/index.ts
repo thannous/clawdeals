@@ -16,7 +16,9 @@ export async function handler(req, res, ctx) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  if (ctx?.actor?.type !== "owner") {
+  // v0 WebMCP uses agent API keys in-browser; allow agent actor if it carries an owner_id in ctx.
+  const actorType = ctx?.actor?.type;
+  if (actorType !== "owner" && actorType !== "agent") {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
   }
 

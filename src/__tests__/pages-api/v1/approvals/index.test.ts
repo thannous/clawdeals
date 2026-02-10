@@ -46,6 +46,14 @@ describe("GET /v1/approvals", () => {
     expect(result.status).toBe(401);
   });
 
+  it("allows agent actor when ownerId is present (WebMCP in-browser)", async () => {
+    mockedListApprovals.mockResolvedValue({ approvals: [], nextCursor: null } as any);
+    const req = makeReq({ state: "PENDING" });
+    const result: any = await handler(req, null, { ownerId, actor: { type: "agent" }, authError: null });
+    expect(result.status).toBe(200);
+    expect(listApprovals).toHaveBeenCalledWith(expect.objectContaining({ ownerId }));
+  });
+
   it("returns 401 without ownerId", async () => {
     const req = makeReq();
     const result: any = await handler(req, null, { actor: { type: "owner" }, ownerId: null, authError: null });

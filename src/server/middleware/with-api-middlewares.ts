@@ -27,6 +27,20 @@ function isWriteMethod(method) {
   return !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
 }
 
+function getHeaderValue(headers: any, name: string): string | null {
+  if (!headers) return null;
+  const key = String(name || "").toLowerCase();
+  const value = headers[key] ?? headers[name];
+  if (Array.isArray(value)) return String(value[0] || "");
+  if (value === undefined || value === null) return null;
+  return String(value);
+}
+
+function isWebMcpChannelRequest(req: any): boolean {
+  const raw = getHeaderValue(req?.headers, "x-client-channel");
+  return raw ? raw.trim().toLowerCase() === "webmcp" : false;
+}
+
 function parseCommaList(value: any): string[] {
   if (!value || typeof value !== "string") return [];
   return value
@@ -257,10 +271,53 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
       return;
     }
 
-    let idempotencyContext = null;
+      let idempotencyContext = null;
 
     try {
       if (resolved.enableRateLimit) {
+        // Add an extra safety bucket for in-browser WebMCP tool invocation, in addition to the route-group limits.
+        if (isWebMcpChannelRequest(req)) {
+          const webmcpRateLimitResult = await rateLimitMiddleware(req, {
+            routeGroup: "webmcp.tool_invoke",
+            agentId: ctx.agentId,
+            ownerId: ctx.ownerId,
+            channelId: ctx.channelId,
+            ip: ctx.ip,
+            env: process.env,
+            onRateLimited: (meta) => {
+              ctx.rateLimit = {
+                group: meta.group,
+                scope: meta.scope,
+                identity: meta.identity,
+                limit: meta.limit,
+                windowSeconds: meta.windowSeconds,
+                retryAfterSeconds: meta.retryAfterSeconds,
+                remaining: meta.remaining,
+                resetSeconds: meta.resetSeconds
+              };
+            }
+          });
+
+          if (webmcpRateLimitResult && webmcpRateLimitResult.status === 429) {
+            ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
+            if (webmcpRateLimitResult.meta) {
+              const meta: any = webmcpRateLimitResult.meta;
+              ctx.rateLimit = {
+                group: meta.group || "webmcp.tool_invoke",
+                scope: meta.scope,
+                identity: meta.identity,
+                limit: meta.limit,
+                remaining: meta.remaining,
+                resetSeconds: meta.resetSeconds,
+                retryAfterSeconds: meta.retryAfterSeconds
+              };
+            }
+            sendJson(res, webmcpRateLimitResult.status, webmcpRateLimitResult.body, webmcpRateLimitResult.headers);
+            ctx.response = jsonResponse(webmcpRateLimitResult.status, webmcpRateLimitResult.body, webmcpRateLimitResult.headers);
+            return;
+          }
+        }
+
         const rateLimitResult = await rateLimitMiddleware(req, {
           routeGroup: resolved.routeGroup,
           agentId: ctx.agentId,

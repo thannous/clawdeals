@@ -15,15 +15,17 @@ function getHeaderValue(req, name) {
 }
 
 export async function handler(req, res, ctx) {
-  if (req.method !== "POST") {
-    return methodNotAllowed(["POST"]);
+  if (req.method !== "GET" && req.method !== "POST") {
+    return methodNotAllowed(["GET", "POST"]);
   }
 
   if (ctx?.authError) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  if (ctx?.actor?.type !== "owner") {
+  // v0 WebMCP uses agent API keys in-browser; allow agent actor if it carries an owner_id in ctx.
+  const actorType = ctx?.actor?.type;
+  if (actorType !== "owner" && actorType !== "agent") {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
   }
 
@@ -41,22 +43,59 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "approval_id is required"));
   }
 
-  const [approvalId, action] = rawId.split(":");
-  if (!approvalId || !action) {
-    return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown approval action"));
-  }
+  const parts = rawId.split(":");
+  const approvalId = parts[0] || "";
+  const action = parts[1] || null;
 
   if (!isUuid(approvalId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "approval_id must be a UUID"));
   }
 
-  if (action !== "approve" && action !== "deny") {
+  // GET /v1/approvals/{approval_id}
+  if (req.method === "GET") {
+    if (ctx) {
+      ctx.auditEvent = "approval.viewed";
+      ctx.body = { approval_id: approvalId };
+    }
+
+    try {
+      const approval = await getApprovalForOwner(approvalId, ownerId);
+      if (!approval) {
+        return jsonResponse(404, errorPayload("NOT_FOUND", "Approval not found"));
+      }
+
+      return jsonResponse(200, { data: approval });
+    } catch (error) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
+    }
+  }
+
+  // POST /v1/approvals/{approval_id}:approve|deny
+  if (!action) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown approval action"));
   }
 
   const idempotencyKey = getHeaderValue(req, "idempotency-key");
   if (!idempotencyKey) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+  }
+
+  const body = req.body || {};
+  const rawNote = body?.note;
+  let note: string | null = null;
+  if (rawNote !== undefined && rawNote !== null && rawNote !== "") {
+    if (typeof rawNote !== "string") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "note must be a string"));
+    }
+    const trimmed = rawNote.trim();
+    if (trimmed.length > 400) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "note must be 0..400 characters"));
+    }
+    note = trimmed || null;
+  }
+
+  if (action !== "approve" && action !== "deny") {
+    return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown approval action"));
   }
 
   const decision = action === "approve" ? "APPROVED" : "DENIED";
@@ -78,7 +117,8 @@ export async function handler(req, res, ctx) {
       approvalId,
       ownerId,
       decision,
-      resolvedBy: ownerId
+      resolvedBy: ownerId,
+      reason: note
     });
 
     if (resolved.state !== decision) {

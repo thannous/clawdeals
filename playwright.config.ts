@@ -16,10 +16,12 @@ const webServerMode = process.env.PW_WEB_SERVER_MODE || "dev";
 // Integration tests run the server in "prod" mode; ensure required runtime env is present.
 const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME || "clawdeals_bot";
 const internalCronSecret = process.env.INTERNAL_CRON_SECRET || "test-cron-secret";
+// Enable the WebMCP demo route for UI smoke tests.
+const webmcpEnv = "NEXT_PUBLIC_WEBMCP_ENABLED=1";
 const webServerCommand =
   webServerMode === "prod"
-    ? `INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
-    : `npm run dev -- --port ${devPort} ${devBundlerFlag}`;
+    ? `${webmcpEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
+    : `${webmcpEnv} npm run dev -- --port ${devPort} ${devBundlerFlag}`;
 const integrationWorkers = (() => {
   const raw = process.env.PW_INTEGRATION_WORKERS;
   if (!raw) return 1;
