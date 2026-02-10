@@ -23,6 +23,8 @@ function isRootPath(restPath: string): boolean {
 function isAppRoute(restPath: string): boolean {
   return (
     restPath === "/start" ||
+    restPath === "/settings" ||
+    restPath.startsWith("/settings/") ||
     restPath.startsWith("/developer") ||
     restPath === "/dev/webmcp" ||
     restPath === "/deals" ||
@@ -43,6 +45,8 @@ function isAppRoute(restPath: string): boolean {
 function isAppSectionRoute(restPath: string): boolean {
   return (
     restPath === "/start" ||
+    restPath === "/settings" ||
+    restPath.startsWith("/settings/") ||
     restPath.startsWith("/developer") ||
     restPath === "/dev/webmcp" ||
     restPath === "/deals" ||
@@ -138,6 +142,7 @@ export function middleware(request: NextRequest) {
       rest.startsWith("/console") ||
       rest.startsWith("/deals") ||
       rest.startsWith("/start") ||
+      rest.startsWith("/settings") ||
       rest.startsWith("/developer") ||
       rest.startsWith("/dev/") ||
       rest.startsWith("/claim") ||

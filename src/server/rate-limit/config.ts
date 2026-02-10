@@ -117,6 +117,14 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 20, windowSeconds: HOUR }],
   },
+  "installations.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "installations.revoke": {
+    scope: "owner",
+    buckets: [{ limit: 20, windowSeconds: HOUR }],
+  },
   "policies.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],

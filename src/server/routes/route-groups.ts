@@ -92,6 +92,16 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/owner\/verify-phone:confirm$/
   },
   {
+    group: "installations.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/owner\/installations$/
+  },
+  {
+    group: "installations.revoke",
+    methods: ["POST"],
+    pattern: /^\/v1\/installations\/[^/]+:revoke$/
+  },
+  {
     group: "policies.read",
     methods: ["GET"],
     pattern: /^\/v1\/policies(?:\/[^/]+)?$/

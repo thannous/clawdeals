@@ -39,6 +39,14 @@ describe("middleware host routing", () => {
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/device");
   });
 
+  it("bounces marketing /settings/connected-apps to app host", () => {
+    const res = middleware(
+      makeReq("https://www.clawdeals.com/settings/connected-apps", "www.clawdeals.com")
+    );
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/settings/connected-apps");
+  });
+
   it("keeps marketing / as-is", () => {
     const res = middleware(makeReq("https://www.clawdeals.com/", "www.clawdeals.com"));
     expect(res?.headers.get("x-middleware-next")).toBe("1");
@@ -65,6 +73,13 @@ describe("middleware host routing", () => {
 
   it("does not redirect app host /device", () => {
     const res = middleware(makeReq("https://app.clawdeals.com/device", "app.clawdeals.com"));
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("does not redirect app host /settings/connected-apps", () => {
+    const res = middleware(
+      makeReq("https://app.clawdeals.com/settings/connected-apps", "app.clawdeals.com")
+    );
     expect(res?.headers.get("x-middleware-next")).toBe("1");
   });
 

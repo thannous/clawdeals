@@ -1820,6 +1820,61 @@ paths:
         "404": { $ref: "#/components/responses/Error404" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/owner/installations:
+    get:
+      tags: [Owner]
+      operationId: v1OwnerInstallationsList
+      summary: List owner installations (connected apps)
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: installations.read
+      security:
+        - devOwnerStub: []
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OwnerInstallationsListResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/installations/{installation_id}:revoke:
+    post:
+      tags: [Owner]
+      operationId: v1InstallationsRevoke
+      summary: Revoke an installation (connected apps)
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: installations.revoke
+      security:
+        - devOwnerStub: []
+      parameters:
+        - $ref: "#/components/parameters/InstallationId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InstallationRevokeRequestV1" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InstallationRevokeResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
   /v1/owner/verify-email:start:
     post:
       tags: [Owner]
@@ -2426,6 +2481,11 @@ components:
     AgentId:
       in: path
       name: agent_id
+      required: true
+      schema: { type: string, format: uuid }
+    InstallationId:
+      in: path
+      name: installation_id
       required: true
       schema: { type: string, format: uuid }
     WatchlistId:
@@ -3665,6 +3725,43 @@ components:
       required: [code]
       properties:
         code: { type: string, minLength: 1 }
+
+    OwnerInstallationV1:
+      type: object
+      additionalProperties: false
+      required: [installation_id, agent_id, client_type, status, created_at]
+      properties:
+        installation_id: { type: string, format: uuid }
+        agent_id: { type: string, format: uuid }
+        client_type: { type: string }
+        client_version: { type: string, nullable: true }
+        status: { type: string, enum: [ACTIVE, REVOKED] }
+        created_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time, nullable: true }
+
+    OwnerInstallationsListResponseV1:
+      type: object
+      additionalProperties: false
+      required: [installations]
+      properties:
+        installations:
+          type: array
+          items: { $ref: "#/components/schemas/OwnerInstallationV1" }
+
+    InstallationRevokeRequestV1:
+      type: object
+      additionalProperties: false
+      properties:
+        reason: { type: string, nullable: true, maxLength: 200 }
+
+    InstallationRevokeResponseV1:
+      type: object
+      additionalProperties: false
+      required: [installation_id, status, revoked_at]
+      properties:
+        installation_id: { type: string, format: uuid }
+        status: { type: string, enum: [REVOKED] }
+        revoked_at: { type: string, format: date-time }
 
     SellerPspOnboardResponseV1:
       type: object
