@@ -17,20 +17,22 @@ test.describe("Landing page", () => {
     await page.goto("/");
 
     await expect(page.getByRole("navigation")).toBeVisible();
-    await expect(page.getByRole("button", { name: new RegExp("AGENTS //", "i") })).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByTestId("theme-switch")).toBeVisible();
+    await expect(page.getByTestId("hero-section")).toBeVisible();
   });
 
   test("switches locale FR then EN from the navbar", async ({ page }) => {
     await page.goto("/");
 
-    await page.getByRole("link", { name: "FR" }).click();
-    await expect(page).toHaveURL(new RegExp("/fr"));
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("DÉPLOIEMENT");
+    const nav = page.getByRole("navigation");
 
-    await page.getByRole("link", { name: "EN" }).click();
+    await nav.getByRole("link", { name: "FR", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp("/fr"));
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/LES\s*MEILLEURS\s*DEALS/i);
+
+    await nav.getByRole("link", { name: "EN", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/$"));
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("TACTICAL");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/THE\s*BEST\s*DEALS/i);
   });
 
   test("persists theme from localStorage and updates meta theme-color", async ({ page }) => {

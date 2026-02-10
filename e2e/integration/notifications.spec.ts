@@ -92,6 +92,14 @@ test.describe.serial("Integration: Notifications (TI-300)", () => {
     expect(outboxBeforeError).toBeNull();
     expect(outboxBefore?.status).toBe("PENDING");
 
+    // Dispatch selects the oldest pending outbox rows and limits by distinct owners.
+    // On shared test DBs, there can be many older pending rows, so force our row to be oldest.
+    const { error: bumpErr } = await supabase
+      .from("notification_outbox")
+      .update({ occurred_at: "2000-01-01T00:00:00.000Z" })
+      .eq("notification_outbox_id", outboxBefore.notification_outbox_id);
+    expect(bumpErr).toBeNull();
+
     const cronRes = await request.post("/api/internal/cron/notifications-dispatch?dry_run=1&limit_owners=20", {
       headers: { "x-cron-secret": String(cronSecret) }
     });
@@ -110,4 +118,3 @@ test.describe.serial("Integration: Notifications (TI-300)", () => {
     expect(agent.owner_id).toBe(ownerId);
   });
 });
-

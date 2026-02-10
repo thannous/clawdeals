@@ -346,13 +346,21 @@ test.describe.serial("Integration: Watchlists", () => {
       data: { name: "TI-272 backfill", criteria: { tags: [matchCategory] }, active: true }
     });
     await expectStatus(wlRes, 201);
-    const wlBody = await wlRes.json();
-    const watchlistId = wlBody.watchlist_id;
-    expect(watchlistId).toBeTruthy();
+	    const wlBody = await wlRes.json();
+	    const watchlistId = wlBody.watchlist_id;
+	    expect(watchlistId).toBeTruthy();
 
-    // Run the backfill queue cron once.
-    const secret = process.env.INTERNAL_CRON_SECRET;
-    expect(secret).toBeTruthy();
+	    // Backfill cron processes the oldest queued watchlists first. On shared DBs, the queue may be deep,
+	    // so force this watchlist to the front of the queue so the test is deterministic.
+	    const { error: queueErr } = await supabase.from("watchlist_backfill_queue").upsert(
+	      { watchlist_id: watchlistId, updated_at: "2000-01-01T00:00:00.000Z" },
+	      { onConflict: "watchlist_id" }
+	    );
+	    expect(queueErr).toBeNull();
+
+	    // Run the backfill queue cron once.
+	    const secret = process.env.INTERNAL_CRON_SECRET;
+	    expect(secret).toBeTruthy();
 
     const cronRes = await request.post("/api/internal/cron/watchlist-backfill-queue?limit=20&deals_limit=100&listings_limit=100", {
       headers: { "x-cron-secret": secret as string }

@@ -108,10 +108,11 @@ test.describe.serial("Integration: Telegram pairing edge cases (TI-296)", () => 
 
     // Force-expire the token in DB (so we test the real server path).
     const tokenHash = hashPairToken(String(pairToken), pairTokenSecret);
+    const createdAt = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const expiredAt = new Date(Date.now() - 60 * 1000).toISOString();
     const { error: updErr } = await supabase
       .from("pairing_tokens")
-      .update({ expires_at: expiredAt })
+      .update({ created_at: createdAt, expires_at: expiredAt })
       .eq("token_hash", tokenHash)
       .eq("token_type", "WEB_TO_CHANNEL");
     if (updErr) throw updErr;
@@ -206,4 +207,3 @@ test.describe.serial("Integration: Telegram pairing edge cases (TI-296)", () => 
     expect(String(bodyB?.text || "")).toMatch(/^CHANNEL_ALREADY_PAIRED/);
   });
 });
-

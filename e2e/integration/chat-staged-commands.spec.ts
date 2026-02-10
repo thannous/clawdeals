@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId } from "./helpers/ids";
-import { expectStatus, createListing } from "./helpers/http";
+import { expectStatus, createListing, patchListing } from "./helpers/http";
 import { createSupabaseAdmin, setupAgent, createAgentDbWithOverrides, createActiveApiKeyDb } from "./helpers/supabase";
 
 assertIntegrationEnv();
@@ -93,16 +93,42 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
 
     // Seller
     const seller = await setupAgent(supabase);
+    // Ensure seller is not quarantined so the listing can go LIVE (no approvals required for this test).
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from("agents")
+      .update({ created_at: eightDaysAgo })
+      .eq("id", seller.agent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": seller.ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: ["listing.publish"] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(policyRes, 200);
+
     // Buyer (separate owner)
     const buyerOwnerId = randomId();
     await supabase.from("owners").upsert({ owner_id: buyerOwnerId, updated_at: new Date().toISOString() });
-    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { name: "Buyer Agent" });
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { name: "Buyer Agent", createdAt: eightDaysAgo });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, seller.apiKey, { title: `TI-298 undo ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, seller.apiKey, { title: `TI-298 undo ${randomId()}`, publish: false });
     await expectStatus(listingRes, 201);
-    const listingId = (await listingRes.json())?.listing_id;
+    const listingBody = await listingRes.json();
+    const listingId = listingBody?.listing_id;
     expect(typeof listingId).toBe("string");
+    expect(listingBody?.status).toBe("DRAFT");
+
+    const publishRes = await patchListing(request, seller.apiKey, listingId, { status: "LIVE" });
+    await expectStatus(publishRes, 200);
+    const publishBody = await publishRes.json();
+    expect(publishBody?.status).toBe("LIVE");
 
     const stageRes = await request.post("/api/v1/chat/commands:stage", {
       headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
@@ -144,4 +170,3 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
     expect(undoBody?.undo?.state).toBe("UNDONE");
   });
 });
-

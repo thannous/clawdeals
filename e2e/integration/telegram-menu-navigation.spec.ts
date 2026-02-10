@@ -64,7 +64,7 @@ test.describe.serial("Integration: Telegram menu navigation (TI-297)", () => {
     const webhookSecret = requireEnv("TELEGRAM_WEBHOOK_SECRET_TOKEN");
 
     const supabase = createSupabaseAdmin();
-    const { ownerId, apiKey } = await setupAgent(supabase);
+    const { ownerId, agent } = await setupAgent(supabase);
 
     const nonce = Math.floor(Math.random() * 1_000_000_000);
     const fromId = 100000 + nonce;
@@ -92,17 +92,23 @@ test.describe.serial("Integration: Telegram menu navigation (TI-297)", () => {
     expect(identity?.channel_identity_id).toBeTruthy();
 
     // Create enough watchlists to trigger pagination (page size = 8).
-    for (let i = 0; i < 9; i += 1) {
-      const wlRes = await request.post("/api/v1/watchlists", {
-        headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
-        data: {
-          name: `TG WL ${i}`,
-          criteria: { tags: [`tg-menu-nav-${i}`] },
-          active: true
-        }
-      });
-      await expectStatus(wlRes, 201);
-    }
+    const watchlists = Array.from({ length: 9 }).map((_, i) => ({
+      agent_id: agent.id,
+      name: `TG WL ${i}`,
+      active: true,
+      criteria: { tags: [`tg-menu-nav-${i}`] },
+      query_text: null,
+      tags: [`tg-menu-nav-${i}`],
+      price_max: null,
+      geo_lat: null,
+      geo_lon: null,
+      distance_km: null,
+      deleted_at: null,
+      updated_at: new Date().toISOString()
+    }));
+
+    const { error: wlError } = await supabase.from("watchlists").insert(watchlists);
+    if (wlError) throw wlError;
 
     const menuRes = await request.post("/api/v1/channels/telegram/webhook", {
       headers: { "x-telegram-bot-api-secret-token": webhookSecret },
@@ -183,4 +189,3 @@ test.describe.serial("Integration: Telegram menu navigation (TI-297)", () => {
     expect(String(home?.text || "")).toMatch(/\bMenu\b/);
   });
 });
-
