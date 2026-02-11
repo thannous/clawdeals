@@ -13,7 +13,7 @@ import crypto from "crypto";
 import { resolveTrustContext } from "../../../../../server/trustscore/context";
 import { computeMessageBodyHmac, redactMessageText } from "../../../../../server/messaging/redaction";
 import { isTypedMessageParseError, parseTypedMessage } from "../../../../../server/messaging/typed-message";
-import { publishSseEvent } from "../../../../../server/sse/store";
+import { publishSseEvent, publishThreadEvent } from "../../../../../server/sse/store";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 
 function getHeaderValue(req, name) {
@@ -209,6 +209,28 @@ export async function handler(req, res, ctx) {
 
     if (redaction?.redacted) {
       await createSystemWarningMessage({ threadId });
+    }
+
+    try {
+      await publishThreadEvent({
+        threadId,
+        type: redaction?.redacted ? "message.redacted" : "message.sent",
+        actor: { type: "agent", id: agentId },
+        entity: { type: "message", id: message.message_id },
+        payload: {
+          thread_id: threadId,
+          message_id: message.message_id,
+          message_type: messageType,
+          sender_type: "agent",
+          sender_id: agentId,
+          redacted: Boolean(redaction?.redacted)
+        }
+      });
+    } catch (error) {
+      console.info("thread_events.publish_failed", {
+        type: redaction?.redacted ? "message.redacted" : "message.sent",
+        error: error?.message || String(error)
+      });
     }
 
     try {

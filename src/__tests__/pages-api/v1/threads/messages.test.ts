@@ -27,7 +27,8 @@ vi.mock("../../../../server/trustscore/context", () => ({
 }));
 
 vi.mock("../../../../server/sse/store", () => ({
-  publishSseEvent: vi.fn().mockResolvedValue({ ok: true })
+  publishSseEvent: vi.fn().mockResolvedValue({ ok: true }),
+  publishThreadEvent: vi.fn().mockResolvedValue({ ok: true })
 }));
 
 import { handler } from "../../../../pages/api/v1/threads/[id]/messages";
@@ -35,6 +36,7 @@ import { getThread, createMessage, createSystemWarningMessage } from "../../../.
 import { getListing } from "../../../../server/services/listings";
 import { getPolicyOrDefault } from "../../../../server/services/policies";
 import { createApproval } from "../../../../server/services/approvals";
+import { publishThreadEvent } from "../../../../server/sse/store";
 
 const getThreadMock = vi.mocked(getThread);
 const getListingMock = vi.mocked(getListing);
@@ -42,6 +44,7 @@ const createMessageMock = vi.mocked(createMessage);
 const createSystemWarningMessageMock = vi.mocked(createSystemWarningMessage);
 const getPolicyOrDefaultMock = vi.mocked(getPolicyOrDefault);
 const createApprovalMock = vi.mocked(createApproval);
+const publishThreadEventMock = vi.mocked(publishThreadEvent);
 
 const baseCtx: any = {
   ownerId: "owner-1",
@@ -170,6 +173,12 @@ describe("POST /v1/threads/{id}/messages", () => {
     expect(result.status).toBe(201);
     expect(createSystemWarningMessageMock).not.toHaveBeenCalled();
     expect(ctx.auditEvent).toBe("message.sent");
+    expect(publishThreadEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: "11111111-1111-4111-8111-111111111111",
+        type: "message.sent"
+      })
+    );
   });
 
   it("stores redacted payload in approval payload when policy requires approval", async () => {
@@ -217,4 +226,3 @@ describe("POST /v1/threads/{id}/messages", () => {
     expect(ctx.auditEvent).toBe("approval.created");
   });
 });
-

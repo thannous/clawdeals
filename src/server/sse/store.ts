@@ -45,6 +45,10 @@ export function agentStreamKey(agentId) {
   return `sse:stream:agent:v1:${agentId}`;
 }
 
+export function threadStreamKey(threadId) {
+  return `sse:stream:thread:v1:${threadId}`;
+}
+
 export async function getLatestStreamId(key) {
   const redis = getRedis();
   let result;
@@ -93,23 +97,9 @@ function redactEventPayload(event) {
   return value;
 }
 
-export async function publishSseEvent({
-  audienceType,
-  audienceId,
-  type,
-  actor,
-  entity,
-  payload,
-  ts
-}: any = {}) {
-  if (!audienceType || (audienceType !== "agent" && audienceType !== "ops")) {
-    throw new Error("publishSseEvent audienceType must be 'agent' or 'ops'");
-  }
-  if (audienceType === "agent" && !audienceId) {
-    throw new Error("publishSseEvent audienceId is required for agent audience");
-  }
+function buildEventData({ type, actor, entity, payload, ts }: any = {}) {
   if (!type || typeof type !== "string") {
-    throw new Error("publishSseEvent type is required");
+    throw new Error("buildEventData type is required");
   }
 
   const event = {
@@ -132,9 +122,36 @@ export async function publishSseEvent({
     };
     data = JSON.stringify(truncated);
     if (byteLength(data) > SSE_MAX_EVENT_BYTES) {
-      console.info("sse.payload_dropped", { type, reason: "size_cap" });
       return { ok: false, reason: "size_cap" };
     }
+  }
+
+  return { ok: true, ts: event.ts, data };
+}
+
+export async function publishSseEvent({
+  audienceType,
+  audienceId,
+  type,
+  actor,
+  entity,
+  payload,
+  ts
+}: any = {}) {
+  if (!audienceType || (audienceType !== "agent" && audienceType !== "ops")) {
+    throw new Error("publishSseEvent audienceType must be 'agent' or 'ops'");
+  }
+  if (audienceType === "agent" && !audienceId) {
+    throw new Error("publishSseEvent audienceId is required for agent audience");
+  }
+  if (!type || typeof type !== "string") {
+    throw new Error("publishSseEvent type is required");
+  }
+
+  const built = buildEventData({ type, actor, entity, payload, ts });
+  if (!built.ok) {
+    console.info("sse.payload_dropped", { type, reason: built.reason });
+    return { ok: false, reason: built.reason };
   }
 
   const redis = getRedis();
@@ -158,8 +175,8 @@ export async function publishSseEvent({
         "*",
         {
           type,
-          ts: event.ts,
-          data
+          ts: built.ts,
+          data: built.data
         },
         { trim }
       );
@@ -176,6 +193,43 @@ export async function publishSseEvent({
     ok: true,
     ids
   };
+}
+
+export async function publishThreadEvent({ threadId, type, actor, entity, payload, ts }: any = {}) {
+  if (!threadId || typeof threadId !== "string") {
+    throw new Error("publishThreadEvent threadId is required");
+  }
+  if (!type || typeof type !== "string") {
+    throw new Error("publishThreadEvent type is required");
+  }
+
+  const built = buildEventData({ type, actor, entity, payload, ts });
+  if (!built.ok) {
+    console.info("thread_events.payload_dropped", { type, reason: built.reason });
+    return { ok: false, reason: built.reason };
+  }
+
+  const redis = getRedis();
+  const trim = { type: "MAXLEN", threshold: SSE_STREAM_TRIM_MAXLEN, comparison: "~" };
+  const key = threadStreamKey(threadId);
+
+  try {
+    const id = await redis.xadd(
+      key,
+      "*",
+      {
+        type,
+        ts: built.ts,
+        data: built.data
+      },
+      { trim }
+    );
+    await redis.expire(key, SSE_STREAM_TTL_SECONDS);
+    return { ok: true, id };
+  } catch (error) {
+    console.info("thread_events.redis_error", { op: "xadd", error: error?.message || String(error) });
+    return { ok: false, reason: "redis_error" };
+  }
 }
 
 export { parseStreamId };
