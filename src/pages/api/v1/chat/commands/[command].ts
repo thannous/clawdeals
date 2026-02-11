@@ -14,6 +14,8 @@ import {
   markStagedCommandUndone
 } from "../../../../../server/services/staged-commands";
 import {
+  AUTHORITY_DECISION,
+  evaluateAuthorityAction,
   hasExplicitOriginContext,
   ORIGIN_CONTEXT_KIND,
   resolveOriginContext
@@ -325,6 +327,10 @@ export async function handler(req: any, _res: any, ctx: any) {
     const requestOriginContext = resolveOriginContext({
       originContext: req.body?.origin_context
     });
+    const requestAuthority = evaluateAuthorityAction({
+      actionType: command.action_type,
+      originContext: requestOriginContext
+    });
 
     if (ctx) {
       ctx.body = {
@@ -334,9 +340,35 @@ export async function handler(req: any, _res: any, ctx: any) {
       };
     }
 
+    if (requestAuthority.decision === AUTHORITY_DECISION.BLOCKED) {
+      if (ctx) {
+        ctx.auditEvent = "chat.command_confirmed";
+        ctx.auditEntityType = "staged_command";
+        ctx.auditEntityId = commandId;
+        ctx.body = {
+          command_id: commandId,
+          action,
+          origin_context: requestOriginContext,
+          staged_origin_context: commandMeta.originContext
+        };
+        ctx.outcome = { type: "BLOCKED", reason: requestAuthority.reason || "origin_context" };
+      }
+
+      return jsonResponse(
+        403,
+        errorPayload("ORIGIN_CONTEXT_BLOCKED", "Action not authorized in this context", {
+          command_id: commandId,
+          origin_context: requestOriginContext,
+          staged_origin_context: commandMeta.originContext,
+          action_type: command.action_type,
+          reason: requestAuthority.reason
+        })
+      );
+    }
+
     if (
       (command.state === "STAGED" || command.state === "CONFIRMED") &&
-      commandMeta.authority?.requiresControlDmConfirm &&
+      requestAuthority.decision === AUTHORITY_DECISION.STAGED &&
       requestOriginContext.kind !== ORIGIN_CONTEXT_KIND.CONTROL_DM
     ) {
       if (ctx) {
@@ -358,7 +390,8 @@ export async function handler(req: any, _res: any, ctx: any) {
           command_id: commandId,
           required_origin_context: ORIGIN_CONTEXT_KIND.CONTROL_DM,
           origin_context: requestOriginContext,
-          staged_origin_context: commandMeta.originContext
+          staged_origin_context: commandMeta.originContext,
+          reason: requestAuthority.reason || commandMeta.authority?.reason || null
         })
       );
     }

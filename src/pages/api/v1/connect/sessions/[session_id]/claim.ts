@@ -77,6 +77,18 @@ function buildConflictFromStatus(status: any) {
   return null;
 }
 
+function resolveTransitionNow(session: any) {
+  const nowMs = Date.now();
+  const createdAtRaw = typeof session?.created_at === "string" ? session.created_at : null;
+  if (!createdAtRaw) return new Date(nowMs);
+
+  const createdAtMs = Date.parse(createdAtRaw);
+  if (!Number.isFinite(createdAtMs)) return new Date(nowMs);
+
+  // Guard against DB clock skew where row timestamps can be ahead of app clock.
+  return new Date(Math.max(nowMs, createdAtMs + 1));
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -180,7 +192,7 @@ export async function handler(req: any, res: any, ctx: any) {
       ownerId: ctx.ownerId,
       agentId,
       installationId: null,
-      now: new Date()
+      now: resolveTransitionNow(session)
     });
 
     let controlThreadId: string | null = null;

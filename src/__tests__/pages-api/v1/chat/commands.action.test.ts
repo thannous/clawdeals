@@ -229,6 +229,43 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "control_dm_confirm_required" });
   });
 
+  it("confirm enforces request origin policy even when staged authority metadata is missing", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000333";
+    const listingId = "00000000-0000-4000-a000-000000000444";
+
+    getStagedCommandForAgentMock.mockResolvedValue({
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      state: "STAGED",
+      action_type: "offer.create",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+      payload_redacted: {
+        payload: {
+          listing_id: listingId,
+          amount: 350,
+          currency: "EUR",
+          expires_at: new Date(Date.now() + 3600000).toISOString()
+        }
+      }
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": commandId },
+      query: { command: `${commandId}:confirm` },
+      body: { origin_context: { kind: "public_group" } }
+    };
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("CONTROL_DM_CONFIRM_REQUIRED");
+    expect(confirmStagedCommandMock).not.toHaveBeenCalled();
+    expect(offerCreateHandlerMock).not.toHaveBeenCalled();
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "control_dm_confirm_required" });
+  });
+
   it("confirm maps offer approval_required to 202 PENDING_APPROVAL and stores approval_id", async () => {
     const commandId = "00000000-0000-4000-a000-000000000333";
     const listingId = "00000000-0000-4000-a000-000000000444";
