@@ -27,6 +27,9 @@ function redactClaimTokenInCtx(ctx: any) {
 }
 
 export async function handler(req: any, res: any, ctx: any) {
+  // Ensure claim tokens never reach audit logs, even on early-return paths.
+  redactClaimTokenInCtx(ctx);
+
   if (req.method !== "GET") {
     return methodNotAllowed(["GET"]);
   }
@@ -34,8 +37,6 @@ export async function handler(req: any, res: any, ctx: any) {
   if (ctx?.authError) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
-
-  redactClaimTokenInCtx(ctx);
 
   const claimToken = resolveParam(req.query?.claim_token);
   if (!claimToken) {
