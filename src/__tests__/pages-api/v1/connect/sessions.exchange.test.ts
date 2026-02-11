@@ -186,6 +186,117 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
     expect(finalizeIdempotencyMock).not.toHaveBeenCalled();
   });
 
+  it("returns 401 for invalid poll token", async () => {
+    getConnectSessionForPollMock.mockRejectedValue(
+      Object.assign(new Error("Invalid poll token"), { status: 401, code: "UNAUTHORIZED" })
+    );
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1", authorization: "Bearer cd_poll_invalid" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+    expect(result.body.error.message).toBe("Invalid poll token");
+    expect(beginIdempotencyMock).not.toHaveBeenCalled();
+    expect(exchangeMock).not.toHaveBeenCalled();
+    expect(finalizeIdempotencyMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [409, "SESSION_NOT_CLAIMED", "Connect session not claimed"],
+    [410, "SESSION_EXPIRED", "Connect session expired"]
+  ])("returns %s when exchange fails with %s", async (status, code, message) => {
+    exchangeMock.mockRejectedValue(Object.assign(new Error(message), { status, code }));
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(status);
+    expect(result.body.error.code).toBe(code);
+    expect(result.body.error.message).toBe(message);
+    expect(finalizeIdempotencyMock).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ status })
+    );
+    expect(ctx.idempotency).toEqual(expect.objectContaining({ key: "idem-1", replayed: false, status: "COMPLETED" }));
+  });
+
+  it("returns 409 when the same Idempotency-Key is reused with a different body", async () => {
+    const seenBodies = new Map<string, string>();
+    beginIdempotencyMock.mockImplementation(async (req: any) => {
+      const key = String(req?.headers?.["idempotency-key"] || "");
+      const bodyFingerprint = JSON.stringify(req?.body || {});
+      const previousBodyFingerprint = seenBodies.get(key);
+
+      if (previousBodyFingerprint && previousBodyFingerprint !== bodyFingerprint) {
+        return {
+          action: "error",
+          response: jsonResponse(409, {
+            error: { code: "IDEMPOTENCY_KEY_REUSE", message: "Idempotency-Key reuse detected" }
+          })
+        } as any;
+      }
+
+      seenBodies.set(key, bodyFingerprint);
+      return {
+        action: "continue",
+        context: { key, record: { idempotency_id: `idem-${key}` } }
+      } as any;
+    });
+
+    exchangeMock.mockResolvedValue({
+      session_id: "11111111-1111-4111-8111-111111111111",
+      status: "DELIVERED",
+      agent_id: "22222222-2222-4222-8222-222222222222",
+      owner_id: "55555555-5555-4555-8555-555555555555",
+      installation_id: "33333333-3333-4333-8333-333333333333",
+      api_key: "cd_live_testprefix.testsecret",
+      api_key_id: "44444444-4444-4444-8444-444444444444",
+      issued_at: "2026-02-10T12:00:00.000Z"
+    } as any);
+
+    const firstReq = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-same", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: {
+        requested_key_scope: "agent_write",
+        installation: { client_type: "openclaw", client_version: "1.0.0" }
+      }
+    };
+
+    const secondReq = {
+      ...firstReq,
+      body: {
+        requested_key_scope: "agent_write",
+        installation: { client_type: "openclaw", client_version: "2.0.0" }
+      }
+    };
+
+    const firstResult: any = await handler(firstReq, null, { ...baseCtx });
+    const secondCtx: any = { ...baseCtx };
+    const secondResult: any = await handler(secondReq, null, secondCtx);
+
+    expect(firstResult.status).toBe(200);
+    expect(secondResult.status).toBe(409);
+    expect(secondResult.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
+    expect(secondCtx.outcome).toEqual({ type: "BLOCKED", reason: "idempotency" });
+    expect(exchangeMock).toHaveBeenCalledTimes(1);
+    expect(finalizeIdempotencyMock).toHaveBeenCalledTimes(1);
+  });
+
   it("validates requested_key_scope must be agent_write", async () => {
     const req = {
       method: "POST",
@@ -249,6 +360,11 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
     const result: any = await handler(req, null, ctx);
 
     expect(hashConnectSessionPollToken).toHaveBeenCalledWith("cd_poll_test");
+    expect(beginIdempotencyMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ strictReplayTtl: true })
+    );
     expect(exchangeConnectSessionForInstallationApiKey).toHaveBeenCalledWith(
       expect.objectContaining({
         sessionId: "11111111-1111-4111-8111-111111111111",

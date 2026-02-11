@@ -120,6 +120,29 @@ function buildErrorResponse(code, message, details, status = 409, headers = {}) 
   return jsonResponse(status, errorPayload(code, message, details), headers);
 }
 
+function buildInProgressResponse() {
+  return buildErrorResponse(
+    "IDEMPOTENCY_IN_PROGRESS",
+    "Request with the same Idempotency-Key is still in progress",
+    { retry_after_seconds: 1 },
+    409,
+    { "Retry-After": "1" }
+  );
+}
+
+function isRecordExpired(record: any) {
+  if (!record?.expires_at) return false;
+  const expiresAtMs = Date.parse(String(record.expires_at));
+  if (!Number.isFinite(expiresAtMs)) return false;
+  return expiresAtMs <= Date.now();
+}
+
+function canReplayRecord(record: any, options: any) {
+  // Route opt-in: strict replay TTL refuses serving cached responses past expires_at.
+  if (options?.strictReplayTtl !== true) return true;
+  return !isRecordExpired(record);
+}
+
 function tryGetRedisClient() {
   try {
     return getRedis();
@@ -305,27 +328,23 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
     });
 
     if (record) {
-      return {
-        action: "replay",
-        response: buildReplayResponse(record),
-        context: {
-          key,
-          requestHmac,
-          record,
-          replayed: true
-        }
-      };
+      if (canReplayRecord(record, options)) {
+        return {
+          action: "replay",
+          response: buildReplayResponse(record),
+          context: {
+            key,
+            requestHmac,
+            record,
+            replayed: true
+          }
+        };
+      }
     }
 
     return {
       action: "error",
-      response: buildErrorResponse(
-        "IDEMPOTENCY_IN_PROGRESS",
-        "Request with the same Idempotency-Key is still in progress",
-        { retry_after_seconds: 1 },
-        409,
-        { "Retry-After": "1" }
-      )
+      response: buildInProgressResponse()
     };
   }
 
@@ -344,7 +363,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
     });
     if (fingerprintError) return fingerprintError;
 
-    if (existing.status === "COMPLETED" || existing.status === "FAILED") {
+    if ((existing.status === "COMPLETED" || existing.status === "FAILED") && canReplayRecord(existing, options)) {
       await tryReleaseLock(redis, lockKey);
       return {
         action: "replay",
@@ -369,26 +388,22 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
         maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
       });
       if (record) {
-        return {
-          action: "replay",
-          response: buildReplayResponse(record),
-          context: {
-            key,
-            requestHmac,
-            record,
-            replayed: true
-          }
-        };
+        if (canReplayRecord(record, options)) {
+          return {
+            action: "replay",
+            response: buildReplayResponse(record),
+            context: {
+              key,
+              requestHmac,
+              record,
+              replayed: true
+            }
+          };
+        }
       }
       return {
         action: "error",
-        response: buildErrorResponse(
-          "IDEMPOTENCY_IN_PROGRESS",
-          "Request with the same Idempotency-Key is still in progress",
-          { retry_after_seconds: 1 },
-          409,
-          { "Retry-After": "1" }
-        )
+        response: buildInProgressResponse()
       };
     }
   }
@@ -441,7 +456,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
     });
     if (fingerprintError) return fingerprintError;
 
-    if (record.status === "COMPLETED" || record.status === "FAILED") {
+    if ((record.status === "COMPLETED" || record.status === "FAILED") && canReplayRecord(record, options)) {
       await tryReleaseLock(redis, lockKey);
       return {
         action: "replay",
@@ -465,26 +480,22 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
         maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
       });
       if (completed) {
-        return {
-          action: "replay",
-          response: buildReplayResponse(completed),
-          context: {
-            key,
-            requestHmac,
-            record: completed,
-            replayed: true
-          }
-        };
+        if (canReplayRecord(completed, options)) {
+          return {
+            action: "replay",
+            response: buildReplayResponse(completed),
+            context: {
+              key,
+              requestHmac,
+              record: completed,
+              replayed: true
+            }
+          };
+        }
       }
       return {
         action: "error",
-        response: buildErrorResponse(
-          "IDEMPOTENCY_IN_PROGRESS",
-          "Request with the same Idempotency-Key is still in progress",
-          { retry_after_seconds: 1 },
-          409,
-          { "Retry-After": "1" }
-        )
+        response: buildInProgressResponse()
       };
     }
   }

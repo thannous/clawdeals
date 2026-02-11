@@ -132,6 +132,41 @@ describe("beginIdempotency", () => {
     expect(replayResult.response.headers["Idempotency-Replayed"]).toBe("true");
   });
 
+  it("does not replay expired records when strictReplayTtl is enabled", async () => {
+    mockRedis.set.mockResolvedValue("OK");
+    (getIdempotencyRecord as any).mockResolvedValue({
+      idempotency_id: "idem-1",
+      status: "COMPLETED",
+      request_hmac: "hmac-abc",
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+      response_status: 201,
+      response_body: { data: { id: "1" } },
+      response_headers: {}
+    });
+
+    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, strictReplayTtl: true });
+    const continueResult = expectBeginIdempotencyAction(result, "continue");
+    expect(continueResult.context.record.idempotency_id).toBe("idem-1");
+    expect(mockRedis.del).not.toHaveBeenCalled();
+  });
+
+  it("still replays non-expired records when strictReplayTtl is enabled", async () => {
+    mockRedis.set.mockResolvedValue("OK");
+    (getIdempotencyRecord as any).mockResolvedValue({
+      idempotency_id: "idem-1",
+      status: "COMPLETED",
+      request_hmac: "hmac-abc",
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      response_status: 201,
+      response_body: { data: { id: "1" } },
+      response_headers: {}
+    });
+
+    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, strictReplayTtl: true });
+    const replayResult = expectBeginIdempotencyAction(result, "replay");
+    expect(replayResult.response.status).toBe(201);
+  });
+
   it("returns 409 KEY_REUSE on HMAC mismatch", async () => {
     mockRedis.set.mockResolvedValue("OK");
     (buildRequestHmac as any).mockReturnValue("hmac-different");
@@ -157,6 +192,28 @@ describe("beginIdempotency", () => {
     const result = await beginIdempotency(makeReq(), makeCtx(), {
       enabled: true,
       maxWaitMs: 100
+    });
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(409);
+    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_IN_PROGRESS");
+  });
+
+  it("returns IN_PROGRESS when poll resolves to expired record and strictReplayTtl is enabled", async () => {
+    mockRedis.set.mockResolvedValue(null);
+    (getIdempotencyRecord as any).mockResolvedValue({
+      idempotency_id: "idem-1",
+      status: "COMPLETED",
+      request_hmac: "hmac-abc",
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+      response_status: 201,
+      response_body: { ok: true },
+      response_headers: {}
+    });
+
+    const result = await beginIdempotency(makeReq(), makeCtx(), {
+      enabled: true,
+      maxWaitMs: 100,
+      strictReplayTtl: true
     });
     const errorResult = expectBeginIdempotencyAction(result, "error");
     expect(errorResult.response.status).toBe(409);

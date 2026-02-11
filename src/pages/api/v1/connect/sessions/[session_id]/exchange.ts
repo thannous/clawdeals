@@ -175,7 +175,8 @@ export async function handler(req: any, _res: any, ctx: any) {
     const idemResult = await beginIdempotency(req, ctx, {
       enabled: true,
       useIpFallback: false,
-      ttlSeconds: 10 * 60
+      ttlSeconds: 10 * 60,
+      strictReplayTtl: true
     });
 
     if (idemResult.action === "error") {
