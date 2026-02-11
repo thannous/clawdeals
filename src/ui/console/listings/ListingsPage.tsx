@@ -23,7 +23,7 @@ export default function ListingsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <ListingsToolbar
           sort={sort}
           onSortChange={setSort}

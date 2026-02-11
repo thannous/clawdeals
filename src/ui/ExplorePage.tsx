@@ -905,7 +905,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
         futureMode={futureMode}
       />
 
-      <main className="pb-32">
+      <main id="main-content" tabIndex={-1} className="pb-32">
         {futureMode && (
           <div className="bg-bg border-b border-border">
             <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

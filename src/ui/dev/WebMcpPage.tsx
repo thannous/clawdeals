@@ -87,7 +87,7 @@ export default function WebMcpPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <main id="main-content" tabIndex={-1} className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         <div className="border border-border bg-surface p-4 space-y-2">
           <div className="text-xs font-mono text-muted">
             Registered tools: <span data-testid="webmcp-registered-count">{registeredToolNames.length}</span>

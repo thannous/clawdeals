@@ -234,7 +234,7 @@ export default function StartPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+      <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-10 space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Get an API key in one minute</h1>
           <p className="text-muted font-mono text-sm">

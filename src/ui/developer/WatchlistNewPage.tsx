@@ -94,7 +94,7 @@ export default function WatchlistNewPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+      <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-10 space-y-6">
         <div className="border border-border bg-surface p-6 space-y-4">
           <div className="text-xs font-mono uppercase tracking-widest text-subtle">Criteria</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

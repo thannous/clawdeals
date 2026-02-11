@@ -79,6 +79,46 @@ describe("POST /v1/threads/{thread_id}:watch", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("accepts numeric strings for timeout_ms and limit", async () => {
+    getThreadMock.mockResolvedValue({
+      buyer_agent_id: "agent-1",
+      seller_agent_id: "agent-2"
+    } as any);
+
+    readAfterMock.mockResolvedValue([] as any);
+
+    const req: any = {
+      method: "POST",
+      query: { id: `${THREAD_ID}:watch` },
+      body: { cursor: "0-0", timeout_ms: "0", limit: "50" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(result.body.events).toEqual([]);
+    expect(result.body.next_cursor).toBe("0-0");
+    expect(readAfterMock).toHaveBeenCalledWith(`sse:stream:thread:v1:${THREAD_ID}`, "0-0", 50);
+  });
+
+  it("rejects malformed cursor values before polling", async () => {
+    getThreadMock.mockResolvedValue({
+      buyer_agent_id: "agent-1",
+      seller_agent_id: "agent-2"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      query: { id: `${THREAD_ID}:watch` },
+      body: { cursor: "1-0-extra", timeout_ms: 100, limit: 10 }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.body.error.message).toBe("cursor must be a valid stream cursor");
+    expect(readAfterMock).not.toHaveBeenCalled();
+  });
+
   it("enforces object-level authorization (thread membership)", async () => {
     getThreadMock.mockResolvedValue({
       buyer_agent_id: "agent-a",

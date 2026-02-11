@@ -11,6 +11,7 @@ const WATCH_MAX_LIMIT = 200;
 const WATCH_DEFAULT_TIMEOUT_MS = 25000;
 const WATCH_MAX_TIMEOUT_MS = 25000;
 const WATCH_POLL_INTERVAL_MS = 250;
+const STREAM_CURSOR_RE = /^\d+-\d+$/;
 
 function resolveParam(value: any) {
   if (Array.isArray(value)) return value[0] || null;
@@ -27,7 +28,7 @@ function parseOptionalInteger(value: any, name: string) {
   if (typeof value !== "string") return { error: `${name} must be an integer` };
   const trimmed = value.trim();
   if (!trimmed) return { value: null };
-  if (!/^[+-]?\\d+$/.test(trimmed)) return { error: `${name} must be an integer` };
+  if (!/^[+-]?\d+$/.test(trimmed)) return { error: `${name} must be an integer` };
   const n = Number(trimmed);
   if (!Number.isSafeInteger(n)) return { error: `${name} must be an integer` };
   return { value: n };
@@ -38,6 +39,7 @@ function parseCursor(value: any) {
   if (typeof value !== "string") return { error: "cursor must be a string" };
   const trimmed = value.trim();
   if (!trimmed) return { value: null };
+  if (!STREAM_CURSOR_RE.test(trimmed)) return { error: "cursor must be a valid stream cursor" };
   if (!parseStreamId(trimmed)) return { error: "cursor must be a valid stream cursor" };
   return { value: trimmed };
 }

@@ -33,9 +33,7 @@ export default class MyDocument extends Document {
           >
             Skip to content
           </a>
-          <div id="main-content" role="main" tabIndex={-1}>
-            <Main />
-          </div>
+          <Main />
           <NextScript />
         </body>
       </Html>

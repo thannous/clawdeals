@@ -145,7 +145,7 @@ export default function ChannelsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <ChannelsToolbar
           state={state}
           onStateChange={setState}

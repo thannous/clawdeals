@@ -270,7 +270,7 @@ export default function EventsViewerPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-4">
+      <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-8 space-y-4">
         {!apiKey && (
           <div className="border border-border bg-bg p-5 text-xs font-mono text-subtle">
             Missing API key. Go to <Link href="/start" className="text-primary hover:underline">/start</Link>.

@@ -67,7 +67,7 @@ export default function DeveloperDashboard() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+      <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-10 space-y-8">
         <div className="border border-border bg-surface p-6 space-y-4">
           <div className="flex flex-wrap gap-3 items-center justify-between">
             <div className="space-y-1">
