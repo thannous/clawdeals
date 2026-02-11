@@ -14,6 +14,7 @@ vi.mock("../redis/upstash", () => ({
 }));
 
 vi.mock("./store", () => ({
+  claimExpiredIdempotencyRecord: vi.fn(),
   getIdempotencyRecord: vi.fn(),
   insertIdempotencyRecord: vi.fn(),
   updateIdempotencyRecord: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock("../utils/canonical-json", () => ({
 
 import { beginIdempotency, finalizeIdempotency, type BeginIdempotencyResult } from "./middleware";
 import {
+  claimExpiredIdempotencyRecord,
   getIdempotencyRecord,
   insertIdempotencyRecord,
   updateIdempotencyRecord,
@@ -132,8 +134,9 @@ describe("beginIdempotency", () => {
     expect(replayResult.response.headers["Idempotency-Replayed"]).toBe("true");
   });
 
-  it("does not replay expired records when strictReplayTtl is enabled", async () => {
+  it("claims expired records when strictReplayTtl is enabled", async () => {
     mockRedis.set.mockResolvedValue("OK");
+    const refreshedExpiresAt = new Date(Date.now() + 60_000).toISOString();
     (getIdempotencyRecord as any).mockResolvedValue({
       idempotency_id: "idem-1",
       status: "COMPLETED",
@@ -143,10 +146,24 @@ describe("beginIdempotency", () => {
       response_body: { data: { id: "1" } },
       response_headers: {}
     });
+    (claimExpiredIdempotencyRecord as any).mockResolvedValue({
+      idempotency_id: "idem-1",
+      status: "IN_PROGRESS",
+      request_hmac: "hmac-abc",
+      expires_at: refreshedExpiresAt
+    });
 
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, strictReplayTtl: true });
     const continueResult = expectBeginIdempotencyAction(result, "continue");
     expect(continueResult.context.record.idempotency_id).toBe("idem-1");
+    expect(continueResult.context.record.status).toBe("IN_PROGRESS");
+    expect(claimExpiredIdempotencyRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        idempotencyId: "idem-1",
+        nowIso: expect.any(String),
+        expiresAt: continueResult.context.expiresAt
+      })
+    );
     expect(mockRedis.del).not.toHaveBeenCalled();
   });
 
@@ -268,12 +285,45 @@ describe("beginIdempotency", () => {
     const result = await beginIdempotency(makeReq(), ctx, { enabled: true });
     expect(result.action).toBe("skip");
   });
+
+  it("returns IN_PROGRESS in DB-only mode when expired record claim is lost", async () => {
+    redisAvailable = false;
+    (getIdempotencyRecord as any)
+      .mockResolvedValueOnce({
+        idempotency_id: "idem-1",
+        status: "COMPLETED",
+        request_hmac: "hmac:hmac-abc",
+        expires_at: new Date(Date.now() - 1000).toISOString(),
+        response_status: 201,
+        response_body: { ok: true },
+        response_headers: {}
+      })
+      .mockResolvedValueOnce({
+        idempotency_id: "idem-1",
+        status: "IN_PROGRESS",
+        request_hmac: "hmac:hmac-abc",
+        expires_at: new Date(Date.now() + 60_000).toISOString()
+      });
+    (claimExpiredIdempotencyRecord as any).mockResolvedValue(null);
+
+    const result = await beginIdempotency(makeReq(), makeCtx(), {
+      enabled: true,
+      strictReplayTtl: true,
+      maxWaitMs: 0
+    });
+
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(409);
+    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_IN_PROGRESS");
+    expect(insertIdempotencyRecord).not.toHaveBeenCalled();
+  });
 });
 
 describe("finalizeIdempotency", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.IDEMPOTENCY_SECRET = "test-secret";
+    redisAvailable = true;
   });
 
   it("does nothing without context", async () => {

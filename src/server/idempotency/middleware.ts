@@ -16,6 +16,7 @@ import {
   IDEMPOTENCY_TTL_SECONDS
 } from "./constants";
 import {
+  claimExpiredIdempotencyRecord,
   deleteIdempotencyRecord,
   getIdempotencyRecord,
   insertIdempotencyRecord,
@@ -315,70 +316,11 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
     const lockKey = buildLockKey({ actorType, actorId, method, path, key });
     const lockTtlMs = options.lockTtlMs || IDEMPOTENCY_LOCK_TTL_MS;
     const lockAcquired = redis ? await redis.set(lockKey, "1", { nx: true, px: lockTtlMs }) : null;
+    const ttlSeconds = options.ttlSeconds || IDEMPOTENCY_TTL_SECONDS;
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
 
-  // Without Redis, we rely on the DB unique index to prevent multiple leaders per (actor, method, path, key).
-  if (redis && !lockAcquired) {
-    const record = await pollForRecord({
-      actorType,
-      actorId,
-      method,
-      path,
-      key,
-      maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
-    });
-
-    if (record) {
-      if (canReplayRecord(record, options)) {
-        return {
-          action: "replay",
-          response: buildReplayResponse(record),
-          context: {
-            key,
-            requestHmac,
-            record,
-            replayed: true
-          }
-        };
-      }
-    }
-
-    return {
-      action: "error",
-      response: buildInProgressResponse()
-    };
-  }
-
-  const existing = await getIdempotencyRecord({ actorType, actorId, method, path, key });
-  if (existing) {
-    const fingerprintError = await verifyIdempotencyFingerprint({
-      record: existing,
-      requestHmac,
-      secret,
-      method,
-      path,
-      query,
-      canonicalBody,
-      redis,
-      lockKey
-    });
-    if (fingerprintError) return fingerprintError;
-
-    if ((existing.status === "COMPLETED" || existing.status === "FAILED") && canReplayRecord(existing, options)) {
-      await tryReleaseLock(redis, lockKey);
-      return {
-        action: "replay",
-        response: buildReplayResponse(existing),
-        context: {
-          key,
-          requestHmac,
-          record: existing,
-          replayed: true
-        }
-      };
-    }
-
-    // DB-only mode: if a record exists but is still in progress, wait briefly and replay if it completes.
-    if (!redis && existing.status === "IN_PROGRESS") {
+    // Without Redis, we rely on the DB unique index to prevent multiple leaders per (actor, method, path, key).
+    if (redis && !lockAcquired) {
       const record = await pollForRecord({
         actorType,
         actorId,
@@ -387,6 +329,7 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
         key,
         maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
       });
+
       if (record) {
         if (canReplayRecord(record, options)) {
           return {
@@ -401,104 +344,233 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
           };
         }
       }
+
       return {
         action: "error",
         response: buildInProgressResponse()
       };
     }
-  }
 
-  const ttlSeconds = options.ttlSeconds || IDEMPOTENCY_TTL_SECONDS;
-  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-  let record = existing;
-  let recordFromUniqueViolation = false;
-  if (!record) {
-    try {
-      record = await insertIdempotencyRecord({
-        actor_type: actorType,
-        actor_id: actorId,
+    let record = await getIdempotencyRecord({ actorType, actorId, method, path, key });
+    if (record) {
+      const fingerprintError = await verifyIdempotencyFingerprint({
+        record,
+        requestHmac,
+        secret,
         method,
         path,
-        idempotency_key: key,
-        request_hmac: requestHmac,
-        status: "IN_PROGRESS",
-        expires_at: expiresAt
+        query,
+        canonicalBody,
+        redis,
+        lockKey
       });
-    } catch (error: any) {
-      // Race: another request inserted first (DB unique index).
-      if (error?.code === "23505") {
-        record = await getIdempotencyRecord({ actorType, actorId, method, path, key });
-        recordFromUniqueViolation = true;
-      } else {
+      if (fingerprintError) return fingerprintError;
+
+      if ((record.status === "COMPLETED" || record.status === "FAILED") && canReplayRecord(record, options)) {
         await tryReleaseLock(redis, lockKey);
-        throw error;
+        return {
+          action: "replay",
+          response: buildReplayResponse(record),
+          context: {
+            key,
+            requestHmac,
+            record,
+            replayed: true
+          }
+        };
       }
-    }
-  }
-  if (!record) {
-    await tryReleaseLock(redis, lockKey);
-    throw new Error("Failed to resolve idempotency record");
-  }
 
-  // If we lost the insert race, behave like the normal "existing record" path:
-  // don't let multiple leaders execute side effects for the same Idempotency-Key.
-  if (recordFromUniqueViolation) {
-    const fingerprintError = await verifyIdempotencyFingerprint({
-      record,
-      requestHmac,
-      secret,
-      method,
-      path,
-      query,
-      canonicalBody,
-      redis,
-      lockKey
-    });
-    if (fingerprintError) return fingerprintError;
-
-    if ((record.status === "COMPLETED" || record.status === "FAILED") && canReplayRecord(record, options)) {
-      await tryReleaseLock(redis, lockKey);
-      return {
-        action: "replay",
-        response: buildReplayResponse(record),
-        context: {
+      // DB-only mode: if a record exists but is still in progress, wait briefly and replay if it completes.
+      if (!redis && record.status === "IN_PROGRESS") {
+        const completed = await pollForRecord({
+          actorType,
+          actorId,
+          method,
+          path,
           key,
-          requestHmac,
-          record,
-          replayed: true
+          maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
+        });
+        if (completed) {
+          if (canReplayRecord(completed, options)) {
+            return {
+              action: "replay",
+              response: buildReplayResponse(completed),
+              context: {
+                key,
+                requestHmac,
+                record: completed,
+                replayed: true
+              }
+            };
+          }
         }
-      };
-    }
+        return {
+          action: "error",
+          response: buildInProgressResponse()
+        };
+      }
 
-    if (!redis && record.status === "IN_PROGRESS") {
-      const completed = await pollForRecord({
-        actorType,
-        actorId,
-        method,
-        path,
-        key,
-        maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
-      });
-      if (completed) {
-        if (canReplayRecord(completed, options)) {
-          return {
-            action: "replay",
-            response: buildReplayResponse(completed),
-            context: {
-              key,
+      if ((record.status === "COMPLETED" || record.status === "FAILED") && options?.strictReplayTtl === true) {
+        const claimedRecord = await claimExpiredIdempotencyRecord({
+          idempotencyId: record.idempotency_id,
+          nowIso: new Date().toISOString(),
+          expiresAt
+        });
+
+        if (!claimedRecord) {
+          const latest = await getIdempotencyRecord({ actorType, actorId, method, path, key });
+          if (latest) {
+            const latestFingerprintError = await verifyIdempotencyFingerprint({
+              record: latest,
               requestHmac,
-              record: completed,
-              replayed: true
+              secret,
+              method,
+              path,
+              query,
+              canonicalBody,
+              redis,
+              lockKey
+            });
+            if (latestFingerprintError) return latestFingerprintError;
+
+            if ((latest.status === "COMPLETED" || latest.status === "FAILED") && canReplayRecord(latest, options)) {
+              await tryReleaseLock(redis, lockKey);
+              return {
+                action: "replay",
+                response: buildReplayResponse(latest),
+                context: {
+                  key,
+                  requestHmac,
+                  record: latest,
+                  replayed: true
+                }
+              };
             }
+
+            if (latest.status === "IN_PROGRESS" && !redis) {
+              const completed = await pollForRecord({
+                actorType,
+                actorId,
+                method,
+                path,
+                key,
+                maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
+              });
+              if (completed) {
+                if (canReplayRecord(completed, options)) {
+                  return {
+                    action: "replay",
+                    response: buildReplayResponse(completed),
+                    context: {
+                      key,
+                      requestHmac,
+                      record: completed,
+                      replayed: true
+                    }
+                  };
+                }
+              }
+            }
+          }
+
+          await tryReleaseLock(redis, lockKey);
+          return {
+            action: "error",
+            response: buildInProgressResponse()
           };
         }
+
+        record = claimedRecord;
       }
-      return {
-        action: "error",
-        response: buildInProgressResponse()
-      };
     }
-  }
+    let recordFromUniqueViolation = false;
+    if (!record) {
+      try {
+        record = await insertIdempotencyRecord({
+          actor_type: actorType,
+          actor_id: actorId,
+          method,
+          path,
+          idempotency_key: key,
+          request_hmac: requestHmac,
+          status: "IN_PROGRESS",
+          expires_at: expiresAt
+        });
+      } catch (error: any) {
+        // Race: another request inserted first (DB unique index).
+        if (error?.code === "23505") {
+          record = await getIdempotencyRecord({ actorType, actorId, method, path, key });
+          recordFromUniqueViolation = true;
+        } else {
+          await tryReleaseLock(redis, lockKey);
+          throw error;
+        }
+      }
+    }
+    if (!record) {
+      await tryReleaseLock(redis, lockKey);
+      throw new Error("Failed to resolve idempotency record");
+    }
+
+    // If we lost the insert race, behave like the normal "existing record" path:
+    // don't let multiple leaders execute side effects for the same Idempotency-Key.
+    if (recordFromUniqueViolation) {
+      const fingerprintError = await verifyIdempotencyFingerprint({
+        record,
+        requestHmac,
+        secret,
+        method,
+        path,
+        query,
+        canonicalBody,
+        redis,
+        lockKey
+      });
+      if (fingerprintError) return fingerprintError;
+
+      if ((record.status === "COMPLETED" || record.status === "FAILED") && canReplayRecord(record, options)) {
+        await tryReleaseLock(redis, lockKey);
+        return {
+          action: "replay",
+          response: buildReplayResponse(record),
+          context: {
+            key,
+            requestHmac,
+            record,
+            replayed: true
+          }
+        };
+      }
+
+      if (!redis && record.status === "IN_PROGRESS") {
+        const completed = await pollForRecord({
+          actorType,
+          actorId,
+          method,
+          path,
+          key,
+          maxWaitMs: options.maxWaitMs || IDEMPOTENCY_MAX_WAIT_MS
+        });
+        if (completed) {
+          if (canReplayRecord(completed, options)) {
+            return {
+              action: "replay",
+              response: buildReplayResponse(completed),
+              context: {
+                key,
+                requestHmac,
+                record: completed,
+                replayed: true
+              }
+            };
+          }
+        }
+        return {
+          action: "error",
+          response: buildInProgressResponse()
+        };
+      }
+    }
 
     return {
       action: "continue",
