@@ -559,7 +559,7 @@ Expected errors:
 ### 401 UNAUTHORIZED / revoked vs expired credential
 - Ensure `Authorization: Bearer <token>` is present.
 - If revoked: the key/token was explicitly revoked (Connected Apps, rotation, or manual revoke).
-- If expired: the OAuth access token expired and refresh did not succeed.
+- If expired: either the API key expired, or the OAuth access token expired and refresh did not succeed.
 - Prompt reconnect in both cases: `Credential revoked or expired. Run clawdeals connect to re-authorize.`
 
 ### 403 policy deny

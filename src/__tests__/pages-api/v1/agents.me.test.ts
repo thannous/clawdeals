@@ -28,6 +28,17 @@ describe("GET /v1/agents/me", () => {
     expect(result.body.error.message).toBe("API key revoked");
   });
 
+  it("passes through 401 when API key is expired", async () => {
+    const req: any = { method: "GET", headers: {}, query: {} };
+    const result: any = await handler(req, null, {
+      authError: { status: 401, code: "API_KEY_EXPIRED", message: "API key expired" }
+    });
+
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("API_KEY_EXPIRED");
+    expect(result.body.error.message).toBe("API key expired");
+  });
+
   it("passes through 401 when OAuth access token is expired", async () => {
     const req: any = { method: "GET", headers: {}, query: {} };
     const result: any = await handler(req, null, {
@@ -37,6 +48,17 @@ describe("GET /v1/agents/me", () => {
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("TOKEN_EXPIRED");
     expect(result.body.error.message).toBe("Access token expired");
+  });
+
+  it("passes through 401 when OAuth access token is revoked", async () => {
+    const req: any = { method: "GET", headers: {}, query: {} };
+    const result: any = await handler(req, null, {
+      authError: { status: 401, code: "TOKEN_REVOKED", message: "Access token revoked" }
+    });
+
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("TOKEN_REVOKED");
+    expect(result.body.error.message).toBe("Access token revoked");
   });
 
   it("returns 200 with agent identity and sets audit fields", async () => {

@@ -19,6 +19,29 @@ function existsFile(p) {
   }
 }
 
+function supportsExecutableBitChecks(dir) {
+  const probePath = path.join(dir, `.perm-probe-${process.pid}-${Date.now()}`);
+  try {
+    fs.writeFileSync(probePath, "probe\n", "utf8");
+
+    fs.chmodSync(probePath, 0o644);
+    const mode644 = fs.statSync(probePath).mode & 0o777;
+
+    fs.chmodSync(probePath, 0o755);
+    const mode755 = fs.statSync(probePath).mode & 0o777;
+
+    return (mode644 & 0o111) === 0 && (mode755 & 0o111) !== 0;
+  } catch {
+    return false;
+  } finally {
+    try {
+      fs.unlinkSync(probePath);
+    } catch {
+      // ignore
+    }
+  }
+}
+
 function extractFrontmatter(md) {
   const m = md.match(/^---\n([\s\S]*?)\n---\n/);
   return m ? m[1] : null;
@@ -75,6 +98,8 @@ for (const f of required) {
   if (!existsFile(p)) fail(`missing required file: skills/clawdeals/${f}`);
 }
 
+const canCheckExecutableBits = supportsExecutableBitChecks(skillDir);
+
 // Docs-only: no subfolders, no non-md files, no executable bits.
 for (const ent of fs.readdirSync(skillDir, { withFileTypes: true })) {
   if (ent.isDirectory()) {
@@ -86,9 +111,11 @@ for (const ent of fs.readdirSync(skillDir, { withFileTypes: true })) {
   if (!ent.name.endsWith(".md")) {
     fail(`non-doc file found in skills/clawdeals/: ${ent.name}`);
   }
-  const st = fs.statSync(path.join(skillDir, ent.name));
-  if ((st.mode & 0o111) !== 0) {
-    fail(`executable bit set on skills/clawdeals/${ent.name}`);
+  if (canCheckExecutableBits) {
+    const st = fs.statSync(path.join(skillDir, ent.name));
+    if ((st.mode & 0o111) !== 0) {
+      fail(`executable bit set on skills/clawdeals/${ent.name}`);
+    }
   }
 }
 
