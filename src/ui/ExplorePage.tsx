@@ -34,6 +34,30 @@ function preloadNpmCallout() {
   void import("./landing/NpmCallout");
 }
 
+const TRUST_MARQUEE_KEYS = [
+  "segment-01",
+  "segment-02",
+  "segment-03",
+  "segment-04",
+  "segment-05",
+  "segment-06",
+  "segment-07",
+  "segment-08",
+  "segment-09",
+  "segment-10"
+] as const;
+
+const FOOTER_SYSTEM_LINKS: Array<{ key: "status" | "api" | "audit"; href: string }> = [
+  { key: "status", href: "/heartbeat.md" },
+  { key: "api", href: "/reference.md" },
+  { key: "audit", href: "/security.md" }
+];
+
+const FOOTER_LEGAL_LINKS: Array<{ key: "terms" | "privacy"; href: string }> = [
+  { key: "terms", href: "/policies.md" },
+  { key: "privacy", href: "/security.md" }
+];
+
 const COPY = {
   fr: {
     tabs: {
@@ -562,8 +586,8 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           <span className="font-mono text-xs text-muted tracking-widest uppercase">{hero.subtitle}</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
-          {hero.title.split(" ").map((word, i) => (
-            <span key={i} className="block">
+          {hero.title.split(" ").map((word, idx) => (
+            <span key={`${hero.title}-${word}-${idx}`} className="block">
               {word}
             </span>
           ))}
@@ -790,7 +814,7 @@ const TaskSelector = ({ copy }) => (
       { icon: <MessageSquare />, ...copy.taskSelector[3] }
     ].map((item, idx) => (
       <button
-        key={idx}
+        key={item.label}
         className="group relative h-24 bg-surface border border-border hover:border-primary transition-colors p-4 text-left overflow-hidden"
       >
         <div className="absolute right-2 top-2 text-border group-hover:text-primary/20 transition-colors">
@@ -893,8 +917,8 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
             className="flex whitespace-nowrap gap-12 font-mono text-xs font-bold uppercase tracking-widest"
             style={{ animation: "marquee 20s linear infinite" }}
           >
-            {[...Array(10)].map((_, i) => (
-              <React.Fragment key={i}>
+            {TRUST_MARQUEE_KEYS.map((segmentKey) => (
+              <React.Fragment key={segmentKey}>
                 <span className="flex items-center gap-2">
                   <ShieldCheck size={14} /> {copy.trust.verified}
                 </span>
@@ -935,16 +959,31 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
           <div>
             <h4 className="text-text font-bold mb-4 uppercase">{copy.footer.sysLinks}</h4>
             <ul className="space-y-2">
-              <li className="hover:text-primary cursor-pointer">{copy.footer.status}</li>
-              <li className="hover:text-primary cursor-pointer">{copy.footer.api}</li>
-              <li className="hover:text-primary cursor-pointer">{copy.footer.audit}</li>
+              {FOOTER_SYSTEM_LINKS.map((link) => (
+                <li key={link.key}>
+                  <Link
+                    href={link.href}
+                    className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+                  >
+                    {copy.footer[link.key]}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
             <h4 className="text-text font-bold mb-4 uppercase">{copy.footer.legal}</h4>
             <ul className="space-y-2">
-              <li className="hover:text-primary cursor-pointer">{copy.footer.terms}</li>
-              <li className="hover:text-primary cursor-pointer">{copy.footer.privacy}</li>
+              {FOOTER_LEGAL_LINKS.map((link) => (
+                <li key={link.key}>
+                  <Link
+                    href={link.href}
+                    className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+                  >
+                    {copy.footer[link.key]}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

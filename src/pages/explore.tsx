@@ -25,15 +25,32 @@ const META = {
 
 const TAB_MAP: Record<string, string> = { agents: "gig", skills: "npm", data: "data" };
 
+function baseUrlFromRequest(req: any): string {
+  const configured = process.env.SITE_URL;
+  if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
+
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
+  const proto = req?.headers?.["x-forwarded-proto"] || "https";
+  if (!host) return "https://www.clawdeals.com";
+  return `${proto}://${host}`.replace(/\/$/, "");
+}
+
+function isWorkersDevRequest(req: any): boolean {
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
+  return typeof host === "string" && host.includes(".workers.dev");
+}
+
 type ExploreProps = {
   locale: string;
   initialTab: string;
+  baseUrl: string;
+  isPreviewHost: boolean;
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
 };
 
-export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ locale, query, req }) => {
+export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ locale, query, req, res }) => {
   const appVersion =
     process.env.NEXT_PUBLIC_APP_VERSION ||
     process.env.npm_package_version ||
@@ -49,11 +66,22 @@ export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ loc
   const deploySha = typeof deployShaRaw === "string" && deployShaRaw.length >= 7 ? deployShaRaw : undefined;
   const tabParam = typeof query.tab === "string" ? query.tab : "";
   const initialTab = TAB_MAP[tabParam] || "gig";
+  const isPreviewHost = isWorkersDevRequest(req);
+  if (res?.setHeader) {
+    res.setHeader(
+      "Cache-Control",
+      isPreviewHost
+        ? "no-store"
+        : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
+    );
+  }
 
   return {
     props: {
       locale: locale || "en",
       initialTab,
+      baseUrl: baseUrlFromRequest(req),
+      isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
       ...(deploySha ? { deploySha } : {})
@@ -64,6 +92,8 @@ export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ loc
 export default function Explore({
   locale,
   initialTab,
+  baseUrl,
+  isPreviewHost,
   buildTimeIso,
   appVersion,
   deploySha
@@ -71,16 +101,30 @@ export default function Explore({
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
   const meta = META[currentLocale] || META.en;
+  const canonicalPath = currentLocale === "fr" ? "/fr/explore" : "/explore";
+  const canonicalUrl = `${baseUrl}${canonicalPath}`;
+  const enUrl = `${baseUrl}/explore`;
+  const frUrl = `${baseUrl}/fr/explore`;
+  const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow";
 
   return (
     <>
       <Head>
         <title>{meta.title}</title>
         <meta name="description" content={meta.description} />
-        <meta name="robots" content="index,follow" />
+        <meta name="robots" content={robotsContent} />
+        <link rel="canonical" href={canonicalUrl} />
+
+        <link rel="alternate" hrefLang="en" href={enUrl} />
+        <link rel="alternate" hrefLang="fr" href={frUrl} />
+        <link rel="alternate" hrefLang="x-default" href={enUrl} />
+
         <meta property="og:title" content={meta.ogTitle} />
         <meta property="og:description" content={meta.ogDescription} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content={canonicalUrl} />
+
+        <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <ExplorePage
         locale={currentLocale}
