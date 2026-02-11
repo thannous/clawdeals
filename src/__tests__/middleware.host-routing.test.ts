@@ -8,9 +8,36 @@ function makeReq(url: string, host?: string) {
   });
 }
 
+function makeReqWithHeaders(url: string, headers: Record<string, string>) {
+  return new NextRequest(url, { headers });
+}
+
 describe("middleware host routing", () => {
   it("redirects app host / to /start by default", () => {
     const res = middleware(makeReq("https://app.clawdeals.com/", "app.clawdeals.com"));
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
+  });
+
+  it("redirects app host / to /fr/start when browser language is fr", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://app.clawdeals.com/", {
+        host: "app.clawdeals.com",
+        "accept-language": "fr-FR,fr;q=0.9,en;q=0.8"
+      })
+    );
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/fr/start");
+  });
+
+  it("prioritizes NEXT_LOCALE cookie over accept-language on app host /", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://app.clawdeals.com/", {
+        host: "app.clawdeals.com",
+        cookie: "NEXT_LOCALE=en",
+        "accept-language": "fr-FR,fr;q=0.9"
+      })
+    );
     expect(res?.status).toBe(308);
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
   });

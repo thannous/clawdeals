@@ -1,6 +1,11 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+type SupportedLocale = "fr" | "en";
+
+const SUPPORTED_LOCALES: SupportedLocale[] = ["fr", "en"];
+const DEFAULT_LOCALE: SupportedLocale = "en";
+
 function normalizeHost(hostname: string): string {
   if (!hostname) return "";
   // Strip port if present.
@@ -77,6 +82,55 @@ function isStaticPath(restPath: string): boolean {
   );
 }
 
+function parseSupportedLocale(raw: string | null | undefined): SupportedLocale | null {
+  if (!raw) return null;
+  const normalized = String(raw).trim().toLowerCase();
+  if (!normalized) return null;
+  const primary = normalized.split(";")[0]?.split("-")[0];
+  if (!primary) return null;
+  return SUPPORTED_LOCALES.includes(primary as SupportedLocale) ? (primary as SupportedLocale) : null;
+}
+
+function localePrefixFor(locale: SupportedLocale): string {
+  return locale === DEFAULT_LOCALE ? "" : `/${locale}`;
+}
+
+function parseAcceptLanguage(header: string | null): SupportedLocale | null {
+  if (!header) return null;
+
+  const ranked = header
+    .split(",")
+    .map((entry, index) => {
+      const [tag, ...params] = entry.split(";");
+      const locale = parseSupportedLocale(tag);
+      if (!locale) return null;
+
+      const qParam = params.find((param) => param.trim().toLowerCase().startsWith("q="));
+      const q = qParam ? Number.parseFloat(qParam.split("=")[1] || "1") : 1;
+      const quality = Number.isFinite(q) ? q : 0;
+      return { locale, quality, index };
+    })
+    .filter((item): item is { locale: SupportedLocale; quality: number; index: number } => item !== null)
+    .sort((a, b) => {
+      if (b.quality !== a.quality) return b.quality - a.quality;
+      return a.index - b.index;
+    });
+
+  return ranked[0]?.locale || null;
+}
+
+function resolveLocalePrefix(request: NextRequest, localePrefix: string): string {
+  if (localePrefix) return localePrefix;
+
+  const cookieLocale = parseSupportedLocale(request.cookies.get("NEXT_LOCALE")?.value);
+  if (cookieLocale) return localePrefixFor(cookieLocale);
+
+  const headerLocale = parseAcceptLanguage(request.headers.get("accept-language"));
+  if (headerLocale) return localePrefixFor(headerLocale);
+
+  return localePrefixFor(DEFAULT_LOCALE);
+}
+
 export function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = normalizeHost(url.hostname || request.headers.get("host") || "");
@@ -123,7 +177,7 @@ export function middleware(request: NextRequest) {
     if (isRootPath(rest)) {
       const target = new URL(url.toString());
       const entryPath = appEntry.startsWith("/") ? appEntry : `/${appEntry}`;
-      target.pathname = `${localePrefix}${entryPath}`;
+      target.pathname = `${resolveLocalePrefix(request, localePrefix)}${entryPath}`;
       target.protocol = "https:";
       return NextResponse.redirect(target, 308);
     }
