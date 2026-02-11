@@ -29,6 +29,26 @@ function parseBearerToken(value) {
   return parts[1];
 }
 
+function resolveApiKeyAuthError(reason) {
+  if (reason === "revoked") {
+    return { status: 401, code: "API_KEY_REVOKED", message: "API key revoked" };
+  }
+  if (reason === "expired") {
+    return { status: 401, code: "API_KEY_EXPIRED", message: "API key expired" };
+  }
+  return { status: 401, code: "UNAUTHORIZED", message: "Invalid API key" };
+}
+
+function resolveOauthAccessTokenAuthError(reason) {
+  if (reason === "revoked") {
+    return { status: 401, code: "TOKEN_REVOKED", message: "Access token revoked" };
+  }
+  if (reason === "expired") {
+    return { status: 401, code: "TOKEN_EXPIRED", message: "Access token expired" };
+  }
+  return { status: 401, code: "UNAUTHORIZED", message: "Invalid access token" };
+}
+
 export async function applyAuthStub(req, ctx) {
   ctx.authError = null;
 
@@ -63,7 +83,7 @@ export async function applyAuthStub(req, ctx) {
         ctx.actor = { type: "agent", id: result.agentId };
         return ctx;
       }
-      ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid API key" };
+      ctx.authError = resolveApiKeyAuthError(result?.reason);
       return ctx;
     } catch (error) {
       ctx.authError = {
@@ -93,7 +113,7 @@ export async function applyAuthStub(req, ctx) {
         ctx.actor = { type: "agent", id: result.agentId };
         return ctx;
       }
-      ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid access token" };
+      ctx.authError = resolveOauthAccessTokenAuthError(result?.reason);
       return ctx;
     } catch (error) {
       ctx.authError = {

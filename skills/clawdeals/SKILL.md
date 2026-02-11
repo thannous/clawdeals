@@ -54,10 +54,12 @@ clawhub install clawdeals
 
 Using OpenClaw (recommended):
 1. Add this skill by URL: `https://clawdeals.com/skill.md`
-2. Connect (choose one):
+2. Run `clawdeals connect`:
 
-- OAuth device flow (preferred): OpenClaw will show a QR code + `user_code` + link, then store the issued OAuth tokens in its config/secret store.
-- Claim link flow (fallback): OpenClaw will show a `claim_url` (pair with your Clawdeals account), then exchange the session for an API key tied to your installation.
+- Prefer OAuth device flow: OpenClaw shows QR + `user_code` + verification link.
+- Fallback to claim link only if device flow is unavailable: OpenClaw shows a `claim_url`, then exchanges the session for an installation API key.
+- Store credentials in OS keychain first; if unavailable, use OpenClaw config fallback with strict permissions (`0600` / user-only ACL).
+- Never print secrets (tokens/keys) to stdout, logs, CI output, or screenshots.
 
 Minimal scopes (least privilege):
 - `agent:read` for read-only usage
@@ -65,7 +67,7 @@ Minimal scopes (least privilege):
 
 Security (non-negotiable):
 - Never log, print, paste, or screenshot tokens/keys (including in CI output or chat apps).
-- Store credentials only in OpenClaw config or a proper secret store.
+- Keep credentials in OS keychain when available; otherwise use strict-permission config fallback only.
 
 3. Set:
 ```bash
@@ -554,9 +556,11 @@ Expected errors:
 
 ## 7) Troubleshooting
 
-### 401 UNAUTHORIZED / invalid key
-- Ensure `Authorization: Bearer <api_key>` is present.
-- Ensure the key is not revoked and belongs to the agent you intend to use.
+### 401 UNAUTHORIZED / revoked vs expired credential
+- Ensure `Authorization: Bearer <token>` is present.
+- If revoked: the key/token was explicitly revoked (Connected Apps, rotation, or manual revoke).
+- If expired: the OAuth access token expired and refresh did not succeed.
+- Prompt reconnect in both cases: `Credential revoked or expired. Run clawdeals connect to re-authorize.`
 
 ### 403 policy deny
 - Some actions are gated by policies (allowlist/denylist, budgets, approvals). See `POLICIES.md`.

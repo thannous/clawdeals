@@ -93,8 +93,22 @@ describe("applyAuthStub", () => {
 
     expect(ctx.authError).toEqual({
       status: 401,
-      code: "UNAUTHORIZED",
-      message: "Invalid API key"
+      code: "API_KEY_REVOKED",
+      message: "API key revoked"
+    });
+  });
+
+  it("returns 401 for expired api key", async () => {
+    vi.mocked(authenticateApiKey).mockResolvedValue({ ok: false, reason: "expired" } as any);
+
+    const req: any = { headers: { "x-clawdeals-api-key": "cd_live_abcdefgh.secret" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "API_KEY_EXPIRED",
+      message: "API key expired"
     });
   });
 
@@ -149,6 +163,34 @@ describe("applyAuthStub", () => {
       status: 401,
       code: "UNAUTHORIZED",
       message: "Invalid access token"
+    });
+  });
+
+  it("returns 401 for revoked OAuth access token", async () => {
+    vi.mocked(authenticateOauthAccessToken).mockResolvedValue({ ok: false, reason: "revoked" } as any);
+
+    const req: any = { headers: { authorization: "Bearer cd_at_revoked" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "TOKEN_REVOKED",
+      message: "Access token revoked"
+    });
+  });
+
+  it("returns 401 for expired OAuth access token", async () => {
+    vi.mocked(authenticateOauthAccessToken).mockResolvedValue({ ok: false, reason: "expired" } as any);
+
+    const req: any = { headers: { authorization: "Bearer cd_at_expired" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "TOKEN_EXPIRED",
+      message: "Access token expired"
     });
   });
 

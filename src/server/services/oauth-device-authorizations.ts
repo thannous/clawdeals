@@ -144,6 +144,35 @@ function buildUserCodeLockoutState(row: any, now = new Date()) {
   };
 }
 
+function buildUserCodeFailureUpdatePayload({
+  row,
+  now,
+  maxFailedAttempts,
+  lockoutWindowSeconds
+}: {
+  row?: any;
+  now: Date;
+  maxFailedAttempts: number;
+  lockoutWindowSeconds: number;
+}) {
+  const nowIso = now.toISOString();
+  const hasPriorLockout = Boolean(row?.locked_until);
+  const lockoutStillActive = retryAfterSecondsFromDate(row?.locked_until, now) > 0;
+  const previousAttempts =
+    hasPriorLockout && !lockoutStillActive ? 0 : Math.max(0, Number(row?.attempt_count || 0));
+  const nextAttempts = previousAttempts + 1;
+
+  return {
+    attempt_count: nextAttempts,
+    last_failed_at: nowIso,
+    updated_at: nowIso,
+    locked_until:
+      nextAttempts >= maxFailedAttempts
+        ? new Date(now.getTime() + lockoutWindowSeconds * 1000).toISOString()
+        : null
+  };
+}
+
 function buildPollingState(row: any, now = new Date()) {
   const effectiveIntervalSeconds = positiveInt(
     row?.poll_interval_seconds,
@@ -246,23 +275,14 @@ export async function incrementOauthUserCodeLookupFailure({
   }
 
   const nowIso = now.toISOString();
-  const previousAttempts = Math.max(0, Number(existing?.attempt_count || 0));
-  const nextAttempts = previousAttempts + 1;
-  const lockoutUntil = new Date(now.getTime() + resolvedLockoutWindowSeconds * 1000).toISOString();
-
-  const updatePayload: any = {
-    attempt_count: nextAttempts,
-    last_failed_at: nowIso,
-    updated_at: nowIso
-  };
-  if (nextAttempts >= resolvedMaxFailedAttempts) {
-    updatePayload.locked_until = lockoutUntil;
-  } else {
-    updatePayload.locked_until = null;
-  }
-
   let row: any = null;
   if (existing) {
+    const updatePayload = buildUserCodeFailureUpdatePayload({
+      row: existing,
+      now,
+      maxFailedAttempts: resolvedMaxFailedAttempts,
+      lockoutWindowSeconds: resolvedLockoutWindowSeconds
+    });
     const { data, error } = await client
       .from("oauth_device_user_code_attempts")
       .update(updatePayload)
@@ -274,19 +294,52 @@ export async function incrementOauthUserCodeLookupFailure({
     }
     row = data || { attempt_count: updatePayload.attempt_count, locked_until: updatePayload.locked_until };
   } else {
+    const insertPayload = buildUserCodeFailureUpdatePayload({
+      row: null,
+      now,
+      maxFailedAttempts: resolvedMaxFailedAttempts,
+      lockoutWindowSeconds: resolvedLockoutWindowSeconds
+    });
     const { data, error } = await client
       .from("oauth_device_user_code_attempts")
       .insert({
         user_code_hash: userCodeHash,
-        ...updatePayload,
+        ...insertPayload,
         created_at: nowIso
       })
       .select("attempt_count,locked_until")
       .maybeSingle();
-    if (error) {
+    if (!error) {
+      row = data || { attempt_count: insertPayload.attempt_count, locked_until: insertPayload.locked_until };
+    } else if (isUniqueViolation(error)) {
+      const { data: current, error: refetchError } = await client
+        .from("oauth_device_user_code_attempts")
+        .select("attempt_count,locked_until")
+        .eq("user_code_hash", userCodeHash)
+        .maybeSingle();
+      if (refetchError) {
+        throw mapSupabaseServiceError(refetchError);
+      }
+
+      const retryPayload = buildUserCodeFailureUpdatePayload({
+        row: current,
+        now,
+        maxFailedAttempts: resolvedMaxFailedAttempts,
+        lockoutWindowSeconds: resolvedLockoutWindowSeconds
+      });
+      const { data: retryData, error: retryError } = await client
+        .from("oauth_device_user_code_attempts")
+        .update(retryPayload)
+        .eq("user_code_hash", userCodeHash)
+        .select("attempt_count,locked_until")
+        .maybeSingle();
+      if (retryError) {
+        throw mapSupabaseServiceError(retryError);
+      }
+      row = retryData || { attempt_count: retryPayload.attempt_count, locked_until: retryPayload.locked_until };
+    } else {
       throw mapSupabaseServiceError(error);
     }
-    row = data || { attempt_count: updatePayload.attempt_count, locked_until: updatePayload.locked_until };
   }
 
   return {

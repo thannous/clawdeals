@@ -17,6 +17,28 @@ describe("GET /v1/agents/me", () => {
     expect(result.body.error.code).toBe("UNAUTHORIZED");
   });
 
+  it("passes through 401 when API key is revoked", async () => {
+    const req: any = { method: "GET", headers: {}, query: {} };
+    const result: any = await handler(req, null, {
+      authError: { status: 401, code: "API_KEY_REVOKED", message: "API key revoked" }
+    });
+
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("API_KEY_REVOKED");
+    expect(result.body.error.message).toBe("API key revoked");
+  });
+
+  it("passes through 401 when OAuth access token is expired", async () => {
+    const req: any = { method: "GET", headers: {}, query: {} };
+    const result: any = await handler(req, null, {
+      authError: { status: 401, code: "TOKEN_EXPIRED", message: "Access token expired" }
+    });
+
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("TOKEN_EXPIRED");
+    expect(result.body.error.message).toBe("Access token expired");
+  });
+
   it("returns 200 with agent identity and sets audit fields", async () => {
     const req: any = { method: "GET", headers: {}, query: {} };
     const ctx: any = {
@@ -38,4 +60,3 @@ describe("GET /v1/agents/me", () => {
     expect(ctx.auditEntityId).toBe(ctx.agentId);
   });
 });
-

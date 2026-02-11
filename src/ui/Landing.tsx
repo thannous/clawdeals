@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
@@ -22,7 +22,7 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import { getPublicAppUrl, joinUrl } from "../shared/urls";
+import { getPublicApiBaseUrl, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -500,12 +500,137 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 );
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const isLoading = status === "loading" || isPending;
+  const isSuccess = status === "success";
+  const isError = status === "error";
+
+  const helperText = isSuccess
+    ? message || copy.waitlist.success
+    : isError
+      ? message || copy.waitlist.error
+      : copy.waitlist.helper;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (isLoading) return;
+
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || !EMAIL_REGEX.test(normalized)) {
+      setStatus("error");
+      setMessage(copy.waitlist.invalid);
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const apiBaseUrl = getPublicApiBaseUrl();
+      const endpoint = apiBaseUrl ? joinUrl(apiBaseUrl, "/api/v1/watchlist-signups") : "/api/v1/watchlist-signups";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized, locale, source })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        startTransition(() => {
+          setStatus("error");
+          setMessage(payload?.error?.message || copy.waitlist.error);
+        });
+        return;
+      }
+
+      const resultStatus = payload?.data?.status;
+      if (resultStatus === "already_registered") {
+        startTransition(() => {
+          setStatus("success");
+          setMessage(copy.waitlist.already);
+        });
+        return;
+      }
+
+      startTransition(() => {
+        setStatus("success");
+        setMessage(copy.waitlist.success);
+      });
+    } catch (error) {
+      startTransition(() => {
+        setStatus("error");
+        setMessage(copy.waitlist.error);
+      });
+      void error;
+    }
+  };
+
+  const handleChange = (event) => {
+    setEmail(event.target.value);
+    if (status !== "idle") {
+      setStatus("idle");
+      setMessage("");
+    }
+  };
+
+  const containerClasses = compact
+    ? "border border-border bg-surface-alt p-4"
+    : "border border-border bg-surface p-5";
+  const formClasses = compact ? "flex flex-col sm:flex-row gap-3" : "flex flex-col sm:flex-row gap-4";
+  const actionDisabled = isLoading || isSuccess;
+
+  return (
+    <div className={containerClasses} data-testid={`waitlist-${source}`}>
+      <div className="font-mono text-xs uppercase tracking-widest text-subtle mb-3">{copy.waitlist.title}</div>
+      <form onSubmit={handleSubmit} className={formClasses}>
+        <div className="flex-1">
+          <label className="sr-only" htmlFor={`waitlist-email-${source}`}>
+            {copy.waitlist.label}
+          </label>
+          <input
+            id={`waitlist-email-${source}`}
+            type="email"
+            value={email}
+            onChange={handleChange}
+            placeholder={copy.waitlist.placeholder}
+            autoComplete="email"
+            disabled={actionDisabled}
+            className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={actionDisabled}
+          className={`h-11 px-6 font-bold uppercase tracking-wider text-xs border border-primary transition-colors ${
+            actionDisabled
+              ? "bg-surface-alt text-subtle cursor-not-allowed"
+              : "bg-primary text-bg hover:bg-text hover:text-bg"
+          }`}
+        >
+          {copy.waitlist.cta}
+        </button>
+      </form>
+      <div
+        className={`mt-2 text-xs font-mono ${isError ? "text-red-400" : isSuccess ? "text-emerald-400" : "text-subtle"}`}
+        aria-live="polite"
+      >
+        {helperText}
+      </div>
+    </div>
+  );
+};
+
 /* ── Navbar (simplified — no tabs) ── */
 
-const Navbar = ({ copy, themeId, setTheme, themes }) => {
+const Navbar = ({ copy, themeId, setTheme, themes, futureMode }) => {
   const router = useRouter();
   const localePrefix = router.locale === "fr" ? "/fr" : "";
-  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}/start?from=nav`);
+  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
 
@@ -586,13 +711,15 @@ const Navbar = ({ copy, themeId, setTheme, themes }) => {
             </div>
           </div>
 
-          <Link
-            href={appEntryUrl}
-            className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
-          >
-            <Terminal className="w-4 h-4" />
-            {copy.connect}
-          </Link>
+          {!futureMode && (
+            <Link
+              href={appEntryUrl}
+              className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
+            >
+              <Terminal className="w-4 h-4" />
+              {copy.connect}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -605,28 +732,37 @@ const Navbar = ({ copy, themeId, setTheme, themes }) => {
 
 /* ── Hero — Deals + Marketplace split ── */
 
-const HeroCtas = ({ primary, secondary, primaryHref, secondaryHref }) => (
-  <div className="flex flex-wrap gap-3">
-    <Link
-      href={primaryHref}
-      className="px-6 py-3 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-    >
-      <span className="relative z-10 flex items-center gap-2">
-        {primary} <ChevronRight className="w-4 h-4" />
-      </span>
-    </Link>
-    <Link href={secondaryHref} className="border border-border-strong text-muted px-6 py-3 font-mono text-xs uppercase tracking-wider hover:border-text hover:text-text transition-colors">
-      {secondary}
-    </Link>
+const ComingSoonBadge = ({ label }) => (
+  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
+    <span className="w-2 h-2 bg-primary animate-pulse" />
+    {label}
   </div>
 );
 
-const DealsHero = ({ copy, locale }) => {
+const HeroCtas = ({ primary, secondary, primaryHref, futureMode, badge }) =>
+  futureMode ? (
+    <ComingSoonBadge label={badge} />
+  ) : (
+    <div className="flex flex-wrap gap-3">
+      <Link
+        href={primaryHref}
+        className="px-6 py-3 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+      >
+        <span className="relative z-10 flex items-center gap-2">
+          {primary} <ChevronRight className="w-4 h-4" />
+        </span>
+      </Link>
+      <button className="border border-border-strong text-muted px-6 py-3 font-mono text-xs uppercase tracking-wider hover:border-text hover:text-text transition-colors">
+        {secondary}
+      </button>
+    </div>
+  );
+
+const DealsHero = ({ copy, futureMode, locale }) => {
   const appUrl = getPublicAppUrl();
   const localePrefix = locale === "fr" ? "/fr" : "";
-  const dealsUrl = joinUrl(appUrl, `${localePrefix}/start?from=hero-deals`);
-  const listingsUrl = joinUrl(appUrl, `${localePrefix}/start?from=hero-marketplace`);
-  const docsUrl = "/skill.md";
+  const dealsUrl = joinUrl(appUrl, `${localePrefix}/deals`);
+  const listingsUrl = joinUrl(appUrl, `${localePrefix}${getPublicAppEntryPath()}`);
 
   return (
     <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
@@ -653,7 +789,8 @@ const DealsHero = ({ copy, locale }) => {
               primary={copy.ctas.browseDeals}
               secondary={copy.ctas.postDeal}
               primaryHref={dealsUrl}
-              secondaryHref={docsUrl}
+              futureMode={futureMode}
+              badge={copy.future.badge}
             />
           </div>
 
@@ -675,9 +812,14 @@ const DealsHero = ({ copy, locale }) => {
               primary={copy.ctas.browseListings}
               secondary={copy.ctas.createListing}
               primaryHref={listingsUrl}
-              secondaryHref={docsUrl}
+              futureMode={futureMode}
+              badge={copy.future.badge}
             />
           </div>
+        </div>
+
+        <div className="mt-12">
+          <WaitlistForm copy={copy} locale={locale} source="hero" />
         </div>
       </div>
     </div>
@@ -686,7 +828,7 @@ const DealsHero = ({ copy, locale }) => {
 
 /* ── Showcase sections ── */
 
-const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, reverse = false, ctaHref }) => (
+const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, futureMode, reverse = false }) => (
   <div>
     <SectionHeader title={header.title} subtitle={header.subtitle} />
     <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${reverse ? "lg:[direction:rtl]" : ""}`}>
@@ -702,9 +844,13 @@ const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, reverse = fal
             </li>
           ))}
         </ul>
-        <Link href={ctaHref} className="inline-block px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
-          {showcase.cta}
-        </Link>
+        {futureMode ? (
+          <ComingSoonBadge label={copy.future.badge} />
+        ) : (
+          <button className="px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
+            {showcase.cta}
+          </button>
+        )}
       </div>
       <div className={`flex justify-center ${reverse ? "lg:[direction:ltr]" : ""}`}>
         <PhoneComponent copy={copy} />
@@ -769,6 +915,9 @@ const SecondaryFeatures = ({ copy }) => (
         <Link key={key} href={`/explore?tab=${tab}`} className="block h-full">
           <TechBorder className="h-full">
             <div className="p-6 flex flex-col h-full relative">
+              <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-[9px] font-mono uppercase text-subtle">
+                {copy.future.badge}
+              </div>
               <div className={`w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center ${color} mb-4`}>
                 <Icon size={20} />
               </div>
@@ -957,14 +1106,13 @@ type LandingProps = {
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
+  futureMode?: boolean;
 };
 
-export default function Landing({ locale = "en", buildTimeIso, appVersion, deploySha }: LandingProps) {
+export default function Landing({ locale = "en", buildTimeIso, appVersion, deploySha, futureMode = false }: LandingProps) {
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
-  const appUrl = getPublicAppUrl();
-  const localePrefix = locale === "fr" ? "/fr" : "";
 
   return (
     <div className="min-h-screen">
@@ -973,10 +1121,23 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
+        futureMode={futureMode}
       />
 
       <main id="main-content" tabIndex={-1} className="pb-32">
-        <DealsHero copy={copy} locale={locale} />
+        {futureMode && (
+          <div className="bg-bg border-b border-border">
+            <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
+                <span className="w-2 h-2 bg-primary animate-pulse" />
+                {copy.future.bannerTitle}
+              </div>
+              <div className="text-xs font-mono text-muted">{copy.future.bannerBody}</div>
+            </div>
+          </div>
+        )}
+
+        <DealsHero copy={copy} futureMode={futureMode} locale={locale} />
 
         {/* Trust marquee */}
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
@@ -1006,7 +1167,7 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
             showcase={copy.showcase.deals}
             PhoneComponent={DealsPhone}
             copy={copy}
-            ctaHref={joinUrl(appUrl, `${localePrefix}/start?from=showcase-deals`)}
+            futureMode={futureMode}
           />
 
           <ShowcaseSection
@@ -1014,7 +1175,7 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
             showcase={copy.showcase.marketplace}
             PhoneComponent={MarketPhone}
             copy={copy}
-            ctaHref={joinUrl(appUrl, `${localePrefix}/start?from=showcase-marketplace`)}
+            futureMode={futureMode}
             reverse
           />
 
@@ -1048,6 +1209,9 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
                 </>
               ) : null}
             </p>
+            <div className="mt-6 max-w-md">
+              <WaitlistForm copy={copy} locale={locale} compact source="footer" />
+            </div>
           </div>
           <div>
             <h4 className="text-text font-bold mb-4 uppercase">{copy.footer.sysLinks}</h4>

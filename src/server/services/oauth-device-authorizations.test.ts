@@ -39,6 +39,15 @@ function createUpdateChain(result: any) {
   return chain;
 }
 
+function createInsertChain(result: any) {
+  const chain: any = {
+    insert: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn(async () => result)
+  };
+  return chain;
+}
+
 function createDeleteChain(result: any) {
   const chain: any = {
     delete: vi.fn().mockReturnThis(),
@@ -157,6 +166,114 @@ describe("user-code lockout primitives", () => {
       failed_attempts: 5,
       locked: true,
       retry_after_seconds: 300
+    });
+  });
+
+  it("resets failed attempts after a prior lockout window has elapsed", async () => {
+    const now = new Date("2026-02-11T12:00:00.000Z");
+    const selectChain = createSelectChain({
+      data: {
+        user_code_hash: "hash",
+        attempt_count: 5,
+        locked_until: "2026-02-11T11:59:00.000Z"
+      },
+      error: null
+    });
+    const updateChain = createUpdateChain({
+      data: {
+        attempt_count: 1,
+        locked_until: null
+      },
+      error: null
+    });
+    const client: any = {
+      from: vi.fn().mockReturnValueOnce(selectChain).mockReturnValueOnce(updateChain)
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    const result = await incrementOauthUserCodeLookupFailure({
+      userCode: "ABCD-EFGH",
+      maxFailedAttempts: 5,
+      lockoutWindowSeconds: 300,
+      now
+    });
+
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attempt_count: 1,
+        locked_until: null,
+        last_failed_at: now.toISOString()
+      })
+    );
+    expect(result).toMatchObject({
+      failed_attempts: 1,
+      locked: false,
+      retry_after_seconds: 0
+    });
+  });
+
+  it("retries with update when first insert loses a duplicate-key race", async () => {
+    const now = new Date("2026-02-11T12:00:00.000Z");
+    const firstSelectChain = createSelectChain({
+      data: null,
+      error: null
+    });
+    const insertChain = createInsertChain({
+      data: null,
+      error: {
+        code: "23505",
+        message: "duplicate key value violates unique constraint"
+      }
+    });
+    const refetchChain = createSelectChain({
+      data: {
+        attempt_count: 1,
+        locked_until: null
+      },
+      error: null
+    });
+    const updateChain = createUpdateChain({
+      data: {
+        attempt_count: 2,
+        locked_until: null
+      },
+      error: null
+    });
+    const client: any = {
+      from: vi
+        .fn()
+        .mockReturnValueOnce(firstSelectChain)
+        .mockReturnValueOnce(insertChain)
+        .mockReturnValueOnce(refetchChain)
+        .mockReturnValueOnce(updateChain)
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    const result = await incrementOauthUserCodeLookupFailure({
+      userCode: "ABCD-EFGH",
+      maxFailedAttempts: 5,
+      lockoutWindowSeconds: 300,
+      now
+    });
+
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attempt_count: 1,
+        locked_until: null,
+        created_at: now.toISOString()
+      })
+    );
+    expect(updateChain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attempt_count: 2,
+        locked_until: null,
+        last_failed_at: now.toISOString()
+      })
+    );
+    expect(result).toMatchObject({
+      failed_attempts: 2,
+      locked: false,
+      retry_after_seconds: 0
     });
   });
 
