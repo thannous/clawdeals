@@ -12,9 +12,11 @@ pnpm-debug.log*
 
 # Next.js
 .next/
+.next.bak/
 out/
 .vercel/
 .open-next/
+.open-next.bak/
 next-env.d.ts
 
 # Env files (keep .env.example committed if present)

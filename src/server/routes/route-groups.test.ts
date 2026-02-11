@@ -113,4 +113,10 @@ describe("route groups", () => {
     expect(matchRouteGroup("POST", `/api/console/installations/${id}:scopes-upgrade`, sp)).toBe("installations.scopes_upgrade");
     expect(matchRouteGroup("POST", `/api/console/installations/${id}:revoke`, sp)).toBe("installations.revoke");
   });
+
+  it("matches threads.watch for POST /v1/threads/:thread_id:watch", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+    expect(matchRouteGroup("POST", `/api/v1/threads/${id}:watch`, sp)).toBe("threads.watch");
+  });
 });

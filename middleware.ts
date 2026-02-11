@@ -33,6 +33,8 @@ function isAppRoute(restPath: string): boolean {
     restPath.startsWith("/claim/") ||
     restPath === "/device" ||
     restPath.startsWith("/device/") ||
+    restPath === "/auth" ||
+    restPath.startsWith("/auth/") ||
     restPath === "/console" ||
     restPath.startsWith("/console/") ||
     restPath === "/api" ||
@@ -55,6 +57,8 @@ function isAppSectionRoute(restPath: string): boolean {
     restPath.startsWith("/claim/") ||
     restPath === "/device" ||
     restPath.startsWith("/device/") ||
+    restPath === "/auth" ||
+    restPath.startsWith("/auth/") ||
     restPath === "/console" ||
     restPath.startsWith("/console/") ||
     restPath === "/api" ||
@@ -143,6 +147,7 @@ export function middleware(request: NextRequest) {
       rest.startsWith("/deals") ||
       rest.startsWith("/start") ||
       rest.startsWith("/settings") ||
+      rest.startsWith("/auth") ||
       rest.startsWith("/developer") ||
       rest.startsWith("/dev/") ||
       rest.startsWith("/claim") ||

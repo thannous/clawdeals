@@ -1,6 +1,17 @@
 import { authenticateApiKey } from "../services/api-keys";
 import { authenticateOauthAccessToken, isOauthAccessToken } from "../services/oauth-access-tokens";
 import { parseApiKey, parseApiKeyAnyNamespace } from "../utils/api-keys";
+import { readOwnerSessionCookie } from "../auth/session-cookie";
+import {
+  getOwnerSessionByTokenHash,
+  markOwnerSessionExpired,
+  markOwnerSessionRevoked,
+  touchOwnerSession
+} from "../services/owner-sessions";
+import { getOwner } from "../services/owners";
+import { hashOwnerSessionToken, isOwnerSessionToken } from "../utils/session-tokens";
+
+const OWNER_SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 
 function safeHeader(req, name) {
   const value = req.headers?.[name];
@@ -85,6 +96,109 @@ export async function applyAuthStub(req, ctx) {
       ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid access token" };
       return ctx;
     } catch (error) {
+      ctx.authError = {
+        status: error.status || 503,
+        code: error.code || "ERROR",
+        message: error.message || "Authentication failed"
+      };
+      return ctx;
+    }
+  }
+
+  const sessionToken = readOwnerSessionCookie(req);
+  if (sessionToken) {
+    if (!isOwnerSessionToken(sessionToken)) {
+      ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid session cookie" };
+      return ctx;
+    }
+    try {
+      const tokenHash = hashOwnerSessionToken(sessionToken);
+      const session = await getOwnerSessionByTokenHash(tokenHash);
+      if (!session) {
+        ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid session cookie" };
+        return ctx;
+      }
+
+      const now = new Date();
+      const nowMs = now.getTime();
+
+      const expiresAt = session?.expires_at ? new Date(session.expires_at) : null;
+      const expired = !expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= nowMs;
+
+      if (session.status === "REVOKED") {
+        ctx.authError = { status: 401, code: "SESSION_REVOKED", message: "Session revoked" };
+        return ctx;
+      }
+
+      if (session.status === "EXPIRED" || expired) {
+        if (session.status !== "EXPIRED" && session.session_id) {
+          try {
+            await markOwnerSessionExpired(session.session_id, now);
+          } catch {
+            // Best-effort only.
+          }
+        }
+        ctx.authError = { status: 401, code: "SESSION_EXPIRED", message: "Session expired" };
+        return ctx;
+      }
+
+      if (session.status !== "ACTIVE") {
+        ctx.authError = { status: 401, code: "SESSION_INACTIVE", message: "Session not active" };
+        return ctx;
+      }
+
+      const ownerId = session.owner_id || null;
+      if (!ownerId) {
+        ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid session cookie" };
+        return ctx;
+      }
+
+      const owner = await getOwner(ownerId);
+      if (!owner) {
+        if (session.session_id) {
+          try {
+            await markOwnerSessionRevoked(session.session_id, now);
+          } catch {
+            // Best-effort only.
+          }
+        }
+        ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid session cookie" };
+        return ctx;
+      }
+
+      if (owner.suspended_at) {
+        if (session.session_id) {
+          try {
+            await markOwnerSessionRevoked(session.session_id, now);
+          } catch {
+            // Best-effort only.
+          }
+        }
+        ctx.authError = { status: 403, code: "OWNER_SUSPENDED", message: "Owner account is suspended" };
+        return ctx;
+      }
+
+      if (session.session_id) {
+        try {
+          const lastUsedAt = session?.last_used_at ? new Date(session.last_used_at) : null;
+          const shouldTouch =
+            !lastUsedAt ||
+            Number.isNaN(lastUsedAt.getTime()) ||
+            nowMs - lastUsedAt.getTime() >= OWNER_SESSION_TOUCH_INTERVAL_MS;
+
+          if (shouldTouch) {
+            await touchOwnerSession(session.session_id, now);
+          }
+        } catch {
+          // Best-effort only.
+        }
+      }
+
+      ctx.ownerId = owner.owner_id || null;
+      ctx.ownerSessionId = session.session_id || null;
+      ctx.actor = { type: "owner", id: owner.owner_id || null };
+      return ctx;
+    } catch (error: any) {
       ctx.authError = {
         status: error.status || 503,
         code: error.code || "ERROR",

@@ -223,8 +223,8 @@ export default function StartPage() {
                 >
                   Forget
                 </button>
-                <Link href="/developer" className="border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-bg">
-                  Dashboard
+                <Link href="/auth/login" className="border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-bg">
+                  Owner login
                 </Link>
               </>
             ) : (

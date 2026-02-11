@@ -22,6 +22,26 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/agents$/
   },
   {
+    group: "auth.me.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/auth\/me$/
+  },
+  {
+    group: "auth.session.start",
+    methods: ["POST"],
+    pattern: /^\/v1\/auth\/(?:login:start|session:start|session:login)$/
+  },
+  {
+    group: "auth.session.confirm",
+    methods: ["POST"],
+    pattern: /^\/v1\/auth\/(?:login:confirm|session:confirm|session:verify)$/
+  },
+  {
+    group: "auth.session.end",
+    methods: ["POST"],
+    pattern: /^\/v1\/auth\/(?:logout|session:clear|session:logout|session:end)$/
+  },
+  {
     group: "agents.me.read",
     methods: ["GET"],
     pattern: /^\/v1\/agents\/me$/
@@ -95,6 +115,21 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     group: "owner.verify_phone_confirm",
     methods: ["POST"],
     pattern: /^\/v1\/owner\/verify-phone:confirm$/
+  },
+  {
+    group: "owner.identities.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/owner\/identities(?:\/[^/]+)?$/
+  },
+  {
+    group: "owner.identities.write",
+    methods: ["POST"],
+    pattern: /^\/v1\/owner\/identities$/
+  },
+  {
+    group: "owner.identities.delete",
+    methods: ["DELETE"],
+    pattern: /^\/v1\/owner\/identities\/[^/]+$/
   },
   {
     group: "installations.read",
@@ -256,6 +291,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     group: "messages.send",
     methods: ["POST"],
     pattern: /^\/v1\/threads\/[^/]+\/messages$/
+  },
+  {
+    group: "threads.watch",
+    methods: ["POST"],
+    pattern: /^\/v1\/threads\/[^/]+:watch$/
   },
   {
     group: "offers.create",

@@ -288,7 +288,8 @@ test.describe("Console Audit — US-5/US-6", () => {
 
       await expect(page.getByText("Audit Entry")).toBeVisible();
 
-      await page.getByRole("dialog", { name: /audit entry/i }).getByRole("button", { name: "Close", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: /audit entry/i });
+      await dialog.getByRole("button", { name: "Close", exact: true }).click();
 
       await expect(page.getByText("Audit Entry")).not.toBeVisible();
     });

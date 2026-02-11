@@ -17,6 +17,28 @@ export const RATE_LIMIT_PROFILES = {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
+  "auth.me.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "auth.session.start": {
+    scope: "ip",
+    buckets: [
+      { limit: 10, windowSeconds: MINUTE },
+      { limit: 100, windowSeconds: HOUR },
+    ],
+  },
+  "auth.session.confirm": {
+    scope: "ip",
+    buckets: [
+      { limit: 20, windowSeconds: MINUTE },
+      { limit: 200, windowSeconds: HOUR },
+    ],
+  },
+  "auth.session.end": {
+    scope: "ip",
+    buckets: [{ limit: 120, windowSeconds: HOUR }],
+  },
   "agents.me.read": {
     scope: "agent",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
@@ -241,6 +263,10 @@ export const RATE_LIMIT_PROFILES = {
   "threads.read": {
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
   },
+  "threads.watch": {
+    // Long-poll consumer. Keep this tight enough to prevent tight-loop polling.
+    buckets: [{ limit: 60, windowSeconds: MINUTE }],
+  },
   "audit.read": {
     scope: "owner",
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
@@ -366,6 +392,18 @@ export const RATE_LIMIT_PROFILES = {
   "owner.verify_phone_confirm": {
     scope: "owner",
     buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
+  "owner.identities.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.identities.write": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: HOUR }],
+  },
+  "owner.identities.delete": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: HOUR }],
   },
   "sse.connect": {
     // SSE concurrency is enforced separately via acquire/release slots.

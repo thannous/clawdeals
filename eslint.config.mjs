@@ -5,7 +5,9 @@ const config = [
     ignores: [
       ".claude/**",
       ".next/**",
+      ".next.bak/**",
       ".open-next/**",
+      ".open-next.bak/**",
       "dist/**",
       "coverage/**",
       "test-results/**",

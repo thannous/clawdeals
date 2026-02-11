@@ -23,6 +23,36 @@ describe("GET /v1/connect/claims/:claim_token", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("redacts claim_token in ctx on method not allowed (audit safety)", async () => {
+    const req = { method: "POST", query: { claim_token: "cd_claim_test" } };
+    const ctx: any = {
+      ...baseCtx,
+      path: "/api/v1/connect/claims/cd_claim_test",
+      query: { claim_token: "cd_claim_test" }
+    };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(405);
+    expect(ctx.path).toBe("/api/v1/connect/claims");
+    expect(ctx.query).toEqual({});
+  });
+
+  it("redacts claim_token in ctx on auth error early return (audit safety)", async () => {
+    const req = { method: "GET", query: { claim_token: "cd_claim_test" } };
+    const ctx: any = {
+      ...baseCtx,
+      authError: { status: 401, code: "AUTH_ERROR", message: "Invalid token" },
+      path: "/api/v1/connect/claims/cd_claim_test",
+      query: { claim_token: "cd_claim_test" }
+    };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(401);
+    expect(ctx.path).toBe("/api/v1/connect/claims");
+    expect(ctx.query).toEqual({});
+    expect(getConnectSessionByClaimToken).not.toHaveBeenCalled();
+  });
+
   it("returns connect session metadata", async () => {
     getConnectSessionByClaimTokenMock.mockResolvedValue({
       session_id: "11111111-1111-1111-1111-111111111111",
@@ -60,4 +90,3 @@ describe("GET /v1/connect/claims/:claim_token", () => {
     expect(ctx.auditEntityId).toBe("11111111-1111-1111-1111-111111111111");
   });
 });
-

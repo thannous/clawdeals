@@ -4,6 +4,7 @@ import { buildExternalLinkWarningPayload, SYSTEM_SENDER_ID } from "../messaging/
 import { encodeThreadsCursor } from "./threads-cursor";
 import { encodeMessagesCursor } from "./messages-cursor";
 import { isUuid } from "../utils/validators";
+import { publishThreadEvent } from "./thread-events";
 
 const DEFAULT_LIMIT = 50;
 const THREAD_TYPE_MARKETPLACE = "MARKETPLACE";
@@ -200,6 +201,37 @@ export async function createMessage({
   if (error) {
     mapError(error);
   }
+
+  const eventType = Boolean(data?.redacted) ? "message.redacted" : "message.sent";
+
+  try {
+    await publishThreadEvent({
+      threadId,
+      type: eventType,
+      actor: { type: data?.sender_type || senderType, id: data?.sender_id || senderId || null },
+      entity: { type: "message", id: data?.message_id || null },
+      payload: {
+        thread_id: data?.thread_id || threadId,
+        message: {
+          message_id: data?.message_id,
+          thread_id: data?.thread_id,
+          sender_type: data?.sender_type,
+          sender_id: data?.sender_id,
+          type: data?.type,
+          payload: data?.payload,
+          redacted: Boolean(data?.redacted),
+          created_at: data?.created_at
+        }
+      }
+    });
+  } catch (error) {
+    // Best-effort: message persistence should not depend on the realtime/event store.
+    console.info("thread_events.publish_failed", {
+      type: eventType,
+      error: (error as any)?.message || String(error)
+    });
+  }
+
   return data;
 }
 
