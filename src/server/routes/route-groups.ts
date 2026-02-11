@@ -242,6 +242,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/threads\/[^/]+\/messages$/
   },
   {
+    group: "threads.watch",
+    methods: ["POST"],
+    pattern: /^\/v1\/threads\/[^/]+:watch$/
+  },
+  {
     group: "offers.create",
     methods: ["POST"],
     pattern: /^\/v1\/listings\/[^/]+\/offers$/
