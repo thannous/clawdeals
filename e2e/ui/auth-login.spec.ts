@@ -1,7 +1,15 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Auth: Login", () => {
-  test("requests magic link and shows verify link", async ({ page }) => {
+  test("shows unified login with Google and legacy link", async ({ page }) => {
+    await page.goto("/auth/login");
+    await expect(page.getByTestId("auth-login-page")).toBeVisible();
+    await expect(page.getByTestId("auth-login-google")).toBeVisible();
+    await expect(page.getByTestId("auth-login-submit")).toBeVisible();
+    await expect(page.getByTestId("auth-login-legacy-link")).toHaveAttribute("href", "/auth/login-legacy");
+  });
+
+  test("requests legacy magic link and shows verify link", async ({ page }) => {
     let loginStarted = false;
 
     await page.route("**/api/v1/auth/login:start", async (route) => {
@@ -23,7 +31,7 @@ test.describe("Auth: Login", () => {
       });
     });
 
-    await page.goto("/auth/login");
+    await page.goto("/auth/login-legacy");
     await expect(page.getByTestId("auth-login-page")).toBeVisible();
 
     await page.getByTestId("auth-login-email").fill("owner@example.com");

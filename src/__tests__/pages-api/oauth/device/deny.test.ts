@@ -4,10 +4,16 @@ vi.mock("../../../../server/services/oauth-device-authorizations", () => ({
   denyOauthDeviceAuthorization: vi.fn()
 }));
 
+vi.mock("../../../../server/services/owners", () => ({
+  getOwner: vi.fn()
+}));
+
 import { handler } from "../../../../pages/api/oauth/device/deny";
 import { denyOauthDeviceAuthorization } from "../../../../server/services/oauth-device-authorizations";
+import { getOwner } from "../../../../server/services/owners";
 
 const denyMock = vi.mocked(denyOauthDeviceAuthorization);
+const getOwnerMock = vi.mocked(getOwner);
 
 const ownerId = "00000000-0000-4000-a000-000000000123";
 
@@ -20,6 +26,10 @@ const baseCtx: any = {
 describe("POST /oauth/device/deny", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email_verified_at: "2026-02-10T12:00:00.000Z"
+    } as any);
   });
 
   it("requires Idempotency-Key", async () => {
@@ -41,6 +51,24 @@ describe("POST /oauth/device/deny", () => {
 
     const result: any = await handler(req, null, { authError: null, ownerId: null, actor: { type: "anonymous" } });
     expect(result.status).toBe(401);
+  });
+
+  it("rejects unverified owner", async () => {
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email_verified_at: null
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "k1" },
+      body: { user_code: "ABCD-EFGH" }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("OWNER_EMAIL_NOT_VERIFIED");
+    expect(denyOauthDeviceAuthorization).not.toHaveBeenCalled();
   });
 
   it("requires user_code", async () => {

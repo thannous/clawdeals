@@ -9,6 +9,7 @@ import {
   getAgentById,
   getOwnerAgentLimit
 } from "../../../../../../server/services/agents";
+import { getOwner } from "../../../../../../server/services/owners";
 import { createOrGetControlDmThread } from "../../../../../../server/services/threads";
 import {
   claimConnectSession,
@@ -113,6 +114,16 @@ export async function handler(req: any, res: any, ctx: any) {
   }
   if (!isUuid(ctx.ownerId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
+  }
+  const owner = await getOwner(ctx.ownerId);
+  if (!owner) {
+    return jsonResponse(404, errorPayload("NOT_FOUND", "Owner not found"));
+  }
+  if (!owner.email_verified_at) {
+    return jsonResponse(
+      403,
+      errorPayload("OWNER_EMAIL_NOT_VERIFIED", "Owner email must be verified to claim a connect session")
+    );
   }
   const csrfBlocked = requireSameOriginForOwnerSession(req, ctx);
   if (csrfBlocked) return csrfBlocked;

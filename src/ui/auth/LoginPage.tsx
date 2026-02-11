@@ -1,15 +1,8 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useMemo, useState } from "react";
 
-import {
-  clearStoredOwnerAuth,
-  getStoredOwnerEmail,
-  getStoredOwnerSessionId,
-  getStoredOwnerSessionToken,
-  setStoredOwnerEmail,
-  setStoredOwnerSessionId,
-  setStoredOwnerSessionToken
-} from "./ownerAuth";
+import { getBrowserSupabaseClient } from "./supabase-client";
 
 function getErrorMessage(body: any, status: number) {
   const error = body?.error;
@@ -18,81 +11,121 @@ function getErrorMessage(body: any, status: number) {
   return `HTTP ${status}`;
 }
 
-const EXPIRES_FORMATTER = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
-
-function formatExpiresAt(expiresAt: string) {
-  const d = new Date(expiresAt);
-  if (!Number.isFinite(d.getTime())) return expiresAt;
-  return EXPIRES_FORMATTER.format(d);
+async function bridgeOwnerSession(accessToken: string) {
+  const resp = await fetch("/api/v1/auth/session:bridge", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+  const body = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    throw new Error(getErrorMessage(body, resp.status));
+  }
+  return body?.data || null;
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState(() => getStoredOwnerEmail() || "");
-  const [sessionId, setSessionId] = useState<string | null>(() => getStoredOwnerSessionId());
-  const [submitState, setSubmitState] = useState<"idle" | "loading" | "sent" | "error">("idle");
+  const router = useRouter();
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitState, setSubmitState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(() => getStoredOwnerSessionToken());
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [forgotState, setForgotState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
-  const canSubmit = useMemo(() => email.trim().length > 0 && submitState !== "loading", [email, submitState]);
+  const canSubmit = useMemo(
+    () => Boolean(email.trim() && password.trim() && submitState !== "loading"),
+    [email, password, submitState]
+  );
 
-  const resetAuth = useCallback(() => {
-    void fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
-    clearStoredOwnerAuth();
-    setSessionId(null);
-    setToken(null);
-    setExpiresAt(null);
-    setSubmitState("idle");
+  const onGoogle = useCallback(async () => {
+    setSubmitState("loading");
     setError(null);
+    setNotice(null);
+    try {
+      const supabase = getBrowserSupabaseClient();
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo }
+      });
+      if (oauthError) {
+        throw oauthError;
+      }
+    } catch (err: any) {
+      setSubmitState("error");
+      setError(String(err?.message || "Google sign-in failed"));
+    }
   }, []);
 
-  const onSend = useCallback(async () => {
-    if (!email.trim()) {
-      setError("Enter an email address.");
-      setSubmitState("error");
-      return;
-    }
+  const onEmailPassword = useCallback(async () => {
+    if (!canSubmit) return;
 
     setSubmitState("loading");
     setError(null);
-    setToken(null);
-    setExpiresAt(null);
-
-    setStoredOwnerEmail(email.trim());
-
+    setNotice(null);
     try {
-      const res = await fetch("/api/v1/auth/login:start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email: email.trim() })
+      const supabase = getBrowserSupabaseClient();
+      if (mode === "login") {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password
+        });
+        if (signInError) throw signInError;
+        const accessToken = data?.session?.access_token || null;
+        if (!accessToken) {
+          throw new Error("Missing session token");
+        }
+        await bridgeOwnerSession(accessToken);
+        setSubmitState("done");
+        void router.replace("/settings/account");
+        return;
+      }
+
+      const emailRedirectTo = `${window.location.origin}/auth/callback`;
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { emailRedirectTo }
       });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(getErrorMessage(body, res.status));
+      if (signUpError) throw signUpError;
+
+      const accessToken = data?.session?.access_token || null;
+      if (accessToken) {
+        await bridgeOwnerSession(accessToken);
+        setSubmitState("done");
+        void router.replace("/settings/account");
+        return;
       }
 
-      const nextSessionId = body?.data?.session_id ? String(body.data.session_id) : null;
-      const nextToken = body?.data?.session_token ? String(body.data.session_token) : null;
-      const nextExpires = body?.data?.expires_at ? String(body.data.expires_at) : null;
-
-      if (!nextSessionId) {
-        throw new Error("Missing session_id in response");
-      }
-
-      setStoredOwnerSessionId(nextSessionId);
-      setSessionId(nextSessionId);
-      if (nextToken) {
-        setStoredOwnerSessionToken(nextToken);
-      }
-
-      setToken(nextToken);
-      setExpiresAt(nextExpires);
-      setSubmitState("sent");
+      setSubmitState("done");
+      setNotice("Account created. Check your inbox if email confirmation is enabled.");
     } catch (err: any) {
-      setError(String(err?.message || "Failed to send login link"));
       setSubmitState("error");
+      setError(String(err?.message || "Authentication failed"));
+    }
+  }, [canSubmit, email, mode, password, router]);
+
+  const onForgotPassword = useCallback(async () => {
+    if (!email.trim()) {
+      setForgotState("error");
+      setError("Enter your email first.");
+      return;
+    }
+    setForgotState("loading");
+    setError(null);
+    try {
+      const supabase = getBrowserSupabaseClient();
+      const redirectTo = `${window.location.origin}/auth/reset`;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+      if (resetError) throw resetError;
+      setForgotState("done");
+      setNotice("Password reset email sent.");
+    } catch (err: any) {
+      setForgotState("error");
+      setError(String(err?.message || "Failed to send reset email"));
     }
   }, [email]);
 
@@ -106,106 +139,131 @@ export default function LoginPage() {
           <div className="bg-surface border border-border rounded clip-corner p-5 space-y-4">
             <div className="space-y-1">
               <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-                <span className="text-primary">/ </span>OWNER LOGIN
+                <span className="text-primary">/ </span>OWNER SIGN IN
               </h1>
               <p className="text-xs font-mono text-subtle">
-                Enter your email to receive a magic link. For dev/local, the session token is echoed here.
+                Sign in with Google or with your email and password.
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="auth-email">
-                Email
-              </label>
-              <input
-                id="auth-email"
-                name="email"
-                type="email"
-                inputMode="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                data-testid="auth-login-email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com…"
-                autoComplete="email"
-                className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
-              />
-            </div>
+            <button
+              data-testid="auth-login-google"
+              onClick={onGoogle}
+              disabled={submitState === "loading"}
+              className="w-full px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
+            >
+              Continue with Google
+            </button>
 
-            {sessionId && (
-              <div className="text-[10px] font-mono text-subtle">
-                Session ID:{" "}
-                <span className="text-text" data-testid="auth-login-session-id">
-                  {sessionId}
-                </span>
+            <div className="border-t border-border pt-4 space-y-3">
+              <div className="flex gap-2 bg-surface p-1 w-fit border border-border">
+                <button
+                  onClick={() => setMode("login")}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${
+                    mode === "login" ? "bg-text text-bg" : "text-subtle hover:text-text"
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setMode("signup")}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${
+                    mode === "signup" ? "bg-text text-bg" : "text-subtle hover:text-text"
+                  }`}
+                >
+                  Sign up
+                </button>
               </div>
-            )}
 
-            {error && (
-              <div data-testid="auth-login-error" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-red-400">Error</div>
-                <div className="text-xs font-mono text-muted mt-1">{error}</div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="auth-email">
+                  Email
+                </label>
+                <input
+                  id="auth-email"
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-testid="auth-login-email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com…"
+                  autoComplete="email"
+                  className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                />
               </div>
-            )}
 
-            {submitState === "sent" && (
-              <div data-testid="auth-login-sent" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 space-y-2">
-                <div className="text-xs font-mono text-secondary">Magic link sent</div>
-                <div className="text-xs font-mono text-muted">
-                  Check your inbox for the login link. You can also verify manually below.
+              <div className="space-y-2">
+                <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="auth-password">
+                  Password
+                </label>
+                <input
+                  id="auth-password"
+                  name="password"
+                  type="password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-testid="auth-login-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                  className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                />
+              </div>
+
+              {error && (
+                <div data-testid="auth-login-error" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
+                  <div className="text-xs font-mono text-red-400">Error</div>
+                  <div className="text-xs font-mono text-muted mt-1">{error}</div>
                 </div>
-                {expiresAt && (
-                  <div className="text-[10px] font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
-                )}
-                {token && (
-                  <div className="text-xs font-mono text-text break-all" data-testid="auth-login-token">
-                    session_token={token}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    data-testid="auth-login-verify-link"
-                    href={
-                      sessionId
-                        ? `/auth/verify?session_id=${encodeURIComponent(sessionId)}${token ? `&token=${encodeURIComponent(token)}` : ""}`
-                        : "/auth/verify"
-                    }
-                    className="px-3 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
-                  >
-                    Verify now
-                  </Link>
-                  <button
-                    onClick={resetAuth}
-                    className="px-3 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
-                  >
-                    Start over
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                data-testid="auth-login-submit"
-                onClick={onSend}
-                disabled={!canSubmit}
-                className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
-              >
-                {submitState === "loading" ? "Sending…" : "Send magic link"}
-              </button>
-              <Link
-                href="/settings/identities"
-                className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
-              >
-                Linked identities
-              </Link>
+              {notice && (
+                <div data-testid="auth-login-notice" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
+                  <div className="text-xs font-mono text-secondary">Notice</div>
+                  <div className="text-xs font-mono text-muted mt-1">{notice}</div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  data-testid="auth-login-submit"
+                  onClick={onEmailPassword}
+                  disabled={!canSubmit}
+                  className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
+                >
+                  {submitState === "loading"
+                    ? "Working…"
+                    : mode === "signup"
+                      ? "Create account"
+                      : "Login"}
+                </button>
+                <button
+                  data-testid="auth-login-forgot"
+                  onClick={onForgotPassword}
+                  disabled={forgotState === "loading" || submitState === "loading"}
+                  className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors disabled:opacity-50"
+                >
+                  {forgotState === "loading" ? "Sending…" : "Forgot password"}
+                </button>
+                <Link
+                  href="/auth/login-legacy"
+                  data-testid="auth-login-legacy-link"
+                  className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+                >
+                  Magic link (legacy)
+                </Link>
+              </div>
             </div>
           </div>
 
           <div className="text-[10px] font-mono text-subtle">
-            Tip: if you already verified, head straight to <span className="text-text">/settings/identities</span>.
+            After login, go to <span className="text-text">/settings/account</span> to view your agents and claims.
           </div>
         </div>
       </div>

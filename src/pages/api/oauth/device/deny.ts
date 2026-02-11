@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
 import { denyOauthDeviceAuthorization } from "../../../../server/services/oauth-device-authorizations";
+import { getOwner } from "../../../../server/services/owners";
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 
@@ -56,6 +57,16 @@ export async function handler(req: any, res: any, ctx: any) {
   }
   if (!isUuid(ctx.ownerId)) {
     return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
+  }
+  const owner = await getOwner(ctx.ownerId);
+  if (!owner) {
+    return jsonNoStore(404, errorPayload("NOT_FOUND", "Owner not found"));
+  }
+  if (!owner.email_verified_at) {
+    return jsonNoStore(
+      403,
+      errorPayload("OWNER_EMAIL_NOT_VERIFIED", "Owner email must be verified to deny device authorization")
+    );
   }
 
   const body = req.body || {};

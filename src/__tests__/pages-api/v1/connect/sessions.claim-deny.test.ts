@@ -17,6 +17,10 @@ vi.mock("../../../../server/services/threads", () => ({
   createOrGetControlDmThread: vi.fn()
 }));
 
+vi.mock("../../../../server/services/owners", () => ({
+  getOwner: vi.fn()
+}));
+
 import { handler as claimHandler } from "../../../../pages/api/v1/connect/sessions/[session_id]/claim";
 import { handler as denyHandler } from "../../../../pages/api/v1/connect/sessions/[session_id]/deny";
 
@@ -32,6 +36,7 @@ import {
   getOwnerAgentLimit
 } from "../../../../server/services/agents";
 import { createOrGetControlDmThread } from "../../../../server/services/threads";
+import { getOwner } from "../../../../server/services/owners";
 
 const getConnectSessionByClaimTokenMock = vi.mocked(getConnectSessionByClaimToken);
 const claimConnectSessionMock = vi.mocked(claimConnectSession);
@@ -42,6 +47,7 @@ const deleteAgentByIdMock = vi.mocked(deleteAgentById);
 const getAgentByIdMock = vi.mocked(getAgentById);
 const getOwnerAgentLimitMock = vi.mocked(getOwnerAgentLimit);
 const createOrGetControlDmThreadMock = vi.mocked(createOrGetControlDmThread);
+const getOwnerMock = vi.mocked(getOwner);
 
 const ownerId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
 const sessionId = "11111111-1111-4111-8111-111111111111";
@@ -59,6 +65,10 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getOwnerAgentLimitMock.mockReturnValue(1);
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email_verified_at: "2026-02-10T12:00:00.000Z"
+    } as any);
   });
 
   it("requires Idempotency-Key", async () => {
@@ -111,6 +121,25 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects unverified owners", async () => {
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email_verified_at: null
+    } as any);
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      query: { session_id: sessionId },
+      body: { claim_token: claimToken }
+    };
+
+    const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("OWNER_EMAIL_NOT_VERIFIED");
+    expect(getConnectSessionByClaimToken).not.toHaveBeenCalled();
   });
 
   it("blocks cookie-auth owner claims on cross-site requests", async () => {
@@ -398,6 +427,10 @@ describe("POST /v1/connect/sessions/:session_id/deny", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getOwnerAgentLimitMock.mockReturnValue(1);
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email_verified_at: "2026-02-10T12:00:00.000Z"
+    } as any);
   });
 
   it("requires Idempotency-Key", async () => {
@@ -454,6 +487,25 @@ describe("POST /v1/connect/sessions/:session_id/deny", () => {
     const result: any = await denyHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects unverified owners", async () => {
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email_verified_at: null
+    } as any);
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      query: { session_id: sessionId },
+      body: { claim_token: claimToken }
+    };
+
+    const result: any = await denyHandler(req, null, { ...baseOwnerCtx });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("OWNER_EMAIL_NOT_VERIFIED");
+    expect(getConnectSessionByClaimToken).not.toHaveBeenCalled();
   });
 
   it("denies connect session", async () => {

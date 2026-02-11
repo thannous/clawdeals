@@ -3,10 +3,19 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import crypto from "node:crypto";
+import { getSupabaseServiceClient } from "../../../../server/db/supabase";
 
 import { buildOwnerSessionClearCookie, isSecureRequest, readOwnerSessionCookie } from "../../../../server/auth/session-cookie";
 import { confirmOwnerLogin, startOwnerLogin } from "../../../../server/services/owner-login";
+import { issueTrustedOwnerSession } from "../../../../server/services/owner-session-issue";
 import { getOwnerSessionByTokenHash, markOwnerSessionRevoked } from "../../../../server/services/owner-sessions";
+import {
+  createOwnerLink,
+  getOwnerLinkBySupabaseUserId,
+  touchOwnerLinkLogin
+} from "../../../../server/services/owner-auth-links";
+import { getOwner, getOwnerByEmail, upsertOwner } from "../../../../server/services/owners";
+import { normalizeEmail } from "../../../../server/utils/owner-verification";
 import { hashOwnerSessionToken, isOwnerSessionToken } from "../../../../server/utils/session-tokens";
 import { isUuid } from "../../../../server/utils/validators";
 
@@ -17,12 +26,65 @@ function resolveParam(value: any) {
 
 const LOGIN_START_ACTIONS = new Set(["login:start", "session:start", "session:login"]);
 const LOGIN_CONFIRM_ACTIONS = new Set(["login:confirm", "session:confirm", "session:verify"]);
+const SESSION_BRIDGE_ACTIONS = new Set(["session:bridge", "bridge", "login:bridge"]);
 const LOGOUT_ACTIONS = new Set(["logout", "session:clear", "session:logout", "session:end"]);
 
 function normalizeNonEmptyString(value: any) {
   if (value === null || value === undefined) return null;
   const str = String(value).trim();
   return str ? str : null;
+}
+
+function getHeaderValue(req: any, name: string) {
+  const value = req?.headers?.[name] ?? req?.headers?.[String(name).toLowerCase()];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function parseBearerToken(value: any) {
+  if (!value || typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(/\s+/);
+  if (parts.length !== 2) return null;
+  if (parts[0].toLowerCase() !== "bearer") return null;
+  return parts[1];
+}
+
+function parseIsoDate(value: any) {
+  const raw = normalizeNonEmptyString(value);
+  if (!raw) return null;
+  const dt = new Date(raw);
+  if (!Number.isFinite(dt.getTime())) return null;
+  return dt.toISOString();
+}
+
+function resolveSupabaseEmailVerifiedAt(user: any): string | null {
+  const direct = parseIsoDate(user?.email_confirmed_at) || parseIsoDate(user?.confirmed_at);
+  if (direct) return direct;
+
+  if (user?.user_metadata?.email_verified === true) {
+    return new Date().toISOString();
+  }
+
+  const identities = Array.isArray(user?.identities) ? user.identities : [];
+  const identityVerified = identities.some((identity: any) => identity?.identity_data?.email_verified === true);
+  if (identityVerified) {
+    return new Date().toISOString();
+  }
+
+  return null;
+}
+
+function resolveSupabaseProvider(user: any): string | null {
+  const fromAppMetadata = normalizeNonEmptyString(user?.app_metadata?.provider);
+  if (fromAppMetadata) return fromAppMetadata;
+  const identities = Array.isArray(user?.identities) ? user.identities : [];
+  for (const identity of identities) {
+    const provider = normalizeNonEmptyString(identity?.provider);
+    if (provider) return provider;
+  }
+  return null;
 }
 
 function shouldEchoToken() {
@@ -179,6 +241,155 @@ export async function handler(req: any, _res: any, ctx: any) {
         },
         {
           "Set-Cookie": result.set_cookie,
+          "Cache-Control": "no-store"
+        }
+      );
+    } catch (error: any) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    }
+  }
+
+  if (SESSION_BRIDGE_ACTIONS.has(action)) {
+    const body = req.body || {};
+    const authHeader = getHeaderValue(req, "authorization");
+    const bearerToken = parseBearerToken(authHeader);
+    const accessTokenRaw = bearerToken || body.access_token || body.accessToken || null;
+    const accessToken = normalizeNonEmptyString(accessTokenRaw);
+    if (!accessToken) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "access_token is required"));
+    }
+
+    try {
+      const now = new Date();
+      const supabase = getSupabaseServiceClient();
+      const { data, error } = await supabase.auth.getUser(accessToken);
+      if (error || !data?.user) {
+        return jsonResponse(401, errorPayload("UNAUTHORIZED", "Invalid Supabase access token"));
+      }
+
+      const supabaseUserId = normalizeNonEmptyString(data.user.id);
+      if (!supabaseUserId || !isUuid(supabaseUserId)) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "supabase user id must be a UUID"));
+      }
+
+      const email = normalizeEmail(data.user.email);
+      const emailVerifiedAt = resolveSupabaseEmailVerifiedAt(data.user);
+      const provider = resolveSupabaseProvider(data.user);
+
+      let linkCreated = false;
+      let linkedByVerifiedEmail = false;
+
+      let ownerLink = await getOwnerLinkBySupabaseUserId(supabaseUserId);
+      let owner: any = null;
+
+      if (ownerLink) {
+        const existingOwner = await getOwner(ownerLink.owner_id);
+        const existingPhone = existingOwner?.phone_e164 ?? null;
+        const existingPhoneVerifiedAt = existingOwner?.phone_verified_at ?? null;
+
+        owner = await upsertOwner({
+          ownerId: ownerLink.owner_id,
+          email: email ?? existingOwner?.email ?? null,
+          phoneE164: existingPhone,
+          emailVerifiedAt: emailVerifiedAt ?? null,
+          phoneVerifiedAt: existingPhoneVerifiedAt,
+          updatedAt: now
+        });
+
+        await touchOwnerLinkLogin({
+          supabaseUserId,
+          email: email ?? null,
+          emailVerifiedAt: emailVerifiedAt ?? null,
+          now
+        });
+      } else {
+        const ownerByEmail = email ? await getOwnerByEmail(email) : null;
+        if (ownerByEmail && !emailVerifiedAt) {
+          return jsonResponse(
+            409,
+            errorPayload(
+              "OWNER_EMAIL_LINK_CONFLICT",
+              "Existing owner found for email; verification required before linking"
+            )
+          );
+        }
+
+        if (ownerByEmail) {
+          linkedByVerifiedEmail = true;
+          owner = await upsertOwner({
+            ownerId: ownerByEmail.owner_id,
+            email: email ?? ownerByEmail.email ?? null,
+            phoneE164: ownerByEmail.phone_e164 ?? null,
+            emailVerifiedAt: emailVerifiedAt ?? null,
+            phoneVerifiedAt: ownerByEmail.phone_verified_at ?? null,
+            updatedAt: now
+          });
+        } else {
+          owner = await upsertOwner({
+            ownerId: crypto.randomUUID(),
+            email: email ?? null,
+            phoneE164: null,
+            emailVerifiedAt: emailVerifiedAt ?? null,
+            phoneVerifiedAt: null,
+            updatedAt: now
+          });
+        }
+
+        ownerLink = await createOwnerLink({
+          ownerId: owner.owner_id,
+          supabaseUserId,
+          email: email ?? null,
+          emailVerifiedAt: emailVerifiedAt ?? null,
+          now
+        });
+        linkCreated = true;
+      }
+
+      if (!owner?.owner_id || !isUuid(owner.owner_id)) {
+        return jsonResponse(500, errorPayload("ERROR", "Failed to resolve owner account"));
+      }
+      if (owner.suspended_at) {
+        return jsonResponse(403, errorPayload("OWNER_SUSPENDED", "Owner account is suspended"));
+      }
+
+      const cookieSecure = isSecureRequest(req);
+      const issued = await issueTrustedOwnerSession({
+        ownerId: owner.owner_id,
+        cookieSecure,
+        ipTruncated: truncateIp(ctx?.ip),
+        uaHash: hashUserAgent(ctx?.userAgent),
+        now
+      });
+
+      if (ctx) {
+        ctx.auditEvent = linkedByVerifiedEmail
+          ? "owner.linked_by_verified_email"
+          : linkCreated
+            ? "owner.link_created"
+            : "owner.login_bridged";
+        ctx.auditEntityType = "owner";
+        ctx.auditEntityId = owner.owner_id;
+        ctx.security = {
+          ...(ctx.security || {}),
+          owner_auth_link_id: ownerLink?.link_id || null,
+          supabase_user_id: supabaseUserId,
+          auth_provider: provider || null
+        };
+      }
+
+      return jsonResponse(
+        200,
+        {
+          data: {
+            owner_id: owner.owner_id,
+            email: owner.email ?? null,
+            email_verified_at: owner.email_verified_at ?? null,
+            auth_provider: provider || null,
+            session_expires_at: issued.session?.expires_at || null
+          }
+        },
+        {
+          "Set-Cookie": issued.set_cookie,
           "Cache-Control": "no-store"
         }
       );

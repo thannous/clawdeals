@@ -240,7 +240,7 @@ export default function VerifyPage() {
               <div data-testid="auth-verify-success" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
                 <div className="text-xs font-mono text-secondary">Verified</div>
                 <div className="text-xs font-mono text-muted mt-1">
-                  Login completed. You can manage linked identities now.
+                  Login completed. You can now open your account dashboard.
                 </div>
               </div>
             )}
@@ -263,10 +263,10 @@ export default function VerifyPage() {
                 Resend
               </button>
               <Link
-                href="/settings/identities"
+                href="/settings/account"
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                Linked identities
+                My account
               </Link>
               <button
                 onClick={onReset}
@@ -280,8 +280,8 @@ export default function VerifyPage() {
           {!sessionId.trim() && (
             <div className="text-[10px] font-mono text-subtle">
               Missing session ID. Return to{" "}
-              <Link href="/auth/login" className="text-text underline">
-                /auth/login
+              <Link href="/auth/login-legacy" className="text-text underline">
+                /auth/login-legacy
               </Link>
               .
             </div>
