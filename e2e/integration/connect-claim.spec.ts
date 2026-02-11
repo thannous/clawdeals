@@ -13,6 +13,17 @@ function extractClaimToken(claimUrl: string): string {
   return decodeURIComponent(parts[parts.length - 1] || "");
 }
 
+async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
+  const { error } = await supabase
+    .from("owners")
+    .update({
+      email_verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("owner_id", ownerId);
+  expect(error).toBeNull();
+}
+
 test.describe.serial("Integration: Connect Claim", () => {
   test.setTimeout(60_000);
 
@@ -20,6 +31,7 @@ test.describe.serial("Integration: Connect Claim", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const ip = randomIp();
     const create = await request.post("/api/v1/connect/sessions", {
@@ -142,8 +154,10 @@ test.describe.serial("Integration: Connect Claim", () => {
   });
 
   test("deny (v1) returns CANCELLED and poll reflects it", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
@@ -176,6 +190,7 @@ test.describe.serial("Integration: Connect Claim", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
     const existingAgent = await createAgentDb(supabase, ownerId);
 
     const create = await request.post("/api/v1/connect/sessions", {

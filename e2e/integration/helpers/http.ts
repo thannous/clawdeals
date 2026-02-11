@@ -463,3 +463,43 @@ export async function evidenceGet(api: APIRequestContext, apiKey: string, disput
     }
   });
 }
+
+export async function suspendAgentByOps(
+  api: APIRequestContext,
+  targetAgentId: string,
+  {
+    reason = "integration test suspension",
+    idempotencyKey
+  }: { reason?: string; idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post("/api/console/moderation/suspend", {
+    headers: {
+      "Idempotency-Key": idempotencyKey || randomId()
+    },
+    data: {
+      target_type: "agent",
+      target_id: targetAgentId,
+      reason
+    }
+  });
+}
+
+export async function unsuspendAgentByOps(
+  api: APIRequestContext,
+  targetAgentId: string,
+  {
+    reason = "integration test unsuspension",
+    idempotencyKey
+  }: { reason?: string; idempotencyKey?: string } = {}
+): Promise<APIResponse> {
+  return api.post("/api/console/moderation/unsuspend", {
+    headers: {
+      "Idempotency-Key": idempotencyKey || randomId()
+    },
+    data: {
+      target_type: "agent",
+      target_id: targetAgentId,
+      reason
+    }
+  });
+}

@@ -5,17 +5,21 @@ import { randomId, randomIp } from "./helpers/ids";
 import {
   acceptOffer,
   configurePsp,
+  createTransactionRating,
   createEscrow,
   createListing,
   createOffer,
   expectStatus,
+  markTransactionCompleted,
   markDelivered,
   payEscrow,
   confirmReceived,
   postPspWebhook,
   pspOnboardSeller
 } from "./helpers/http";
+import { setVerifiedOwnerContact } from "./helpers/marketplace";
 import { createSupabaseAdmin, createAgentDbWithOverrides, createActiveApiKeyDb, ensureOwnerDb, OPS_CONSOLE_OWNER_ID } from "./helpers/supabase";
+import { runTrustScoreRecalcQueue } from "../../src/server/trustscore/recalc-queue";
 
 import { canonicalJsonStringify } from "../../src/server/utils/canonical-json";
 import { hmacSha256 } from "../../src/server/utils/hmac";
@@ -253,6 +257,229 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     expect(invalidBody?.error?.code).toBe("ESCROW_FINALIZED");
   });
 
+  test("cross-domain journey: contact reveal -> escrow release -> completion -> rating -> trustscore queue", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+
+    const sellerOwnerId = randomId();
+    await ensureOwnerDb(supabase, sellerOwnerId);
+    await setupPolicy(request, sellerOwnerId);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
+
+    await setVerifiedOwnerContact(supabase, sellerOwnerId, {
+      email: `itest+seller-${sellerOwnerId.slice(0, 8)}@example.com`,
+      phoneE164: "+33655556666"
+    });
+    await setVerifiedOwnerContact(supabase, buyerOwnerId, {
+      email: `itest+buyer-${buyerOwnerId.slice(0, 8)}@example.com`,
+      phoneE164: "+33677778888"
+    });
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
+    const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+    const configureRes = await configurePsp(
+      request,
+      OPS_CONSOLE_OWNER_ID,
+      { provider: "mock", mode: "sandbox", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(configureRes, 200);
+
+    const listingRes = await createListing(request, sellerApiKey, { title: `Cross-domain listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const offerRes = await createOffer(
+      request,
+      buyerApiKey,
+      listingId,
+      { threadId: null, amount: 420, currency: "EUR", expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(offerRes, 201);
+    const offerBody = await offerRes.json();
+    const offerId = offerBody.offer_id;
+
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    await expectStatus(acceptRes, 200);
+    const txId = (await acceptRes.json()).transaction?.tx_id;
+    expect(typeof txId).toBe("string");
+
+    const requestRevealRes = await request.post(`/api/v1/transactions/${encodeURIComponent(txId)}/request-contact-reveal`, {
+      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(requestRevealRes, 202);
+
+    const approveRevealRes = await request.post(`/api/v1/transactions/${encodeURIComponent(txId)}/approve-contact-reveal`, {
+      headers: { "x-owner-id": OPS_CONSOLE_OWNER_ID, "Idempotency-Key": randomId() },
+      data: {}
+    });
+    await expectStatus(approveRevealRes, 200);
+
+    const { data: txAfterReveal, error: txRevealErr } = await supabase
+      .from("transactions")
+      .select("tx_id,status,contact_reveal_state")
+      .eq("tx_id", txId)
+      .maybeSingle();
+    if (txRevealErr) throw txRevealErr;
+    expect(txAfterReveal?.status).toBe("CONTACT_REVEALED");
+    expect(txAfterReveal?.contact_reveal_state).toBe("APPROVED");
+
+    const createEscrowRes = await createEscrow(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(createEscrowRes, 201);
+    const createEscrowBody = await createEscrowRes.json();
+    const escrowId = createEscrowBody.escrow_id;
+    expect(createEscrowBody.status).toBe("CREATED");
+
+    const payRes = await payEscrow(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(payRes, 200);
+    const paymentId = (await payRes.json())?.psp?.payment_id;
+    expect(typeof paymentId).toBe("string");
+
+    const paymentWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payment.succeeded",
+      created_at: new Date().toISOString(),
+      data: {
+        payment_id: paymentId,
+        hold_id: `hold_${randomId()}`,
+        hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(paymentWebhook), body: paymentWebhook }), 200);
+
+    await expectStatus(await markDelivered(request, sellerApiKey, escrowId, { idempotencyKey: randomId() }), 200);
+
+    const confirmRes = await confirmReceived(request, buyerApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(confirmRes, 200);
+    const payoutId = (await confirmRes.json())?.psp?.payout_id;
+    expect(typeof payoutId).toBe("string");
+
+    const payoutWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payout.succeeded",
+      created_at: new Date().toISOString(),
+      data: { payout_id: payoutId }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(payoutWebhook), body: payoutWebhook }), 200);
+
+    const { data: escrowRow, error: escrowErr } = await supabase
+      .from("escrows")
+      .select("escrow_id,status,released_at")
+      .eq("escrow_id", escrowId)
+      .maybeSingle();
+    if (escrowErr) throw escrowErr;
+    expect(escrowRow?.status).toBe("RELEASED");
+    expect(escrowRow?.released_at).toBeTruthy();
+
+    const { data: ledgerRows, error: ledgerErr } = await supabase
+      .from("ledger_entries")
+      .select("type")
+      .eq("escrow_id", escrowId)
+      .in("type", ["GROSS", "PLATFORM_FEE", "NET_TO_SELLER"]);
+    if (ledgerErr) throw ledgerErr;
+    const ledgerTypes = new Set((ledgerRows || []).map((row: any) => row.type));
+    expect(ledgerTypes.has("GROSS")).toBe(true);
+    expect(ledgerTypes.has("PLATFORM_FEE")).toBe(true);
+    expect(ledgerTypes.has("NET_TO_SELLER")).toBe(true);
+
+    const buyerComplete = await markTransactionCompleted(request, buyerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(buyerComplete, 200);
+    const buyerCompleteBody = await buyerComplete.json();
+    expect(buyerCompleteBody.status).toBe("COMPLETED_PENDING_CONFIRM");
+
+    const sellerComplete = await markTransactionCompleted(request, sellerApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(sellerComplete, 200);
+    const sellerCompleteBody = await sellerComplete.json();
+    expect(sellerCompleteBody.status).toBe("COMPLETED");
+
+    const ratingRes = await createTransactionRating(
+      request,
+      buyerApiKey,
+      txId,
+      { score: 5, reasonCode: "AS_DESCRIBED", comment: "Cross domain flow ok" },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(ratingRes, 201);
+
+    const { data: ratingRow, error: ratingErr } = await supabase
+      .from("ratings")
+      .select("rating_id,tx_id,rated_agent_id,rater_agent_id,score")
+      .eq("tx_id", txId)
+      .maybeSingle();
+    if (ratingErr) throw ratingErr;
+    expect(ratingRow?.tx_id).toBe(txId);
+    expect(ratingRow?.rated_agent_id).toBe(sellerAgent.id);
+    expect(ratingRow?.rater_agent_id).toBe(buyerAgent.id);
+    expect(ratingRow?.score).toBe(5);
+
+    const { data: txCompletedRow, error: txCompletedErr } = await supabase
+      .from("transactions")
+      .select("tx_id,status")
+      .eq("tx_id", txId)
+      .maybeSingle();
+    if (txCompletedErr) throw txCompletedErr;
+    expect(txCompletedRow?.status).toBe("COMPLETED");
+
+    const { data: listingCompletedRow, error: listingCompletedErr } = await supabase
+      .from("listings")
+      .select("listing_id,status,completed_at")
+      .eq("listing_id", listingId)
+      .maybeSingle();
+    if (listingCompletedErr) throw listingCompletedErr;
+    expect(listingCompletedRow?.status).toBe("COMPLETED");
+    expect(listingCompletedRow?.completed_at).toBeTruthy();
+
+    const { data: sellerBefore, error: sellerBeforeErr } = await supabase
+      .from("agents")
+      .select("id,trust_score,trust_updated_at")
+      .eq("id", sellerAgent.id)
+      .maybeSingle();
+    if (sellerBeforeErr) throw sellerBeforeErr;
+
+    const { error: queueBumpErr } = await supabase
+      .from("trustscore_recalc_queue")
+      .update({ updated_at: "2000-01-01T00:00:00.000Z" })
+      .eq("agent_id", sellerAgent.id);
+    if (queueBumpErr) throw queueBumpErr;
+
+    await runTrustScoreRecalcQueue({ limit: 20 });
+
+    const { data: sellerAfter, error: sellerAfterErr } = await supabase
+      .from("agents")
+      .select("id,trust_score,trust_updated_at")
+      .eq("id", sellerAgent.id)
+      .maybeSingle();
+    if (sellerAfterErr) throw sellerAfterErr;
+    expect(sellerAfter?.trust_updated_at).toBeTruthy();
+    expect(sellerAfter?.trust_score).not.toBeNull();
+    expect(sellerAfter?.trust_score).not.toBe(sellerBefore?.trust_score);
+
+    const { data: queueRow, error: queueRowErr } = await supabase
+      .from("trustscore_recalc_queue")
+      .select("agent_id")
+      .eq("agent_id", sellerAgent.id)
+      .maybeSingle();
+    if (queueRowErr) throw queueRowErr;
+    expect(queueRow).toBeNull();
+  });
+
   test("installation-scoped escrow:create + confirm-received require approval and process payout release (TI-332)", async ({ request }) => {
     const supabase = createSupabaseAdmin();
 
@@ -263,6 +490,10 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
     await setupPolicy(request, buyerOwnerId);
+    await setVerifiedOwnerContact(supabase, buyerOwnerId, {
+      email: `itest+buyer-${buyerOwnerId.slice(0, 8)}@example.com`,
+      phoneE164: "+33644445555"
+    });
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
     const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, {

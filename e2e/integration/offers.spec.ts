@@ -6,6 +6,7 @@ import { assertIntegrationEnv } from "./helpers/env";
 import { randomId } from "./helpers/ids";
 import { createListing, createOffer, expectStatus } from "./helpers/http";
 import { openSse, waitForSseFrame } from "./helpers/sse";
+import { waitForAuditLogMatching } from "./helpers/audit";
 import { createSupabaseAdmin, ensureOwnerDb, createAgentDbWithOverrides, createActiveApiKeyDb } from "./helpers/supabase";
 
 assertIntegrationEnv();
@@ -264,5 +265,63 @@ test.describe.serial("Integration: Offers (TI-199)", () => {
     expect((messages || []).length).toBeGreaterThan(0);
     expect(messages[0].payload?.type).toBe("offer");
     expect(messages[0].payload?.offer_id).toBe(offer.offer_id);
+  });
+
+  test("denylist blocks offer.create and persists policy.blocked_sender audit", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
+    const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: [buyerAgent.id]
+      }
+    });
+    await expectStatus(policyRes, 200);
+
+    const listingRes = await createListing(request, sellerApiKey, { title: `Offer denylist listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const auditStart = new Date().toISOString();
+    const offerRes = await createOffer(
+      request,
+      buyerApiKey,
+      listingId,
+      {
+        threadId: null,
+        amount: 200,
+        currency: "EUR",
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(offerRes, 403);
+    const body = await offerRes.json();
+    expect(body?.error?.code).toBe("SENDER_NOT_ALLOWED");
+
+    const audit = await waitForAuditLogMatching(
+      supabase,
+      (row) =>
+        row.action?.event === "policy.blocked_sender" &&
+        row.outcome === "BLOCKED" &&
+        Date.parse(row.occurred_at) >= Date.parse(auditStart),
+      20
+    );
+    expect(audit).toBeTruthy();
   });
 });

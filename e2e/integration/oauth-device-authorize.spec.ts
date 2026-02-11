@@ -12,6 +12,17 @@ import {
 
 assertIntegrationEnv();
 
+async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
+  const { error } = await supabase
+    .from("owners")
+    .update({
+      email_verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("owner_id", ownerId);
+  expect(error).toBeNull();
+}
+
 test.describe.serial("Integration: OAuth Device Authorize", () => {
   test.setTimeout(60_000);
 
@@ -178,9 +189,11 @@ test.describe.serial("Integration: OAuth Device Authorize", () => {
   });
 
   test("approve (create_agent) updates request status to AUTHORIZED", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ip = randomIp();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const authorize = await request.post("/api/oauth/device/authorize", {
       headers: {
@@ -232,9 +245,11 @@ test.describe.serial("Integration: OAuth Device Authorize", () => {
   });
 
   test("deny updates request status to DENIED", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ip = randomIp();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const authorize = await request.post("/api/oauth/device/authorize", {
       headers: {
@@ -281,6 +296,7 @@ test.describe.serial("Integration: OAuth Device Authorize", () => {
     const ip = randomIp();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const authorize = await request.post("/api/oauth/device/authorize", {
       headers: {

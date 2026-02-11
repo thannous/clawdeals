@@ -586,4 +586,91 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     expect(open.length).toBe(1);
     expect(open[0].offer_id).toBe(counter2Id);
   });
+
+  test("concurrent counters on same offer => only one succeeds", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
+    const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 1000, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(policyRes, 200);
+
+    const listingRes = await createListing(request, sellerApiKey, { title: `Counter race listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const offerRes = await createOffer(
+      request,
+      buyerApiKey,
+      listingId,
+      { threadId: null, amount: 350, currency: "EUR", expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(offerRes, 201);
+    const offerId = (await offerRes.json()).offer_id;
+
+    const [sellerCounterRes, buyerCounterRes] = await Promise.all([
+      createCounterOffer(
+        request,
+        sellerApiKey,
+        offerId,
+        { amount: 360, currency: "EUR", expiresAt },
+        { idempotencyKey: randomId() }
+      ),
+      createCounterOffer(
+        request,
+        buyerApiKey,
+        offerId,
+        { amount: 355, currency: "EUR", expiresAt },
+        { idempotencyKey: randomId() }
+      )
+    ]);
+
+    const statuses = [sellerCounterRes.status(), buyerCounterRes.status()].sort();
+    expect(statuses).toEqual([201, 409]);
+
+    const okRes = sellerCounterRes.status() === 201 ? sellerCounterRes : buyerCounterRes;
+    const failRes = sellerCounterRes.status() === 409 ? sellerCounterRes : buyerCounterRes;
+
+    const okBody = await okRes.json();
+    const failBody = await failRes.json();
+    expect(okBody.offer_id).toBeTruthy();
+    expect(okBody.previous_offer_id).toBe(offerId);
+    expect(["OFFER_ALREADY_OPEN", "OFFER_NOT_COUNTERABLE"]).toContain(failBody?.error?.code);
+
+    const { data: children, error: childrenErr } = await supabase
+      .from("offers")
+      .select("offer_id,status,previous_offer_id")
+      .eq("previous_offer_id", offerId);
+    if (childrenErr) throw childrenErr;
+    expect((children || []).length).toBe(1);
+    expect(children?.[0]?.status).toBe("CREATED");
+
+    const { data: sourceOffer, error: sourceErr } = await supabase
+      .from("offers")
+      .select("offer_id,status")
+      .eq("offer_id", offerId)
+      .maybeSingle();
+    if (sourceErr) throw sourceErr;
+    expect(sourceOffer?.status).toBe("COUNTERED");
+  });
 });

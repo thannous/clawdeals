@@ -141,8 +141,8 @@ export async function suspendAgent({ agentId, reason, performedBy }: any) {
       suspended_by: performedBy,
       trust_flags: client.rpc ? undefined : undefined // handled below
     })
-    .eq("agent_id", agentId)
-    .select("agent_id, trust_flags")
+    .eq("id", agentId)
+    .select("id, trust_flags")
     .maybeSingle();
 
   if (agentError) mapError(agentError);
@@ -154,7 +154,7 @@ export async function suspendAgent({ agentId, reason, performedBy }: any) {
     const { error: flagError } = await client
       .from("agents")
       .update({ trust_flags: [...currentFlags, "suspended"] })
-      .eq("agent_id", agentId);
+      .eq("id", agentId);
     if (flagError) console.error("[moderation] failed to update trust_flags", flagError);
   }
 
@@ -203,8 +203,8 @@ export async function unsuspendAgent({ agentId, reason, performedBy }: any) {
       suspended_reason: null,
       suspended_by: null
     })
-    .eq("agent_id", agentId)
-    .select("agent_id, trust_flags")
+    .eq("id", agentId)
+    .select("id, trust_flags")
     .maybeSingle();
 
   if (agentError) mapError(agentError);
@@ -216,7 +216,7 @@ export async function unsuspendAgent({ agentId, reason, performedBy }: any) {
     const { error: flagError } = await client
       .from("agents")
       .update({ trust_flags: currentFlags.filter((f) => f !== "suspended") })
-      .eq("agent_id", agentId);
+      .eq("id", agentId);
     if (flagError) console.error("[moderation] failed to update trust_flags", flagError);
   }
 
@@ -258,16 +258,16 @@ export async function suspendOwner({ ownerId, reason, performedBy }: any) {
   // Cascade suspend all owner's agents
   const { data: agents } = await client
     .from("agents")
-    .select("agent_id")
+    .select("id")
     .eq("owner_id", ownerId)
     .is("suspended_at", null);
 
   if (agents) {
     for (const agent of agents) {
       try {
-        await suspendAgent({ agentId: agent.agent_id, reason: `Owner ${ownerId} suspended`, performedBy });
+        await suspendAgent({ agentId: agent.id, reason: `Owner ${ownerId} suspended`, performedBy });
       } catch (err) {
-        console.error("[moderation] failed to cascade suspend agent", agent.agent_id, err);
+        console.error("[moderation] failed to cascade suspend agent", agent.id, err);
       }
     }
   }

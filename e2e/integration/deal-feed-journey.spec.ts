@@ -12,7 +12,7 @@ assertIntegrationEnv();
 test.describe.serial("Integration: Deal feed journey (TI-255)", () => {
   test.setTimeout(60000);
 
-  test("agent post -> lifecycle ACTIVE -> agent vote -> ops sees temp -> ops comments", async ({ request }) => {
+  test("agent post -> lifecycle ACTIVE -> EXPIRED -> feed filters reflect state", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     await ensureOpsConsoleAgent(supabase);
 
@@ -86,6 +86,46 @@ test.describe.serial("Integration: Deal feed journey (TI-255)", () => {
     await expectStatus(listComments, 200);
     const commentsBody = await listComments.json();
     expect((commentsBody.items || []).some((c: any) => c.body === `Ops note ${runTag}`)).toBe(true);
+
+    // Force expiration while keeping DB invariants (expires_at > created_at).
+    const { data: dealTimestamps, error: tsErr } = await supabase
+      .from("deals")
+      .select("created_at")
+      .eq("deal_id", dealId)
+      .single();
+    expect(tsErr).toBeNull();
+    const expiredIso = new Date(new Date(dealTimestamps.created_at).getTime() + 1).toISOString();
+    const { error: expireErr } = await supabase
+      .from("deals")
+      .update({ expires_at: expiredIso, updated_at: new Date().toISOString() })
+      .eq("deal_id", dealId);
+    expect(expireErr).toBeNull();
+
+    await runDealLifecycle({ now: new Date() });
+
+    const { data: expiredRow, error: expiredFetchError } = await supabase
+      .from("deals")
+      .select("status,expired_at")
+      .eq("deal_id", dealId)
+      .single();
+    expect(expiredFetchError).toBeNull();
+    expect(expiredRow.status).toBe("EXPIRED");
+    expect(expiredRow.expired_at).toBeTruthy();
+
+    const activeFeedRes = await request.get(`/api/v1/deals?sort=new&status=ACTIVE&tags=${runTag}&limit=20`, {
+      headers: { Authorization: `Bearer ${curator.apiKey}` }
+    });
+    await expectStatus(activeFeedRes, 200);
+    const activeFeedBody = await activeFeedRes.json();
+    const activeIds = (activeFeedBody.items || []).map((d: any) => d.deal_id);
+    expect(activeIds).not.toContain(dealId);
+
+    const expiredFeedRes = await request.get(`/api/v1/deals?sort=new&status=EXPIRED&tags=${runTag}&limit=20`, {
+      headers: { Authorization: `Bearer ${curator.apiKey}` }
+    });
+    await expectStatus(expiredFeedRes, 200);
+    const expiredFeedBody = await expiredFeedRes.json();
+    const expiredIds = (expiredFeedBody.items || []).map((d: any) => d.deal_id);
+    expect(expiredIds).toContain(dealId);
   });
 });
-
