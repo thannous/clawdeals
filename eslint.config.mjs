@@ -3,6 +3,7 @@ import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 const config = [
   {
     ignores: [
+      ".claude/**",
       ".next/**",
       ".open-next/**",
       "dist/**",
