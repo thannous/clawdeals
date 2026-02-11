@@ -250,13 +250,11 @@ export async function handler(req: any, _res: any, ctx: any) {
   }
 
   if (SESSION_BRIDGE_ACTIONS.has(action)) {
-    const body = req.body || {};
     const authHeader = getHeaderValue(req, "authorization");
     const bearerToken = parseBearerToken(authHeader);
-    const accessTokenRaw = bearerToken || body.access_token || body.accessToken || null;
-    const accessToken = normalizeNonEmptyString(accessTokenRaw);
+    const accessToken = normalizeNonEmptyString(bearerToken);
     if (!accessToken) {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "access_token is required"));
+      return jsonResponse(401, errorPayload("UNAUTHORIZED", "Bearer authorization is required"));
     }
 
     try {
@@ -284,14 +282,19 @@ export async function handler(req: any, _res: any, ctx: any) {
 
       if (ownerLink) {
         const existingOwner = await getOwner(ownerLink.owner_id);
+        const nextEmail = email ?? existingOwner?.email ?? null;
+        const existingEmail = normalizeEmail(existingOwner?.email);
+        const nextEmailNormalized = normalizeEmail(nextEmail);
+        const emailChanged = existingEmail !== nextEmailNormalized;
+        const resolvedOwnerEmailVerifiedAt = emailVerifiedAt ?? (emailChanged ? null : existingOwner?.email_verified_at ?? null);
         const existingPhone = existingOwner?.phone_e164 ?? null;
         const existingPhoneVerifiedAt = existingOwner?.phone_verified_at ?? null;
 
         owner = await upsertOwner({
           ownerId: ownerLink.owner_id,
-          email: email ?? existingOwner?.email ?? null,
+          email: nextEmail,
           phoneE164: existingPhone,
-          emailVerifiedAt: emailVerifiedAt ?? null,
+          emailVerifiedAt: resolvedOwnerEmailVerifiedAt,
           phoneVerifiedAt: existingPhoneVerifiedAt,
           updatedAt: now
         });
@@ -299,7 +302,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         await touchOwnerLinkLogin({
           supabaseUserId,
           email: email ?? null,
-          emailVerifiedAt: emailVerifiedAt ?? null,
+          emailVerifiedAt: resolvedOwnerEmailVerifiedAt,
           now
         });
       } else {

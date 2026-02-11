@@ -213,10 +213,19 @@ describe("POST /v1/auth/[action]", () => {
     expect(result.body.data.ok).toBe(true);
   });
 
-  it("requires access token for session:bridge", async () => {
-    const result: any = await handler(makeReq("session:bridge", {}), null, makeCtx());
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  it("requires bearer authorization for session:bridge", async () => {
+    const missingAuthResult: any = await handler(makeReq("session:bridge", {}), null, makeCtx());
+    expect(missingAuthResult.status).toBe(401);
+    expect(missingAuthResult.body.error.code).toBe("UNAUTHORIZED");
+
+    const bodyTokenResult: any = await handler(
+      makeReq("session:bridge", { access_token: "supabase-token" }),
+      null,
+      makeCtx()
+    );
+    expect(bodyTokenResult.status).toBe(401);
+    expect(bodyTokenResult.body.error.code).toBe("UNAUTHORIZED");
+    expect(supabaseGetUserMock).not.toHaveBeenCalled();
   });
 
   it("rejects invalid Supabase token for session:bridge", async () => {
@@ -254,6 +263,53 @@ describe("POST /v1/auth/[action]", () => {
     expect(ctx.auditEvent).toBe("owner.login_bridged");
   });
 
+  it("preserves existing owner email verification when Supabase omits it for linked login", async () => {
+    supabaseGetUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: supabaseUserId,
+          email: "owner@example.com",
+          email_confirmed_at: null,
+          app_metadata: { provider: "google" },
+          identities: []
+        }
+      },
+      error: null
+    } as any);
+    getOwnerLinkBySupabaseUserIdMock.mockResolvedValue({
+      link_id: ownerLinkId,
+      owner_id: ownerId
+    } as any);
+    getOwnerMock.mockResolvedValue({
+      owner_id: ownerId,
+      email: "owner@example.com",
+      email_verified_at: verifiedAt,
+      phone_e164: null,
+      phone_verified_at: null,
+      suspended_at: null
+    } as any);
+
+    const result: any = await handler(
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
+      null,
+      makeCtx()
+    );
+
+    expect(result.status).toBe(200);
+    expect(upsertOwner).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ownerId,
+        emailVerifiedAt: verifiedAt
+      })
+    );
+    expect(touchOwnerLinkLogin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        supabaseUserId,
+        emailVerifiedAt: verifiedAt
+      })
+    );
+  });
+
   it("auto-links by verified email when owner exists", async () => {
     getOwnerByEmailMock.mockResolvedValue({
       owner_id: ownerId,
@@ -265,7 +321,7 @@ describe("POST /v1/auth/[action]", () => {
 
     const ctx = makeCtx();
     const result: any = await handler(
-      makeReq("session:bridge", { access_token: "supabase-token" }),
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
       null,
       ctx
     );
