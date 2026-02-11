@@ -305,27 +305,34 @@ async function postApprovalDecisionThreadMessage({
   decision: "APPROVED" | "DENIED";
 }) {
   const ownerId = typeof approval?.owner_id === "string" && isUuid(approval.owner_id) ? String(approval.owner_id) : null;
+  const ownerAgentId = ownerId ? await getAgentIdByOwnerId(ownerId).catch(() => null) : null;
 
-  let agentId: string | null =
+  let actorAgentId: string | null =
     typeof approval?.created_by_agent_id === "string" && isUuid(approval.created_by_agent_id)
       ? String(approval.created_by_agent_id)
       : null;
 
-  if (!agentId) {
+  if (!actorAgentId) {
     const actionRef = approval?.action_ref && typeof approval.action_ref === "object" ? approval.action_ref : {};
     const candidates = [actionRef.agent_id, actionRef.buyer_agent_id, actionRef.seller_agent_id];
     for (const candidate of candidates) {
       if (typeof candidate === "string" && isUuid(candidate)) {
-        agentId = candidate;
+        actorAgentId = candidate;
         break;
       }
     }
   }
 
   let threadId: string | null = null;
-  if (ownerId && agentId) {
+  if (
+    ownerId &&
+    typeof ownerAgentId === "string" &&
+    isUuid(ownerAgentId) &&
+    actorAgentId &&
+    actorAgentId === ownerAgentId
+  ) {
     try {
-      const controlDm = await createOrGetControlDmThread({ ownerId, agentId });
+      const controlDm = await createOrGetControlDmThread({ ownerId, agentId: ownerAgentId });
       const raw = controlDm?.thread?.thread_id ? String(controlDm.thread.thread_id) : null;
       if (raw && isUuid(raw)) threadId = raw;
     } catch {
