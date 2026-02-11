@@ -5,6 +5,10 @@ vi.mock("../../../../server/services/owner-login", () => ({
   confirmOwnerLogin: vi.fn()
 }));
 
+vi.mock("../../../../server/services/owner-login-email", () => ({
+  sendOwnerLoginMagicLinkEmail: vi.fn()
+}));
+
 vi.mock("../../../../server/db/supabase", () => ({
   getSupabaseServiceClient: vi.fn()
 }));
@@ -33,6 +37,7 @@ vi.mock("../../../../server/services/owner-sessions", () => ({
 import { handler } from "../../../../pages/api/v1/auth/[action]";
 import { getSupabaseServiceClient } from "../../../../server/db/supabase";
 import { confirmOwnerLogin, startOwnerLogin } from "../../../../server/services/owner-login";
+import { sendOwnerLoginMagicLinkEmail } from "../../../../server/services/owner-login-email";
 import {
   createOwnerLink,
   getOwnerLinkBySupabaseUserId,
@@ -60,6 +65,7 @@ function makeCtx() {
 }
 
 const getSupabaseServiceClientMock = vi.mocked(getSupabaseServiceClient);
+const sendOwnerLoginMagicLinkEmailMock = vi.mocked(sendOwnerLoginMagicLinkEmail);
 const getOwnerLinkBySupabaseUserIdMock = vi.mocked(getOwnerLinkBySupabaseUserId);
 const createOwnerLinkMock = vi.mocked(createOwnerLink);
 const touchOwnerLinkLoginMock = vi.mocked(touchOwnerLinkLogin);
@@ -78,6 +84,14 @@ describe("POST /v1/auth/[action]", () => {
       auth: {
         getUser: supabaseGetUserMock
       }
+    } as any);
+
+    sendOwnerLoginMagicLinkEmailMock.mockResolvedValue({
+      provider: "none",
+      delivered: false,
+      skipped: true,
+      verify_url: "http://localhost:3000/auth/verify",
+      message_id: null
     } as any);
 
     supabaseGetUserMock.mockResolvedValue({
@@ -156,6 +170,7 @@ describe("POST /v1/auth/[action]", () => {
 
     expect(result.status).toBe(201);
     expect(result.body.data.session_id).toBe("22222222-2222-4222-8222-222222222222");
+    expect(sendOwnerLoginMagicLinkEmail).toHaveBeenCalled();
     expect(ctx.auditEvent).toBe("owner.login_magic_link_sent");
   });
 
@@ -177,7 +192,34 @@ describe("POST /v1/auth/[action]", () => {
     expect(result.body.data.owner_id).toBe(ownerId);
     expect(result.body.data.session_id).toBe("22222222-2222-4222-8222-222222222222");
     expect(result.body.data.session_token).toBe("cd_os_test");
+    expect(sendOwnerLoginMagicLinkEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "test@example.com",
+        sessionId: "22222222-2222-4222-8222-222222222222",
+        token: "cd_os_test"
+      })
+    );
     expect(ctx.auditEvent).toBe("owner.login_magic_link_sent");
+  });
+
+  it("returns provider failure when login email delivery fails", async () => {
+    vi.mocked(startOwnerLogin).mockResolvedValue({
+      owner: { owner_id: ownerId },
+      session: { session_id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-02-12T00:00:00Z" },
+      session_token: "cd_os_test"
+    } as any);
+    sendOwnerLoginMagicLinkEmailMock.mockRejectedValueOnce(
+      Object.assign(new Error("Failed to send owner login email"), { status: 503, code: "EMAIL_SEND_FAILED" })
+    );
+
+    const result: any = await handler(
+      makeReq("login:start", { email: "test@example.com" }),
+      null,
+      makeCtx()
+    );
+
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("EMAIL_SEND_FAILED");
   });
 
   it("confirms login and sets session cookie", async () => {

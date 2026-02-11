@@ -109,7 +109,7 @@ export default function LegacyLoginPage() {
                 <span className="text-primary">/ </span>OWNER LOGIN
               </h1>
               <p className="text-xs font-mono text-subtle">
-                Enter your email to receive a magic link. For dev/local, the session token is echoed here.
+                Enter your email to receive a magic link.
               </p>
             </div>
 

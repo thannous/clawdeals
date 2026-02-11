@@ -7,6 +7,7 @@ import { getSupabaseServiceClient } from "../../../../server/db/supabase";
 
 import { buildOwnerSessionClearCookie, isSecureRequest, readOwnerSessionCookie } from "../../../../server/auth/session-cookie";
 import { confirmOwnerLogin, startOwnerLogin } from "../../../../server/services/owner-login";
+import { sendOwnerLoginMagicLinkEmail } from "../../../../server/services/owner-login-email";
 import { issueTrustedOwnerSession } from "../../../../server/services/owner-session-issue";
 import { getOwnerSessionByTokenHash, markOwnerSessionRevoked } from "../../../../server/services/owner-sessions";
 import {
@@ -57,6 +58,17 @@ function parseIsoDate(value: any) {
   const dt = new Date(raw);
   if (!Number.isFinite(dt.getTime())) return null;
   return dt.toISOString();
+}
+
+function resolveRequestOrigin(req: any) {
+  const forwardedProto = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-proto"));
+  const forwardedHost = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-host"));
+  const hostHeader = normalizeNonEmptyString(getHeaderValue(req, "host"));
+
+  const proto = (forwardedProto ? forwardedProto.split(",")[0] : isSecureRequest(req) ? "https" : "http").trim().toLowerCase();
+  const host = (forwardedHost ? forwardedHost.split(",")[0] : hostHeader || "").trim();
+  if (!host) return null;
+  return `${proto}://${host}`;
 }
 
 function resolveSupabaseEmailVerifiedAt(user: any): string | null {
@@ -183,10 +195,24 @@ export async function handler(req: any, _res: any, ctx: any) {
         now: new Date()
       });
 
+      const delivery = await sendOwnerLoginMagicLinkEmail({
+        email: result.owner?.email || email,
+        sessionId: result.session?.session_id,
+        token: result.session_token,
+        expiresAt: result.session?.expires_at || null,
+        appUrl: resolveRequestOrigin(req)
+      });
+
       if (ctx) {
         ctx.auditEvent = "owner.login_magic_link_sent";
         ctx.auditEntityType = "owner";
         ctx.auditEntityId = result.owner?.owner_id || null;
+        ctx.security = {
+          ...(ctx.security || {}),
+          owner_login_email_provider: delivery.provider,
+          owner_login_email_skipped: delivery.skipped,
+          owner_login_email_message_id: delivery.message_id || null
+        };
       }
 
       const data: any = {
