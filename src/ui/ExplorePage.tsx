@@ -418,7 +418,7 @@ const SectionHeader = ({ title, subtitle }) => (
 
 /* ── Navbar with tabs ── */
 
-const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futureMode }) => {
+const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) => {
   const router = useRouter();
   const localePrefix = router.locale === "fr" ? "/fr" : "";
   const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
@@ -531,15 +531,13 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
             </div>
           </div>
 
-          {!futureMode && (
-            <Link
-              href={appEntryUrl}
-              className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
-            >
-              <Terminal className="w-4 h-4" />
-              {copy.connect}
-            </Link>
-          )}
+          <Link
+            href={appEntryUrl}
+            className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
+          >
+            <Terminal className="w-4 h-4" />
+            {copy.connect}
+          </Link>
         </div>
       </div>
 
@@ -552,7 +550,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes, futu
 
 /* ── Hero frame ── */
 
-const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Icon, futureMode, locale }) => (
+const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Icon, locale }) => (
   <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden">
     <div className="animate-scanline" />
     <div className="tech-grid absolute inset-0 opacity-30" />
@@ -574,26 +572,19 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           {hero.description}
         </p>
 
-        {futureMode ? (
-          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
-            <span className="w-2 h-2 bg-primary animate-pulse" />
-            {copy.future.badge}
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}`)}
-              className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
-              </span>
-            </Link>
-            <button className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors">
-              {copy.ctas.secondary}
-            </button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-4">
+          <Link
+            href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}`)}
+            className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
+            </span>
+          </Link>
+          <Link href="/skill.md" className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors">
+            {copy.ctas.secondary}
+          </Link>
+        </div>
       </div>
 
       <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
@@ -639,7 +630,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
   </div>
 );
 
-const GigHero = ({ copy, futureMode, locale }) => (
+const GigHero = ({ copy, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.gig}
@@ -647,12 +638,11 @@ const GigHero = ({ copy, futureMode, locale }) => (
     iconClassName="text-primary"
     orbitBorderClass="border-primary"
     Icon={Cpu}
-    futureMode={futureMode}
     locale={locale}
   />
 );
 
-const NpmHero = ({ copy, futureMode, locale }) => (
+const NpmHero = ({ copy, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.npm}
@@ -660,12 +650,11 @@ const NpmHero = ({ copy, futureMode, locale }) => (
     iconClassName="text-secondary"
     orbitBorderClass="border-border-strong"
     Icon={Package}
-    futureMode={futureMode}
     locale={locale}
   />
 );
 
-const DataHero = ({ copy, futureMode, locale }) => (
+const DataHero = ({ copy, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.data}
@@ -673,21 +662,15 @@ const DataHero = ({ copy, futureMode, locale }) => (
     iconClassName="text-emerald-400"
     orbitBorderClass="border-border-strong"
     Icon={Database}
-    futureMode={futureMode}
     locale={locale}
   />
 );
 
 /* ── Market cards & section ── */
 
-const MarketCard = ({ item, type, copy, dataTestId, futureMode }) => (
+const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
   <TechBorder className="h-full" dataTestId={dataTestId}>
     <div className="p-6 flex flex-col h-full relative">
-      {futureMode && (
-        <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-[9px] font-mono uppercase text-subtle">
-          {copy.future.badge}
-        </div>
-      )}
       <div className="flex justify-between items-start mb-4">
         <div className="w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center text-muted">
           {type === "npm" && <Code size={20} />}
@@ -743,14 +726,12 @@ const MarketCard = ({ item, type, copy, dataTestId, futureMode }) => (
               </span>
             ))}
         </div>
-        <button
-          disabled={futureMode}
-          className={`text-bg text-xs font-bold uppercase px-4 py-2 transition-colors ${
-            futureMode ? "bg-surface-alt text-subtle cursor-not-allowed" : "bg-text hover:bg-primary hover:text-text"
-          }`}
+        <Link
+          href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}?from=explore-card-${type}-${item.id}`)}
+          className="bg-text text-bg text-xs font-bold uppercase px-4 py-2 transition-colors hover:bg-primary hover:text-text"
         >
           {type === "gig" ? copy.actions.deploy : copy.actions.acquire}
-        </button>
+        </Link>
       </div>
 
       <div className="absolute top-0 right-0 p-1">
@@ -760,7 +741,7 @@ const MarketCard = ({ item, type, copy, dataTestId, futureMode }) => (
   </TechBorder>
 );
 
-const MarketSection = ({ title, items, type, copy, futureMode }) => (
+const MarketSection = ({ title, items, type, copy, locale }) => (
   <>
     <SectionHeader title={title} subtitle={copy.headers.market.subtitle} />
 
@@ -791,7 +772,7 @@ const MarketSection = ({ title, items, type, copy, futureMode }) => (
           type={type}
           copy={copy}
           dataTestId={`card-${item.id}`}
-          futureMode={futureMode}
+          locale={locale}
         />
       ))}
     </div>
@@ -829,14 +810,14 @@ const TaskSelector = ({ copy }) => (
 
 /* ── Tab panels ── */
 
-const GigTabPanel = ({ copy, locale, items, futureMode }) => {
+const GigTabPanel = ({ copy, locale, items }) => {
   const marketTitle = locale === "fr" ? "Unités disponibles" : "Available Units";
 
   return (
     <>
       <SectionHeader title={copy.headers.mission.title} subtitle={copy.headers.mission.subtitle} />
       <TaskSelector copy={copy} />
-      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} futureMode={futureMode} />
+      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} locale={locale} />
 
       <div className="mt-24 max-w-4xl mx-auto">
         <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
@@ -848,12 +829,12 @@ const GigTabPanel = ({ copy, locale, items, futureMode }) => {
   );
 };
 
-const NpmTabPanel = ({ copy, locale, items, futureMode }) => {
+const NpmTabPanel = ({ copy, locale, items }) => {
   const marketTitle = locale === "fr" ? "Modules de skills" : "Skill Modules";
 
   return (
     <>
-      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} futureMode={futureMode} />
+      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} locale={locale} />
       <div style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
         <NpmCallout copy={copy} />
       </div>
@@ -861,10 +842,10 @@ const NpmTabPanel = ({ copy, locale, items, futureMode }) => {
   );
 };
 
-const DataTabPanel = ({ copy, locale, items, futureMode }) => {
+const DataTabPanel = ({ copy, locale, items }) => {
   const marketTitle = locale === "fr" ? "Contextes data" : "Data Contexts";
 
-  return <MarketSection title={marketTitle} items={items} type="data" copy={copy} futureMode={futureMode} />;
+  return <MarketSection title={marketTitle} items={items} type="data" copy={copy} locale={locale} />;
 };
 
 /* ── Main ExplorePage component ── */
@@ -875,10 +856,9 @@ type ExplorePageProps = {
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
-  futureMode?: boolean;
 };
 
-export default function ExplorePage({ locale = "en", initialTab = "gig", buildTimeIso, appVersion, deploySha, futureMode = false }: ExplorePageProps) {
+export default function ExplorePage({ locale = "en", initialTab = "gig", buildTimeIso, appVersion, deploySha }: ExplorePageProps) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
@@ -902,23 +882,10 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
-        futureMode={futureMode}
       />
 
       <main id="main-content" tabIndex={-1} className="pb-32">
-        {futureMode && (
-          <div className="bg-bg border-b border-border">
-            <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
-                <span className="w-2 h-2 bg-primary animate-pulse" />
-                {copy.future.bannerTitle}
-              </div>
-              <div className="text-xs font-mono text-muted">{copy.future.bannerBody}</div>
-            </div>
-          </div>
-        )}
-
-        <ActiveHero copy={copy} futureMode={futureMode} locale={locale} />
+        <ActiveHero copy={copy} locale={locale} />
 
         {/* Trust marquee */}
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
@@ -942,7 +909,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
         </div>
 
         <div className="max-w-[1400px] mx-auto px-6 py-16">
-          <ActivePanel copy={copy} locale={locale} items={activeVariant.items} futureMode={futureMode} />
+          <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
         </div>
       </main>
 

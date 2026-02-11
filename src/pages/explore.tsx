@@ -31,7 +31,6 @@ type ExploreProps = {
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
-  futureMode: boolean;
 };
 
 export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ locale, query, req }) => {
@@ -48,8 +47,6 @@ export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ loc
     process.env.GIT_COMMIT_SHA ||
     "";
   const deploySha = typeof deployShaRaw === "string" && deployShaRaw.length >= 7 ? deployShaRaw : undefined;
-  const futureMode = String(process.env.NEXT_PUBLIC_FUTURE_MODE || "").toLowerCase() === "true";
-
   const tabParam = typeof query.tab === "string" ? query.tab : "";
   const initialTab = TAB_MAP[tabParam] || "gig";
 
@@ -59,7 +56,6 @@ export const getServerSideProps: GetServerSideProps<ExploreProps> = async ({ loc
       initialTab,
       buildTimeIso: new Date().toISOString(),
       appVersion,
-      futureMode,
       ...(deploySha ? { deploySha } : {})
     }
   };
@@ -70,8 +66,7 @@ export default function Explore({
   initialTab,
   buildTimeIso,
   appVersion,
-  deploySha,
-  futureMode
+  deploySha
 }: ExploreProps) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
@@ -93,7 +88,6 @@ export default function Explore({
         buildTimeIso={buildTimeIso}
         appVersion={appVersion}
         deploySha={deploySha}
-        futureMode={futureMode}
       />
     </>
   );

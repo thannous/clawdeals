@@ -52,7 +52,6 @@ type HomePageProps = {
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
-  futureMode: boolean;
 };
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ locale, req, res }) => {
@@ -69,8 +68,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
     process.env.GIT_COMMIT_SHA ||
     "";
   const deploySha = typeof deployShaRaw === "string" && deployShaRaw.length >= 7 ? deployShaRaw : undefined;
-  const futureMode = String(process.env.NEXT_PUBLIC_FUTURE_MODE || "").toLowerCase() === "true";
-
   const isPreviewHost = isWorkersDevRequest(req);
   if (res?.setHeader) {
     // This page's rendered locale is driven by Next routing (`locale`), not `Accept-Language`.
@@ -91,7 +88,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
-      futureMode,
       ...(deploySha ? { deploySha } : {})
     }
   };
@@ -103,8 +99,7 @@ export default function Home({
   isPreviewHost,
   buildTimeIso,
   appVersion,
-  deploySha,
-  futureMode
+  deploySha
 }: HomePageProps) {
   const router = useRouter();
   const currentLocale = router.locale || locale || "en";
@@ -139,7 +134,6 @@ export default function Home({
         buildTimeIso={buildTimeIso}
         appVersion={appVersion}
         deploySha={deploySha}
-        futureMode={futureMode}
       />
     </>
   );
