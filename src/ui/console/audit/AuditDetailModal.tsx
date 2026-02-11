@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { useRouter } from "next/router";
 import ConsoleStatusBadge from "../shared/ConsoleStatusBadge";
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
 }
 
 export default function AuditDetailModal({ open, entry, onClose }: Props) {
+  const router = useRouter();
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -79,7 +82,18 @@ export default function AuditDetailModal({ open, entry, onClose }: Props) {
           </div>
         </dl>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-between items-center pt-2">
+          {entry.entity?.type && entry.entity?.id ? (
+            <button
+              onClick={() => {
+                onClose();
+                router.push(`/console/timeline?entity_type=${encodeURIComponent(entry.entity.type)}&entity_id=${encodeURIComponent(entry.entity.id)}`);
+              }}
+              className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
+            >
+              View Timeline
+            </button>
+          ) : <span />}
           <button
             onClick={onClose}
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
