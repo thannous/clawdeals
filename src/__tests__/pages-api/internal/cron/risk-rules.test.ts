@@ -78,5 +78,24 @@ describe("GET/POST /api/internal/cron/risk-rules", () => {
     );
     expect(res.status).toHaveBeenCalledWith(200);
   });
-});
 
+  it("accepts POST options from query params when body is empty", async () => {
+    vi.mocked(runRiskRulesEngine).mockResolvedValue({ rules_scanned: 1 } as any);
+    const req: any = {
+      method: "POST",
+      headers: { "x-cron-secret": "secret-1" },
+      query: { dry_run: "true", rule_key: "rate_limit_triggers_1h", max_agents_per_rule: "20" }
+    };
+    const res = createMockRes();
+    await handler(req, res);
+
+    expect(runRiskRulesEngine).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dryRun: true,
+        ruleKey: "rate_limit_triggers_1h",
+        maxAgentsPerRule: 20
+      })
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+});

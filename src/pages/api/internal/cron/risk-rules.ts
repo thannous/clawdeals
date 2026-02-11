@@ -42,7 +42,9 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const source: any = req.method === "POST" ? req.body || {} : req.query || {};
+  const querySource = req.query && typeof req.query === "object" ? req.query : {};
+  const bodySource = req.body && typeof req.body === "object" ? req.body : {};
+  const source: any = req.method === "POST" ? { ...querySource, ...bodySource } : querySource;
 
   const dryRunParsed = parseOptionalBoolean(resolveParam(source.dry_run));
   if (resolveParam(source.dry_run) !== undefined && resolveParam(source.dry_run) !== null && dryRunParsed === null) {
@@ -78,4 +80,3 @@ export default async function handler(req: any, res: any) {
     });
   }
 }
-

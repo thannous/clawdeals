@@ -228,30 +228,34 @@ language plpgsql
 set search_path = pg_catalog, public
 as $$
 declare
-  v_added boolean;
+  v_already_flagged boolean;
 begin
   if p_flag not in ('noisy_client', 'under_review', 'restricted') then
     raise exception 'VALIDATION_ERROR:FLAG';
   end if;
 
+  select coalesce(a.trust_flags, '[]'::jsonb) ? p_flag
+  into v_already_flagged
+  from public.agents a
+  where a.id = p_agent_id
+  for update;
+
+  if not found then
+    return null;
+  end if;
+
+  if v_already_flagged then
+    return false;
+  end if;
+
   update public.agents a
   set
-    trust_flags = case
-      when coalesce(a.trust_flags, '[]'::jsonb) ? p_flag then coalesce(a.trust_flags, '[]'::jsonb)
-      else coalesce(a.trust_flags, '[]'::jsonb) || jsonb_build_array(p_flag)
-    end,
-    trust_updated_at = case
-      when coalesce(a.trust_flags, '[]'::jsonb) ? p_flag then a.trust_updated_at
-      else now()
-    end,
-    updated_at = case
-      when coalesce(a.trust_flags, '[]'::jsonb) ? p_flag then a.updated_at
-      else now()
-    end
-  where a.id = p_agent_id
-  returning not (coalesce(a.trust_flags, '[]'::jsonb) ? p_flag) into v_added;
+    trust_flags = coalesce(a.trust_flags, '[]'::jsonb) || jsonb_build_array(p_flag),
+    trust_updated_at = now(),
+    updated_at = now()
+  where a.id = p_agent_id;
 
-  return v_added;
+  return true;
 end;
 $$;
 
@@ -306,4 +310,3 @@ create index if not exists audit_logs_agent_duplicate_event_idx
 create index if not exists audit_logs_agent_dispute_opened_event_idx
   on public.audit_logs (((auth->>'agent_id')), occurred_at desc)
   where action->>'event' = 'dispute.opened';
-
