@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { RISK_FLAG_VALUES } from "../../../shared/risk-rules";
 import { useRiskRules } from "./useRiskRules";
 import { useRiskRuleMutation } from "./useRiskRuleMutation";
@@ -34,30 +34,36 @@ export default function RiskRulesPage() {
   const [unflagFlag, setUnflagFlag] = useState("restricted");
   const [unflagReason, setUnflagReason] = useState("");
 
-  useEffect(() => {
-    if (!Array.isArray(items) || items.length === 0) return;
-    setDraftByRuleId((prev) => {
-      const next = { ...prev };
-      for (const item of items) {
-        if (!item?.risk_rule_id) continue;
-        if (!next[item.risk_rule_id]) {
-          next[item.risk_rule_id] = {
-            enabled: Boolean(item.enabled),
-            threshold: Number(item.threshold),
-            window_seconds: Number(item.window_seconds),
-            cooldown_seconds: Number(item.cooldown_seconds),
-            flag: String(item.flag || "")
-          };
-        }
-      }
-      return next;
-    });
-  }, [items]);
-
   const sortedItems = useMemo(
     () => [...items].sort((left: any, right: any) => String(left.rule_key).localeCompare(String(right.rule_key))),
     [items]
   );
+  const baseDraftByRuleId = useMemo(() => {
+    const next: Record<string, any> = {};
+    for (const item of sortedItems) {
+      if (!item?.risk_rule_id) continue;
+      next[item.risk_rule_id] = {
+        enabled: Boolean(item.enabled),
+        threshold: Number(item.threshold),
+        window_seconds: Number(item.window_seconds),
+        cooldown_seconds: Number(item.cooldown_seconds),
+        flag: String(item.flag || "")
+      };
+    }
+    return next;
+  }, [sortedItems]);
+  const resolvedDraftByRuleId = useMemo(() => {
+    const next: Record<string, any> = {};
+    for (const item of sortedItems) {
+      if (!item?.risk_rule_id) continue;
+      const ruleId = String(item.risk_rule_id);
+      next[ruleId] = {
+        ...(baseDraftByRuleId[ruleId] || {}),
+        ...(draftByRuleId[ruleId] || {})
+      };
+    }
+    return next;
+  }, [baseDraftByRuleId, draftByRuleId, sortedItems]);
 
   const setDraftField = (ruleId: string, key: string, value: any) => {
     setDraftByRuleId((prev) => ({
@@ -70,7 +76,7 @@ export default function RiskRulesPage() {
   };
 
   const saveRule = async (rule: any) => {
-    const draft = draftByRuleId[rule.risk_rule_id];
+    const draft = resolvedDraftByRuleId[rule.risk_rule_id];
     if (!draft) return;
 
     setSaveMessage(null);
@@ -193,7 +199,7 @@ export default function RiskRulesPage() {
                 </thead>
                 <tbody>
                   {sortedItems.map((rule: any) => {
-                    const draft = draftByRuleId[rule.risk_rule_id] || {};
+                    const draft = resolvedDraftByRuleId[rule.risk_rule_id] || {};
                     return (
                       <tr key={rule.risk_rule_id} className="border-b border-border/50">
                         <td className="px-3 py-2 text-xs font-mono text-text">
@@ -323,4 +329,3 @@ export default function RiskRulesPage() {
     </div>
   );
 }
-

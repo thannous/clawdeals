@@ -87,27 +87,28 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   }, [token]);
 
   const expires = useMemo(() => formatExpires(session?.expires_at || null), [session?.expires_at]);
-  const ownerAgents = Array.isArray(session?.owner_agents) ? session.owner_agents : [];
+  const ownerAgents = useMemo(
+    () => (Array.isArray(session?.owner_agents) ? session.owner_agents : []),
+    [session]
+  );
+  const fallbackAttachAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
+  const resolvedAttachAgentId = useMemo(() => {
+    const selected = String(attachAgentId || "").trim();
+    if (!selected) return fallbackAttachAgentId;
+    const stillAvailable = ownerAgents.some((agent) => String(agent?.agent_id) === selected);
+    return stillAvailable ? selected : fallbackAttachAgentId;
+  }, [attachAgentId, fallbackAttachAgentId, ownerAgents]);
   const ownerContextAvailable = Boolean(session?.owner_context_available);
   const allowCreateAgent = session?.allow_create_agent !== false;
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
 
   const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired);
-  const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(String(attachAgentId || "").trim()));
-
-  useEffect(() => {
-    if (ownerAgents.length === 0) return;
-    const hasSelectedAgent = ownerAgents.some((agent) => String(agent.agent_id) === String(attachAgentId || ""));
-    if (hasSelectedAgent) return;
-    const firstAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
-    if (!firstAgentId) return;
-    setAttachAgentId(firstAgentId);
-  }, [ownerAgents, attachAgentId]);
+  const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(resolvedAttachAgentId));
 
   const onClaim = useCallback(async () => {
     if (!session) return;
     if (submitState === "loading") return;
-    if (mode === "attach_agent" && !String(attachAgentId || "").trim()) {
+    if (mode === "attach_agent" && !resolvedAttachAgentId) {
       setSubmitError("Select an existing agent to attach.");
       setSubmitState("error");
       return;
@@ -122,7 +123,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
       claimToken: token,
       mode,
       agentName: mode === "create_agent" ? agentName : undefined,
-      attachAgentId: mode === "attach_agent" ? attachAgentId : undefined
+      attachAgentId: mode === "attach_agent" ? resolvedAttachAgentId : undefined
     });
 
     if (!resp.ok) {
@@ -144,7 +145,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         : prev
     );
     setSubmitState("done");
-  }, [session, submitState, token, mode, agentName, attachAgentId]);
+  }, [session, submitState, token, mode, agentName, resolvedAttachAgentId]);
 
   const onDeny = useCallback(async () => {
     if (!session) return;
@@ -345,7 +346,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                             id="claim-attach-agent-select"
                             data-testid="claim-attach-agent-select"
                             disabled={!actionable || submitState === "loading"}
-                            value={attachAgentId}
+                            value={resolvedAttachAgentId}
                             onChange={(e) => setAttachAgentId(e.target.value)}
                             className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                           >
@@ -368,7 +369,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                             id="claim-attach-agent-id"
                             data-testid="claim-attach-agent-id"
                             disabled={!actionable || submitState === "loading"}
-                            value={attachAgentId}
+                            value={resolvedAttachAgentId}
                             onChange={(e) => setAttachAgentId(e.target.value)}
                             placeholder="uuid"
                             name="attach_agent_id"

@@ -19,6 +19,7 @@ vi.mock("../../../../pages/api/v1/offers/[offer_id]/counter", () => ({ handler: 
 vi.mock("../../../../pages/api/v1/offers/[offer_id]/cancel", () => ({ handler: vi.fn() }));
 vi.mock("../../../../pages/api/v1/transactions/[tx_id]/request-contact-reveal", () => ({ handler: vi.fn() }));
 vi.mock("../../../../pages/api/v1/transactions/[tx_id]/mark-completed", () => ({ handler: vi.fn() }));
+vi.mock("../../../../server/services/channel-identities", () => ({ getChannelIdentity: vi.fn() }));
 
 import { handler } from "../../../../pages/api/v1/chat/commands/[command]";
 import {
@@ -32,6 +33,7 @@ import {
 
 import { handler as offerCreateHandler } from "../../../../pages/api/v1/listings/[id]/offers";
 import { handler as offerCancelHandler } from "../../../../pages/api/v1/offers/[offer_id]/cancel";
+import { getChannelIdentity } from "../../../../server/services/channel-identities";
 
 const getStagedCommandForAgentMock = vi.mocked(getStagedCommandForAgent);
 const confirmStagedCommandMock = vi.mocked(confirmStagedCommand);
@@ -42,6 +44,7 @@ const markStagedCommandUndoneMock = vi.mocked(markStagedCommandUndone);
 
 const offerCreateHandlerMock = vi.mocked(offerCreateHandler);
 const offerCancelHandlerMock = vi.mocked(offerCancelHandler);
+const getChannelIdentityMock = vi.mocked(getChannelIdentity);
 
 const baseCtx: any = {
   agentId: "00000000-0000-4000-a000-000000000111",
@@ -53,6 +56,7 @@ const baseCtx: any = {
 describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getChannelIdentityMock.mockResolvedValue(null as any);
   });
 
   it("requires Idempotency-Key and it must equal command_id", async () => {
@@ -156,6 +160,13 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
         created_at: new Date().toISOString()
       }
     } as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
+      owner_id: baseCtx.ownerId,
+      channel_type: "telegram",
+      channel_user_id: "user-1",
+      channel_context_id: "group-1"
+    } as any);
 
     markStagedCommandExecutedMock.mockResolvedValue({
       command_id: commandId,
@@ -198,6 +209,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
       state: "STAGED",
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -211,6 +223,13 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
           expires_at: new Date(Date.now() + 3600000).toISOString()
         }
       }
+    } as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
+      owner_id: baseCtx.ownerId,
+      channel_type: "discord",
+      channel_user_id: "user-1",
+      channel_context_id: "group-1"
     } as any);
 
     const req: any = {
@@ -229,6 +248,52 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "control_dm_confirm_required" });
   });
 
+  it("confirm still requires CONTROL_DM when staged authority is STAGED but request is NEGOTIATION_THREAD", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000933";
+    const listingId = "00000000-0000-4000-a000-000000000944";
+
+    getStagedCommandForAgentMock.mockResolvedValue({
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      channel_identity_id: "00000000-0000-4000-a000-000000000889",
+      state: "STAGED",
+      action_type: "offer.create",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+      payload_redacted: {
+        authority: { decision: "STAGED", reason: "public_group_requires_control_dm", requires_control_dm_confirm: true },
+        origin_context: { kind: "public_group" },
+        payload: {
+          listing_id: listingId,
+          amount: 350,
+          currency: "EUR",
+          expires_at: new Date(Date.now() + 3600000).toISOString()
+        }
+      }
+    } as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: "00000000-0000-4000-a000-000000000889",
+      owner_id: baseCtx.ownerId,
+      channel_type: "discord",
+      channel_user_id: "user-1",
+      channel_context_id: "group-1"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": commandId },
+      query: { command: `${commandId}:confirm` },
+      body: { origin_context: { kind: "negotiation_thread" } }
+    };
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_MISMATCH");
+    expect(confirmStagedCommandMock).not.toHaveBeenCalled();
+    expect(offerCreateHandlerMock).not.toHaveBeenCalled();
+  });
+
   it("confirm enforces request origin policy even when staged authority metadata is missing", async () => {
     const commandId = "00000000-0000-4000-a000-000000000333";
     const listingId = "00000000-0000-4000-a000-000000000444";
@@ -237,6 +302,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
       state: "STAGED",
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -248,6 +314,13 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
           expires_at: new Date(Date.now() + 3600000).toISOString()
         }
       }
+    } as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
+      owner_id: baseCtx.ownerId,
+      channel_type: "discord",
+      channel_user_id: "user-1",
+      channel_context_id: "group-1"
     } as any);
 
     const req: any = {

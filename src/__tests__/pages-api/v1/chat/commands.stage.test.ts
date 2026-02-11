@@ -7,13 +7,18 @@ vi.mock("../../../../server/services/staged-commands", () => ({
 vi.mock("../../../../server/services/offers", () => ({
   getOffer: vi.fn()
 }));
+vi.mock("../../../../server/services/channel-identities", () => ({
+  getChannelIdentity: vi.fn()
+}));
 
 import { handler } from "../../../../pages/api/v1/chat/[command]";
 import { createStagedCommand } from "../../../../server/services/staged-commands";
 import { getOffer } from "../../../../server/services/offers";
+import { getChannelIdentity } from "../../../../server/services/channel-identities";
 
 const createStagedCommandMock = vi.mocked(createStagedCommand);
 const getOfferMock = vi.mocked(getOffer);
+const getChannelIdentityMock = vi.mocked(getChannelIdentity);
 
 const baseCtx: any = {
   agentId: "00000000-0000-4000-a000-000000000111",
@@ -25,6 +30,7 @@ const baseCtx: any = {
 describe("POST /v1/chat/commands:stage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getChannelIdentityMock.mockResolvedValue(null as any);
   });
 
   it("requires agent auth", async () => {
@@ -115,6 +121,13 @@ describe("POST /v1/chat/commands:stage", () => {
       action_type: "watchlist.create",
       expires_at: new Date(Date.now() + 600_000).toISOString()
     } as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
+      owner_id: baseCtx.ownerId,
+      channel_type: "discord",
+      channel_user_id: "user-1",
+      channel_context_id: "group-1"
+    } as any);
 
     const req: any = {
       method: "POST",
@@ -122,6 +135,7 @@ describe("POST /v1/chat/commands:stage", () => {
       headers: {},
       body: {
         action_type: "watchlist.create",
+        channel_identity_id: "00000000-0000-4000-a000-000000000888",
         origin_context: { kind: "public_group" },
         payload: {
           name: "My watch",
@@ -145,7 +159,7 @@ describe("POST /v1/chat/commands:stage", () => {
     expect(ctx.outcome).toEqual({ type: "STAGED", reason: "public_group_requires_control_dm" });
   });
 
-  it("blocks disallowed actions in negotiation context", async () => {
+  it("requires server attestation for non-control origins", async () => {
     const req: any = {
       method: "POST",
       query: { command: "commands:stage" },
@@ -165,9 +179,8 @@ describe("POST /v1/chat/commands:stage", () => {
     const result: any = await handler(req, null, ctx);
 
     expect(result.status).toBe(403);
-    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_BLOCKED");
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_UNATTESTED");
     expect(createStagedCommandMock).not.toHaveBeenCalled();
-    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "negotiation_action_not_allowed" });
   });
 
   it("blocks invalid explicit origin context", async () => {

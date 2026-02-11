@@ -13,6 +13,7 @@ import {
   hasExplicitOriginContext,
   resolveOriginContext
 } from "../policy/authority";
+import { attestOriginContextForOwner } from "../policy/origin-attestation";
 import { getListing } from "../services/listings";
 import { getOffer } from "../services/offers";
 
@@ -197,8 +198,17 @@ export async function handler(req: any, res: any, ctx: any) {
   if (!hasExplicitOriginContext(body.origin_context)) {
     return jsonResponse(400, errorPayload("ORIGIN_CONTEXT_REQUIRED", "origin_context is required"));
   }
+  const attestation = await attestOriginContextForOwner({
+    ownerId: ctx.ownerId || null,
+    requestedOriginContext: body.origin_context,
+    channelIdentityId,
+    requestOrigin: ctx?.origin || null
+  });
+  if (attestation.ok === false) {
+    return jsonResponse(attestation.status, errorPayload(attestation.code, attestation.message, attestation.details));
+  }
   const originContext = resolveOriginContext({
-    originContext: body.origin_context
+    originContext: attestation.originContext
   });
   const authority = evaluateAuthorityAction({
     actionType,

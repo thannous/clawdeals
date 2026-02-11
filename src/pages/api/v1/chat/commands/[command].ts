@@ -20,6 +20,7 @@ import {
   ORIGIN_CONTEXT_KIND,
   resolveOriginContext
 } from "../../../../../server/policy/authority";
+import { attestOriginContextForOwner } from "../../../../../server/policy/origin-attestation";
 
 import { handler as watchlistIndexHandler } from "../../watchlists/index";
 import { handler as watchlistIdHandler } from "../../watchlists/[watchlist_id]";
@@ -323,9 +324,19 @@ export async function handler(req: any, _res: any, ctx: any) {
       return jsonResponse(400, errorPayload("ORIGIN_CONTEXT_REQUIRED", "origin_context is required"));
     }
 
+    const attestation = await attestOriginContextForOwner({
+      ownerId: ctx?.ownerId || command?.owner_id || null,
+      requestedOriginContext: req.body?.origin_context,
+      channelIdentityId: command?.channel_identity_id || null,
+      requestOrigin: ctx?.origin || null
+    });
+    if (attestation.ok === false) {
+      return jsonResponse(attestation.status, errorPayload(attestation.code, attestation.message, attestation.details));
+    }
+
     const commandMeta = extractCommandMeta(command);
     const requestOriginContext = resolveOriginContext({
-      originContext: req.body?.origin_context
+      originContext: attestation.originContext
     });
     const requestAuthority = evaluateAuthorityAction({
       actionType: command.action_type,
@@ -366,9 +377,19 @@ export async function handler(req: any, _res: any, ctx: any) {
       );
     }
 
+    const stagedRequiresControlDmConfirm =
+      commandMeta.authority?.decision === AUTHORITY_DECISION.STAGED ||
+      commandMeta.authority?.requiresControlDmConfirm === true ||
+      commandMeta.originContext.kind === ORIGIN_CONTEXT_KIND.PUBLIC_GROUP;
+    const requestRequiresControlDmConfirm = requestAuthority.decision === AUTHORITY_DECISION.STAGED;
+    const controlDmConfirmRequired = stagedRequiresControlDmConfirm || requestRequiresControlDmConfirm;
+    const controlDmConfirmReason = stagedRequiresControlDmConfirm
+      ? commandMeta.authority?.reason || "public_group_requires_control_dm"
+      : requestAuthority.reason || null;
+
     if (
       (command.state === "STAGED" || command.state === "CONFIRMED") &&
-      requestAuthority.decision === AUTHORITY_DECISION.STAGED &&
+      controlDmConfirmRequired &&
       requestOriginContext.kind !== ORIGIN_CONTEXT_KIND.CONTROL_DM
     ) {
       if (ctx) {
@@ -391,7 +412,7 @@ export async function handler(req: any, _res: any, ctx: any) {
           required_origin_context: ORIGIN_CONTEXT_KIND.CONTROL_DM,
           origin_context: requestOriginContext,
           staged_origin_context: commandMeta.originContext,
-          reason: requestAuthority.reason || commandMeta.authority?.reason || null
+          reason: controlDmConfirmReason
         })
       );
     }
