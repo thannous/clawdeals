@@ -72,20 +72,21 @@ test.describe("Dev WebMCP demo", () => {
     await createDraftButton.evaluate((el) => (el as HTMLButtonElement).click());
 
     // Ensure the selection actually applied (prevents accidentally running the default read tool).
-    await expect(page.locator("textarea")).toHaveValue(/price_amount_minor/);
+    // The default expect timeout (5s) can be tight on first-run dev compilation.
+    await expect(page.locator("textarea")).toHaveValue(/price_amount_minor/, { timeout: 20_000 });
 
-    await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
+    await page.getByRole("button", { name: "Run" }).click({ timeout: 20_000 });
 
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "Deny" }).evaluate((el) => (el as HTMLButtonElement).click());
+    await page.getByRole("button", { name: "Deny" }).click({ timeout: 20_000 });
 
     await expect(page.getByText("\"USER_DENIED\"")).toBeVisible();
 
     // Run again: Approve this time and ensure idempotency header is present.
     const reqPromise = page.waitForRequest((req) => req.method() === "POST" && req.url().includes("/api/v1/listings"));
-    await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
+    await page.getByRole("button", { name: "Run" }).click({ timeout: 20_000 });
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "Approve" }).evaluate((el) => (el as HTMLButtonElement).click());
+    await page.getByRole("button", { name: "Approve" }).click({ timeout: 20_000 });
 
     const req = await reqPromise;
     expect(req.headers()["idempotency-key"]).toBeTruthy();
