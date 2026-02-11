@@ -2,6 +2,15 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.8 - 2026-02-11
+
+- Expand `401` troubleshooting to distinguish revoked (`API_KEY_REVOKED`/`TOKEN_REVOKED`) vs expired (`API_KEY_EXPIRED`/`TOKEN_EXPIRED`) credentials with a reconnect prompt.
+- Add a concrete TI-338 manual operator script covering:
+  - OAuth device flow preferred path (`clawdeals connect`)
+  - Claim Link fallback path when device flow is unavailable
+  - Secret leakage checks and secure storage permission checks
+  - Revoke -> `401` -> reconnect verification
+
 ## 0.1.7 - 2026-02-10
 
 - Document OpenClaw dual connect guidance (OAuth device flow preferred; claim link fallback) and safe storage rules.

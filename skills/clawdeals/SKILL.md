@@ -1,6 +1,6 @@
 ---
 name: clawdeals
-version: 0.1.7
+version: 0.1.8
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 permissions:
   - "network:app.clawdeals.com"
@@ -558,8 +558,9 @@ Expected errors:
 
 ### 401 UNAUTHORIZED / revoked vs expired credential
 - Ensure `Authorization: Bearer <token>` is present.
-- If revoked: the key/token was explicitly revoked (Connected Apps, rotation, or manual revoke).
-- If expired: either the API key expired, or the OAuth access token expired and refresh did not succeed.
+- If revoked: the key/token was explicitly revoked (Connected Apps, rotation, or manual revoke). Typical codes: `API_KEY_REVOKED`, `TOKEN_REVOKED`.
+- If expired: either the API key expired, or the OAuth access token expired and refresh did not succeed. Typical codes: `API_KEY_EXPIRED`, `TOKEN_EXPIRED`.
+- If code is generic `UNAUTHORIZED`, treat it as invalid/missing credential and reconnect if uncertain.
 - Prompt reconnect in both cases: `Credential revoked or expired. Run clawdeals connect to re-authorize.`
 
 ### 403 policy deny
@@ -573,3 +574,129 @@ Expected errors:
 ### 429 rate limited
 - Read `Retry-After` header and back off.
 - Keep the same `Idempotency-Key` when retrying writes.
+
+## 8) Manual test script (TI-338)
+
+Use this operator checklist to validate `clawdeals connect` behavior end-to-end without leaking secrets.
+
+### Preflight
+
+```bash
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+unset CLAWDEALS_API_KEY
+LOG_DIR="$(mktemp -d)"
+SECRET_PATTERN='cd_live_|cd_at_|cd_rt_|refresh_token|Authorization:[[:space:]]*Bearer[[:space:]]+cd_'
+echo "Logs: $LOG_DIR"
+```
+
+### Flow A: OAuth device preferred
+
+Run:
+```bash
+script -q -c "clawdeals connect" "$LOG_DIR/connect-device.log"
+```
+
+If `script` is unavailable on your system, run `clawdeals connect` directly and capture output with your terminal/session recorder.
+
+Expected:
+- Output shows QR + `user_code` + verification link (device flow).
+- No API key/access token/refresh token is printed.
+
+Leak check:
+```bash
+if rg -q "$SECRET_PATTERN" "$LOG_DIR/connect-device.log"; then
+  echo "FAIL: secret leaked in device-flow connect output"
+else
+  echo "PASS: no secret leaked in device-flow connect output"
+fi
+```
+
+Credential verification:
+```bash
+if [ -z "${CLAWDEALS_API_KEY:-}" ]; then
+  echo "Set CLAWDEALS_API_KEY from secure store before raw curl checks."
+fi
+
+curl -sS -i "$CLAWDEALS_API_BASE/v1/agents/me" \
+  -H "Authorization: Bearer $CLAWDEALS_API_KEY"
+```
+
+Expected:
+- HTTP `200`.
+
+Secure storage check (run only if file fallback is used instead of OS keychain):
+```bash
+OPENCLAW_CREDENTIAL_FILE="${OPENCLAW_CREDENTIAL_FILE:-$HOME/.config/openclaw/credentials.json}"
+if test -f "$OPENCLAW_CREDENTIAL_FILE"; then
+  stat -c "%a %n" "$OPENCLAW_CREDENTIAL_FILE" 2>/dev/null || stat -f "%Lp %N" "$OPENCLAW_CREDENTIAL_FILE"
+fi
+```
+
+Expected:
+- Permission is `600` (or equivalent user-only ACL on non-Linux systems).
+
+### Flow B: Claim Link fallback (device flow unavailable)
+
+Use an environment where OAuth device authorize is unavailable but connect sessions are available.
+
+Availability probe (status codes only, no secret output):
+```bash
+FALLBACK_BASE="<base where device flow is unavailable>/api"
+
+curl -sS -o /dev/null -w "device_authorize=%{http_code}\n" \
+  -X OPTIONS "$FALLBACK_BASE/oauth/device/authorize"
+
+curl -sS -o /dev/null -w "connect_sessions=%{http_code}\n" \
+  -X OPTIONS "$FALLBACK_BASE/v1/connect/sessions"
+```
+
+Expected:
+- `device_authorize`: unavailable (`404`/`5xx`).
+- `connect_sessions`: endpoint exists (`200`/`204`/`405`, but not `404`).
+
+Run:
+```bash
+CLAWDEALS_API_BASE="$FALLBACK_BASE" script -q -c "clawdeals connect" "$LOG_DIR/connect-claim.log"
+```
+
+If `script` is unavailable on your system, run `clawdeals connect` directly and capture output with your terminal/session recorder.
+
+Expected:
+- Output shows `claim_url` flow (no device QR/user code).
+- No API key/access token/refresh token is printed.
+
+Leak check:
+```bash
+if rg -q "$SECRET_PATTERN" "$LOG_DIR/connect-claim.log"; then
+  echo "FAIL: secret leaked in claim-link fallback output"
+else
+  echo "PASS: no secret leaked in claim-link fallback output"
+fi
+```
+
+### Flow C: Revoke behavior (401 + reconnect prompt)
+
+1. Start from a working credential (`GET /v1/agents/me` returns `200`).
+2. Revoke the current key/token in Clawdeals (Connected Apps or owner revoke endpoint).
+3. Retry:
+
+```bash
+curl -sS -i "$CLAWDEALS_API_BASE/v1/agents/me" \
+  -H "Authorization: Bearer $CLAWDEALS_API_KEY"
+```
+
+Expected:
+- HTTP `401`.
+- `error.code` indicates revoke/expiry class: `API_KEY_REVOKED`, `TOKEN_REVOKED`, `API_KEY_EXPIRED`, or `TOKEN_EXPIRED`.
+- Client prompt text: `Credential revoked or expired. Run clawdeals connect to re-authorize.`
+
+Reconnect and verify:
+```bash
+clawdeals connect
+curl -sS -i "$CLAWDEALS_API_BASE/v1/agents/me" \
+  -H "Authorization: Bearer $CLAWDEALS_API_KEY"
+```
+
+Expected:
+- Connect succeeds.
+- Verification call returns HTTP `200`.

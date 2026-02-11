@@ -4,15 +4,39 @@ import { assertIntegrationEnv } from "./helpers/env";
 import { randomId, randomIp } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
 import { waitForAuditLog } from "./helpers/audit";
+import { createRedis } from "./helpers/sse";
 import { createSupabaseAdmin } from "./helpers/supabase";
 import { V1_SCOPES_DEFAULT } from "../../src/shared/scopes/v1";
 
 assertIntegrationEnv();
 
+const UUID_RE = /^[0-9a-f-]{36}$/i;
+
+async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
+  const { error } = await supabase
+    .from("owners")
+    .update({
+      email_verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("owner_id", ownerId);
+  expect(error).toBeNull();
+}
+
 function extractClaimToken(claimUrl: string): string {
   const url = new URL(String(claimUrl));
   const parts = url.pathname.split("/").filter(Boolean);
   return decodeURIComponent(parts[parts.length - 1] || "");
+}
+
+function extractApiKeyPrefix(apiKey: string): string | null {
+  if (!apiKey) return null;
+  const [prefixPart] = String(apiKey).split(".");
+  if (!prefixPart) return null;
+  const idx = prefixPart.lastIndexOf("_");
+  if (idx === -1) return null;
+  const prefix = prefixPart.slice(idx + 1);
+  return prefix || null;
 }
 
 async function createConnectedInstallation(
@@ -23,6 +47,9 @@ async function createConnectedInstallation(
     agentName: "Integration Connected App Agent"
   }
 ) {
+  const supabase = createSupabaseAdmin();
+  await ensureOwnerEmailVerified(supabase, ownerId);
+
   const create = await request.post("/api/v1/connect/sessions", {
     headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
     data: { requested_agent_name: options.requestedAgentName, requested_scopes: [] }
@@ -34,6 +61,8 @@ async function createConnectedInstallation(
   const pollToken = createBody?.data?.poll_token;
   const claimToken = extractClaimToken(createBody?.data?.claim_url);
 
+  expect(createBody?.data?.status).toBe("PENDING_CLAIM");
+  expect(createBody?.data?.interval_seconds).toBe(2);
   expect(sessionId).toBeTruthy();
   expect(pollToken).toBeTruthy();
   expect(claimToken).toMatch(/^cd_claim_/);
@@ -43,6 +72,12 @@ async function createConnectedInstallation(
     data: { claim_token: claimToken, mode: "create_agent", agent_name: options.agentName }
   });
   await expectStatus(claim, 200);
+  const claimBody = await claim.json();
+  expect(claimBody?.data?.session_id).toBe(sessionId);
+  expect(claimBody?.data?.status).toBe("CLAIMED");
+  expect(claimBody?.data?.owner_id).toBe(ownerId);
+  expect(String(claimBody?.data?.agent_id || "")).toMatch(UUID_RE);
+  expect(String(claimBody?.data?.claimed_at || "")).toBeTruthy();
 
   const exchange = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
     headers: {
@@ -64,15 +99,21 @@ async function createConnectedInstallation(
 
   const installationId = exchangeBody?.data?.installation_id;
   const apiKey = exchangeBody?.data?.api_key;
+  const apiKeyId = exchangeBody?.data?.api_key_id;
 
+  expect(exchangeBody?.data?.session_id).toBe(sessionId);
+  expect(exchangeBody?.data?.status).toBe("DELIVERED");
   expect(installationId).toBeTruthy();
+  expect(String(installationId || "")).toMatch(UUID_RE);
   expect(apiKey).toMatch(/^cd_(live|sandbox)_.+\..+$/);
+  expect(String(apiKeyId || "")).toMatch(UUID_RE);
 
   return {
     sessionId,
     pollToken,
     installationId: String(installationId),
-    apiKey: String(apiKey)
+    apiKey: String(apiKey),
+    apiKeyId: String(apiKeyId)
   };
 }
 
@@ -83,6 +124,7 @@ test.describe.serial("Integration: Connected Apps", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
@@ -95,6 +137,8 @@ test.describe.serial("Integration: Connected Apps", () => {
     const pollToken = createBody?.data?.poll_token;
     const claimToken = extractClaimToken(createBody?.data?.claim_url);
 
+    expect(createBody?.data?.status).toBe("PENDING_CLAIM");
+    expect(createBody?.data?.interval_seconds).toBe(2);
     expect(sessionId).toBeTruthy();
     expect(pollToken).toBeTruthy();
     expect(claimToken).toMatch(/^cd_claim_/);
@@ -104,6 +148,12 @@ test.describe.serial("Integration: Connected Apps", () => {
       data: { claim_token: claimToken, mode: "create_agent", agent_name: "Integration Connected Apps Agent" },
     });
     await expectStatus(claim, 200);
+    const claimBody = await claim.json();
+    expect(claimBody?.data?.session_id).toBe(sessionId);
+    expect(claimBody?.data?.status).toBe("CLAIMED");
+    expect(claimBody?.data?.owner_id).toBe(ownerId);
+    expect(String(claimBody?.data?.agent_id || "")).toMatch(UUID_RE);
+    expect(String(claimBody?.data?.claimed_at || "")).toBeTruthy();
 
     const fingerprint = `itest-${randomId()}`;
     const exchange = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
@@ -126,9 +176,22 @@ test.describe.serial("Integration: Connected Apps", () => {
 
     const installationId = exchangeBody?.data?.installation_id;
     const apiKey = exchangeBody?.data?.api_key;
+    const apiKeyId = exchangeBody?.data?.api_key_id;
 
+    expect(exchangeBody?.data?.session_id).toBe(sessionId);
+    expect(exchangeBody?.data?.status).toBe("DELIVERED");
     expect(installationId).toBeTruthy();
+    expect(String(installationId || "")).toMatch(UUID_RE);
     expect(apiKey).toMatch(/^cd_(live|sandbox)_.+\..+$/);
+    expect(String(apiKeyId || "")).toMatch(UUID_RE);
+
+    const meBeforeRevoke = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    await expectStatus(meBeforeRevoke, 200);
+    const meBeforeRevokeBody = await meBeforeRevoke.json();
+    expect(meBeforeRevokeBody?.data?.installation_id).toBe(installationId);
+    expect(meBeforeRevokeBody?.data?.oauth_scopes).toEqual([]);
 
     const auditSince = new Date().toISOString();
 
@@ -164,10 +227,13 @@ test.describe.serial("Integration: Connected Apps", () => {
     expect(foundAfter).toBeTruthy();
     expect(foundAfter.status).toBe("REVOKED");
 
-    const revokedAuth = await request.get("/api/v1/policies", {
+    const revokedAuth = await request.get("/api/v1/agents/me", {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     expect(revokedAuth.status()).toBe(401);
+    const revokedAuthBody = await revokedAuth.json();
+    expect(revokedAuthBody?.error?.code).toBe("API_KEY_REVOKED");
+    expect(revokedAuthBody?.error?.message).toBe("API key revoked");
 
     const auditList = await waitForAuditLog(supabase, "installation.list_viewed", 10, auditSince, listRequestId);
     expect(auditList).not.toBeNull();
@@ -214,7 +280,8 @@ test.describe.serial("Integration: Connected Apps", () => {
     expect(rotatedKey).toMatch(/^cd_(live|sandbox)_.+\..+$/);
     expect(rotateBody.installation_id).toBe(connected.installationId);
     expect(rotateBody.grace_seconds).toBe(120);
-    expect(rotateBody.previous_api_key_id).toBeTruthy();
+    const previousApiKeyId = String(rotateBody?.previous_api_key_id || "");
+    expect(previousApiKeyId).toMatch(UUID_RE);
     expect(rotateBody.api_key_id).toBeTruthy();
     expect(rotatedKey).not.toBe(connected.apiKey);
 
@@ -229,6 +296,29 @@ test.describe.serial("Integration: Connected Apps", () => {
     await expectStatus(newKeyAuth, 200);
     const newKeyBody = await newKeyAuth.json();
     expect(newKeyBody?.data?.installation_id).toBe(connected.installationId);
+
+    const forcedExpiredAt = new Date(Date.now() - 60_000).toISOString();
+    const { data: forcedExpiredKey, error: forceExpireError } = await supabase
+      .from("api_keys")
+      .update({ grace_expires_at: forcedExpiredAt })
+      .eq("api_key_id", previousApiKeyId)
+      .eq("key_state", "GRACE")
+      .select("api_key_id")
+      .maybeSingle();
+    expect(forceExpireError).toBeNull();
+    expect(forcedExpiredKey?.api_key_id).toBe(previousApiKeyId);
+
+    const oldKeyPrefix = extractApiKeyPrefix(connected.apiKey);
+    expect(oldKeyPrefix).toBeTruthy();
+    await createRedis().del(`auth:api_key_prefix:${oldKeyPrefix}`);
+
+    const oldKeyExpiredAuth = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${connected.apiKey}` }
+    });
+    expect(oldKeyExpiredAuth.status()).toBe(401);
+    const oldKeyExpiredBody = await oldKeyExpiredAuth.json();
+    expect(oldKeyExpiredBody?.error?.code).toBe("API_KEY_EXPIRED");
+    expect(oldKeyExpiredBody?.error?.message).toBe("API key expired");
 
     const auditRotate = await waitForAuditLog(supabase, "installation.key_rotated", 10, auditSince, rotateRequestId);
     expect(auditRotate).not.toBeNull();
@@ -271,6 +361,9 @@ test.describe.serial("Integration: Connected Apps", () => {
       headers: { Authorization: `Bearer ${connected.apiKey}` }
     });
     expect(oldKeyAuth.status()).toBe(401);
+    const oldKeyBody = await oldKeyAuth.json();
+    expect(oldKeyBody?.error?.code).toBe("API_KEY_REVOKED");
+    expect(oldKeyBody?.error?.message).toBe("API key revoked");
 
     const newKeyAuth = await request.get("/api/v1/agents/me", {
       headers: { Authorization: `Bearer ${rotatedKey}` }
@@ -279,8 +372,10 @@ test.describe.serial("Integration: Connected Apps", () => {
   });
 
   test("scope upgrade creates approval then updates installation scopes after approval", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },

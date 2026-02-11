@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import crypto from "node:crypto";
 
 import { assertIntegrationEnv } from "./helpers/env";
-import { randomId, randomIp, sleep } from "./helpers/ids";
+import { randomId, randomIp } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
 import { createRedis } from "./helpers/sse";
 import { createSupabaseAdmin } from "./helpers/supabase";
@@ -11,6 +11,18 @@ import { V1_SCOPES_DEFAULT } from "../../src/shared/scopes/v1";
 assertIntegrationEnv();
 
 const DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
+const UUID_RE = /^[0-9a-f-]{36}$/i;
+
+async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
+  const { error } = await supabase
+    .from("owners")
+    .update({
+      email_verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("owner_id", ownerId);
+  expect(error).toBeNull();
+}
 
 function requireOauthTokenSecretForTests() {
   const secret =
@@ -37,6 +49,7 @@ async function authorizeAndApproveDeviceFlow({
 }): Promise<{ deviceCode: string; userCode: string; ownerId: string; agentId: string }> {
   const ownerId = randomId();
   await createOwner(request, ownerId);
+  await ensureOwnerEmailVerified(createSupabaseAdmin(), ownerId);
 
   const authorize = await request.post("/api/oauth/device/authorize", {
     headers: {
@@ -51,12 +64,18 @@ async function authorizeAndApproveDeviceFlow({
     }
   });
   await expectStatus(authorize, 200);
+  expect(authorize.headers()["cache-control"]).toBe("no-store");
   const authorizeBody = await authorize.json();
 
   const deviceCode = String(authorizeBody?.device_code || "");
   const userCode = String(authorizeBody?.user_code || "");
   expect(deviceCode).toMatch(/^cd_dev_/);
   expect(userCode).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+  expect(String(authorizeBody?.verification_uri || "")).toContain("/device");
+  expect(String(authorizeBody?.verification_uri_complete || "")).toContain("user_code=");
+  expect(String(authorizeBody?.verification_uri_complete || "")).toContain(encodeURIComponent(userCode));
+  expect(authorizeBody?.expires_in).toBe(600);
+  expect(authorizeBody?.interval).toBe(2);
 
   const approve = await request.post("/api/oauth/device/approve", {
     headers: {
@@ -72,9 +91,14 @@ async function authorizeAndApproveDeviceFlow({
     }
   });
   await expectStatus(approve, 200);
+  expect(approve.headers()["cache-control"]).toBe("no-store");
   const approveBody = await approve.json();
+  expect(String(approveBody?.data?.authorization_id || "")).toMatch(UUID_RE);
+  expect(approveBody?.data?.status).toBe("AUTHORIZED");
+  expect(approveBody?.data?.owner_id).toBe(ownerId);
   const agentId = String(approveBody?.data?.agent_id || "");
-  expect(agentId).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(agentId).toMatch(UUID_RE);
+  expect(String(approveBody?.data?.authorized_at || "")).toBeTruthy();
 
   return { deviceCode, userCode, ownerId, agentId };
 }
@@ -112,6 +136,7 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(accessToken).toMatch(/^cd_at_/);
     expect(refreshToken).toMatch(/^cd_rt_/);
     expect(tokenBody?.token_type).toBe("Bearer");
+    expect(Number(tokenBody?.expires_in || 0)).toBeGreaterThan(0);
 
     const me = await request.get("/api/v1/agents/me", {
       headers: {
@@ -224,6 +249,7 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(meAfter.status()).toBe(401);
     const meAfterBody = await meAfter.json();
     expect(meAfterBody?.error?.code).toBe("UNAUTHORIZED");
+    expect(meAfterBody?.error?.message).toBe("Invalid access token");
 
     const refreshed = await request.post("/api/oauth/token", {
       headers: {
@@ -378,6 +404,7 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(meAfter.status()).toBe(401);
     const meAfterBody = await meAfter.json();
     expect(meAfterBody?.error?.code).toBe("UNAUTHORIZED");
+    expect(meAfterBody?.error?.message).toBe("Invalid access token");
   });
 
   test("rotation: old refresh token rejected", async ({ request }) => {
@@ -483,7 +510,7 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(secondBody?.error?.code).toBe("invalid_grant");
   });
 
-  test("access token TTL: expired access token rejected", async ({ request }) => {
+  test("access token TTL: expired access token surfaces TOKEN_EXPIRED", async ({ request }) => {
     const ip = randomIp();
     const { deviceCode } = await authorizeAndApproveDeviceFlow({ request, ip });
 
@@ -508,15 +535,25 @@ test.describe.serial("Integration: OAuth Token", () => {
     const accessToken = String(tokenBody?.access_token || "");
     expect(accessToken).toMatch(/^cd_at_/);
 
-    // Force the Redis entry to expire quickly (faster + more reliable than waiting for TTL).
+    // Force a past expires_at while keeping the token record present, so auth reports TOKEN_EXPIRED.
     const secret = requireOauthTokenSecretForTests();
     const accessTokenHash = crypto.createHmac("sha256", secret).update(accessToken).digest("hex");
     const redisKey = `auth:oauth:access:v1:${accessTokenHash}`;
     const redis = createRedis();
-    await redis.expire(redisKey, 1);
-    await sleep(1_500);
+    const tokenRecordRaw = await redis.get(redisKey);
+    expect(tokenRecordRaw).toBeTruthy();
+    const tokenRecord = typeof tokenRecordRaw === "string" ? JSON.parse(tokenRecordRaw) : tokenRecordRaw;
+    expect(tokenRecord?.v).toBe(1);
+    await redis.set(
+      redisKey,
+      JSON.stringify({
+        ...tokenRecord,
+        expires_at: new Date(Date.now() - 60_000).toISOString()
+      }),
+      { ex: 60 }
+    );
 
-    const expired = await request.get("/api/v1/watchlists", {
+    const expired = await request.get("/api/v1/agents/me", {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "x-forwarded-for": ip
@@ -524,6 +561,7 @@ test.describe.serial("Integration: OAuth Token", () => {
     });
     expect(expired.status()).toBe(401);
     const expiredBody = await expired.json();
-    expect(expiredBody?.error?.code).toBe("UNAUTHORIZED");
+    expect(expiredBody?.error?.code).toBe("TOKEN_EXPIRED");
+    expect(expiredBody?.error?.message).toBe("Access token expired");
   });
 });
