@@ -14,6 +14,9 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Cloudflare/OpenNext can intermittently fail to resolve Turbopack externalized
+  // packages (e.g. "zod-<hash>"). Bundle Pages Router deps to avoid runtime 500s.
+  bundlePagesRouterDependencies: true,
   experimental: {
     // Avoid lucide-react barrel import cost by rewriting to per-icon imports at build time.
     optimizePackageImports: ["lucide-react"]

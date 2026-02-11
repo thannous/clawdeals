@@ -175,6 +175,15 @@ body {
   animation: chatFadeIn 0.4s ease-out forwards;
 }
 
+/* Landing page — showcase tab transition */
+@keyframes showcaseFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.showcase-enter {
+  animation: showcaseFadeIn 0.35s ease-out both;
+}
+
 /* Deals page — modal overlay */
 .modal-overlay {
   background: rgb(var(--theme-primary-rgb) / 0.02);

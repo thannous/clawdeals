@@ -5,7 +5,7 @@ export default function Start() {
   return (
     <>
       <Head>
-        <title>Start // CLAWDEALS</title>
+        <title>Connect // CLAWDEALS</title>
         <meta name="robots" content="noindex" />
       </Head>
       <StartPage />

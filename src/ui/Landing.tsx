@@ -1,7 +1,7 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
 import { LANDING_COPY } from "./landing/copy";
@@ -268,99 +268,110 @@ function Hero({
   );
 }
 
-function ValueProps({
+type ShowcaseTab = "deals" | "marketplace";
+
+const SHOWCASE_TABS: { key: ShowcaseTab; Icon: typeof Zap; colorClass: string; borderClass: string; accentBg: string }[] = [
+  { key: "marketplace", Icon: ShoppingBag, colorClass: "text-secondary", borderClass: "border-secondary", accentBg: "bg-secondary" },
+  { key: "deals", Icon: Zap, colorClass: "text-primary", borderClass: "border-primary", accentBg: "bg-primary" }
+];
+
+function TabbedShowcase({
   copy,
-  futureMode,
-  locale
+  futureMode
 }: {
   copy: LandingCopy;
   futureMode: boolean;
-  locale: LandingLocale;
 }) {
-  const appUrl = getPublicAppUrl();
-  const localePrefix = locale === "fr" ? "/fr" : "";
-  const dealsUrl = joinUrl(appUrl, `${localePrefix}/deals`);
-  const listingsUrl = joinUrl(appUrl, `${localePrefix}${getPublicAppEntryPath()}`);
+  const [active, setActive] = useState<ShowcaseTab>("marketplace");
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <Zap className="w-5 h-5 text-primary" />
-          <span className="font-mono text-xs text-primary tracking-widest uppercase">{copy.hero.deals.subtitle}</span>
-        </div>
-        <h2 className="text-3xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text">
-          {copy.hero.deals.title}
-        </h2>
-        <p className="text-sm text-muted font-mono max-w-md border-l-2 border-border-strong pl-4">
-          {copy.hero.deals.description}
-        </p>
-      </div>
-
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <ShoppingBag className="w-5 h-5 text-secondary" />
-          <span className="font-mono text-xs text-secondary tracking-widest uppercase">{copy.hero.marketplace.subtitle}</span>
-        </div>
-        <h2 className="text-3xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text">
-          {copy.hero.marketplace.title}
-        </h2>
-        <p className="text-sm text-muted font-mono max-w-md border-l-2 border-secondary pl-4">
-          {copy.hero.marketplace.description}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ShowcaseSection({
-  header,
-  showcase,
-  PhoneComponent,
-  copy,
-  futureMode,
-  reverse = false
-}: {
-  header: {
-    title: string;
-    subtitle: string;
+  const heroData: Record<ShowcaseTab, { subtitle: string; title: string; description: string }> = {
+    deals: copy.hero.deals,
+    marketplace: copy.hero.marketplace
   };
-  showcase: {
-    title: string;
-    bullets: string[];
-    cta: string;
+
+  const showcaseMap: Record<ShowcaseTab, {
+    header: { title: string; subtitle: string };
+    showcase: { title: string; bullets: string[]; cta: string };
+    Phone: React.ComponentType<{ copy: LandingCopy }>;
+  }> = {
+    deals: { header: copy.headers.deals, showcase: copy.showcase.deals, Phone: DealsPhone },
+    marketplace: { header: copy.headers.marketplace, showcase: copy.showcase.marketplace, Phone: MarketPhone }
   };
-  PhoneComponent: React.ComponentType<{ copy: LandingCopy }>;
-  copy: LandingCopy;
-  futureMode: boolean;
-  reverse?: boolean;
-}) {
+
+  const { header, showcase, Phone } = showcaseMap[active];
+  const activeTab = SHOWCASE_TABS.find((t) => t.key === active)!;
+
   return (
     <div>
-      <SectionHeader title={header.title} subtitle={header.subtitle} />
-      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${reverse ? "lg:[direction:rtl]" : ""}`}>
-        <div className={reverse ? "lg:[direction:ltr]" : ""}>
-          <h3 className="text-2xl font-bold text-text uppercase tracking-wide mb-6">{showcase.title}</h3>
-          <ul className="space-y-3 mb-8">
-            {showcase.bullets.map((bullet, index) => (
-              <li key={`${showcase.title}-${bullet}`} className="flex items-start gap-3">
-                <span className="w-5 h-5 border border-primary flex items-center justify-center text-[10px] font-mono text-primary flex-shrink-0 mt-0.5">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="text-sm text-muted font-mono">{bullet}</span>
-              </li>
-            ))}
-          </ul>
-          {futureMode ? (
-            <ComingSoonBadge label={copy.future.badge} />
-          ) : (
-            <button className="px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
-              {showcase.cta}
-            </button>
-          )}
-        </div>
-        <div className={`flex justify-center ${reverse ? "lg:[direction:ltr]" : ""}`}>
-          <PhoneComponent copy={copy} />
+      {/* ValueProps as clickable cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16">
+        {SHOWCASE_TABS.map(({ key, Icon, colorClass, borderClass, accentBg }) => {
+          const isActive = active === key;
+          return (
+            <div key={key} className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => setActive(key)}
+                className={`relative text-left transition-opacity duration-300 cursor-pointer pb-4 ${
+                  isActive ? "opacity-100" : "opacity-40 hover:opacity-70"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className={`w-5 h-5 ${colorClass}`} />
+                  <span className={`font-mono text-xs ${colorClass} tracking-widest uppercase`}>
+                    {heroData[key].subtitle}
+                  </span>
+                </div>
+                <h2 className="text-3xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text">
+                  {heroData[key].title}
+                </h2>
+                <p className={`text-sm text-muted font-mono max-w-md border-l-2 ${borderClass} pl-4`}>
+                  {heroData[key].description}
+                </p>
+                {/* Active bottom bar */}
+                <div className={`absolute bottom-0 left-0 h-[2px] transition-all duration-300 ${
+                  isActive ? `w-full ${accentBg}` : "w-0 bg-transparent"
+                }`} />
+              </button>
+              {/* Chevron indicator under active card */}
+              <div className={`flex items-center gap-2 pt-3 transition-all duration-300 ${
+                isActive ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"
+              }`}>
+                <ChevronDown className={`w-3.5 h-3.5 ${colorClass} animate-bounce`} />
+                <span className={`font-mono text-[10px] ${colorClass} tracking-widest uppercase`}>SHOWCASE</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Active showcase */}
+      <div key={active} className="showcase-enter">
+        <SectionHeader title={header.title} subtitle={header.subtitle} accentText={activeTab.colorClass} accentBg={activeTab.accentBg} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h3 className="text-2xl font-bold text-text uppercase tracking-wide mb-6">{showcase.title}</h3>
+            <ul className="space-y-3 mb-8">
+              {showcase.bullets.map((bullet, index) => (
+                <li key={bullet} className="flex items-start gap-3">
+                  <span className={`w-5 h-5 border ${activeTab.borderClass} flex items-center justify-center text-[10px] font-mono ${activeTab.colorClass} flex-shrink-0 mt-0.5`}>
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="text-sm text-muted font-mono">{bullet}</span>
+                </li>
+              ))}
+            </ul>
+            {futureMode ? (
+              <ComingSoonBadge label={copy.future.badge} />
+            ) : (
+              <button className="px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
+                {showcase.cta}
+              </button>
+            )}
+          </div>
+          <div className="flex justify-center">
+            <Phone copy={copy} />
+          </div>
         </div>
       </div>
     </div>
@@ -447,24 +458,7 @@ export default function Landing({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-24">
-          <ValueProps copy={copy} futureMode={futureMode} locale={resolvedLocale} />
-
-          <ShowcaseSection
-            header={copy.headers.deals}
-            showcase={copy.showcase.deals}
-            PhoneComponent={DealsPhone}
-            copy={copy}
-            futureMode={futureMode}
-          />
-
-          <ShowcaseSection
-            header={copy.headers.marketplace}
-            showcase={copy.showcase.marketplace}
-            PhoneComponent={MarketPhone}
-            copy={copy}
-            futureMode={futureMode}
-            reverse
-          />
+          <TabbedShowcase copy={copy} futureMode={futureMode} />
 
           <HowItWorks copy={copy} />
 
