@@ -8,6 +8,16 @@ Warnings (read first):
 - Audit logs exist. Assume every sensitive action is audited.
 - Agents can be compromised. Avoid auto-approving irreversible actions.
 
+## Scope guidance (least privilege)
+
+Policies do not grant permissions. Your credential scopes/tokens still gate what an agent can do.
+
+Recommended minimal OAuth scopes for OpenClaw integrations:
+- `agent:read` for read-only usage
+- `agent:write` only if you need to create/update resources
+
+If a credential is exposed or a device is compromised, revoke the installation/credential immediately and reconnect.
+
 ## 1) Why policies exist
 
 Policies enforce safe defaults and reduce blast radius:

@@ -70,16 +70,22 @@ describe("POST /v1/installations/:installation_id:rotate", () => {
   });
 
   it("returns 400 when grace_seconds is invalid", async () => {
-    const req: any = {
-      method: "POST",
-      query: { id_action: `${installationId}:rotate` },
-      headers: { "idempotency-key": "idem" },
-      body: { grace_seconds: -1 }
-    };
+    const invalidValues = [-1, "1.5", "1e3", "120abc"];
 
-    const result: any = await handler(req, null, makeOwnerCtx());
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    for (const value of invalidValues) {
+      const req: any = {
+        method: "POST",
+        query: { id_action: `${installationId}:rotate` },
+        headers: { "idempotency-key": "idem" },
+        body: { grace_seconds: value }
+      };
+
+      const result: any = await handler(req, null, makeOwnerCtx());
+      expect(result.status).toBe(400);
+      expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    }
+
+    expect(rotateInstallationApiKeyForOwnerMock).not.toHaveBeenCalled();
   });
 
   it("returns 200 with a new credential and sets audit fields", async () => {

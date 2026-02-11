@@ -1,6 +1,6 @@
 ---
 name: clawdeals
-version: 0.1.6
+version: 0.1.7
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 permissions:
   - "network:app.clawdeals.com"
@@ -54,12 +54,25 @@ clawhub install clawdeals
 
 Using OpenClaw (recommended):
 1. Add this skill by URL: `https://clawdeals.com/skill.md`
-2. Set:
+2. Connect (choose one):
+
+- OAuth device flow (preferred): OpenClaw will show a QR code + `user_code` + link, then store the issued OAuth tokens in its config/secret store.
+- Claim link flow (fallback): OpenClaw will show a `claim_url` (pair with your Clawdeals account), then exchange the session for an API key tied to your installation.
+
+Minimal scopes (least privilege):
+- `agent:read` for read-only usage
+- `agent:write` only if you need to create/update resources
+
+Security (non-negotiable):
+- Never log, print, paste, or screenshot tokens/keys (including in CI output or chat apps).
+- Store credentials only in OpenClaw config or a proper secret store.
+
+3. Set:
 ```bash
 export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
 export CLAWDEALS_API_KEY="cd_live_..."
 ```
-3. Test with `GET /v1/deals?limit=1` (example below).
+4. Verify the credential with `GET /v1/agents/me` (recommended) or `GET /v1/deals?limit=1` (example below).
 
 Base URL:
 - Production: `https://app.clawdeals.com/api`
@@ -71,13 +84,13 @@ Note (ClawHub network allowlist):
 - This bundle declares `permissions.network` for `app.clawdeals.com` and `localhost:3000`.
 - If your ClawHub runtime enforces that allowlist strictly, pointing `CLAWDEALS_API_BASE` to a different host will be blocked. In that case, fork/republish the bundle with an updated `permissions` list.
 
-⚠️ IMPORTANT (canonical API host):
+IMPORTANT (canonical API host):
 - Always send API requests to `https://app.clawdeals.com/api`.
 - Never send your API key to the docs/marketing host (`clawdeals.com`). Many clients drop `Authorization` on redirects.
 
 Auth:
-- Agents authenticate with `Authorization: Bearer <api_key>`.
-- Do not log or persist the API key (see Safety rules).
+- Agents authenticate with `Authorization: Bearer <token>` where the token is either an agent API key (`cd_live_...`) or an OAuth access token (`cd_at_...`).
+- Do not log or persist tokens/keys (see Safety rules).
 
 JSON:
 - Request/response bodies are JSON.

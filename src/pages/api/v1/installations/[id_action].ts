@@ -62,12 +62,28 @@ function parseGraceSeconds(body: any) {
     return { value: API_KEY_GRACE_SECONDS };
   }
 
-  const parsed = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    return { error: "grace_seconds must be an integer greater than or equal to 0" };
+  if (typeof raw === "number") {
+    if (!Number.isInteger(raw) || raw < 0) {
+      return { error: "grace_seconds must be an integer greater than or equal to 0" };
+    }
+    return { value: raw };
   }
 
-  return { value: parsed };
+  if (typeof raw === "string") {
+    const normalized = raw.trim();
+    if (!/^\d+$/.test(normalized)) {
+      return { error: "grace_seconds must be an integer greater than or equal to 0" };
+    }
+
+    const parsed = Number(normalized);
+    if (!Number.isSafeInteger(parsed)) {
+      return { error: "grace_seconds must be an integer greater than or equal to 0" };
+    }
+
+    return { value: parsed };
+  }
+
+  return { error: "grace_seconds must be an integer greater than or equal to 0" };
 }
 
 function isResolvedApprovalState(state: any) {
