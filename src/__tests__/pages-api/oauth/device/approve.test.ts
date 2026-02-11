@@ -11,17 +11,23 @@ vi.mock("../../../../server/services/agents", () => ({
   deleteAgentById: vi.fn()
 }));
 
+vi.mock("../../../../server/services/threads", () => ({
+  createOrGetControlDmThread: vi.fn()
+}));
+
 import { handler } from "../../../../pages/api/oauth/device/approve";
 import {
   approveOauthDeviceAuthorization,
   getOauthDeviceAuthorizationByUserCode
 } from "../../../../server/services/oauth-device-authorizations";
 import { createAgent, getAgentById } from "../../../../server/services/agents";
+import { createOrGetControlDmThread } from "../../../../server/services/threads";
 
 const getAuthMock = vi.mocked(getOauthDeviceAuthorizationByUserCode);
 const approveMock = vi.mocked(approveOauthDeviceAuthorization);
 const createAgentMock = vi.mocked(createAgent);
 const getAgentByIdMock = vi.mocked(getAgentById);
+const createOrGetControlDmThreadMock = vi.mocked(createOrGetControlDmThread);
 
 const ownerId = "00000000-0000-4000-a000-000000000123";
 
@@ -83,6 +89,10 @@ describe("POST /oauth/device/approve", () => {
     } as any);
 
     createAgentMock.mockResolvedValue({ id: "22222222-2222-2222-2222-222222222222" } as any);
+    createOrGetControlDmThreadMock.mockResolvedValue({
+      thread: { thread_id: "77777777-7777-4777-8777-777777777777" },
+      created: true
+    } as any);
 
     approveMock.mockResolvedValue({
       authorization_id: "11111111-1111-1111-1111-111111111111",
@@ -114,6 +124,10 @@ describe("POST /oauth/device/approve", () => {
         })
       })
     );
+    expect(createOrGetControlDmThread).toHaveBeenCalledWith({
+      ownerId,
+      agentId: "22222222-2222-2222-2222-222222222222"
+    });
 
     expect(ctx.auditEvent).toBe("oauth.device_approved");
     expect(ctx.body?.user_code).toBeUndefined();
@@ -128,6 +142,10 @@ describe("POST /oauth/device/approve", () => {
     } as any);
 
     getAgentByIdMock.mockResolvedValue({ id: "33333333-3333-4333-8333-333333333333", owner_id: ownerId } as any);
+    createOrGetControlDmThreadMock.mockResolvedValue({
+      thread: { thread_id: "77777777-7777-4777-8777-777777777777" },
+      created: false
+    } as any);
 
     approveMock.mockResolvedValue({
       authorization_id: "11111111-1111-1111-1111-111111111111",
@@ -147,7 +165,40 @@ describe("POST /oauth/device/approve", () => {
     const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(200);
     expect(result.body.data.agent_id).toBe("33333333-3333-4333-8333-333333333333");
+    expect(createOrGetControlDmThread).toHaveBeenCalledWith({
+      ownerId,
+      agentId: "33333333-3333-4333-8333-333333333333"
+    });
     expect(createAgent).not.toHaveBeenCalled();
+  });
+
+  it("keeps approval successful when control DM creation fails", async () => {
+    getAuthMock.mockResolvedValue({
+      authorization_id: "11111111-1111-1111-1111-111111111111",
+      status: "PENDING",
+      client_id: "openclaw",
+      requested_agent_name: "OpenClaw"
+    } as any);
+
+    createAgentMock.mockResolvedValue({ id: "22222222-2222-2222-2222-222222222222" } as any);
+    approveMock.mockResolvedValue({
+      authorization_id: "11111111-1111-1111-1111-111111111111",
+      status: "AUTHORIZED",
+      owner_id: ownerId,
+      agent_id: "22222222-2222-2222-2222-222222222222",
+      authorized_at: "2026-02-10T12:00:00.000Z"
+    } as any);
+    createOrGetControlDmThreadMock.mockRejectedValue(new Error("db down"));
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "k1" },
+      body: { user_code: "ABCD-EFGH", mode: "create_agent", agent_name: "My Agent" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.status).toBe("AUTHORIZED");
   });
 
   it("returns conflict when already authorized", async () => {

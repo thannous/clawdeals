@@ -3,8 +3,12 @@ import { mapSupabaseError } from "./supabase-errors";
 import { buildExternalLinkWarningPayload, SYSTEM_SENDER_ID } from "../messaging/warnings";
 import { encodeThreadsCursor } from "./threads-cursor";
 import { encodeMessagesCursor } from "./messages-cursor";
+import { isUuid } from "../utils/validators";
 
 const DEFAULT_LIMIT = 50;
+const THREAD_TYPE_MARKETPLACE = "MARKETPLACE";
+const THREAD_TYPE_CONTROL_DM = "CONTROL_DM";
+const CONTROL_DM_QUICK_ACTIONS = ["Help", "Approvals", "Connected Apps"];
 
 function formatFilterValue(value) {
   if (typeof value !== "string") return String(value);
@@ -21,6 +25,7 @@ export async function getThreadForBuyerListing({ listingId, buyerAgentId }: any)
   const { data, error } = await client
     .from("threads")
     .select("*")
+    .eq("thread_type", THREAD_TYPE_MARKETPLACE)
     .eq("listing_id", listingId)
     .eq("buyer_agent_id", buyerAgentId)
     .maybeSingle();
@@ -39,11 +44,14 @@ export async function createOrGetThread({ listingId, ownerId, buyerAgentId, sell
   }
 
   const payload = {
+    thread_type: THREAD_TYPE_MARKETPLACE,
     listing_id: listingId,
     owner_id: ownerId || null,
     buyer_agent_id: buyerAgentId,
     seller_agent_id: sellerAgentId,
-    status: "OPEN"
+    status: "OPEN",
+    control_owner_id: null,
+    control_agent_id: null
   };
 
   const { data, error } = await client.from("threads").insert(payload).select("*").single();
@@ -59,6 +67,105 @@ export async function createOrGetThread({ listingId, ownerId, buyerAgentId, sell
   }
 
   return { thread: data, created: true };
+}
+
+function buildControlDmGreetingPayload() {
+  return {
+    type: "info",
+    text: [
+      "Control channel connected.",
+      "Quick actions:",
+      "- Help",
+      "- Approvals",
+      "- Connected Apps"
+    ].join("\n"),
+    quick_actions: CONTROL_DM_QUICK_ACTIONS
+  };
+}
+
+export async function getControlDmThread({ ownerId, agentId }: any) {
+  if (!isUuid(ownerId) || !isUuid(agentId)) {
+    throw Object.assign(new Error("ownerId and agentId must be UUIDs"), {
+      status: 400,
+      code: "VALIDATION_ERROR"
+    });
+  }
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("threads")
+    .select("*")
+    .eq("thread_type", THREAD_TYPE_CONTROL_DM)
+    .eq("control_owner_id", ownerId)
+    .eq("control_agent_id", agentId)
+    .maybeSingle();
+  if (error) {
+    mapError(error);
+  }
+  return data || null;
+}
+
+export async function createOrGetControlDmThread({ ownerId, agentId }: any) {
+  if (!isUuid(ownerId) || !isUuid(agentId)) {
+    throw Object.assign(new Error("ownerId and agentId must be UUIDs"), {
+      status: 400,
+      code: "VALIDATION_ERROR"
+    });
+  }
+
+  const existing = await getControlDmThread({ ownerId, agentId });
+  if (existing) {
+    return { thread: existing, created: false };
+  }
+
+  const client = getSupabaseServiceClient();
+  const payload = {
+    thread_type: THREAD_TYPE_CONTROL_DM,
+    owner_id: ownerId,
+    control_owner_id: ownerId,
+    control_agent_id: agentId,
+    listing_id: null,
+    buyer_agent_id: null,
+    seller_agent_id: null,
+    status: "OPEN"
+  };
+
+  let thread: any = null;
+  const { data, error } = await client.from("threads").insert(payload).select("*").single();
+  if (error) {
+    // Handle races with the unique control-DM index.
+    if (typeof error.message === "string" && /duplicate key value/i.test(error.message)) {
+      const again = await getControlDmThread({ ownerId, agentId });
+      if (again) {
+        return { thread: again, created: false };
+      }
+    }
+    mapError(error);
+  } else {
+    thread = data;
+  }
+
+  if (!thread) {
+    const again = await getControlDmThread({ ownerId, agentId });
+    if (!again) {
+      throw Object.assign(new Error("Failed to create control DM thread"), {
+        status: 500,
+        code: "ERROR"
+      });
+    }
+    return { thread: again, created: false };
+  }
+
+  await createMessage({
+    threadId: thread.thread_id,
+    senderId: SYSTEM_SENDER_ID,
+    senderType: "system",
+    type: "info",
+    payload: buildControlDmGreetingPayload(),
+    redacted: false
+  });
+
+  return { thread, created: true };
 }
 
 export async function getThread(threadId) {
@@ -113,6 +220,7 @@ export async function listThreads({ listingId, buyerAgentId, sellerAgentId, stat
   let query = client
     .from("threads")
     .select("*")
+    .eq("thread_type", THREAD_TYPE_MARKETPLACE)
     .order("created_at", { ascending: false })
     .order("thread_id", { ascending: false })
     .limit(pageLimit + 1);

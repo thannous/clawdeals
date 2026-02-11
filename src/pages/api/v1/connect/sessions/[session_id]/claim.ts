@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../../../server/http/methods";
 import { errorPayload } from "../../../../../../server/http/errors";
 import { isUuid } from "../../../../../../server/utils/validators";
 import { createAgent, deleteAgentById, getAgentById } from "../../../../../../server/services/agents";
+import { createOrGetControlDmThread } from "../../../../../../server/services/threads";
 import {
   claimConnectSession,
   getConnectSessionByClaimToken
@@ -147,6 +148,30 @@ export async function handler(req: any, res: any, ctx: any) {
       now: new Date()
     });
 
+    let controlThreadId: string | null = null;
+    try {
+      const controlDm = await createOrGetControlDmThread({
+        ownerId: ctx.ownerId,
+        agentId
+      });
+      controlThreadId = controlDm?.thread?.thread_id ? String(controlDm.thread.thread_id) : null;
+    } catch (controlDmError: any) {
+      // Claim should remain successful even if control-DM provisioning is temporarily unavailable.
+      console.error("control_dm.ensure_failed", {
+        session_id: String(sessionId),
+        owner_id: ctx.ownerId,
+        agent_id: agentId,
+        error: controlDmError?.message || String(controlDmError)
+      });
+    }
+
+    if (ctx && controlThreadId) {
+      ctx.security = {
+        ...(ctx.security || {}),
+        control_dm_thread_id: controlThreadId
+      };
+    }
+
     return jsonResponse(200, {
       data: {
         session_id: claimed.session_id,
@@ -173,4 +198,3 @@ export default withApiMiddlewares(handler, {
   routeGroup: "connect.sessions.claim_owner",
   enableIdempotency: true
 });
-

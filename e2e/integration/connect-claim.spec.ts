@@ -90,6 +90,49 @@ test.describe.serial("Integration: Connect Claim", () => {
     expect(claimBody?.data?.status).toBe("CLAIMED");
     expect(claimBody?.data?.agent_id).toBeTruthy();
 
+    const claimedAgentId = String(claimBody?.data?.agent_id || "");
+    expect(claimedAgentId).toBeTruthy();
+
+    let controlThread: any = null;
+    for (let i = 0; i < 20; i += 1) {
+      const { data, error } = await supabase
+        .from("threads")
+        .select("thread_id, thread_type, control_owner_id, control_agent_id")
+        .eq("thread_type", "CONTROL_DM")
+        .eq("control_owner_id", ownerId)
+        .eq("control_agent_id", claimedAgentId)
+        .maybeSingle();
+      if (!error && data) {
+        controlThread = data;
+        break;
+      }
+      await sleep(100);
+    }
+    expect(controlThread).not.toBeNull();
+
+    const { data: greetingRow, error: greetingError } = await supabase
+      .from("messages")
+      .select("sender_type, type, payload")
+      .eq("thread_id", controlThread.thread_id)
+      .eq("sender_type", "system")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    expect(greetingError).toBeNull();
+    expect(greetingRow?.type).toBe("info");
+    expect(String(greetingRow?.payload?.text || "")).toContain("Quick actions");
+    expect(Array.isArray(greetingRow?.payload?.quick_actions)).toBe(true);
+    expect(greetingRow?.payload?.quick_actions).toEqual(["Help", "Approvals", "Connected Apps"]);
+
+    const { data: controlRows, error: controlRowsError } = await supabase
+      .from("threads")
+      .select("thread_id")
+      .eq("thread_type", "CONTROL_DM")
+      .eq("control_owner_id", ownerId)
+      .eq("control_agent_id", claimedAgentId);
+    expect(controlRowsError).toBeNull();
+    expect((controlRows || []).length).toBe(1);
+
     const poll = await request.get(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}`, {
       headers: { Authorization: `Bearer ${pollToken}` }
     });

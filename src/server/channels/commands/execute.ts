@@ -27,7 +27,7 @@ import { renderCardPlainText } from "../cards/types";
 import { buildApprovalsCard, type ApprovalCardItem } from "./approvals-telegram";
 import { encodeApprovalsCursorToken, decodeApprovalsCursorToken } from "./approvals-cursor";
 import { getTransaction } from "../../services/transactions";
-import { createMessage } from "../../services/threads";
+import { createMessage, createOrGetControlDmThread } from "../../services/threads";
 import { SYSTEM_SENDER_ID } from "../../messaging/warnings";
 import { clearActiveListingDraftForChannel } from "../../services/listing-drafts";
 import { cancelStagedCommandsForChannelIdentity } from "../../services/staged-commands";
@@ -270,21 +270,50 @@ async function postApprovalDecisionThreadMessage({
   approval: any;
   decision: "APPROVED" | "DENIED";
 }) {
-  const actionType = String(approval?.action_type || "");
-  let threadId: string | null = null;
+  const ownerId = typeof approval?.owner_id === "string" && isUuid(approval.owner_id) ? String(approval.owner_id) : null;
 
-  if (actionType === "offer_over_budget" || actionType === "message.send") {
-    const raw = approval?.action_ref?.thread_id ? String(approval.action_ref.thread_id) : null;
-    if (raw && isUuid(raw)) threadId = raw;
-  } else if (actionType === "contact_reveal") {
-    const txId = approval?.action_ref_id ? String(approval.action_ref_id) : null;
-    if (txId && isUuid(txId)) {
-      try {
-        const tx = await getTransaction(txId);
-        const raw = tx?.thread_id ? String(tx.thread_id) : null;
-        if (raw && isUuid(raw)) threadId = raw;
-      } catch {
-        threadId = null;
+  let agentId: string | null =
+    typeof approval?.created_by_agent_id === "string" && isUuid(approval.created_by_agent_id)
+      ? String(approval.created_by_agent_id)
+      : null;
+
+  if (!agentId) {
+    const actionRef = approval?.action_ref && typeof approval.action_ref === "object" ? approval.action_ref : {};
+    const candidates = [actionRef.agent_id, actionRef.buyer_agent_id, actionRef.seller_agent_id];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && isUuid(candidate)) {
+        agentId = candidate;
+        break;
+      }
+    }
+  }
+
+  let threadId: string | null = null;
+  if (ownerId && agentId) {
+    try {
+      const controlDm = await createOrGetControlDmThread({ ownerId, agentId });
+      const raw = controlDm?.thread?.thread_id ? String(controlDm.thread.thread_id) : null;
+      if (raw && isUuid(raw)) threadId = raw;
+    } catch {
+      threadId = null;
+    }
+  }
+
+  if (!threadId) {
+    const actionType = String(approval?.action_type || "");
+    if (actionType === "offer_over_budget" || actionType === "message.send") {
+      const raw = approval?.action_ref?.thread_id ? String(approval.action_ref.thread_id) : null;
+      if (raw && isUuid(raw)) threadId = raw;
+    } else if (actionType === "contact_reveal") {
+      const txId = approval?.action_ref_id ? String(approval.action_ref_id) : null;
+      if (txId && isUuid(txId)) {
+        try {
+          const tx = await getTransaction(txId);
+          const raw = tx?.thread_id ? String(tx.thread_id) : null;
+          if (raw && isUuid(raw)) threadId = raw;
+        } catch {
+          threadId = null;
+        }
       }
     }
   }
