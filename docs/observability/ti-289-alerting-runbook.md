@@ -147,6 +147,7 @@ Actions:
 1. Check if the worker cron is running:
    - `POST /api/internal/cron/trustscore-recalc-queue`
    - `POST /api/internal/cron/watchlist-backfill-queue`
+   - `POST /api/internal/cron/risk-rules`
 2. Check staleness:
    - Use `oldest_age_s` to see if the queue is stuck vs just temporarily behind.
 3. For approvals backlog:
