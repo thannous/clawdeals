@@ -237,6 +237,10 @@ export const RATE_LIMIT_PROFILES = {
   "threads.read": {
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
   },
+  "threads.watch": {
+    // Long-poll consumer. Keep this tight enough to prevent tight-loop polling.
+    buckets: [{ limit: 60, windowSeconds: MINUTE }],
+  },
   "audit.read": {
     scope: "owner",
     buckets: [{ limit: 240, windowSeconds: MINUTE }],
