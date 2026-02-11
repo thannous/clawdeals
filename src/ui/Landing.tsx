@@ -259,9 +259,6 @@ function Hero({
           </Link>
         )}
 
-        <div className="mt-12 w-full max-w-2xl">
-          <WaitlistForm copy={copy} locale={locale} source="hero" />
-        </div>
       </div>
     </div>
   );
