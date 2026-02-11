@@ -22,7 +22,7 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import { getPublicApiBaseUrl, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
+import { getPublicApiBaseUrl, getPublicAppUrl, joinUrl } from "../shared/urls";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -630,7 +630,7 @@ const WaitlistForm = ({ copy, locale, compact = false, source = "hero" }) => {
 const Navbar = ({ copy, themeId, setTheme, themes, futureMode }) => {
   const router = useRouter();
   const localePrefix = router.locale === "fr" ? "/fr" : "";
-  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
+  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}/start?from=nav`);
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
 
@@ -761,8 +761,8 @@ const HeroCtas = ({ primary, secondary, primaryHref, futureMode, badge }) =>
 const DealsHero = ({ copy, futureMode, locale }) => {
   const appUrl = getPublicAppUrl();
   const localePrefix = locale === "fr" ? "/fr" : "";
-  const dealsUrl = joinUrl(appUrl, `${localePrefix}/deals`);
-  const listingsUrl = joinUrl(appUrl, `${localePrefix}${getPublicAppEntryPath()}`);
+  const dealsUrl = joinUrl(appUrl, `${localePrefix}/start?from=hero-deals`);
+  const listingsUrl = joinUrl(appUrl, `${localePrefix}/start?from=hero-marketplace`);
 
   return (
     <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
@@ -828,7 +828,7 @@ const DealsHero = ({ copy, futureMode, locale }) => {
 
 /* ── Showcase sections ── */
 
-const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, futureMode, reverse = false }) => (
+const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, futureMode, reverse = false, ctaHref }) => (
   <div>
     <SectionHeader title={header.title} subtitle={header.subtitle} />
     <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${reverse ? "lg:[direction:rtl]" : ""}`}>
@@ -847,9 +847,9 @@ const ShowcaseSection = ({ header, showcase, PhoneComponent, copy, futureMode, r
         {futureMode ? (
           <ComingSoonBadge label={copy.future.badge} />
         ) : (
-          <button className="px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
+          <Link href={ctaHref} className="inline-block px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
             {showcase.cta}
-          </button>
+          </Link>
         )}
       </div>
       <div className={`flex justify-center ${reverse ? "lg:[direction:ltr]" : ""}`}>
@@ -1113,6 +1113,8 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
+  const appUrl = getPublicAppUrl();
+  const localePrefix = locale === "fr" ? "/fr" : "";
 
   return (
     <div className="min-h-screen">
@@ -1168,6 +1170,7 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
             PhoneComponent={DealsPhone}
             copy={copy}
             futureMode={futureMode}
+            ctaHref={joinUrl(appUrl, `${localePrefix}/start?from=showcase-deals`)}
           />
 
           <ShowcaseSection
@@ -1176,6 +1179,7 @@ export default function Landing({ locale = "en", buildTimeIso, appVersion, deplo
             PhoneComponent={MarketPhone}
             copy={copy}
             futureMode={futureMode}
+            ctaHref={joinUrl(appUrl, `${localePrefix}/start?from=showcase-marketplace`)}
             reverse
           />
 

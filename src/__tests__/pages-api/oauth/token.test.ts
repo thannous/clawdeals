@@ -40,7 +40,10 @@ import {
   issueRefreshTokenRecord,
   rotateRefreshToken
 } from "../../../server/services/oauth-refresh-tokens";
-import { issueOauthAccessToken } from "../../../server/services/oauth-access-tokens";
+import {
+  deleteOauthAccessTokenByHash,
+  issueOauthAccessToken
+} from "../../../server/services/oauth-access-tokens";
 
 const rateLimitMock = vi.mocked(rateLimitMiddleware);
 const getByDeviceCodeMock = vi.mocked(getOauthDeviceAuthorizationByDeviceCode);
@@ -51,6 +54,7 @@ const issueRefreshMock = vi.mocked(issueRefreshTokenRecord);
 const getRefreshMock = vi.mocked(getOauthRefreshTokenRecordByToken);
 const rotateMock = vi.mocked(rotateRefreshToken);
 const issueAccessMock = vi.mocked(issueOauthAccessToken);
+const deleteAccessByHashMock = vi.mocked(deleteOauthAccessTokenByHash);
 
 describe("POST /oauth/token", () => {
   beforeEach(() => {
@@ -368,5 +372,79 @@ describe("POST /oauth/token", () => {
     expect(result.status).toBe(503);
     expect(result.body.error.code).toBe("AUTH_UNAVAILABLE");
     expect(rotateRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it("returns invalid_grant and revokes issued access token when rotation loses refresh race", async () => {
+    getRefreshMock.mockResolvedValue({
+      tokenHash: "hash",
+      record: {
+        token_id: "old",
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        installation_id: "inst-1"
+      }
+    } as any);
+
+    issueAccessMock.mockResolvedValue({
+      access_token: "cd_at_new",
+      access_token_hash: "athash2",
+      expires_in: 900,
+      expires_at: new Date(Date.now() + 900_000).toISOString(),
+      issued_at: new Date().toISOString()
+    } as any);
+
+    rotateMock.mockRejectedValue({
+      status: 401,
+      code: "invalid_grant",
+      message: "Invalid refresh token"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: { client_id: "openclaw", grant_type: "refresh_token", refresh_token: "cd_rt_old" }
+    };
+
+    const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1", body: req.body });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("invalid_grant");
+    expect(deleteAccessByHashMock).toHaveBeenCalledWith("athash2");
+  });
+
+  it("fails closed on rotation server errors and revokes issued access token", async () => {
+    getRefreshMock.mockResolvedValue({
+      tokenHash: "hash",
+      record: {
+        token_id: "old",
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        installation_id: "inst-1"
+      }
+    } as any);
+
+    issueAccessMock.mockResolvedValue({
+      access_token: "cd_at_new",
+      access_token_hash: "athash2",
+      expires_in: 900,
+      expires_at: new Date(Date.now() + 900_000).toISOString(),
+      issued_at: new Date().toISOString()
+    } as any);
+
+    rotateMock.mockRejectedValue({
+      status: 503,
+      code: "ROTATION_UNAVAILABLE",
+      message: "Failed to rotate refresh token"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: { client_id: "openclaw", grant_type: "refresh_token", refresh_token: "cd_rt_old" }
+    };
+
+    const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1", body: req.body });
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("ROTATION_UNAVAILABLE");
+    expect(deleteAccessByHashMock).toHaveBeenCalledWith("athash2");
   });
 });

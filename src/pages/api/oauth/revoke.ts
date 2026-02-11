@@ -4,6 +4,12 @@ import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors";
 import { rateLimitMiddleware } from "../../../server/rate-limit/middleware";
 import { getOauthRefreshTokenRecordByToken, revokeRefreshToken } from "../../../server/services/oauth-refresh-tokens";
+import {
+  getOauthAccessTokenRecordByToken,
+  revokeOauthAccessToken
+} from "../../../server/services/oauth-access-tokens";
+
+type OauthRevocationTokenType = "refresh_token" | "access_token";
 
 function getHeaderValue(req: any, name: string) {
   const value = req?.headers?.[name] ?? req?.headers?.[String(name).toLowerCase()];
@@ -65,6 +71,81 @@ function applyRateLimitResultToCtx(ctx: any, meta: any) {
   };
 }
 
+function normalizeTokenTypeHint(value: any): OauthRevocationTokenType | null {
+  const tokenTypeHint = typeof value === "string" ? value.trim() : "";
+  if (tokenTypeHint === "refresh_token" || tokenTypeHint === "access_token") {
+    return tokenTypeHint;
+  }
+  return null;
+}
+
+function resolveLookupOrder(tokenTypeHint: OauthRevocationTokenType | null): OauthRevocationTokenType[] {
+  if (tokenTypeHint === "access_token") {
+    return ["access_token", "refresh_token"];
+  }
+  if (tokenTypeHint === "refresh_token") {
+    return ["refresh_token", "access_token"];
+  }
+  return ["refresh_token", "access_token"];
+}
+
+function normalizeOwnerId(ownerId: any): string | null {
+  if (ownerId === null || ownerId === undefined) return null;
+  const value = String(ownerId).trim();
+  return value ? value : null;
+}
+
+async function lookupOauthAccessTokenRecordByTokenCompat({ accessToken }: { accessToken: string }) {
+  return getOauthAccessTokenRecordByToken({ accessToken });
+}
+
+async function revokeOauthAccessTokenCompat({
+  accessToken,
+  now = new Date()
+}: {
+  accessToken: string;
+  now?: Date;
+}) {
+  return revokeOauthAccessToken({ accessToken, now });
+}
+
+async function lookupByTokenType({
+  tokenType,
+  token
+}: {
+  tokenType: OauthRevocationTokenType;
+  token: string;
+}): Promise<{ found: boolean; ownerId: string | null }> {
+  const found =
+    tokenType === "refresh_token"
+      ? await getOauthRefreshTokenRecordByToken({ refreshToken: token })
+      : await lookupOauthAccessTokenRecordByTokenCompat({ accessToken: token });
+
+  if (!found?.record) {
+    return { found: false, ownerId: null };
+  }
+
+  return {
+    found: true,
+    ownerId: normalizeOwnerId(found.record.owner_id)
+  };
+}
+
+async function revokeByTokenType({
+  tokenType,
+  token,
+  now
+}: {
+  tokenType: OauthRevocationTokenType;
+  token: string;
+  now: Date;
+}) {
+  if (tokenType === "refresh_token") {
+    return revokeRefreshToken({ refreshToken: token, now });
+  }
+  return revokeOauthAccessTokenCompat({ accessToken: token, now });
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -87,10 +168,8 @@ export async function handler(req: any, res: any, ctx: any) {
   }
 
   const tokenTypeHintRaw = body.token_type_hint ?? body.tokenTypeHint ?? null;
-  const tokenTypeHint = typeof tokenTypeHintRaw === "string" ? tokenTypeHintRaw.trim() : "";
-  if (tokenTypeHint && tokenTypeHint !== "refresh_token") {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "token_type_hint must be 'refresh_token'"));
-  }
+  const tokenTypeHint = normalizeTokenTypeHint(tokenTypeHintRaw);
+  const lookupOrder = resolveLookupOrder(tokenTypeHint);
 
   const tokenRaw = body.token ?? null;
   const token = typeof tokenRaw === "string" ? tokenRaw.trim() : "";
@@ -104,14 +183,18 @@ export async function handler(req: any, res: any, ctx: any) {
 
   // Lookup first so we can rate-limit by owner when possible.
   let ownerId: string | null = null;
-  try {
-    const found = await getOauthRefreshTokenRecordByToken({ refreshToken: token });
-    ownerId = found?.record?.owner_id ? String(found.record.owner_id) : null;
-  } catch (error: any) {
-    if (error?.status && error.status >= 500) {
-      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+  for (const tokenType of lookupOrder) {
+    try {
+      const found = await lookupByTokenType({ tokenType, token });
+      if (found.found) {
+        ownerId = found.ownerId;
+        break;
+      }
+    } catch (error: any) {
+      if (error?.status && error.status >= 500) {
+        return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+      }
     }
-    ownerId = null;
   }
 
   const rateLimitResult = await rateLimitMiddleware(req, {
@@ -127,23 +210,64 @@ export async function handler(req: any, res: any, ctx: any) {
     return jsonResponse(rateLimitResult.status, rateLimitResult.body, rateLimitResult.headers);
   }
 
-  try {
-    const result = await revokeRefreshToken({ refreshToken: token, now: new Date() });
-    if (ctx) {
+  let revokeResult: { tokenType: OauthRevocationTokenType; payload: any } | null = null;
+  const now = new Date();
+
+  for (const tokenType of lookupOrder) {
+    try {
+      const result = await revokeByTokenType({ tokenType, token, now });
+      if (result?.found || result?.revoked) {
+        revokeResult = { tokenType, payload: result };
+        break;
+      }
+    } catch (error: any) {
+      if (error?.status && error.status >= 500) {
+        return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+      }
+      // RFC 7009: never reveal token validity; keep trying other supported token types.
+    }
+  }
+
+  if (ctx) {
+    if (revokeResult?.tokenType === "refresh_token") {
       ctx.auditEntityType = "oauth_refresh_token";
-      ctx.auditEntityId = result.token_id || null;
+      ctx.auditEntityId = revokeResult.payload?.token_id || null;
       ctx.security = {
         ...(ctx.security || {}),
-        refresh_token_id: result.token_id || null,
-        refresh_token_hash: result.token_hash || null
+        refresh_token_id: revokeResult.payload?.token_id || null,
+        refresh_token_hash: revokeResult.payload?.token_hash || null
       };
-    }
-  } catch (error: any) {
-    // RFC 7009: never reveal token validity; still return 200.
-    if (ctx) {
+    } else if (revokeResult?.tokenType === "access_token") {
+      const accessTokenHash =
+        revokeResult.payload?.access_token_hash ??
+        revokeResult.payload?.token_hash ??
+        null;
+      const accessTokenId =
+        revokeResult.payload?.access_token_id ??
+        revokeResult.payload?.token_id ??
+        null;
+      ctx.auditEntityType = "oauth_access_token";
+      ctx.auditEntityId = accessTokenId;
+      ctx.security = {
+        ...(ctx.security || {}),
+        access_token_id: accessTokenId,
+        access_token_hash: accessTokenHash
+      };
+    } else if (tokenTypeHint === "refresh_token") {
       ctx.security = {
         ...(ctx.security || {}),
         refresh_token_hash: null
+      };
+    } else if (tokenTypeHint === "access_token") {
+      ctx.security = {
+        ...(ctx.security || {}),
+        access_token_hash: null
+      };
+    } else {
+      ctx.security = {
+        ...(ctx.security || {}),
+        refresh_token_hash: null,
+        access_token_hash: null
       };
     }
   }

@@ -251,6 +251,113 @@ function isOauthAccessTokenRecord(value: any): value is OauthAccessTokenRecord {
   return true;
 }
 
+export async function getOauthAccessTokenRecordByToken({
+  accessToken,
+  now = new Date()
+}: {
+  accessToken: string;
+  now?: Date;
+}): Promise<{ accessTokenHash: string; record: OauthAccessTokenRecord } | null> {
+  const token = normalizeNonEmptyString(accessToken);
+  if (!token) throw buildServiceError("accessToken is required", 400, "VALIDATION_ERROR");
+  if (!isOauthAccessToken(token)) return null;
+
+  const secret = requireOauthTokenSecret();
+  const accessTokenHash = hashWithSecret(token, secret);
+  const key = buildRedisKey(accessTokenHash);
+
+  let raw: any;
+  try {
+    const redis = getRedis();
+    raw = await redis.get(key);
+  } catch (error) {
+    throw buildServiceError("Failed to read access token", 503, "AUTH_UNAVAILABLE");
+  }
+
+  if (!raw) return null;
+
+  let parsed: any = null;
+  try {
+    parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    await deleteOauthAccessTokenByHash(accessTokenHash);
+    return null;
+  }
+
+  if (!isOauthAccessTokenRecord(parsed)) {
+    await deleteOauthAccessTokenByHash(accessTokenHash);
+    return null;
+  }
+
+  const expiresAt = new Date(parsed.expires_at);
+  if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
+    await deleteOauthAccessTokenByHash(accessTokenHash);
+    return null;
+  }
+
+  return { accessTokenHash, record: parsed };
+}
+
+export async function revokeOauthAccessToken({
+  accessToken,
+  now = new Date()
+}: {
+  accessToken: string;
+  now?: Date;
+}): Promise<{
+  found: boolean;
+  revoked: boolean;
+  access_token_hash: string | null;
+  owner_id: string | null;
+  agent_id: string | null;
+  installation_id: string | null;
+}> {
+  const token = normalizeNonEmptyString(accessToken);
+  if (!token) throw buildServiceError("accessToken is required", 400, "VALIDATION_ERROR");
+  if (!isOauthAccessToken(token)) {
+    return {
+      found: false,
+      revoked: false,
+      access_token_hash: null,
+      owner_id: null,
+      agent_id: null,
+      installation_id: null
+    };
+  }
+
+  const secret = requireOauthTokenSecret();
+  const accessTokenHash = hashWithSecret(token, secret);
+  const existing = await getOauthAccessTokenRecordByToken({ accessToken: token, now });
+  if (!existing) {
+    return {
+      found: false,
+      revoked: false,
+      access_token_hash: accessTokenHash,
+      owner_id: null,
+      agent_id: null,
+      installation_id: null
+    };
+  }
+
+  let revoked = false;
+  try {
+    const redis = getRedis();
+    await redis.del(buildRedisKey(accessTokenHash));
+    revoked = true;
+  } catch (error) {
+    throw buildServiceError("Failed to revoke access token", 503, "AUTH_UNAVAILABLE");
+  }
+
+  return {
+    found: true,
+    revoked,
+    access_token_hash: accessTokenHash,
+    owner_id: existing.record.owner_id || null,
+    agent_id: existing.record.agent_id || null,
+    installation_id: existing.record.installation_id || null
+  };
+}
+
 export async function authenticateOauthAccessToken(accessToken: string, { now = new Date() } = {}) {
   const token = normalizeNonEmptyString(accessToken);
   if (!token || !isOauthAccessToken(token)) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
 
@@ -26,7 +27,14 @@ function isLikelyApiKey(value: string): boolean {
   return v.length >= 16 && (v.startsWith("cd_") || v.includes("_"));
 }
 
+function subscribeToNothing() {
+  return () => {};
+}
+
 export default function StartPage() {
+  const router = useRouter();
+  const from = typeof router.query.from === "string" ? router.query.from : null;
+
   const [mode, setMode] = useState<"generate" | "paste">("generate");
   const [agentName, setAgentName] = useState("");
   const [pastedKey, setPastedKey] = useState("");
@@ -147,10 +155,14 @@ export default function StartPage() {
     }
   }, [activeKey]);
 
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://app.clawdeals.com";
-  const apiBase = `${baseUrl}/api`;
   const hostedApiBase = "https://app.clawdeals.com/api";
   const localApiBase = "http://localhost:3000/api";
+  const baseUrl = useSyncExternalStore(
+    subscribeToNothing,
+    () => window.location.origin,
+    () => "https://app.clawdeals.com"
+  );
+  const apiBase = `${baseUrl}/api`;
   const [mcpApiBase, setMcpApiBase] = useState<string>(hostedApiBase);
   const skillUrl = "https://clawdeals.com/skill.md";
   const curlSnippet = activeKey
@@ -234,7 +246,7 @@ export default function StartPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-10 space-y-8">
+      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-10 space-y-8">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Get an API key in one minute</h1>
           <p className="text-muted font-mono text-sm">

@@ -166,6 +166,79 @@ test.describe.serial("Integration: OAuth Token", () => {
     expect(refreshFailBody?.error?.code).toBe("invalid_grant");
   });
 
+  test("revoking an access token invalidates it immediately", async ({ request }) => {
+    const ip = randomIp();
+    const { deviceCode, agentId } = await authorizeAndApproveDeviceFlow({ request, ip });
+
+    await request.get("/api/v1/watchlists", { headers: { "x-forwarded-for": ip } });
+
+    const token = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        grant_type: DEVICE_CODE_GRANT_TYPE,
+        device_code: deviceCode,
+        client_id: "openclaw"
+      }).toString()
+    });
+    await expectStatus(token, 200);
+    const tokenBody = await token.json();
+
+    const accessToken = String(tokenBody?.access_token || "");
+    const refreshToken = String(tokenBody?.refresh_token || "");
+    expect(accessToken).toMatch(/^cd_at_/);
+    expect(refreshToken).toMatch(/^cd_rt_/);
+
+    const meBefore = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-forwarded-for": ip
+      }
+    });
+    await expectStatus(meBefore, 200);
+    const meBeforeBody = await meBefore.json();
+    expect(meBeforeBody?.data?.agent_id).toBe(agentId);
+
+    const revoke = await request.post("/api/oauth/revoke", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        token: accessToken,
+        token_type_hint: "access_token",
+        client_id: "openclaw"
+      }).toString()
+    });
+    await expectStatus(revoke, 200);
+
+    const meAfter = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-forwarded-for": ip
+      }
+    });
+    expect(meAfter.status()).toBe(401);
+    const meAfterBody = await meAfter.json();
+    expect(meAfterBody?.error?.code).toBe("UNAUTHORIZED");
+
+    const refreshed = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: "openclaw"
+      }).toString()
+    });
+    await expectStatus(refreshed, 200);
+  });
+
   test("device flow polling too quickly returns slow_down", async ({ request }) => {
     const ip = randomIp();
 

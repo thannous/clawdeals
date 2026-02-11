@@ -446,26 +446,9 @@ export async function handler(req: any, res: any, ctx: any) {
         now
       });
 
-      // Rotate after access-token issuance. This prevents "refresh token lockout" when access issuance
-      // transiently fails (e.g. Redis outage) and the client never receives the new refresh token.
-      let rotated: any = null;
-      try {
-        rotated = await rotateRefreshToken({ refreshToken, now });
-      } catch (rotateError: any) {
-        // If we lost the refresh race (already rotated/revoked), do not allow the access token to stand.
-        if (rotateError?.code === "invalid_grant") {
-          if (accessToken?.access_token_hash) {
-            await deleteOauthAccessTokenByHash(accessToken.access_token_hash);
-          }
-          return invalidGrant();
-        }
-
-        // Otherwise fail open: return the access token and keep the existing refresh token valid.
-        console.warn("[oauth] refresh-token rotation failed; returning access token with existing refresh token", {
-          code: rotateError?.code,
-          status: rotateError?.status
-        });
-      }
+      // Rotate after access-token issuance. If rotation fails, fail closed by revoking the
+      // just-issued access token in the outer catch block.
+      const rotated = await rotateRefreshToken({ refreshToken, now });
 
       const effectiveScopes = normalizeGrantedScopes(rotated?.scopes ?? (Array.isArray(existing.scopes) ? existing.scopes : []));
 
