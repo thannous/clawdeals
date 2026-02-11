@@ -9,7 +9,9 @@ vi.mock("../../../../server/services/connect-sessions", () => ({
 vi.mock("../../../../server/services/agents", () => ({
   createAgent: vi.fn(),
   deleteAgentById: vi.fn(),
-  getAgentById: vi.fn()
+  getAgentById: vi.fn(),
+  getOwnerAgentLimit: vi.fn(),
+  listOwnerAgentsForClaim: vi.fn()
 }));
 
 vi.mock("../../../../server/services/threads", () => ({
@@ -24,7 +26,13 @@ import {
   denyConnectSession,
   getConnectSessionByClaimToken
 } from "../../../../server/services/connect-sessions";
-import { createAgent, deleteAgentById, getAgentById } from "../../../../server/services/agents";
+import {
+  createAgent,
+  deleteAgentById,
+  getAgentById,
+  getOwnerAgentLimit,
+  listOwnerAgentsForClaim
+} from "../../../../server/services/agents";
 import { createOrGetControlDmThread } from "../../../../server/services/threads";
 
 const getConnectSessionByClaimTokenMock = vi.mocked(getConnectSessionByClaimToken);
@@ -34,6 +42,8 @@ const denyConnectSessionMock = vi.mocked(denyConnectSession);
 const createAgentMock = vi.mocked(createAgent);
 const deleteAgentByIdMock = vi.mocked(deleteAgentById);
 const getAgentByIdMock = vi.mocked(getAgentById);
+const getOwnerAgentLimitMock = vi.mocked(getOwnerAgentLimit);
+const listOwnerAgentsForClaimMock = vi.mocked(listOwnerAgentsForClaim);
 const createOrGetControlDmThreadMock = vi.mocked(createOrGetControlDmThread);
 
 const ownerId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
@@ -51,6 +61,8 @@ const baseOwnerCtx: any = {
 describe("POST /v1/connect/sessions/:session_id/claim", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getOwnerAgentLimitMock.mockReturnValue(1);
+    listOwnerAgentsForClaimMock.mockResolvedValue([]);
   });
 
   it("requires Idempotency-Key", async () => {
@@ -103,6 +115,23 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("blocks cookie-auth owner claims on cross-site requests", async () => {
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      query: { session_id: sessionId },
+      body: { claim_token: claimToken }
+    };
+
+    const result: any = await claimHandler(req, null, {
+      ...baseOwnerCtx,
+      ownerSessionId: "77777777-7777-4777-8777-777777777777"
+    });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("CSRF_BLOCKED");
+    expect(getConnectSessionByClaimToken).not.toHaveBeenCalled();
   });
 
   it("claims session (create_agent mode)", async () => {
@@ -180,6 +209,41 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     expect(ctx.auditEvent).toBe("connect.session_claimed");
     expect(ctx.auditEntityType).toBe("connect_session");
     expect(ctx.auditEntityId).toBe(sessionId);
+  });
+
+  it("returns 409 when owner has reached OWNER_AGENT_LIMIT in create mode", async () => {
+    getConnectSessionByClaimTokenMock.mockResolvedValue({
+      session_id: sessionId,
+      status: "PENDING_CLAIM",
+      requested_agent_name: "OpenClaw",
+      requested_scopes: []
+    } as any);
+    getOwnerAgentLimitMock.mockReturnValue(1);
+    listOwnerAgentsForClaimMock.mockResolvedValue([
+      {
+        id: "22222222-2222-4222-8222-222222222222",
+        name: "Existing Agent",
+        status: "active",
+        created_at: "2026-02-10T11:00:00.000Z"
+      }
+    ] as any);
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      query: { session_id: sessionId },
+      body: {
+        claim_token: claimToken,
+        mode: "create_agent",
+        agent_name: "Should Not Create"
+      }
+    };
+
+    const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("OWNER_AGENT_LIMIT_REACHED");
+    expect(createAgent).not.toHaveBeenCalled();
+    expect(claimConnectSession).not.toHaveBeenCalled();
   });
 
   it("maps status conflicts to 409 (already claimed)", async () => {
@@ -337,6 +401,8 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
 describe("POST /v1/connect/sessions/:session_id/deny", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getOwnerAgentLimitMock.mockReturnValue(1);
+    listOwnerAgentsForClaimMock.mockResolvedValue([]);
   });
 
   it("requires Idempotency-Key", async () => {
@@ -350,6 +416,23 @@ describe("POST /v1/connect/sessions/:session_id/deny", () => {
     const result: any = await denyHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("blocks cookie-auth owner deny requests on cross-site requests", async () => {
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      query: { session_id: sessionId },
+      body: { claim_token: claimToken }
+    };
+
+    const result: any = await denyHandler(req, null, {
+      ...baseOwnerCtx,
+      ownerSessionId: "77777777-7777-4777-8777-777777777777"
+    });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("CSRF_BLOCKED");
+    expect(getConnectSessionByClaimToken).not.toHaveBeenCalled();
   });
 
   it("requires owner authentication", async () => {

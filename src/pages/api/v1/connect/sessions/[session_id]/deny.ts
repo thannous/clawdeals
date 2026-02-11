@@ -22,6 +22,33 @@ function resolveClaimToken(body: any) {
   return typeof claimToken === "string" ? claimToken.trim() : "";
 }
 
+function requireSameOriginForOwnerSession(req: any, ctx: any) {
+  if (!ctx?.ownerSessionId) return null;
+  const origin = getHeaderValue(req, "origin");
+  const referer = getHeaderValue(req, "referer");
+  const source = origin || referer;
+  if (!source) {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  const forwardedHost = getHeaderValue(req, "x-forwarded-host");
+  const hostHeader = forwardedHost ? String(forwardedHost).split(",")[0].trim() : getHeaderValue(req, "host");
+  if (!hostHeader) {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  try {
+    const sourceHost = new URL(String(source)).host;
+    if (!sourceHost || sourceHost !== String(hostHeader)) {
+      return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+    }
+  } catch {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  return null;
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -47,6 +74,8 @@ export async function handler(req: any, res: any, ctx: any) {
   if (!isUuid(ctx.ownerId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
   }
+  const csrfBlocked = requireSameOriginForOwnerSession(req, ctx);
+  if (csrfBlocked) return csrfBlocked;
 
   const body = req.body || {};
   const claimToken = resolveClaimToken(body);
@@ -83,4 +112,3 @@ export default withApiMiddlewares(handler, {
   routeGroup: "connect.sessions.deny_owner",
   enableIdempotency: true
 });
-

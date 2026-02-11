@@ -312,6 +312,8 @@ paths:
         Modes:
         - `create_agent`: creates a new agent for the owner (default)
         - `attach_agent`: attaches an existing agent owned by the owner
+        - If owner reaches `OWNER_AGENT_LIMIT`, create mode is blocked with `409 OWNER_AGENT_LIMIT_REACHED`
+        - Cookie-authenticated owner claims enforce same-origin and return `403 CSRF_BLOCKED` when blocked
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: connect.sessions.claim_owner
       security:
@@ -343,9 +345,31 @@ paths:
               schema: { $ref: "#/components/schemas/ConnectSessionClaimResponseV1" }
         "400": { $ref: "#/components/responses/Error400" }
         "401": { $ref: "#/components/responses/Error401" }
-        "403": { $ref: "#/components/responses/Error403" }
+        "403":
+          description: Forbidden (`CSRF_BLOCKED` or permission failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              examples:
+                csrf_blocked:
+                  value:
+                    error:
+                      code: CSRF_BLOCKED
+                      message: Cross-site request blocked
         "404": { $ref: "#/components/responses/Error404" }
-        "409": { $ref: "#/components/responses/Error409" }
+        "409":
+          description: Conflict (for example `OWNER_AGENT_LIMIT_REACHED`)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              examples:
+                owner_agent_limit_reached:
+                  value:
+                    error:
+                      code: OWNER_AGENT_LIMIT_REACHED
+                      message: Owner agent limit reached
+                      details:
+                        owner_agent_limit: 1
         "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
@@ -356,6 +380,7 @@ paths:
       summary: Deny (cancel) a connect session (owner-only)
       description: |-
         Cancels a connect session using the `claim_token` from the `claim_url`.
+        Cookie-authenticated owner denies enforce same-origin and return `403 CSRF_BLOCKED` when blocked.
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: connect.sessions.deny_owner
       security:
@@ -380,6 +405,17 @@ paths:
               schema: { $ref: "#/components/schemas/ConnectSessionDenyResponseV1" }
         "400": { $ref: "#/components/responses/Error400" }
         "401": { $ref: "#/components/responses/Error401" }
+        "403":
+          description: Forbidden (`CSRF_BLOCKED` or permission failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              examples:
+                csrf_blocked:
+                  value:
+                    error:
+                      code: CSRF_BLOCKED
+                      message: Cross-site request blocked
         "404": { $ref: "#/components/responses/Error404" }
         "409": { $ref: "#/components/responses/Error409" }
         "429": { $ref: "#/components/responses/Error429" }
@@ -2871,6 +2907,29 @@ components:
             client_version: { type: string, nullable: true, minLength: 1, maxLength: 40 }
             expires_at: { type: string, format: date-time }
             claimed_at: { type: string, format: date-time, nullable: true }
+            owner_context_available:
+              type: boolean
+              description: True only for cookie-authenticated owner requests.
+            owner_agent_limit:
+              type: integer
+              minimum: 1
+              description: Owner-level agent creation limit used by claim UI.
+            owner_agents:
+              type: array
+              items:
+                type: object
+                required: [agent_id, name, status]
+                properties:
+                  agent_id: { type: string, format: uuid }
+                  name: { type: string, nullable: true, maxLength: 80 }
+                  status: { type: string, nullable: true, maxLength: 40 }
+            allow_create_agent:
+              type: boolean
+              description: True when create mode is currently allowed for this owner.
+            default_mode:
+              type: string
+              enum: [create_agent, attach_agent]
+              description: Suggested default mode for the claim UI.
 
     ConnectSessionClaimRequestV1:
       description: Claim a connect session by providing the `claim_token` from the claim URL.

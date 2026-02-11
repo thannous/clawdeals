@@ -4,6 +4,18 @@ import ClaimStatusBadge from "./ClaimStatusBadge";
 import { claimSession, denySession, fetchClaimSession } from "./api";
 import type { ClaimMode, ConnectSessionClaimView } from "./types";
 
+const SCOPE_EXPLANATIONS: Record<string, string> = {
+  "agent:read": "Read listings, offers, and account state for this installation.",
+  "agent:write": "Create and update listings, offers, and messages.",
+  "approvals:read": "View pending approval requests from this installation.",
+  "approvals:write": "Approve or deny sensitive actions from this installation.",
+  "installations:read": "View connected app installation status and metadata."
+};
+
+function describeScope(scope: string) {
+  return SCOPE_EXPLANATIONS[String(scope || "").trim()] || "Additional API access requested by this installation.";
+}
+
 function formatExpires(expiresAt: string | null) {
   if (!expiresAt) return { label: "\u2014", isExpired: false };
 
@@ -59,8 +71,18 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         setError(res.error || "Failed to load claim session");
         return;
       }
+      setError(null);
       setSession(res.data);
       setAgentName(String(res.data.requested_agent_name || "").trim());
+      const ownerAgents = Array.isArray(res.data.owner_agents) ? res.data.owner_agents : [];
+      const defaultMode = res.data.default_mode === "attach_agent" ? "attach_agent" : "create_agent";
+      setMode(defaultMode);
+      if (defaultMode === "attach_agent") {
+        const firstAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
+        setAttachAgentId(firstAgentId);
+      } else {
+        setAttachAgentId("");
+      }
     });
 
     return () => {
@@ -69,6 +91,10 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   }, [token]);
 
   const expires = useMemo(() => formatExpires(session?.expires_at || null), [session?.expires_at]);
+  const ownerAgents = Array.isArray(session?.owner_agents) ? session.owner_agents : [];
+  const ownerContextAvailable = Boolean(session?.owner_context_available);
+  const allowCreateAgent = session?.allow_create_agent !== false;
+  const showCreateMode = !ownerContextAvailable || allowCreateAgent;
 
   const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired);
 
@@ -140,7 +166,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   }, [session, submitState, token]);
 
   return (
-    <div className="min-h-screen bg-bg relative overflow-hidden">
+    <div data-testid="claim-page" className="min-h-screen bg-bg relative overflow-hidden">
       <div className="absolute inset-0 tech-grid opacity-60" />
       <div className="animate-scanline" />
 
@@ -156,7 +182,11 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   Connect an external client to your Clawdeals owner account.
                 </p>
               </div>
-              {session?.status && <ClaimStatusBadge status={session.status} />}
+              {session?.status && (
+                <div data-testid="claim-status">
+                  <ClaimStatusBadge status={session.status} />
+                </div>
+              )}
             </div>
 
             {!token && (
@@ -180,7 +210,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
             )}
 
             {session && (
-              <div className="space-y-4">
+              <div data-testid="claim-loaded" className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
                     <div className="text-[10px] font-mono text-subtle uppercase">Client</div>
@@ -202,17 +232,18 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                 <div className="border border-border bg-surface/40 rounded clip-corner p-3 space-y-2">
                   <div className="text-[10px] font-mono text-subtle uppercase">Requested Permissions</div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-2" data-testid="claim-requested-scopes">
                     {(session.requested_scopes || []).length === 0 && (
                       <span className="text-xs font-mono text-muted">none</span>
                     )}
                     {(session.requested_scopes || []).map((scope) => (
-                      <span
+                      <div
                         key={scope}
-                        className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-border rounded text-subtle bg-surface/20"
+                        className="border border-border rounded bg-surface/20 px-2 py-1 space-y-1"
                       >
-                        {scope}
-                      </span>
+                        <div className="text-[10px] font-mono font-bold uppercase text-subtle">{scope}</div>
+                        <div className="text-[10px] font-mono text-muted">{describeScope(scope)}</div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -229,18 +260,22 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="text-xs font-mono text-subtle uppercase">Choose agent</div>
                     <div className="flex items-center gap-2">
+                      {showCreateMode && (
+                        <button
+                          data-testid="claim-mode-create"
+                          disabled={!actionable || submitState === "loading"}
+                          onClick={() => setMode("create_agent")}
+                          className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
+                            mode === "create_agent"
+                              ? "border-primary/40 text-primary bg-primary/10"
+                              : "border-border text-muted hover:border-border-strong hover:text-text"
+                          }`}
+                        >
+                          Create
+                        </button>
+                      )}
                       <button
-                        disabled={!actionable || submitState === "loading"}
-                        onClick={() => setMode("create_agent")}
-                        className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
-                          mode === "create_agent"
-                            ? "border-primary/40 text-primary bg-primary/10"
-                            : "border-border text-muted hover:border-border-strong hover:text-text"
-                        }`}
-                      >
-                        Create
-                      </button>
-                      <button
+                        data-testid="claim-mode-attach"
                         disabled={!actionable || submitState === "loading"}
                         onClick={() => setMode("attach_agent")}
                         className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
@@ -253,8 +288,19 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                       </button>
                     </div>
                   </div>
+                  {ownerContextAvailable && !allowCreateAgent && (
+                    <div
+                      data-testid="claim-agent-limit-note"
+                      className="border border-border bg-surface-alt/20 rounded clip-corner p-3"
+                    >
+                      <div className="text-xs font-mono text-subtle">
+                        This owner already reached the agent limit ({String(session.owner_agent_limit || 1)}). Attach to
+                        an existing agent.
+                      </div>
+                    </div>
+                  )}
 
-                  {mode === "create_agent" && (
+                  {mode === "create_agent" && showCreateMode && (
                     <div>
                       <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="claim-agent-name">
                         New Agent Name
@@ -276,23 +322,52 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                   {mode === "attach_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="claim-attach-agent-id">
-                        Existing Agent ID
-                      </label>
-                      <input
-                        id="claim-attach-agent-id"
-                        disabled={!actionable || submitState === "loading"}
-                        value={attachAgentId}
-                        onChange={(e) => setAttachAgentId(e.target.value)}
-                        placeholder="uuid"
-                        name="attach_agent_id"
-                        autoComplete="off"
-                        spellCheck={false}
-                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
-                      />
-                      <div className="text-[10px] font-mono text-muted mt-1">
-                        Agent must belong to the same owner.
-                      </div>
+                      {ownerContextAvailable && ownerAgents.length > 0 ? (
+                        <>
+                          <label
+                            className="block text-[10px] font-mono text-subtle uppercase mb-1"
+                            htmlFor="claim-attach-agent-select"
+                          >
+                            Existing Agent
+                          </label>
+                          <select
+                            id="claim-attach-agent-select"
+                            data-testid="claim-attach-agent-select"
+                            disabled={!actionable || submitState === "loading"}
+                            value={attachAgentId}
+                            onChange={(e) => setAttachAgentId(e.target.value)}
+                            className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
+                          >
+                            {ownerAgents.map((agent) => (
+                              <option key={agent.agent_id} value={agent.agent_id}>
+                                {agent.name || agent.agent_id} [{agent.status || "active"}]
+                              </option>
+                            ))}
+                          </select>
+                        </>
+                      ) : (
+                        <>
+                          <label
+                            className="block text-[10px] font-mono text-subtle uppercase mb-1"
+                            htmlFor="claim-attach-agent-id"
+                          >
+                            Existing Agent ID
+                          </label>
+                          <input
+                            id="claim-attach-agent-id"
+                            data-testid="claim-attach-agent-id"
+                            disabled={!actionable || submitState === "loading"}
+                            value={attachAgentId}
+                            onChange={(e) => setAttachAgentId(e.target.value)}
+                            placeholder="uuid"
+                            name="attach_agent_id"
+                            autoComplete="off"
+                            spellCheck={false}
+                            className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
+                          />
+                        </>
+                      )}
+                      <div className="text-[10px] font-mono text-muted mt-1">Agent must belong to the same owner.</div>
                     </div>
                   )}
                 </div>
@@ -315,6 +390,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
+                    data-testid="claim-approve"
                     disabled={!actionable || submitState === "loading"}
                     onClick={onClaim}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
@@ -322,6 +398,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     {submitState === "loading" ? "Claiming…" : "Claim & Connect"}
                   </button>
                   <button
+                    data-testid="claim-deny"
                     disabled={!actionable || submitState === "loading"}
                     onClick={onDeny}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"

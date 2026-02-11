@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId, randomIp, sleep } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
-import { createSupabaseAdmin, OPS_CONSOLE_OWNER_ID } from "./helpers/supabase";
+import { createAgentDb, createSupabaseAdmin, OPS_CONSOLE_AGENT_ID, OPS_CONSOLE_OWNER_ID } from "./helpers/supabase";
 
 assertIntegrationEnv();
 
@@ -172,6 +172,56 @@ test.describe.serial("Integration: Connect Claim", () => {
     expect(pollBody?.data?.status).toBe("CANCELLED");
   });
 
+  test("owner limit blocks create_agent and allows attach_agent fallback", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+    const existingAgent = await createAgentDb(supabase, ownerId);
+
+    const create = await request.post("/api/v1/connect/sessions", {
+      headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
+      data: { requested_agent_name: "Integration Owner Limit", requested_scopes: [] }
+    });
+    await expectStatus(create, 201);
+    const body = await create.json();
+
+    const sessionId = body?.data?.session_id;
+    const pollToken = body?.data?.poll_token;
+    const claimToken = extractClaimToken(body?.data?.claim_url);
+
+    const createModeClaim = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {
+        claim_token: claimToken,
+        mode: "create_agent",
+        agent_name: "Should Not Create"
+      }
+    });
+    await expectStatus(createModeClaim, 409);
+    const createModeBody = await createModeClaim.json();
+    expect(createModeBody?.error?.code).toBe("OWNER_AGENT_LIMIT_REACHED");
+
+    const attachClaim = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {
+        claim_token: claimToken,
+        mode: "attach_agent",
+        attach_agent_id: existingAgent.id
+      }
+    });
+    await expectStatus(attachClaim, 200);
+    const attachBody = await attachClaim.json();
+    expect(attachBody?.data?.status).toBe("CLAIMED");
+    expect(attachBody?.data?.agent_id).toBe(existingAgent.id);
+
+    const poll = await request.get(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}`, {
+      headers: { Authorization: `Bearer ${pollToken}` }
+    });
+    await expectStatus(poll, 200);
+    const pollBody = await poll.json();
+    expect(pollBody?.data?.status).toBe("CLAIMED");
+  });
+
   test("claim via console wrapper (ops) works", async ({ request }) => {
     const baseUrl =
       process.env.API_BASE_URL ||
@@ -196,8 +246,24 @@ test.describe.serial("Integration: Connect Claim", () => {
       },
       data: { claim_token: claimToken, mode: "create_agent", agent_name: "Ops Claimed Agent" }
     });
-    await expectStatus(claim, 200);
-    const claimBody = await claim.json();
+    let claimBody: any = null;
+    if (claim.status() === 409) {
+      claimBody = await claim.json();
+      expect(claimBody?.error?.code).toBe("OWNER_AGENT_LIMIT_REACHED");
+      const attachClaim = await request.post(`/api/console/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+        headers: {
+          "Idempotency-Key": randomId(),
+          origin: baseUrl,
+          referer: `${baseUrl}/console`
+        },
+        data: { claim_token: claimToken, mode: "attach_agent", attach_agent_id: OPS_CONSOLE_AGENT_ID }
+      });
+      await expectStatus(attachClaim, 200);
+      claimBody = await attachClaim.json();
+    } else {
+      await expectStatus(claim, 200);
+      claimBody = await claim.json();
+    }
     expect(claimBody?.data?.status).toBe("CLAIMED");
     expect(claimBody?.data?.owner_id).toBe(OPS_CONSOLE_OWNER_ID);
     expect(claimBody?.data?.agent_id).toBeTruthy();

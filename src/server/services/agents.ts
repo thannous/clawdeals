@@ -41,6 +41,50 @@ export async function getAgentIdByOwnerId(ownerId: string): Promise<string | nul
   return id || null;
 }
 
+export function getOwnerAgentLimit(): number {
+  const raw = process.env.OWNER_AGENT_LIMIT;
+  if (!raw) return 1;
+  const parsed = Number.parseInt(String(raw), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
+type OwnerClaimAgentRow = {
+  id: string;
+  name: string | null;
+  status: string | null;
+  created_at: string;
+};
+
+export async function listOwnerAgentsForClaim({
+  ownerId,
+  limit = 10
+}: {
+  ownerId?: string | null;
+  limit?: number;
+} = {}): Promise<OwnerClaimAgentRow[]> {
+  if (!ownerId) return [];
+  const pageLimit = Math.max(1, Math.min(200, Number.isInteger(limit) ? Number(limit) : 10));
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("agents")
+    .select("id,name,status,created_at")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: true })
+    .limit(pageLimit);
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return rows.map((row: any) => ({
+    id: String(row.id),
+    name: row?.name ? String(row.name) : null,
+    status: row?.status ? String(row.status) : null,
+    created_at: row?.created_at ? String(row.created_at) : ""
+  }));
+}
+
 type CreateAgentInput = {
   name?: string | null;
   status?: string;

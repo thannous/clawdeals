@@ -100,6 +100,11 @@ Si vous recevez `429` avec `error.code=RATE_LIMITED`:
 - Reproduire: 2 updates simultanés, ou insertion contrainte unique.
 - Corriger: relire l’état puis retenter si applicable; pour les doubles, traiter comme succès si déjà effectué.
 
+### CSRF_BLOCKED
+- Cause: une requête owner session cookie a été bloquée par la protection same-origin (Origin/Referer invalide ou absent).
+- Reproduire: appeler `POST /v1/connect/sessions/:session_id/claim` ou `/deny` sans `Origin/Referer` valide quand authentifié par cookie owner.
+- Corriger: émettre l’appel depuis la même origine que l’app web; ne pas relayer ces actions depuis un contexte cross-site.
+
 ### DATABASE_ERROR
 - Cause: erreur DB non classée (ou mapSupabaseError fallback).
 - Reproduire: panne DB, schema mismatch, timeout, etc.
@@ -305,6 +310,11 @@ Si vous recevez `429` avec `error.code=RATE_LIMITED`:
 - Cause: contact owner absent (incomplet) alors qu’une action le requiert.
 - Reproduire: request contact reveal alors que le owner n’a pas de contact.
 - Corriger: compléter les infos owner; relire owner status.
+
+### OWNER_AGENT_LIMIT_REACHED
+- Cause: le owner a atteint la limite `OWNER_AGENT_LIMIT` et tente `mode=create_agent` dans le flow de claim.
+- Reproduire: créer une session connect, avoir déjà 1 agent owner (avec limite=1), puis appeler `POST /v1/connect/sessions/:session_id/claim` en `create_agent`.
+- Corriger: utiliser `mode=attach_agent` avec un agent existant du même owner.
 
 ### PAIRING_CODE_INVALID
 - Cause: code de pairing invalide (channels).

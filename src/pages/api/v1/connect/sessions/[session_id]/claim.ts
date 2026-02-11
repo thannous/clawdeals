@@ -3,7 +3,13 @@ import { jsonResponse } from "../../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../../server/http/methods";
 import { errorPayload } from "../../../../../../server/http/errors";
 import { isUuid } from "../../../../../../server/utils/validators";
-import { createAgent, deleteAgentById, getAgentById } from "../../../../../../server/services/agents";
+import {
+  createAgent,
+  deleteAgentById,
+  getAgentById,
+  getOwnerAgentLimit,
+  listOwnerAgentsForClaim
+} from "../../../../../../server/services/agents";
 import { createOrGetControlDmThread } from "../../../../../../server/services/threads";
 import {
   claimConnectSession,
@@ -25,6 +31,33 @@ function resolveParam(value: any) {
 function resolveClaimToken(body: any) {
   const claimToken = body?.claim_token ?? body?.claimToken ?? null;
   return typeof claimToken === "string" ? claimToken.trim() : "";
+}
+
+function requireSameOriginForOwnerSession(req: any, ctx: any) {
+  if (!ctx?.ownerSessionId) return null;
+  const origin = getHeaderValue(req, "origin");
+  const referer = getHeaderValue(req, "referer");
+  const source = origin || referer;
+  if (!source) {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  const forwardedHost = getHeaderValue(req, "x-forwarded-host");
+  const hostHeader = forwardedHost ? String(forwardedHost).split(",")[0].trim() : getHeaderValue(req, "host");
+  if (!hostHeader) {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  try {
+    const sourceHost = new URL(String(source)).host;
+    if (!sourceHost || sourceHost !== String(hostHeader)) {
+      return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+    }
+  } catch {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  return null;
 }
 
 function resolveMode(body: any) {
@@ -70,6 +103,8 @@ export async function handler(req: any, res: any, ctx: any) {
   if (!isUuid(ctx.ownerId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
   }
+  const csrfBlocked = requireSameOriginForOwnerSession(req, ctx);
+  if (csrfBlocked) return csrfBlocked;
 
   const body = req.body || {};
   const claimToken = resolveClaimToken(body);
@@ -121,6 +156,14 @@ export async function handler(req: any, res: any, ctx: any) {
       }
       if (agentName.length > 80) {
         return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_name must be at most 80 characters"));
+      }
+      const ownerAgentLimit = getOwnerAgentLimit();
+      const ownerAgents = await listOwnerAgentsForClaim({ ownerId: ctx.ownerId, limit: ownerAgentLimit });
+      if (ownerAgents.length >= ownerAgentLimit) {
+        return jsonResponse(
+          409,
+          errorPayload("OWNER_AGENT_LIMIT_REACHED", "Owner agent limit reached", { owner_agent_limit: ownerAgentLimit })
+        );
       }
 
       const agent = await createAgent({

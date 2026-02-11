@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getConnectSessionByClaimToken } from "../../../../../server/services/connect-sessions";
+import { getOwnerAgentLimit, listOwnerAgentsForClaim } from "../../../../../server/services/agents";
 
 function resolveParam(value: any) {
   if (Array.isArray(value)) return value[0] || null;
@@ -45,6 +46,28 @@ export async function handler(req: any, res: any, ctx: any) {
 
   try {
     const session = await getConnectSessionByClaimToken({ claimToken: String(claimToken), now: new Date() });
+    const ownerContextAvailable = Boolean(ctx?.ownerSessionId && ctx?.actor?.type === "owner" && ctx?.ownerId);
+    let ownerContext: any = { owner_context_available: false };
+
+    if (ownerContextAvailable) {
+      const ownerAgentLimit = getOwnerAgentLimit();
+      const ownerAgents = await listOwnerAgentsForClaim({
+        ownerId: ctx.ownerId,
+        limit: Math.max(ownerAgentLimit, 1)
+      });
+      const allowCreateAgent = ownerAgents.length < ownerAgentLimit;
+      ownerContext = {
+        owner_context_available: true,
+        owner_agent_limit: ownerAgentLimit,
+        owner_agents: ownerAgents.map((agent) => ({
+          agent_id: agent.id,
+          name: agent.name ?? null,
+          status: agent.status ?? null
+        })),
+        allow_create_agent: allowCreateAgent,
+        default_mode: allowCreateAgent ? "create_agent" : "attach_agent"
+      };
+    }
 
     if (ctx) {
       ctx.auditEvent = "connect.claim_viewed";
@@ -61,7 +84,8 @@ export async function handler(req: any, res: any, ctx: any) {
         client_type: session.client_type || null,
         client_version: session.client_version || null,
         expires_at: session.expires_at,
-        claimed_at: session.claimed_at ?? null
+        claimed_at: session.claimed_at ?? null,
+        ...ownerContext
       }
     });
   } catch (error: any) {
