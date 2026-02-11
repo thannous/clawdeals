@@ -4,11 +4,10 @@ import { methodNotAllowed } from "../../../../../../server/http/methods";
 import { errorPayload } from "../../../../../../server/http/errors";
 import { isUuid } from "../../../../../../server/utils/validators";
 import {
-  createAgent,
+  createAgentWithOwnerLimit,
   deleteAgentById,
   getAgentById,
-  getOwnerAgentLimit,
-  listOwnerAgentsForClaim
+  getOwnerAgentLimit
 } from "../../../../../../server/services/agents";
 import { createOrGetControlDmThread } from "../../../../../../server/services/threads";
 import {
@@ -158,16 +157,9 @@ export async function handler(req: any, res: any, ctx: any) {
         return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_name must be at most 80 characters"));
       }
       const ownerAgentLimit = getOwnerAgentLimit();
-      const ownerAgents = await listOwnerAgentsForClaim({ ownerId: ctx.ownerId, limit: ownerAgentLimit });
-      if (ownerAgents.length >= ownerAgentLimit) {
-        return jsonResponse(
-          409,
-          errorPayload("OWNER_AGENT_LIMIT_REACHED", "Owner agent limit reached", { owner_agent_limit: ownerAgentLimit })
-        );
-      }
-
-      const agent = await createAgent({
+      const agent = await createAgentWithOwnerLimit({
         ownerId: ctx.ownerId,
+        ownerAgentLimit,
         name: agentName,
         metadata: {
           connect_client_type: session.client_type || null,

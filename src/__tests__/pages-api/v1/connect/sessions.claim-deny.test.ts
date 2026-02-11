@@ -7,11 +7,10 @@ vi.mock("../../../../server/services/connect-sessions", () => ({
 }));
 
 vi.mock("../../../../server/services/agents", () => ({
-  createAgent: vi.fn(),
+  createAgentWithOwnerLimit: vi.fn(),
   deleteAgentById: vi.fn(),
   getAgentById: vi.fn(),
-  getOwnerAgentLimit: vi.fn(),
-  listOwnerAgentsForClaim: vi.fn()
+  getOwnerAgentLimit: vi.fn()
 }));
 
 vi.mock("../../../../server/services/threads", () => ({
@@ -27,11 +26,10 @@ import {
   getConnectSessionByClaimToken
 } from "../../../../server/services/connect-sessions";
 import {
-  createAgent,
+  createAgentWithOwnerLimit,
   deleteAgentById,
   getAgentById,
-  getOwnerAgentLimit,
-  listOwnerAgentsForClaim
+  getOwnerAgentLimit
 } from "../../../../server/services/agents";
 import { createOrGetControlDmThread } from "../../../../server/services/threads";
 
@@ -39,11 +37,10 @@ const getConnectSessionByClaimTokenMock = vi.mocked(getConnectSessionByClaimToke
 const claimConnectSessionMock = vi.mocked(claimConnectSession);
 const denyConnectSessionMock = vi.mocked(denyConnectSession);
 
-const createAgentMock = vi.mocked(createAgent);
+const createAgentWithOwnerLimitMock = vi.mocked(createAgentWithOwnerLimit);
 const deleteAgentByIdMock = vi.mocked(deleteAgentById);
 const getAgentByIdMock = vi.mocked(getAgentById);
 const getOwnerAgentLimitMock = vi.mocked(getOwnerAgentLimit);
-const listOwnerAgentsForClaimMock = vi.mocked(listOwnerAgentsForClaim);
 const createOrGetControlDmThreadMock = vi.mocked(createOrGetControlDmThread);
 
 const ownerId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
@@ -62,7 +59,6 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getOwnerAgentLimitMock.mockReturnValue(1);
-    listOwnerAgentsForClaimMock.mockResolvedValue([]);
   });
 
   it("requires Idempotency-Key", async () => {
@@ -144,7 +140,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
       client_version: "1.0.0"
     } as any);
 
-    createAgentMock.mockResolvedValue({ id: "22222222-2222-4222-8222-222222222222" } as any);
+    createAgentWithOwnerLimitMock.mockResolvedValue({ id: "22222222-2222-4222-8222-222222222222" } as any);
     createOrGetControlDmThreadMock.mockResolvedValue({
       thread: { thread_id: "99999999-9999-4999-8999-999999999999" },
       created: true
@@ -179,9 +175,10 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     expect(result.body.data.agent_id).toBe("22222222-2222-4222-8222-222222222222");
     expect(result.body.data.claimed_at).toBe("2026-02-10T12:00:00.000Z");
 
-    expect(createAgent).toHaveBeenCalledWith(
+    expect(createAgentWithOwnerLimit).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId,
+        ownerAgentLimit: 1,
         name: "My Agent",
         metadata: {
           connect_client_type: "openclaw",
@@ -219,14 +216,13 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
       requested_scopes: []
     } as any);
     getOwnerAgentLimitMock.mockReturnValue(1);
-    listOwnerAgentsForClaimMock.mockResolvedValue([
-      {
-        id: "22222222-2222-4222-8222-222222222222",
-        name: "Existing Agent",
-        status: "active",
-        created_at: "2026-02-10T11:00:00.000Z"
-      }
-    ] as any);
+    createAgentWithOwnerLimitMock.mockRejectedValue(
+      Object.assign(new Error("Owner agent limit reached"), {
+        status: 409,
+        code: "OWNER_AGENT_LIMIT_REACHED",
+        details: { owner_agent_limit: 1 }
+      })
+    );
 
     const req = {
       method: "POST",
@@ -242,7 +238,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("OWNER_AGENT_LIMIT_REACHED");
-    expect(createAgent).not.toHaveBeenCalled();
+    expect(createAgentWithOwnerLimit).toHaveBeenCalledTimes(1);
     expect(claimConnectSession).not.toHaveBeenCalled();
   });
 
@@ -264,7 +260,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("SESSION_ALREADY_CLAIMED");
-    expect(createAgent).not.toHaveBeenCalled();
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
     expect(claimConnectSession).not.toHaveBeenCalled();
   });
 
@@ -289,7 +285,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     const result: any = await claimHandler(req, null, { ...baseOwnerCtx });
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe(expectedCode);
-    expect(createAgent).not.toHaveBeenCalled();
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
     expect(claimConnectSession).not.toHaveBeenCalled();
   });
 
@@ -333,7 +329,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
     expect(result.body.data.agent_id).toBe(attachAgentId);
     expect(getAgentById).toHaveBeenCalledWith(attachAgentId);
     expect(createOrGetControlDmThread).toHaveBeenCalledWith({ ownerId, agentId: attachAgentId });
-    expect(createAgent).not.toHaveBeenCalled();
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
   });
 
   it("keeps claim successful when control DM creation fails", async () => {
@@ -344,7 +340,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
       requested_scopes: []
     } as any);
 
-    createAgentMock.mockResolvedValue({ id: "22222222-2222-4222-8222-222222222222" } as any);
+    createAgentWithOwnerLimitMock.mockResolvedValue({ id: "22222222-2222-4222-8222-222222222222" } as any);
     claimConnectSessionMock.mockResolvedValue({
       session_id: sessionId,
       status: "CLAIMED",
@@ -378,7 +374,7 @@ describe("POST /v1/connect/sessions/:session_id/claim", () => {
       requested_scopes: []
     } as any);
 
-    createAgentMock.mockResolvedValue({ id: "33333333-3333-4333-8333-333333333333" } as any);
+    createAgentWithOwnerLimitMock.mockResolvedValue({ id: "33333333-3333-4333-8333-333333333333" } as any);
     claimConnectSessionMock.mockRejectedValue(
       Object.assign(new Error("Already claimed"), { status: 409, code: "CONNECT_SESSION_ALREADY_CLAIMED" })
     );
@@ -402,7 +398,6 @@ describe("POST /v1/connect/sessions/:session_id/deny", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getOwnerAgentLimitMock.mockReturnValue(1);
-    listOwnerAgentsForClaimMock.mockResolvedValue([]);
   });
 
   it("requires Idempotency-Key", async () => {

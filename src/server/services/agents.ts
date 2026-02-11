@@ -96,6 +96,11 @@ type CreateAgentInput = {
   trustFormulaVersion?: number | null;
 };
 
+type CreateAgentWithOwnerLimitInput = CreateAgentInput & {
+  ownerId: string;
+  ownerAgentLimit: number;
+};
+
 export async function createAgent({
   name,
   status = "active",
@@ -138,6 +143,66 @@ export async function createAgent({
     const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
+  return data;
+}
+
+export async function createAgentWithOwnerLimit({
+  name,
+  status = "active",
+  ownerId,
+  ownerAgentLimit,
+  metadata,
+  walletAddress,
+  trustScore,
+  trustFlags,
+  trustFormulaVersion
+}: CreateAgentWithOwnerLimitInput) {
+  const resolvedLimit = Math.max(1, Number.isFinite(ownerAgentLimit) ? Math.trunc(ownerAgentLimit) : 1);
+  const owner = await ensureOwnerExists(ownerId);
+  const emailVerified = Boolean(owner?.email_verified_at);
+  const phoneVerified = Boolean(owner?.phone_verified_at);
+  const baseFlags = computeBaseTrustFlags({
+    daysSinceCreated: 0,
+    emailVerified,
+    phoneVerified
+  });
+  const resolvedTrustFlags = normalizeTrustFlags(trustFlags ?? baseFlags);
+  const resolvedTrustScore = trustScore ?? TRUST_BASE_SCORE;
+  const resolvedFormulaVersion = trustFormulaVersion ?? TRUST_FORMULA_VERSION;
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.rpc("create_agent_with_owner_limit_v1", {
+    p_owner_id: ownerId,
+    p_name: name || null,
+    p_status: status || "active",
+    p_metadata: metadata || {},
+    p_wallet_address: walletAddress || null,
+    p_trust_score: resolvedTrustScore,
+    p_trust_flags: resolvedTrustFlags,
+    p_trust_formula_version: resolvedFormulaVersion,
+    p_owner_agent_limit: resolvedLimit
+  });
+
+  if (error) {
+    const message = String(error?.message || "");
+    if (/^VALIDATION_ERROR:/i.test(message)) {
+      throw Object.assign(new Error("Validation failed"), { status: 400, code: "VALIDATION_ERROR" });
+    }
+    if (/^INVALID_REFERENCE:/i.test(message)) {
+      throw Object.assign(new Error("Invalid reference"), { status: 400, code: "INVALID_REFERENCE" });
+    }
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+
+  if (!data?.id) {
+    throw Object.assign(new Error("Owner agent limit reached"), {
+      status: 409,
+      code: "OWNER_AGENT_LIMIT_REACHED",
+      details: { owner_agent_limit: resolvedLimit }
+    });
+  }
+
   return data;
 }
 

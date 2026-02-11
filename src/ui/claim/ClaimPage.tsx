@@ -76,13 +76,9 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
       setAgentName(String(res.data.requested_agent_name || "").trim());
       const ownerAgents = Array.isArray(res.data.owner_agents) ? res.data.owner_agents : [];
       const defaultMode = res.data.default_mode === "attach_agent" ? "attach_agent" : "create_agent";
+      const firstAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
       setMode(defaultMode);
-      if (defaultMode === "attach_agent") {
-        const firstAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
-        setAttachAgentId(firstAgentId);
-      } else {
-        setAttachAgentId("");
-      }
+      setAttachAgentId(firstAgentId);
     });
 
     return () => {
@@ -97,10 +93,25 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
 
   const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired);
+  const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(String(attachAgentId || "").trim()));
+
+  useEffect(() => {
+    if (ownerAgents.length === 0) return;
+    const hasSelectedAgent = ownerAgents.some((agent) => String(agent.agent_id) === String(attachAgentId || ""));
+    if (hasSelectedAgent) return;
+    const firstAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
+    if (!firstAgentId) return;
+    setAttachAgentId(firstAgentId);
+  }, [ownerAgents, attachAgentId]);
 
   const onClaim = useCallback(async () => {
     if (!session) return;
     if (submitState === "loading") return;
+    if (mode === "attach_agent" && !String(attachAgentId || "").trim()) {
+      setSubmitError("Select an existing agent to attach.");
+      setSubmitState("error");
+      return;
+    }
 
     setSubmitState("loading");
     setSubmitError(null);
@@ -391,7 +402,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     data-testid="claim-approve"
-                    disabled={!actionable || submitState === "loading"}
+                    disabled={!canSubmitClaim || submitState === "loading"}
                     onClick={onClaim}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
