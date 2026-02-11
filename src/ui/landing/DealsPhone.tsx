@@ -1,20 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-
-type Copy = {
-  chat: {
-    deals: {
-      header: string;
-      online: string;
-      messages: {
-        newDeal: string;
-        heatingUp: string;
-        votedUp: string;
-        newDeal2: string;
-        shared: string;
-      };
-    };
-  };
-};
+import type { LandingCopy } from "./types";
 
 /* ── Shared sub-components ── */
 
@@ -213,7 +198,7 @@ function useChatAnimation(messageTypes: MessageType[], totalMessages: number) {
 
 const MESSAGE_TYPES: MessageType[] = ["bot", "bot", "user", "bot", "bot"];
 
-export default function DealsPhone({ copy }: { copy: Copy }) {
+export default function DealsPhone({ copy }: { copy: LandingCopy }) {
   const msg = copy.chat.deals.messages;
   const { visibleCount, showTyping, containerRef } = useChatAnimation(MESSAGE_TYPES, MESSAGE_TYPES.length);
 

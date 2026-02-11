@@ -1,21 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-
-type Copy = {
-  chat: {
-    marketplace: {
-      header: string;
-      online: string;
-      messages: {
-        newListing: string;
-        offerReceived: string;
-        counter: string;
-        accepted: string;
-        contactRevealed: string;
-        complete: string;
-      };
-    };
-  };
-};
+import type { LandingCopy } from "./types";
 
 /* ── Shared sub-components ── */
 
@@ -219,7 +203,7 @@ function useChatAnimation(messageTypes: MessageType[], totalMessages: number) {
 
 const MESSAGE_TYPES: MessageType[] = ["bot", "bot", "user", "bot", "bot", "bot"];
 
-export default function MarketPhone({ copy }: { copy: Copy }) {
+export default function MarketPhone({ copy }: { copy: LandingCopy }) {
   const msg = copy.chat.marketplace.messages;
   const { visibleCount, showTyping, containerRef } = useChatAnimation(MESSAGE_TYPES, MESSAGE_TYPES.length);
 

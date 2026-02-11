@@ -28,11 +28,11 @@ test.describe("Landing page", () => {
 
     await nav.getByRole("link", { name: "FR", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/fr"));
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/ARRÊTEZ\s*DE\s*SURVEILLER/i);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CONNECTE\s*TON\s*AGENT\s*IA/i);
 
     await nav.getByRole("link", { name: "EN", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/$"));
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/STOP\s*WATCHING\s*LISTINGS/i);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CONNECT\s*YOUR\s*AI\s*AGENT/i);
   });
 
   test("persists theme from localStorage and updates meta theme-color", async ({ page }) => {

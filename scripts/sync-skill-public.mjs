@@ -16,7 +16,7 @@ function writeUtf8(p, content) {
 }
 
 function extractFrontmatter(md) {
-  const m = md.match(/^---\n([\s\S]*?)\n---\n/);
+  const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
   return m ? m[1] : null;
 }
 
