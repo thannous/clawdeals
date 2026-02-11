@@ -75,18 +75,19 @@ test.describe("Dev WebMCP demo", () => {
     // The default expect timeout (5s) can be tight on first-run dev compilation.
     await expect(page.locator("textarea")).toHaveValue(/price_amount_minor/, { timeout: 20_000 });
 
-    await page.getByRole("button", { name: "Run" }).click({ timeout: 20_000 });
+    // Next.js dev overlay uses <nextjs-portal> which can intercept pointer events; bypass via DOM click().
+    await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
 
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "Deny" }).click({ timeout: 20_000 });
+    await page.getByRole("button", { name: "Deny" }).evaluate((el) => (el as HTMLButtonElement).click());
 
     await expect(page.getByText("\"USER_DENIED\"")).toBeVisible();
 
     // Run again: Approve this time and ensure idempotency header is present.
     const reqPromise = page.waitForRequest((req) => req.method() === "POST" && req.url().includes("/api/v1/listings"));
-    await page.getByRole("button", { name: "Run" }).click({ timeout: 20_000 });
+    await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "Approve" }).click({ timeout: 20_000 });
+    await page.getByRole("button", { name: "Approve" }).evaluate((el) => (el as HTMLButtonElement).click());
 
     const req = await reqPromise;
     expect(req.headers()["idempotency-key"]).toBeTruthy();

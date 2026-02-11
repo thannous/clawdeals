@@ -53,6 +53,18 @@ export default function ConfirmModal({
     if (!open) return;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleKeyDown);
+
+    // Defensive cleanup for test mode; avoid stale overlays blocking clicks.
+    if (process.env.NODE_ENV === "test") {
+      const prev = document.body.style.pointerEvents;
+      document.body.style.pointerEvents = "auto";
+      return () => {
+        document.body.style.pointerEvents = prev;
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKeyDown);

@@ -278,7 +278,7 @@ test.describe("Console Audit — US-5/US-6", () => {
       await expect(dialog).toBeVisible();
       await expect(dialog.getByText("listing.create")).toBeVisible();
       await expect(dialog.getByText("Metadata Hash")).toBeVisible();
-      await expect(dialog.getByRole("button", { name: /close/i })).toBeVisible();
+      await expect(dialog.getByRole("button", { name: "Close", exact: true })).toBeVisible();
     });
 
     test("modal closes on Close button", async ({ page }) => {
@@ -288,7 +288,8 @@ test.describe("Console Audit — US-5/US-6", () => {
 
       await expect(page.getByText("Audit Entry")).toBeVisible();
 
-      await page.getByRole("button", { name: /close/i }).click();
+      const dialog = page.getByRole("dialog", { name: /audit entry/i });
+      await dialog.getByRole("button", { name: "Close", exact: true }).click();
 
       await expect(page.getByText("Audit Entry")).not.toBeVisible();
     });
