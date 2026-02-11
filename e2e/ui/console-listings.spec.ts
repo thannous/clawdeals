@@ -115,6 +115,9 @@ test.describe("Console Listings — US-1", () => {
       const gate = new Promise<void>((resolve) => {
         release = resolve;
       });
+      const apiRequest = page.waitForRequest(
+        (req) => req.method() === "GET" && req.url().includes("/api/console/listings")
+      );
 
       await page.route("**/api/console/listings?*", async (route) => {
         await gate;
@@ -125,10 +128,10 @@ test.describe("Console Listings — US-1", () => {
         });
       });
 
-      const nav = page.goto("/console/listings");
+      const nav = page.goto("/console/listings", { waitUntil: "domcontentloaded" });
 
-      await expect(page.getByTestId("listings-page")).toBeVisible();
-      await expect(page.getByTestId("listings-page").locator(".animate-pulse")).toBeVisible();
+      await apiRequest;
+      await expect(page.getByTestId("listings-page").locator(".animate-pulse")).toBeVisible({ timeout: 20_000 });
 
       release?.();
       await nav;

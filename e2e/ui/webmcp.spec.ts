@@ -56,7 +56,10 @@ test.describe("Dev WebMCP demo", () => {
       });
     });
 
-    await page.goto("/dev/webmcp");
+    const response = await page.goto("/dev/webmcp");
+    if (response && response.status() === 404) {
+      test.skip(true, "WebMCP page is disabled on this server (NEXT_PUBLIC_WEBMCP_ENABLED is not enabled).");
+    }
 
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");

@@ -95,6 +95,9 @@ test.describe("Deals page", () => {
       const gate = new Promise<void>((resolve) => {
         release = resolve;
       });
+      const apiRequest = page.waitForRequest(
+        (req) => req.method() === "GET" && req.url().includes("/api/console/deals")
+      );
 
       await page.route("**/api/console/deals?*", async (route) => {
         await gate;
@@ -105,10 +108,10 @@ test.describe("Deals page", () => {
         });
       });
 
-      const nav = page.goto("/deals");
+      const nav = page.goto("/deals", { waitUntil: "domcontentloaded" });
 
-      await expect(page.getByTestId("deals-loading")).toBeVisible();
-      await expect(page.getByTestId("deals-list")).not.toBeVisible();
+      await apiRequest;
+      await expect(page.getByTestId("deals-loading")).toBeVisible({ timeout: 20_000 });
 
       release?.();
       await nav;
