@@ -31,12 +31,8 @@ function extractClaimToken(claimUrl: string): string {
 
 function extractApiKeyPrefix(apiKey: string): string | null {
   if (!apiKey) return null;
-  const [prefixPart] = String(apiKey).split(".");
-  if (!prefixPart) return null;
-  const idx = prefixPart.lastIndexOf("_");
-  if (idx === -1) return null;
-  const prefix = prefixPart.slice(idx + 1);
-  return prefix || null;
+  const match = String(apiKey).match(/^cd_(?:live|sandbox)_([A-Za-z0-9_-]+)\.[A-Za-z0-9_-]+$/);
+  return match?.[1] || null;
 }
 
 async function createConnectedInstallation(
