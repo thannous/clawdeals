@@ -263,17 +263,21 @@ export async function handler(req: any, _res: any, ctx: any) {
       };
     }
 
-    response = jsonResponse(200, {
-      data: {
-        session_id: exchanged.session_id,
-        status: exchanged.status,
-        agent_id: exchanged.agent_id,
-        installation_id: exchanged.installation_id,
-        api_key: exchanged.api_key,
-        api_key_id: exchanged.api_key_id,
-        issued_at: exchanged.issued_at
-      }
-    });
+    response = jsonResponse(
+      200,
+      {
+        data: {
+          session_id: exchanged.session_id,
+          status: exchanged.status,
+          agent_id: exchanged.agent_id,
+          installation_id: exchanged.installation_id,
+          api_key: exchanged.api_key,
+          api_key_id: exchanged.api_key_id,
+          issued_at: exchanged.issued_at
+        }
+      },
+      { "Cache-Control": "no-store" }
+    );
 
     return response;
   } catch (error: any) {

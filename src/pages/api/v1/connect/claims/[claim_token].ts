@@ -10,6 +10,22 @@ function resolveParam(value: any) {
   return value;
 }
 
+function redactClaimTokenInCtx(ctx: any) {
+  if (!ctx) return;
+
+  // Do not leak claim_token (path param) in audit logs.
+  if (typeof ctx.path === "string" && ctx.path.startsWith("/api/v1/connect/claims/")) {
+    ctx.path = "/api/v1/connect/claims";
+  }
+
+  // Next.js dynamic route params live in req.query (and thus ctx.query).
+  if (ctx.query && typeof ctx.query === "object" && "claim_token" in ctx.query) {
+    const next = { ...(ctx.query as any) };
+    delete (next as any).claim_token;
+    ctx.query = next;
+  }
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "GET") {
     return methodNotAllowed(["GET"]);
@@ -18,6 +34,8 @@ export async function handler(req: any, res: any, ctx: any) {
   if (ctx?.authError) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
+
+  redactClaimTokenInCtx(ctx);
 
   const claimToken = resolveParam(req.query?.claim_token);
   if (!claimToken) {
@@ -54,4 +72,3 @@ export default withApiMiddlewares(handler, {
   routeGroup: "connect.claims.read",
   enableIdempotency: false
 });
-

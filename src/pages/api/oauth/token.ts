@@ -250,13 +250,17 @@ export async function handler(req: any, res: any, ctx: any) {
         };
       }
 
-      return jsonResponse(200, {
-        access_token: accessToken.access_token,
-        token_type: "Bearer",
-        expires_in: accessToken.expires_in,
-        refresh_token: refresh.refresh_token,
-        scope: normalizeScope(scopes.join(" ")).join(" ")
-      });
+      return jsonResponse(
+        200,
+        {
+          access_token: accessToken.access_token,
+          token_type: "Bearer",
+          expires_in: accessToken.expires_in,
+          refresh_token: refresh.refresh_token,
+          scope: normalizeScope(scopes.join(" ")).join(" ")
+        },
+        { "Cache-Control": "no-store" }
+      );
     } catch (error: any) {
       // Best-effort cleanup: if we fail after creating an installation (and downstream tokens),
       // delete the installation (cascades refresh tokens) and delete the Redis access token.
@@ -371,13 +375,17 @@ export async function handler(req: any, res: any, ctx: any) {
         };
       }
 
-      return jsonResponse(200, {
-        access_token: accessToken.access_token,
-        token_type: "Bearer",
-        expires_in: accessToken.expires_in,
-        refresh_token: rotated?.new_refresh_token || refreshToken,
-        scope: normalizeScope(effectiveScopes.join(" ")).join(" ")
-      });
+      return jsonResponse(
+        200,
+        {
+          access_token: accessToken.access_token,
+          token_type: "Bearer",
+          expires_in: accessToken.expires_in,
+          refresh_token: rotated?.new_refresh_token || refreshToken,
+          scope: normalizeScope(effectiveScopes.join(" ")).join(" ")
+        },
+        { "Cache-Control": "no-store" }
+      );
     } catch (error: any) {
       if (accessToken?.access_token_hash) {
         await deleteOauthAccessTokenByHash(accessToken.access_token_hash);

@@ -55,16 +55,20 @@ async function handleRotate(req, ctx, agentId) {
     previous_api_key_id: result.previousApiKeyId
   };
 
-  return jsonResponse(200, {
-    data: {
-      agent_id: agentId,
-      api_key_id: result.apiKeyId,
-      api_key: result.apiKey,
-      rotated_at: result.rotatedAt.toISOString(),
-      previous_api_key_id: result.previousApiKeyId,
-      grace_seconds: result.graceSeconds
-    }
-  });
+  return jsonResponse(
+    200,
+    {
+      data: {
+        agent_id: agentId,
+        api_key_id: result.apiKeyId,
+        api_key: result.apiKey,
+        rotated_at: result.rotatedAt.toISOString(),
+        previous_api_key_id: result.previousApiKeyId,
+        grace_seconds: result.graceSeconds
+      }
+    },
+    { "Cache-Control": "no-store" }
+  );
 }
 
 async function handleRevoke(req, ctx, agentId) {

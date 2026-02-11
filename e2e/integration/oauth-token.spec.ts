@@ -103,6 +103,7 @@ test.describe.serial("Integration: OAuth Token", () => {
       data: tokenForm
     });
     await expectStatus(token, 200);
+    expect(token.headers()["cache-control"]).toBe("no-store");
     const tokenBody = await token.json();
 
     const accessToken = String(tokenBody?.access_token || "");
@@ -185,6 +186,7 @@ test.describe.serial("Integration: OAuth Token", () => {
       }).toString()
     });
     await expectStatus(token, 200);
+    expect(token.headers()["cache-control"]).toBe("no-store");
     const tokenBody = await token.json();
 
     const accessToken = String(tokenBody?.access_token || "");
@@ -286,6 +288,7 @@ test.describe.serial("Integration: OAuth Token", () => {
       }).toString()
     });
     await expectStatus(refreshResp, 200);
+    expect(refreshResp.headers()["cache-control"]).toBe("no-store");
     const refreshBody = await refreshResp.json();
     const refresh2 = String(refreshBody?.refresh_token || "");
     expect(refresh2).toMatch(/^cd_rt_/);
@@ -318,6 +321,7 @@ test.describe.serial("Integration: OAuth Token", () => {
       }).toString()
     });
     await expectStatus(refreshedAgain, 200);
+    expect(refreshedAgain.headers()["cache-control"]).toBe("no-store");
   });
 
   test("access token TTL: expired access token rejected", async ({ request }) => {
@@ -340,6 +344,7 @@ test.describe.serial("Integration: OAuth Token", () => {
       }).toString()
     });
     await expectStatus(token, 200);
+    expect(token.headers()["cache-control"]).toBe("no-store");
     const tokenBody = await token.json();
     const accessToken = String(tokenBody?.access_token || "");
     expect(accessToken).toMatch(/^cd_at_/);

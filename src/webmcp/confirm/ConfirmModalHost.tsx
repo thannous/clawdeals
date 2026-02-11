@@ -15,13 +15,24 @@ export default function ConfirmModalHost() {
   const [edited, setEdited] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [remainingMs, setRemainingMs] = useState<number>(0);
+  const [cooldownRemainingMs, setCooldownRemainingMs] = useState<number>(0);
 
   useEffect(() => {
     if (!pending) return;
-    setMode("preview");
-    setError("");
     const safe = sanitizeToolOutput(pending.args);
-    setEdited(JSON.stringify(safe, null, 2));
+    const nextEdited = JSON.stringify(safe, null, 2);
+
+    // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
+    let alive = true;
+    Promise.resolve().then(() => {
+      if (!alive) return;
+      setMode("preview");
+      setError("");
+      setEdited(nextEdited);
+    });
+    return () => {
+      alive = false;
+    };
   }, [pending]);
 
   useEffect(() => {
@@ -36,6 +47,32 @@ export default function ConfirmModalHost() {
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
   }, [pending]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!cooldownUntilMs) {
+      // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
+      Promise.resolve().then(() => {
+        if (!alive) return;
+        setCooldownRemainingMs(0);
+      });
+      return () => {
+        alive = false;
+      };
+    }
+
+    const tick = () => {
+      if (!alive) return;
+      setCooldownRemainingMs(Math.max(0, cooldownUntilMs - Date.now()));
+    };
+
+    tick();
+    const id = setInterval(tick, 250);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [cooldownUntilMs]);
 
   useEffect(() => {
     if (!pending) return;
@@ -79,9 +116,9 @@ export default function ConfirmModalHost() {
   if (!show) {
     return (
       <>
-        {cooldownUntilMs && Date.now() < cooldownUntilMs ? (
+        {cooldownUntilMs && cooldownRemainingMs > 0 ? (
           <div className="fixed bottom-4 right-4 z-50 border border-border bg-surface px-3 py-2 text-xs font-mono text-muted">
-            WebMCP cooldown active ({formatSeconds(cooldownUntilMs - Date.now())})
+            WebMCP cooldown active ({formatSeconds(cooldownRemainingMs)})
           </div>
         ) : null}
       </>
@@ -179,4 +216,3 @@ export default function ConfirmModalHost() {
     </>
   );
 }
-

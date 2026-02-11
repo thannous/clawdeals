@@ -91,11 +91,27 @@ test.describe("Deals page", () => {
     });
 
     test("shows loading skeleton while fetching", async ({ page }) => {
-      await mockDealsApi(page, { delay: 2000 });
-      await page.goto("/deals");
+      let release: (() => void) | null = null;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+
+      await page.route("**/api/console/deals?*", async (route) => {
+        await gate;
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: MOCK_DEALS, next_cursor: null })
+        });
+      });
+
+      const nav = page.goto("/deals");
 
       await expect(page.getByTestId("deals-loading")).toBeVisible();
       await expect(page.getByTestId("deals-list")).not.toBeVisible();
+
+      release?.();
+      await nav;
     });
 
     test("shows empty state when no deals", async ({ page }) => {

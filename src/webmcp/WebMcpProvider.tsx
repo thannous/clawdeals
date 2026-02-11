@@ -76,6 +76,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    let alive = true;
     if (didRegisterRef.current) return;
     if (!enabled) return;
     if (!supported) return;
@@ -83,7 +84,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     const pathname = router.pathname || "";
     if (!shouldRegisterOnRoute(pathname)) return;
 
-      const registerable = WEBMCP_TOOLS.map((t) => ({
+    const registerable = WEBMCP_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputJsonSchema,
@@ -96,15 +97,27 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = registerTools(registerable);
       didRegisterRef.current = true;
-      setRegistered(result.registered > 0);
-      // WebMCP registration might partially fail depending on API shape; keep the full list for visibility.
-      setRegisteredToolNames(registerable.map((t) => t.name));
-      if (result.errors > 0) {
-        setLastRegisterError(`${result.errors} tool(s) failed to register`);
-      }
+
+      // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
+      Promise.resolve().then(() => {
+        if (!alive) return;
+        setRegistered(result.registered > 0);
+        // WebMCP registration might partially fail depending on API shape; keep the full list for visibility.
+        setRegisteredToolNames(registerable.map((t) => t.name));
+        if (result.errors > 0) {
+          setLastRegisterError(`${result.errors} tool(s) failed to register`);
+        }
+      });
     } catch (error: any) {
-      setLastRegisterError(error?.message || "Tool registration failed");
+      Promise.resolve().then(() => {
+        if (!alive) return;
+        setLastRegisterError(error?.message || "Tool registration failed");
+      });
     }
+
+    return () => {
+      alive = false;
+    };
   }, [router.pathname, enabled, supported, executeTool]);
 
   const value = useMemo<WebMcpContextValue>(

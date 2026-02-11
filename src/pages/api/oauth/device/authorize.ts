@@ -186,14 +186,18 @@ export async function handler(req: any, res: any, ctx: any) {
       };
     }
 
-    return jsonResponse(200, {
-      device_code: created.device_code,
-      user_code: created.user_code,
-      verification_uri: verificationUri,
-      verification_uri_complete: verificationUriComplete,
-      expires_in: OAUTH_DEVICE_EXPIRES_IN_SECONDS,
-      interval: OAUTH_DEVICE_POLL_INTERVAL_SECONDS
-    });
+    return jsonResponse(
+      200,
+      {
+        device_code: created.device_code,
+        user_code: created.user_code,
+        verification_uri: verificationUri,
+        verification_uri_complete: verificationUriComplete,
+        expires_in: OAUTH_DEVICE_EXPIRES_IN_SECONDS,
+        interval: OAUTH_DEVICE_POLL_INTERVAL_SECONDS
+      },
+      { "Cache-Control": "no-store" }
+    );
   } catch (error: any) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }

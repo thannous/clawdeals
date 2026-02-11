@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
-import { randomId, randomIp } from "./helpers/ids";
+import { randomId, randomIp, sleep } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
-import { OPS_CONSOLE_OWNER_ID } from "./helpers/supabase";
+import { createSupabaseAdmin, OPS_CONSOLE_OWNER_ID } from "./helpers/supabase";
 
 assertIntegrationEnv();
 
@@ -17,6 +17,7 @@ test.describe.serial("Integration: Connect Claim", () => {
   test.setTimeout(60_000);
 
   test("resolve claim metadata + claim (v1) + poll shows CLAIMED", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
 
@@ -32,6 +33,7 @@ test.describe.serial("Integration: Connect Claim", () => {
       }
     });
     await expectStatus(create, 201);
+    expect(create.headers()["cache-control"]).toBe("no-store");
     const createBody = await create.json();
 
     const sessionId = createBody?.data?.session_id;
@@ -42,13 +44,35 @@ test.describe.serial("Integration: Connect Claim", () => {
     expect(pollToken).toBeTruthy();
     expect(claimToken).toMatch(/^cd_claim_/);
 
+    const auditRequestId = randomId();
     const meta = await request.get(`/api/v1/connect/claims/${encodeURIComponent(claimToken)}`, {
-      headers: { "x-forwarded-for": ip }
+      headers: { "x-forwarded-for": ip, "x-request-id": auditRequestId }
     });
     await expectStatus(meta, 200);
     const metaBody = await meta.json();
     expect(metaBody?.data?.session_id).toBe(sessionId);
     expect(metaBody?.data?.status).toBe("PENDING_CLAIM");
+
+    // Ensure audit logs never contain claim_token (path param or payload) in cleartext.
+    let auditRow: any = null;
+    for (let i = 0; i < 20; i += 1) {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("id, request, action, payload, security")
+        .eq("request_id", auditRequestId)
+        .maybeSingle();
+      if (!error && data) {
+        auditRow = data;
+        break;
+      }
+      await sleep(200);
+    }
+    expect(auditRow).not.toBeNull();
+    expect(auditRow.action?.event).toBe("connect.claim_viewed");
+    expect(auditRow.request?.path).toBe("/api/v1/connect/claims");
+    expect(auditRow.action?.path).toBe("/api/v1/connect/claims");
+    expect(auditRow.request?.query?.claim_token).toBeUndefined();
+    expect(JSON.stringify(auditRow)).not.toContain(claimToken);
 
     const claim = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
       headers: {

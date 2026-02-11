@@ -43,7 +43,7 @@ export function assertIntegrationEnv() {
   }
 }
 
-export const skipRateLimitTests = process.env.NODE_ENV !== "production";
+export const skipRateLimitTests = process.env.PW_WEB_SERVER_MODE !== "prod" && process.env.NODE_ENV !== "production";
 
 export function getApiBaseUrl() {
   loadDotenvOnce();

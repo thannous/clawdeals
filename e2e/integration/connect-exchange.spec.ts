@@ -24,6 +24,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
       data: { requested_agent_name: "Integration Exchange", requested_scopes: [] }
     });
     await expectStatus(create, 201);
+    expect(create.headers()["cache-control"]).toBe("no-store");
     const createBody = await create.json();
 
     const sessionId = createBody?.data?.session_id;
@@ -58,6 +59,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
       }
     });
     await expectStatus(exchange, 200);
+    expect(exchange.headers()["cache-control"]).toBe("no-store");
     const exchangeBody = await exchange.json();
 
     expect(exchangeBody?.data?.status).toBe("DELIVERED");

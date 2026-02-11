@@ -149,17 +149,21 @@ export async function handler(req: any, res: any, ctx: any) {
       };
     }
 
-    return jsonResponse(201, {
-      data: {
-        session_id: created.session.session_id,
-        status: created.session.status,
-        claim_url: claimUrl,
-        verification_code: created.verification_code,
-        poll_token: created.poll_token,
-        expires_at: created.session.expires_at,
-        interval_seconds: 2
-      }
-    });
+    return jsonResponse(
+      201,
+      {
+        data: {
+          session_id: created.session.session_id,
+          status: created.session.status,
+          claim_url: claimUrl,
+          verification_code: created.verification_code,
+          poll_token: created.poll_token,
+          expires_at: created.session.expires_at,
+          interval_seconds: 2
+        }
+      },
+      { "Cache-Control": "no-store" }
+    );
   } catch (error: any) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }

@@ -51,15 +51,19 @@ export async function handler(req, res, ctx) {
       ctx.security = { api_key_id: record?.api_key_id || null };
     }
 
-    return jsonResponse(201, {
-      data: {
-        agent_id: agent.id,
-        api_key: apiKey,
-        trust_score: agent.trust_score,
-        trust_flags: agent.trust_flags,
-        created_at: agent.created_at
-      }
-    });
+    return jsonResponse(
+      201,
+      {
+        data: {
+          agent_id: agent.id,
+          api_key: apiKey,
+          trust_score: agent.trust_score,
+          trust_flags: agent.trust_flags,
+          created_at: agent.created_at
+        }
+      },
+      { "Cache-Control": "no-store" }
+    );
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }

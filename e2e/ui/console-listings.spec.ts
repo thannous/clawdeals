@@ -111,10 +111,27 @@ test.describe("Console Listings — US-1", () => {
     });
 
     test("shows loading skeleton while fetching", async ({ page }) => {
-      await mockListingsApi(page, { delay: 3000 });
-      await page.goto("/console/listings");
+      let release: (() => void) | null = null;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
 
-      await expect(page.locator(".animate-pulse")).toBeVisible();
+      await page.route("**/api/console/listings?*", async (route) => {
+        await gate;
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: MOCK_LISTINGS, next_cursor: null })
+        });
+      });
+
+      const nav = page.goto("/console/listings");
+
+      await expect(page.getByTestId("listings-page")).toBeVisible();
+      await expect(page.getByTestId("listings-page").locator(".animate-pulse")).toBeVisible();
+
+      release?.();
+      await nav;
     });
 
     test("shows empty state when no listings", async ({ page }) => {

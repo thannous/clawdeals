@@ -22,7 +22,6 @@ describe("webmcp adapter", () => {
     if (originalModelContextDescriptor) {
       Object.defineProperty(nav, "modelContext", originalModelContextDescriptor);
     } else {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete (nav as any).modelContext;
     }
   });
@@ -34,7 +33,6 @@ describe("webmcp adapter", () => {
       Object.defineProperty(globalThis, "navigator", { value: nav, configurable: true });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete (nav as any).modelContext;
     expect(isWebMCPSupported()).toBe(false);
   });

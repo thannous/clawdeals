@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { assertIntegrationEnv } from "./helpers/env";
+import { assertIntegrationEnv, skipRateLimitTests } from "./helpers/env";
 import { randomId, randomIp } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
 import {
@@ -34,6 +34,7 @@ test.describe.serial("Integration: OAuth Device Authorize", () => {
       data: form
     });
     await expectStatus(authorize, 200);
+    expect(authorize.headers()["cache-control"]).toBe("no-store");
     const body = await authorize.json();
 
     const deviceCode = String(body?.device_code || "");
@@ -57,6 +58,32 @@ test.describe.serial("Integration: OAuth Device Authorize", () => {
     expect(viewBody?.data?.client_id).toBe("openclaw");
     expect(viewBody?.data?.requested_scopes).toEqual(["agent:read", "agent:write"]);
     expect(viewBody?.data?.requested_agent_name).toBe("Integration OpenClaw");
+  });
+
+  test("rate limit: /api/oauth/device/requests blocks brute force user_code attempts", async ({ request }) => {
+    test.skip(skipRateLimitTests, "rate limit oauth.device.requests.read_ip");
+    const ip = randomIp();
+    let rateLimited = false;
+
+    for (let i = 0; i < 80; i += 1) {
+      const res = await request.get(`/api/oauth/device/requests?user_code=${encodeURIComponent("ABCD-EFGH")}`, {
+        headers: { "x-forwarded-for": ip }
+      });
+      if (res.status() === 429) {
+        rateLimited = true;
+        expect(res.headers()["retry-after"]).toBeTruthy();
+        break;
+      }
+
+      // We expect 404 (unknown user_code) until rate limit triggers.
+      // Allow 200 just in case the code accidentally exists from another run.
+      if (res.status() !== 404 && res.status() !== 200) {
+        const body = await res.text();
+        expect(res.status(), body).toBe(404);
+      }
+    }
+
+    expect(rateLimited).toBe(true);
   });
 
   test("idempotency: authorize replays same codes and rejects key reuse", async ({ request }) => {
