@@ -1,9 +1,23 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { normalizeEmail } from "../utils/owner-verification";
 
 export async function getOwner(ownerId) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client.from("owners").select("*").eq("owner_id", ownerId).maybeSingle();
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  return data || null;
+}
+
+export async function getOwnerByEmail(email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("owners").select("*").eq("email", normalized).limit(1).maybeSingle();
   if (error) {
     const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });

@@ -9,9 +9,21 @@ vi.mock("../services/oauth-access-tokens", () => ({
   isOauthAccessToken: (token: any) => typeof token === "string" && token.startsWith("cd_at_")
 }));
 
+vi.mock("../services/owner-sessions", () => ({
+  getOwnerSessionByTokenHash: vi.fn(),
+  markOwnerSessionExpired: vi.fn(),
+  touchOwnerSession: vi.fn()
+}));
+
+vi.mock("../utils/session-tokens", () => ({
+  hashOwnerSessionToken: vi.fn(() => "test-hash"),
+  isOwnerSessionToken: (token: any) => typeof token === "string" && token.startsWith("cd_os_")
+}));
+
 import { applyAuthStub } from "./auth-stub";
 import { authenticateApiKey } from "../services/api-keys";
 import { authenticateOauthAccessToken } from "../services/oauth-access-tokens";
+import { getOwnerSessionByTokenHash, touchOwnerSession } from "../services/owner-sessions";
 
 describe("applyAuthStub", () => {
   beforeEach(() => {
@@ -142,5 +154,37 @@ describe("applyAuthStub", () => {
     expect(authenticateOauthAccessToken).not.toHaveBeenCalled();
     expect(ctx.authError).toBeNull();
     expect(ctx.actor).toEqual({ type: "anonymous", id: null });
+  });
+
+  it("authenticates via owner session cookie", async () => {
+    vi.mocked(getOwnerSessionByTokenHash).mockResolvedValue({
+      session_id: "sess-1",
+      owner_id: "owner-123",
+      status: "ACTIVE",
+      expires_at: "2026-02-12T00:00:00Z"
+    } as any);
+
+    const token = `cd_os_${"a".repeat(43)}`;
+    const req: any = { headers: { cookie: `cd_owner_session=${token}` } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toBeNull();
+    expect(ctx.ownerId).toBe("owner-123");
+    expect(ctx.actor).toEqual({ type: "owner", id: "owner-123" });
+    expect(touchOwnerSession).toHaveBeenCalledWith("sess-1", expect.any(Date));
+  });
+
+  it("rejects invalid owner session cookies", async () => {
+    const req: any = { headers: { cookie: "cd_owner_session=not-a-token" } };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toEqual({
+      status: 401,
+      code: "UNAUTHORIZED",
+      message: "Invalid session cookie"
+    });
+    expect(ctx.ownerId).toBeUndefined();
   });
 });
