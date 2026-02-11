@@ -7,6 +7,8 @@ const MAX_WINDOW_MINUTES = 24 * 60;
 
 const AUDIT_BATCH_SIZE = 5000;
 const AUDIT_MAX_ROWS = 20000;
+const BURN_RATE_FAST_WINDOW_SECONDS = 5 * 60;
+const BURN_RATE_SLOW_WINDOW_SECONDS = 60 * 60;
 
 const SLI_EVENTS = ["deal.create", "listing.create", "offer.create"] as const;
 const SLO_TARGET = 0.99; // 99.0%
@@ -33,7 +35,8 @@ function computeBurnRate(badRate: number | null, sloTarget: number): number | nu
   if (badRate === null) return null;
   const allowedBadRate = 1 - sloTarget;
   if (allowedBadRate <= 0) return null;
-  return badRate / allowedBadRate;
+  const raw = badRate / allowedBadRate;
+  return Math.round(raw * 1e6) / 1e6;
 }
 
 function buildServiceError(message: string, status = 500, code = "ERROR", meta?: any) {
@@ -209,6 +212,8 @@ export async function getConsoleOpsDashboard({
   const supabase = client || getSupabaseServiceClient();
   const toIso = now.toISOString();
   const fromIso = new Date(now.getTime() - parsedWindow * 60 * 1000).toISOString();
+  const burnSlowFromIso = new Date(now.getTime() - BURN_RATE_SLOW_WINDOW_SECONDS * 1000).toISOString();
+  const requiresExtendedBurnLookback = parsedWindow * 60 < BURN_RATE_SLOW_WINDOW_SECONDS;
 
   const [
     { rows: auditRows, truncated, maxRows },
@@ -216,7 +221,8 @@ export async function getConsoleOpsDashboard({
     trustscoreJobs,
     watchlistJobs,
     oldestPendingApproval,
-    resolvedApprovals
+    resolvedApprovals,
+    burnAuditWindow
   ] = await Promise.all([
     fetchAuditRowsWindow({ client: supabase, fromIso, toIso }),
     countRows({
@@ -228,7 +234,10 @@ export async function getConsoleOpsDashboard({
     countRows({ client: supabase, table: "trustscore_recalc_queue", select: "agent_id" }),
     countRows({ client: supabase, table: "watchlist_backfill_queue", select: "watchlist_id" }),
     fetchOldestPendingApproval({ client: supabase }),
-    fetchResolvedApprovals({ client: supabase, fromIso, toIso })
+    fetchResolvedApprovals({ client: supabase, fromIso, toIso }),
+    requiresExtendedBurnLookback
+      ? fetchAuditRowsWindow({ client: supabase, fromIso: burnSlowFromIso, toIso })
+      : Promise.resolve(null)
   ]);
 
   const buckets = new Map<string, RouteGroupBucket>();
@@ -377,16 +386,17 @@ export async function getConsoleOpsDashboard({
   const sliBudgetRemainingPct = sliErrorBudget > 0 ? Math.max(0, 1 - sliUsedBudget / sliErrorBudget) * 100 : 0;
   const sliBudgetState = computeBudgetState(sliAggRate, SLO_TARGET);
 
-  // Burn rate (fast=5m, slow=1h) — compute from audit rows in current window.
-  // For simplicity use the window data we already have rather than re-querying.
-  const burnFastWindowS = 300;
-  const burnSlowWindowS = 3600;
+  // Burn rate (fast=5m, slow=1h) should always use real 5m/1h lookbacks.
+  // For short dashboard windows, fetch a separate 1h audit slice for burn-rate math.
+  const burnFastWindowS = BURN_RATE_FAST_WINDOW_SECONDS;
+  const burnSlowWindowS = BURN_RATE_SLOW_WINDOW_SECONDS;
+  const burnAuditRows = burnAuditWindow?.rows || auditRows;
   const nowMs = now.getTime();
   let fastTotal = 0;
   let fastBad = 0;
   let slowTotal = 0;
   let slowBad = 0;
-  for (const row of auditRows) {
+  for (const row of burnAuditRows) {
     const event = row?.action?.event;
     if (typeof event !== "string" || !sliByEvent.has(event)) continue;
     const occurredAt = new Date(row?.occurred_at).getTime();

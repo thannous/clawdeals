@@ -122,6 +122,14 @@ function formatBurnRate(value: number | null) {
   return value.toFixed(1) + "x";
 }
 
+export function getP95SloTargetForRoute(routeGroup: string, sloLatencyTargets: Record<string, number>) {
+  const target = sloLatencyTargets?.[routeGroup];
+  if (typeof target !== "number" || !Number.isFinite(target) || target <= 0) {
+    return null;
+  }
+  return target;
+}
+
 function formatIsoShort(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
@@ -310,13 +318,6 @@ export default function OpsPage() {
     }));
   }, [data?.rate_limit?.top_agents, data?.rate_limit?.status_429]);
 
-  // Determine if a p95 value breaches SLO targets.
-  // We color cells red if any route_group's p95 exceeds the strictest latency target.
-  const p95SloThreshold = useMemo(() => {
-    const vals = Object.values(sloLatencyTargets);
-    return vals.length > 0 ? Math.min(...vals) : null;
-  }, [sloLatencyTargets]);
-
   return (
     <div data-testid="ops-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
@@ -428,7 +429,8 @@ export default function OpsPage() {
                     const val = row[col.key];
                     const text = formatMs(val);
                     // Color-code p95 cells that exceed the SLO latency target.
-                    if (col.key === "p95_ms" && p95SloThreshold !== null && typeof val === "number" && val > p95SloThreshold) {
+                    const routeTarget = getP95SloTargetForRoute(row.route_group, sloLatencyTargets);
+                    if (col.key === "p95_ms" && routeTarget !== null && typeof val === "number" && val > routeTarget) {
                       return <span className="text-red-400 font-bold">{text}</span>;
                     }
                     return text;
