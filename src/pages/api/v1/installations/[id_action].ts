@@ -3,9 +3,11 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
+import { API_KEY_GRACE_SECONDS } from "../../../../server/utils/api-keys";
 import { getSupabaseServiceClient } from "../../../../server/db/supabase";
 import { mapSupabaseError } from "../../../../server/services/supabase-errors";
 import { revokeInstallationForOwner, getInstallationById } from "../../../../server/services/agent-installations";
+import { rotateInstallationApiKeyForOwner } from "../../../../server/services/api-keys";
 import { createApproval } from "../../../../server/services/approvals";
 import {
   V1_SCOPES_DEFAULT,
@@ -54,6 +56,20 @@ function parseRequestedScopes(body: any) {
   return requested;
 }
 
+function parseGraceSeconds(body: any) {
+  const raw = body?.grace_seconds ?? body?.graceSeconds;
+  if (raw === null || raw === undefined || raw === "") {
+    return { value: API_KEY_GRACE_SECONDS };
+  }
+
+  const parsed = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return { error: "grace_seconds must be an integer greater than or equal to 0" };
+  }
+
+  return { value: parsed };
+}
+
 function isResolvedApprovalState(state: any) {
   return state === "APPROVED" || state === "DENIED" || state === "EXPIRED" || state === "CANCELLED";
 }
@@ -75,7 +91,7 @@ export async function handler(req: any, _res: any, ctx: any) {
   if (!isUuid(installationId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "installation_id must be a UUID"));
   }
-  if (action !== "revoke" && action !== "scopes-upgrade") {
+  if (action !== "revoke" && action !== "rotate" && action !== "scopes-upgrade") {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown action"));
   }
 
@@ -128,6 +144,69 @@ export async function handler(req: any, _res: any, ctx: any) {
         status: "REVOKED",
         revoked_at: revoked.revoked_at
       });
+    } catch (error: any) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    }
+  }
+
+  // POST /v1/installations/{id}:rotate
+  if (action === "rotate") {
+    if (ctx?.actor?.type !== "owner") {
+      return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+    }
+
+    const ownerId = ctx?.ownerId || null;
+    if (!ownerId) {
+      return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+    }
+    if (!isUuid(ownerId)) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "owner_id must be a UUID"));
+    }
+
+    const body = req.body || {};
+    const parsedGraceSeconds = parseGraceSeconds(body);
+    if (parsedGraceSeconds && typeof parsedGraceSeconds === "object" && "error" in parsedGraceSeconds) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", parsedGraceSeconds.error));
+    }
+    const graceSeconds = Number(parsedGraceSeconds.value);
+
+    if (ctx) {
+      ctx.auditEvent = "installation.key_rotated";
+      ctx.auditEntityType = "installation";
+      ctx.auditEntityId = installationId;
+      ctx.security = {
+        installation_id: installationId,
+        grace_seconds: graceSeconds
+      };
+    }
+
+    try {
+      const rotated = await rotateInstallationApiKeyForOwner({
+        ownerId,
+        installationId,
+        graceSeconds
+      });
+
+      if (ctx) {
+        ctx.security = {
+          ...(ctx.security || {}),
+          api_key_id: rotated.apiKeyId,
+          previous_api_key_id: rotated.previousApiKeyId
+        };
+      }
+
+      return jsonResponse(
+        200,
+        {
+          installation_id: installationId,
+          api_key_id: rotated.apiKeyId,
+          api_key: rotated.apiKey,
+          rotated_at: rotated.rotatedAt.toISOString(),
+          previous_api_key_id: rotated.previousApiKeyId,
+          grace_seconds: rotated.graceSeconds
+        },
+        { "Cache-Control": "no-store" }
+      );
     } catch (error: any) {
       return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
     }

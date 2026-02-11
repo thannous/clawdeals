@@ -151,6 +151,10 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 20, windowSeconds: HOUR }],
   },
+  "installations.rotate": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
   "installations.scopes_upgrade": {
     scope: "owner",
     buckets: [{ limit: 10, windowSeconds: DAY }],

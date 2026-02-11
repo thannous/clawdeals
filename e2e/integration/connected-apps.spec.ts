@@ -15,6 +15,67 @@ function extractClaimToken(claimUrl: string): string {
   return decodeURIComponent(parts[parts.length - 1] || "");
 }
 
+async function createConnectedInstallation(
+  request: any,
+  ownerId: string,
+  options: { requestedAgentName: string; agentName: string; clientVersion?: string } = {
+    requestedAgentName: "Integration Connected App",
+    agentName: "Integration Connected App Agent"
+  }
+) {
+  const create = await request.post("/api/v1/connect/sessions", {
+    headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
+    data: { requested_agent_name: options.requestedAgentName, requested_scopes: [] }
+  });
+  await expectStatus(create, 201);
+  const createBody = await create.json();
+
+  const sessionId = createBody?.data?.session_id;
+  const pollToken = createBody?.data?.poll_token;
+  const claimToken = extractClaimToken(createBody?.data?.claim_url);
+
+  expect(sessionId).toBeTruthy();
+  expect(pollToken).toBeTruthy();
+  expect(claimToken).toMatch(/^cd_claim_/);
+
+  const claim = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+    headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+    data: { claim_token: claimToken, mode: "create_agent", agent_name: options.agentName }
+  });
+  await expectStatus(claim, 200);
+
+  const exchange = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
+    headers: {
+      Authorization: `Bearer ${pollToken}`,
+      "Idempotency-Key": randomId()
+    },
+    data: {
+      requested_key_scope: "agent_write",
+      installation: {
+        client_type: "openclaw",
+        client_version: options.clientVersion || "itest",
+        device_name: "ci",
+        fingerprint: `itest-${randomId()}`
+      }
+    }
+  });
+  await expectStatus(exchange, 200);
+  const exchangeBody = await exchange.json();
+
+  const installationId = exchangeBody?.data?.installation_id;
+  const apiKey = exchangeBody?.data?.api_key;
+
+  expect(installationId).toBeTruthy();
+  expect(apiKey).toMatch(/^cd_(live|sandbox)_.+\..+$/);
+
+  return {
+    sessionId,
+    pollToken,
+    installationId: String(installationId),
+    apiKey: String(apiKey)
+  };
+}
+
 test.describe.serial("Integration: Connected Apps", () => {
   test.setTimeout(60_000);
 
@@ -72,7 +133,7 @@ test.describe.serial("Integration: Connected Apps", () => {
     const auditSince = new Date().toISOString();
 
     const listRequestId = randomId();
-    const list = await request.get("/api/v1/owner/installations", {
+    const list = await request.get("/api/v1/installations", {
       headers: { "x-owner-id": ownerId, "x-request-id": listRequestId },
     });
     await expectStatus(list, 200);
@@ -94,7 +155,7 @@ test.describe.serial("Integration: Connected Apps", () => {
     expect(revokeBody.status).toBe("REVOKED");
     expect(revokeBody.revoked_at).toBeTruthy();
 
-    const listAfter = await request.get("/api/v1/owner/installations", {
+    const listAfter = await request.get("/api/v1/installations", {
       headers: { "x-owner-id": ownerId },
     });
     await expectStatus(listAfter, 200);
@@ -119,6 +180,102 @@ test.describe.serial("Integration: Connected Apps", () => {
     expect(auditRevoke.outcome).toBe("SUCCESS");
     expect(auditRevoke.action?.entity_type).toBe("installation");
     expect(auditRevoke.action?.entity_id).toBe(installationId);
+  });
+
+  test("rotate returns new credential and previous key stays valid during grace", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+
+    const connected = await createConnectedInstallation(request, ownerId, {
+      requestedAgentName: "Integration Rotate Grace",
+      agentName: "Integration Rotate Grace Agent"
+    });
+
+    const warmCacheBeforeRotate = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${connected.apiKey}` }
+    });
+    await expectStatus(warmCacheBeforeRotate, 200);
+
+    const auditSince = new Date().toISOString();
+    const rotateRequestId = randomId();
+    const rotate = await request.post(`/api/v1/installations/${encodeURIComponent(connected.installationId)}:rotate`, {
+      headers: {
+        "x-owner-id": ownerId,
+        "Idempotency-Key": randomId(),
+        "x-request-id": rotateRequestId
+      },
+      data: { grace_seconds: 120 }
+    });
+    await expectStatus(rotate, 200);
+    const rotateBody = await rotate.json();
+
+    const rotatedKey = String(rotateBody?.api_key || "");
+    expect(rotatedKey).toMatch(/^cd_(live|sandbox)_.+\..+$/);
+    expect(rotateBody.installation_id).toBe(connected.installationId);
+    expect(rotateBody.grace_seconds).toBe(120);
+    expect(rotateBody.previous_api_key_id).toBeTruthy();
+    expect(rotateBody.api_key_id).toBeTruthy();
+    expect(rotatedKey).not.toBe(connected.apiKey);
+
+    const graceAuth = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${connected.apiKey}` }
+    });
+    await expectStatus(graceAuth, 200);
+
+    const newKeyAuth = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${rotatedKey}` }
+    });
+    await expectStatus(newKeyAuth, 200);
+    const newKeyBody = await newKeyAuth.json();
+    expect(newKeyBody?.data?.installation_id).toBe(connected.installationId);
+
+    const auditRotate = await waitForAuditLog(supabase, "installation.key_rotated", 10, auditSince, rotateRequestId);
+    expect(auditRotate).not.toBeNull();
+    expect(auditRotate.outcome).toBe("SUCCESS");
+    expect(auditRotate.action?.entity_type).toBe("installation");
+    expect(auditRotate.action?.entity_id).toBe(connected.installationId);
+  });
+
+  test("rotate with grace_seconds=0 revokes previous key immediately", async ({ request }) => {
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+
+    const connected = await createConnectedInstallation(request, ownerId, {
+      requestedAgentName: "Integration Rotate Immediate",
+      agentName: "Integration Rotate Immediate Agent"
+    });
+
+    // Ensure the previous key is cached before rotate so invalidation is exercised.
+    const warmCache = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${connected.apiKey}` }
+    });
+    await expectStatus(warmCache, 200);
+
+    const rotate = await request.post(`/api/v1/installations/${encodeURIComponent(connected.installationId)}:rotate`, {
+      headers: {
+        "x-owner-id": ownerId,
+        "Idempotency-Key": randomId()
+      },
+      data: { grace_seconds: 0 }
+    });
+    await expectStatus(rotate, 200);
+    const rotateBody = await rotate.json();
+
+    const rotatedKey = String(rotateBody?.api_key || "");
+    expect(rotatedKey).toMatch(/^cd_(live|sandbox)_.+\..+$/);
+    expect(rotateBody.grace_seconds).toBe(0);
+    expect(rotatedKey).not.toBe(connected.apiKey);
+
+    const oldKeyAuth = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${connected.apiKey}` }
+    });
+    expect(oldKeyAuth.status()).toBe(401);
+
+    const newKeyAuth = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${rotatedKey}` }
+    });
+    await expectStatus(newKeyAuth, 200);
   });
 
   test("scope upgrade creates approval then updates installation scopes after approval", async ({ request }) => {

@@ -24,6 +24,59 @@ function getErrorMessage(body: any, status: number): string {
   return body?.error?.message || body?.message || `HTTP ${status}`;
 }
 
+function pickString(...values: any[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function pickNumber(...values: any[]): number | null {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string" && value.trim() && /^\d+$/.test(value.trim())) {
+      const parsed = Number.parseInt(value.trim(), 10);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return null;
+}
+
+type RotateCredentialResponse = {
+  credential: string;
+  credentialId: string | null;
+  previousCredentialId: string | null;
+  rotatedAt: string | null;
+  graceSeconds: number | null;
+  installationId: string | null;
+};
+
+function parseRotateCredentialResponse(body: any): RotateCredentialResponse | null {
+  const data = body?.data && typeof body.data === "object" ? body.data : {};
+  const credential = pickString(body?.credential, body?.api_key, data?.credential, data?.api_key);
+  if (!credential) return null;
+
+  return {
+    credential,
+    credentialId: pickString(body?.credential_id, body?.api_key_id, data?.credential_id, data?.api_key_id),
+    previousCredentialId: pickString(
+      body?.previous_credential_id,
+      body?.previous_api_key_id,
+      data?.previous_credential_id,
+      data?.previous_api_key_id
+    ),
+    rotatedAt: pickString(body?.rotated_at, data?.rotated_at),
+    graceSeconds: pickNumber(body?.grace_seconds, data?.grace_seconds),
+    installationId: pickString(body?.installation_id, data?.installation_id),
+  };
+}
+
 type Installation = {
   installation_id: string;
   agent_id: string;
@@ -135,6 +188,12 @@ export default function ConnectedAppsPage() {
   const [upgradeState, setUpgradeState] = useState<"idle" | "loading" | "error">("idle");
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
+  const [rotateOpen, setRotateOpen] = useState(false);
+  const [rotateGraceSeconds, setRotateGraceSeconds] = useState("");
+  const [rotateState, setRotateState] = useState<"idle" | "loading" | "error">("idle");
+  const [rotateError, setRotateError] = useState<string | null>(null);
+  const [rotatedCredential, setRotatedCredential] = useState<RotateCredentialResponse | null>(null);
+
   const openRevokeConfirm = useCallback((installation: Installation) => {
     setSelected(installation);
     setReason("");
@@ -159,6 +218,14 @@ export default function ConnectedAppsPage() {
     setUpgradeOpen(true);
   }, []);
 
+  const openRotate = useCallback((installation: Installation) => {
+    setSelected(installation);
+    setRotateGraceSeconds("");
+    setRotateState("idle");
+    setRotateError(null);
+    setRotateOpen(true);
+  }, []);
+
   const closeUpgrade = useCallback(() => {
     if (upgradeState === "loading") return;
     setUpgradeOpen(false);
@@ -166,6 +233,29 @@ export default function ConnectedAppsPage() {
     setUpgradeState("idle");
     setUpgradeError(null);
   }, [upgradeState]);
+
+  const closeRotate = useCallback(() => {
+    if (rotateState === "loading") return;
+    setRotateOpen(false);
+    setRotateGraceSeconds("");
+    setRotateState("idle");
+    setRotateError(null);
+  }, [rotateState]);
+
+  const closeRotatedCredential = useCallback(() => {
+    setRotatedCredential(null);
+  }, []);
+
+  const copyRotatedCredential = useCallback(async () => {
+    const credential = rotatedCredential?.credential || "";
+    if (!credential) return;
+    try {
+      await navigator.clipboard.writeText(credential);
+      show("Credential copied to clipboard", "success");
+    } catch {
+      show("Copy failed. Copy manually before closing.", "error");
+    }
+  }, [rotatedCredential, show]);
 
   const onConfirm = useCallback(async () => {
     if (!selected) return;
@@ -244,6 +334,60 @@ export default function ConnectedAppsPage() {
     }
   }, [selected, upgradeState, upgradeSelectedScopes, closeUpgrade, refetch, show]);
 
+  const onRotateCredential = useCallback(async () => {
+    if (!selected) return;
+    if (rotateState === "loading") return;
+
+    const trimmedGraceSeconds = rotateGraceSeconds.trim();
+    let graceSeconds: number | undefined;
+    if (trimmedGraceSeconds) {
+      if (!/^\d+$/.test(trimmedGraceSeconds)) {
+        const validationMessage = "Grace seconds must be a non-negative integer";
+        setRotateState("error");
+        setRotateError(validationMessage);
+        return;
+      }
+      graceSeconds = Number.parseInt(trimmedGraceSeconds, 10);
+    }
+
+    setRotateState("loading");
+    setRotateError(null);
+
+    try {
+      const idempotencyKey = randomIdempotencyKey();
+      const resp = await fetch(`/api/console/installations/${encodeURIComponent(selected.installation_id)}:rotate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(typeof graceSeconds === "number" ? { grace_seconds: graceSeconds } : {}),
+      });
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(getErrorMessage(body, resp.status));
+      }
+
+      const parsed = parseRotateCredentialResponse(body);
+      if (!parsed?.credential) {
+        throw new Error("Rotate succeeded but no credential was returned");
+      }
+
+      setRotatedCredential({
+        ...parsed,
+        installationId: parsed.installationId || selected.installation_id,
+      });
+      show("Credential rotated. Copy it now.", "success");
+      closeRotate();
+      refetch();
+    } catch (err: any) {
+      const message = String(err?.message || "Rotate failed");
+      setRotateError(message);
+      setRotateState("error");
+      show(message, "error");
+    }
+  }, [selected, rotateState, rotateGraceSeconds, show, closeRotate, refetch]);
+
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
@@ -257,7 +401,8 @@ export default function ConnectedAppsPage() {
       <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-mono text-subtle">
-            Manage your connected installations (OpenClaw/ClawdBot). Revoking invalidates credentials immediately.
+            Manage your connected installations (OpenClaw/ClawdBot). Revoke to invalidate immediately, or rotate to issue
+            a new credential.
           </div>
           <button
             onClick={refetch}
@@ -317,6 +462,17 @@ export default function ConnectedAppsPage() {
                         Upgrade
                       </button>
                       <button
+                        data-testid={`connected-apps-rotate-${row.installation_id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openRotate(row);
+                        }}
+                        className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors"
+                      >
+                        Rotate
+                      </button>
+                      <button
                         data-testid={`connected-apps-revoke-${row.installation_id}`}
                         onClick={(e) => {
                           e.preventDefault();
@@ -336,6 +492,34 @@ export default function ConnectedAppsPage() {
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        open={rotateOpen}
+        title="Rotate credential"
+        message="Rotate this installation credential? The newly returned credential is shown once."
+        confirmLabel="Rotate"
+        variant="default"
+        loading={rotateState === "loading"}
+        onCancel={closeRotate}
+        onConfirm={onRotateCredential}
+      >
+        <div className="space-y-2">
+          <label className="block text-[10px] font-mono text-subtle uppercase">Grace seconds (optional)</label>
+          <input
+            data-testid="connected-apps-rotate-grace-seconds"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            value={rotateGraceSeconds}
+            onChange={(e) => setRotateGraceSeconds(e.target.value)}
+            placeholder="e.g. 300"
+            className="w-full h-10 px-3 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
+          />
+          <div className="text-[10px] font-mono text-subtle">Leave blank to use server default grace duration.</div>
+          {rotateError && <div className="text-[10px] font-mono text-red-400">{rotateError}</div>}
+        </div>
+      </ConfirmModal>
 
       <ConfirmModal
         open={confirmOpen}
@@ -417,6 +601,37 @@ export default function ConnectedAppsPage() {
           </div>
 
           {upgradeError && <div className="text-[10px] font-mono text-red-400">{upgradeError}</div>}
+        </div>
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={Boolean(rotatedCredential)}
+        title="Credential rotated"
+        message="Copy the new credential now. For security, it is cleared after this dialog is closed."
+        confirmLabel="Copy"
+        cancelLabel="Close"
+        variant="success"
+        onCancel={closeRotatedCredential}
+        onConfirm={copyRotatedCredential}
+      >
+        <div className="space-y-3">
+          <label className="block text-[10px] font-mono text-subtle uppercase">New credential</label>
+          <textarea
+            data-testid="connected-apps-rotate-credential"
+            value={rotatedCredential?.credential || ""}
+            readOnly
+            className="w-full min-h-[84px] px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text"
+          />
+          <div className="space-y-1 text-[10px] font-mono text-subtle">
+            {rotatedCredential?.credentialId && <div>credential_id: {rotatedCredential.credentialId}</div>}
+            {rotatedCredential?.previousCredentialId && (
+              <div>previous_credential_id: {rotatedCredential.previousCredentialId}</div>
+            )}
+            {rotatedCredential && rotatedCredential.graceSeconds !== null && (
+              <div>grace_seconds: {rotatedCredential.graceSeconds}</div>
+            )}
+            {rotatedCredential?.rotatedAt && <div>rotated_at: {formatDate(rotatedCredential.rotatedAt)}</div>}
+          </div>
         </div>
       </ConfirmModal>
 

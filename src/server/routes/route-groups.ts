@@ -137,9 +137,19 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/owner\/installations$/
   },
   {
+    group: "installations.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/installations$/
+  },
+  {
     group: "installations.revoke",
     methods: ["POST"],
     pattern: /^\/v1\/installations\/[^/]+:revoke$/
+  },
+  {
+    group: "installations.rotate",
+    methods: ["POST"],
+    pattern: /^\/v1\/installations\/[^/]+:rotate$/
   },
   {
     group: "installations.scopes_upgrade",
@@ -151,6 +161,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     group: "installations.revoke",
     methods: ["POST"],
     pattern: /^\/console\/installations\/[^/]+:revoke$/
+  },
+  {
+    group: "installations.rotate",
+    methods: ["POST"],
+    pattern: /^\/console\/installations\/[^/]+:rotate$/
   },
   {
     group: "installations.scopes_upgrade",

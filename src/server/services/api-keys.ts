@@ -34,7 +34,7 @@ function isPrefixCollision(error) {
   return error.message.includes(KEY_PREFIX_UNIQUE_CONSTRAINT);
 }
 
-async function insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt }: any) {
+async function insertApiKeyRecord({ agentId, installationId = null, keyState, scope, graceExpiresAt }: any) {
   const client = getSupabaseServiceClient();
 
   for (let attempt = 0; attempt < MAX_KEY_GENERATION_ATTEMPTS; attempt += 1) {
@@ -42,6 +42,7 @@ async function insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt }: 
     const keyHash = await hashApiKeySecret(secret);
     const payload = {
       agent_id: agentId,
+      installation_id: installationId,
       key_prefix: prefix,
       key_hash: keyHash,
       key_state: keyState,
@@ -62,15 +63,28 @@ async function insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt }: 
   throw buildServiceError("Failed to generate a unique API key", 500, "API_KEY_GENERATION_FAILED");
 }
 
-export async function createApiKeyForAgent({ agentId, keyState = "ACTIVE", scope = "full", graceExpiresAt }: any) {
+export async function createApiKeyForAgent({
+  agentId,
+  installationId = null,
+  keyState = "ACTIVE",
+  scope = "full",
+  graceExpiresAt
+}: any) {
   if (!agentId) {
     throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
   }
-  return insertApiKeyRecord({ agentId, keyState, scope, graceExpiresAt });
+  return insertApiKeyRecord({ agentId, installationId, keyState, scope, graceExpiresAt });
 }
 
 export async function issueApiKey({ agentId, scope = "full", state = "ACTIVE" }: any) {
   return createApiKeyForAgent({ agentId, keyState: state, scope });
+}
+
+function resolveGraceSecondsInput(value: any) {
+  if (!Number.isInteger(value) || value < 0) {
+    throw buildServiceError("graceSeconds must be an integer greater than or equal to 0", 400, "VALIDATION_ERROR");
+  }
+  return value;
 }
 
 async function revokeApiKeyRecord(apiKeyId, now = new Date()) {
@@ -210,6 +224,7 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
   if (!agentId) {
     throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
   }
+  const resolvedGraceSeconds = resolveGraceSecondsInput(graceSeconds);
 
   const client = getSupabaseServiceClient();
   const { data: keys, error } = await client
@@ -230,7 +245,7 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
   }
 
   const now = new Date();
-  const graceExpiresAt = computeGraceExpiry(graceSeconds, now);
+  const graceExpiresAt = computeGraceExpiry(resolvedGraceSeconds, now);
 
   const graceKey = keys?.find((key) => key.key_state === "GRACE");
   if (graceKey) {
@@ -284,7 +299,7 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
       apiKeyId: created.record.api_key_id,
       previousApiKeyId: activeKey.api_key_id,
       rotatedAt: now,
-      graceSeconds
+      graceSeconds: resolvedGraceSeconds
     };
   } catch (error) {
     await client
@@ -295,6 +310,143 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
       })
       .eq("api_key_id", activeKey.api_key_id)
       .eq("key_state", "GRACE");
+    throw error;
+  }
+}
+
+export async function rotateInstallationApiKeyForOwner({
+  ownerId,
+  installationId,
+  graceSeconds = API_KEY_GRACE_SECONDS
+}: any) {
+  if (!ownerId) {
+    throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
+  }
+  if (!installationId) {
+    throw buildServiceError("installationId is required", 400, "VALIDATION_ERROR");
+  }
+  const resolvedGraceSeconds = resolveGraceSecondsInput(graceSeconds);
+
+  const client = getSupabaseServiceClient();
+  const { data: installation, error: installationError } = await client
+    .from("agent_installations")
+    .select("installation_id, owner_id, agent_id, status")
+    .eq("installation_id", installationId)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+
+  if (installationError) {
+    throw mapSupabaseServiceError(installationError);
+  }
+  if (!installation) {
+    throw buildServiceError("Installation not found", 404, "NOT_FOUND");
+  }
+
+  if (!installation.agent_id) {
+    throw buildServiceError("Installation agent is missing", 409, "INSTALLATION_AGENT_REQUIRED");
+  }
+
+  const status = String(installation.status || "").toUpperCase();
+  if (status === "REVOKED") {
+    throw buildServiceError("Installation is revoked", 409, "INSTALLATION_REVOKED");
+  }
+
+  const { data: keys, error } = await client
+    .from("api_keys")
+    .select("api_key_id, key_state, key_prefix, scope")
+    .eq("installation_id", installationId)
+    .in("key_state", ["ACTIVE", "GRACE"]);
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+
+  const activeKey = keys?.find((key) => key.key_state === "ACTIVE");
+  if (!activeKey) {
+    throw buildServiceError("Active API key not found", 404, "NOT_FOUND");
+  }
+
+  const now = new Date();
+  const graceKey = keys?.find((key) => key.key_state === "GRACE");
+  if (graceKey) {
+    if (graceKey.key_prefix) {
+      await deleteCachedApiKeyAuthRecord(graceKey.key_prefix);
+    }
+    const { error: revokeError } = await client
+      .from("api_keys")
+      .update({
+        key_state: "REVOKED",
+        revoked_at: now.toISOString(),
+        grace_expires_at: null
+      })
+      .eq("api_key_id", graceKey.api_key_id)
+      .eq("key_state", "GRACE");
+
+    if (revokeError) {
+      throw mapSupabaseServiceError(revokeError);
+    }
+  }
+
+  const transitionPatch =
+    resolvedGraceSeconds > 0
+      ? {
+          key_state: "GRACE",
+          grace_expires_at: computeGraceExpiry(resolvedGraceSeconds, now).toISOString(),
+          revoked_at: null
+        }
+      : {
+          key_state: "REVOKED",
+          revoked_at: now.toISOString(),
+          grace_expires_at: null
+        };
+
+  const previousKeyState = resolvedGraceSeconds > 0 ? "GRACE" : "REVOKED";
+  const { data: updated, error: updateError } = await client
+    .from("api_keys")
+    .update(transitionPatch)
+    .eq("api_key_id", activeKey.api_key_id)
+    .eq("key_state", "ACTIVE")
+    .select("api_key_id")
+    .maybeSingle();
+
+  if (updateError) {
+    throw mapSupabaseServiceError(updateError);
+  }
+  if (!updated) {
+    throw buildServiceError("API key rotation conflict", 409, "CONFLICT");
+  }
+
+  if (activeKey.key_prefix) {
+    await deleteCachedApiKeyAuthRecord(activeKey.key_prefix);
+  }
+
+  try {
+    const created = await createApiKeyForAgent({
+      agentId: installation.agent_id,
+      installationId,
+      keyState: "ACTIVE",
+      scope: activeKey.scope || "full"
+    });
+
+    return {
+      installationId,
+      apiKey: created.apiKey,
+      apiKeyId: created.record.api_key_id,
+      previousApiKeyId: activeKey.api_key_id,
+      rotatedAt: now,
+      graceSeconds: resolvedGraceSeconds
+    };
+  } catch (error) {
+    await client
+      .from("api_keys")
+      .update({
+        key_state: "ACTIVE",
+        revoked_at: null,
+        grace_expires_at: null
+      })
+      .eq("api_key_id", activeKey.api_key_id)
+      .eq("key_state", previousKeyState);
+
     throw error;
   }
 }

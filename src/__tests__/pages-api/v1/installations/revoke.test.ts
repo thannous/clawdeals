@@ -5,6 +5,10 @@ vi.mock("../../../../server/services/agent-installations", () => ({
   getInstallationById: vi.fn()
 }));
 
+vi.mock("../../../../server/services/api-keys", () => ({
+  rotateInstallationApiKeyForOwner: vi.fn()
+}));
+
 import { handler } from "../../../../pages/api/v1/installations/[id_action]";
 import { revokeInstallationForOwner } from "../../../../server/services/agent-installations";
 

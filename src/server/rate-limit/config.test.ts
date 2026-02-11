@@ -44,6 +44,13 @@ describe("getProfileForGroup", () => {
     ]);
   });
 
+  it("returns installations.rotate profile (TI-330)", () => {
+    const profile = getProfileForGroup("installations.rotate");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("owner");
+    expect(profile.buckets).toEqual([{ limit: 10, windowSeconds: 3600 }]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

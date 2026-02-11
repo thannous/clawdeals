@@ -5,6 +5,10 @@ vi.mock("../../../../server/services/agent-installations", () => ({
   getInstallationById: vi.fn()
 }));
 
+vi.mock("../../../../server/services/api-keys", () => ({
+  rotateInstallationApiKeyForOwner: vi.fn()
+}));
+
 vi.mock("../../../../server/services/approvals", () => ({
   createApproval: vi.fn()
 }));
@@ -120,4 +124,3 @@ describe("POST /v1/installations/:installation_id:scopes-upgrade", () => {
     );
   });
 });
-
