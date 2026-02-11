@@ -76,7 +76,7 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "owner_id must be a UUID"));
   }
 
-  const idAction = String(resolveParam(req.query?.id_action) || "");
+  const idAction = String(resolveParam(req.query?.id_action ?? req.query?.id) || "");
   const [channelAccountId, action] = idAction.split(":");
   if (!channelAccountId || !action) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown action"));
@@ -135,4 +135,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler, { routeGroup: "channels.pairings.write" });
-
