@@ -197,6 +197,7 @@ describe("/api/console/approvals/[approval_id]", () => {
     const approval = {
       approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
       state: "APPROVED",
+      action_type: "listing_publish",
       owner_id: "owner-1"
     };
     vi.mocked(getApproval).mockResolvedValue(approval);
@@ -210,6 +211,33 @@ describe("/api/console/approvals/[approval_id]", () => {
 
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("CONFLICT");
+  });
+
+  it("POST: replays escrow confirm-received side effects when already APPROVED", async () => {
+    const approval = {
+      approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
+      state: "APPROVED",
+      action_type: "escrow.confirm_received",
+      owner_id: "owner-1"
+    };
+    vi.mocked(getApproval).mockResolvedValue(approval);
+    vi.mocked(resolveApproval).mockResolvedValue(approval as any);
+
+    const req = {
+      method: "POST",
+      query: { approval_id: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7" },
+      body: { action: "approve" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(resolveApproval).toHaveBeenCalledWith({
+      approvalId: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7",
+      ownerId: "owner-1",
+      decision: "APPROVED",
+      resolvedBy: "owner-1",
+      reason: undefined
+    });
   });
 
   it("POST: returns 404 when getApproval returns null", async () => {

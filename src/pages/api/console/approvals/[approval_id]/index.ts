@@ -6,6 +6,14 @@ import { errorPayload } from "../../../../../server/http/errors";
 import { getApproval, resolveApproval } from "../../../../../server/services/approvals";
 import { isUuid } from "../../../../../server/utils/validators";
 
+function shouldReplayApprovalSideEffects(approval: any, decision: "APPROVED" | "DENIED"): boolean {
+  return (
+    decision === "APPROVED" &&
+    approval?.state === "APPROVED" &&
+    approval?.action_type === "escrow.confirm_received"
+  );
+}
+
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
   return value;
@@ -57,6 +65,7 @@ export async function handler(req, res, ctx) {
   }
 
   const reason = body.reason != null ? String(body.reason).slice(0, 500) : undefined;
+  const decision = action === "approve" ? "APPROVED" : "DENIED";
 
   try {
     const approval = await getApproval(approvalId);
@@ -65,13 +74,23 @@ export async function handler(req, res, ctx) {
     }
 
     if (approval.state !== "PENDING") {
+      if (shouldReplayApprovalSideEffects(approval, decision)) {
+        const replayed = await resolveApproval({
+          approvalId,
+          ownerId: approval.owner_id,
+          decision,
+          resolvedBy: ctx.ownerId,
+          reason
+        });
+        return jsonResponse(200, { approval: replayed });
+      }
       return jsonResponse(409, errorPayload("CONFLICT", "Approval already resolved"));
     }
 
     const result = await resolveApproval({
       approvalId,
       ownerId: approval.owner_id,
-      decision: action === "approve" ? "APPROVED" : "DENIED",
+      decision,
       resolvedBy: ctx.ownerId,
       reason
     });

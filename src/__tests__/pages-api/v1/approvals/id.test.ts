@@ -122,6 +122,27 @@ describe("POST /v1/approvals/[id]", () => {
     const result: any = await handler(makeReq(`${approvalId}:approve`), null, ownerCtx());
     expect(result.status).toBe(200);
     expect((result.body as any).data.state).toBe("APPROVED");
+    expect(mockedResolveApproval).not.toHaveBeenCalled();
+  });
+
+  it("replays escrow confirm-received side effects when already APPROVED", async () => {
+    const existing = { approval_id: approvalId, state: "APPROVED", action_type: "escrow.confirm_received" };
+    mockedGetApprovalForOwner.mockResolvedValue(existing as any);
+    mockedResolveApproval.mockResolvedValue(existing as any);
+    const ctx = ownerCtx();
+
+    const result: any = await handler(makeReq(`${approvalId}:approve`), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(mockedResolveApproval).toHaveBeenCalledWith({
+      approvalId,
+      ownerId,
+      decision: "APPROVED",
+      resolvedBy: ownerId,
+      reason: null
+    });
+    expect(ctx.auditEvent).toBe("approval.resolved");
+    expect(ctx.policy?.approval_id).toBe(approvalId);
   });
 
   it("returns 200 with state=APPROVED", async () => {

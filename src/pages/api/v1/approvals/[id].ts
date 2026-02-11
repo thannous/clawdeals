@@ -8,6 +8,14 @@ import { safeAuditLog } from "../../../../server/audit/singleton";
 import { getListing } from "../../../../server/services/listings";
 import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
 
+function shouldReplayApprovalSideEffects(approval: any, decision: "APPROVED" | "DENIED"): boolean {
+  return (
+    decision === "APPROVED" &&
+    approval?.state === "APPROVED" &&
+    approval?.action_type === "escrow.confirm_received"
+  );
+}
+
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
   if (Array.isArray(value)) return value[0];
@@ -107,6 +115,24 @@ export async function handler(req, res, ctx) {
     }
 
     if (existing.state !== "PENDING") {
+      if (shouldReplayApprovalSideEffects(existing, decision)) {
+        const replayed = await resolveApproval({
+          approvalId,
+          ownerId,
+          decision,
+          resolvedBy: ownerId,
+          reason: note
+        });
+        if (ctx) {
+          ctx.auditEvent = "approval.resolved";
+          ctx.policy = {
+            decision: "N_A",
+            approval_id: approvalId,
+            policy_version: null
+          };
+        }
+        return jsonResponse(200, { data: replayed });
+      }
       if (existing.state === decision) {
         return jsonResponse(200, { data: existing });
       }

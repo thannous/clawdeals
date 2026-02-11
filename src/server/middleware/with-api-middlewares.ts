@@ -369,17 +369,17 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
       return;
     }
 
-    // TI-331: installation-scoped OAuth scopes (v1).
-    // Keep this before rate limiting / idempotency: blocked requests should not consume limits or locks.
-    const scopesResponse = await enforceInstallationScopes(req, res, ctx);
-    if (scopesResponse) {
-      ctx.response = scopesResponse;
-      return;
-    }
-
     let idempotencyContext = null;
 
     try {
+      // TI-331: installation-scoped OAuth scopes (v1).
+      // Keep this before rate limiting / idempotency: blocked requests should not consume limits or locks.
+      const scopesResponse = await enforceInstallationScopes(req, res, ctx);
+      if (scopesResponse) {
+        ctx.response = scopesResponse;
+        return;
+      }
+
       if (resolved.enableRateLimit) {
         // Add an extra safety bucket for in-browser WebMCP tool invocation, in addition to the route-group limits.
         if (isWebMcpChannelRequest(req)) {
