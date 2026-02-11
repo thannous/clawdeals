@@ -68,7 +68,12 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       payload_redacted: { payload: { listing_id: "00000000-0000-4000-a000-000000000444" } }
     } as any);
 
-    const reqMissing: any = { method: "POST", headers: {}, query: { command: `${commandId}:confirm` }, body: {} };
+    const reqMissing: any = {
+      method: "POST",
+      headers: {},
+      query: { command: `${commandId}:confirm` },
+      body: { origin_context: { kind: "control_dm" } }
+    };
     const res1: any = await handler(reqMissing, null, { ...baseCtx });
     expect(res1.status).toBe(400);
     expect(res1.body.error.code).toBe("VALIDATION_ERROR");
@@ -77,11 +82,34 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       method: "POST",
       headers: { "idempotency-key": "nope" },
       query: { command: `${commandId}:confirm` },
-      body: {}
+      body: { origin_context: { kind: "control_dm" } }
     };
     const res2: any = await handler(reqWrong, null, { ...baseCtx });
     expect(res2.status).toBe(400);
     expect(String(res2.body.error.message)).toContain("must equal");
+  });
+
+  it("confirm requires explicit origin_context", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000333";
+    getStagedCommandForAgentMock.mockResolvedValue({
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      state: "STAGED",
+      action_type: "watchlist.create",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+      payload_redacted: { payload: { name: "WL", criteria: { query: "x" }, active: true } }
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": commandId },
+      query: { command: `${commandId}:confirm` },
+      body: {}
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_REQUIRED");
   });
 
   it("confirm executes offer.create and enables undo (offer.cancel)", async () => {
@@ -97,6 +125,8 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
       payload_redacted: {
+        authority: { decision: "EXECUTED", reason: "control_dm_allowed", requires_control_dm_confirm: false },
+        origin_context: { kind: "control_dm" },
         payload: {
           listing_id: listingId,
           thread_id: null,
@@ -143,7 +173,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       method: "POST",
       headers: { "idempotency-key": commandId },
       query: { command: `${commandId}:confirm` },
-      body: {}
+      body: { origin_context: { kind: "control_dm" } }
     };
     const ctx: any = { ...baseCtx };
     const result: any = await handler(req, null, ctx);
@@ -158,6 +188,45 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
 
     expect(markStagedCommandExecutedMock).toHaveBeenCalledTimes(1);
     expect(ctx.auditEvent).toBe("chat.command_executed");
+  });
+
+  it("confirm blocks until command is confirmed from CONTROL_DM when staged from public/group", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000333";
+    const listingId = "00000000-0000-4000-a000-000000000444";
+
+    getStagedCommandForAgentMock.mockResolvedValue({
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      state: "STAGED",
+      action_type: "offer.create",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+      payload_redacted: {
+        authority: { decision: "STAGED", reason: "public_group_requires_control_dm", requires_control_dm_confirm: true },
+        origin_context: { kind: "public_group" },
+        payload: {
+          listing_id: listingId,
+          amount: 350,
+          currency: "EUR",
+          expires_at: new Date(Date.now() + 3600000).toISOString()
+        }
+      }
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": commandId },
+      query: { command: `${commandId}:confirm` },
+      body: { origin_context: { kind: "public_group" } }
+    };
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("CONTROL_DM_CONFIRM_REQUIRED");
+    expect(confirmStagedCommandMock).not.toHaveBeenCalled();
+    expect(offerCreateHandlerMock).not.toHaveBeenCalled();
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "control_dm_confirm_required" });
   });
 
   it("confirm maps offer approval_required to 202 PENDING_APPROVAL and stores approval_id", async () => {
@@ -195,7 +264,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       method: "POST",
       headers: { "idempotency-key": commandId },
       query: { command: `${commandId}:confirm` },
-      body: {}
+      body: { origin_context: { kind: "control_dm" } }
     };
     const ctx: any = { ...baseCtx };
     const result: any = await handler(req, null, ctx);
@@ -237,7 +306,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       method: "POST",
       headers: { "idempotency-key": commandId },
       query: { command: `${commandId}:confirm` },
-      body: {}
+      body: { origin_context: { kind: "control_dm" } }
     };
     const ctx: any = { ...baseCtx };
     const result: any = await handler(req, null, ctx);

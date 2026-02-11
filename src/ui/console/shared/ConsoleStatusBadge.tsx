@@ -28,6 +28,9 @@ const APPROVAL_VARIANTS: Record<string, string> = {
 
 const AUDIT_VARIANTS: Record<string, string> = {
   SUCCESS: "border-secondary/40 text-secondary bg-secondary/10",
+  EXECUTED: "border-secondary/40 text-secondary bg-secondary/10",
+  STAGED: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  BLOCKED: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
   FAILURE: "border-red-400/40 text-red-400 bg-red-400/10",
   UNKNOWN: "border-border-strong text-subtle bg-surface-alt",
 };

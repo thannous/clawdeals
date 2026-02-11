@@ -53,24 +53,63 @@ test.describe.serial("Integration: Thread watch (TI-337)", () => {
     const threadBody = await threadRes.json();
     const threadId = threadBody.thread_id;
 
-    const watchRes = await request.post(`/api/v1/threads/${threadId}:watch`, {
+    const baselineRes = await request.post(`/api/v1/threads/${threadId}:watch`, {
       headers: { Authorization: `Bearer ${seller.apiKey}` },
       data: {
         cursor: "0-0",
-        timeout_ms: 1000,
-        limit: 10,
-        types: ["message.sent", "message.redacted"]
+        timeout_ms: 250,
+        limit: 10
       }
     });
-    await expectStatus(watchRes, 200);
-    const watchBody = await watchRes.json();
+    await expectStatus(baselineRes, 200);
+    const baselineBody = await baselineRes.json();
+    let cursor = typeof baselineBody?.next_cursor === "string" ? baselineBody.next_cursor : "0-0";
 
-    expect(typeof watchBody.next_cursor).toBe("string");
-    expect(Array.isArray(watchBody.events)).toBe(true);
+    const followUpText = `Watch follow-up ${randomId()}`;
+    const sendRes = await request.post(`/api/v1/threads/${threadId}/messages`, {
+      headers: { Authorization: `Bearer ${buyer.apiKey}`, "Idempotency-Key": randomId() },
+      data: { type: "question", text: followUpText }
+    });
+    await expectStatus(sendRes, 201);
+    const sendBody = await sendRes.json();
+    const sentMessageId = sendBody?.message_id;
+    expect(typeof sentMessageId).toBe("string");
+
+    let watchBody: any = null;
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const watchRes = await request.post(`/api/v1/threads/${threadId}:watch`, {
+        headers: { Authorization: `Bearer ${seller.apiKey}` },
+        data: {
+          cursor,
+          timeout_ms: 1000,
+          limit: 10
+        }
+      });
+      await expectStatus(watchRes, 200);
+      watchBody = await watchRes.json();
+      if (typeof watchBody?.next_cursor === "string" && watchBody.next_cursor) {
+        cursor = watchBody.next_cursor;
+      }
+      if (Array.isArray(watchBody?.events) && watchBody.events.length > 0) {
+        break;
+      }
+    }
+
+    expect(typeof watchBody?.next_cursor).toBe("string");
+    expect(Array.isArray(watchBody?.events)).toBe(true);
     expect(watchBody.events.length).toBeGreaterThan(0);
 
-    const ev = watchBody.events.find((e: any) => e?.type === "message.sent") || watchBody.events[0];
-    expect(ev?.payload?.thread_id).toBe(threadId);
-    expect(ev?.payload?.message?.payload?.text).toBe(messageText);
+    const extractPayload = (event: any) => event?.payload || event?.data?.payload || null;
+    const eventForThread = watchBody.events.find((e: any) => {
+      const payload = extractPayload(e);
+      return payload?.thread_id === threadId || payload?.message?.thread_id === threadId;
+    });
+    expect(Boolean(eventForThread)).toBe(true);
+
+    const hasSentMessage = watchBody.events.some((e: any) => {
+      const payload = extractPayload(e);
+      return payload?.message_id === sentMessageId || payload?.message?.message_id === sentMessageId;
+    });
+    expect(hasSentMessage).toBe(true);
   });
 });

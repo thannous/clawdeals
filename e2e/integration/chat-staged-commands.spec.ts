@@ -18,6 +18,7 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
       headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
       data: {
         action_type: "watchlist.create",
+        origin_context: { kind: "control_dm" },
         payload: { name: "Staged WL", criteria: { tags: ["ti-298-staged"] }, active: true }
       }
     });
@@ -36,7 +37,7 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
 
     const confirmRes = await request.post(`/api/v1/chat/commands/${encodeURIComponent(commandId)}:confirm`, {
       headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": String(commandId) },
-      data: {}
+      data: { origin_context: { kind: "control_dm" } }
     });
     await expectStatus(confirmRes, 200);
     const confirmBody = await confirmRes.json();
@@ -52,7 +53,7 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
     // Idempotent confirm should not create another row.
     const confirmAgain = await request.post(`/api/v1/chat/commands/${encodeURIComponent(commandId)}:confirm`, {
       headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": String(commandId) },
-      data: {}
+      data: { origin_context: { kind: "control_dm" } }
     });
     await expectStatus(confirmAgain, 200);
 
@@ -72,6 +73,7 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
       headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
       data: {
         action_type: "watchlist.create",
+        origin_context: { kind: "control_dm" },
         payload: { name: "Cancel WL", criteria: { tags: ["ti-298-cancel"] }, active: true }
       }
     });
@@ -134,6 +136,7 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
       headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
       data: {
         action_type: "offer.create",
+        origin_context: { kind: "control_dm" },
         payload: {
           listing_id: listingId,
           thread_id: null,
@@ -150,7 +153,7 @@ test.describe.serial("Integration: Chat staged commands (TI-298)", () => {
 
     const confirmRes = await request.post(`/api/v1/chat/commands/${encodeURIComponent(commandId)}:confirm`, {
       headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": String(commandId) },
-      data: {}
+      data: { origin_context: { kind: "control_dm" } }
     });
     await expectStatus(confirmRes, 200);
     const confirmBody = await confirmRes.json();

@@ -7,6 +7,12 @@ import { createStagedCommand } from "../services/staged-commands";
 import { parseWatchlistCriteria } from "../utils/watchlists";
 import { getPolicyOrDefault } from "../services/policies";
 import { evaluatePolicyAction } from "../policy/evaluate";
+import {
+  AUTHORITY_DECISION,
+  evaluateAuthorityAction,
+  hasExplicitOriginContext,
+  resolveOriginContext
+} from "../policy/authority";
 import { getListing } from "../services/listings";
 import { getOffer } from "../services/offers";
 
@@ -136,6 +142,14 @@ function parseTxPayload(payload: any) {
   return { ok: true as const, value: { tx_id: txId } };
 }
 
+function buildAuthorityGuidance(authority: any) {
+  if (!authority || authority.decision !== AUTHORITY_DECISION.STAGED) return null;
+  return {
+    required_origin_context: "CONTROL_DM",
+    message: "Action staged from a non-trusted context. Confirm from Control DM to execute."
+  };
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -180,6 +194,37 @@ export async function handler(req: any, res: any, ctx: any) {
   }
 
   const payload = body.payload || {};
+  if (!hasExplicitOriginContext(body.origin_context)) {
+    return jsonResponse(400, errorPayload("ORIGIN_CONTEXT_REQUIRED", "origin_context is required"));
+  }
+  const originContext = resolveOriginContext({
+    originContext: body.origin_context
+  });
+  const authority = evaluateAuthorityAction({
+    actionType,
+    originContext
+  });
+
+  if (authority.decision === AUTHORITY_DECISION.BLOCKED) {
+    if (ctx) {
+      ctx.auditEvent = "chat.command_staged";
+      ctx.auditEntityType = "staged_command";
+      ctx.body = {
+        action_type: actionType,
+        origin_context: originContext,
+        authority
+      };
+      ctx.outcome = { type: "BLOCKED", reason: authority.reason || "origin_context" };
+    }
+    return jsonResponse(
+      403,
+      errorPayload("ORIGIN_CONTEXT_BLOCKED", "Action not authorized in this context", {
+        origin_context: originContext,
+        action_type: actionType,
+        reason: authority.reason
+      })
+    );
+  }
 
   const now = new Date();
   const ttlSeconds = getStagedCommandTtlSeconds();
@@ -460,7 +505,12 @@ export async function handler(req: any, res: any, ctx: any) {
     agentId: ctx.agentId,
     channelIdentityId,
     actionType,
-    payload: { action_type: actionType, payload: normalizedPayload },
+    payload: {
+      action_type: actionType,
+      payload: normalizedPayload,
+      origin_context: originContext,
+      authority
+    },
     expiresAt,
     now
   });
@@ -473,8 +523,11 @@ export async function handler(req: any, res: any, ctx: any) {
       command_id: staged.command_id,
       action_type: actionType,
       expires_at: staged.expires_at,
-      channel_identity_id: channelIdentityId
+      channel_identity_id: channelIdentityId,
+      origin_context: originContext,
+      authority
     };
+    ctx.outcome = { type: "STAGED", reason: authority.reason || "staged" };
   }
 
   return jsonResponse(201, {
@@ -482,7 +535,10 @@ export async function handler(req: any, res: any, ctx: any) {
     state: staged.state,
     action_type: actionType,
     expires_at: staged.expires_at,
+    origin_context: originContext,
+    authority,
     preview,
+    guidance: buildAuthorityGuidance(authority),
     buttons: [
       { id: "confirm", label: "Confirmer", action: "confirm" },
       { id: "modify", label: "Modifier", action: "modify" },
@@ -490,4 +546,3 @@ export async function handler(req: any, res: any, ctx: any) {
     ]
   });
 }
-

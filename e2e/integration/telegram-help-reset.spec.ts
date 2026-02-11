@@ -135,6 +135,7 @@ test.describe.serial("Integration: Telegram help/reset (TI-303)", () => {
       headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
       data: {
         action_type: "watchlist.create",
+        origin_context: { kind: "control_dm" },
         channel_identity_id: identity.channel_identity_id,
         payload: { name: "Reset WL", criteria: { tags: ["ti-303-reset"] }, active: true }
       }
@@ -195,4 +196,3 @@ test.describe.serial("Integration: Telegram help/reset (TI-303)", () => {
     expect(stagedAfter?.state).toBe("CANCELLED");
   });
 });
-

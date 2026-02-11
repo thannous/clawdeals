@@ -43,8 +43,8 @@ export default defineConfig({
     : {
         command: webServerCommand,
         url: uiBaseURL,
-        // Next.js dev startup can exceed 60s on slow filesystems (e.g. WSL drvfs).
-        timeout: 180 * 1000,
+        // Prod build+start in CI/WSL can exceed 3 minutes; keep startup timeout conservative.
+        timeout: 420 * 1000,
         reuseExistingServer: true
       },
   projects: [

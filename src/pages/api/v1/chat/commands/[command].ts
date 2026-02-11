@@ -13,6 +13,11 @@ import {
   markStagedCommandPendingApproval,
   markStagedCommandUndone
 } from "../../../../../server/services/staged-commands";
+import {
+  hasExplicitOriginContext,
+  ORIGIN_CONTEXT_KIND,
+  resolveOriginContext
+} from "../../../../../server/policy/authority";
 
 import { handler as watchlistIndexHandler } from "../../watchlists/index";
 import { handler as watchlistIdHandler } from "../../watchlists/[watchlist_id]";
@@ -80,6 +85,24 @@ function extractPayload(command: any) {
   }
 
   return pr;
+}
+
+function extractCommandMeta(command: any) {
+  const pr = command?.payload_redacted && typeof command.payload_redacted === "object" ? command.payload_redacted : {};
+  const originContextRaw = pr.origin_context ?? pr?.payload?.origin_context ?? null;
+  const authorityRaw = pr.authority && typeof pr.authority === "object" ? pr.authority : null;
+
+  return {
+    originContext: resolveOriginContext({ originContext: originContextRaw }),
+    authority:
+      authorityRaw && typeof authorityRaw === "object"
+        ? {
+            decision: typeof authorityRaw.decision === "string" ? authorityRaw.decision : null,
+            reason: typeof authorityRaw.reason === "string" ? authorityRaw.reason : null,
+            requiresControlDmConfirm: Boolean(authorityRaw.requires_control_dm_confirm)
+          }
+        : null
+  };
 }
 
 function computeUndoExpiresAt(command: any, { now = new Date() }: any = {}) {
@@ -294,6 +317,52 @@ export async function handler(req: any, _res: any, ctx: any) {
   }
 
   if (action === "confirm") {
+    if (!hasExplicitOriginContext(req.body?.origin_context)) {
+      return jsonResponse(400, errorPayload("ORIGIN_CONTEXT_REQUIRED", "origin_context is required"));
+    }
+
+    const commandMeta = extractCommandMeta(command);
+    const requestOriginContext = resolveOriginContext({
+      originContext: req.body?.origin_context
+    });
+
+    if (ctx) {
+      ctx.body = {
+        command_id: commandId,
+        action,
+        origin_context: requestOriginContext
+      };
+    }
+
+    if (
+      (command.state === "STAGED" || command.state === "CONFIRMED") &&
+      commandMeta.authority?.requiresControlDmConfirm &&
+      requestOriginContext.kind !== ORIGIN_CONTEXT_KIND.CONTROL_DM
+    ) {
+      if (ctx) {
+        ctx.auditEvent = "chat.command_confirmed";
+        ctx.auditEntityType = "staged_command";
+        ctx.auditEntityId = commandId;
+        ctx.body = {
+          command_id: commandId,
+          action,
+          origin_context: requestOriginContext,
+          staged_origin_context: commandMeta.originContext
+        };
+        ctx.outcome = { type: "BLOCKED", reason: "control_dm_confirm_required" };
+      }
+
+      return jsonResponse(
+        409,
+        errorPayload("CONTROL_DM_CONFIRM_REQUIRED", "Confirm this action from Control DM", {
+          command_id: commandId,
+          required_origin_context: ORIGIN_CONTEXT_KIND.CONTROL_DM,
+          origin_context: requestOriginContext,
+          staged_origin_context: commandMeta.originContext
+        })
+      );
+    }
+
     const idempotencyKey = getHeaderValue(req, "idempotency-key");
     if (!idempotencyKey) {
       return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
@@ -409,6 +478,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         ctx.auditEntityType = "staged_command";
         ctx.auditEntityId = commandId;
         ctx.body = { command_id: commandId, action, state: "PENDING_APPROVAL", approval_id: approvalId };
+        ctx.outcome = { type: "STAGED", reason: "approval_required" };
       }
 
       return jsonResponse(
@@ -461,6 +531,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         ctx.auditEntityType = "staged_command";
         ctx.auditEntityId = commandId;
         ctx.body = { command_id: commandId, action, state: "EXECUTED", result_ref_id: resultRefId };
+        ctx.outcome = { type: "EXECUTED", reason: "executed" };
       }
 
       return jsonResponse(200, mapCommand(command, { now }));

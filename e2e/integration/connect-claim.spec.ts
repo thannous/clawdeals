@@ -228,35 +228,42 @@ test.describe.serial("Integration: Connect Claim", () => {
       process.env.E2E_BASE_URL ||
       `http://localhost:${process.env.E2E_DEV_PORT || 3000}`;
 
-    const create = await request.post("/api/v1/connect/sessions", {
-      headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-      data: { requested_agent_name: "Integration Console Claim", requested_scopes: [] }
-    });
-    await expectStatus(create, 201);
-    const body = await create.json();
+    const createConsoleSession = async () => {
+      const create = await request.post("/api/v1/connect/sessions", {
+        headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
+        data: { requested_agent_name: "Integration Console Claim", requested_scopes: [] }
+      });
+      await expectStatus(create, 201);
+      const body = await create.json();
+      return {
+        sessionId: body?.data?.session_id,
+        claimToken: extractClaimToken(body?.data?.claim_url)
+      };
+    };
 
-    const sessionId = body?.data?.session_id;
-    const claimToken = extractClaimToken(body?.data?.claim_url);
+    const primary = await createConsoleSession();
 
-    const claim = await request.post(`/api/console/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+    const claim = await request.post(`/api/console/connect/sessions/${encodeURIComponent(primary.sessionId)}/claim`, {
       headers: {
         "Idempotency-Key": randomId(),
         origin: baseUrl,
         referer: `${baseUrl}/console`
       },
-      data: { claim_token: claimToken, mode: "create_agent", agent_name: "Ops Claimed Agent" }
+      data: { claim_token: primary.claimToken, mode: "create_agent", agent_name: "Ops Claimed Agent" }
     });
     let claimBody: any = null;
     if (claim.status() === 409) {
       claimBody = await claim.json();
       expect(claimBody?.error?.code).toBe("OWNER_AGENT_LIMIT_REACHED");
-      const attachClaim = await request.post(`/api/console/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+      // Use a fresh session for attach fallback to avoid coupling with any partial state from the create-agent attempt.
+      const fallback = await createConsoleSession();
+      const attachClaim = await request.post(`/api/console/connect/sessions/${encodeURIComponent(fallback.sessionId)}/claim`, {
         headers: {
           "Idempotency-Key": randomId(),
           origin: baseUrl,
           referer: `${baseUrl}/console`
         },
-        data: { claim_token: claimToken, mode: "attach_agent", attach_agent_id: OPS_CONSOLE_AGENT_ID }
+        data: { claim_token: fallback.claimToken, mode: "attach_agent", attach_agent_id: OPS_CONSOLE_AGENT_ID }
       });
       await expectStatus(attachClaim, 200);
       claimBody = await attachClaim.json();

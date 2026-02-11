@@ -53,6 +53,7 @@ describe("POST /v1/chat/commands:stage", () => {
       headers: {},
       body: {
         action_type: "watchlist.create",
+        origin_context: { kind: "control_dm" },
         payload: {
           name: "My watch",
           active: true,
@@ -79,6 +80,118 @@ describe("POST /v1/chat/commands:stage", () => {
     expect(ctx.auditEvent).toBe("chat.command_staged");
     expect(ctx.auditEntityType).toBe("staged_command");
     expect(ctx.auditEntityId).toBe("00000000-0000-4000-a000-000000000333");
+    expect(ctx.outcome).toEqual({ type: "STAGED", reason: "control_dm_allowed" });
+    expect(result.body.origin_context?.kind).toBe("CONTROL_DM");
+    expect(result.body.authority?.decision).toBe("EXECUTED");
+    expect(createStagedCommandMock).toHaveBeenCalledTimes(1);
+    expect(createStagedCommandMock.mock.calls[0]?.[0]?.payload?.origin_context?.kind).toBe("CONTROL_DM");
+  });
+
+  it("requires explicit origin_context", async () => {
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      headers: {},
+      body: {
+        action_type: "watchlist.create",
+        payload: {
+          name: "No origin",
+          active: true,
+          criteria: { query: "iphone" }
+        }
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_REQUIRED");
+    expect(createStagedCommandMock).not.toHaveBeenCalled();
+  });
+
+  it("public/group context stages with control-DM guidance", async () => {
+    createStagedCommandMock.mockResolvedValue({
+      command_id: "00000000-0000-4000-a000-000000000333",
+      state: "STAGED",
+      action_type: "watchlist.create",
+      expires_at: new Date(Date.now() + 600_000).toISOString()
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      headers: {},
+      body: {
+        action_type: "watchlist.create",
+        origin_context: { kind: "public_group" },
+        payload: {
+          name: "My watch",
+          active: true,
+          criteria: {
+            query: "iphone",
+            tags: ["apple"],
+            price_max: 1000
+          }
+        }
+      }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(201);
+    expect(result.body.authority?.decision).toBe("STAGED");
+    expect(result.body.authority?.requires_control_dm_confirm).toBe(true);
+    expect(result.body.guidance?.required_origin_context).toBe("CONTROL_DM");
+    expect(ctx.outcome).toEqual({ type: "STAGED", reason: "public_group_requires_control_dm" });
+  });
+
+  it("blocks disallowed actions in negotiation context", async () => {
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      headers: {},
+      body: {
+        action_type: "watchlist.create",
+        origin_context: { kind: "negotiation_thread" },
+        payload: {
+          name: "Nope",
+          active: true,
+          criteria: { query: "iphone" }
+        }
+      }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_BLOCKED");
+    expect(createStagedCommandMock).not.toHaveBeenCalled();
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "negotiation_action_not_allowed" });
+  });
+
+  it("blocks invalid explicit origin context", async () => {
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      headers: {},
+      body: {
+        action_type: "watchlist.create",
+        origin_context: { kind: "not_real" },
+        payload: {
+          name: "Nope",
+          active: true,
+          criteria: { query: "iphone" }
+        }
+      }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_BLOCKED");
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "origin_context_unknown" });
   });
 
   it("offer.counter staging is anti-enumeration safe (404 for non-party)", async () => {
@@ -95,6 +208,7 @@ describe("POST /v1/chat/commands:stage", () => {
       headers: {},
       body: {
         action_type: "offer.counter",
+        origin_context: { kind: "control_dm" },
         payload: {
           offer_id: "00000000-0000-4000-a000-000000000333",
           amount: 123,

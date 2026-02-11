@@ -8,6 +8,34 @@ const MAX_WINDOW_MINUTES = 24 * 60;
 const AUDIT_BATCH_SIZE = 5000;
 const AUDIT_MAX_ROWS = 20000;
 
+const SLI_EVENTS = ["deal.create", "listing.create", "offer.create"] as const;
+const SLO_TARGET = 0.99; // 99.0%
+const SLO_LATENCY_TARGETS: Record<string, number> = {
+  "deal.create": 1000,
+  "listing.create": 1200,
+  "offer.create": 1200
+};
+
+type BudgetState = "GREEN" | "YELLOW" | "RED" | "EXHAUSTED";
+
+function computeBudgetState(successRate: number | null, sloTarget: number): BudgetState {
+  if (successRate === null) return "GREEN";
+  const errorBudget = 1 - sloTarget;
+  const usedBudget = Math.max(0, 1 - successRate);
+  const remainingPct = errorBudget > 0 ? Math.max(0, 1 - usedBudget / errorBudget) : 0;
+  if (remainingPct <= 0) return "EXHAUSTED";
+  if (remainingPct < 0.25) return "RED";
+  if (remainingPct < 0.5) return "YELLOW";
+  return "GREEN";
+}
+
+function computeBurnRate(badRate: number | null, sloTarget: number): number | null {
+  if (badRate === null) return null;
+  const allowedBadRate = 1 - sloTarget;
+  if (allowedBadRate <= 0) return null;
+  return badRate / allowedBadRate;
+}
+
 function buildServiceError(message: string, status = 500, code = "ERROR", meta?: any) {
   const error: any = new Error(message);
   error.status = status;
@@ -87,7 +115,7 @@ async function fetchAuditRowsWindow({ client, fromIso, toIso }: any) {
 
     let query = client
       .from("audit_logs")
-      .select("id, occurred_at, action, request, auth")
+      .select("id, occurred_at, action, request, auth, outcome")
       .order("occurred_at", { ascending: false })
       .order("id", { ascending: false })
       .gte("occurred_at", fromIso)
@@ -134,6 +162,33 @@ type RouteGroupBucket = {
   status5xx: number;
 };
 
+async function fetchOldestPendingApproval({ client }: any) {
+  const { data, error } = await client
+    .from("approvals")
+    .select("created_at")
+    .eq("state", "PENDING")
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (error) mapError(error);
+  const row = Array.isArray(data) ? data[0] : null;
+  return row?.created_at ? String(row.created_at) : null;
+}
+
+async function fetchResolvedApprovals({ client, fromIso, toIso }: any) {
+  const { data, error } = await client
+    .from("approvals")
+    .select("created_at, resolved_at")
+    .not("resolved_at", "is", null)
+    .gte("resolved_at", fromIso)
+    .lt("resolved_at", toIso)
+    .order("resolved_at", { ascending: false })
+    .limit(5000);
+
+  if (error) mapError(error);
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getConsoleOpsDashboard({
   windowMinutes = DEFAULT_WINDOW_MINUTES,
   now = new Date(),
@@ -155,7 +210,14 @@ export async function getConsoleOpsDashboard({
   const toIso = now.toISOString();
   const fromIso = new Date(now.getTime() - parsedWindow * 60 * 1000).toISOString();
 
-  const [{ rows: auditRows, truncated, maxRows }, approvalsPending, trustscoreJobs, watchlistJobs] = await Promise.all([
+  const [
+    { rows: auditRows, truncated, maxRows },
+    approvalsPending,
+    trustscoreJobs,
+    watchlistJobs,
+    oldestPendingApproval,
+    resolvedApprovals
+  ] = await Promise.all([
     fetchAuditRowsWindow({ client: supabase, fromIso, toIso }),
     countRows({
       client: supabase,
@@ -164,7 +226,9 @@ export async function getConsoleOpsDashboard({
       filters: [{ op: "eq", col: "state", value: "PENDING" }]
     }),
     countRows({ client: supabase, table: "trustscore_recalc_queue", select: "agent_id" }),
-    countRows({ client: supabase, table: "watchlist_backfill_queue", select: "watchlist_id" })
+    countRows({ client: supabase, table: "watchlist_backfill_queue", select: "watchlist_id" }),
+    fetchOldestPendingApproval({ client: supabase }),
+    fetchResolvedApprovals({ client: supabase, fromIso, toIso })
   ]);
 
   const buckets = new Map<string, RouteGroupBucket>();
@@ -280,6 +344,87 @@ export async function getConsoleOpsDashboard({
 
   const jobsPending = trustscoreJobs + watchlistJobs;
 
+  // --- SLI: success rate by event ---
+  const sliByEvent = new Map<string, { total: number; success: number }>();
+  for (const evt of SLI_EVENTS) {
+    sliByEvent.set(evt, { total: 0, success: 0 });
+  }
+  for (const row of auditRows) {
+    const event = row?.action?.event;
+    if (typeof event !== "string") continue;
+    const bucket = sliByEvent.get(event);
+    if (!bucket) continue;
+    bucket.total += 1;
+    // Use `outcome = 'SUCCESS'` to match the alert engine and SLO doc definition.
+    if (row?.outcome === "SUCCESS") {
+      bucket.success += 1;
+    }
+  }
+
+  const sliEvents = Array.from(sliByEvent.entries()).map(([event, { total, success }]) => ({
+    event,
+    total,
+    success,
+    success_rate: total > 0 ? success / total : null
+  }));
+
+  const sliAggTotal = sliEvents.reduce((s, e) => s + e.total, 0);
+  const sliAggSuccess = sliEvents.reduce((s, e) => s + e.success, 0);
+  const sliAggRate = sliAggTotal > 0 ? sliAggSuccess / sliAggTotal : null;
+  const sliAggBadRate = sliAggRate !== null ? 1 - sliAggRate : null;
+  const sliErrorBudget = 1 - SLO_TARGET;
+  const sliUsedBudget = sliAggBadRate !== null ? sliAggBadRate : 0;
+  const sliBudgetRemainingPct = sliErrorBudget > 0 ? Math.max(0, 1 - sliUsedBudget / sliErrorBudget) * 100 : 0;
+  const sliBudgetState = computeBudgetState(sliAggRate, SLO_TARGET);
+
+  // Burn rate (fast=5m, slow=1h) — compute from audit rows in current window.
+  // For simplicity use the window data we already have rather than re-querying.
+  const burnFastWindowS = 300;
+  const burnSlowWindowS = 3600;
+  const nowMs = now.getTime();
+  let fastTotal = 0;
+  let fastBad = 0;
+  let slowTotal = 0;
+  let slowBad = 0;
+  for (const row of auditRows) {
+    const event = row?.action?.event;
+    if (typeof event !== "string" || !sliByEvent.has(event)) continue;
+    const occurredAt = new Date(row?.occurred_at).getTime();
+    if (Number.isNaN(occurredAt)) continue;
+    const isGood = row?.outcome === "SUCCESS";
+    const ageS = (nowMs - occurredAt) / 1000;
+    if (ageS <= burnFastWindowS) {
+      fastTotal += 1;
+      if (!isGood) fastBad += 1;
+    }
+    if (ageS <= burnSlowWindowS) {
+      slowTotal += 1;
+      if (!isGood) slowBad += 1;
+    }
+  }
+  const burnRateFast = computeBurnRate(
+    fastTotal > 0 ? fastBad / fastTotal : null,
+    SLO_TARGET
+  );
+  const burnRateSlow = computeBurnRate(
+    slowTotal > 0 ? slowBad / slowTotal : null,
+    SLO_TARGET
+  );
+
+  // --- Approvals detail: resolve time ---
+  const resolveDurations: number[] = [];
+  for (const row of resolvedApprovals) {
+    const createdMs = new Date(row?.created_at).getTime();
+    const resolvedMs = new Date(row?.resolved_at).getTime();
+    if (Number.isNaN(createdMs) || Number.isNaN(resolvedMs)) continue;
+    const durationS = Math.max(0, (resolvedMs - createdMs) / 1000);
+    resolveDurations.push(durationS);
+  }
+  resolveDurations.sort((a, b) => a - b);
+  const oldestPendingAgeS = oldestPendingApproval
+    ? Math.max(0, Math.floor((now.getTime() - new Date(oldestPendingApproval).getTime()) / 1000))
+    : null;
+
   return {
     window: { from: fromIso, to: toIso, minutes: parsedWindow },
     sample: { audit_rows: auditRows.length, truncated, max_rows: maxRows },
@@ -310,7 +455,36 @@ export async function getConsoleOpsDashboard({
         { name: "trustscore_recalc_queue", depth: trustscoreJobs },
         { name: "watchlist_backfill_queue", depth: watchlistJobs }
       ]
-    }
+    },
+    sli: {
+      write_journeys: {
+        events: [...SLI_EVENTS],
+        by_event: sliEvents,
+        aggregate: {
+          total: sliAggTotal,
+          success: sliAggSuccess,
+          success_rate: sliAggRate,
+          slo_target: SLO_TARGET,
+          error_budget_remaining_pct: Math.round(sliBudgetRemainingPct * 100) / 100,
+          budget_state: sliBudgetState
+        },
+        burn_rate: {
+          fast: { window_s: burnFastWindowS, value: burnRateFast },
+          slow: { window_s: burnSlowWindowS, value: burnRateSlow }
+        }
+      }
+    },
+    approvals_detail: {
+      pending_count: approvalsPending,
+      oldest_pending_age_s: oldestPendingAgeS,
+      oldest_pending_created_at: oldestPendingApproval,
+      resolved_window: {
+        count: resolveDurations.length,
+        p50_resolve_s: percentileFromSorted(resolveDurations, 0.5),
+        p95_resolve_s: percentileFromSorted(resolveDurations, 0.95)
+      }
+    },
+    slo_latency_targets: SLO_LATENCY_TARGETS
   };
 }
 

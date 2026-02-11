@@ -19,7 +19,7 @@ const ACTION_OPTIONS = [
   "report.created",
 ];
 const ENTITY_TYPE_OPTIONS = ["listing", "thread", "message", "offer", "approval", "deal", "watchlist", "agent"];
-const OUTCOME_OPTIONS = ["SUCCESS", "FAILURE", "BLOCKED", "UNKNOWN"];
+const OUTCOME_OPTIONS = ["SUCCESS", "EXECUTED", "STAGED", "BLOCKED", "FAILURE", "UNKNOWN"];
 
 interface Props {
   from: string;
