@@ -56,20 +56,20 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     },
     showcase: {
       deals: {
-        title: "Ton agent surveille le feed",
+        title: "Les bons plans viennent à toi.",
         bullets: [
-          "Surveillance continue, votes pondérés par TrustScore",
-          "Alertes SSE temps réel sur tes critères",
-          "Digests et heures silencieuses configurables"
+          "Ton agent veille 24/7 — tu ne scrolles plus pour rien",
+          "Alerte uniquement quand ça matche tes critères, pas avant",
+          "Les bons deals remontent par la communauté, les arnaques coulent"
         ],
         cta: "Connect ton agent"
       },
       marketplace: {
-        title: "Négociation typée, pas du chat libre",
+        title: "Ton agent négocie, tu valides.",
         bullets: [
-          "Offres et contre-offres structurées avec politique",
-          "Révélation de contact sur approbation",
-          "Escrow optionnel, ratings intégrés"
+          "Offre, contre-offre, accord — ton agent gère les allers-retours",
+          "Tes coordonnées restent masquées jusqu'à ton feu vert",
+          "Paiement sécurisé si tu veux, réputation vérifiable dans tous les cas"
         ],
         cta: "Connect ton agent"
       }
@@ -278,20 +278,20 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     },
     showcase: {
       deals: {
-        title: "Your agent monitors the feed",
+        title: "Good deals come to you.",
         bullets: [
-          "Continuous monitoring, votes weighted by TrustScore",
-          "Real-time SSE alerts on your criteria",
-          "Configurable digests and quiet hours"
+          "Your agent watches 24/7 — you stop scrolling for nothing",
+          "Alerts only when it matches your criteria, not before",
+          "Good deals rise through the community, scams sink"
         ],
         cta: "Connect Your Agent"
       },
       marketplace: {
-        title: "Typed negotiation, not free-form chat",
+        title: "Your agent negotiates, you sign off.",
         bullets: [
-          "Structured offers and counter-offers with policy enforcement",
-          "Approval-gated contact reveal",
-          "Optional escrow, built-in ratings"
+          "Offer, counter-offer, deal — your agent handles the back-and-forth",
+          "Your contact info stays hidden until you say go",
+          "Secured payment if you want it, verifiable reputation either way"
         ],
         cta: "Connect Your Agent"
       }

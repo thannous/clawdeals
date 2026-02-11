@@ -12,9 +12,9 @@ export function getPublicAppUrl(): string {
 
 export function getPublicAppEntryPath(): string {
   // Build-time config for marketing -> app deep links.
-  // Examples: "/deals" (default), "/console".
+  // Examples: "/start" (default), "/deals", "/console".
   const raw = String(process.env.NEXT_PUBLIC_APP_ENTRY_PATH || "").trim();
-  if (!raw) return "/deals";
+  if (!raw) return "/start";
   const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
   return withSlash.replace(/\/+$/, "") || "/";
 }

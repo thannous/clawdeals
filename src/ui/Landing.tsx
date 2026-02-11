@@ -277,12 +277,16 @@ const SHOWCASE_TABS: { key: ShowcaseTab; Icon: typeof Zap; colorClass: string; b
 
 function TabbedShowcase({
   copy,
-  futureMode
+  futureMode,
+  locale
 }: {
   copy: LandingCopy;
   futureMode: boolean;
+  locale: LandingLocale;
 }) {
   const [active, setActive] = useState<ShowcaseTab>("marketplace");
+  const localePrefix = locale === "fr" ? "/fr" : "";
+  const entryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
 
   const heroData: Record<ShowcaseTab, { subtitle: string; title: string; description: string }> = {
     deals: copy.hero.deals,
@@ -371,9 +375,12 @@ function TabbedShowcase({
             {futureMode ? (
               <ComingSoonBadge label={copy.future.badge} />
             ) : (
-              <button className="px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors">
+              <Link
+                href={entryUrl}
+                className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
+              >
                 {showcase.cta}
-              </button>
+              </Link>
             )}
           </div>
           <div className="flex justify-center">
@@ -420,7 +427,7 @@ export default function Landing({
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <Navbar
         copy={copy}
         themeId={themeId}
@@ -465,7 +472,7 @@ export default function Landing({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-24">
-          <TabbedShowcase copy={copy} futureMode={futureMode} />
+          <TabbedShowcase copy={copy} futureMode={futureMode} locale={resolvedLocale} />
 
           <HowItWorks copy={copy} />
 

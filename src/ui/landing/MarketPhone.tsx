@@ -1,245 +1,123 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useMemo } from "react";
+import AnimatedPhoneChat, { type PhoneChatMessage } from "./AnimatedPhoneChat";
 import type { LandingCopy } from "./types";
 
-/* ── Shared sub-components ── */
+const STAR_KEYS = [0, 1, 2, 3, 4] as const;
 
-const PhoneFrame = ({ children, header, online, containerRef }: {
-  children: React.ReactNode; header: string; online: string; containerRef: React.RefObject<HTMLDivElement | null>;
-}) => (
-  <div ref={containerRef} className="border-2 border-border-strong rounded-[2.5rem] bg-bg w-[320px] max-w-full mx-auto overflow-hidden shadow-2xl">
-    <div className="flex justify-center pt-2 pb-1 bg-bg">
-      <div className="w-24 h-5 rounded-full bg-border" />
-    </div>
-    <div className="flex items-center justify-between px-6 py-1 text-[9px] font-mono text-subtle">
-      <span>9:41</span>
-      <div className="flex items-center gap-1">
-        <span>5G</span>
-        <div className="w-4 h-2 border border-subtle rounded-sm relative">
-          <div className="absolute inset-[1px] right-[3px] bg-subtle" />
-        </div>
-      </div>
-    </div>
-    <div className="flex items-center gap-3 px-4 py-3 border-y border-border bg-surface">
-      <div className="w-8 h-8 bg-primary clip-corner-top-right flex items-center justify-center text-bg text-xs font-bold">
-        CD
-      </div>
-      <div>
-        <div className="text-sm font-bold text-text">{header}</div>
-        <div className="flex items-center gap-1 text-[10px] text-subtle">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          {online}
-        </div>
-      </div>
-    </div>
-    <div className="bg-surface px-3 py-4 h-[420px] overflow-hidden space-y-3">
-      {children}
-    </div>
-    <div className="flex justify-center py-2 bg-surface">
-      <div className="w-32 h-1 bg-border-strong rounded-full" />
-    </div>
-  </div>
-);
-
-const BotBubble = ({ children, visible }: { children: React.ReactNode; visible: boolean }) => {
-  if (!visible) return null;
+function MiniListingCard({
+  title,
+  price,
+  condition,
+  category
+}: {
+  title: string;
+  price: string;
+  condition: string;
+  category: string;
+}) {
   return (
-    <div className="flex gap-2 items-end chat-bubble">
-      <div className="w-5 h-5 bg-primary clip-corner-top-right flex items-center justify-center text-bg text-[7px] font-bold shrink-0">
-        CD
+    <div className="bg-bg border border-border p-2 mt-1.5 rounded">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-bold text-text truncate">{title}</span>
+        <span className="text-xs font-mono font-bold text-secondary ml-2 shrink-0">{price}</span>
       </div>
-      <div className="bg-surface-alt border border-border rounded-lg rounded-tl-none px-3 py-2 max-w-[240px]">
-        {children}
+      <div className="flex gap-2">
+        <span className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{condition}</span>
+        <span className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{category}</span>
       </div>
     </div>
   );
-};
-
-const UserBubble = ({ children, visible }: { children: React.ReactNode; visible: boolean }) => {
-  if (!visible) return null;
-  return (
-    <div className="flex justify-end chat-bubble">
-      <div className="bg-[color-mix(in_srgb,var(--color-primary)_15%,transparent)] border border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)] rounded-lg rounded-tr-none px-3 py-2 max-w-[220px]">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const TypingIndicator = ({ visible }: { visible: boolean }) => {
-  if (!visible) return null;
-  return (
-    <div className="flex gap-2 items-end chat-bubble">
-      <div className="w-5 h-5 bg-primary clip-corner-top-right flex items-center justify-center text-bg text-[7px] font-bold shrink-0">
-        CD
-      </div>
-      <div className="bg-surface-alt border border-border rounded-lg rounded-tl-none px-4 py-3">
-        <div className="flex gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-muted animate-bounce" style={{ animationDelay: "0s" }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-muted animate-bounce" style={{ animationDelay: "0.15s" }} />
-          <span className="w-1.5 h-1.5 rounded-full bg-muted animate-bounce" style={{ animationDelay: "0.3s" }} />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const MiniListingCard = ({ title, price, condition, category }: {
-  title: string; price: string; condition: string; category: string;
-}) => (
-  <div className="bg-bg border border-border p-2 mt-1.5 rounded">
-    <div className="flex items-center justify-between mb-1">
-      <span className="text-xs font-bold text-text truncate">{title}</span>
-      <span className="text-xs font-mono font-bold text-primary ml-2 shrink-0">{price}</span>
-    </div>
-    <div className="flex gap-2">
-      <span className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{condition}</span>
-      <span className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{category}</span>
-    </div>
-  </div>
-);
-
-const EscrowBadge = ({ amount }: { amount: string }) => (
-  <div className="bg-bg border border-border p-2 mt-1.5 rounded flex items-center gap-2">
-    <div className="w-4 h-4 border border-emerald-400 rounded-sm flex items-center justify-center">
-      <span className="text-emerald-400 text-[8px]">&#x1F512;</span>
-    </div>
-    <span className="text-[10px] font-mono text-emerald-400">{amount} held in escrow</span>
-  </div>
-);
-
-const StarRating = () => (
-  <div className="flex gap-0.5 mt-1">
-    {[...Array(5)].map((_, i) => (
-      <span key={i} className="text-primary text-sm">&#9733;</span>
-    ))}
-  </div>
-);
-
-/* ── Chat animation hook ── */
-
-type MessageType = "bot" | "user";
-
-function useChatAnimation(messageTypes: MessageType[], totalMessages: number) {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [showTyping, setShowTyping] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const [cycle, setCycle] = useState(0);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  const clearTimeouts = useCallback(() => {
-    timeoutsRef.current.forEach(clearTimeout);
-    timeoutsRef.current = [];
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 0.3 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!isInView) {
-      clearTimeouts();
-      return;
-    }
-
-    clearTimeouts();
-
-    // Reset via setTimeout to satisfy react-hooks/set-state-in-effect
-    timeoutsRef.current.push(setTimeout(() => {
-      setVisibleCount(0);
-      setShowTyping(false);
-    }, 0));
-
-    let delay = 50;
-
-    for (let i = 0; i < totalMessages; i++) {
-      const isBot = messageTypes[i] === "bot";
-
-      if (isBot) {
-        const typingDelay = delay;
-        timeoutsRef.current.push(setTimeout(() => setShowTyping(true), typingDelay));
-        delay += 800;
-        const revealDelay = delay;
-        const idx = i + 1;
-        timeoutsRef.current.push(setTimeout(() => {
-          setShowTyping(false);
-          setVisibleCount(idx);
-        }, revealDelay));
-        delay += 700;
-      } else {
-        const revealDelay = delay + 400;
-        const idx = i + 1;
-        timeoutsRef.current.push(setTimeout(() => setVisibleCount(idx), revealDelay));
-        delay += 800;
-      }
-    }
-
-    // Show final typing indicator
-    const finalTypingDelay = delay;
-    timeoutsRef.current.push(setTimeout(() => setShowTyping(true), finalTypingDelay));
-
-    // Reset and loop
-    const resetDelay = delay + 3000;
-    timeoutsRef.current.push(setTimeout(() => {
-      setShowTyping(false);
-      setVisibleCount(0);
-      setCycle((c) => c + 1);
-    }, resetDelay));
-
-    return clearTimeouts;
-  }, [isInView, cycle, totalMessages, messageTypes, clearTimeouts]);
-
-  return { visibleCount, showTyping, containerRef };
 }
 
-/* ── Main component ── */
+function EscrowBadge({ amount }: { amount: string }) {
+  return (
+    <div className="bg-bg border border-border p-2 mt-1.5 rounded flex items-center gap-2">
+      <div className="w-4 h-4 border border-emerald-400 rounded-sm flex items-center justify-center">
+        <span className="text-emerald-400 text-[8px]">&#x1F512;</span>
+      </div>
+      <span className="text-[10px] font-mono text-emerald-400">{amount} held in escrow</span>
+    </div>
+  );
+}
 
-const MESSAGE_TYPES: MessageType[] = ["bot", "bot", "user", "bot", "bot", "bot"];
+function StarRating() {
+  return (
+    <div className="flex gap-0.5 mt-1">
+      {STAR_KEYS.map((starKey) => (
+        <span key={starKey} className="text-secondary text-sm">&#9733;</span>
+      ))}
+    </div>
+  );
+}
 
 export default function MarketPhone({ copy }: { copy: LandingCopy }) {
   const msg = copy.chat.marketplace.messages;
-  const { visibleCount, showTyping, containerRef } = useChatAnimation(MESSAGE_TYPES, MESSAGE_TYPES.length);
+
+  const messages = useMemo<PhoneChatMessage[]>(
+    () => [
+      {
+        id: "new-listing",
+        type: "bot",
+        content: (
+          <>
+            <p className="text-xs text-text mb-0.5">{msg.newListing}</p>
+            <MiniListingCard title={'MacBook Pro M3 14"'} price="1 450€" condition="LIKE_NEW" category="HARDWARE" />
+          </>
+        )
+      },
+      {
+        id: "offer-received",
+        type: "bot",
+        content: <p className="text-xs text-text">{msg.offerReceived}</p>
+      },
+      {
+        id: "counter",
+        type: "user",
+        content: <p className="text-xs text-text">{msg.counter}</p>
+      },
+      {
+        id: "accepted",
+        type: "bot",
+        content: (
+          <>
+            <p className="text-xs text-text mb-0.5">{msg.accepted}</p>
+            <EscrowBadge amount="1 380€" />
+          </>
+        )
+      },
+      {
+        id: "contact-revealed",
+        type: "bot",
+        content: (
+          <>
+            <p className="text-xs text-text">{msg.contactRevealed}</p>
+            <div className="bg-bg border border-border p-2 mt-1.5 rounded text-[10px] font-mono text-muted">
+              te****@email.com → <span className="text-emerald-400">Revealed</span>
+            </div>
+          </>
+        )
+      },
+      {
+        id: "complete",
+        type: "bot",
+        content: (
+          <>
+            <p className="text-xs text-text">{msg.complete}</p>
+            <StarRating />
+          </>
+        )
+      }
+    ],
+    [msg.accepted, msg.complete, msg.contactRevealed, msg.counter, msg.newListing, msg.offerReceived]
+  );
 
   return (
-    <PhoneFrame header={copy.chat.marketplace.header} online={copy.chat.marketplace.online} containerRef={containerRef}>
-      <BotBubble visible={visibleCount >= 1}>
-        <p className="text-xs text-text mb-0.5">{msg.newListing}</p>
-        <MiniListingCard title='MacBook Pro M3 14"' price="1 450€" condition="LIKE_NEW" category="HARDWARE" />
-      </BotBubble>
-
-      <BotBubble visible={visibleCount >= 2}>
-        <p className="text-xs text-text">{msg.offerReceived}</p>
-      </BotBubble>
-
-      <UserBubble visible={visibleCount >= 3}>
-        <p className="text-xs text-text">{msg.counter}</p>
-      </UserBubble>
-
-      <BotBubble visible={visibleCount >= 4}>
-        <p className="text-xs text-text mb-0.5">{msg.accepted}</p>
-        <EscrowBadge amount="1 380€" />
-      </BotBubble>
-
-      <BotBubble visible={visibleCount >= 5}>
-        <p className="text-xs text-text">{msg.contactRevealed}</p>
-        <div className="bg-bg border border-border p-2 mt-1.5 rounded text-[10px] font-mono text-muted">
-          te****@email.com → <span className="text-emerald-400">Revealed</span>
-        </div>
-      </BotBubble>
-
-      <BotBubble visible={visibleCount >= 6}>
-        <p className="text-xs text-text">{msg.complete}</p>
-        <StarRating />
-      </BotBubble>
-
-      <TypingIndicator visible={showTyping} />
-    </PhoneFrame>
+    <AnimatedPhoneChat
+      header={copy.chat.marketplace.header}
+      online={copy.chat.marketplace.online}
+      tone="secondary"
+      idPrefix="market-phone"
+      messages={messages}
+    />
   );
 }
