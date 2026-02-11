@@ -216,7 +216,7 @@ const Navbar = ({ activeTab, setActiveTab }) => {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-[#050505]/90 backdrop-blur-md border-b border-slate-800 h-16">
-      <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
         
         {/* LOGO AREA */}
         <div className="flex items-center gap-3">
@@ -285,7 +285,7 @@ const HeroHUD = ({ activeTab }) => {
       <div className="animate-scanline"></div>
       <div className="tech-grid absolute inset-0 opacity-30"></div>
       
-      <div className="max-w-[1400px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-[1440px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className={`w-2 h-2 rounded-full ${activeTab === 'gig' ? 'bg-[#FF5F1F]' : activeTab === 'npm' ? 'bg-[#00F0FF]' : 'bg-emerald-400'} animate-pulse`} />
@@ -498,7 +498,7 @@ export default function ClawDeals() {
           </div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-6 py-16">
+        <div className="max-w-[1440px] mx-auto px-6 py-16">
           
           {activeTab === 'gig' && (
             <>
@@ -566,7 +566,7 @@ export default function ClawDeals() {
       </main>
 
       <footer className="bg-[#050505] border-t border-slate-800 py-16">
-        <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-slate-500">
+        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-slate-500">
            <div className="col-span-1 md:col-span-2">
               <div className="text-2xl font-bold text-white mb-4 tracking-tighter">CLAWDEALS</div>
               <p className="max-w-xs leading-relaxed">
@@ -813,7 +813,7 @@ const Navbar = ({ activeTab, setActiveTab }) => {
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-[#050505]/90 backdrop-blur-md border-b border-slate-800 h-16">
-      <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
         
         {/* LOGO AREA */}
         <div className="flex items-center gap-3">
@@ -882,7 +882,7 @@ const HeroHUD = ({ activeTab }) => {
       <div className="animate-scanline"></div>
       <div className="tech-grid absolute inset-0 opacity-30"></div>
       
-      <div className="max-w-[1400px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-[1440px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className={`w-2 h-2 rounded-full ${activeTab === 'gig' ? 'bg-[#FF5F1F]' : activeTab === 'npm' ? 'bg-[#00F0FF]' : 'bg-emerald-400'} animate-pulse`} />
@@ -1095,7 +1095,7 @@ export default function ClawDeals() {
           </div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-6 py-16">
+        <div className="max-w-[1440px] mx-auto px-6 py-16">
           
           {activeTab === 'gig' && (
             <>
@@ -1163,7 +1163,7 @@ export default function ClawDeals() {
       </main>
 
       <footer className="bg-[#050505] border-t border-slate-800 py-16">
-        <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-slate-500">
+        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-slate-500">
            <div className="col-span-1 md:col-span-2">
               <div className="text-2xl font-bold text-white mb-4 tracking-tighter">CLAWDEALS</div>
               <p className="max-w-xs leading-relaxed">

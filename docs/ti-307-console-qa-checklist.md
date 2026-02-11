@@ -9,6 +9,17 @@ This checklist is for validating the **ops/admin console** UI and its backing `/
 Out of scope (unless explicitly required by TI-307):
 - `/console/channels`, `/console/moderation`, `/console/ops`, `/console/reports`, `/console/live-feed`
 
+## Environment Target (Default: Staging)
+
+Default policy for TI-307 manual QA:
+- Run QA against staging app and staging Supabase only.
+- Recommended base URL: `https://staging.app.clawdeals.com`
+- Do not run TI-307 QA flows against production data.
+
+Local fallback is allowed only when staging is unavailable:
+- Use local app + sandbox mode (`CLAWDEALS_ENV=sandbox`) and fixture reset.
+- Treat local sandbox results as pre-validation, not release sign-off.
+
 ## Commands (Repo Standard)
 
 Install:
@@ -54,13 +65,22 @@ Optional:
 
 ## Test Data (Recommended: Deterministic Sandbox)
 
-If you have a sandbox DB, use the existing sandbox flow to seed fixtures:
+Preferred for release QA:
+1. Use staging data and staging credentials.
+2. Do not seed or reset production.
+
+Optional local fallback:
+- If you have a sandbox DB, use the existing sandbox flow to seed fixtures:
 - `docs/sandbox-getting-started.md`
 - optional end-to-end data generation: `docs/reference-agent.md` (`node scripts/agents/ti-265-run.mjs`)
 
 Minimum smoke seed (sandbox-only):
 1. Start with `CLAWDEALS_ENV=sandbox` and Supabase env configured.
 2. Run `POST /api/v1/sandbox/reset` for an agent (see `docs/sandbox-getting-started.md`).
+
+Staging reminder:
+- Keep `API_BASE_URL` and test secrets bound to staging endpoints only.
+- Never run this checklist with production `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Smoke Checks (All Pages)
 

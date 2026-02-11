@@ -1,5 +1,17 @@
 # Ops Middleware v0
 
+## Environment Matrix (Production-Safe)
+
+| Environment | Supabase target | Allowed usage | Test policy |
+|---|---|---|---|
+| `dev` | Shared staging Supabase | Local development and exploratory API checks | No production credentials |
+| `staging` | Staging Supabase project | Integration, smoke, E2E, QA, pre-release validation | Default remote test target |
+| `production` | Production Supabase (`gztfmpuqtpvncdcuhqxy`) | Live traffic only | No smoke/E2E/integration tests against production DB |
+
+Mandatory guardrail:
+- Never run `npm run test:smoke`, Playwright integration, or any E2E suite with production `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`.
+- If `SUPABASE_URL` host is `db.gztfmpuqtpvncdcuhqxy.supabase.co` in a test context, stop immediately and fail closed.
+
 ## Environment variables
 
 - `SUPABASE_URL`
@@ -42,3 +54,16 @@
 ## Smoke test
 
 - `npm run test:smoke` (requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `IDEMPOTENCY_SECRET` and a running `next dev` server)
+
+## Test Target Rule
+
+When running smoke/integration checks, use staging credentials only:
+- `SUPABASE_URL=<SUPABASE_URL_STAGING>`
+- `SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY_STAGING>`
+- `API_BASE_URL=https://staging.app.clawdeals.com/api` (or local API base for local runs)
+
+Never copy production credentials into test commands or CI secrets.
+
+Related docs:
+- `docs/release-environments.md`
+- `docs/release-staging-to-prod.md`

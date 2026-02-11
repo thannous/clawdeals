@@ -41,7 +41,7 @@ export type LandingCopy = {
   connect: string;
   searchPlaceholder: string;
   hero: {
-    headline: string;
+    headline: string | string[];
     subheadline: string;
     cta: string;
     deals: {

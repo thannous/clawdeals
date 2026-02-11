@@ -238,11 +238,15 @@ function Hero({
       <div className="animate-scanline" />
       <div className="tech-grid absolute inset-0 opacity-30" />
 
-      <div className="max-w-[1400px] mx-auto relative z-10 flex flex-col items-center text-center">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow max-w-4xl">
-          {copy.hero.headline}
+      <div className="max-w-[1440px] mx-auto relative z-10 flex flex-col items-center text-center">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
+          {Array.isArray(copy.hero.headline)
+            ? copy.hero.headline.map((line, i) => (
+                <span key={i} className="block">{line}</span>
+              ))
+            : copy.hero.headline}
         </h1>
-        <p className="text-sm md:text-base text-muted font-mono mb-8 max-w-2xl">
+        <p className="text-sm md:text-base text-muted font-mono mb-8 max-w-4xl">
           {copy.hero.subheadline}
         </p>
 
@@ -286,20 +290,11 @@ function ValueProps({
           <span className="font-mono text-xs text-primary tracking-widest uppercase">{copy.hero.deals.subtitle}</span>
         </div>
         <h2 className="text-3xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text">
-          {copy.hero.deals.title.split(" ").map((word, idx) => (
-            <span key={`deals-title-${word}-${idx}`} className="block">{word}</span>
-          ))}
+          {copy.hero.deals.title}
         </h2>
-        <p className="text-sm text-muted font-mono mb-6 max-w-md border-l-2 border-border-strong pl-4">
+        <p className="text-sm text-muted font-mono max-w-md border-l-2 border-border-strong pl-4">
           {copy.hero.deals.description}
         </p>
-        <HeroCtas
-          primary={copy.ctas.browseDeals}
-          secondary={copy.ctas.postDeal}
-          primaryHref={dealsUrl}
-          futureMode={futureMode}
-          badge={copy.future.badge}
-        />
       </div>
 
       <div>
@@ -308,20 +303,11 @@ function ValueProps({
           <span className="font-mono text-xs text-secondary tracking-widest uppercase">{copy.hero.marketplace.subtitle}</span>
         </div>
         <h2 className="text-3xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text">
-          {copy.hero.marketplace.title.split(" ").map((word, idx) => (
-            <span key={`market-title-${word}-${idx}`} className="block">{word}</span>
-          ))}
+          {copy.hero.marketplace.title}
         </h2>
-        <p className="text-sm text-muted font-mono mb-6 max-w-md border-l-2 border-secondary pl-4">
+        <p className="text-sm text-muted font-mono max-w-md border-l-2 border-secondary pl-4">
           {copy.hero.marketplace.description}
         </p>
-        <HeroCtas
-          primary={copy.ctas.browseListings}
-          secondary={copy.ctas.createListing}
-          primaryHref={listingsUrl}
-          futureMode={futureMode}
-          badge={copy.future.badge}
-        />
       </div>
     </div>
   );
@@ -428,7 +414,7 @@ export default function Landing({
       <main id="main-content" tabIndex={-1} className="pb-32">
         {futureMode && (
           <div className="bg-bg border-b border-border">
-            <div className="max-w-[1400px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-[1440px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
                 <span className="w-2 h-2 bg-primary animate-pulse" />
                 {copy.future.bannerTitle}
@@ -460,7 +446,7 @@ export default function Landing({
           </div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-6 py-16 space-y-24">
+        <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-24">
           <ValueProps copy={copy} futureMode={futureMode} locale={resolvedLocale} />
 
           <ShowcaseSection
@@ -493,7 +479,7 @@ export default function Landing({
       </main>
 
       <footer className="bg-bg border-t border-border py-16">
-        <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-subtle">
+        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-subtle">
           <div className="col-span-1 md:col-span-2">
             <div className="text-2xl font-bold text-text mb-4 tracking-tighter">CLAWDEALS</div>
             <p className="max-w-xs leading-relaxed">

@@ -85,7 +85,7 @@ test.describe.serial("Integration: Telegram help/reset (TI-303)", () => {
     }
 
     const nonce = Math.floor(Math.random() * 1_000_000_000);
-    const fromId = 140000 + nonce;
+    const fromId = 144000 + nonce;
     const chatId = 240000 + nonce;
 
     const nowIso = new Date().toISOString();

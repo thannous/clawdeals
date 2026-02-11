@@ -21,7 +21,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-bg backdrop-blur-md border-b border-border h-16">
-      <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
             <div className="absolute inset-0 hazard-stripe opacity-20" />

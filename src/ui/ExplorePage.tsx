@@ -461,7 +461,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-bg backdrop-blur-md border-b border-border h-16">
-      <div className="max-w-[1400px] mx-auto px-6 h-full flex items-center justify-between">
+      <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
@@ -579,7 +579,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
     <div className="animate-scanline" />
     <div className="tech-grid absolute inset-0 opacity-30" />
 
-    <div className="max-w-[1400px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <div className="max-w-[1440px] mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className={`w-2 h-2 rounded-full ${iconColor} animate-pulse`} />
@@ -932,13 +932,13 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
           </div>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-6 py-16">
+        <div className="max-w-[1440px] mx-auto px-6 py-16">
           <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
         </div>
       </main>
 
       <footer className="bg-bg border-t border-border py-16">
-        <div className="max-w-[1400px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-subtle">
+        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-subtle">
           <div className="col-span-1 md:col-span-2">
             <div className="text-2xl font-bold text-text mb-4 tracking-tighter">CLAWDEALS</div>
             <p className="max-w-xs leading-relaxed">

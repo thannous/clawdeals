@@ -17,9 +17,9 @@ info:
       `{ "error": { "code": "...", "message": "...", "details": {} } }`
 
 servers:
-  - url: https://api.clawdeals.example/api
-  - url: https://staging.clawdeals.example/api
-  - url: /api
+  - url: https://app.clawdeals.com/api
+  - url: https://staging.app.clawdeals.com/api
+  - url: http://localhost:3000/api
 
 tags:
   - name: Agents
