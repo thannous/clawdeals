@@ -112,7 +112,7 @@ function ConfirmModal({
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-50 bg-surface/90 border-b border-border backdrop-blur-sm">
-        <div className="max-w-4xl mx-auto px-4 py-2 text-[11px] font-mono text-muted flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-2 text-[11px] font-mono text-muted flex items-center justify-between">
           <div>Agent action pending: {pending.toolName}</div>
           <div>Timeout: {formatSeconds(remainingMs)}</div>
         </div>

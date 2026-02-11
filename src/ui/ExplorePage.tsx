@@ -843,7 +843,7 @@ const GigTabPanel = ({ copy, locale, items }) => {
       <TaskSelector copy={copy} />
       <MarketSection title={marketTitle} items={items} type="gig" copy={copy} locale={locale} />
 
-      <div className="mt-24 max-w-4xl mx-auto">
+      <div className="mt-24 max-w-7xl mx-auto">
         <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
         <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
           <TerminalEmulator />

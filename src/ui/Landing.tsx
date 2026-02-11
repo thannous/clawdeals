@@ -387,7 +387,7 @@ function TabbedShowcase({
 
 function DeveloperSection({ copy }: { copy: LandingCopy }) {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
       <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
         <TerminalEmulator />

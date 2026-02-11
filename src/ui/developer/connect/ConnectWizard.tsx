@@ -111,13 +111,13 @@ export default function ConnectWizard() {
     return (
       <div className="min-h-screen bg-bg text-text">
         <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <div className="font-bold tracking-wider">
               <span className="text-primary">/ </span>CONNECT
             </div>
           </div>
         </header>
-        <main className="max-w-4xl mx-auto px-4 py-10 flex items-center justify-center">
+        <main className="max-w-7xl mx-auto px-4 py-10 flex items-center justify-center">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
@@ -134,7 +134,7 @@ export default function ConnectWizard() {
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="font-bold tracking-wider">
             <span className="text-primary">/ </span>CONNECT
           </div>
@@ -170,7 +170,7 @@ export default function ConnectWizard() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-10 space-y-6">
+      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-10 space-y-6">
         {/* Step indicator */}
         <StepIndicator currentStep={state.step} />
 
