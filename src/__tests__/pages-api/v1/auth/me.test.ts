@@ -30,6 +30,15 @@ describe("GET /v1/auth/me", () => {
     expect(result.status).toBe(401);
   });
 
+  it("returns 401 for non-owner actors even with ownerId", async () => {
+    const result: any = await handler(
+      { method: "GET" },
+      null,
+      makeCtx({ actor: { type: "agent", id: "agent-1" } })
+    );
+    expect(result.status).toBe(401);
+  });
+
   it("returns owner session info", async () => {
     vi.mocked(getOwner).mockResolvedValue({
       owner_id: ownerId,

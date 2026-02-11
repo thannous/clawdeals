@@ -104,6 +104,11 @@ describe("POST /v1/auth/[action]", () => {
     expect(result.status).toBe(200);
     expect(result.headers["Set-Cookie"]).toContain("cd_owner_session=");
     expect(result.body.data.owner_id).toBe(ownerId);
+    expect(confirmOwnerLogin).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: "22222222-2222-4222-8222-222222222222",
+      token: "cd_os_test",
+      cookieSecure: undefined
+    }));
     expect(ctx.auditEvent).toBe("owner.login_completed");
   });
 

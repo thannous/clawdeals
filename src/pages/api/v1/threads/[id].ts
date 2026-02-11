@@ -30,8 +30,17 @@ function parseCursor(value: any) {
   if (typeof value !== "string") return { error: "cursor must be a string" };
   const trimmed = value.trim();
   if (!trimmed) return { value: null };
+  if (!/^\d+-\d+$/.test(trimmed)) return { error: "cursor is invalid" };
   const parsed = parseStreamId(trimmed);
-  if (!parsed || parsed.ms < 0 || parsed.seq < 0) return { error: "cursor is invalid" };
+  if (
+    !parsed ||
+    !Number.isSafeInteger(parsed.ms) ||
+    !Number.isSafeInteger(parsed.seq) ||
+    parsed.ms < 0 ||
+    parsed.seq < 0
+  ) {
+    return { error: "cursor is invalid" };
+  }
   return { value: trimmed };
 }
 
@@ -239,7 +248,7 @@ export async function handler(req: any, _res: any, ctx: any) {
       }
 
       rapidScans = 0;
-      const remainingMs = deadline - now;
+      const remainingMs = deadline - Date.now();
       if (remainingMs <= 0) break;
       await sleep(Math.min(THREAD_WATCH_POLL_INTERVAL_MS, remainingMs));
     }

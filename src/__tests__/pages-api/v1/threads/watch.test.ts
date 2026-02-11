@@ -64,6 +64,18 @@ describe("POST /v1/threads/{thread_id}:watch", () => {
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
+  it("rejects malformed cursor formats", async () => {
+    for (const cursor of ["1-2-3", "1.5-0"]) {
+      const req: any = { method: "POST", query: { id: `${threadId}:watch` }, body: { cursor, timeout_ms: 0 } };
+      const result: any = await handler(req, null, { ...baseCtx });
+      expect(result.status).toBe(400);
+      expect(result.body.error.code).toBe("VALIDATION_ERROR");
+      expect(result.body.error.message).toContain("cursor");
+    }
+    expect(getThreadMock).not.toHaveBeenCalled();
+    expect(readThreadEventsAfterMock).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when thread not found", async () => {
     getThreadMock.mockResolvedValue(null as any);
     getLatestThreadEventIdMock.mockResolvedValue("0-0" as any);
@@ -193,5 +205,41 @@ describe("POST /v1/threads/{thread_id}:watch", () => {
     const result: any = await promise;
     expect(result.status).toBe(200);
     expect(result.body.events).toEqual([]);
+  });
+
+  it("does not exceed timeout when an empty poll read is slow", async () => {
+    getThreadMock.mockResolvedValue({
+      buyer_agent_id: "agent-1",
+      seller_agent_id: "agent-2"
+    } as any);
+    getLatestThreadEventIdMock.mockResolvedValue("0-0" as any);
+
+    let readCount = 0;
+    readThreadEventsAfterMock.mockImplementation(async () => {
+      readCount += 1;
+      if (readCount === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+      }
+      return [] as any;
+    });
+
+    const req: any = {
+      method: "POST",
+      query: { id: `${threadId}:watch` },
+      body: { timeout_ms: 1000, limit: 10 }
+    };
+
+    const startedAt = Date.now();
+    let resolvedAt = startedAt;
+    const promise = handler(req, null, { ...baseCtx }).then((result: any) => {
+      resolvedAt = Date.now();
+      return result;
+    });
+
+    await vi.advanceTimersByTimeAsync(2000);
+    const result: any = await promise;
+
+    expect(result.status).toBe(200);
+    expect(resolvedAt - startedAt).toBeLessThanOrEqual(1000);
   });
 });

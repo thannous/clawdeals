@@ -13,7 +13,7 @@ export async function handler(req: any, _res: any, ctx: any) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  if (!ctx?.ownerId) {
+  if (!ctx?.ownerId || ctx?.actor?.type !== "owner") {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
   }
 

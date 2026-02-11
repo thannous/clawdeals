@@ -107,12 +107,14 @@ function readHeaderValue(headers: any, name: string): string | null {
   return String(value);
 }
 
-export function isSecureRequest(req: any): boolean {
+export function isSecureRequest(req: any): boolean | undefined {
   const proto = readHeaderValue(req?.headers, "x-forwarded-proto");
-  if (!proto) return false;
+  if (!proto) return undefined;
   // "https" or "https,http" depending on proxies.
   const first = proto.split(",")[0]?.trim().toLowerCase();
-  return first === "https";
+  if (first === "https") return true;
+  if (first === "http") return false;
+  return undefined;
 }
 
 export function buildOwnerSessionCookie({

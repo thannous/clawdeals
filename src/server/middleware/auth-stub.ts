@@ -2,7 +2,13 @@ import { authenticateApiKey } from "../services/api-keys";
 import { authenticateOauthAccessToken, isOauthAccessToken } from "../services/oauth-access-tokens";
 import { parseApiKey, parseApiKeyAnyNamespace } from "../utils/api-keys";
 import { readOwnerSessionCookie } from "../auth/session-cookie";
-import { getOwnerSessionByTokenHash, markOwnerSessionExpired, touchOwnerSession } from "../services/owner-sessions";
+import {
+  getOwnerSessionByTokenHash,
+  markOwnerSessionExpired,
+  markOwnerSessionRevoked,
+  touchOwnerSession
+} from "../services/owner-sessions";
+import { getOwner } from "../services/owners";
 import { hashOwnerSessionToken, isOwnerSessionToken } from "../utils/session-tokens";
 
 const OWNER_SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
@@ -140,6 +146,37 @@ export async function applyAuthStub(req, ctx) {
         return ctx;
       }
 
+      const ownerId = session.owner_id || null;
+      if (!ownerId) {
+        ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid session cookie" };
+        return ctx;
+      }
+
+      const owner = await getOwner(ownerId);
+      if (!owner) {
+        if (session.session_id) {
+          try {
+            await markOwnerSessionRevoked(session.session_id, now);
+          } catch {
+            // Best-effort only.
+          }
+        }
+        ctx.authError = { status: 401, code: "UNAUTHORIZED", message: "Invalid session cookie" };
+        return ctx;
+      }
+
+      if (owner.suspended_at) {
+        if (session.session_id) {
+          try {
+            await markOwnerSessionRevoked(session.session_id, now);
+          } catch {
+            // Best-effort only.
+          }
+        }
+        ctx.authError = { status: 403, code: "OWNER_SUSPENDED", message: "Owner account is suspended" };
+        return ctx;
+      }
+
       if (session.session_id) {
         try {
           const lastUsedAt = session?.last_used_at ? new Date(session.last_used_at) : null;
@@ -156,9 +193,9 @@ export async function applyAuthStub(req, ctx) {
         }
       }
 
-      ctx.ownerId = session.owner_id || null;
+      ctx.ownerId = owner.owner_id || null;
       ctx.ownerSessionId = session.session_id || null;
-      ctx.actor = { type: "owner", id: session.owner_id || null };
+      ctx.actor = { type: "owner", id: owner.owner_id || null };
       return ctx;
     } catch (error: any) {
       ctx.authError = {
