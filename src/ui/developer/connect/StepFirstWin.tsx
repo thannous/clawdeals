@@ -2,7 +2,6 @@ import Link from "next/link";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 
 import { maskApiKey } from "../api";
-import { getStoredApiKey } from "../storage";
 import type { AgentMeResponse } from "./types";
 
 function subscribeToNothing() {

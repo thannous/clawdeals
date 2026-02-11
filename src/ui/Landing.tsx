@@ -304,7 +304,7 @@ function TabbedShowcase({
   return (
     <div>
       {/* ValueProps as clickable cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-16">
+      <div className="grid grid-cols-2 gap-4 md:gap-16 mb-8 md:mb-16">
         {SHOWCASE_TABS.map(({ key, Icon, colorClass, borderClass, accentBg }) => {
           const isActive = active === key;
           return (
@@ -312,29 +312,36 @@ function TabbedShowcase({
               <button
                 type="button"
                 onClick={() => setActive(key)}
-                className={`relative text-left transition-opacity duration-300 cursor-pointer pb-4 ${
+                className={`group/card relative text-left transition-opacity duration-300 cursor-pointer pb-3 md:pb-4 ${
                   isActive ? "opacity-100" : "opacity-40 hover:opacity-70"
                 }`}
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <Icon className={`w-5 h-5 ${colorClass}`} />
-                  <span className={`font-mono text-xs ${colorClass} tracking-widest uppercase`}>
+                <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
+                  <Icon className={`w-4 h-4 md:w-5 md:h-5 ${colorClass}`} />
+                  <span className={`font-mono text-[9px] md:text-xs ${colorClass} tracking-widest uppercase`}>
                     {heroData[key].subtitle}
                   </span>
                 </div>
-                <h2 className="text-3xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-4 text-text">
+                <h2 className="text-xl md:text-5xl font-bold uppercase leading-[0.9] tracking-tighter mb-2 md:mb-4 text-text">
                   {heroData[key].title}
                 </h2>
-                <p className={`text-sm text-muted font-mono max-w-md border-l-2 ${borderClass} pl-4`}>
+                <p className={`hidden md:block text-sm text-muted font-mono max-w-md border-l-2 ${borderClass} pl-4`}>
                   {heroData[key].description}
                 </p>
+                {/* Hover hint on inactive card — desktop only */}
+                {!isActive && (
+                  <span className={`hidden md:flex absolute bottom-4 right-0 font-mono text-[10px] ${colorClass} tracking-widest uppercase opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 items-center gap-1.5`}>
+                    <ChevronDown className="w-3 h-3" />
+                    VOIR LA DEMO
+                  </span>
+                )}
                 {/* Active bottom bar */}
                 <div className={`absolute bottom-0 left-0 h-[2px] transition-all duration-300 ${
                   isActive ? `w-full ${accentBg}` : "w-0 bg-transparent"
                 }`} />
               </button>
-              {/* Chevron indicator under active card */}
-              <div className={`flex items-center gap-2 pt-3 transition-all duration-300 ${
+              {/* Chevron indicator under active card — desktop only */}
+              <div className={`hidden md:flex items-center gap-2 pt-3 transition-all duration-300 ${
                 isActive ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"
               }`}>
                 <ChevronDown className={`w-3.5 h-3.5 ${colorClass} animate-bounce`} />

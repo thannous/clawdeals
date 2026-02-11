@@ -177,6 +177,7 @@ export default function ConnectWizard() {
         {/* Step content */}
         {state.step === "connect" && (
           <StepConnect
+            apiKey={state.apiKey}
             onMethodSelected={selectMethod}
             onApiKeySet={setApiKey}
             onClaimSessionCreated={setClaimSession}

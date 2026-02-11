@@ -23,12 +23,13 @@ function deriveStep(method: ConnectionMethod | null, verified: boolean): WizardS
 
 export function useWizardState() {
   const [method, setMethod] = useState<ConnectionMethod | null>(null);
-  const [apiKey, setApiKeyState] = useState<string | null>(() => getStoredApiKey());
+  // Initialize to null for SSR safety; hydrated from localStorage in effect below
+  const [apiKey, setApiKeyState] = useState<string | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [claimSession, setClaimSession] = useState<ConnectSessionData | null>(null);
   const [agentMe, setAgentMe] = useState<AgentMeResponse | null>(null);
   const [verified, setVerifiedState] = useState(false);
-  const [autoVerifying, setAutoVerifying] = useState(() => Boolean(getStoredApiKey()));
+  const [autoVerifying, setAutoVerifying] = useState(false);
 
   const mountedRef = useRef(true);
 
@@ -38,19 +39,24 @@ export function useWizardState() {
     };
   }, []);
 
-  // Auto-verify on mount if we have a stored key
+  // Hydrate stored key from localStorage and auto-verify on mount
   useEffect(() => {
-    const stored = getStoredApiKey();
-    if (!stored) return;
-
     let cancelled = false;
 
-    apiRequest<{ data: AgentMeResponse }>({
-      path: "/v1/agents/me",
-      method: "GET",
-      apiKey: stored
-    })
-      .then((res) => {
+    const hydrate = async () => {
+      const stored = getStoredApiKey();
+      if (!stored) return;
+
+      // Hydrate the key into state so the UI can show the masked key
+      setApiKeyState(stored);
+      setAutoVerifying(true);
+
+      try {
+        const res = await apiRequest<{ data: AgentMeResponse }>({
+          path: "/v1/agents/me",
+          method: "GET",
+          apiKey: stored
+        });
         if (cancelled || !mountedRef.current) return;
         const data = res.data?.data;
         if (data?.agent_id) {
@@ -59,15 +65,16 @@ export function useWizardState() {
           setMethod("apikey");
           setVerifiedState(true);
         }
-      })
-      .catch(() => {
+      } catch {
         // Key is invalid or expired -- don't clear it, just don't auto-advance
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled && mountedRef.current) {
           setAutoVerifying(false);
         }
-      });
+      }
+    };
+
+    hydrate();
 
     return () => {
       cancelled = true;

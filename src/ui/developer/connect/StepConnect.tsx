@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 
-import { apiRequest, maskApiKey } from "../api";
-import { getStoredApiKey, setStoredApiKey } from "../storage";
+import { apiRequest } from "../api";
+import { setStoredApiKey } from "../storage";
 import type { ConnectionMethod, ConnectSessionData, PollStatus } from "./types";
 
 type RegisterResult = {
@@ -29,6 +29,7 @@ function subscribeToNothing() {
 }
 
 type Props = {
+  apiKey: string | null;
   onMethodSelected: (method: ConnectionMethod) => void;
   onApiKeySet: (key: string, agentId?: string) => void;
   onClaimSessionCreated: (session: ConnectSessionData) => void;
@@ -40,6 +41,7 @@ type Props = {
 };
 
 export default function StepConnect({
+  apiKey: storedKey,
   onMethodSelected,
   onApiKeySet,
   onClaimSessionCreated,
@@ -72,8 +74,6 @@ export default function StepConnect({
   const [mcpApiBase, setMcpApiBase] = useState(hostedApiBase);
   const [mcpAdvancedOpen, setMcpAdvancedOpen] = useState(false);
   const [mcpCopyMsg, setMcpCopyMsg] = useState("");
-
-  const storedKey = getStoredApiKey();
 
   const mcpInstallSnippet = useMemo(
     () =>
