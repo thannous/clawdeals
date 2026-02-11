@@ -21,10 +21,13 @@ export default function TimelineList({ items, onSelect }: Props) {
       {items.map((item) => (
         <li
           key={item.audit_id}
+          role="button"
+          tabIndex={0}
           className={`mb-4 ml-6 cursor-pointer hover:bg-surface/50 rounded p-2 transition-colors ${
             item.is_primary === false ? "opacity-50" : ""
           }`}
           onClick={() => onSelect(item)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(item); } }}
         >
           <span
             className={`absolute -left-1.5 w-3 h-3 rounded-full border border-bg ${

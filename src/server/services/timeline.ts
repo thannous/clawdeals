@@ -175,8 +175,20 @@ export async function getEntityTimeline({
     return a.audit_id < b.audit_id ? -1 : a.audit_id > b.audit_id ? 1 : 0;
   });
 
-  // Cap at limit
-  const finalItems = allItems.slice(0, pageLimit);
+  // Keep all primary rows from this page and only fill remaining slots with correlated rows.
+  const correlatedCapacity = Math.max(0, pageLimit - cappedPrimary.length);
+  let correlatedIncluded = 0;
+  const finalItems: any[] = [];
+  for (const item of allItems) {
+    if (item.is_primary) {
+      finalItems.push(item);
+      continue;
+    }
+    if (correlatedIncluded < correlatedCapacity) {
+      finalItems.push(item);
+      correlatedIncluded += 1;
+    }
+  }
 
   // Compute next cursor from primary data (not correlated)
   let nextCursor = null;

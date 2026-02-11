@@ -24,9 +24,13 @@ export default function TimelinePage() {
 
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
 
-  const handleReplayToPoint = (auditId: string) => {
-    if (entityType && entityId) {
-      loadReplay(entityType, entityId, auditId);
+  const handleReplayToPoint = (entry: any) => {
+    const auditId = entry?.audit_id;
+    const replayEntityType = entry?.entity?.type || entityType;
+    const replayEntityId = entry?.entity?.id || entityId;
+
+    if (replayEntityType && replayEntityId && auditId) {
+      loadReplay(replayEntityType, replayEntityId, auditId);
       setSelectedEntry(null);
     }
   };

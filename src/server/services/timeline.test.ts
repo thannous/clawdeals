@@ -180,6 +180,45 @@ describe("getEntityTimeline", () => {
     expect(result.items[1].correlation_source).toBe("idempotency_key");
   });
 
+  it("does not let correlated rows displace primary rows at page limit", async () => {
+    const primaryRow1 = makeSampleRow({
+      id: "aaaaaaaa-bbbb-1ccc-9ddd-000000000001",
+      occurred_at: "2026-02-07T12:00:02Z",
+      request_id: "req-123",
+      idempotency: { key: null }
+    });
+    const primaryRow2 = makeSampleRow({
+      id: "aaaaaaaa-bbbb-1ccc-9ddd-000000000002",
+      occurred_at: "2026-02-07T12:00:03Z",
+      request_id: "req-123",
+      idempotency: { key: null }
+    });
+    const correlatedEarlyRow = makeSampleRow({
+      id: "aaaaaaaa-bbbb-1ccc-9ddd-000000000003",
+      occurred_at: "2026-02-07T12:00:01Z",
+      action: {
+        event: "deal.created",
+        entity_type: "deal",
+        entity_id: "22222222-2222-3333-8444-555555555555",
+        path: "/api/v1/deals"
+      },
+      request_id: "req-123",
+      idempotency: { key: null }
+    });
+
+    const mockClient = createSequentialMockClient([
+      { data: [primaryRow1, primaryRow2], error: null }, // primary query
+      { data: [correlatedEarlyRow, primaryRow1, primaryRow2], error: null } // request_id correlation
+    ]);
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(mockClient as any);
+
+    const result = await getEntityTimeline({ entityType: "listing", entityId: ENTITY_ID, limit: 2 });
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items.map((item) => item.audit_id)).toEqual([primaryRow1.id, primaryRow2.id]);
+    expect(result.items.every((item) => item.is_primary)).toBe(true);
+  });
+
   it("skips correlation queries when includeCorrelated=false", async () => {
     const row = makeSampleRow();
     const mockClient = createMockClient([row]);
@@ -288,7 +327,6 @@ describe("replayEntityState", () => {
     expect(result.current_state).toEqual({
       status: "COMPLETED",
       amount: 50,
-      currency: undefined,
       escrow_status: "FUNDED"
     });
     expect(result.steps[0].delta.status).toBe("DRAFT");

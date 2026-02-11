@@ -1,14 +1,16 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import ConsoleStatusBadge from "../shared/ConsoleStatusBadge";
 
 interface Props {
   open: boolean;
   entry: any | null;
   onClose: () => void;
-  onReplayToPoint: (auditId: string) => void;
+  onReplayToPoint: (entry: any) => void;
 }
 
 export default function TimelineDetailModal({ open, entry, onClose, onReplayToPoint }: Props) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -20,6 +22,8 @@ export default function TimelineDetailModal({ open, entry, onClose, onReplayToPo
     if (!open) return;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleKeyDown);
+    // Focus the close button so keyboard users land inside the dialog
+    requestAnimationFrame(() => closeRef.current?.focus());
     return () => {
       document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKeyDown);
@@ -72,7 +76,7 @@ export default function TimelineDetailModal({ open, entry, onClose, onReplayToPo
         <div className="flex justify-between items-center pt-2">
           <button
             onClick={() => {
-              if (entry.audit_id) onReplayToPoint(entry.audit_id);
+              if (entry.audit_id) onReplayToPoint(entry);
             }}
             disabled={!entry.audit_id}
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 disabled:opacity-50 transition-colors"
@@ -80,6 +84,7 @@ export default function TimelineDetailModal({ open, entry, onClose, onReplayToPo
             Replay to this point
           </button>
           <button
+            ref={closeRef}
             onClick={onClose}
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
           >
