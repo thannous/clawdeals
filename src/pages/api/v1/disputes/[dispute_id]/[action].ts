@@ -31,6 +31,30 @@ function resolveParam(value) {
   return value;
 }
 
+function buildResolvedDisputeResponse(dispute: any, escrow: any) {
+  return {
+    dispute_id: dispute.dispute_id,
+    status: dispute.status,
+    resolution: dispute.resolution,
+    resolved_at: dispute.resolved_at,
+    escrow_status: escrow.status,
+    psp: {
+      payout_id: escrow.psp_payout_id || null,
+      refund_id: escrow.psp_refund_id || null
+    }
+  };
+}
+
+function isEscrowStatusCompatibleWithResolution(escrowStatus: string, resolution: string) {
+  if (resolution === "REFUND") {
+    return escrowStatus === "REFUND_PENDING" || escrowStatus === "REFUNDED";
+  }
+  if (resolution === "RELEASE") {
+    return escrowStatus === "RELEASE_PENDING" || escrowStatus === "RELEASED";
+  }
+  return false;
+}
+
 async function resolveEvidenceRole({
   actorAgentId,
   actorOwnerId,
@@ -133,6 +157,11 @@ export async function handler(req, res, ctx) {
       }
 
       if (escrow.status !== "DISPUTE_OPEN") {
+        const disputeStatus = typeof dispute.status === "string" ? dispute.status.toUpperCase() : "";
+        const disputeResolution = typeof dispute.resolution === "string" ? dispute.resolution.toUpperCase() : "";
+        if (disputeStatus === "RESOLVED" && disputeResolution === resolutionRaw && isEscrowStatusCompatibleWithResolution(escrow.status, resolutionRaw)) {
+          return jsonResponse(200, buildResolvedDisputeResponse(dispute, escrow));
+        }
         return jsonResponse(409, errorPayload("INVALID_STATE", "Invalid escrow state", { status: escrow.status }));
       }
 
@@ -145,21 +174,11 @@ export async function handler(req, res, ctx) {
       // This prevents overlapping resolve requests from issuing duplicate payout/refund calls.
       const begin = await beginResolveDispute({ disputeId: String(disputeId) });
       if (begin.state === "already_resolved") {
-        const d: any = begin.dispute;
-        if (String(d.resolution) !== resolutionRaw) {
+        const resolvedDispute: any = begin.dispute;
+        if (String(resolvedDispute.resolution) !== resolutionRaw) {
           return jsonResponse(409, errorPayload("DISPUTE_ALREADY_RESOLVED", "Dispute already resolved"));
         }
-        return jsonResponse(200, {
-          dispute_id: d.dispute_id,
-          status: d.status,
-          resolution: d.resolution,
-          resolved_at: d.resolved_at,
-          escrow_status: escrow.status,
-          psp: {
-            payout_id: escrow.psp_payout_id || null,
-            refund_id: escrow.psp_refund_id || null
-          }
-        });
+        return jsonResponse(200, buildResolvedDisputeResponse(resolvedDispute, escrow));
       }
 
       const adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });

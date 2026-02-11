@@ -148,4 +148,41 @@ describe("POST /v1/disputes/:id/resolve concurrency guard", () => {
     expect(createPspAdapterMock).not.toHaveBeenCalled();
     expect(resolveDisputeMock).not.toHaveBeenCalled();
   });
+
+  it("returns 200 for same-resolution replay when escrow already moved past DISPUTE_OPEN", async () => {
+    getDisputeByIdMock.mockResolvedValue({
+      dispute_id: DISPUTE_ID,
+      escrow_id: ESCROW_ID,
+      status: "RESOLVED",
+      resolution: "REFUND",
+      resolved_at: "2026-02-09T00:00:00.000Z",
+    } as any);
+    getEscrowMock.mockResolvedValue({
+      escrow_id: ESCROW_ID,
+      status: "REFUND_PENDING",
+      psp_payment_id: "mock_pay_escrow",
+      amount_gross_minor: 12345,
+      currency: "EUR",
+      psp_payout_id: null,
+      psp_refund_id: "mock_refund_1",
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      query: { action: "resolve", dispute_id: DISPUTE_ID },
+      headers: { "idempotency-key": "k1" },
+      body: { resolution: "REFUND", notes: "ok" },
+    };
+    const ctx: any = { ownerId: OPS_OWNER_ID, authError: null };
+
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body?.status).toBe("RESOLVED");
+    expect(result.body?.resolution).toBe("REFUND");
+    expect(result.body?.escrow_status).toBe("REFUND_PENDING");
+    expect(beginResolveDisputeMock).not.toHaveBeenCalled();
+    expect(createPspAdapterMock).not.toHaveBeenCalled();
+    expect(resolveDisputeMock).not.toHaveBeenCalled();
+  });
 });

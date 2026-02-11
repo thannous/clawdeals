@@ -10,7 +10,7 @@ export async function waitForAuditLog(
   for (let i = 0; i < attempts; i += 1) {
     let query = supabase
       .from("audit_logs")
-      .select("id, action, outcome, occurred_at, payload, security, policy, auth, idempotency")
+      .select("id, action, outcome, occurred_at, request, payload, security, policy, auth, idempotency")
       .eq("action->>event", eventName)
       .order("occurred_at", { ascending: false })
       .limit(1);
@@ -42,9 +42,9 @@ export async function waitForAuditLogMatching(
   for (let i = 0; i < attempts; i += 1) {
     const { data, error } = await supabase
       .from("audit_logs")
-      .select("id, action, outcome, occurred_at, payload, security, policy, auth, idempotency")
+      .select("id, action, outcome, occurred_at, request, payload, security, policy, auth, idempotency")
       .order("occurred_at", { ascending: false })
-      .limit(50);
+      .limit(200);
 
     if (!error && data) {
       const match = data.find(predicate);

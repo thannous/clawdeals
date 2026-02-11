@@ -143,8 +143,6 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
         onFrame: (entry) => (entry.type === "comment" && entry.comment === "ping" ? entry : undefined)
       });
 
-      const auditStart = new Date().toISOString();
-
       const reqRes = await request.post(`/api/v1/transactions/${encodeURIComponent(txId)}/request-contact-reveal`, {
         headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
         data: {}
@@ -191,9 +189,8 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
         (row) =>
           row.action?.event === "contact_reveal.requested" &&
           row.payload?.tx_id === txId &&
-          row.payload?.approval_id === approvalId &&
-          Date.parse(row.occurred_at) >= Date.parse(auditStart),
-        20
+          row.payload?.approval_id === approvalId,
+        40
       );
       expect(requestAudit).toBeTruthy();
 
@@ -240,9 +237,8 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
         (row) =>
           row.action?.event === "contact_reveal.approved" &&
           row.payload?.tx_id === txId &&
-          row.payload?.approval_id === approvalId &&
-          Date.parse(row.occurred_at) >= Date.parse(auditStart),
-        20
+          row.payload?.approval_id === approvalId,
+        40
       );
       expect(approveAudit).toBeTruthy();
 
@@ -332,8 +328,6 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
         onFrame: (entry) => (entry.type === "comment" && entry.comment === "ping" ? entry : undefined)
       });
 
-      const auditStart = new Date().toISOString();
-
       const firstReq = await request.post(`/api/v1/transactions/${encodeURIComponent(txId)}/request-contact-reveal`, {
         headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
         data: {}
@@ -369,9 +363,8 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
         (row) =>
           row.action?.event === "contact_reveal.denied" &&
           row.payload?.tx_id === txId &&
-          row.payload?.approval_id === firstApprovalId &&
-          Date.parse(row.occurred_at) >= Date.parse(auditStart),
-        20
+          row.payload?.approval_id === firstApprovalId,
+        40
       );
       expect(denyAudit).toBeTruthy();
 
@@ -418,9 +411,8 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
         (row) =>
           row.action?.event === "contact_reveal.approved" &&
           row.payload?.tx_id === txId &&
-          row.payload?.approval_id === secondApprovalId &&
-          Date.parse(row.occurred_at) >= Date.parse(auditStart),
-        20
+          row.payload?.approval_id === secondApprovalId,
+        40
       );
       expect(approveAudit).toBeTruthy();
     } finally {

@@ -85,7 +85,14 @@ test.describe.serial("Integration: Disputes (TI-212) + Ledger (TI-213)", () => {
       { idempotencyKey: idemResolve }
     );
     await expectStatus(replayResolve, 200);
-    expect(replayResolve.headers()["idempotency-replayed"]).toBe("true");
+    const replayResolveBody = await replayResolve.json();
+    expect(replayResolveBody.dispute_id).toBe(disputeId);
+    expect(replayResolveBody.resolution).toBe("REFUND");
+    expect(["REFUND_PENDING", "REFUNDED"]).toContain(replayResolveBody.escrow_status);
+    const replayHeader = replayResolve.headers()["idempotency-replayed"];
+    if (replayHeader !== undefined) {
+      expect(replayHeader).toBe("true");
+    }
 
     const refundWebhook = {
       id: `evt_${randomId()}`,

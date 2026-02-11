@@ -3,6 +3,7 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId, randomIp } from "./helpers/ids";
 import { createListing, createOwner, expectStatus } from "./helpers/http";
+import { waitForAuditLog } from "./helpers/audit";
 import { createSupabaseAdmin } from "./helpers/supabase";
 
 assertIntegrationEnv();
@@ -11,6 +12,17 @@ function extractClaimToken(claimUrl: string): string {
   const url = new URL(String(claimUrl));
   const parts = url.pathname.split("/").filter(Boolean);
   return decodeURIComponent(parts[parts.length - 1] || "");
+}
+
+async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
+  const { error } = await supabase
+    .from("owners")
+    .update({
+      email_verified_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .eq("owner_id", ownerId);
+  expect(error).toBeNull();
 }
 
 async function createConnectSession(request: APIRequestContext, requestedAgentName: string) {
@@ -44,8 +56,10 @@ test.describe.serial("Integration: Connect Exchange", () => {
   test.setTimeout(60_000);
 
   test("claim -> exchange -> api_key works + replay is stable", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
@@ -71,10 +85,13 @@ test.describe.serial("Integration: Connect Exchange", () => {
 
     const exchangeIdem = randomId();
     const fingerprint = `itest-${randomId()}`;
+    const auditSince = new Date().toISOString();
+    const auditRequestId = randomId();
     const exchange = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
       headers: {
         Authorization: `Bearer ${pollToken}`,
-        "Idempotency-Key": exchangeIdem
+        "Idempotency-Key": exchangeIdem,
+        "x-request-id": auditRequestId
       },
       data: {
         requested_key_scope: "agent_write",
@@ -99,6 +116,19 @@ test.describe.serial("Integration: Connect Exchange", () => {
     const apiKey = exchangeBody?.data?.api_key;
     const agentId = exchangeBody?.data?.agent_id;
     const installationId = exchangeBody?.data?.installation_id;
+
+    const exchangeAudit = await waitForAuditLog(supabase, "connect.exchange", 10, auditSince, auditRequestId);
+    expect(exchangeAudit).not.toBeNull();
+
+    const payloadStr = JSON.stringify(exchangeAudit?.payload || {});
+    const requestStr = JSON.stringify(exchangeAudit?.request || {});
+    const securityStr = JSON.stringify(exchangeAudit?.security || {});
+
+    for (const secret of [claimToken, pollToken, apiKey]) {
+      expect(payloadStr).not.toContain(secret);
+      expect(requestStr).not.toContain(secret);
+      expect(securityStr).not.toContain(secret);
+    }
 
     const replay = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
       headers: {
@@ -169,6 +199,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const { sessionId, pollToken, claimToken } = await createConnectSession(request, "Integration Exchange Expired");
     await claimConnectSession(request, sessionId, ownerId, claimToken, "Integration Exchange Expired Agent");
@@ -203,8 +234,10 @@ test.describe.serial("Integration: Connect Exchange", () => {
   });
 
   test("same idempotency key with different body returns IDEMPOTENCY_KEY_REUSE", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
 
     const { sessionId, pollToken, claimToken } = await createConnectSession(request, "Integration Exchange Idempotency Mismatch");
     await claimConnectSession(request, sessionId, ownerId, claimToken, "Integration Exchange Idempotency Agent");

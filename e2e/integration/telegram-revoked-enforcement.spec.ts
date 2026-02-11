@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { createSupabaseAdmin } from "./helpers/supabase";
-import { randomId } from "./helpers/ids";
+import { randomId, randomIp } from "./helpers/ids";
 
 assertIntegrationEnv();
 
@@ -12,6 +12,7 @@ test.describe.serial("Integration: Telegram revoked enforcement", () => {
   test("revoked identity triggers CHANNEL_NOT_PAIRED response", async ({ request }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
+    const telegramUserId = String(Math.floor(Math.random() * 9_000_000_000) + 1_000_000_000);
 
     await supabase.from("owners").upsert({
       owner_id: ownerId,
@@ -22,7 +23,7 @@ test.describe.serial("Integration: Telegram revoked enforcement", () => {
       .from("channel_identities")
       .insert({
         channel_type: "telegram",
-        channel_user_id: `revoked_${ownerId.slice(0, 8)}`,
+        channel_user_id: telegramUserId,
         channel_context_id: "",
         display_name: "revoked-user",
         owner_id: ownerId,
@@ -42,22 +43,23 @@ test.describe.serial("Integration: Telegram revoked enforcement", () => {
       message: {
         message_id: 1,
         date: Math.floor(Date.now() / 1000),
-        chat: { id: 123, type: "private" },
+        chat: { id: Number(telegramUserId), type: "private" },
         text: "status",
-        from: { id: 123, is_bot: false, first_name: "Revoked" }
+        from: { id: Number(telegramUserId), is_bot: false, first_name: "Revoked" }
       }
     };
 
     const res = await request.post("/api/v1/channels/telegram/webhook", {
       headers: {
         "x-telegram-bot-api-secret-token": process.env.TELEGRAM_WEBHOOK_SECRET_TOKEN || "secret",
-        "x-telegram-bot-token": process.env.TELEGRAM_BOT_TOKEN || "token"
+        "x-telegram-bot-token": process.env.TELEGRAM_BOT_TOKEN || "token",
+        "x-forwarded-for": randomIp()
       },
       data: payload
     });
 
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body?.text).toMatch(/CHANNEL_NOT_PAIRED/);
+    expect(String(body?.text || "")).toMatch(/CHANNEL_NOT_PAIRED/);
   });
 });

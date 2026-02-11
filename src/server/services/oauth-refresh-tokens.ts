@@ -258,12 +258,23 @@ export async function rotateRefreshToken({
       }
 
       if (revokeError) {
-        // Fail open to avoid lockout: return the new token even if we couldn't confirm revocation.
-        // Worst case: both tokens remain valid temporarily.
-        console.warn("[oauth] refresh-token revocation failed during rotation; returning new token anyway", {
+        // Fail closed: if we cannot revoke the old token, do not return the replacement token.
+        // Best-effort cleanup prevents issuing a second valid refresh token on transient DB issues.
+        try {
+          await client.from("oauth_refresh_tokens").delete().eq("token_id", inserted.token_id);
+        } catch (cleanupError: any) {
+          console.error("[oauth] refresh-token cleanup failed after revoke error", {
+            inserted_token_id: inserted.token_id,
+            code: cleanupError?.code,
+            message: cleanupError?.message
+          });
+        }
+
+        console.warn("[oauth] refresh-token rotation failed; old token revoke unavailable", {
           code: revokeError?.code,
           message: revokeError?.message
         });
+        throw buildServiceError("Failed to rotate refresh token", 503, "AUTH_UNAVAILABLE");
       }
 
       return {
