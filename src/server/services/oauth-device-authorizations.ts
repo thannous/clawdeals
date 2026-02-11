@@ -5,6 +5,11 @@ import { mapSupabaseError } from "./supabase-errors";
 
 const OAUTH_DEVICE_AUTH_TTL_MINUTES = 10;
 const DEVICE_CODE_PREFIX = "cd_dev_";
+const USER_CODE_LOCKOUT_MAX_FAILED_ATTEMPTS = 5;
+const USER_CODE_LOCKOUT_WINDOW_SECONDS = 5 * 60;
+const OAUTH_DEVICE_POLL_INTERVAL_SECONDS = 2;
+const OAUTH_DEVICE_SLOW_DOWN_INCREMENT_SECONDS = 5;
+const OAUTH_DEVICE_POLL_INTERVAL_MAX_SECONDS = 60;
 
 // Non-ambiguous alphabet (no I/O/1/0).
 const USER_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -105,6 +110,453 @@ export function normalizeOauthUserCode(value: any): string | null {
 }
 
 export type OauthDeviceAuthorizationRow = any;
+
+function parseIsoDate(value: any): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function positiveInt(value: any, fallback: number, min = 1) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.floor(parsed));
+}
+
+function retryAfterSecondsFromDate(value: any, now = new Date()) {
+  const until = parseIsoDate(value);
+  if (!until) return 0;
+  const deltaMs = until.getTime() - now.getTime();
+  if (deltaMs <= 0) return 0;
+  return Math.ceil(deltaMs / 1000);
+}
+
+function buildUserCodeLockoutState(row: any, now = new Date()) {
+  const failedAttempts = Math.max(0, Number(row?.user_code_attempt_count || 0));
+  const retryAfterSeconds = retryAfterSecondsFromDate(row?.user_code_locked_until, now);
+
+  return {
+    failed_attempts: failedAttempts,
+    locked_until: row?.user_code_locked_until || null,
+    locked: retryAfterSeconds > 0,
+    retry_after_seconds: retryAfterSeconds
+  };
+}
+
+function buildPollingState(row: any, now = new Date()) {
+  const effectiveIntervalSeconds = positiveInt(
+    row?.poll_interval_seconds,
+    OAUTH_DEVICE_POLL_INTERVAL_SECONDS
+  );
+  const lastPolledAt = parseIsoDate(row?.last_polled_at);
+  const nextAllowedAt =
+    lastPolledAt ? new Date(lastPolledAt.getTime() + effectiveIntervalSeconds * 1000) : null;
+  const retryAfterSeconds =
+    nextAllowedAt && nextAllowedAt.getTime() > now.getTime()
+      ? Math.ceil((nextAllowedAt.getTime() - now.getTime()) / 1000)
+      : 0;
+
+  return {
+    effective_interval_seconds: effectiveIntervalSeconds,
+    last_polled_at: row?.last_polled_at || null,
+    next_allowed_at: nextAllowedAt ? nextAllowedAt.toISOString() : null,
+    poll_too_fast: retryAfterSeconds > 0,
+    retry_after_seconds: retryAfterSeconds
+  };
+}
+
+export async function getOauthUserCodeLockoutState({
+  userCode,
+  now = new Date()
+}: any): Promise<
+  | {
+      failed_attempts: number;
+      locked_until: string | null;
+      locked: boolean;
+      retry_after_seconds: number;
+    }
+  | null
+> {
+  const normalized = normalizeOauthUserCode(userCode);
+  if (!normalized) {
+    throw buildServiceError("userCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const secret = requireOauthDeviceSecret();
+  const userCodeHash = hashWithSecret(normalized, secret);
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("oauth_device_user_code_attempts")
+    .select("attempt_count,locked_until")
+    .eq("user_code_hash", userCodeHash)
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  if (!data) {
+    return null;
+  }
+
+  return buildUserCodeLockoutState(
+    {
+      user_code_attempt_count: data.attempt_count,
+      user_code_locked_until: data.locked_until
+    },
+    now
+  );
+}
+
+export async function incrementOauthUserCodeLookupFailure({
+  userCode,
+  maxFailedAttempts = USER_CODE_LOCKOUT_MAX_FAILED_ATTEMPTS,
+  lockoutWindowSeconds = USER_CODE_LOCKOUT_WINDOW_SECONDS,
+  now = new Date()
+}: any): Promise<
+  | {
+      failed_attempts: number;
+      locked_until: string | null;
+      locked: boolean;
+      retry_after_seconds: number;
+    }
+  | null
+> {
+  const normalized = normalizeOauthUserCode(userCode);
+  if (!normalized) {
+    throw buildServiceError("userCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const resolvedMaxFailedAttempts = positiveInt(maxFailedAttempts, USER_CODE_LOCKOUT_MAX_FAILED_ATTEMPTS);
+  const resolvedLockoutWindowSeconds = positiveInt(lockoutWindowSeconds, USER_CODE_LOCKOUT_WINDOW_SECONDS);
+
+  const secret = requireOauthDeviceSecret();
+  const userCodeHash = hashWithSecret(normalized, secret);
+
+  const client = getSupabaseServiceClient();
+  const { data: existing, error: lookupError } = await client
+    .from("oauth_device_user_code_attempts")
+    .select("user_code_hash,attempt_count,locked_until")
+    .eq("user_code_hash", userCodeHash)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw mapSupabaseServiceError(lookupError);
+  }
+
+  const nowIso = now.toISOString();
+  const previousAttempts = Math.max(0, Number(existing?.attempt_count || 0));
+  const nextAttempts = previousAttempts + 1;
+  const lockoutUntil = new Date(now.getTime() + resolvedLockoutWindowSeconds * 1000).toISOString();
+
+  const updatePayload: any = {
+    attempt_count: nextAttempts,
+    last_failed_at: nowIso,
+    updated_at: nowIso
+  };
+  if (nextAttempts >= resolvedMaxFailedAttempts) {
+    updatePayload.locked_until = lockoutUntil;
+  } else {
+    updatePayload.locked_until = null;
+  }
+
+  let row: any = null;
+  if (existing) {
+    const { data, error } = await client
+      .from("oauth_device_user_code_attempts")
+      .update(updatePayload)
+      .eq("user_code_hash", userCodeHash)
+      .select("attempt_count,locked_until")
+      .maybeSingle();
+    if (error) {
+      throw mapSupabaseServiceError(error);
+    }
+    row = data || { attempt_count: updatePayload.attempt_count, locked_until: updatePayload.locked_until };
+  } else {
+    const { data, error } = await client
+      .from("oauth_device_user_code_attempts")
+      .insert({
+        user_code_hash: userCodeHash,
+        ...updatePayload,
+        created_at: nowIso
+      })
+      .select("attempt_count,locked_until")
+      .maybeSingle();
+    if (error) {
+      throw mapSupabaseServiceError(error);
+    }
+    row = data || { attempt_count: updatePayload.attempt_count, locked_until: updatePayload.locked_until };
+  }
+
+  return {
+    ...buildUserCodeLockoutState(
+      {
+        user_code_attempt_count: row.attempt_count,
+        user_code_locked_until: row.locked_until
+      },
+      now
+    )
+  };
+}
+
+export const incrementOauthUserCodeLookupFailures = incrementOauthUserCodeLookupFailure;
+
+export async function resetOauthUserCodeLookupFailures({
+  userCode
+}: any): Promise<OauthDeviceAuthorizationRow | null> {
+  const normalized = normalizeOauthUserCode(userCode);
+  if (!normalized) {
+    throw buildServiceError("userCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const secret = requireOauthDeviceSecret();
+  const userCodeHash = hashWithSecret(normalized, secret);
+  const client = getSupabaseServiceClient();
+  const { error } = await client
+    .from("oauth_device_user_code_attempts")
+    .delete()
+    .eq("user_code_hash", userCodeHash)
+    .select("user_code_hash")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  return null;
+}
+
+export async function getOauthDeviceCodePollingState({
+  deviceCode,
+  now = new Date()
+}: any): Promise<{
+  authorization: OauthDeviceAuthorizationRow;
+  effective_interval_seconds: number;
+  last_polled_at: string | null;
+  next_allowed_at: string | null;
+  poll_too_fast: boolean;
+  retry_after_seconds: number;
+}> {
+  const resolved = normalizeNonEmptyString(deviceCode);
+  if (!resolved || !resolved.startsWith(DEVICE_CODE_PREFIX)) {
+    throw buildServiceError("deviceCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const secret = requireOauthDeviceSecret();
+  const deviceCodeHash = hashWithSecret(resolved, secret);
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("oauth_device_authorizations")
+    .select("*")
+    .eq("device_code_hash", deviceCodeHash)
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  if (!data) {
+    throw buildServiceError("Device authorization not found", 404, "DEVICE_AUTHORIZATION_NOT_FOUND");
+  }
+
+  return {
+    authorization: data,
+    ...buildPollingState(data, now)
+  };
+}
+
+export async function recordOauthDeviceCodePoll({
+  deviceCode,
+  now = new Date()
+}: any): Promise<{
+  authorization: OauthDeviceAuthorizationRow;
+  effective_interval_seconds: number;
+  last_polled_at: string | null;
+  next_allowed_at: string | null;
+  poll_too_fast: boolean;
+  retry_after_seconds: number;
+}> {
+  const resolved = normalizeNonEmptyString(deviceCode);
+  if (!resolved || !resolved.startsWith(DEVICE_CODE_PREFIX)) {
+    throw buildServiceError("deviceCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const secret = requireOauthDeviceSecret();
+  const deviceCodeHash = hashWithSecret(resolved, secret);
+  const nowIso = now.toISOString();
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("oauth_device_authorizations")
+    .update({
+      last_polled_at: nowIso,
+      updated_at: nowIso
+    })
+    .eq("device_code_hash", deviceCodeHash)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  if (!data) {
+    throw buildServiceError("Device authorization not found", 404, "DEVICE_AUTHORIZATION_NOT_FOUND");
+  }
+
+  return {
+    authorization: data,
+    ...buildPollingState(data, now)
+  };
+}
+
+export async function slowDownOauthDeviceCodePolling({
+  deviceCode,
+  incrementSeconds = OAUTH_DEVICE_SLOW_DOWN_INCREMENT_SECONDS,
+  maxIntervalSeconds = OAUTH_DEVICE_POLL_INTERVAL_MAX_SECONDS,
+  now = new Date()
+}: any): Promise<{
+  authorization: OauthDeviceAuthorizationRow;
+  effective_interval_seconds: number;
+  last_polled_at: string | null;
+  next_allowed_at: string | null;
+  poll_too_fast: boolean;
+  retry_after_seconds: number;
+}> {
+  const resolved = normalizeNonEmptyString(deviceCode);
+  if (!resolved || !resolved.startsWith(DEVICE_CODE_PREFIX)) {
+    throw buildServiceError("deviceCode is invalid", 400, "VALIDATION_ERROR");
+  }
+
+  const resolvedIncrementSeconds = positiveInt(incrementSeconds, OAUTH_DEVICE_SLOW_DOWN_INCREMENT_SECONDS);
+  const resolvedMaxIntervalSeconds = positiveInt(maxIntervalSeconds, OAUTH_DEVICE_POLL_INTERVAL_MAX_SECONDS);
+
+  const secret = requireOauthDeviceSecret();
+  const deviceCodeHash = hashWithSecret(resolved, secret);
+
+  const client = getSupabaseServiceClient();
+  const { data: existing, error: lookupError } = await client
+    .from("oauth_device_authorizations")
+    .select("*")
+    .eq("device_code_hash", deviceCodeHash)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw mapSupabaseServiceError(lookupError);
+  }
+  if (!existing) {
+    throw buildServiceError("Device authorization not found", 404, "DEVICE_AUTHORIZATION_NOT_FOUND");
+  }
+
+  const currentInterval = positiveInt(existing.poll_interval_seconds, OAUTH_DEVICE_POLL_INTERVAL_SECONDS);
+  const nextInterval = Math.min(resolvedMaxIntervalSeconds, currentInterval + resolvedIncrementSeconds);
+  const nowIso = now.toISOString();
+
+  const { data, error } = await client
+    .from("oauth_device_authorizations")
+    .update({
+      poll_interval_seconds: nextInterval,
+      last_polled_at: nowIso,
+      updated_at: nowIso
+    })
+    .eq("authorization_id", existing.authorization_id)
+    .eq("device_code_hash", deviceCodeHash)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+
+  const authorization = data || {
+    ...existing,
+    poll_interval_seconds: nextInterval,
+    last_polled_at: nowIso,
+    updated_at: nowIso
+  };
+
+  return {
+    authorization,
+    ...buildPollingState(authorization, now)
+  };
+}
+
+function buildLockoutSignal(lockoutState: any) {
+  const retryAfterSeconds = Math.max(1, Number(lockoutState?.retry_after_seconds || 0));
+  return {
+    status: 429,
+    code: "DEVICE_AUTHORIZATION_LOCKED",
+    message: "Too many attempts. Try again later.",
+    retry_after_seconds: retryAfterSeconds,
+    details: {
+      retry_after_seconds: retryAfterSeconds
+    }
+  };
+}
+
+export async function assertOauthDeviceUserCodeLookupAllowed({
+  userCode,
+  now = new Date()
+}: any): Promise<any | null> {
+  try {
+    const lockoutState = await getOauthUserCodeLockoutState({ userCode, now });
+    if (!lockoutState?.locked) return null;
+    return buildLockoutSignal(lockoutState);
+  } catch (error: any) {
+    // Invalid user-code formats are handled by route validation/lookup and should not block lookup accounting.
+    if (error?.code === "VALIDATION_ERROR") return null;
+    throw error;
+  }
+}
+
+export async function recordOauthDeviceUserCodeLookupAttempt({
+  userCode,
+  matched = false,
+  success = false,
+  now = new Date()
+}: any): Promise<any | null> {
+  try {
+    if (success && matched) {
+      await resetOauthUserCodeLookupFailures({ userCode, now });
+      return null;
+    }
+
+    const lockoutState = await incrementOauthUserCodeLookupFailure({ userCode, now });
+    if (!lockoutState?.locked) return null;
+    return buildLockoutSignal(lockoutState);
+  } catch (error: any) {
+    if (error?.code === "VALIDATION_ERROR") return null;
+    throw error;
+  }
+}
+
+export async function consumeOauthDeviceTokenPollAttempt({
+  authorization = null,
+  deviceCode,
+  now = new Date()
+}: any): Promise<any | null> {
+  const pollState =
+    authorization && typeof authorization === "object"
+      ? {
+          authorization,
+          ...buildPollingState(authorization, now)
+        }
+      : await getOauthDeviceCodePollingState({ deviceCode, now });
+
+  if (pollState.poll_too_fast) {
+    const slowed = await slowDownOauthDeviceCodePolling({ deviceCode, now });
+    return {
+      status: 400,
+      code: "slow_down",
+      retry_after_seconds: Math.max(
+        1,
+        Number(slowed?.retry_after_seconds || pollState.retry_after_seconds || OAUTH_DEVICE_POLL_INTERVAL_SECONDS)
+      )
+    };
+  }
+
+  await recordOauthDeviceCodePoll({ deviceCode, now });
+  return null;
+}
 
 export async function createOauthDeviceAuthorization({
   clientId,

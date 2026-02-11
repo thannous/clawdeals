@@ -161,9 +161,60 @@ test.describe.serial("Integration: OAuth Token", () => {
       },
       data: refreshFailForm
     });
-    expect(refreshFail.status()).toBe(401);
+    expect(refreshFail.status()).toBe(400);
     const refreshFailBody = await refreshFail.json();
     expect(refreshFailBody?.error?.code).toBe("invalid_grant");
+  });
+
+  test("device flow polling too quickly returns slow_down", async ({ request }) => {
+    const ip = randomIp();
+
+    const authorize = await request.post("/api/oauth/device/authorize", {
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": ip
+      },
+      data: {
+        client_id: "openclaw",
+        scope: "agent:read",
+        requested_agent_name: "Integration OAuth Polling"
+      }
+    });
+    await expectStatus(authorize, 200);
+    const authorizeBody = await authorize.json();
+    const deviceCode = String(authorizeBody?.device_code || "");
+    expect(deviceCode).toMatch(/^cd_dev_/);
+
+    const tokenForm = new URLSearchParams({
+      grant_type: DEVICE_CODE_GRANT_TYPE,
+      device_code: deviceCode,
+      client_id: "openclaw"
+    }).toString();
+
+    const firstPoll = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": ip
+      },
+      data: tokenForm
+    });
+    expect(firstPoll.status()).toBe(400);
+    const firstBody = await firstPoll.json();
+    expect(firstBody?.error?.code).toBe("authorization_pending");
+
+    const secondPoll = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": ip
+      },
+      data: tokenForm
+    });
+    expect(secondPoll.status()).toBe(400);
+    expect(secondPoll.headers()["cache-control"]).toBe("no-store");
+    expect(secondPoll.headers()["retry-after"]).toBeTruthy();
+    const secondBody = await secondPoll.json();
+    expect(secondBody?.error?.code).toBe("slow_down");
   });
 
   test("installation revoke invalidates OAuth refresh and access tokens", async ({ request }) => {
@@ -241,7 +292,7 @@ test.describe.serial("Integration: OAuth Token", () => {
         client_id: "openclaw"
       }).toString()
     });
-    expect(refreshFail.status()).toBe(401);
+    expect(refreshFail.status()).toBe(400);
     const refreshFailBody = await refreshFail.json();
     expect(refreshFailBody?.error?.code).toBe("invalid_grant");
 
@@ -306,7 +357,7 @@ test.describe.serial("Integration: OAuth Token", () => {
         client_id: "openclaw"
       }).toString()
     });
-    expect(oldRejected.status()).toBe(401);
+    expect(oldRejected.status()).toBe(400);
     const oldRejectedBody = await oldRejected.json();
     expect(oldRejectedBody?.error?.code).toBe("invalid_grant");
 
@@ -323,6 +374,40 @@ test.describe.serial("Integration: OAuth Token", () => {
     });
     await expectStatus(refreshedAgain, 200);
     expect(refreshedAgain.headers()["cache-control"]).toBe("no-store");
+  });
+
+  test("device_code is single-use and cannot be exchanged twice", async ({ request }) => {
+    const ip = randomIp();
+    const { deviceCode } = await authorizeAndApproveDeviceFlow({ request, ip });
+
+    const firstExchange = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        grant_type: DEVICE_CODE_GRANT_TYPE,
+        device_code: deviceCode,
+        client_id: "openclaw"
+      }).toString()
+    });
+    await expectStatus(firstExchange, 200);
+
+    const secondExchange = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-forwarded-for": ip
+      },
+      data: new URLSearchParams({
+        grant_type: DEVICE_CODE_GRANT_TYPE,
+        device_code: deviceCode,
+        client_id: "openclaw"
+      }).toString()
+    });
+    expect(secondExchange.status()).toBe(400);
+    const secondBody = await secondExchange.json();
+    expect(secondBody?.error?.code).toBe("invalid_grant");
   });
 
   test("access token TTL: expired access token rejected", async ({ request }) => {

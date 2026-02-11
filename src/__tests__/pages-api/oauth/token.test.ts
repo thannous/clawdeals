@@ -6,7 +6,8 @@ vi.mock("../../../server/rate-limit/middleware", () => ({
 
 vi.mock("../../../server/services/oauth-device-authorizations", () => ({
   getOauthDeviceAuthorizationByDeviceCode: vi.fn(),
-  markOauthDeviceAuthorizationExchanged: vi.fn()
+  markOauthDeviceAuthorizationExchanged: vi.fn(),
+  consumeOauthDeviceTokenPollAttempt: vi.fn()
 }));
 
 vi.mock("../../../server/services/agent-installations", () => ({
@@ -29,6 +30,7 @@ import { handler } from "../../../pages/api/oauth/token";
 import { rateLimitMiddleware } from "../../../server/rate-limit/middleware";
 import { V1_SCOPES_DEFAULT } from "../../../shared/scopes/v1";
 import {
+  consumeOauthDeviceTokenPollAttempt,
   getOauthDeviceAuthorizationByDeviceCode,
   markOauthDeviceAuthorizationExchanged
 } from "../../../server/services/oauth-device-authorizations";
@@ -43,6 +45,7 @@ import { issueOauthAccessToken } from "../../../server/services/oauth-access-tok
 const rateLimitMock = vi.mocked(rateLimitMiddleware);
 const getByDeviceCodeMock = vi.mocked(getOauthDeviceAuthorizationByDeviceCode);
 const markExchangedMock = vi.mocked(markOauthDeviceAuthorizationExchanged);
+const consumeDevicePollAttemptMock = vi.mocked(consumeOauthDeviceTokenPollAttempt);
 const createInstallationMock = vi.mocked(createAgentInstallation);
 const issueRefreshMock = vi.mocked(issueRefreshTokenRecord);
 const getRefreshMock = vi.mocked(getOauthRefreshTokenRecordByToken);
@@ -53,6 +56,7 @@ describe("POST /oauth/token", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     rateLimitMock.mockResolvedValue(null as any);
+    consumeDevicePollAttemptMock.mockResolvedValue(null as any);
   });
 
   it("requires client_id", async () => {
@@ -93,6 +97,33 @@ describe("POST /oauth/token", () => {
         ip: "203.0.113.1"
       })
     );
+  });
+
+  it("returns slow_down when the device client polls too quickly", async () => {
+    getByDeviceCodeMock.mockResolvedValue({
+      authorization_id: "auth-1",
+      status: "PENDING",
+      expires_at: new Date(Date.now() + 60_000).toISOString()
+    } as any);
+    consumeDevicePollAttemptMock.mockResolvedValue({
+      code: "slow_down",
+      retry_after_seconds: 3
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: {
+        client_id: "openclaw",
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        device_code: "cd_dev_test"
+      }
+    };
+    const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1" });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("slow_down");
+    expect(result.headers["Retry-After"]).toBe("3");
+    expect(result.headers["Cache-Control"]).toBe("no-store");
   });
 
   it("exchanges an authorized device_code for access+refresh tokens (and sanitizes ctx.body)", async () => {
@@ -182,6 +213,52 @@ describe("POST /oauth/token", () => {
     );
   });
 
+  it("grants only the requested scopes for device_code exchange", async () => {
+    getByDeviceCodeMock.mockResolvedValue({
+      authorization_id: "11111111-1111-1111-1111-111111111111",
+      status: "AUTHORIZED",
+      client_id: "openclaw",
+      owner_id: "22222222-2222-2222-2222-222222222222",
+      agent_id: "33333333-3333-4333-8333-333333333333",
+      requested_scopes: ["watchlists:read", "threads:read"],
+      requested_agent_name: "Integration OpenClaw",
+      device_code_hash: "dhash",
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      exchanged_at: null
+    } as any);
+    createInstallationMock.mockResolvedValue({
+      installation_id: "44444444-4444-4444-4444-444444444444"
+    } as any);
+    issueRefreshMock.mockResolvedValue({
+      refresh_token: "cd_rt_test",
+      token_id: "55555555-5555-4555-8555-555555555555",
+      token_hash: "rthash",
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    } as any);
+    issueAccessMock.mockResolvedValue({
+      access_token: "cd_at_test",
+      access_token_hash: "athash",
+      expires_in: 900
+    } as any);
+    markExchangedMock.mockResolvedValue({ authorization_id: "11111111-1111-1111-1111-111111111111" } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: {
+        client_id: "openclaw",
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        device_code: "cd_dev_test"
+      }
+    };
+
+    const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1", body: req.body });
+    expect(result.status).toBe(200);
+    expect(result.body.scope).toBe("watchlists:read threads:read");
+    expect(issueRefreshMock).toHaveBeenCalledWith(expect.objectContaining({ scopes: ["watchlists:read", "threads:read"] }));
+    expect(issueAccessMock).toHaveBeenCalledWith(expect.objectContaining({ scopes: ["watchlists:read", "threads:read"] }));
+  });
+
   it("returns invalid_grant for revoked refresh token", async () => {
     getRefreshMock.mockResolvedValue({
       tokenHash: "hash",
@@ -201,8 +278,9 @@ describe("POST /oauth/token", () => {
     const ctx: any = { authError: null, ip: "203.0.113.1", body: req.body };
 
     const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(401);
+    expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("invalid_grant");
+    expect(result.headers["Cache-Control"]).toBe("no-store");
     expect(ctx.body?.refresh_token).toBeUndefined();
   });
 

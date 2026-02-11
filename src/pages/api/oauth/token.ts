@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors";
 import { rateLimitMiddleware } from "../../../server/rate-limit/middleware";
 import {
+  consumeOauthDeviceTokenPollAttempt,
   getOauthDeviceAuthorizationByDeviceCode,
   markOauthDeviceAuthorizationExchanged
 } from "../../../server/services/oauth-device-authorizations";
@@ -20,6 +21,7 @@ import {
 import { V1_SCOPES_DEFAULT, normalizeRequestedScopes, sortScopesStable } from "../../../shared/scopes/v1";
 
 const DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
+const OAUTH_TOKEN_NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 
 function getHeaderValue(req: any, name: string) {
   const value = req?.headers?.[name] ?? req?.headers?.[String(name).toLowerCase()];
@@ -99,17 +101,92 @@ function applyRateLimitResultToCtx(ctx: any, meta: any) {
   };
 }
 
-function oauthError(code: string, message: string, status: number) {
+function buildNoStoreHeaders(headers: Record<string, string> = {}) {
+  return {
+    ...OAUTH_TOKEN_NO_STORE_HEADERS,
+    ...headers
+  };
+}
+
+function oauthError(code: string, message: string, status: number, headers: Record<string, string> = {}) {
   return jsonResponse(status, {
     error: {
       code,
       message
     }
-  });
+  }, buildNoStoreHeaders(headers));
 }
 
 function invalidGrant(message = "Invalid grant") {
-  return oauthError("invalid_grant", message, 401);
+  return oauthError("invalid_grant", message, 400);
+}
+
+function parsePositiveSeconds(value: any): number | null {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.ceil(parsed);
+}
+
+function resolveRetryAfterSeconds(value: any): number | null {
+  const candidates = [
+    value?.retry_after_seconds,
+    value?.retryAfterSeconds,
+    value?.details?.retry_after_seconds,
+    value?.details?.retryAfterSeconds
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parsePositiveSeconds(candidate);
+    if (parsed) return parsed;
+  }
+
+  return null;
+}
+
+function isSlowDownSignal(value: any) {
+  if (!value) return false;
+
+  const code = normalizeNonEmptyString(value.code ?? value.error ?? value.reason)?.toLowerCase();
+  if (code === "slow_down" || code === "device_poll_too_fast" || code === "oauth_device_poll_too_fast") {
+    return true;
+  }
+
+  return (
+    value.status === 429 ||
+    value.slowDown === true ||
+    value.shouldSlowDown === true ||
+    value.pollTooFast === true ||
+    value.tooFast === true
+  );
+}
+
+function slowDownError(retryAfterSeconds: number | null = null) {
+  const headers = retryAfterSeconds ? { "Retry-After": String(retryAfterSeconds) } : {};
+  return oauthError("slow_down", "Slow down", 400, headers);
+}
+
+async function enforceDevicePollInterval({
+  authorization,
+  deviceCode,
+  now = new Date()
+}: {
+  authorization: any;
+  deviceCode: string;
+  now?: Date;
+}) {
+  if (authorization?.status !== "PENDING") return null;
+  try {
+    const result = await consumeOauthDeviceTokenPollAttempt({ authorization, deviceCode, now });
+    if (isSlowDownSignal(result)) {
+      return slowDownError(resolveRetryAfterSeconds(result));
+    }
+    return null;
+  } catch (error: any) {
+    if (isSlowDownSignal(error)) {
+      return slowDownError(resolveRetryAfterSeconds(error));
+    }
+    throw error;
+  }
 }
 
 export async function handler(req: any, res: any, ctx: any) {
@@ -118,7 +195,11 @@ export async function handler(req: any, res: any, ctx: any) {
   }
 
   if (ctx?.authError) {
-    return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
+    return jsonResponse(
+      ctx.authError.status || 401,
+      errorPayload(ctx.authError.code, ctx.authError.message),
+      buildNoStoreHeaders()
+    );
   }
 
   const body = parseTokenBody(req);
@@ -127,16 +208,16 @@ export async function handler(req: any, res: any, ctx: any) {
   const clientIdRaw = body.client_id ?? body.clientId ?? null;
   const clientId = typeof clientIdRaw === "string" ? clientIdRaw.trim() : "";
   if (!clientId) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "client_id is required"));
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "client_id is required"), buildNoStoreHeaders());
   }
   if (clientId !== "openclaw") {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "client_id must be 'openclaw'"));
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "client_id must be 'openclaw'"), buildNoStoreHeaders());
   }
 
   const grantTypeRaw = body.grant_type ?? body.grantType ?? null;
   const grantType = typeof grantTypeRaw === "string" ? grantTypeRaw.trim() : "";
   if (!grantType) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "grant_type is required"));
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "grant_type is required"), buildNoStoreHeaders());
   }
 
   if (grantType === DEVICE_CODE_GRANT_TYPE) {
@@ -153,25 +234,38 @@ export async function handler(req: any, res: any, ctx: any) {
 
     if (rateLimitResult && rateLimitResult.status === 429) {
       if (ctx) ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
-      return jsonResponse(rateLimitResult.status, rateLimitResult.body, rateLimitResult.headers);
+      return jsonResponse(
+        rateLimitResult.status,
+        rateLimitResult.body,
+        buildNoStoreHeaders(rateLimitResult.headers || {})
+      );
     }
 
     const deviceCode = normalizeNonEmptyString(body.device_code ?? body.deviceCode);
     if (!deviceCode) {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "device_code is required"));
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "device_code is required"), buildNoStoreHeaders());
     }
 
+    const now = new Date();
     let authorization: any;
     try {
-      authorization = await getOauthDeviceAuthorizationByDeviceCode({ deviceCode, now: new Date() });
+      authorization = await getOauthDeviceAuthorizationByDeviceCode({ deviceCode, now });
     } catch (error: any) {
       if (error?.status && error.status >= 500) {
-        return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+        return jsonResponse(
+          error.status || 500,
+          errorPayload(error.code || "ERROR", error.message, error.details),
+          buildNoStoreHeaders()
+        );
       }
       return invalidGrant();
     }
 
-    const now = new Date();
+    const slowDownResponse = await enforceDevicePollInterval({ authorization, deviceCode, now });
+    if (slowDownResponse) {
+      return slowDownResponse;
+    }
+
     const expiresAt = authorization?.expires_at ? new Date(authorization.expires_at) : null;
     const expired = !expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime();
 
@@ -197,8 +291,8 @@ export async function handler(req: any, res: any, ctx: any) {
       return invalidGrant();
     }
 
-    const requestedScopes = Array.isArray(authorization.requested_scopes) ? authorization.requested_scopes : [];
-    const grantedScopes = [...V1_SCOPES_DEFAULT];
+    const requestedScopes = authorization?.requested_scopes;
+    const grantedScopes = normalizeGrantedScopes(requestedScopes);
 
     let installation: any = null;
     let accessToken: any = null;
@@ -273,7 +367,11 @@ export async function handler(req: any, res: any, ctx: any) {
       }
 
       if (error?.status && error.status >= 500) {
-        return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+        return jsonResponse(
+          error.status || 500,
+          errorPayload(error.code || "ERROR", error.message, error.details),
+          buildNoStoreHeaders()
+        );
       }
 
       return invalidGrant();
@@ -287,7 +385,7 @@ export async function handler(req: any, res: any, ctx: any) {
 
     const refreshToken = normalizeNonEmptyString(body.refresh_token ?? body.refreshToken);
     if (!refreshToken) {
-      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "refresh_token is required"));
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "refresh_token is required"), buildNoStoreHeaders());
     }
 
     let existing: any;
@@ -298,7 +396,11 @@ export async function handler(req: any, res: any, ctx: any) {
       existingTokenHash = found?.tokenHash || null;
     } catch (error: any) {
       if (error?.status && error.status >= 500) {
-        return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+        return jsonResponse(
+          error.status || 500,
+          errorPayload(error.code || "ERROR", error.message, error.details),
+          buildNoStoreHeaders()
+        );
       }
       return invalidGrant();
     }
@@ -327,7 +429,11 @@ export async function handler(req: any, res: any, ctx: any) {
 
     if (rateLimitResult && rateLimitResult.status === 429) {
       if (ctx) ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
-      return jsonResponse(rateLimitResult.status, rateLimitResult.body, rateLimitResult.headers);
+      return jsonResponse(
+        rateLimitResult.status,
+        rateLimitResult.body,
+        buildNoStoreHeaders(rateLimitResult.headers || {})
+      );
     }
 
     let accessToken: any = null;
@@ -347,7 +453,7 @@ export async function handler(req: any, res: any, ctx: any) {
         rotated = await rotateRefreshToken({ refreshToken, now });
       } catch (rotateError: any) {
         // If we lost the refresh race (already rotated/revoked), do not allow the access token to stand.
-        if (rotateError?.status === 401 && rotateError?.code === "invalid_grant") {
+        if (rotateError?.code === "invalid_grant") {
           if (accessToken?.access_token_hash) {
             await deleteOauthAccessTokenByHash(accessToken.access_token_hash);
           }
@@ -392,13 +498,17 @@ export async function handler(req: any, res: any, ctx: any) {
         await deleteOauthAccessTokenByHash(accessToken.access_token_hash);
       }
       if (error?.status && error.status >= 500) {
-        return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+        return jsonResponse(
+          error.status || 500,
+          errorPayload(error.code || "ERROR", error.message, error.details),
+          buildNoStoreHeaders()
+        );
       }
       return invalidGrant();
     }
   }
 
-  return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Unsupported grant_type"));
+  return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Unsupported grant_type"), buildNoStoreHeaders());
 }
 
 export default withApiMiddlewares(handler, {

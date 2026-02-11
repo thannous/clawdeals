@@ -86,6 +86,45 @@ test.describe.serial("Integration: OAuth Device Authorize", () => {
     expect(rateLimited).toBe(true);
   });
 
+  test("lockout: repeated invalid lookups eventually lock the attempted user_code", async ({ request }) => {
+    const ip = randomIp();
+    const authorize = await request.post("/api/oauth/device/authorize", {
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": ip
+      },
+      data: {
+        client_id: "openclaw",
+        scope: "agent:read",
+        requested_agent_name: "Integration Lockout"
+      }
+    });
+    await expectStatus(authorize, 200);
+    const authorizeBody = await authorize.json();
+    const userCode = String(authorizeBody?.user_code || "");
+    expect(userCode).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+    const attemptedCode = `${userCode.slice(0, 8)}${userCode.endsWith("A") ? "B" : "A"}`;
+
+    let locked = false;
+    for (let i = 0; i < 8; i += 1) {
+      const res = await request.get(`/api/oauth/device/requests?user_code=${encodeURIComponent(attemptedCode)}`, {
+        headers: { "x-forwarded-for": ip }
+      });
+      if (res.status() === 429) {
+        locked = true;
+        expect(res.headers()["retry-after"]).toBeTruthy();
+        const body = await res.json();
+        expect(body?.error?.code).toBe("DEVICE_AUTHORIZATION_LOCKED");
+        break;
+      }
+
+      expect(res.status()).toBe(404);
+    }
+
+    expect(locked).toBe(true);
+  });
+
   test("idempotency: authorize replays same codes and rejects key reuse", async ({ request }) => {
     const ip = randomIp();
     const idem = randomId();

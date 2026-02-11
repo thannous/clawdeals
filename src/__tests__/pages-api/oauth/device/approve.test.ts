@@ -49,6 +49,7 @@ describe("POST /oauth/device/approve", () => {
     const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.headers["Cache-Control"]).toBe("no-store");
     expect(ctx.body?.user_code).toBeUndefined();
   });
 
@@ -113,6 +114,7 @@ describe("POST /oauth/device/approve", () => {
     expect(result.status).toBe(200);
     expect(result.body.data.status).toBe("AUTHORIZED");
     expect(result.body.data.owner_id).toBe(ownerId);
+    expect(result.headers["Cache-Control"]).toBe("no-store");
 
     expect(createAgent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -215,6 +217,7 @@ describe("POST /oauth/device/approve", () => {
     };
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(409);
+    expect(result.headers["Cache-Control"]).toBe("no-store");
     expect(approveOauthDeviceAuthorization).not.toHaveBeenCalled();
   });
 });

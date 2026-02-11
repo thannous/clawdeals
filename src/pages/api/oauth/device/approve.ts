@@ -10,6 +10,8 @@ import {
   getOauthDeviceAuthorizationByUserCode
 } from "../../../../server/services/oauth-device-authorizations";
 
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+
 function getHeaderValue(req: any, name: string) {
   const value = req.headers?.[name] ?? req.headers?.[String(name).toLowerCase()];
   if (Array.isArray(value)) return value[0];
@@ -38,18 +40,25 @@ function sanitizeCtxBody(ctx: any, body: any) {
   ctx.body = copy;
 }
 
+function jsonNoStore(status: number, body: any, headers: Record<string, string> = {}) {
+  return jsonResponse(status, body, {
+    ...NO_STORE_HEADERS,
+    ...headers
+  });
+}
+
 function buildConflictFromStatus(status: any) {
   if (status === "AUTHORIZED") {
-    return jsonResponse(
+    return jsonNoStore(
       409,
       errorPayload("DEVICE_AUTHORIZATION_ALREADY_AUTHORIZED", "Device authorization already authorized")
     );
   }
   if (status === "DENIED") {
-    return jsonResponse(409, errorPayload("DEVICE_AUTHORIZATION_DENIED", "Device authorization denied"));
+    return jsonNoStore(409, errorPayload("DEVICE_AUTHORIZATION_DENIED", "Device authorization denied"));
   }
   if (status === "EXPIRED") {
-    return jsonResponse(409, errorPayload("DEVICE_AUTHORIZATION_EXPIRED", "Device authorization expired"));
+    return jsonNoStore(409, errorPayload("DEVICE_AUTHORIZATION_EXPIRED", "Device authorization expired"));
   }
   return null;
 }
@@ -60,19 +69,19 @@ export async function handler(req: any, res: any, ctx: any) {
   }
 
   if (ctx?.authError) {
-    return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
+    return jsonNoStore(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
   const idempotencyKey = getHeaderValue(req, "idempotency-key");
   if (!idempotencyKey) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+    return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
   }
 
   if (!ctx?.ownerId || ctx?.actor?.type !== "owner") {
-    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+    return jsonNoStore(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
   }
   if (!isUuid(ctx.ownerId)) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
+    return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
   }
 
   const body = req.body || {};
@@ -80,7 +89,7 @@ export async function handler(req: any, res: any, ctx: any) {
   sanitizeCtxBody(ctx, body);
 
   if (!userCode) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "user_code is required"));
+    return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "user_code is required"));
   }
 
   const mode = resolveMode(body);
@@ -92,7 +101,7 @@ export async function handler(req: any, res: any, ctx: any) {
     const conflict = buildConflictFromStatus(authorization.status);
     if (conflict) return conflict;
     if (authorization.status !== "PENDING") {
-      return jsonResponse(
+      return jsonNoStore(
         409,
         errorPayload("DEVICE_AUTHORIZATION_NOT_APPROVABLE", "Device authorization cannot be approved")
       );
@@ -116,15 +125,15 @@ export async function handler(req: any, res: any, ctx: any) {
     if (mode === "attach_agent") {
       const attachAgentId = typeof body.attach_agent_id === "string" ? body.attach_agent_id.trim() : "";
       if (!isUuid(attachAgentId)) {
-        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "attach_agent_id must be a UUID"));
+        return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "attach_agent_id must be a UUID"));
       }
 
       const agent = await getAgentById(attachAgentId);
       if (!agent) {
-        return jsonResponse(404, errorPayload("NOT_FOUND", "Agent not found"));
+        return jsonNoStore(404, errorPayload("NOT_FOUND", "Agent not found"));
       }
       if (agent.owner_id !== ctx.ownerId) {
-        return jsonResponse(403, errorPayload("PERMISSION_DENIED", "Agent does not belong to owner"));
+        return jsonNoStore(403, errorPayload("PERMISSION_DENIED", "Agent does not belong to owner"));
       }
 
       agentId = attachAgentId;
@@ -132,10 +141,10 @@ export async function handler(req: any, res: any, ctx: any) {
       const agentNameRaw = typeof body.agent_name === "string" ? body.agent_name.trim() : "";
       const agentName = (agentNameRaw || String(authorization.requested_agent_name || "") || "OpenClaw").trim();
       if (!agentName) {
-        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_name is required"));
+        return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "agent_name is required"));
       }
       if (agentName.length > 80) {
-        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_name must be at most 80 characters"));
+        return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "agent_name must be at most 80 characters"));
       }
 
       const created = await createAgent({
@@ -150,7 +159,7 @@ export async function handler(req: any, res: any, ctx: any) {
       agentId = created?.id ? String(created.id) : null;
       createdAgentId = agentId;
       if (!agentId) {
-        return jsonResponse(500, errorPayload("ERROR", "Failed to create agent"));
+        return jsonNoStore(500, errorPayload("ERROR", "Failed to create agent"));
       }
     }
 
@@ -185,7 +194,7 @@ export async function handler(req: any, res: any, ctx: any) {
       };
     }
 
-    return jsonResponse(200, {
+    return jsonNoStore(200, {
       data: {
         authorization_id: approved.authorization_id,
         status: approved.status,
@@ -203,7 +212,7 @@ export async function handler(req: any, res: any, ctx: any) {
         // ignore
       }
     }
-    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    return jsonNoStore(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 }
 

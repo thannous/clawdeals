@@ -5,6 +5,8 @@ import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
 import { denyOauthDeviceAuthorization } from "../../../../server/services/oauth-device-authorizations";
 
+const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
+
 function getHeaderValue(req: any, name: string) {
   const value = req.headers?.[name] ?? req.headers?.[String(name).toLowerCase()];
   if (Array.isArray(value)) return value[0];
@@ -28,25 +30,32 @@ function sanitizeCtxBody(ctx: any, body: any) {
   ctx.body = copy;
 }
 
+function jsonNoStore(status: number, body: any, headers: Record<string, string> = {}) {
+  return jsonResponse(status, body, {
+    ...NO_STORE_HEADERS,
+    ...headers
+  });
+}
+
 export async function handler(req: any, res: any, ctx: any) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
   }
 
   if (ctx?.authError) {
-    return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
+    return jsonNoStore(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
   const idempotencyKey = getHeaderValue(req, "idempotency-key");
   if (!idempotencyKey) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+    return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
   }
 
   if (!ctx?.ownerId || ctx?.actor?.type !== "owner") {
-    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+    return jsonNoStore(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
   }
   if (!isUuid(ctx.ownerId)) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
+    return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
   }
 
   const body = req.body || {};
@@ -54,7 +63,7 @@ export async function handler(req: any, res: any, ctx: any) {
   sanitizeCtxBody(ctx, body);
 
   if (!userCode) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "user_code is required"));
+    return jsonNoStore(400, errorPayload("VALIDATION_ERROR", "user_code is required"));
   }
 
   if (ctx) {
@@ -76,7 +85,7 @@ export async function handler(req: any, res: any, ctx: any) {
       };
     }
 
-    return jsonResponse(200, {
+    return jsonNoStore(200, {
       data: {
         authorization_id: denied.authorization_id,
         status: denied.status,
@@ -84,7 +93,7 @@ export async function handler(req: any, res: any, ctx: any) {
       }
     });
   } catch (error: any) {
-    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    return jsonNoStore(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 }
 

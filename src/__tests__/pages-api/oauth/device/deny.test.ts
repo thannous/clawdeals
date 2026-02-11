@@ -29,6 +29,7 @@ describe("POST /oauth/device/deny", () => {
     const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(result.headers["Cache-Control"]).toBe("no-store");
   });
 
   it("requires owner auth", async () => {
@@ -92,6 +93,7 @@ describe("POST /oauth/device/deny", () => {
 
     const result: any = await handler(req, null, ctx);
     expect(result.status).toBe(200);
+    expect(result.headers["Cache-Control"]).toBe("no-store");
     expect(result.body.data.authorization_id).toBe("11111111-1111-1111-1111-111111111111");
     expect(result.body.data.status).toBe("DENIED");
     expect(result.body.data.denied_at).toBe("2026-02-10T12:00:00.000Z");
@@ -116,4 +118,3 @@ describe("POST /oauth/device/deny", () => {
     );
   });
 });
-
