@@ -107,6 +107,22 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/installations\/[^/]+:revoke$/
   },
   {
+    group: "installations.scopes_upgrade",
+    methods: ["POST"],
+    pattern: /^\/v1\/installations\/[^/]+:scopes-upgrade$/
+  },
+  // Console wrappers (browser) reuse v1 handlers under /api/console/*.
+  {
+    group: "installations.revoke",
+    methods: ["POST"],
+    pattern: /^\/console\/installations\/[^/]+:revoke$/
+  },
+  {
+    group: "installations.scopes_upgrade",
+    methods: ["POST"],
+    pattern: /^\/console\/installations\/[^/]+:scopes-upgrade$/
+  },
+  {
     group: "policies.read",
     methods: ["GET"],
     pattern: /^\/v1\/policies(?:\/[^/]+)?$/
@@ -257,6 +273,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/transactions\/[^/]+\/mark-completed$/
   },
   {
+    group: "contact_reveal.request",
+    methods: ["POST"],
+    pattern: /^\/v1\/transactions\/[^/]+\/request-contact-reveal$/
+  },
+  {
     group: "escrows.create",
     methods: ["POST"],
     pattern: /^\/v1\/transactions\/[^/]+\/escrow:create$/
@@ -267,9 +288,19 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/transactions\/[^/]+\/ratings$/
   },
   {
-    group: "escrows.actions",
+    group: "escrows.pay",
     methods: ["POST"],
-    pattern: /^\/v1\/escrows\/[^/]+\/(?:pay|mark-delivered|confirm-received)$/
+    pattern: /^\/v1\/escrows\/[^/]+\/pay$/
+  },
+  {
+    group: "escrows.mark_delivered",
+    methods: ["POST"],
+    pattern: /^\/v1\/escrows\/[^/]+\/mark-delivered$/
+  },
+  {
+    group: "escrows.confirm_received",
+    methods: ["POST"],
+    pattern: /^\/v1\/escrows\/[^/]+\/confirm-received$/
   },
   {
     group: "disputes.open",

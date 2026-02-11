@@ -5,6 +5,7 @@ import { randomId, randomIp } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
 import { waitForAuditLog } from "./helpers/audit";
 import { createSupabaseAdmin } from "./helpers/supabase";
+import { V1_SCOPES_DEFAULT } from "../../src/shared/scopes/v1";
 
 assertIntegrationEnv();
 
@@ -80,6 +81,7 @@ test.describe.serial("Integration: Connected Apps", () => {
     const found = (listBody.installations || []).find((it: any) => it?.installation_id === installationId);
     expect(found).toBeTruthy();
     expect(found.status).toBe("ACTIVE");
+    expect(found.oauth_scopes).toEqual(V1_SCOPES_DEFAULT);
 
     const revokeRequestId = randomId();
     const revoke = await request.post(`/api/v1/installations/${encodeURIComponent(installationId)}:revoke`, {
@@ -118,5 +120,72 @@ test.describe.serial("Integration: Connected Apps", () => {
     expect(auditRevoke.action?.entity_type).toBe("installation");
     expect(auditRevoke.action?.entity_id).toBe(installationId);
   });
-});
 
+  test("scope upgrade creates approval then updates installation scopes after approval", async ({ request }) => {
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+
+    const create = await request.post("/api/v1/connect/sessions", {
+      headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
+      data: { requested_agent_name: "Integration Scope Upgrade", requested_scopes: [] },
+    });
+    await expectStatus(create, 201);
+    const createBody = await create.json();
+
+    const sessionId = createBody?.data?.session_id;
+    const pollToken = createBody?.data?.poll_token;
+    const claimToken = extractClaimToken(createBody?.data?.claim_url);
+
+    const claim = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/claim`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: { claim_token: claimToken, mode: "create_agent", agent_name: "Integration Scope Upgrade Agent" },
+    });
+    await expectStatus(claim, 200);
+
+    const exchange = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
+      headers: {
+        Authorization: `Bearer ${pollToken}`,
+        "Idempotency-Key": randomId(),
+      },
+      data: {
+        requested_key_scope: "agent_write",
+        installation: {
+          client_type: "openclaw",
+          client_version: "itest",
+          fingerprint: `itest-${randomId()}`,
+        },
+      },
+    });
+    await expectStatus(exchange, 200);
+    const exchangeBody = await exchange.json();
+    const installationId = String(exchangeBody?.data?.installation_id || "");
+    expect(installationId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    const upgrade = await request.post(`/api/v1/installations/${encodeURIComponent(installationId)}:scopes-upgrade`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: { requested_scopes: ["policies:*"] },
+    });
+    await expectStatus(upgrade, 202);
+    const upgradeBody = await upgrade.json();
+    expect(upgradeBody.status).toBe("PENDING_APPROVAL");
+    const approvalId = String(upgradeBody.approval_id || "");
+    expect(approvalId).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(upgradeBody.requested_scopes).toEqual(["policies:*"]);
+    expect(upgradeBody.current_scopes).toEqual(V1_SCOPES_DEFAULT);
+
+    const approve = await request.post(`/api/v1/approvals/${encodeURIComponent(approvalId)}:approve`, {
+      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      data: {},
+    });
+    await expectStatus(approve, 200);
+
+    const listAfter = await request.get("/api/v1/owner/installations", {
+      headers: { "x-owner-id": ownerId },
+    });
+    await expectStatus(listAfter, 200);
+    const listAfterBody = await listAfter.json();
+    const foundAfter = (listAfterBody.installations || []).find((it: any) => it?.installation_id === installationId);
+    expect(foundAfter).toBeTruthy();
+    expect(foundAfter.oauth_scopes).toEqual(expect.arrayContaining([...V1_SCOPES_DEFAULT, "policies:*"]));
+  });
+});

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
-import { randomId } from "./helpers/ids";
+import { randomId, randomIp } from "./helpers/ids";
 import {
   acceptOffer,
   configurePsp,
@@ -251,6 +251,219 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     await expectStatus(invalidFinal, 409);
     const invalidBody = await invalidFinal.json();
     expect(invalidBody?.error?.code).toBe("ESCROW_FINALIZED");
+  });
+
+  test("installation-scoped escrow:create + confirm-received require approval and process payout release (TI-332)", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+
+    const sellerOwnerId = randomId();
+    await ensureOwnerDb(supabase, sellerOwnerId);
+    await setupPolicy(request, sellerOwnerId);
+
+    const buyerOwnerId = randomId();
+    await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
+
+    const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
+    const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
+
+    // OAuth device flow => installation-scoped buyer access token.
+    const authorize = await request.post("/api/oauth/device/authorize", {
+      headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
+      data: {
+        client_id: "openclaw",
+        scope: "agent:read agent:write",
+        requested_agent_name: "Escrow Install Buyer"
+      }
+    });
+    await expectStatus(authorize, 200);
+    const authorizeBody = await authorize.json();
+    const deviceCode = String(authorizeBody?.device_code || "");
+    const userCode = String(authorizeBody?.user_code || "");
+    expect(deviceCode).toMatch(/^cd_dev_/);
+    expect(userCode).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+
+    const approve = await request.post("/api/oauth/device/approve", {
+      headers: {
+        "Content-Type": "application/json",
+        "x-owner-id": buyerOwnerId,
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": randomIp()
+      },
+      data: {
+        user_code: userCode,
+        mode: "create_agent",
+        agent_name: "Escrow Buyer Agent"
+      }
+    });
+    await expectStatus(approve, 200);
+    const approveBody = await approve.json();
+    const buyerAgentId = String(approveBody?.data?.agent_id || "");
+    expect(buyerAgentId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    // Keep this scenario focused on TI-332 escrow approvals by avoiding
+    // unrelated quarantine-based offer approval gating for fresh agents.
+    const { error: buyerTrustUpdateError } = await supabase
+      .from("agents")
+      .update({
+        created_at: agedCreatedAt,
+        trust_score: 90,
+        trust_flags: []
+      })
+      .eq("id", buyerAgentId);
+    if (buyerTrustUpdateError) throw buyerTrustUpdateError;
+
+    const tokenRes = await request.post("/api/oauth/token", {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": randomId(),
+        "x-forwarded-for": randomIp()
+      },
+      data: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        device_code: deviceCode,
+        client_id: "openclaw"
+      }).toString()
+    });
+    await expectStatus(tokenRes, 200);
+    const tokenBody = await tokenRes.json();
+    const buyerInstallApiKey = String(tokenBody?.access_token || "");
+    expect(buyerInstallApiKey).toMatch(/^cd_at_/);
+
+    const meRes = await request.get("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${buyerInstallApiKey}` }
+    });
+    await expectStatus(meRes, 200);
+    const meBody = await meRes.json();
+    const buyerInstallationId = String(meBody?.data?.installation_id || "");
+    expect(buyerInstallationId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    // Also create a legacy/global key for this buyer agent (used for non-gated escrow steps).
+    const { apiKey: buyerGlobalApiKey } = await createActiveApiKeyDb(supabase, buyerAgentId);
+
+    // Request and approve non-default scopes needed for escrow-sensitive routes.
+    const scopesUpgrade = await request.post(
+      `/api/v1/installations/${encodeURIComponent(buyerInstallationId)}:scopes-upgrade`,
+      {
+        headers: { "x-owner-id": buyerOwnerId, "Idempotency-Key": randomId() },
+        data: { requested_scopes: ["escrow:*", "payout:*"] }
+      }
+    );
+    await expectStatus(scopesUpgrade, 202);
+    const scopesUpgradeBody = await scopesUpgrade.json();
+    const scopesApprovalId = String(scopesUpgradeBody?.approval_id || "");
+    expect(scopesApprovalId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    await expectStatus(
+      await request.post(`/api/v1/approvals/${encodeURIComponent(scopesApprovalId)}:approve`, {
+        headers: { "x-owner-id": buyerOwnerId, "Idempotency-Key": randomId() },
+        data: {}
+      }),
+      200
+    );
+
+    await expectStatus(
+      await configurePsp(
+        request,
+        OPS_CONSOLE_OWNER_ID,
+        { provider: "mock", mode: "sandbox", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 },
+        { idempotencyKey: randomId() }
+      ),
+      200
+    );
+
+    const listingRes = await createListing(request, sellerApiKey, { title: `Escrow install listing ${randomId()}`, publish: true });
+    await expectStatus(listingRes, 201);
+    const listingId = (await listingRes.json()).listing_id;
+
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const offerRes = await createOffer(
+      request,
+      buyerInstallApiKey,
+      listingId,
+      { threadId: null, amount: 350, currency: "EUR", expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(offerRes, 201);
+    const offerId = (await offerRes.json()).offer_id;
+
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    await expectStatus(acceptRes, 200);
+    const txId = (await acceptRes.json()).transaction?.tx_id;
+    expect(typeof txId).toBe("string");
+
+    const createEscrowRes = await createEscrow(request, buyerInstallApiKey, txId, { idempotencyKey: randomId() });
+    await expectStatus(createEscrowRes, 202);
+    const createEscrowBody = await createEscrowRes.json();
+    expect(createEscrowBody.status).toBe("PENDING_APPROVAL");
+    const createApprovalId = String(createEscrowBody.approval_id || "");
+    expect(createApprovalId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    await expectStatus(
+      await request.post(`/api/v1/approvals/${encodeURIComponent(createApprovalId)}:approve`, {
+        headers: { "x-owner-id": buyerOwnerId, "Idempotency-Key": randomId() },
+        data: {}
+      }),
+      200
+    );
+
+    const { data: escrowAfterCreate, error: escrowCreateErr } = await supabase
+      .from("escrows")
+      .select("escrow_id,status")
+      .eq("tx_id", txId)
+      .maybeSingle();
+    if (escrowCreateErr) throw escrowCreateErr;
+    expect(escrowAfterCreate?.status).toBe("CREATED");
+    const escrowId = String(escrowAfterCreate?.escrow_id || "");
+    expect(escrowId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    const payRes = await payEscrow(request, buyerGlobalApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(payRes, 200);
+    const paymentId = (await payRes.json())?.psp?.payment_id;
+    expect(typeof paymentId).toBe("string");
+
+    const paymentWebhook = {
+      id: `evt_${randomId()}`,
+      type: "payment.succeeded",
+      created_at: new Date().toISOString(),
+      data: {
+        payment_id: paymentId,
+        hold_id: `hold_${randomId()}`,
+        hold_expires_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    };
+    await expectStatus(await postPspWebhook(request, { signature: signWebhook(paymentWebhook), body: paymentWebhook }), 200);
+
+    await expectStatus(await markDelivered(request, sellerApiKey, escrowId, { idempotencyKey: randomId() }), 200);
+
+    const confirmRes = await confirmReceived(request, buyerInstallApiKey, escrowId, { idempotencyKey: randomId() });
+    await expectStatus(confirmRes, 202);
+    const confirmBody = await confirmRes.json();
+    expect(confirmBody.status).toBe("PENDING_APPROVAL");
+    const confirmApprovalId = String(confirmBody.approval_id || "");
+    expect(confirmApprovalId).toMatch(/^[0-9a-f-]{36}$/i);
+
+    await expectStatus(
+      await request.post(`/api/v1/approvals/${encodeURIComponent(confirmApprovalId)}:approve`, {
+        headers: { "x-owner-id": buyerOwnerId, "Idempotency-Key": randomId() },
+        data: {}
+      }),
+      200
+    );
+
+    const { data: escrowAfterApproveConfirm, error: escrowAfterApproveErr } = await supabase
+      .from("escrows")
+      .select("escrow_id,status,psp_payout_id")
+      .eq("escrow_id", escrowId)
+      .maybeSingle();
+    if (escrowAfterApproveErr) throw escrowAfterApproveErr;
+    expect(escrowAfterApproveConfirm?.status).toBe("RELEASE_PENDING");
+    expect(typeof escrowAfterApproveConfirm?.psp_payout_id).toBe("string");
   });
 
   test("seller onboarding + KYC verified gates escrow:create in production mode (TI-294)", async ({ request }) => {

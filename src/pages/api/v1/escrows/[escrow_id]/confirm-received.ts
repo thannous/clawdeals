@@ -6,6 +6,7 @@ import { isUuid } from "../../../../../server/utils/validators";
 import { getPspConfig } from "../../../../../server/services/psp-config";
 import { createPspAdapter } from "../../../../../server/psp";
 import { getEscrowById, markEscrowConfirmed, setEscrowReleasePending } from "../../../../../server/services/escrows";
+import { upsertPendingApproval } from "../../../../../server/services/approvals";
 import { claimOrphanedPspWebhookEvents } from "../../../../../server/services/psp-webhook-events";
 import { replayPendingEscrowEvents } from "../../../../../server/services/psp-webhook-replay";
 import { publishSseEvent } from "../../../../../server/sse/store";
@@ -91,6 +92,54 @@ export async function handler(req, res, ctx) {
       return jsonResponse(404, errorPayload("ESCROW_NOT_FOUND", "Escrow not found"));
     }
 
+    // TI-332: installation-scoped credentials must always request approval for payout release.
+    if (ctx?.installationId) {
+      const ownerId = ctx?.ownerId || null;
+      if (!ownerId || !isUuid(ownerId)) {
+        return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner context required"));
+      }
+
+      const approval = await upsertPendingApproval({
+        ownerId,
+        actionType: "escrow.confirm_received",
+        actionRef: {
+          escrow_id: escrow.escrow_id,
+          tx_id: escrow.tx_id,
+          buyer_agent_id: escrow.buyer_agent_id,
+          seller_agent_id: escrow.seller_agent_id,
+          installation_id: ctx.installationId
+        },
+        actionRefId: escrow.escrow_id,
+        actionPayload: {
+          escrow_id: escrow.escrow_id
+        },
+        createdByAgentId: agentId
+      });
+
+      if (ctx) {
+        ctx.auditEvent = "escrow.confirm_received_requested";
+        ctx.auditEntityType = "approval";
+        ctx.auditEntityId = approval.approval_id;
+        ctx.policy = {
+          decision: "REQUIRES_APPROVAL",
+          approval_id: approval.approval_id,
+          policy_version: null
+        };
+        ctx.security = {
+          ...(ctx.security || {}),
+          installation_id: ctx.installationId,
+          approval_id: approval.approval_id
+        };
+      }
+
+      return jsonResponse(202, {
+        status: "PENDING_APPROVAL",
+        approval_id: approval.approval_id,
+        escrow_id: escrow.escrow_id,
+        message: "Payout release pending approval"
+      });
+    }
+
     const paymentId = escrow.psp_payment_id ? String(escrow.psp_payment_id) : null;
     if (!paymentId) {
       return jsonResponse(409, errorPayload("ESCROW_NOT_READY", "Escrow payment not initialized"));
@@ -147,5 +196,4 @@ export async function handler(req, res, ctx) {
   }
 }
 
-export default withApiMiddlewares(handler, { routeGroup: "escrows.actions" });
-
+export default withApiMiddlewares(handler, { routeGroup: "escrows.confirm_received" });

@@ -60,6 +60,7 @@ describe("GET /v1/owner/installations", () => {
         agent_id: "22222222-2222-4222-8222-222222222222",
         client_type: "openclaw",
         client_version: "1.2.3",
+        oauth_scopes: ["watchlists:read", "watchlists:write"],
         status: "ACTIVE",
         created_at: "2026-02-10T12:00:00Z",
         last_seen_at: "2026-02-10T12:30:00Z"
@@ -73,8 +74,8 @@ describe("GET /v1/owner/installations", () => {
     expect(result.status).toBe(200);
     expect(Array.isArray(result.body.installations)).toBe(true);
     expect(result.body.installations[0].installation_id).toBe("11111111-1111-4111-8111-111111111111");
+    expect(result.body.installations[0].oauth_scopes).toEqual(["watchlists:read", "watchlists:write"]);
     expect(ctx.auditEvent).toBe("installation.list_viewed");
     expect(listInstallationsForOwner).toHaveBeenCalledWith({ ownerId: validOwnerId, limit: 10 });
   });
 });
-

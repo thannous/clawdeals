@@ -33,7 +33,7 @@ suite("GET /v1/transactions/{tx_id} (TI-203)", () => {
     const txMod = await import("../../../../server/services/transactions");
     getTransactionMock = vi.mocked(txMod.getTransaction);
     getMaskedContactsForTransactionMock = vi.mocked(txMod.getMaskedContactsForTransaction);
-  });
+  }, 30_000);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -131,4 +131,3 @@ suite("GET /v1/transactions/{tx_id} (TI-203)", () => {
     expect(result.body.data?.buyer_contact?.email_masked).toContain("***");
   });
 });
-

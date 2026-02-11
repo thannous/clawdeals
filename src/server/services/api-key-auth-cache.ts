@@ -5,6 +5,7 @@ export type CachedApiKeyAuthRecord = {
   api_key_id: string;
   agent_id: string;
   owner_id: string | null;
+  installation_id: string | null;
   key_hash: string;
   key_state: string;
   grace_expires_at: string | null;
@@ -37,6 +38,7 @@ function isCachedApiKeyAuthRecord(value: unknown): value is CachedApiKeyAuthReco
     typeof v.agent_id === "string" &&
     v.agent_id.length > 0 &&
     isStringOrNull(v.owner_id) &&
+    isStringOrNull(v.installation_id) &&
     typeof v.key_hash === "string" &&
     v.key_hash.length > 0 &&
     typeof v.key_state === "string" &&

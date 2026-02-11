@@ -135,7 +135,7 @@ export async function listInstallationsForOwner({ ownerId, limit = INSTALLATIONS
   const client = getSupabaseServiceClient();
   const { data, error } = await client
     .from("agent_installations")
-    .select("installation_id, agent_id, client_type, client_version, status, created_at, last_seen_at")
+    .select("installation_id, agent_id, client_type, client_version, status, created_at, last_seen_at, oauth_scopes")
     .eq("owner_id", resolvedOwnerId)
     .order("last_seen_at", { ascending: false, nullsFirst: false })
     .order("installation_id", { ascending: false })
@@ -146,6 +146,24 @@ export async function listInstallationsForOwner({ ownerId, limit = INSTALLATIONS
   }
 
   return data || [];
+}
+
+export async function getInstallationById(installationId: string) {
+  const resolvedInstallationId = normalizeNonEmptyString(installationId);
+  if (!resolvedInstallationId) throw buildServiceError("installationId is required", 400, "VALIDATION_ERROR");
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("agent_installations")
+    .select("installation_id, owner_id, agent_id, status, oauth_scopes, client_type, client_version, created_at, last_seen_at")
+    .eq("installation_id", resolvedInstallationId)
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+
+  return data || null;
 }
 
 export function mapRevokeInstallationRpcError(error: any) {

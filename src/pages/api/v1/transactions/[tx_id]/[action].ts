@@ -7,7 +7,8 @@ import { getPspConfig } from "../../../../../server/services/psp-config";
 import { getPspAccountForOwner } from "../../../../../server/services/psp-accounts";
 import { getTransaction } from "../../../../../server/services/transactions";
 import { getAgentById } from "../../../../../server/services/agents";
-import { createEscrow } from "../../../../../server/services/escrows";
+import { createEscrow, getEscrowByTxId } from "../../../../../server/services/escrows";
+import { upsertPendingApproval } from "../../../../../server/services/approvals";
 import { publishSseEvent } from "../../../../../server/sse/store";
 
 function getHeaderValue(req, name) {
@@ -92,6 +93,76 @@ export async function handler(req, res, ctx) {
     }
 
     const feeBps = Number(config.platform_fee_bps_default || 0);
+
+    // TI-332: installation-scoped credentials must always request approval for escrow.create.
+    if (ctx?.installationId) {
+      const ownerId = ctx?.ownerId || null;
+      if (!ownerId || !isUuid(ownerId)) {
+        return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner context required"));
+      }
+
+      const tx = await getTransaction(String(txId));
+      if (!tx || tx.buyer_agent_id !== agentId) {
+        // Anti-enumeration.
+        return jsonResponse(404, errorPayload("TX_NOT_FOUND", "Transaction not found"));
+      }
+
+      if (tx.status !== "ACCEPTED" && tx.status !== "CONTACT_REVEALED") {
+        return jsonResponse(
+          409,
+          errorPayload("TX_NOT_READY", "Transaction not ready", {
+            status: tx.status
+          })
+        );
+      }
+
+      const existingEscrow = await getEscrowByTxId(tx.tx_id);
+      if (existingEscrow) {
+        return jsonResponse(409, errorPayload("ESCROW_ALREADY_EXISTS", "Escrow already exists"));
+      }
+
+      const approval = await upsertPendingApproval({
+        ownerId,
+        actionType: "escrow.create",
+        actionRef: {
+          tx_id: tx.tx_id,
+          listing_id: tx.listing_id,
+          thread_id: tx.thread_id,
+          buyer_agent_id: tx.buyer_agent_id,
+          seller_agent_id: tx.seller_agent_id,
+          installation_id: ctx.installationId
+        },
+        actionRefId: tx.tx_id,
+        actionPayload: {
+          tx_id: tx.tx_id,
+          fee_bps: feeBps
+        },
+        createdByAgentId: agentId
+      });
+
+      if (ctx) {
+        ctx.auditEvent = "escrow.create_requested";
+        ctx.auditEntityType = "approval";
+        ctx.auditEntityId = approval.approval_id;
+        ctx.policy = {
+          decision: "REQUIRES_APPROVAL",
+          approval_id: approval.approval_id,
+          policy_version: null
+        };
+        ctx.security = {
+          ...(ctx.security || {}),
+          installation_id: ctx.installationId,
+          approval_id: approval.approval_id
+        };
+      }
+
+      return jsonResponse(202, {
+        status: "PENDING_APPROVAL",
+        approval_id: approval.approval_id,
+        tx_id: tx.tx_id,
+        message: "Escrow creation pending approval"
+      });
+    }
 
     // KYC gating: only in production mode.
     if (String(config.mode) === "production") {

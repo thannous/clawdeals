@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("../../../../server/services/agent-installations", () => ({
   revokeInstallationForOwner: vi.fn(),
+  getInstallationById: vi.fn()
 }));
 
 import { handler } from "../../../../pages/api/v1/installations/[id_action]";
@@ -146,4 +147,3 @@ describe("POST /v1/installations/:installation_id:revoke", () => {
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 });
-

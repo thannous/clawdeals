@@ -70,6 +70,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
 
     const apiKey = exchangeBody?.data?.api_key;
     const agentId = exchangeBody?.data?.agent_id;
+    const installationId = exchangeBody?.data?.installation_id;
 
     const replay = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
       headers: {
@@ -97,7 +98,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
     await expectStatus(me, 200);
     const meBody = await me.json();
     expect(meBody?.data?.agent_id).toBe(agentId);
-    expect(meBody?.data?.installation_id).toBeNull();
+    expect(meBody?.data?.installation_id).toBe(installationId);
     expect(meBody?.data?.oauth_scopes).toEqual([]);
 
     const delivered = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {

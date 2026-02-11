@@ -1,6 +1,8 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { redactValue } from "../audit/redaction";
+import { processApprovalJobByApprovalId } from "./approval-jobs";
+import { deleteCachedInstallationOauthScopes } from "./installation-scopes-cache";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -52,6 +54,8 @@ function mapError(error) {
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
 }
 
+const DIRECT_RESOLVE_ACTION_TYPES = new Set(["scopes.upgrade", "escrow.create", "escrow.confirm_received"]);
+
 export async function createApproval({
   ownerId,
   actionType,
@@ -88,6 +92,51 @@ export async function createApproval({
         return existing.data;
       }
     }
+    mapError(error);
+  }
+  return data;
+}
+
+export async function upsertPendingApproval({
+  ownerId,
+  actionType,
+  actionRef,
+  actionRefId,
+  actionPayload,
+  createdByAgentId,
+  now = new Date()
+}: {
+  ownerId: string;
+  actionType: string;
+  actionRef?: any;
+  actionRefId: string;
+  actionPayload?: any;
+  createdByAgentId?: string | null;
+  now?: Date;
+}) {
+  const client = getSupabaseServiceClient();
+  const redacted = redactValue(actionPayload || {});
+  const payload = {
+    owner_id: ownerId,
+    action_type: actionType,
+    action_ref: actionRef || {},
+    action_ref_id: actionRefId,
+    action_payload_redacted: redacted.value,
+    created_by_agent_id: createdByAgentId || null,
+    state: "PENDING",
+    created_at: now.toISOString(),
+    resolved_at: null,
+    resolved_by_human_id: null,
+    resolved_reason_text: null
+  };
+
+  const { data, error } = await client
+    .from("approvals")
+    .upsert(payload, { onConflict: "owner_id,action_type,action_ref_id" })
+    .select("*")
+    .single();
+
+  if (error) {
     mapError(error);
   }
   return data;
@@ -158,6 +207,30 @@ export async function getApprovalForOwner(approvalId, ownerId) {
 }
 
 export async function resolveApproval({ approvalId, ownerId, decision, resolvedBy, reason }: any) {
+  const existing = await getApprovalForOwner(approvalId, ownerId);
+  if (!existing) {
+    throw Object.assign(new Error("Approval not found"), { status: 404, code: "NOT_FOUND" });
+  }
+
+  if (DIRECT_RESOLVE_ACTION_TYPES.has(String(existing.action_type || ""))) {
+    const resolved = await resolveApprovalDirect({ approvalId, ownerId, decision, resolvedBy, reason });
+
+    if (resolved?.state === "APPROVED" && resolved?.action_type === "scopes.upgrade") {
+      const installationId =
+        (resolved?.action_ref?.installation_id ? String(resolved.action_ref.installation_id) : null) ||
+        (resolved?.action_ref_id ? String(resolved.action_ref_id) : null);
+      if (installationId) {
+        await deleteCachedInstallationOauthScopes(installationId);
+      }
+    }
+
+    if (resolved?.state === "APPROVED" && resolved?.action_type === "escrow.confirm_received") {
+      await processApprovalJobByApprovalId(String(resolved.approval_id));
+    }
+
+    return resolved;
+  }
+
   const client = getSupabaseServiceClient();
   const rpcArgsWithReason: any = {
     p_approval_id: approvalId,
@@ -187,6 +260,42 @@ export async function resolveApproval({ approvalId, ownerId, decision, resolvedB
   }
 
   mapError(error);
+}
+
+async function resolveApprovalDirect({ approvalId, ownerId, decision, resolvedBy, reason }: any) {
+  if (decision !== "APPROVED" && decision !== "DENIED") {
+    throw Object.assign(new Error("invalid decision"), { status: 400, code: "VALIDATION_ERROR" });
+  }
+
+  const client = getSupabaseServiceClient();
+  const patch = {
+    state: decision,
+    resolved_at: new Date().toISOString(),
+    resolved_by_human_id: resolvedBy || null,
+    resolved_reason_text: reason ?? null
+  };
+
+  const { data, error } = await client
+    .from("approvals")
+    .update(patch)
+    .eq("approval_id", approvalId)
+    .eq("owner_id", ownerId)
+    .eq("state", "PENDING")
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    mapError(error);
+  }
+
+  if (data) return data;
+
+  // Race safety: if another resolver won, return current state.
+  const current = await getApprovalForOwner(approvalId, ownerId);
+  if (!current) {
+    throw Object.assign(new Error("Approval not found"), { status: 404, code: "NOT_FOUND" });
+  }
+  return current;
 }
 
 const DEFAULT_APPROVAL_SLA_HOURS = 24;

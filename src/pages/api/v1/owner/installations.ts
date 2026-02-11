@@ -65,6 +65,7 @@ export async function handler(req: any, _res: any, ctx: any) {
       agent_id: row.agent_id,
       client_type: row.client_type,
       client_version: row.client_version ?? null,
+      oauth_scopes: Array.isArray(row.oauth_scopes) ? row.oauth_scopes : [],
       status: row.status,
       created_at: row.created_at,
       last_seen_at: row.last_seen_at ?? null
@@ -79,4 +80,3 @@ export default withApiMiddlewares(handler, {
   routeGroup: "installations.read",
   enableIdempotency: false
 });
-

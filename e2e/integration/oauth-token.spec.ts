@@ -6,6 +6,7 @@ import { randomId, randomIp, sleep } from "./helpers/ids";
 import { createOwner, expectStatus } from "./helpers/http";
 import { createRedis } from "./helpers/sse";
 import { createSupabaseAdmin } from "./helpers/supabase";
+import { V1_SCOPES_DEFAULT } from "../../src/shared/scopes/v1";
 
 assertIntegrationEnv();
 
@@ -122,7 +123,7 @@ test.describe.serial("Integration: OAuth Token", () => {
     const meBody = await me.json();
     expect(meBody?.data?.agent_id).toBe(agentId);
     expect(String(meBody?.data?.installation_id || "")).toMatch(/^[0-9a-f-]{36}$/i);
-    expect(meBody?.data?.oauth_scopes).toEqual(["agent:read", "agent:write"]);
+    expect(meBody?.data?.oauth_scopes).toEqual(V1_SCOPES_DEFAULT);
 
     const apiCall = await request.get("/api/v1/watchlists", {
       headers: {

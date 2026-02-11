@@ -10,6 +10,7 @@ test.describe("Settings: Connected Apps", () => {
         agent_id: "22222222-2222-4222-8222-222222222222",
         client_type: "openclaw",
         client_version: "1.2.3",
+        oauth_scopes: ["watchlists:read", "watchlists:write", "listings:read", "listings:write"],
         status: "ACTIVE",
         created_at: "2026-02-10T12:00:00Z",
         last_seen_at: "2026-02-10T12:30:00Z",
@@ -47,6 +48,7 @@ test.describe("Settings: Connected Apps", () => {
 
     await expect(page.getByTestId("connected-apps-page")).toBeVisible();
     await expect(page.getByTestId("connected-apps-table")).toBeVisible();
+    await expect(page.getByText("watchlists:read")).toBeVisible();
 
     const revokeButton = page.getByTestId(`connected-apps-revoke-${installationId}`);
     await expect(revokeButton).toBeVisible();

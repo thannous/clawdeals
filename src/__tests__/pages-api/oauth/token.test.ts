@@ -27,6 +27,7 @@ vi.mock("../../../server/services/oauth-access-tokens", () => ({
 
 import { handler } from "../../../pages/api/oauth/token";
 import { rateLimitMiddleware } from "../../../server/rate-limit/middleware";
+import { V1_SCOPES_DEFAULT } from "../../../shared/scopes/v1";
 import {
   getOauthDeviceAuthorizationByDeviceCode,
   markOauthDeviceAuthorizationExchanged
@@ -145,12 +146,23 @@ describe("POST /oauth/token", () => {
     expect(result.body.access_token).toBe("cd_at_test");
     expect(result.body.refresh_token).toBe("cd_rt_test");
     expect(result.body.token_type).toBe("Bearer");
+    expect(result.body.scope).toBe(V1_SCOPES_DEFAULT.join(" "));
 
     expect(createAgentInstallation).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId: "22222222-2222-2222-2222-222222222222",
         agentId: "33333333-3333-4333-8333-333333333333",
         clientType: "openclaw"
+      })
+    );
+    expect(issueRefreshMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopes: V1_SCOPES_DEFAULT
+      })
+    );
+    expect(issueAccessMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopes: V1_SCOPES_DEFAULT
       })
     );
 
@@ -236,6 +248,7 @@ describe("POST /oauth/token", () => {
     expect(result.status).toBe(200);
     expect(result.body.refresh_token).toBe("cd_rt_new");
     expect(result.body.access_token).toBe("cd_at_new");
+    expect(result.body.scope).toBe(V1_SCOPES_DEFAULT.join(" "));
     expect(ctx.auditEvent).toBe("oauth.token_refreshed");
 
     expect(rateLimitMiddleware).toHaveBeenCalledWith(

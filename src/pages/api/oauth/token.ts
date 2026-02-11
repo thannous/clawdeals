@@ -17,6 +17,7 @@ import {
   deleteOauthAccessTokenByHash,
   issueOauthAccessToken
 } from "../../../server/services/oauth-access-tokens";
+import { V1_SCOPES_DEFAULT, normalizeRequestedScopes, sortScopesStable } from "../../../shared/scopes/v1";
 
 const DEVICE_CODE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
@@ -32,13 +33,12 @@ function normalizeNonEmptyString(value: any) {
   return str ? str : null;
 }
 
-function normalizeScope(value: any): string[] {
-  const raw = normalizeNonEmptyString(value);
-  if (!raw) return [];
-  return raw
-    .split(/\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+function normalizeGrantedScopes(value: any): string[] {
+  const normalized = normalizeRequestedScopes(value);
+  if (normalized.normalized.length === 0) {
+    return [...V1_SCOPES_DEFAULT];
+  }
+  return sortScopesStable(normalized.normalized);
 }
 
 function parseTokenBody(req: any) {
@@ -197,7 +197,8 @@ export async function handler(req: any, res: any, ctx: any) {
       return invalidGrant();
     }
 
-    const scopes = Array.isArray(authorization.requested_scopes) ? authorization.requested_scopes : [];
+    const requestedScopes = Array.isArray(authorization.requested_scopes) ? authorization.requested_scopes : [];
+    const grantedScopes = [...V1_SCOPES_DEFAULT];
 
     let installation: any = null;
     let accessToken: any = null;
@@ -216,7 +217,7 @@ export async function handler(req: any, res: any, ctx: any) {
         ownerId,
         agentId,
         installationId: installation.installation_id,
-        scopes,
+        scopes: grantedScopes,
         now
       });
 
@@ -224,7 +225,7 @@ export async function handler(req: any, res: any, ctx: any) {
         ownerId,
         agentId,
         installationId: installation.installation_id,
-        scopes: normalizeScope(scopes.join(" ")),
+        scopes: grantedScopes,
         now
       });
 
@@ -257,7 +258,7 @@ export async function handler(req: any, res: any, ctx: any) {
           token_type: "Bearer",
           expires_in: accessToken.expires_in,
           refresh_token: refresh.refresh_token,
-          scope: normalizeScope(scopes.join(" ")).join(" ")
+          scope: grantedScopes.join(" ")
         },
         { "Cache-Control": "no-store" }
       );
@@ -335,7 +336,7 @@ export async function handler(req: any, res: any, ctx: any) {
         ownerId: existing.owner_id || null,
         agentId: existing.agent_id,
         installationId: existing.installation_id,
-        scopes: normalizeScope((Array.isArray(existing.scopes) ? existing.scopes : []).join(" ")),
+        scopes: normalizeGrantedScopes(Array.isArray(existing.scopes) ? existing.scopes : []),
         now
       });
 
@@ -360,7 +361,7 @@ export async function handler(req: any, res: any, ctx: any) {
         });
       }
 
-      const effectiveScopes = rotated?.scopes ?? (Array.isArray(existing.scopes) ? existing.scopes : []);
+      const effectiveScopes = normalizeGrantedScopes(rotated?.scopes ?? (Array.isArray(existing.scopes) ? existing.scopes : []));
 
       if (ctx) {
         ctx.auditEntityType = "oauth_refresh_token";
@@ -382,7 +383,7 @@ export async function handler(req: any, res: any, ctx: any) {
           token_type: "Bearer",
           expires_in: accessToken.expires_in,
           refresh_token: rotated?.new_refresh_token || refreshToken,
-          scope: normalizeScope(effectiveScopes.join(" ")).join(" ")
+          scope: effectiveScopes.join(" ")
         },
         { "Cache-Control": "no-store" }
       );

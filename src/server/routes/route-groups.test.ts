@@ -49,13 +49,13 @@ describe("route groups", () => {
     ).toBe("escrows.create");
 
     expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/pay", sp)).toBe(
-      "escrows.actions"
+      "escrows.pay"
     );
     expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/mark-delivered", sp)).toBe(
-      "escrows.actions"
+      "escrows.mark_delivered"
     );
     expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/confirm-received", sp)).toBe(
-      "escrows.actions"
+      "escrows.confirm_received"
     );
 
     expect(matchRouteGroup("POST", "/api/v1/escrows/00000000-0000-4000-a000-000000000123/disputes", sp)).toBe(
@@ -102,5 +102,15 @@ describe("route groups", () => {
     const sp = new URLSearchParams();
     const id = "00000000-0000-4000-a000-000000000123";
     expect(matchRouteGroup("DELETE", `/api/v1/deals/${id}`, sp)).toBe("deals.delete");
+  });
+
+  it("matches contact reveal + installation scopes upgrade route groups (TI-331/TI-332)", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+
+    expect(matchRouteGroup("POST", `/api/v1/transactions/${id}/request-contact-reveal`, sp)).toBe("contact_reveal.request");
+    expect(matchRouteGroup("POST", `/api/v1/installations/${id}:scopes-upgrade`, sp)).toBe("installations.scopes_upgrade");
+    expect(matchRouteGroup("POST", `/api/console/installations/${id}:scopes-upgrade`, sp)).toBe("installations.scopes_upgrade");
+    expect(matchRouteGroup("POST", `/api/console/installations/${id}:revoke`, sp)).toBe("installations.revoke");
   });
 });

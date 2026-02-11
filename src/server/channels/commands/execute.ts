@@ -169,6 +169,7 @@ function shortUuid(value: string | null | undefined) {
 function computeApprovalRiskLevel(approval: any): "LOW" | "MED" | "HIGH" {
   const t = String(approval?.action_type || "");
   if (t === "contact_reveal") return "HIGH";
+  if (t.startsWith("escrow.") || t === "scopes.upgrade") return "HIGH";
   if (t === "offer_over_budget") return "MED";
   if (t === "channel.pair") return "MED";
   return "LOW";
@@ -185,6 +186,15 @@ function formatApprovalActionText(approval: any) {
     return "Offer over budget";
   }
   if (t === "contact_reveal") return "Contact reveal";
+  if (t === "escrow.create") return "Create escrow";
+  if (t === "escrow.confirm_received") return "Confirm received (release payout)";
+  if (t === "scopes.upgrade") {
+    const requested = Array.isArray(approval?.action_payload_redacted?.requested_scopes)
+      ? approval.action_payload_redacted.requested_scopes
+      : [];
+    const count = requested.length;
+    return count > 0 ? `Scope upgrade (${count})` : "Scope upgrade";
+  }
   if (t === "listing_publish") return "Publish listing";
   if (t === "message.send") {
     const mt = approval?.action_ref?.message_type ?? approval?.action_payload_redacted?.payload?.type ?? null;
@@ -223,6 +233,30 @@ async function formatApprovalContextText(approval: any) {
     } catch {
       return `tx=${shortUuid(txId)}`;
     }
+  }
+
+  if (t === "escrow.create") {
+    const txId = approval?.action_ref_id ? String(approval.action_ref_id) : null;
+    return txId ? `tx=${shortUuid(txId)}` : null;
+  }
+
+  if (t === "escrow.confirm_received") {
+    const escrowId = approval?.action_ref_id ? String(approval.action_ref_id) : null;
+    return escrowId ? `escrow=${shortUuid(escrowId)}` : null;
+  }
+
+  if (t === "scopes.upgrade") {
+    const installationId =
+      (approval?.action_ref?.installation_id ? String(approval.action_ref.installation_id) : null) ||
+      (approval?.action_ref_id ? String(approval.action_ref_id) : null);
+    const requested = Array.isArray(approval?.action_payload_redacted?.requested_scopes)
+      ? approval.action_payload_redacted.requested_scopes
+      : [];
+    const base = installationId ? `install=${shortUuid(installationId)}` : null;
+    if (requested.length === 0) return base;
+    const summary = requested.slice(0, 2).map((v: any) => String(v)).join(", ");
+    const suffix = requested.length > 2 ? ` (+${requested.length - 2})` : "";
+    return [base, `scopes=${summary}${suffix}`].filter(Boolean).join(" ");
   }
 
   const parts: string[] = [];

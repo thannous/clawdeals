@@ -234,17 +234,10 @@ suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
     });
   });
 
-  it("auto-approve path => 200", async () => {
+  it("always requires approval even when feature flag/policy suggest auto-approve", async () => {
     process.env.FEATURE_CONTACT_REVEAL_AUTO_APPROVE = "true";
     getPolicyOrDefaultMock.mockResolvedValue({
       policy_json: { approval_thresholds: { contact_reveal: "auto" } }
-    } as any);
-    requestContactRevealMock.mockResolvedValue({
-      tx_id: txId,
-      tx_status: "CONTACT_REVEALED",
-      contact_reveal_state: "APPROVED",
-      contact_revealed_at: "2026-02-08T12:00:00Z",
-      approval_id: null
     } as any);
 
     const req: any = {
@@ -255,14 +248,13 @@ suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
     };
 
     const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(200);
-    expect(result.body.contact_reveal_state).toBe("APPROVED");
-    expect(result.body.contact_revealed_at).toBeTruthy();
-    expect(publishSseEventMock).toHaveBeenCalled();
+    expect(result.status).toBe(202);
+    expect(result.body.contact_reveal_state).toBe("REQUESTED");
+    expect(result.body.approval_id).toBe("appr-1");
     expect(requestContactRevealMock).toHaveBeenCalledWith({
       txId,
       actorAgentId: buyerAgentId,
-      autoApprove: true
+      autoApprove: false
     });
   });
 });

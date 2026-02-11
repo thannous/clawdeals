@@ -10,6 +10,7 @@ import ConsoleTable, { type Column } from "../console/shared/ConsoleTable";
 import TruncatedId from "../console/shared/TruncatedId";
 import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
+import { V1_SCOPES_UPGRADE_ONLY, sortScopesStable } from "../../shared/scopes/v1";
 
 function randomIdempotencyKey(): string {
   try {
@@ -28,10 +29,42 @@ type Installation = {
   agent_id: string;
   client_type: string;
   client_version: string | null;
+  oauth_scopes: string[];
   status: "ACTIVE" | "REVOKED" | string;
   created_at: string;
   last_seen_at: string | null;
 };
+
+function renderScopePills(scopes: string[]) {
+  const items = Array.isArray(scopes) ? scopes : [];
+  if (items.length === 0) {
+    return <span className="text-[10px] font-mono text-subtle">\u2014</span>;
+  }
+
+  const sorted = sortScopesStable(items);
+  const max = 3;
+  const visible = sorted.slice(0, max);
+  const remaining = Math.max(0, sorted.length - visible.length);
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {visible.map((scope) => (
+        <span
+          key={scope}
+          className="px-1.5 py-0.5 text-[10px] font-mono uppercase border border-border text-muted rounded"
+          title={scope}
+        >
+          {scope}
+        </span>
+      ))}
+      {remaining > 0 && (
+        <span className="px-1.5 py-0.5 text-[10px] font-mono text-subtle" title={sorted.join("\n")}>
+          +{remaining} more
+        </span>
+      )}
+    </div>
+  );
+}
 
 export default function ConnectedAppsPage() {
   const { toasts, show } = useToast();
@@ -82,6 +115,7 @@ export default function ConnectedAppsPage() {
       { key: "agent_id", label: "Agent" },
       { key: "client_type", label: "Client" },
       { key: "client_version", label: "Version" },
+      { key: "oauth_scopes", label: "Scopes" },
       { key: "status", label: "Status" },
       { key: "created_at", label: "Created" },
       { key: "last_seen_at", label: "Last Seen" },
@@ -95,6 +129,11 @@ export default function ConnectedAppsPage() {
   const [reason, setReason] = useState("");
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "error">("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeSelectedScopes, setUpgradeSelectedScopes] = useState<string[]>([]);
+  const [upgradeState, setUpgradeState] = useState<"idle" | "loading" | "error">("idle");
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const openRevokeConfirm = useCallback((installation: Installation) => {
     setSelected(installation);
@@ -111,6 +150,22 @@ export default function ConnectedAppsPage() {
     setSubmitState("idle");
     setSubmitError(null);
   }, [submitState]);
+
+  const openUpgrade = useCallback((installation: Installation) => {
+    setSelected(installation);
+    setUpgradeSelectedScopes([]);
+    setUpgradeState("idle");
+    setUpgradeError(null);
+    setUpgradeOpen(true);
+  }, []);
+
+  const closeUpgrade = useCallback(() => {
+    if (upgradeState === "loading") return;
+    setUpgradeOpen(false);
+    setUpgradeSelectedScopes([]);
+    setUpgradeState("idle");
+    setUpgradeError(null);
+  }, [upgradeState]);
 
   const onConfirm = useCallback(async () => {
     if (!selected) return;
@@ -145,6 +200,50 @@ export default function ConnectedAppsPage() {
     }
   }, [selected, submitState, reason, closeConfirm, refetch, show]);
 
+  const onRequestUpgrade = useCallback(async () => {
+    if (!selected) return;
+    if (upgradeState === "loading") return;
+
+    setUpgradeState("loading");
+    setUpgradeError(null);
+
+    try {
+      const idempotencyKey = randomIdempotencyKey();
+      const resp = await fetch(
+        `/api/console/installations/${encodeURIComponent(selected.installation_id)}:scopes-upgrade`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          body: JSON.stringify({ requested_scopes: upgradeSelectedScopes }),
+        }
+      );
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(getErrorMessage(body, resp.status));
+      }
+
+      if (resp.status === 202 && body?.approval_id) {
+        show(
+          `Upgrade requested (approval ${String(body.approval_id)}). Review in /console/approvals.`,
+          "success"
+        );
+      } else {
+        show("Scopes already granted (no upgrade needed)", "success");
+      }
+
+      closeUpgrade();
+      refetch();
+    } catch (err: any) {
+      const message = String(err?.message || "Scope upgrade request failed");
+      setUpgradeError(message);
+      setUpgradeState("error");
+      show(message, "error");
+    }
+  }, [selected, upgradeState, upgradeSelectedScopes, closeUpgrade, refetch, show]);
+
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
@@ -155,7 +254,7 @@ export default function ConnectedAppsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-mono text-subtle">
             Manage your connected installations (OpenClaw/ClawdBot). Revoking invalidates credentials immediately.
@@ -170,7 +269,7 @@ export default function ConnectedAppsPage() {
 
         {fetchState === "loading" && (
           <div data-testid="connected-apps-loading">
-            <SkeletonTable columns={8} rows={8} />
+            <SkeletonTable columns={9} rows={8} />
           </div>
         )}
 
@@ -196,6 +295,7 @@ export default function ConnectedAppsPage() {
                 if (col.key === "installation_id") return <TruncatedId id={row.installation_id} />;
                 if (col.key === "agent_id") return <TruncatedId id={row.agent_id} />;
                 if (col.key === "client_version") return row.client_version || "\u2014";
+                if (col.key === "oauth_scopes") return renderScopePills(row.oauth_scopes);
                 if (col.key === "status") return <ConsoleStatusBadge value={row.status} variant="channel" />;
                 if (col.key === "created_at") return formatDate(row.created_at);
                 if (col.key === "last_seen_at") return formatDate(row.last_seen_at);
@@ -204,17 +304,30 @@ export default function ConnectedAppsPage() {
                     return <span className="text-[10px] font-mono text-subtle">\u2014</span>;
                   }
                   return (
-                    <button
-                      data-testid={`connected-apps-revoke-${row.installation_id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openRevokeConfirm(row);
-                      }}
-                      className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
-                    >
-                      Revoke
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        data-testid={`connected-apps-upgrade-${row.installation_id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openUpgrade(row);
+                        }}
+                        className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+                      >
+                        Upgrade
+                      </button>
+                      <button
+                        data-testid={`connected-apps-revoke-${row.installation_id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openRevokeConfirm(row);
+                        }}
+                        className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
+                      >
+                        Revoke
+                      </button>
+                    </div>
                   );
                 }
                 return row[col.key as keyof Installation] as any;
@@ -247,8 +360,67 @@ export default function ConnectedAppsPage() {
         </div>
       </ConfirmModal>
 
+      <ConfirmModal
+        open={upgradeOpen}
+        title="Request scope upgrade"
+        message="Select additional scopes to request. Non-default scopes always require approval."
+        confirmLabel="Request"
+        variant="default"
+        loading={upgradeState === "loading"}
+        onCancel={closeUpgrade}
+        onConfirm={onRequestUpgrade}
+      >
+        <div className="space-y-3">
+          <div className="text-[10px] font-mono text-subtle">
+            Current scopes:{" "}
+            <span className="text-muted">{selected?.oauth_scopes?.length ? selected.oauth_scopes.length : 0}</span>
+          </div>
+
+          <div className="grid gap-2">
+            {V1_SCOPES_UPGRADE_ONLY.map((scope) => {
+              const granted = Array.isArray(selected?.oauth_scopes)
+                ? new Set(sortScopesStable(selected?.oauth_scopes || [])).has(scope)
+                : false;
+              const checked = upgradeSelectedScopes.includes(scope);
+              return (
+                <label
+                  key={scope}
+                  className={`flex items-center justify-between gap-3 px-3 py-2 rounded border ${
+                    granted ? "border-border bg-surface/50 opacity-60" : "border-border bg-surface"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      disabled={granted}
+                      checked={granted ? true : checked}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setUpgradeSelectedScopes((prev) => {
+                          const set = new Set(prev);
+                          if (next) set.add(scope);
+                          else set.delete(scope);
+                          return Array.from(set);
+                        });
+                      }}
+                    />
+                    <span className="text-xs font-mono text-text">{scope}</span>
+                  </div>
+                  {granted ? (
+                    <span className="text-[10px] font-mono text-subtle uppercase">Granted</span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-subtle uppercase">Upgrade</span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+
+          {upgradeError && <div className="text-[10px] font-mono text-red-400">{upgradeError}</div>}
+        </div>
+      </ConfirmModal>
+
       <Toast toasts={toasts} />
     </div>
   );
 }
-

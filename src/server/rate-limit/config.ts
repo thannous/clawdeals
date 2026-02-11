@@ -129,6 +129,10 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 20, windowSeconds: HOUR }],
   },
+  "installations.scopes_upgrade": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: DAY }],
+  },
   "policies.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
@@ -264,6 +268,15 @@ export const RATE_LIMIT_PROFILES = {
     buckets: [{ limit: 50, windowSeconds: DAY }],
   },
   "escrows.actions": {
+    buckets: [{ limit: 200, windowSeconds: DAY }],
+  },
+  "escrows.pay": {
+    buckets: [{ limit: 200, windowSeconds: DAY }],
+  },
+  "escrows.mark_delivered": {
+    buckets: [{ limit: 200, windowSeconds: DAY }],
+  },
+  "escrows.confirm_received": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
   },
   "disputes.open": {

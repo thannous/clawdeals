@@ -7,8 +7,6 @@ import { resolveTrustContext } from "../../../../../server/trustscore/context";
 import { getListing } from "../../../../../server/services/listings";
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/policy/evaluate";
-import { isFeatureEnabled } from "../../../../../server/config/feature-flags";
-import { CONTACT_REVEAL_MIN_TRUST_SCORE } from "../../../../../server/config/transactions";
 import {
   getContactRevealApprovalByTxId,
   getTransaction,
@@ -37,10 +35,6 @@ function uniqueStrings(values: Array<string | null | undefined>) {
 
 function isHardBlocked(flags: any[] = []) {
   return flags.some((f) => f === "suspended" || f === "banned");
-}
-
-function isRestrictedForAutoApprove(flags: any[] = []) {
-  return flags.some((f) => f === "under_review" || f === "restricted" || f === "suspended" || f === "quarantined");
 }
 
 function isParty(tx, agentId) {
@@ -77,7 +71,6 @@ export async function handler(req, res, ctx) {
 
   try {
     const trustContext = await resolveTrustContext({ ctx, actionType: "approval" });
-    const trustScore = Number.isFinite(trustContext?.trust_score) ? trustContext.trust_score : 0;
     const trustFlags = Array.isArray(trustContext?.trust_flags) ? trustContext.trust_flags : [];
 
     if (isHardBlocked(trustFlags)) {
@@ -154,19 +147,12 @@ export async function handler(req, res, ctx) {
       action: "contact_reveal"
     });
 
-    const featureEnabled = isFeatureEnabled("contact_reveal_auto_approve");
-    const restrictedForAuto = isRestrictedForAutoApprove(trustFlags);
-
-    const autoApprove =
-      featureEnabled &&
-      policyDecision.decision === POLICY_DECISION.AUTO_APPROVED &&
-      !restrictedForAuto &&
-      trustScore >= CONTACT_REVEAL_MIN_TRUST_SCORE &&
-      tx.contact_reveal_state !== "DENIED";
+    // TI-332: Contact reveal is always approval-required (disable auto-approve path).
+    const autoApprove = false;
 
     if (ctx) {
       ctx.policy = {
-        decision: policyDecision.decision,
+        decision: POLICY_DECISION.REQUIRES_APPROVAL,
         policy_version: policyDecision.policy_version,
         approval_id: null
       };

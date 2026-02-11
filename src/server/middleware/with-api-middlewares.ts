@@ -4,10 +4,12 @@ import { applyAuthStub } from "./auth-stub";
 import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { beginIdempotency, finalizeIdempotency } from "../idempotency/middleware";
 import { jsonResponse, sendJson } from "../http/response";
-import { sendError } from "../http/errors";
+import { errorPayload, sendError } from "../http/errors";
 import { mergeTrustContextIntoPolicy } from "../trustscore/context";
 import { safeAuditLog } from "../audit/singleton";
 import { matchRouteGroupFromRequest } from "../routes/route-groups";
+import { getInstallationOauthScopes } from "../services/installation-scopes-cache";
+import { sortScopesStable } from "../../shared/scopes/v1";
 
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,
@@ -206,6 +208,102 @@ function inferOutcome(ctx) {
   return "FAILURE";
 }
 
+const ROUTE_GROUP_REQUIRED_SCOPES: Record<string, string[]> = {
+  "watchlists.read": ["watchlists:read"],
+  "watchlists.write": ["watchlists:write"],
+  "listings.read": ["listings:read"],
+  "listings.create": ["listings:write"],
+  "listings.write": ["listings:write"],
+  "threads.read": ["threads:read"],
+  "threads.create": ["threads:write"],
+  "messages.send": ["threads:write"],
+  "offers.create": ["offers:write"],
+  "offers.actions": ["offers:write"],
+  "offers.write": ["offers:write"],
+  "deals.read": ["deals:read"],
+  "deals.comments.read": ["deals:read"],
+  "deals.create": ["deals:write"],
+  "deals.update": ["deals:write"],
+  "deals.delete": ["deals:write"],
+  "deals.vote": ["deals:write"],
+  "deals.comments.create": ["deals:write"],
+  "reports.create": ["reports:write"],
+  "sse.connect": ["notifications:read"],
+  "sse.reconnect_ip": ["notifications:read"],
+  "policies.read": ["policies:*"],
+  "policies.write": ["policies:*"],
+  "audit.export": ["audit:export"],
+  // Only enforced for installation-scoped agent credentials. Owner console uses owner actor.
+  "approvals.read": ["approvals:admin"],
+  "approvals.approve": ["approvals:admin"],
+  "approvals.deny": ["approvals:admin"],
+  "contact_reveal.request": ["contacts:reveal"],
+  "escrows.create": ["escrow:*"],
+  "escrows.pay": ["escrow:*"],
+  "escrows.mark_delivered": ["escrow:*"],
+  "escrows.confirm_received": ["escrow:*", "payout:*"]
+};
+
+function resolveRequiredScopesForRouteGroup(routeGroup: any): string[] | null {
+  if (!routeGroup || typeof routeGroup !== "string") return null;
+  const required = ROUTE_GROUP_REQUIRED_SCOPES[routeGroup];
+  if (!required || required.length === 0) return null;
+  return sortScopesStable(required);
+}
+
+async function enforceInstallationScopes(req: any, res: any, ctx: any) {
+  // Enforce scopes only for installation-scoped credentials.
+  if (ctx?.authError) return null;
+  if (ctx?.actor?.type !== "agent") return null;
+  if (!ctx?.installationId) return null;
+
+  const requiredScopes = resolveRequiredScopesForRouteGroup(ctx?.routeGroup);
+  if (!requiredScopes) return null;
+
+  let grantedScopes: string[] = [];
+  try {
+    grantedScopes = await getInstallationOauthScopes(String(ctx.installationId));
+  } catch (error: any) {
+    const status = error?.status || 503;
+    const code = error?.code || "AUTH_UNAVAILABLE";
+    const message = error?.message || "Failed to load installation scopes";
+    const response = jsonResponse(status, errorPayload(code, message));
+    if (!res.writableEnded) {
+      sendJson(res, response.status, response.body, response.headers);
+    }
+    return response;
+  }
+
+  const granted = new Set(Array.isArray(grantedScopes) ? grantedScopes : []);
+
+  const missing = requiredScopes.filter((scope) => !granted.has(scope));
+  if (missing.length === 0) return null;
+
+  if (ctx) {
+    ctx.outcome = { type: "BLOCKED", reason: "scope" };
+    ctx.security = {
+      ...(ctx.security || {}),
+      installation_id: ctx.installationId,
+      required_scopes: requiredScopes,
+      missing_scopes: missing
+    };
+  }
+
+  const response = jsonResponse(
+    403,
+    errorPayload("INSUFFICIENT_SCOPE", "Insufficient scope", {
+      installation_id: ctx.installationId,
+      required_scopes: requiredScopes
+    })
+  );
+
+  if (!res.writableEnded) {
+    sendJson(res, response.status, response.body, response.headers);
+  }
+
+  return response;
+}
+
 function buildAuditEvent(ctx) {
   const entity = inferAuditEntity(ctx);
   const security: any = {
@@ -271,7 +369,15 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
       return;
     }
 
-      let idempotencyContext = null;
+    // TI-331: installation-scoped OAuth scopes (v1).
+    // Keep this before rate limiting / idempotency: blocked requests should not consume limits or locks.
+    const scopesResponse = await enforceInstallationScopes(req, res, ctx);
+    if (scopesResponse) {
+      ctx.response = scopesResponse;
+      return;
+    }
+
+    let idempotencyContext = null;
 
     try {
       if (resolved.enableRateLimit) {

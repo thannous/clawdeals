@@ -46,6 +46,7 @@ export async function applyAuthStub(req, ctx) {
         }
         ctx.agentId = result.agentId;
         ctx.ownerId = result.ownerId || null;
+        ctx.installationId = result.installationId || null;
         ctx.apiKeyId = result.apiKeyId;
         ctx.apiKeyState = result.keyState;
         ctx.actor = { type: "agent", id: result.agentId };

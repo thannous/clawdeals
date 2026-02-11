@@ -108,5 +108,4 @@ export async function handler(req, res, ctx) {
   }
 }
 
-export default withApiMiddlewares(handler, { routeGroup: "escrows.actions" });
-
+export default withApiMiddlewares(handler, { routeGroup: "escrows.mark_delivered" });
