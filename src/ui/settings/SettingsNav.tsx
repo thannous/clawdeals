@@ -34,7 +34,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
     try {
       // Ensure we don't immediately re-bridge an existing Supabase session on /auth/login.
       const supabase = getBrowserSupabaseClient();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } catch {
       // Best-effort only.
     }
