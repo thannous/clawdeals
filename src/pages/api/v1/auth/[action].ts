@@ -5,7 +5,7 @@ import { errorPayload } from "../../../../server/http/errors";
 import crypto from "node:crypto";
 import { getSupabaseServiceClient } from "../../../../server/db/supabase";
 
-import { buildOwnerSessionClearCookie, isSecureRequest, readOwnerSessionCookie } from "../../../../server/auth/session-cookie";
+import { buildOwnerSessionClearCookies, isSecureRequest, readOwnerSessionCookie } from "../../../../server/auth/session-cookie";
 import { confirmOwnerLogin, startOwnerLogin } from "../../../../server/services/owner-login";
 import { sendOwnerLoginMagicLinkEmail } from "../../../../server/services/owner-login-email";
 import { issueTrustedOwnerSession } from "../../../../server/services/owner-session-issue";
@@ -453,7 +453,7 @@ export async function handler(req: any, _res: any, ctx: any) {
       200,
       { data: { ok: true } },
       {
-        "Set-Cookie": buildOwnerSessionClearCookie({ secure: cookieSecure }),
+        "Set-Cookie": buildOwnerSessionClearCookies({ secure: cookieSecure }),
         "Cache-Control": "no-store"
       }
     );

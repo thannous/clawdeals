@@ -168,3 +168,46 @@ export function buildOwnerSessionClearCookie(options: { secure?: boolean } = {})
     maxAge: 0
   });
 }
+
+// Some browsers can end up with multiple cookies with the same name but different Path/Domain
+// (e.g. older deployments / misconfigured env). Clearing only one variant can make logout appear
+// to "not work" because another cookie is still sent to /api/*.
+export function buildOwnerSessionClearCookies(options: { secure?: boolean } = {}) {
+  const name = resolveCookieName();
+  const configuredDomain = resolveCookieDomain();
+  const configuredPath = resolveCookiePath();
+  const resolvedSecure = typeof options.secure === "boolean" ? options.secure : resolveCookieSecure();
+  let sameSite = resolveCookieSameSite();
+
+  if (sameSite === "None" && !resolvedSecure) {
+    sameSite = "Lax";
+  }
+
+  const domains = [configuredDomain, null].filter((d, i, arr) => {
+    // Dedupe nulls and strings.
+    if (d === null) return true;
+    return arr.indexOf(d) === i;
+  });
+
+  // Clear the configured path, plus common legacy paths.
+  const paths = [configuredPath, "/", "/api"].filter((p, i, arr) => arr.indexOf(p) === i);
+
+  const cookies: string[] = [];
+  for (const domain of domains) {
+    for (const path of paths) {
+      cookies.push(
+        serializeCookie(name, "", {
+          httpOnly: true,
+          secure: resolvedSecure,
+          sameSite,
+          domain: domain || undefined,
+          path,
+          expires: new Date(0),
+          maxAge: 0
+        })
+      );
+    }
+  }
+
+  return cookies;
+}

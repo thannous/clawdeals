@@ -251,7 +251,9 @@ describe("POST /v1/auth/[action]", () => {
     const result: any = await handler(makeReq("logout"), null, makeCtx());
 
     expect(result.status).toBe(200);
-    expect(result.headers["Set-Cookie"]).toContain("Max-Age=0");
+    const setCookie = result.headers["Set-Cookie"];
+    const all = Array.isArray(setCookie) ? setCookie : [String(setCookie || "")];
+    expect(all.some((value) => String(value).includes("Max-Age=0"))).toBe(true);
     expect(result.body.data.ok).toBe(true);
   });
 
