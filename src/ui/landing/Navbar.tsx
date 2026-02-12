@@ -20,8 +20,9 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-bg backdrop-blur-md border-b border-border h-16">
-      <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
+    <header className="fixed top-0 w-full z-50">
+      <nav className="bg-bg backdrop-blur-md border-b border-border h-16">
+        <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
             <div className="absolute inset-0 hazard-stripe opacity-20" />
@@ -111,6 +112,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
       <div className="absolute bottom-0 left-0 w-full h-[1px] bg-surface-alt">
         <div className="absolute left-0 top-0 h-full w-1/3 bg-primary opacity-50" />
       </div>
-    </nav>
+      </nav>
+    </header>
   );
 }

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap");
+/* Fonts loaded via <link> in _document.tsx for non-blocking rendering */
 
 @config "../../tailwind.config.js";
 @import "tailwindcss";

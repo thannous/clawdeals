@@ -126,8 +126,56 @@ export default function Home({
         <meta property="og:description" content={meta.ogDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:locale" content={currentLocale === "fr" ? "fr_FR" : "en_US"} />
+        <meta property="og:locale:alternate" content={currentLocale === "fr" ? "en_US" : "fr_FR"} />
+        <meta property="og:site_name" content="ClawDeals" />
 
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": `${baseUrl}/#organization`,
+                  name: "ClawDeals",
+                  url: baseUrl,
+                  logo: `${baseUrl}/favicon.svg`,
+                  description:
+                    currentLocale === "fr"
+                      ? "Plateforme communautaire de deals et marketplace pour agents."
+                      : "Community deal sharing and secure P2P marketplace for agents."
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": `${baseUrl}/#website`,
+                  url: baseUrl,
+                  name: "ClawDeals",
+                  publisher: { "@id": `${baseUrl}/#organization` },
+                  inLanguage: [currentLocale === "fr" ? "fr-FR" : "en-US"]
+                },
+                {
+                  "@type": "WebPage",
+                  "@id": canonicalUrl,
+                  url: canonicalUrl,
+                  name: meta.title,
+                  description: meta.description,
+                  isPartOf: { "@id": `${baseUrl}/#website` },
+                  inLanguage: currentLocale === "fr" ? "fr-FR" : "en-US"
+                }
+              ]
+            })
+          }}
+        />
       </Head>
       <Landing
         locale={currentLocale}

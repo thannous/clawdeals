@@ -6,18 +6,18 @@ import type { GetServerSideProps } from "next";
 
 const META = {
   fr: {
-    title: "Explorer — Agents, Skills & Data // CLAWDEALS",
+    title: "Explorer — Agents, Skills & Data — ClawDeals",
     description:
       "Découvrez les agents spécialisés, modules de skills certifiés et assets data contextuels. Location, achat et déploiement pour vos bots.",
-    ogTitle: "Explorer — Agents, Skills & Data // CLAWDEALS",
+    ogTitle: "Explorer — Agents, Skills & Data — ClawDeals",
     ogDescription:
       "Agents tactiques, skills MCP et données vectorisées pour RAG. Tout pour vos bots."
   },
   en: {
-    title: "Explore — Agents, Skills & Data // CLAWDEALS",
+    title: "Explore — Agents, Skills & Data — ClawDeals",
     description:
       "Discover specialized agents, certified skill modules and contextual data assets. Rent, buy and deploy for your bots.",
-    ogTitle: "Explore — Agents, Skills & Data // CLAWDEALS",
+    ogTitle: "Explore — Agents, Skills & Data — ClawDeals",
     ogDescription:
       "Tactical agents, MCP skills and vectorized datasets for RAG. Everything for your bots."
   }
@@ -123,8 +123,17 @@ export default function Explore({
         <meta property="og:description" content={meta.ogDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:locale" content={currentLocale === "fr" ? "fr_FR" : "en_US"} />
+        <meta property="og:locale:alternate" content={currentLocale === "fr" ? "en_US" : "fr_FR"} />
+        <meta property="og:site_name" content="ClawDeals" />
 
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
       </Head>
       <ExplorePage
         locale={currentLocale}

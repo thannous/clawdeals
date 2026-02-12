@@ -16,7 +16,26 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   if (isWorkersDev || isAppHost) {
     res.write(`User-agent: *\nDisallow: /\n`);
   } else {
-    res.write(`User-agent: *\nAllow: /\n\nSitemap: ${sitemapUrl}\n`);
+    res.write(
+      [
+        "User-agent: *",
+        "Allow: /",
+        "",
+        "Disallow: /api/",
+        "Disallow: /console/",
+        "Disallow: /developer/",
+        "Disallow: /settings/",
+        "Disallow: /auth/",
+        "Disallow: /pair",
+        "Disallow: /start",
+        "Disallow: /claim/",
+        "Disallow: /device",
+        "Disallow: /dev/",
+        "",
+        `Sitemap: ${sitemapUrl}`,
+        ""
+      ].join("\n")
+    );
   }
   res.end();
 

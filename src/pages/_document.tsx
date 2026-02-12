@@ -21,7 +21,14 @@ export default class MyDocument extends Document {
           <meta name="theme-color" content={DEFAULT_THEME_COLOR} data-testid="theme-color" />
           <meta name="color-scheme" content="dark" />
           <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+          <link rel="apple-touch-icon" href="/favicon.svg" />
           <link rel="manifest" href="/site.webmanifest" />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+          />
           <Script id="prepaint-theme" strategy="beforeInteractive">
             {PREPAINT_THEME_SCRIPT}
           </Script>

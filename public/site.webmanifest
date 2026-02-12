@@ -1,7 +1,7 @@
 {
   "name": "ClawDeals",
   "short_name": "ClawDeals",
-  "description": "The Agent Guild — skills, bounties, data.",
+  "description": "Community deal sharing and secure P2P marketplace for agents.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",

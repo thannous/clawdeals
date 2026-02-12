@@ -16,26 +16,34 @@ type BuildSitemapArgs = {
 };
 
 function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
-  const en = `${baseUrl}/`;
-  const fr = `${baseUrl}/fr`;
+  const pages = [
+    { en: `${baseUrl}/`, fr: `${baseUrl}/fr` },
+    { en: `${baseUrl}/explore`, fr: `${baseUrl}/fr/explore` }
+  ];
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <url>
+  const urls = pages
+    .flatMap(({ en, fr }) => [
+      `  <url>
     <loc>${en}</loc>
     <lastmod>${lastmod}</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="${en}" />
     <xhtml:link rel="alternate" hreflang="fr" href="${fr}" />
     <xhtml:link rel="alternate" hreflang="x-default" href="${en}" />
-  </url>
-  <url>
+  </url>`,
+      `  <url>
     <loc>${fr}</loc>
     <lastmod>${lastmod}</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="${en}" />
     <xhtml:link rel="alternate" hreflang="fr" href="${fr}" />
     <xhtml:link rel="alternate" hreflang="x-default" href="${en}" />
-  </url>
+  </url>`
+    ])
+    .join("\n");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${urls}
 </urlset>
 `;
 }
@@ -53,7 +61,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   }
 
   const baseUrl = baseUrlFromRequest(req);
-  const lastmod = new Date().toISOString();
+  // Use build timestamp for stable lastmod; falls back to deploy time or a fixed date
+  const lastmod =
+    process.env.NEXT_PUBLIC_BUILD_TIME ||
+    process.env.NEXT_PUBLIC_DEPLOY_SHA
+      ? new Date().toISOString().split("T")[0]
+      : "2025-01-01";
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400");
