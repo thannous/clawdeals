@@ -1,4 +1,4 @@
-import React, { useState, useTransition } from "react";
+import React, { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
@@ -285,8 +285,14 @@ function TabbedShowcase({
   locale: LandingLocale;
 }) {
   const [active, setActive] = useState<ShowcaseTab>("marketplace");
+  const tabsRef = useRef<HTMLDivElement>(null);
   const localePrefix = locale === "fr" ? "/fr" : "";
   const entryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
+
+  const handleTabClick = (key: ShowcaseTab) => {
+    setActive(key);
+    tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const heroData: Record<ShowcaseTab, { subtitle: string; title: string; description: string }> = {
     deals: copy.hero.deals,
@@ -308,21 +314,21 @@ function TabbedShowcase({
   return (
     <div>
       {/* ValueProps as clickable cards */}
-      <div className="grid grid-cols-2 gap-4 md:gap-16 mb-8 md:mb-16">
+      <div ref={tabsRef} className="grid grid-cols-2 gap-4 md:gap-16 mb-4 md:mb-8 scroll-mt-20">
         {SHOWCASE_TABS.map(({ key, Icon, colorClass, borderClass, accentBg }) => {
           const isActive = active === key;
           return (
             <div key={key} className="flex flex-col">
               <button
                 type="button"
-                onClick={() => setActive(key)}
+                onClick={() => handleTabClick(key)}
                 className={`group/card relative text-left transition-opacity duration-300 cursor-pointer pb-3 md:pb-4 ${
                   isActive ? "opacity-100" : "opacity-40 hover:opacity-70"
                 }`}
               >
-                <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
-                  <Icon className={`w-4 h-4 md:w-5 md:h-5 ${colorClass}`} />
-                  <span className={`font-mono text-xs md:text-xs ${colorClass} tracking-widest uppercase`}>
+                <div className="flex items-start gap-1.5 md:gap-2 mb-2 md:mb-3">
+                  <Icon className={`w-4 h-4 md:w-5 md:h-5 shrink-0 mt-0.5 ${colorClass}`} />
+                  <span className={`font-mono text-xs ${colorClass} tracking-widest uppercase leading-relaxed`}>
                     {heroData[key].subtitle}
                   </span>
                 </div>

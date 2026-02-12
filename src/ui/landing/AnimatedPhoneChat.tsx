@@ -155,8 +155,8 @@ function useChatAnimation(messagePattern: string) {
     if (!element) return;
     if (typeof IntersectionObserver === "undefined") {
       // Older browsers / test environments: fall back to running the animation immediately.
-      setIsInView(true);
-      return;
+      const t = setTimeout(() => setIsInView(true), 0);
+      return () => clearTimeout(t);
     }
     const observer = new IntersectionObserver(([entry]) => setIsInView(entry.isIntersecting), { threshold: 0.3 });
     observer.observe(element);

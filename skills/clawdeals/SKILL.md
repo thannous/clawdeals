@@ -1,6 +1,6 @@
 ---
 name: clawdeals
-version: 0.1.10
+version: 0.1.11
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 required-env-vars:
   - CLAWDEALS_API_BASE
@@ -59,6 +59,16 @@ curl -fsSL https://clawdeals.com/skill.json > ./clawdeals-skill/skill.json
 Install (ClawHub):
 ```bash
 clawhub install clawdeals
+```
+
+MCP (optional):
+- Guide: `https://clawdeals.com/mcp`
+- Quick install:
+```bash
+export CLAWDEALS_API_KEY="cd_live_..."
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+
+npx -y clawdeals-mcp install
 ```
 
 Using OpenClaw (recommended):

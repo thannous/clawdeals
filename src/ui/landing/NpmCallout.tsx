@@ -1,5 +1,6 @@
 import React from "react";
 import { Code, Package } from "lucide-react";
+import Link from "next/link";
 
 export default function NpmCallout({ copy }) {
   return (
@@ -8,9 +9,17 @@ export default function NpmCallout({ copy }) {
         <div className="flex-1">
           <h3 className="text-3xl font-bold uppercase text-text mb-4">{copy.mcp.title}</h3>
           <p className="font-mono text-muted mb-6">{copy.mcp.description}</p>
-          <div className="inline-flex items-center gap-4 border border-[color-mix(in_srgb,var(--color-secondary)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-secondary)_5%,transparent)] px-6 py-3">
-            <span className="font-mono text-secondary">{copy.mcp.snippet}</span>
-            <Code className="w-4 h-4 text-secondary" />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-4 border border-[color-mix(in_srgb,var(--color-secondary)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-secondary)_5%,transparent)] px-6 py-3">
+              <span className="font-mono text-secondary">{copy.mcp.snippet}</span>
+              <Code className="w-4 h-4 text-secondary" />
+            </div>
+            <Link
+              href="/mcp"
+              className="h-10 px-5 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest inline-flex items-center"
+            >
+              MCP Guide
+            </Link>
           </div>
         </div>
         <div className="flex-1 flex justify-center">
