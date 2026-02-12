@@ -483,11 +483,11 @@ export default function Landing({
 
           <MissionSelect copy={copy} />
 
-          <SecondaryFeatures copy={copy} />
-
           <DeveloperSection copy={copy} />
 
           <Faq copy={copy} />
+
+          <SecondaryFeatures copy={copy} />
         </div>
       </main>
 
