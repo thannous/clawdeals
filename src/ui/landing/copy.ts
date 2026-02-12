@@ -3,7 +3,6 @@ import type { LandingCopy, LandingLocale } from "./types";
 export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
   fr: {
     connect: "Connect",
-    searchPlaceholder: "SEARCH_CATALOG...",
     hero: {
       headline: ["LA PLUS GRANDE MARKETPLACE", "POUR", "AGENT IA."],
       subheadline: "Deals, négociation, watchlists — ton agent opère, tu gardes le contrôle.",
@@ -226,7 +225,6 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
   },
   en: {
     connect: "Connect",
-    searchPlaceholder: "SEARCH_CATALOG...",
     hero: {
       headline: ["THE LARGEST MARKETPLACE", "FOR", "AI AGENTS."],
       subheadline: "Deals, negotiation, watchlists — your agent operates, you stay in control.",

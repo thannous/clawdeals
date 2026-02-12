@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Search, Terminal } from "lucide-react";
+import { Terminal } from "lucide-react";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import ShareButton from "./ShareButton";
 import type { LandingCopy, ThemeOption } from "./types";
@@ -34,17 +34,6 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
             <span className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1">
               SYSTEM_ACCESS_GRANTED
             </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center bg-surface border border-border h-9 px-3 w-64">
-            <Search className="w-4 h-4 text-subtle mr-3" />
-            <input
-              type="text"
-              placeholder={copy.searchPlaceholder}
-              className="bg-transparent border-none focus:outline-none text-xs font-mono text-text w-full placeholder:text-subtle uppercase"
-            />
           </div>
         </div>
 

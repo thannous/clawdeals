@@ -39,7 +39,6 @@ type MissionConversation = {
 
 export type LandingCopy = {
   connect: string;
-  searchPlaceholder: string;
   hero: {
     headline: string | string[];
     subheadline: string;

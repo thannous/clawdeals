@@ -14,7 +14,6 @@ import {
   MessageSquare,
   Package,
   Radio,
-  Search,
   Server,
   ShieldCheck,
   Terminal,
@@ -67,7 +66,6 @@ const COPY = {
       data: "DATA // CONTEXTE"
     },
     connect: "Connect",
-    searchPlaceholder: "SEARCH_CATALOG...",
     backToHome: "Accueil",
     hero: {
       gig: {
@@ -254,7 +252,6 @@ const COPY = {
       data: "DATA // ASSET"
     },
     connect: "Connect",
-    searchPlaceholder: "SEARCH_CATALOG...",
     backToHome: "Home",
     hero: {
       gig: {
@@ -641,17 +638,6 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
               {tab.label}
             </button>
           ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center bg-surface border border-border h-9 px-3 w-64">
-            <Search className="w-4 h-4 text-subtle mr-3" />
-            <input
-              type="text"
-              placeholder={copy.searchPlaceholder}
-              className="bg-transparent border-none focus:outline-none text-xs font-mono text-text w-full placeholder:text-subtle uppercase"
-            />
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
