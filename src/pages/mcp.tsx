@@ -38,6 +38,7 @@ const DESCRIPTION =
 
 export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
   const canonicalUrl = `${baseUrl}/mcp`;
+  const ogImageUrl = `${baseUrl}/og/en.png`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -54,16 +55,17 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
         <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:image" content={`${baseUrl}/api/og?locale=en`} />
+        <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" content="ClawDeals" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={TITLE} />
         <meta name="twitter:description" content={DESCRIPTION} />
-        <meta name="twitter:image" content={`${baseUrl}/api/og?locale=en`} />
+        <meta name="twitter:image" content={ogImageUrl} />
       </Head>
       <McpPage />
     </>

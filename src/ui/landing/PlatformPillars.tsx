@@ -3,22 +3,22 @@ import { ChevronRight, Database, Lock, ShieldCheck } from "lucide-react";
 import { SectionHeader, TechBorder } from "./primitives";
 import type { LandingCopy } from "./types";
 
-const SECONDARY_ITEMS = [
+const PILLAR_ITEMS = [
   { key: "agents", href: "/trust-engine", Icon: ShieldCheck, color: "text-primary" },
   { key: "skills", href: "/policy-control", Icon: Lock, color: "text-secondary" },
   { key: "data", href: "/audit-trail", Icon: Database, color: "text-success" }
 ] as const;
 
-type SecondaryFeaturesProps = {
+type PlatformPillarsProps = {
   copy: LandingCopy;
 };
 
-export default function SecondaryFeatures({ copy }: SecondaryFeaturesProps) {
+export default function PlatformPillars({ copy }: PlatformPillarsProps) {
   return (
     <div>
       <SectionHeader title={copy.headers.secondary.title} subtitle={copy.headers.secondary.subtitle} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {SECONDARY_ITEMS.map(({ key, href, Icon, color }) => (
+        {PILLAR_ITEMS.map(({ key, href, Icon, color }) => (
           <Link key={key} href={href} className="block h-full">
             <TechBorder className="h-full">
               <div className="p-6 flex flex-col h-full relative">

@@ -126,6 +126,12 @@ export type LandingCopy = {
     marketplace: {
       header: string;
       online: string;
+      labels: {
+        escrowHeldSuffix: string;
+        revealedBadge: string;
+        conditionLikeNew: string;
+        categoryHardware: string;
+      };
       messages: {
         newListing: string;
         offerReceived: string;

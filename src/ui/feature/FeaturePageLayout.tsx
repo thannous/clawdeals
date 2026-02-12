@@ -1,0 +1,126 @@
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useTheme } from "../../theme/theme-context";
+import { LANDING_COPY } from "../landing/copy";
+import Navbar from "../landing/Navbar";
+import type { LandingLocale } from "../landing/types";
+
+type FeaturePageLayoutProps = {
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: React.ReactNode;
+  accentColor: string;
+  accentBg: string;
+  children: React.ReactNode;
+};
+
+export default function FeaturePageLayout({
+  title,
+  subtitle,
+  description,
+  icon,
+  accentColor,
+  accentBg,
+  children
+}: FeaturePageLayoutProps) {
+  const router = useRouter();
+  const { themeId, setTheme, themes } = useTheme();
+  const locale: LandingLocale = router.locale === "fr" ? "fr" : "en";
+  const copy = LANDING_COPY[locale];
+  // `router.pathname` is stable across locales and ignores query/hash.
+  const activePath = router.pathname;
+
+  return (
+    <div className="min-h-screen bg-bg text-text">
+      <Navbar
+        copy={copy}
+        themeId={themeId}
+        setTheme={setTheme}
+        themes={themes}
+        futureMode={false}
+      />
+
+      {/* Hero */}
+      <div className="relative pt-28 pb-16 px-6 border-b border-border bg-surface overflow-hidden">
+        <div className="animate-scanline" />
+        <div className="tech-grid absolute inset-0 opacity-30" />
+
+        <div className="max-w-[960px] mx-auto relative z-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className={`w-10 h-10 border border-border-strong bg-surface-alt/50 flex items-center justify-center ${accentColor}`}>
+              {icon}
+            </div>
+            <span className={`font-mono text-xs ${accentColor} tracking-widest uppercase`}>
+              {subtitle}
+            </span>
+          </div>
+
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold uppercase leading-[0.9] tracking-tighter text-text text-shadow-glow mb-6">
+            {title}
+          </h1>
+
+          <p className="text-sm md:text-base text-muted font-mono max-w-2xl leading-relaxed">
+            {description}
+          </p>
+
+          {/* Accent line */}
+          <div className={`mt-8 h-[2px] w-24 ${accentBg}`} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-[960px] mx-auto px-6 py-16 space-y-20">
+        {children}
+      </div>
+
+      {/* Footer CTA */}
+      <div className="border-t border-border bg-surface">
+        <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
+          <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
+            {locale === "fr" ? "EXPLORER LA PLATEFORME" : "EXPLORE THE PLATFORM"}
+          </div>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link
+              href="/"
+              className="px-6 py-3 font-bold uppercase tracking-wider text-xs border border-border-strong text-muted hover:border-text hover:text-text transition-colors bg-bg"
+            >
+              Home
+            </Link>
+            <Link
+              href="/trust-engine"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/trust-engine"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted hover:border-primary hover:text-primary"
+              }`}
+            >
+              Trust Engine
+            </Link>
+            <Link
+              href="/policy-control"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/policy-control"
+                  ? "border-secondary bg-secondary/10 text-secondary"
+                  : "border-border text-muted hover:border-secondary hover:text-secondary"
+              }`}
+            >
+              Policy Control
+            </Link>
+            <Link
+              href="/audit-trail"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/audit-trail"
+                  ? "border-success bg-success/10 text-success"
+                  : "border-border text-muted hover:border-success hover:text-success"
+              }`}
+            >
+              Audit Trail
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

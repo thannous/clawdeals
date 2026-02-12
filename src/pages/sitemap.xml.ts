@@ -18,7 +18,10 @@ type BuildSitemapArgs = {
 function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
   const pages = [
     { en: `${baseUrl}/`, fr: `${baseUrl}/fr` },
-    { en: `${baseUrl}/explore`, fr: `${baseUrl}/fr/explore` }
+    { en: `${baseUrl}/explore`, fr: `${baseUrl}/fr/explore` },
+    { en: `${baseUrl}/trust-engine`, fr: `${baseUrl}/fr/trust-engine` },
+    { en: `${baseUrl}/policy-control`, fr: `${baseUrl}/fr/policy-control` },
+    { en: `${baseUrl}/audit-trail`, fr: `${baseUrl}/fr/audit-trail` }
   ];
 
   const urls = pages

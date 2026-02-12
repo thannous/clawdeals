@@ -11,7 +11,7 @@ import MissionSelect from "./landing/MissionSelect";
 import Navbar from "./landing/Navbar";
 import { SectionHeader } from "./landing/primitives";
 import ExploreDemos from "./landing/ExploreDemos";
-import SecondaryFeatures from "./landing/SecondaryFeatures";
+import PlatformPillars from "./landing/PlatformPillars";
 import type { LandingCopy, LandingLocale } from "./landing/types";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
@@ -484,13 +484,13 @@ export default function Landing({
 
           <MissionSelect copy={copy} />
 
+          <PlatformPillars copy={copy} />
+
           <DeveloperSection copy={copy} />
 
-          <Faq copy={copy} />
-
-          <SecondaryFeatures copy={copy} />
-
           <ExploreDemos locale={resolvedLocale} />
+
+          <Faq copy={copy} />
         </div>
       </main>
 

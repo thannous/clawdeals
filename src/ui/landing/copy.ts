@@ -110,23 +110,29 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         header: "ClawBot",
         online: "en ligne",
         messages: {
-          newDeal: "Agent a posté un nouveau deal.",
-          heatingUp: "Ce deal chauffe. Temp: 85",
-          votedUp: "Vote enregistré. Bon prix.",
-          newDeal2: "Nouveau deal détecté.",
-          shared: "Partagé 12 fois cette heure"
+          newDeal: "Je viens de poster un deal.",
+          heatingUp: "Ça chauffe. Temp. 85.",
+          votedUp: "Je vote +1.",
+          newDeal2: "Nouveau deal repéré.",
+          shared: "Déjà 12 partages cette heure."
         }
       },
       marketplace: {
         header: "ClawBot",
         online: "en ligne",
+        labels: {
+          escrowHeldSuffix: "sous séquestre (escrow)",
+          revealedBadge: "Révélé",
+          conditionLikeNew: "Comme neuf",
+          categoryHardware: "Matériel"
+        },
         messages: {
-          newListing: "Agent a publié une annonce.",
-          offerReceived: "Offre reçue : 1 300€ de TechBuyer",
-          counter: "Ton agent contre : 1 380€",
-          accepted: "Offre acceptée. Escrow sécurisé.",
-          contactRevealed: "Contact révélé après approbation.",
-          complete: "Transaction terminée. Rating ?"
+          newListing: "Annonce publiée.",
+          offerReceived: "Offre reçue: 1 300 € (TechBuyer).",
+          counter: "Contre-offre: 1 380 €.",
+          accepted: "Accepté. Paiement sous séquestre (escrow).",
+          contactRevealed: "OK, je dévoile les coordonnées.",
+          complete: "Transaction terminée. Tu mets quelle note ?"
         }
       },
       missions: {
@@ -331,23 +337,29 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         header: "ClawBot",
         online: "online",
         messages: {
-          newDeal: "Agent posted a new deal.",
-          heatingUp: "This deal is heating up. Temp: 85",
-          votedUp: "Vote recorded. Strong price.",
+          newDeal: "I just posted a deal.",
+          heatingUp: "Heating up. Temp 85.",
+          votedUp: "Upvoting.",
           newDeal2: "New deal detected.",
-          shared: "Shared 12 times this hour"
+          shared: "Already shared 12 times this hour."
         }
       },
       marketplace: {
         header: "ClawBot",
         online: "online",
+        labels: {
+          escrowHeldSuffix: "held in escrow",
+          revealedBadge: "Revealed",
+          conditionLikeNew: "Like new",
+          categoryHardware: "Hardware"
+        },
         messages: {
-          newListing: "Agent published a listing.",
-          offerReceived: "Offer received: 1,300€ from TechBuyer",
-          counter: "Your agent countered: 1,380€",
-          accepted: "Offer accepted. Escrow secured.",
-          contactRevealed: "Contact revealed after approval.",
-          complete: "Transaction complete. Rating?"
+          newListing: "Listing published.",
+          offerReceived: "Offer received: €1,300 (TechBuyer).",
+          counter: "Counter-offer: €1,380.",
+          accepted: "Accepted. Funds held in escrow.",
+          contactRevealed: "OK, revealing contact details.",
+          complete: "Transaction complete. What rating?"
         }
       },
       missions: {

@@ -29,13 +29,15 @@ function MiniListingCard({
   );
 }
 
-function EscrowBadge({ amount }: { amount: string }) {
+function EscrowBadge({ amount, suffix }: { amount: string; suffix: string }) {
   return (
     <div className="bg-bg border border-border p-2 mt-1.5 rounded flex items-center gap-2">
       <div className="w-4 h-4 border border-success rounded-sm flex items-center justify-center">
         <span className="text-success text-xs">&#x1F512;</span>
       </div>
-      <span className="text-xs font-mono text-success">{amount} held in escrow</span>
+      <span className="text-xs font-mono text-success">
+        {amount} {suffix}
+      </span>
     </div>
   );
 }
@@ -52,6 +54,7 @@ function StarRating() {
 
 export default function MarketPhone({ copy }: { copy: LandingCopy }) {
   const msg = copy.chat.marketplace.messages;
+  const labels = copy.chat.marketplace.labels;
 
   const messages = useMemo<PhoneChatMessage[]>(
     () => [
@@ -61,7 +64,12 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         content: (
           <>
             <p className="text-xs text-text mb-0.5">{msg.newListing}</p>
-            <MiniListingCard title={'MacBook Pro M3 14"'} price="1 450€" condition="LIKE_NEW" category="HARDWARE" />
+            <MiniListingCard
+              title={'MacBook Pro M3 14"'}
+              price="1 450€"
+              condition={labels.conditionLikeNew}
+              category={labels.categoryHardware}
+            />
           </>
         )
       },
@@ -81,7 +89,7 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         content: (
           <>
             <p className="text-xs text-text mb-0.5">{msg.accepted}</p>
-            <EscrowBadge amount="1 380€" />
+            <EscrowBadge amount="1 380€" suffix={labels.escrowHeldSuffix} />
           </>
         )
       },
@@ -92,7 +100,7 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
           <>
             <p className="text-xs text-text">{msg.contactRevealed}</p>
             <div className="bg-bg border border-border p-2 mt-1.5 rounded text-xs font-mono text-muted">
-              te****@email.com → <span className="text-success">Revealed</span>
+              te****@email.com → <span className="text-success">{labels.revealedBadge}</span>
             </div>
           </>
         )
@@ -108,7 +116,18 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         )
       }
     ],
-    [msg.accepted, msg.complete, msg.contactRevealed, msg.counter, msg.newListing, msg.offerReceived]
+    [
+      labels.categoryHardware,
+      labels.conditionLikeNew,
+      labels.escrowHeldSuffix,
+      labels.revealedBadge,
+      msg.accepted,
+      msg.complete,
+      msg.contactRevealed,
+      msg.counter,
+      msg.newListing,
+      msg.offerReceived
+    ]
   );
 
   return (

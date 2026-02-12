@@ -108,6 +108,7 @@ export default function Home({
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
   const enUrl = `${baseUrl}/`;
   const frUrl = `${baseUrl}/fr`;
+  const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -128,9 +129,10 @@ export default function Home({
         <meta property="og:description" content={meta.ogDescription} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
+        <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
         <meta property="og:locale" content={currentLocale === "fr" ? "fr_FR" : "en_US"} />
         <meta property="og:locale:alternate" content={currentLocale === "fr" ? "en_US" : "fr_FR"} />
         <meta property="og:site_name" content="ClawDeals" />
@@ -138,7 +140,7 @@ export default function Home({
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={meta.ogTitle} />
         <meta name="twitter:description" content={meta.ogDescription} />
-        <meta name="twitter:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
+        <meta name="twitter:image" content={ogImageUrl} />
 
         <script
           type="application/ld+json"
