@@ -429,6 +429,8 @@ export async function handler(req: any, _res: any, ctx: any) {
 
   if (LOGOUT_ACTIONS.has(action)) {
     const cookieSecure = isSecureRequest(req);
+    const cookieHost =
+      normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-host")) || normalizeNonEmptyString(getHeaderValue(req, "host"));
 
     const sessionToken = readOwnerSessionCookie(req);
     if (sessionToken && isOwnerSessionToken(sessionToken)) {
@@ -453,7 +455,7 @@ export async function handler(req: any, _res: any, ctx: any) {
       200,
       { data: { ok: true } },
       {
-        "Set-Cookie": buildOwnerSessionClearCookies({ secure: cookieSecure }),
+        "Set-Cookie": buildOwnerSessionClearCookies({ secure: cookieSecure, host: cookieHost }),
         "Cache-Control": "no-store"
       }
     );

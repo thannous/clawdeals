@@ -247,15 +247,21 @@ describe("POST /v1/auth/[action]", () => {
     expect(ctx.auditEvent).toBe("owner.login_completed");
   });
 
-  it("clears session cookie on logout", async () => {
-    const result: any = await handler(makeReq("logout"), null, makeCtx());
+	  it("clears session cookie on logout", async () => {
+	    const result: any = await handler(makeReq("logout"), null, makeCtx());
 
-    expect(result.status).toBe(200);
-    const setCookie = result.headers["Set-Cookie"];
-    const all = Array.isArray(setCookie) ? setCookie : [String(setCookie || "")];
-    expect(all.some((value) => String(value).includes("Max-Age=0"))).toBe(true);
-    expect(result.body.data.ok).toBe(true);
-  });
+	    expect(result.status).toBe(200);
+	    const setCookie = result.headers["Set-Cookie"];
+	    const all = Array.isArray(setCookie) ? setCookie : [String(setCookie || "")];
+	    expect(all.length).toBeGreaterThan(1);
+	    expect(all.some((value) => String(value).startsWith("cd_owner_session="))).toBe(true);
+	    expect(all.some((value) => String(value).startsWith("__Secure-cd_owner_session="))).toBe(true);
+	    expect(all.some((value) => String(value).startsWith("__Host-cd_owner_session="))).toBe(true);
+	    expect(all.some((value) => String(value).includes("Path=/"))).toBe(true);
+	    expect(all.some((value) => String(value).includes("Path=/api"))).toBe(true);
+	    expect(all.some((value) => String(value).includes("Max-Age=0"))).toBe(true);
+	    expect(result.body.data.ok).toBe(true);
+	  });
 
   it("requires bearer authorization for session:bridge", async () => {
     const missingAuthResult: any = await handler(makeReq("session:bridge", {}), null, makeCtx());
