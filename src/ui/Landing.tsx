@@ -10,6 +10,7 @@ import HowItWorks from "./landing/HowItWorks";
 import MissionSelect from "./landing/MissionSelect";
 import Navbar from "./landing/Navbar";
 import { SectionHeader } from "./landing/primitives";
+import ExploreDemos from "./landing/ExploreDemos";
 import SecondaryFeatures from "./landing/SecondaryFeatures";
 import type { LandingCopy, LandingLocale } from "./landing/types";
 
@@ -486,6 +487,8 @@ export default function Landing({
           <DeveloperSection copy={copy} />
 
           <Faq copy={copy} />
+
+          <ExploreDemos locale={resolvedLocale} />
 
           <SecondaryFeatures copy={copy} />
         </div>
