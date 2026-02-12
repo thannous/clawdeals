@@ -6,7 +6,8 @@
   "compatibility_date": "2026-02-02",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "SITE_URL": "https://www.clawdeals.com",
+    "SITE_URL": "https://clawdeals.com",
+    "MARKETING_HOSTS": "clawdeals.com",
     "NEXT_PUBLIC_APP_URL": "https://app.clawdeals.com",
     "NEXT_PUBLIC_APP_ENTRY_PATH": "/start"
   },

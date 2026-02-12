@@ -9,7 +9,7 @@ function baseUrlFromRequest(req: any): string {
 
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
   const proto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (!host) return "https://www.clawdeals.com";
+  if (!host) return "https://clawdeals.com";
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 

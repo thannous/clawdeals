@@ -1,6 +1,6 @@
 # Hosting: Landing Cloudflare, App Vercel
 
-Objectif: garder la landing SEO sur Cloudflare (`www.clawdeals.com`) et mettre la partie applicative sur Vercel (`app.clawdeals.com`).
+Objectif: garder la landing SEO sur Cloudflare (`clawdeals.com`) et mettre la partie applicative sur Vercel (`app.clawdeals.com`).
 
 Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 - DNS (2 hosts).
@@ -26,14 +26,15 @@ Branch/deployment mapping:
 
 ## Cible des domaines
 
-- Marketing (Cloudflare Workers / OpenNext): `https://www.clawdeals.com` (+ `https://clawdeals.com` qui redirige vers `www` si tu le souhaites cote Cloudflare).
+- Marketing (Cloudflare Workers / OpenNext): `https://clawdeals.com` (+ `https://www.clawdeals.com` qui redirige vers l'apex).
 - App (Vercel): `https://app.clawdeals.com`
 
 Routage attendu:
-- `www.clawdeals.com/` sert la landing.
-- `www.clawdeals.com/deals*` et `www.clawdeals.com/console*` redirigent vers `app.clawdeals.com` (308).
+- `clawdeals.com/` sert la landing.
+- `www.clawdeals.com/*` redirige vers `clawdeals.com/*` (308).
+- `clawdeals.com/deals*` et `clawdeals.com/console*` redirigent vers `app.clawdeals.com` (308).
 - `app.clawdeals.com/` redirige vers `/deals` (308).
-- `*.vercel.app/*` redirige vers `www` ou `app` (308) pour eviter du contenu non-canonique.
+- `*.vercel.app/*` redirige vers `clawdeals.com` ou `app` (308) pour eviter du contenu non-canonique.
 
 ## Setup Vercel (app.clawdeals.com)
 
@@ -48,7 +49,7 @@ Note SSE: si tu utilises le live feed (`/console/live-feed`) en production, evit
 ### Vercel Production (`main`)
 
 - `APP_HOST=app.clawdeals.com`
-- `MARKETING_HOSTS=clawdeals.com,www.clawdeals.com`
+- `MARKETING_HOSTS=clawdeals.com`
 - `NEXT_PUBLIC_APP_URL=https://app.clawdeals.com`
 - `APP_ENTRY_PATH=/start` (recommended pour self-serve dev; sinon `/deals` ou `/console`)
 - `SUPABASE_URL=<SUPABASE_URL_PROD>`
@@ -66,7 +67,7 @@ Optionnel (SSE hors Vercel):
 ### Vercel Preview/Staging (`staging` branch)
 
 - `APP_HOST=staging.app.clawdeals.com`
-- `MARKETING_HOSTS=clawdeals.com,www.clawdeals.com`
+- `MARKETING_HOSTS=clawdeals.com`
 - `NEXT_PUBLIC_APP_URL=https://staging.app.clawdeals.com`
 - `APP_ENTRY_PATH=/start`
 - `SUPABASE_URL=<SUPABASE_URL_STAGING>`
@@ -84,7 +85,7 @@ Important:
 - `NEXT_PUBLIC_APP_URL=https://app.clawdeals.com` (utilise pour les liens vers l'app)
 - `NEXT_PUBLIC_APP_ENTRY_PATH=/start` (CTA "Get API key" -> onboarding dev; sinon `/deals` ou `/console`)
 - `NEXT_PUBLIC_API_BASE_URL=https://app.clawdeals.com` (uniquement si tu veux que la waitlist poste vers l'API Vercel)
-- `SITE_URL=https://www.clawdeals.com` (utilise pour canonical/robots/sitemap)
+- `SITE_URL=https://clawdeals.com` (utilise pour canonical/robots/sitemap)
 
 Also document a staging marketing setup (if enabled later):
 - `NEXT_PUBLIC_API_BASE_URL=https://staging.app.clawdeals.com`
@@ -105,14 +106,14 @@ L'app (`app.*`) n'est pas une surface SEO:
 - `robots.txt` y renvoie `Disallow: /`.
 - `sitemap.xml` renvoie 404.
 
-La landing (`www.*`) reste la source canonique (SSR + cache edge).
+La landing (`clawdeals.com`) reste la source canonique (SSR + cache edge).
 
 ## Verifications rapides
 
-1. Ouvrir `https://www.clawdeals.com/` puis cliquer les CTA: tu dois arriver sur `https://app.clawdeals.com/deals`.
-2. `https://www.clawdeals.com/deals` doit rediriger vers `https://app.clawdeals.com/deals`.
+1. Ouvrir `https://clawdeals.com/` puis cliquer les CTA: tu dois arriver sur `https://app.clawdeals.com/deals`.
+2. `https://clawdeals.com/deals` doit rediriger vers `https://app.clawdeals.com/deals`.
 3. `https://app.clawdeals.com/robots.txt` doit etre un `Disallow`.
-4. Waitlist: soumettre un email sur `www` et verifier le POST vers l'API attendue (meme origin ou `app`).
+4. Waitlist: soumettre un email sur l'apex et verifier le POST vers l'API attendue (meme origin ou `app`).
 
 ## Related Runbooks
 

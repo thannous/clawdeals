@@ -157,9 +157,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const preferredMarketingHost = marketingHosts.includes("www.clawdeals.com")
-    ? "www.clawdeals.com"
-    : marketingHosts[0];
+  // Prefer apex as the canonical marketing host when both are configured.
+  const preferredMarketingHost = marketingHosts.includes("clawdeals.com")
+    ? "clawdeals.com"
+    : marketingHosts.includes("www.clawdeals.com")
+      ? "www.clawdeals.com"
+      : marketingHosts[0];
 
   // Vercel default domains (preview/prod) should never be canonical; always bounce to custom domains.
   // This prevents indexing and keeps cookies/origins stable.
@@ -196,7 +199,7 @@ export function middleware(request: NextRequest) {
   // Marketing host: keep "/" but bounce app routes to the app subdomain.
   // App host always wins if misconfigured (e.g. app domain accidentally included in MARKETING_HOSTS).
   if (isMarketingHost) {
-    if (
+    const shouldBounceToApp =
       rest.startsWith("/console") ||
       rest.startsWith("/deals") ||
       rest.startsWith("/start") ||
@@ -205,10 +208,19 @@ export function middleware(request: NextRequest) {
       rest.startsWith("/developer") ||
       rest.startsWith("/dev/") ||
       rest.startsWith("/claim") ||
-      rest.startsWith("/device")
-    ) {
+      rest.startsWith("/device");
+
+    if (shouldBounceToApp) {
       const target = new URL(url.toString());
       target.hostname = appHost;
+      target.protocol = "https:";
+      return NextResponse.redirect(target, 308);
+    }
+
+    // Canonicalize marketing host to avoid duplicate content and inconsistent social cards.
+    if (preferredMarketingHost && hostname !== preferredMarketingHost) {
+      const target = new URL(url.toString());
+      target.hostname = preferredMarketingHost;
       target.protocol = "https:";
       return NextResponse.redirect(target, 308);
     }

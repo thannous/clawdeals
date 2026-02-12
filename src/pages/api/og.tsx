@@ -30,7 +30,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   <!-- tagline -->
   <text x="80" y="370" font-family="sans-serif" font-size="24" fill="#888888">${tagline}</text>
   <!-- url -->
-  <text x="80" y="580" font-family="monospace" font-size="14" fill="#555555" letter-spacing="3">www.clawdeals.com</text>
+  <text x="80" y="580" font-family="monospace" font-size="14" fill="#555555" letter-spacing="3">clawdeals.com</text>
 </svg>`;
 
   res.setHeader("Content-Type", "image/svg+xml");

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Share2 } from "lucide-react";
 
-const SHARE_URL = "https://www.clawdeals.com";
+const SHARE_URL = "https://clawdeals.com";
 
 type ShareChannel = {
   key: string;

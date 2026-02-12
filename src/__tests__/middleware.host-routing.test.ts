@@ -75,14 +75,20 @@ describe("middleware host routing", () => {
   });
 
   it("keeps marketing / as-is", () => {
-    const res = middleware(makeReq("https://www.clawdeals.com/", "www.clawdeals.com"));
+    const res = middleware(makeReq("https://clawdeals.com/", "clawdeals.com"));
     expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("canonicalizes www marketing host to apex on non-app routes", () => {
+    const res = middleware(makeReq("https://www.clawdeals.com/", "www.clawdeals.com"));
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://clawdeals.com/");
   });
 
   it("bounces non-app route on app host back to marketing", () => {
     const res = middleware(makeReq("https://app.clawdeals.com/pricing", "app.clawdeals.com"));
     expect(res?.status).toBe(308);
-    expect(res?.headers.get("location")).toBe("https://www.clawdeals.com/pricing");
+    expect(res?.headers.get("location")).toBe("https://clawdeals.com/pricing");
   });
 
   it("does not redirect static assets on app host", () => {
