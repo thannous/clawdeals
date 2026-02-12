@@ -488,9 +488,9 @@ export default function Landing({
 
           <Faq copy={copy} />
 
-          <ExploreDemos locale={resolvedLocale} />
-
           <SecondaryFeatures copy={copy} />
+
+          <ExploreDemos locale={resolvedLocale} />
         </div>
       </main>
 
