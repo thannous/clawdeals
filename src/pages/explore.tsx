@@ -105,7 +105,9 @@ export default function Explore({
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
   const enUrl = `${baseUrl}/explore`;
   const frUrl = `${baseUrl}/fr/explore`;
-  const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow";
+  const robotsContent = isPreviewHost
+    ? "noindex,follow"
+    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
   return (
     <>
@@ -134,6 +136,26 @@ export default function Explore({
         <meta name="twitter:title" content={meta.ogTitle} />
         <meta name="twitter:description" content={meta.ogDescription} />
         <meta name="twitter:image" content={`${baseUrl}/api/og?locale=${currentLocale}`} />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "CollectionPage",
+                  "@id": canonicalUrl,
+                  url: canonicalUrl,
+                  name: meta.title,
+                  description: meta.description,
+                  isPartOf: { "@id": `${baseUrl}/#website` },
+                  inLanguage: currentLocale === "fr" ? "fr-FR" : "en-US"
+                }
+              ]
+            })
+          }}
+        />
       </Head>
       <ExplorePage
         locale={currentLocale}

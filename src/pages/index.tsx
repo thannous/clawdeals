@@ -108,7 +108,9 @@ export default function Home({
   const canonicalUrl = `${baseUrl}${canonicalPath}`;
   const enUrl = `${baseUrl}/`;
   const frUrl = `${baseUrl}/fr`;
-  const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow";
+  const robotsContent = isPreviewHost
+    ? "noindex,follow"
+    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
   return (
     <>
