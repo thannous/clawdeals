@@ -72,6 +72,7 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -359,20 +360,32 @@ export default function LoginPage() {
                   <label className="block text-xs font-mono text-subtle uppercase tracking-wider" htmlFor="auth-password">
                     Password
                   </label>
-                  <input
-                    id="auth-password"
-                    name="password"
-                    type="password"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    data-testid="auth-login-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                    className="w-full px-4 py-3 text-sm font-mono bg-bg/60 border border-border rounded text-text placeholder:text-subtle/60 focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface transition-colors"
-                  />
+                  <div className="relative">
+                    <input
+                      id="auth-password"
+                      name="password"
+                      type={isPasswordVisible ? "text" : "password"}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      data-testid="auth-login-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                      className="w-full px-4 py-3 pr-24 text-sm font-mono bg-bg/60 border border-border rounded text-text placeholder:text-subtle/60 focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface transition-colors"
+                    />
+                    <button
+                      type="button"
+                      data-testid="auth-login-password-toggle"
+                      aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                      aria-pressed={isPasswordVisible}
+                      onClick={() => setIsPasswordVisible((previous) => !previous)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider border border-border text-text rounded bg-bg/80 hover:border-primary/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    >
+                      {isPasswordVisible ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
 
                 {error && (

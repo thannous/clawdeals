@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { useCallback, useState } from "react";
+
+import { clearStoredOwnerAuth } from "../auth/ownerAuth";
 
 type SettingsNavCurrent = "account" | "identities" | "connected-apps";
 
@@ -15,6 +19,21 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function SettingsNav({ current }: { current: SettingsNavCurrent }) {
+  const router = useRouter();
+  const [logoutState, setLogoutState] = useState<"idle" | "loading">("idle");
+
+  const onLogout = useCallback(async () => {
+    if (logoutState === "loading") return;
+    setLogoutState("loading");
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+    } catch {
+      // Always clear local state and redirect to login even if logout endpoint fails.
+    }
+    clearStoredOwnerAuth();
+    void router.replace("/auth/login");
+  }, [logoutState, router]);
+
   return (
     <nav data-testid="settings-nav" aria-label="Settings navigation" className="mt-3 flex flex-wrap items-center gap-2">
       {NAV_ITEMS.map((item) => {
@@ -41,6 +60,15 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
       >
         Start
       </Link>
+      <button
+        type="button"
+        data-testid="settings-logout"
+        onClick={onLogout}
+        disabled={logoutState === "loading"}
+        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
+      >
+        {logoutState === "loading" ? "Signing out..." : "Logout"}
+      </button>
     </nav>
   );
 }

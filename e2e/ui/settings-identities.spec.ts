@@ -12,6 +12,38 @@ const mockChannels = [
 ];
 
 test.describe("Settings: Linked Identities", () => {
+  test("logs out and redirects to login", async ({ page }) => {
+    await page.route("**/api/v1/owner/identities**", async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            owner_id: "11111111-1111-4111-8111-111111111111",
+            email_masked: "o***@example.com",
+            email_verified_at: "2026-02-10T12:00:00Z",
+            channels: []
+          }
+        })
+      });
+    });
+
+    let logoutCalled = false;
+    await page.route("**/api/v1/auth/logout", async (route) => {
+      expect(route.request().method()).toBe("POST");
+      logoutCalled = true;
+      return route.fulfill({ status: 204, body: "" });
+    });
+
+    await page.goto("/settings/identities");
+    await expect(page.getByTestId("settings-logout")).toBeVisible();
+
+    await page.getByTestId("settings-logout").click();
+    await page.waitForURL("**/auth/login");
+    expect(logoutCalled).toBe(true);
+  });
+
   test("renders identities and unlinks one", async ({ page }) => {
     let channels = [...mockChannels];
 

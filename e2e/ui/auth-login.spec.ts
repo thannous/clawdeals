@@ -9,6 +9,25 @@ test.describe("Auth: Login", () => {
     await expect(page.getByTestId("auth-login-legacy-link")).toHaveAttribute("href", "/auth/login-legacy");
   });
 
+  test("toggles password visibility", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    const passwordInput = page.getByTestId("auth-login-password");
+    const passwordToggle = page.getByTestId("auth-login-password-toggle");
+
+    await passwordInput.fill("SuperSecret123!");
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(passwordToggle).toHaveText("Show");
+
+    await passwordToggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    await expect(passwordToggle).toHaveText("Hide");
+
+    await passwordToggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(passwordToggle).toHaveText("Show");
+  });
+
   test("requests legacy magic link and shows verify link", async ({ page }) => {
     let loginStarted = false;
 
