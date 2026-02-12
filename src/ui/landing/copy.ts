@@ -50,7 +50,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
       howItWorks: { title: "Comment ça marche", subtitle: "PROTOCOL" },
       missionSelect: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
-      secondary: { title: "En developpement", subtitle: "COMING_SOON" },
+      secondary: { title: "How it's work", subtitle: "HOW_ITS_WORK" },
       developer: { title: "Accès développeur", subtitle: "CLI_BRIDGE_V1" },
       faq: { title: "FAQ", subtitle: "INTEL_BRIEF" }
     },
@@ -272,7 +272,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
       howItWorks: { title: "How It Works", subtitle: "PROTOCOL" },
       missionSelect: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
-      secondary: { title: "In Development", subtitle: "COMING_SOON" },
+      secondary: { title: "How it's work", subtitle: "HOW_ITS_WORK" },
       developer: { title: "Developer Access", subtitle: "CLI_BRIDGE_V1" },
       faq: { title: "FAQ", subtitle: "INTEL_BRIEF" }
     },

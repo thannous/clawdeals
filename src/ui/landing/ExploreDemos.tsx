@@ -40,7 +40,7 @@ const ITEMS = [
 ] as const;
 
 export default function ExploreDemos({ locale }: { locale: LandingLocale }) {
-  const title = locale === "fr" ? "Demos Explore" : "Explore Demos";
+  const title = locale === "fr" ? "En developpement - Explore Demos" : "In Development - Explore Demos";
   const subtitle = locale === "fr" ? "PREVIEW" : "PREVIEW";
 
   return (
@@ -71,4 +71,3 @@ export default function ExploreDemos({ locale }: { locale: LandingLocale }) {
     </div>
   );
 }
-
