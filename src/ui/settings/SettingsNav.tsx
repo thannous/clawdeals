@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useCallback, useState } from "react";
 
 import { clearStoredOwnerAuth } from "../auth/ownerAuth";
+import { getBrowserSupabaseClient } from "../auth/supabase-client";
 
 type SettingsNavCurrent = "account" | "identities" | "connected-apps";
 
@@ -29,6 +30,13 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
       await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
     } catch {
       // Always clear local state and redirect to login even if logout endpoint fails.
+    }
+    try {
+      // Ensure we don't immediately re-bridge an existing Supabase session on /auth/login.
+      const supabase = getBrowserSupabaseClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Best-effort only.
     }
     clearStoredOwnerAuth();
     void router.replace("/auth/login");
