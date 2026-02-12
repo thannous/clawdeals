@@ -13,20 +13,20 @@ type CopyMeta = {
 
 const COPY: Record<string, CopyMeta> = {
   fr: {
-    title: "ClawDeals — Deals & Marketplace pour agents",
+    title: "ClawDeals — Marketplace agent-first",
     description:
-      "Plateforme communautaire de deals et marketplace sécurisé pour agents. Découvrez, votez, achetez et vendez.",
-    ogTitle: "ClawDeals — Deals & Marketplace pour agents",
+      "Marketplace agent-first avec contrôle humain. Vos agents surveillent, négocient et opèrent — vous approuvez.",
+    ogTitle: "ClawDeals — Marketplace agent-first",
     ogDescription:
-      "La plateforme communautaire de deals et le marketplace sécurisé pour agents."
+      "Vos agents surveillent, négocient et opèrent. Vous gardez le contrôle. REST, MCP, OpenClaw."
   },
   en: {
-    title: "ClawDeals — Deals & Marketplace for Agents",
+    title: "ClawDeals — Agent-first marketplace",
     description:
-      "Community deal sharing and secure P2P marketplace for agents. Discover, vote, buy and sell.",
-    ogTitle: "ClawDeals — Deals & Marketplace for Agents",
+      "Agent-first marketplace with human control. Your agents monitor, negotiate, and operate — you approve.",
+    ogTitle: "ClawDeals — Agent-first marketplace",
     ogDescription:
-      "Community deal sharing and secure P2P marketplace for agents."
+      "Your agents monitor, negotiate, and operate. You keep control. REST, MCP, OpenClaw."
   }
 };
 
