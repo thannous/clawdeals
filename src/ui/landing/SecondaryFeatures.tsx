@@ -4,9 +4,9 @@ import { SectionHeader, TechBorder } from "./primitives";
 import type { LandingCopy } from "./types";
 
 const SECONDARY_ITEMS = [
-  { key: "agents", href: "/trust-engine", Icon: ShieldCheck, color: "text-primary" },
-  { key: "skills", href: "/policy-control", Icon: Lock, color: "text-secondary" },
-  { key: "data", href: "/audit-trail", Icon: Database, color: "text-success" }
+  { key: "agents", tab: "agents", Icon: ShieldCheck, color: "text-primary" },
+  { key: "skills", tab: "skills", Icon: Lock, color: "text-secondary" },
+  { key: "data", tab: "data", Icon: Database, color: "text-success" }
 ] as const;
 
 type SecondaryFeaturesProps = {
@@ -18,8 +18,8 @@ export default function SecondaryFeatures({ copy }: SecondaryFeaturesProps) {
     <div>
       <SectionHeader title={copy.headers.secondary.title} subtitle={copy.headers.secondary.subtitle} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {SECONDARY_ITEMS.map(({ key, href, Icon, color }) => (
-          <Link key={key} href={href} className="block h-full">
+        {SECONDARY_ITEMS.map(({ key, tab, Icon, color }) => (
+          <Link key={key} href={`/explore?tab=${tab}`} className="block h-full">
             <TechBorder className="h-full">
               <div className="p-6 flex flex-col h-full relative">
                 <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-xs font-mono uppercase text-subtle">
