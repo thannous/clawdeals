@@ -206,7 +206,7 @@ export default function AccountPage() {
   return (
     <div data-testid="account-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-[1440px] mx-auto px-4 py-3 space-y-3">
+        <div className="w-full px-4 py-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
               <span className="text-primary">/ </span>MY ACCOUNT
@@ -223,7 +223,7 @@ export default function AccountPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-[1440px] mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         {authRequired && (
           <div data-testid="account-unauthorized" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
             <div className="text-xs font-mono text-error">Login required</div>
