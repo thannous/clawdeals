@@ -43,7 +43,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
   }, [logoutState, router]);
 
   return (
-    <nav data-testid="settings-nav" aria-label="Settings navigation" className="mt-3 flex flex-wrap items-center gap-2">
+    <nav data-testid="settings-nav" aria-label="Settings navigation" className="mt-4 flex flex-wrap items-center gap-2">
       {NAV_ITEMS.map((item) => {
         const active = item.key === current;
         return (
@@ -52,10 +52,10 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={[
-              "px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors",
+              "px-3.5 py-2 text-xs font-mono font-bold uppercase border rounded-md transition-all",
               active
-                ? "border-primary text-primary bg-primary/10"
-                : "border-border text-muted hover:border-border-strong hover:text-text"
+                ? "border-primary/50 text-primary bg-primary/8"
+                : "border-transparent text-muted hover:text-text hover:bg-surface-alt/40"
             ].join(" ")}
           >
             {item.label}
@@ -64,19 +64,21 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
       })}
       <Link
         href="/start"
-        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+        className="px-3.5 py-2 text-xs font-mono font-bold uppercase border border-transparent text-muted rounded-md hover:text-text hover:bg-surface-alt/40 transition-all"
       >
         Start
       </Link>
-      <button
-        type="button"
-        data-testid="settings-logout"
-        onClick={onLogout}
-        disabled={logoutState === "loading"}
-        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
-      >
-        {logoutState === "loading" ? "Signing out..." : "Logout"}
-      </button>
+      <div className="ml-auto">
+        <button
+          type="button"
+          data-testid="settings-logout"
+          onClick={onLogout}
+          disabled={logoutState === "loading"}
+          className="px-3.5 py-2 text-xs font-mono font-bold uppercase border border-error/30 text-error/80 rounded-md hover:bg-error/10 hover:text-error transition-all disabled:opacity-50"
+        >
+          {logoutState === "loading" ? "Signing out..." : "Logout"}
+        </button>
+      </div>
     </nav>
   );
 }

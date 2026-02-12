@@ -64,9 +64,9 @@ function formatAgentName(agent: OwnerAgent, index: number): string {
 
 function activityOutcomeClass(outcome: string | null): string {
   const value = String(outcome || "").toUpperCase();
-  if (value === "SUCCESS") return "border-success-muted/40 text-success-muted bg-success-muted/10";
-  if (value === "BLOCKED") return "border-warning-muted/40 text-warning-muted bg-warning-muted/10";
-  if (value === "FAILURE") return "border-error-muted/40 text-error-muted bg-error-muted/10";
+  if (value === "SUCCESS") return "border-success/30 text-success bg-success/8";
+  if (value === "BLOCKED") return "border-warning/30 text-warning bg-warning/8";
+  if (value === "FAILURE") return "border-error/30 text-error bg-error/8";
   return "border-border text-subtle bg-bg/40";
 }
 
@@ -74,6 +74,13 @@ function formatActionLabel(action: string): string {
   const raw = String(action || "").trim();
   if (!raw) return "unknown.action";
   return raw;
+}
+
+function trustScoreColor(score: number | null): string {
+  if (score === null || score === undefined) return "text-subtle";
+  if (score >= 40) return "text-success";
+  if (score >= 20) return "text-warning";
+  return "text-error";
 }
 
 export default function AccountPage() {
@@ -205,16 +212,17 @@ export default function AccountPage() {
 
   return (
     <div data-testid="account-page" className="min-h-screen bg-bg">
+      {/* ---- Header ---- */}
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-3 space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
+        <div className="w-full max-w-[1440px] mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <h1 className="text-xl font-bold tracking-wider text-text text-shadow-glow">
               <span className="text-primary">/ </span>MY ACCOUNT
             </h1>
             <button
               data-testid="account-refresh"
               onClick={fetchAccount}
-              className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+              className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary/50 hover:text-primary transition-colors"
             >
               Refresh
             </button>
@@ -223,13 +231,15 @@ export default function AccountPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
+      {/* ---- Main ---- */}
+      <main id="main-content" tabIndex={-1} className="w-full max-w-[1440px] mx-auto px-6 py-8">
+        {/* Auth required */}
         {authRequired && (
-          <div data-testid="account-unauthorized" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-error">Login required</div>
-            <div className="text-xs font-mono text-muted mt-1">
+          <div data-testid="account-unauthorized" className="border border-error/30 bg-error/5 rounded clip-corner p-4">
+            <div className="text-sm font-mono font-semibold text-error">Login required</div>
+            <div className="text-sm font-mono text-muted mt-1.5">
               Go to{" "}
-              <Link className="text-text underline" href="/auth/login">
+              <Link className="text-primary hover:underline" href="/auth/login">
                 /auth/login
               </Link>{" "}
               to authenticate your owner session.
@@ -237,173 +247,251 @@ export default function AccountPage() {
           </div>
         )}
 
+        {/* Loading */}
         {!authRequired && state === "loading" && (
-          <div data-testid="account-loading" className="text-xs font-mono text-subtle">
-            Loading account data...
+          <div data-testid="account-loading" className="flex items-center gap-3 py-12">
+            <div className="h-4 w-4 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
+            <span className="text-sm font-mono text-subtle">Loading account data...</span>
           </div>
         )}
 
+        {/* Error */}
         {!authRequired && state === "error" && (
-          <div data-testid="account-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-error">Error</div>
-            <div className="text-xs font-mono text-muted mt-1">{error || "Failed to load account"}</div>
+          <div data-testid="account-error" className="border border-error/30 bg-error/5 rounded clip-corner p-4">
+            <div className="text-sm font-mono font-semibold text-error">Error</div>
+            <div className="text-sm font-mono text-muted mt-1.5">{error || "Failed to load account"}</div>
           </div>
         )}
 
+        {/* Loaded */}
         {!authRequired && state === "done" && (
-          <div className="border border-border rounded clip-corner overflow-hidden bg-surface min-h-[70vh]">
-            <div className="grid md:grid-cols-[320px_minmax(0,1fr)] min-h-[70vh]">
-              <aside className="border-r border-border/60 p-4 bg-[linear-gradient(180deg,rgba(78,26,110,0.95)_0%,rgba(47,16,68,0.95)_55%,rgba(30,14,46,0.95)_100%)]">
-                <div data-testid="account-owner-card" className="rounded clip-corner border border-white/15 bg-black/20 p-3">
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-white/70">Workspace</div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <div className="h-8 w-8 rounded bg-white/20 text-white text-xs font-mono font-bold flex items-center justify-center">
-                      {String(owner?.email || "OW").slice(0, 2).toUpperCase()}
+          <div className="border border-border rounded-lg overflow-hidden bg-surface/40 min-h-[75vh]">
+            <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] min-h-[75vh]">
+
+              {/* ======= Sidebar ======= */}
+              <aside className="border-r border-border/50 bg-surface/80 tech-grid">
+                <div className="p-5 space-y-6">
+
+                  {/* Owner card */}
+                  <div data-testid="account-owner-card" className="rounded-lg border border-border bg-bg/60 p-4">
+                    <div className="text-xs font-mono uppercase tracking-widest text-subtle mb-3">Workspace</div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-primary/15 border border-primary/25 text-primary text-sm font-mono font-bold flex items-center justify-center shrink-0">
+                        {String(owner?.email || "OW").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-text truncate">{owner?.email || "owner"}</div>
+                        <div className="text-xs font-mono text-subtle truncate mt-0.5">{owner?.owner_id || "-"}</div>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold text-white truncate">{owner?.email || "owner"}</div>
-                      <div className="text-[11px] font-mono text-white/60 truncate">{owner?.owner_id || "-"}</div>
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      <div className="flex items-center gap-2">
+                        {owner?.email_verified_at ? (
+                          <>
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
+                            <span className="text-xs font-mono text-success">VERIFIED</span>
+                            <span className="text-xs font-mono text-subtle ml-auto">{formatDate(owner.email_verified_at)}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-warning" />
+                            <span className="text-xs font-mono text-warning">UNVERIFIED</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-2 text-[11px] font-mono text-white/80">
-                    {owner?.email_verified_at ? `VERIFIED ${formatDate(owner.email_verified_at)}` : "UNVERIFIED"}
-                  </div>
+
+                  {/* Channels */}
+                  <section data-testid="account-agents">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-mono uppercase tracking-widest text-subtle">Channels</span>
+                      <span className="text-xs font-mono font-bold text-muted bg-bg/60 border border-border rounded-full px-2.5 py-0.5">
+                        {agents.length}
+                      </span>
+                    </div>
+                    {agents.length === 0 ? (
+                      <div className="text-sm font-mono text-muted leading-relaxed">
+                        No agent channels.{" "}
+                        <Link href="/start" className="text-primary hover:underline">
+                          Connect your first app
+                        </Link>
+                        .
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {agents.map((agent, index) => {
+                          const active = String(agent.agent_id) === selectedAgentId;
+                          return (
+                            <button
+                              key={agent.agent_id}
+                              onClick={() => setSelectedAgentId(String(agent.agent_id))}
+                              className={[
+                                "w-full text-left flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 transition-all",
+                                active
+                                  ? "bg-primary/10 border border-primary/25 text-text"
+                                  : "border border-transparent text-muted hover:bg-bg/60 hover:text-text hover:border-border/50"
+                              ].join(" ")}
+                            >
+                              <span className="truncate text-sm font-medium">
+                                <span className="text-primary/70 mr-1">#</span>
+                                {formatAgentName(agent, index)}
+                              </span>
+                              <span className={`text-xs font-mono shrink-0 ${active ? trustScoreColor(agent.trust_score) : "opacity-60"}`}>
+                                {typeof agent.trust_score === "number" ? agent.trust_score : "-"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* Requests */}
+                  <section data-testid="account-claims">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-mono uppercase tracking-widest text-subtle">Requests</span>
+                      <span className={`text-xs font-mono font-bold rounded-full px-2.5 py-0.5 ${
+                        pendingClaims > 0
+                          ? "text-primary bg-primary/10 border border-primary/25"
+                          : "text-muted bg-bg/60 border border-border"
+                      }`}>
+                        {pendingClaims}
+                      </span>
+                    </div>
+                    {claims.length === 0 ? (
+                      <div className="text-sm font-mono text-muted">No claim requests yet.</div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {claims.slice(0, 8).map((claim) => {
+                          const isPending = String(claim.status || "").toUpperCase() === "PENDING";
+                          return (
+                            <div
+                              key={claim.claim_id}
+                              className={`rounded-lg border px-3 py-2.5 ${
+                                isPending
+                                  ? "border-primary/20 bg-primary/5"
+                                  : "border-border/50 bg-bg/40"
+                              }`}
+                            >
+                              <div className="text-sm text-text truncate">{claim.requested_agent_name || "Unnamed request"}</div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-xs font-mono font-bold uppercase ${isPending ? "text-primary" : "text-subtle"}`}>
+                                  {String(claim.status || "unknown").toUpperCase()}
+                                </span>
+                                <span className="text-xs font-mono text-subtle">{formatDate(claim.created_at)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
                 </div>
-
-                <section data-testid="account-agents" className="mt-4">
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-white/60 mb-2 flex items-center justify-between">
-                    <span>Channels</span>
-                    <span className="rounded-full border border-white/20 bg-black/20 px-2 py-0.5 text-white/80">
-                      {agents.length}
-                    </span>
-                  </div>
-                  {agents.length === 0 ? (
-                    <div className="text-xs font-mono text-white/70">
-                      No agent channels.{" "}
-                      <Link href="/start" className="text-white underline">
-                        Connect your first app
-                      </Link>
-                      .
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {agents.map((agent, index) => {
-                        const active = String(agent.agent_id) === selectedAgentId;
-                        return (
-                          <button
-                            key={agent.agent_id}
-                            onClick={() => setSelectedAgentId(String(agent.agent_id))}
-                            className={[
-                              "w-full text-left flex items-center justify-between gap-2 rounded px-2 py-1.5 transition-colors",
-                              active ? "bg-white/20 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"
-                            ].join(" ")}
-                          >
-                            <span className="truncate text-sm">
-                              # {formatAgentName(agent, index)}
-                            </span>
-                            <span className="text-[11px] font-mono opacity-80">
-                              {typeof agent.trust_score === "number" ? agent.trust_score : "-"}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-
-                <section data-testid="account-claims" className="mt-6">
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-white/60 mb-2 flex items-center justify-between">
-                    <span>Requests</span>
-                    <span className="rounded-full border border-white/20 bg-black/20 px-2 py-0.5 text-white/80">
-                      {pendingClaims}
-                    </span>
-                  </div>
-                  {claims.length === 0 ? (
-                    <div className="text-xs font-mono text-white/70">No claim requests yet.</div>
-                  ) : (
-                    <div className="space-y-1">
-                      {claims.slice(0, 8).map((claim) => (
-                        <div key={claim.claim_id} className="rounded border border-white/10 bg-black/15 px-2 py-1.5">
-                          <div className="text-xs text-white truncate">{claim.requested_agent_name || "Unnamed request"}</div>
-                          <div className="text-[11px] font-mono text-white/60">
-                            {String(claim.status || "unknown").toUpperCase()} - {formatDate(claim.created_at)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
               </aside>
 
-              <section className="min-w-0 flex flex-col bg-[radial-gradient(circle_at_top,rgba(34,64,92,0.24),transparent_45%),linear-gradient(180deg,rgba(13,19,31,0.98)_0%,rgba(8,12,20,0.98)_100%)]">
-                <header className="border-b border-border/60 px-5 py-4">
-                  <div className="text-xl font-semibold tracking-tight text-text"># {selectedAgentName}</div>
-                  <div className="mt-1 text-xs font-mono text-subtle truncate">
+              {/* ======= Main panel ======= */}
+              <section className="min-w-0 flex flex-col">
+
+                {/* Agent header */}
+                <header className="border-b border-border/50 px-6 py-5 bg-bg/40">
+                  <div className="flex items-center gap-3">
+                    <span className="text-primary/60 text-lg font-mono">#</span>
+                    <h2 className="text-xl font-semibold tracking-tight text-text">{selectedAgentName}</h2>
+                  </div>
+                  <div className="mt-1.5 text-xs font-mono text-subtle truncate pl-8">
                     {selectedAgent ? selectedAgent.agent_id : "Select or create an agent channel to start."}
                   </div>
                 </header>
 
-                <div className="p-5 space-y-4">
+                <div className="p-6 space-y-6 flex-1">
+                  {/* Empty state */}
                   {agents.length === 0 && (
-                    <div className="border border-border bg-surface/70 rounded clip-corner p-5">
-                      <div className="text-sm font-semibold text-text">No channels yet</div>
-                      <p className="mt-1 text-xs font-mono text-subtle">
+                    <div className="border border-border bg-surface/60 rounded-lg p-6">
+                      <div className="text-base font-semibold text-text">No channels yet</div>
+                      <p className="mt-2 text-sm font-mono text-muted leading-relaxed">
                         Create your first agent from the onboarding flow, then come back here.
                       </p>
                       <Link
                         href="/start"
-                        className="inline-flex mt-3 px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
+                        className="inline-flex mt-4 px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
                       >
                         Open /start
                       </Link>
                     </div>
                   )}
 
+                  {/* Selected agent details */}
                   {selectedAgent && (
                     <>
-                      <div className="grid sm:grid-cols-3 gap-3">
-                        <div className="border border-border bg-surface/60 rounded clip-corner p-3">
-                          <div className="text-[11px] font-mono uppercase text-subtle">Status</div>
-                          <div className="mt-1 text-sm text-text">{selectedAgent.status || "-"}</div>
+                      {/* Stat cards */}
+                      <div className="grid sm:grid-cols-3 gap-4">
+                        <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Status</div>
+                          <div className="mt-2 text-lg font-semibold text-text">
+                            {selectedAgent.status || "-"}
+                          </div>
                         </div>
-                        <div className="border border-border bg-surface/60 rounded clip-corner p-3">
-                          <div className="text-[11px] font-mono uppercase text-subtle">Trust score</div>
-                          <div className="mt-1 text-sm text-text">
+                        <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Trust score</div>
+                          <div className={`mt-2 text-lg font-semibold font-mono ${trustScoreColor(selectedAgent.trust_score)}`}>
                             {typeof selectedAgent.trust_score === "number" ? String(selectedAgent.trust_score) : "-"}
                           </div>
                         </div>
-                        <div className="border border-border bg-surface/60 rounded clip-corner p-3">
-                          <div className="text-[11px] font-mono uppercase text-subtle">Created</div>
-                          <div className="mt-1 text-sm text-text">{formatDate(selectedAgent.created_at)}</div>
+                        <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Created</div>
+                          <div className="mt-2 text-sm font-semibold text-text">
+                            {formatDate(selectedAgent.created_at)}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="border border-border bg-surface/45 rounded clip-corner p-3">
-                        <div className="text-[11px] font-mono uppercase text-subtle mb-2">Agent actions</div>
+                      {/* Activity log */}
+                      <div className="border border-border bg-surface/30 rounded-lg overflow-hidden">
+                        <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between">
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Agent actions</div>
+                          <span className="text-xs font-mono text-subtle">{filteredActivities.length} events</span>
+                        </div>
+
                         {filteredActivities.length === 0 ? (
-                          <div className="text-xs font-mono text-subtle">No tracked actions for this channel yet.</div>
+                          <div className="px-5 py-8 text-center">
+                            <div className="text-sm font-mono text-subtle">No tracked actions for this channel yet.</div>
+                          </div>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="divide-y divide-border/30">
                             {filteredActivities.map((activity) => (
                               <article
                                 key={activity.activity_id}
-                                className="border border-border/70 bg-bg/70 rounded clip-corner px-3 py-2"
+                                className="px-5 py-3.5 hover:bg-bg/30 transition-colors"
                               >
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <div className="text-xs font-semibold text-text">{formatActionLabel(activity.action)}</div>
-                                  <span
-                                    className={`px-2 py-0.5 text-[11px] font-mono uppercase rounded border ${activityOutcomeClass(
-                                      activity.outcome
-                                    )}`}
-                                  >
-                                    {String(activity.outcome || "unknown")}
-                                  </span>
-                                </div>
-                                <div className="mt-1 text-[11px] font-mono text-subtle">
-                                  Entity: {activity.entity_type || "-"} {activity.entity_id ? `| ${activity.entity_id}` : ""}
-                                </div>
-                                <div className="mt-1 text-[11px] font-mono text-subtle">
-                                  At {formatDate(activity.ts)} {activity.request_id ? `| Request ${activity.request_id}` : ""}
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-sm font-semibold text-text">{formatActionLabel(activity.action)}</span>
+                                      <span
+                                        className={`inline-flex px-2 py-0.5 text-xs font-mono uppercase rounded border shrink-0 ${activityOutcomeClass(activity.outcome)}`}
+                                      >
+                                        {String(activity.outcome || "unknown")}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1.5 flex items-center gap-3 text-xs font-mono text-subtle">
+                                      <span>{activity.entity_type || "-"}</span>
+                                      {activity.entity_id && (
+                                        <>
+                                          <span className="text-border">|</span>
+                                          <span className="truncate max-w-[200px]">{activity.entity_id}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-xs font-mono text-subtle shrink-0 text-right">
+                                    <div>{formatDate(activity.ts)}</div>
+                                    {activity.request_id && (
+                                      <div className="mt-0.5 truncate max-w-[140px] opacity-60" title={activity.request_id}>
+                                        {activity.request_id}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </article>
                             ))}
