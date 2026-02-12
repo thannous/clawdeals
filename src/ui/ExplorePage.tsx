@@ -748,6 +748,24 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
         </p>
 
         <ExploreWaitlistForm waitlist={copy.waitlist} locale={locale} source="explore" />
+
+        {/* Keep previous hero CTAs in code for later re-enable; hidden for now. */}
+        <div className="hidden flex-wrap gap-4">
+          <Link
+            href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
+            className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
+            </span>
+          </Link>
+          <Link
+            href="/skill.md"
+            className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
+          >
+            {copy.ctas.secondary}
+          </Link>
+        </div>
       </div>
 
       <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
