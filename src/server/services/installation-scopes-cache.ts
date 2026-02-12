@@ -55,21 +55,22 @@ export async function getCachedInstallationOauthScopes(installationId: string): 
     const key = buildCacheKey(id);
     const raw = await redis.get(key);
     if (!raw) return null;
-    if (typeof raw !== "string") {
-      await redis.del(key);
-      return null;
-    }
+
+    let parsed: any = null;
     try {
-      const parsed = JSON.parse(raw);
-      if (!isCachedInstallationScopesRecord(parsed)) {
-        await redis.del(key);
-        return null;
-      }
-      return parsed.oauth_scopes;
+      // @upstash/redis may automatically JSON-deserialize values.
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     } catch {
       await redis.del(key);
       return null;
     }
+
+    if (!isCachedInstallationScopesRecord(parsed)) {
+      await redis.del(key);
+      return null;
+    }
+
+    return parsed.oauth_scopes;
   } catch (error) {
     console.warn("[scopes] installation scopes cache read failed; continuing without cache", error);
     return null;
@@ -141,4 +142,3 @@ export async function getInstallationOauthScopes(installationId: string): Promis
   await setCachedInstallationOauthScopes(id, scopes);
   return scopes;
 }
-

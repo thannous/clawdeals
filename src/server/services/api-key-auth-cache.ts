@@ -68,21 +68,22 @@ export async function getCachedApiKeyAuthRecord(prefix: string): Promise<CachedA
     const key = buildCacheKey(prefix);
     const raw = await redis.get(key);
     if (!raw) return null;
-    if (typeof raw !== "string") {
-      await redis.del(key);
-      return null;
-    }
+
+    let parsed: any = null;
     try {
-      const parsed = JSON.parse(raw);
-      if (!isCachedApiKeyAuthRecord(parsed)) {
-        await redis.del(key);
-        return null;
-      }
-      return parsed;
+      // @upstash/redis may automatically JSON-deserialize values.
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
     } catch {
       await redis.del(key);
       return null;
     }
+
+    if (!isCachedApiKeyAuthRecord(parsed)) {
+      await redis.del(key);
+      return null;
+    }
+
+    return parsed;
   } catch (error) {
     // Best-effort cache: auth must still work if Redis is down/misconfigured.
     console.warn("[auth] api key auth cache read failed; continuing without cache", error);
