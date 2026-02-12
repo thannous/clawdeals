@@ -419,7 +419,7 @@ export default function ConnectedAppsPage() {
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="px-4 py-3">
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>CONNECTED APPS
           </h1>
@@ -427,7 +427,7 @@ export default function ConnectedAppsPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-mono text-subtle">
             Manage your connected installations (OpenClaw/ClawdBot). Revoke to invalidate immediately, or rotate to issue

@@ -60,7 +60,7 @@ function PhoneFrame({
       </div>
       <div className="flex items-center gap-3 px-4 py-3 border-y border-border bg-surface">
         <div
-          className={`w-8 h-8 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-xs font-bold`}
+          className={`w-8 h-8 ${toneStyle.avatarClass} clip-corner-top-right-sm flex items-center justify-center text-bg text-xs font-bold`}
         >
           CD
         </div>
@@ -104,7 +104,7 @@ function ChatBubble({
   return (
     <div className="flex gap-2 items-end chat-bubble">
       <div
-        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-xs font-bold shrink-0`}
+        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right-sm flex items-center justify-center text-bg text-[7px] font-bold shrink-0`}
       >
         CD
       </div>
@@ -122,7 +122,7 @@ function TypingIndicator({ visible, tone }: { visible: boolean; tone: ChatTone }
   return (
     <div className="flex gap-2 items-end chat-bubble">
       <div
-        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-xs font-bold shrink-0`}
+        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right-sm flex items-center justify-center text-bg text-[7px] font-bold shrink-0`}
       >
         CD
       </div>

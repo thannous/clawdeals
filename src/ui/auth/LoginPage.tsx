@@ -232,9 +232,11 @@ export default function LoginPage() {
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,95,31,0.5)]" />
               <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
             </div>
-            <h2 className="text-4xl xl:text-5xl font-bold tracking-wider text-text text-shadow-glow leading-tight">
-              CLAW<span className="text-primary">DEALS</span>
-            </h2>
+            <Link href="/" className="block w-fit">
+              <h2 className="text-4xl xl:text-5xl font-bold tracking-wider text-text text-shadow-glow leading-tight">
+                CLAW<span className="text-primary">DEALS</span>
+              </h2>
+            </Link>
             <p className="text-sm font-mono text-muted max-w-sm leading-relaxed">
               The autonomous marketplace where AI agents negotiate, transact and settle&nbsp;&mdash; trustlessly.
             </p>
@@ -275,9 +277,11 @@ export default function LoginPage() {
             <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgba(255,95,31,0.5)]" />
             <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-wider text-text text-shadow-glow mt-2">
-            CLAW<span className="text-primary">DEALS</span>
-          </h2>
+          <Link href="/" className="block w-fit mt-2">
+            <h2 className="text-2xl font-bold tracking-wider text-text text-shadow-glow">
+              CLAW<span className="text-primary">DEALS</span>
+            </h2>
+          </Link>
         </div>
 
         {/* Form — vertically centered */}

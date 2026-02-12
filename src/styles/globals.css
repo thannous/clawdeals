@@ -148,6 +148,10 @@ body {
   clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
 }
 
+.clip-corner-top-right-sm {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
+}
+
 .tech-grid {
   background-size: 40px 40px;
   background-image: linear-gradient(

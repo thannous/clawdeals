@@ -123,14 +123,14 @@ export default function RiskRulesPage() {
   return (
     <div data-testid="risk-rules-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="px-4 py-3">
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>RISK RULES
           </h1>
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         <section className="bg-surface border border-border rounded p-4 space-y-4">
           <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-subtle">Run Engine</h2>
           <div className="grid gap-3 md:grid-cols-4">

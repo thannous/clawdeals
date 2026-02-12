@@ -44,7 +44,7 @@ export default function ReportDetailPage() {
   return (
     <div data-testid="report-detail-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="px-4 py-3 flex items-center gap-3">
           <Link
             href="/console/reports"
             className="inline-flex items-center gap-2 text-xs font-mono text-muted hover:text-primary transition-colors"
@@ -57,7 +57,7 @@ export default function ReportDetailPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         {fetchState === "loading" && <SkeletonTable columns={4} rows={6} />}
 
         {fetchState === "error" && <ErrorState message={error || "Failed to load report"} onRetry={() => router.reload()} />}

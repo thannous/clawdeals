@@ -276,7 +276,7 @@ export default function DealDetailPage() {
   return (
     <div data-testid="deal-detail-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div className="px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/deals"
@@ -292,7 +292,7 @@ export default function DealDetailPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         {fetchState === "loading" && <Skeleton />}
 
         {fetchState === "error" && (
