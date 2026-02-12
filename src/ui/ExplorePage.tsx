@@ -21,7 +21,7 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import { getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
+import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
 import ShareButton from "./landing/ShareButton";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
@@ -90,6 +90,17 @@ const COPY = {
       }
     },
     ctas: { primary: "Initialiser le protocole", secondary: "Lire la doc" },
+    waitlist: {
+      title: "Accès anticipé — rejoins la waitlist",
+      label: "Email",
+      placeholder: "ton@email.com",
+      cta: "Rejoindre",
+      helper: "Notifications de lancement, pas de spam.",
+      success: "Merci ! Tu es sur la waitlist.",
+      already: "Déjà inscrit. On te tient au courant.",
+      invalid: "Entre un email valide.",
+      error: "Une erreur est survenue. Réessaie."
+    },
     future: {
       badge: "COMING SOON",
       bannerTitle: "MODE FONCTIONNALITÉS FUTURES",
@@ -266,6 +277,17 @@ const COPY = {
       }
     },
     ctas: { primary: "Initialize Protocol", secondary: "Read Documentation" },
+    waitlist: {
+      title: "Early access — join the waitlist",
+      label: "Email",
+      placeholder: "you@example.com",
+      cta: "Join",
+      helper: "Launch updates only, no spam.",
+      success: "You're on the waitlist.",
+      already: "Already registered. We'll keep you posted.",
+      invalid: "Enter a valid email.",
+      error: "Something went wrong. Try again."
+    },
     future: {
       badge: "COMING SOON",
       bannerTitle: "FUTURE FEATURES MODE",
@@ -412,6 +434,130 @@ const COPY = {
     }
   }
 };
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function ExploreWaitlistForm({
+  waitlist,
+  locale,
+  source
+}: {
+  waitlist: {
+    title: string;
+    label: string;
+    placeholder: string;
+    cta: string;
+    helper: string;
+    success: string;
+    already: string;
+    invalid: string;
+    error: string;
+  };
+  locale: string;
+  source: string;
+}) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const isLoading = status === "loading";
+  const isSuccess = status === "success";
+  const isError = status === "error";
+
+  const helperText = isSuccess ? message || waitlist.success : isError ? message || waitlist.error : waitlist.helper;
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isLoading || isSuccess) return;
+
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || !EMAIL_REGEX.test(normalized)) {
+      setStatus("error");
+      setMessage(waitlist.invalid);
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const apiBaseUrl = getPublicApiBaseUrl();
+      const endpoint = apiBaseUrl ? joinUrl(apiBaseUrl, "/api/v1/watchlist-signups") : "/api/v1/watchlist-signups";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized, locale, source })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setStatus("error");
+        setMessage(payload?.error?.message || waitlist.error);
+        return;
+      }
+
+      const resultStatus = payload?.data?.status;
+      if (resultStatus === "already_registered") {
+        setStatus("success");
+        setMessage(waitlist.already);
+        return;
+      }
+
+      setStatus("success");
+      setMessage(waitlist.success);
+    } catch (error) {
+      setStatus("error");
+      setMessage(waitlist.error);
+      void error;
+    }
+  };
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+    if (status !== "idle") {
+      setStatus("idle");
+      setMessage("");
+    }
+  };
+
+  return (
+    <div className="border border-border bg-bg/40 backdrop-blur-sm p-4 clip-corner max-w-xl w-full">
+      <div className="font-mono text-xs uppercase tracking-widest text-subtle mb-3">{waitlist.title}</div>
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1">
+          <label className="sr-only" htmlFor={`explore-waitlist-email-${source}`}>
+            {waitlist.label}
+          </label>
+          <input
+            id={`explore-waitlist-email-${source}`}
+            type="email"
+            value={email}
+            onChange={handleChange}
+            placeholder={waitlist.placeholder}
+            autoComplete="email"
+            disabled={isLoading || isSuccess}
+            className="w-full h-12 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={isLoading || isSuccess}
+          className={`h-12 px-6 font-bold uppercase tracking-wider text-xs border border-primary transition-colors ${
+            isLoading || isSuccess
+              ? "bg-surface-alt text-subtle cursor-not-allowed"
+              : "bg-primary text-bg hover:bg-text hover:text-bg"
+          }`}
+        >
+          {waitlist.cta}
+        </button>
+      </form>
+      <div
+        className={`mt-2 text-xs font-mono ${isError ? "text-error" : isSuccess ? "text-success" : "text-subtle"}`}
+        aria-live="polite"
+      >
+        {helperText}
+      </div>
+    </div>
+  );
+}
 
 /* ── Shared primitives ── */
 
@@ -601,19 +747,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           {hero.description}
         </p>
 
-        <div className="flex flex-wrap gap-4">
-          <Link
-            href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
-            className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              {copy.ctas.primary} <ChevronRight className="w-5 h-5" />
-            </span>
-          </Link>
-          <Link href="/skill.md" className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors">
-            {copy.ctas.secondary}
-          </Link>
-        </div>
+        <ExploreWaitlistForm waitlist={copy.waitlist} locale={locale} source="explore" />
       </div>
 
       <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
