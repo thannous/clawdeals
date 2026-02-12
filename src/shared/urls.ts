@@ -19,6 +19,19 @@ export function getPublicAppEntryPath(): string {
   return withSlash.replace(/\/+$/, "") || "/";
 }
 
+/**
+ * Prefer same-origin app entry links unless an explicit NEXT_PUBLIC_APP_URL is configured.
+ *
+ * This avoids local dev accidentally sending users to production, while still allowing
+ * cross-origin (marketing -> app) deep links when needed.
+ */
+export function getPublicAppEntryHref(localePrefix = ""): string {
+  const entryPath = `${localePrefix}${getPublicAppEntryPath()}`;
+  const configured = normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL || "");
+  if (!configured) return entryPath;
+  return joinUrl(configured, entryPath);
+}
+
 export function getPublicApiBaseUrl(): string {
   // When set, landing can call the API cross-origin (e.g. www -> app).
   // When empty, callers should use relative URLs (same-origin).
