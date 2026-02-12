@@ -21,6 +21,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
         "User-agent: *",
         "Allow: /",
         "",
+        "Allow: /api/og",
         "Disallow: /api/",
         "Disallow: /console/",
         "Disallow: /developer/",
