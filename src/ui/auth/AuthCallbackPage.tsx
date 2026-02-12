@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 
+import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { getBrowserSupabaseClient } from "./supabase-client";
 
 function getErrorMessage(body: any, status: number) {
@@ -56,6 +57,7 @@ export default function AuthCallbackPage() {
         }
 
         await bridgeOwnerSession(accessToken);
+        await waitForOwnerSessionReady();
         void router.replace("/settings/account");
       } catch (err: any) {
         setState("error");

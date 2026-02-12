@@ -401,6 +401,10 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+  "owner.activity.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
   "owner.identities.write": {
     scope: "owner",
     buckets: [{ limit: 30, windowSeconds: HOUR }],

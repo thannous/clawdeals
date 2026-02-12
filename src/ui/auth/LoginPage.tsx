@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { getBrowserSupabaseClient } from "./supabase-client";
 
 function getErrorMessage(body: any, status: number) {
@@ -67,6 +68,7 @@ function StatusBadge({ label, value }: { label: string; value: string }) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const hasCheckedExistingSessionRef = useRef(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,6 +81,43 @@ export default function LoginPage() {
     () => Boolean(email.trim() && password.trim() && submitState !== "loading"),
     [email, password, submitState]
   );
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (hasCheckedExistingSessionRef.current) return;
+    hasCheckedExistingSessionRef.current = true;
+
+    let cancelled = false;
+    async function resolveExistingSession() {
+      try {
+        const supabase = getBrowserSupabaseClient();
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) return;
+
+        const accessToken = data?.session?.access_token || null;
+        if (accessToken) {
+          await bridgeOwnerSession(accessToken);
+          await waitForOwnerSessionReady();
+          if (!cancelled) {
+            void router.replace("/settings/account");
+          }
+          return;
+        }
+
+        const hasOwnerSession = await waitForOwnerSessionReady({ attempts: 1 });
+        if (hasOwnerSession && !cancelled) {
+          void router.replace("/settings/account");
+        }
+      } catch {
+        // Ignore recoverability errors and keep login form available.
+      }
+    }
+
+    void resolveExistingSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const onGoogle = useCallback(async () => {
     setSubmitState("loading");
@@ -119,6 +158,7 @@ export default function LoginPage() {
           throw new Error("Missing session token");
         }
         await bridgeOwnerSession(accessToken);
+        await waitForOwnerSessionReady();
         setSubmitState("done");
         void router.replace("/settings/account");
         return;
@@ -135,6 +175,7 @@ export default function LoginPage() {
       const accessToken = data?.session?.access_token || null;
       if (accessToken) {
         await bridgeOwnerSession(accessToken);
+        await waitForOwnerSessionReady();
         setSubmitState("done");
         void router.replace("/settings/account");
         return;

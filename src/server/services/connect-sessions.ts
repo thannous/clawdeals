@@ -78,11 +78,15 @@ function requireConnectSessionSecret() {
   const secret =
     process.env.CONNECT_SESSION_SECRET ||
     process.env.CONNECT_SESSIONS_SECRET ||
+    process.env.OWNER_SESSION_SECRET ||
+    process.env.OWNER_SESSIONS_SECRET ||
+    process.env.OAUTH_TOKEN_SECRET ||
+    process.env.OAUTH_DEVICE_SECRET ||
     process.env.PAIR_TOKEN_SECRET ||
     process.env.PAIRING_CODE_SECRET;
   if (!secret) {
     throw buildServiceError(
-      "CONNECT_SESSION_SECRET (or CONNECT_SESSIONS_SECRET/PAIR_TOKEN_SECRET/PAIRING_CODE_SECRET) is required",
+      "CONNECT_SESSION_SECRET (or CONNECT_SESSIONS_SECRET/OWNER_SESSION_SECRET/OWNER_SESSIONS_SECRET/OAUTH_TOKEN_SECRET/OAUTH_DEVICE_SECRET/PAIR_TOKEN_SECRET/PAIRING_CODE_SECRET) is required",
       500,
       "MISSING_SECRET"
     );

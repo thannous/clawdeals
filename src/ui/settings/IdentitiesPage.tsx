@@ -11,6 +11,7 @@ import { useToast } from "../console/shared/useToast";
 import TruncatedId from "../console/shared/TruncatedId";
 import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
+import SettingsNav from "./SettingsNav";
 
 function randomIdempotencyKey(): string {
   try {
@@ -22,6 +23,12 @@ function randomIdempotencyKey(): string {
 
 function getErrorMessage(body: any, status: number): string {
   return body?.error?.message || body?.message || `HTTP ${status}`;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 type ChannelIdentity = {
@@ -58,27 +65,34 @@ export default function IdentitiesPage() {
     setAuthRequired(false);
 
     try {
-      const resp = await fetch("/api/v1/owner/identities?limit=50", {
-        signal: controller.signal
-      });
-      const body = await resp.json().catch(() => ({}));
-      if (resp.status === 401) {
-        setOwner(null);
-        setChannels([]);
-        setAuthRequired(true);
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const resp = await fetch("/api/v1/owner/identities?limit=50", {
+          signal: controller.signal
+        });
+        const body = await resp.json().catch(() => ({}));
+        if (resp.status === 401 && attempt < 2) {
+          await sleep(140 * (attempt + 1));
+          continue;
+        }
+        if (resp.status === 401) {
+          setOwner(null);
+          setChannels([]);
+          setAuthRequired(true);
+          setFetchState("done");
+          return;
+        }
+        if (!resp.ok) {
+          throw new Error(getErrorMessage(body, resp.status));
+        }
+        setOwner({
+          owner_id: body?.data?.owner_id ? String(body.data.owner_id) : "",
+          email_masked: body?.data?.email_masked ? String(body.data.email_masked) : null,
+          email_verified_at: body?.data?.email_verified_at ? String(body.data.email_verified_at) : null
+        });
+        setChannels(Array.isArray(body?.data?.channels) ? body.data.channels : []);
         setFetchState("done");
         return;
       }
-      if (!resp.ok) {
-        throw new Error(getErrorMessage(body, resp.status));
-      }
-      setOwner({
-        owner_id: body?.data?.owner_id ? String(body.data.owner_id) : "",
-        email_masked: body?.data?.email_masked ? String(body.data.email_masked) : null,
-        email_verified_at: body?.data?.email_verified_at ? String(body.data.email_verified_at) : null
-      });
-      setChannels(Array.isArray(body?.data?.channels) ? body.data.channels : []);
-      setFetchState("done");
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       setAuthRequired(false);
@@ -174,6 +188,7 @@ export default function IdentitiesPage() {
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>LINKED IDENTITIES
           </h1>
+          <SettingsNav current="identities" />
         </div>
       </header>
 

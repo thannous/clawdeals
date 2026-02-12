@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { maskApiKey } from "../api";
 import { useConnectSession } from "./useConnectSession";
@@ -14,6 +14,7 @@ const STEPS: { key: WizardStep; label: string }[] = [
   { key: "verify", label: "Verify" },
   { key: "firstwin", label: "Go" }
 ];
+const AUTO_VERIFY_UI_GUARD_MS = 12000;
 
 function StepIndicator({ currentStep }: { currentStep: WizardStep }) {
   const stepIndex = STEPS.findIndex((s) => s.key === currentStep);
@@ -86,6 +87,21 @@ export default function ConnectWizard() {
     if (!state.apiKey) return null;
     return maskApiKey(state.apiKey);
   }, [state.apiKey]);
+  const [autoVerifyGuardExpired, setAutoVerifyGuardExpired] = useState(false);
+
+  useEffect(() => {
+    if (!state.autoVerifying) {
+      setAutoVerifyGuardExpired(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[start.wizard] auto_verify_ui_guard_expired", { timeout_ms: AUTO_VERIFY_UI_GUARD_MS });
+      }
+      setAutoVerifyGuardExpired(true);
+    }, AUTO_VERIFY_UI_GUARD_MS);
+    return () => clearTimeout(timer);
+  }, [state.autoVerifying]);
 
   const handleForget = useCallback(() => {
     stopPolling();
@@ -107,7 +123,7 @@ export default function ConnectWizard() {
   }, [stopPolling, resetSession, reset]);
 
   // Loading state while auto-verifying
-  if (state.autoVerifying) {
+  if (state.autoVerifying && !autoVerifyGuardExpired) {
     return (
       <div className="min-h-screen bg-bg text-text">
         <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
@@ -149,7 +165,7 @@ export default function ConnectWizard() {
                   Forget
                 </button>
                 <Link
-                  href="/auth/login"
+                  href="/settings/account"
                   className="border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-bg transition-colors"
                 >
                   Owner login
@@ -159,7 +175,7 @@ export default function ConnectWizard() {
               <>
                 <span>NO KEY</span>
                 <Link
-                  href="/auth/login"
+                  href="/settings/account"
                   className="border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-bg transition-colors"
                 >
                   Owner login
@@ -171,6 +187,15 @@ export default function ConnectWizard() {
       </header>
 
       <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-10 space-y-6">
+        {state.autoVerifying && autoVerifyGuardExpired && (
+          <div className="border border-amber-400/30 bg-amber-400/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-amber-300 uppercase">Auto-check timed out</div>
+            <div className="text-xs font-mono text-muted mt-1">
+              Continuing in manual mode. You can verify again or paste an API key.
+            </div>
+          </div>
+        )}
+
         {/* Step indicator */}
         <StepIndicator currentStep={state.step} />
 

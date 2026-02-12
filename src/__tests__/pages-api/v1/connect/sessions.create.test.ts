@@ -114,4 +114,62 @@ describe("POST /v1/connect/sessions", () => {
       })
     );
   });
+
+  it("uses request host for claim_url in localhost dev", async () => {
+    createConnectSessionMock.mockResolvedValue({
+      session: {
+        session_id: "11111111-1111-1111-1111-111111111111",
+        status: "PENDING_CLAIM",
+        expires_at: "2026-02-10T12:00:00.000Z",
+        poll_token_hash: "pollhash",
+        claim_token_hash: "claimhash"
+      },
+      claim_token: "cd_claim_local",
+      poll_token: "cd_poll_test",
+      verification_code: "reef-X4B2"
+    } as any);
+
+    const req = {
+      method: "POST",
+      headers: {
+        host: "localhost:3000",
+        "idempotency-key": "abc"
+      },
+      body: validBody
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(201);
+    expect(result.body.data.claim_url).toBe("http://localhost:3000/claim/cd_claim_local");
+  });
+
+  it("prefers x-forwarded host/proto for claim_url", async () => {
+    createConnectSessionMock.mockResolvedValue({
+      session: {
+        session_id: "11111111-1111-1111-1111-111111111111",
+        status: "PENDING_CLAIM",
+        expires_at: "2026-02-10T12:00:00.000Z",
+        poll_token_hash: "pollhash",
+        claim_token_hash: "claimhash"
+      },
+      claim_token: "cd_claim_forwarded",
+      poll_token: "cd_poll_test",
+      verification_code: "reef-X4B2"
+    } as any);
+
+    const req = {
+      method: "POST",
+      headers: {
+        host: "localhost:3000",
+        "x-forwarded-host": "app-preview.clawdeals.com",
+        "x-forwarded-proto": "https",
+        "idempotency-key": "abc"
+      },
+      body: validBody
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(201);
+    expect(result.body.data.claim_url).toBe("https://app-preview.clawdeals.com/claim/cd_claim_forwarded");
+  });
 });

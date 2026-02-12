@@ -73,13 +73,9 @@ export async function claimSession({
   }
 
   try {
-    // Prefer the owner-authenticated v1 endpoint; the edge/proxy layer is expected to inject auth headers.
-    // In non-production environments, fall back to the console wrapper (ops owner injection) to keep local dev usable.
+    // Strict owner-authenticated endpoint only.
     const primaryUrl = `/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/claim`;
-    let { resp, data } = await postClaim(primaryUrl);
-    if (!resp.ok && resp.status === 401 && process.env.NODE_ENV !== "production") {
-      ({ resp, data } = await postClaim(`/api/console/connect/sessions/${encodeURIComponent(sessionId)}/claim`));
-    }
+    const { resp, data } = await postClaim(primaryUrl);
     if (!resp.ok) {
       return { ok: false as const, status: resp.status, error: getErrorMessage(data, resp.status) };
     }
@@ -109,10 +105,7 @@ export async function denySession({ sessionId, claimToken }: { sessionId: string
     }
 
     const primaryUrl = `/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/deny`;
-    let { resp, data } = await postDeny(primaryUrl);
-    if (!resp.ok && resp.status === 401 && process.env.NODE_ENV !== "production") {
-      ({ resp, data } = await postDeny(`/api/console/connect/sessions/${encodeURIComponent(sessionId)}/deny`));
-    }
+    const { resp, data } = await postDeny(primaryUrl);
     if (!resp.ok) {
       return { ok: false as const, status: resp.status, error: getErrorMessage(data, resp.status) };
     }

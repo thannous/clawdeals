@@ -26,6 +26,7 @@ export function useConnectSession() {
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);

@@ -12,6 +12,7 @@ import {
   clearStoredOwnerSessionId,
   clearStoredOwnerSessionToken
 } from "./ownerAuth";
+import { waitForOwnerSessionReady } from "./ownerSessionReady";
 
 function getErrorMessage(body: any, status: number) {
   const error = body?.error;
@@ -88,6 +89,7 @@ export default function VerifyPage() {
         clearStoredOwnerSessionId();
         setSubmitState("success");
         setError(null);
+        await waitForOwnerSessionReady();
         void router.replace("/settings/identities");
       } catch (err: any) {
         setError(String(err?.message || "Verification failed"));

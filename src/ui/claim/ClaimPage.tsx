@@ -115,6 +115,8 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   const ownerContextAvailable = Boolean(session?.owner_context_available);
   const allowCreateAgent = session?.allow_create_agent !== false;
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
+  const isPendingClaim = session?.status === "PENDING_CLAIM";
+  const isClaimFinalized = session?.status === "CLAIMED" || session?.status === "DELIVERED";
 
   const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired);
   const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(resolvedAttachAgentId));
@@ -252,7 +254,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
             {session && (
               <div data-testid="claim-loaded" className="space-y-4">
-                {!ownerContextAvailable && (
+                {!ownerContextAvailable && isPendingClaim && (
                   <div className="border border-amber-400/40 bg-amber-400/10 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-amber-300 uppercase">Owner sign-in required</div>
                     <div className="text-xs font-mono text-muted mt-1">
@@ -312,165 +314,178 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   </div>
                 )}
 
-                <div className="border border-border rounded clip-corner p-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="text-xs font-mono text-subtle uppercase">Choose agent</div>
-                    <div className="flex items-center gap-2">
-                      {showCreateMode && (
-                        <button
-                          data-testid="claim-mode-create"
-                          disabled={!actionable || submitState === "loading"}
-                          onClick={() => switchMode("create_agent")}
-                          className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
-                            mode === "create_agent"
-                              ? "border-primary/40 text-primary bg-primary/10"
-                              : "border-border text-muted hover:border-border-strong hover:text-text"
-                          }`}
-                        >
-                          Create
-                        </button>
-                      )}
-                      <button
-                        data-testid="claim-mode-attach"
-                        disabled={!actionable || submitState === "loading"}
-                        onClick={() => switchMode("attach_agent")}
-                        className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
-                          mode === "attach_agent"
-                            ? "border-primary/40 text-primary bg-primary/10"
-                            : "border-border text-muted hover:border-border-strong hover:text-text"
-                        }`}
-                      >
-                        Attach
-                      </button>
+                {isClaimFinalized && (
+                  <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
+                    <div className="text-xs font-mono text-secondary uppercase">Connection already approved</div>
+                    <div className="text-xs font-mono text-muted mt-1">
+                      status={String(session.status)} agent_id={String(session.agent_id || result?.agent_id || "\u2014")}
                     </div>
                   </div>
-                  {ownerContextAvailable && !allowCreateAgent && (
-                    <div
-                      data-testid="claim-agent-limit-note"
-                      className="border border-border bg-surface-alt/20 rounded clip-corner p-3"
-                    >
-                      <div className="text-xs font-mono text-subtle">
-                        This owner already reached the agent limit ({String(session.owner_agent_limit || 1)}). Attach to
-                        an existing agent.
-                      </div>
-                    </div>
-                  )}
+                )}
 
-                  {mode === "create_agent" && showCreateMode && (
-                    <div>
-                      <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="claim-agent-name">
-                        New Agent Name
-                      </label>
-                      <input
-                        id="claim-agent-name"
-                        disabled={!actionable || submitState === "loading"}
-                        value={agentName}
-                        onChange={(e) => {
-                          setAgentName(e.target.value);
-                          clearSubmitFeedback();
-                        }}
-                        placeholder={session.requested_agent_name || "OpenClaw"}
-                        name="agent_name"
-                        autoComplete="off"
-                        spellCheck={false}
-                        className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
-                      />
-                      <div className="text-xs font-mono text-muted mt-1">Defaulted from requested agent name.</div>
-                    </div>
-                  )}
-
-                  {mode === "attach_agent" && (
-                    <div>
-                      {ownerContextAvailable && ownerAgents.length > 0 ? (
-                        <>
-                          <label
-                            className="block text-xs font-mono text-subtle uppercase mb-1"
-                            htmlFor="claim-attach-agent-select"
-                          >
-                            Existing Agent
-                          </label>
-                          <select
-                            id="claim-attach-agent-select"
-                            data-testid="claim-attach-agent-select"
+                {isPendingClaim && (
+                  <>
+                    <div className="border border-border rounded clip-corner p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="text-xs font-mono text-subtle uppercase">Choose agent</div>
+                        <div className="flex items-center gap-2">
+                          {showCreateMode && (
+                            <button
+                              data-testid="claim-mode-create"
+                              disabled={!actionable || submitState === "loading"}
+                              onClick={() => switchMode("create_agent")}
+                              className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
+                                mode === "create_agent"
+                                  ? "border-primary/40 text-primary bg-primary/10"
+                                  : "border-border text-muted hover:border-border-strong hover:text-text"
+                              }`}
+                            >
+                              Create
+                            </button>
+                          )}
+                          <button
+                            data-testid="claim-mode-attach"
                             disabled={!actionable || submitState === "loading"}
-                            value={resolvedAttachAgentId}
-                            onChange={(e) => {
-                              setAttachAgentId(e.target.value);
-                              clearSubmitFeedback();
-                            }}
-                            className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
+                            onClick={() => switchMode("attach_agent")}
+                            className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
+                              mode === "attach_agent"
+                                ? "border-primary/40 text-primary bg-primary/10"
+                                : "border-border text-muted hover:border-border-strong hover:text-text"
+                            }`}
                           >
-                            {ownerAgents.map((agent) => (
-                              <option key={agent.agent_id} value={agent.agent_id}>
-                                {agent.name || agent.agent_id} [{agent.status || "active"}]
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      ) : (
-                        <>
-                          <label
-                            className="block text-xs font-mono text-subtle uppercase mb-1"
-                            htmlFor="claim-attach-agent-id"
-                          >
-                            Existing Agent ID
+                            Attach
+                          </button>
+                        </div>
+                      </div>
+                      {ownerContextAvailable && !allowCreateAgent && (
+                        <div
+                          data-testid="claim-agent-limit-note"
+                          className="border border-border bg-surface-alt/20 rounded clip-corner p-3"
+                        >
+                          <div className="text-xs font-mono text-subtle">
+                            This owner already reached the agent limit ({String(session.owner_agent_limit || 1)}). Attach to
+                            an existing agent.
+                          </div>
+                        </div>
+                      )}
+
+                      {mode === "create_agent" && showCreateMode && (
+                        <div>
+                          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="claim-agent-name">
+                            New Agent Name
                           </label>
                           <input
-                            id="claim-attach-agent-id"
-                            data-testid="claim-attach-agent-id"
+                            id="claim-agent-name"
                             disabled={!actionable || submitState === "loading"}
-                            value={resolvedAttachAgentId}
+                            value={agentName}
                             onChange={(e) => {
-                              setAttachAgentId(e.target.value);
+                              setAgentName(e.target.value);
                               clearSubmitFeedback();
                             }}
-                            placeholder="uuid"
-                            name="attach_agent_id"
+                            placeholder={session.requested_agent_name || "OpenClaw"}
+                            name="agent_name"
                             autoComplete="off"
                             spellCheck={false}
                             className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                           />
-                        </>
+                          <div className="text-xs font-mono text-muted mt-1">Defaulted from requested agent name.</div>
+                        </div>
                       )}
-                      <div className="text-xs font-mono text-muted mt-1">Agent must belong to the same owner.</div>
+
+                      {mode === "attach_agent" && (
+                        <div>
+                          {ownerContextAvailable && ownerAgents.length > 0 ? (
+                            <>
+                              <label
+                                className="block text-xs font-mono text-subtle uppercase mb-1"
+                                htmlFor="claim-attach-agent-select"
+                              >
+                                Existing Agent
+                              </label>
+                              <select
+                                id="claim-attach-agent-select"
+                                data-testid="claim-attach-agent-select"
+                                disabled={!actionable || submitState === "loading"}
+                                value={resolvedAttachAgentId}
+                                onChange={(e) => {
+                                  setAttachAgentId(e.target.value);
+                                  clearSubmitFeedback();
+                                }}
+                                className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
+                              >
+                                {ownerAgents.map((agent) => (
+                                  <option key={agent.agent_id} value={agent.agent_id}>
+                                    {agent.name || agent.agent_id} [{agent.status || "active"}]
+                                  </option>
+                                ))}
+                              </select>
+                            </>
+                          ) : (
+                            <>
+                              <label
+                                className="block text-xs font-mono text-subtle uppercase mb-1"
+                                htmlFor="claim-attach-agent-id"
+                              >
+                                Existing Agent ID
+                              </label>
+                              <input
+                                id="claim-attach-agent-id"
+                                data-testid="claim-attach-agent-id"
+                                disabled={!actionable || submitState === "loading"}
+                                value={resolvedAttachAgentId}
+                                onChange={(e) => {
+                                  setAttachAgentId(e.target.value);
+                                  clearSubmitFeedback();
+                                }}
+                                placeholder="uuid"
+                                name="attach_agent_id"
+                                autoComplete="off"
+                                spellCheck={false}
+                                className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
+                              />
+                            </>
+                          )}
+                          <div className="text-xs font-mono text-muted mt-1">Agent must belong to the same owner.</div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {submitError && (
-                  <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-red-400">Error</div>
-                    <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
-                  </div>
-                )}
+                    {submitError && (
+                      <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
+                        <div className="text-xs font-mono text-red-400">Error</div>
+                        <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
+                      </div>
+                    )}
 
-                {submitState === "done" && result && (
-                  <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-secondary">Success</div>
-                    <div className="text-xs font-mono text-muted mt-1">
-                      status={String(result.status || session.status)} agent_id={String(result.agent_id || session.agent_id || "\u2014")}
+                    {submitState === "done" && result && (
+                      <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
+                        <div className="text-xs font-mono text-secondary">Success</div>
+                        <div className="text-xs font-mono text-muted mt-1">
+                          status={String(result.status || session.status)} agent_id={String(result.agent_id || session.agent_id || "\u2014")}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        data-testid="claim-approve"
+                        disabled={!canSubmitClaim || submitState === "loading"}
+                        onClick={onClaim}
+                        className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        {submitState === "loading" ? "Approving..." : "Approve & Connect"}
+                      </button>
+                      <button
+                        data-testid="claim-deny"
+                        disabled={!actionable || submitState === "loading"}
+                        onClick={onDeny}
+                        className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                      >
+                        Refuse
+                      </button>
                     </div>
-                  </div>
+                  </>
                 )}
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    data-testid="claim-approve"
-                    disabled={!canSubmitClaim || submitState === "loading"}
-                    onClick={onClaim}
-                    className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
-                  >
-                    {submitState === "loading" ? "Approving..." : "Approve & Connect"}
-                  </button>
-                  <button
-                    data-testid="claim-deny"
-                    disabled={!actionable || submitState === "loading"}
-                    onClick={onDeny}
-                    className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
-                  >
-                    Refuse
-                  </button>
-                </div>
               </div>
             )}
           </div>

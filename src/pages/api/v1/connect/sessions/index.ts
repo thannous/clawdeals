@@ -20,6 +20,29 @@ function normalizeNonEmptyString(value: any) {
   return str ? str : null;
 }
 
+function resolveRequestOrigin(req: any) {
+  const forwardedProto = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-proto"));
+  const forwardedHost = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-host"));
+  const hostHeader = normalizeNonEmptyString(getHeaderValue(req, "host"));
+  const host = (forwardedHost ? forwardedHost.split(",")[0] : hostHeader || "").trim();
+  if (!host) return null;
+
+  const fromHeader = (forwardedProto ? forwardedProto.split(",")[0] : "").trim().toLowerCase();
+  if (fromHeader === "http" || fromHeader === "https") {
+    return `${fromHeader}://${host}`;
+  }
+
+  const hostLower = host.toLowerCase();
+  const isLocalHost =
+    hostLower === "localhost" ||
+    hostLower.startsWith("localhost:") ||
+    hostLower.startsWith("127.0.0.1") ||
+    hostLower.startsWith("[::1]") ||
+    hostLower.endsWith(".local");
+
+  return `${isLocalHost ? "http" : "https"}://${host}`;
+}
+
 function expandIpv6(ip: string) {
   const strippedZone = ip.split("%")[0];
   if (!strippedZone) return null;
@@ -136,7 +159,8 @@ export async function handler(req: any, res: any, ctx: any) {
       now: new Date()
     });
 
-    const claimUrl = joinUrl(getPublicAppUrl(), `/claim/${encodeURIComponent(created.claim_token)}`);
+    const appBaseUrl = resolveRequestOrigin(req) || getPublicAppUrl();
+    const claimUrl = joinUrl(appBaseUrl, `/claim/${encodeURIComponent(created.claim_token)}`);
 
     if (ctx) {
       ctx.auditEntityType = "connect_session";

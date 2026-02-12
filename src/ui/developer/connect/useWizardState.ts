@@ -4,6 +4,18 @@ import { apiRequest } from "../api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "../storage";
 import type { AgentMeResponse, ConnectionMethod, ConnectSessionData, WizardStep } from "./types";
 
+const AUTO_VERIFY_TIMEOUT_MS = 8000;
+const DEBUG_PREFIX = "[start.wizard]";
+
+function debugLog(event: string, payload?: Record<string, unknown>) {
+  if (process.env.NODE_ENV === "production") return;
+  if (payload) {
+    console.info(DEBUG_PREFIX, event, payload);
+    return;
+  }
+  console.info(DEBUG_PREFIX, event);
+}
+
 export type WizardState = {
   step: WizardStep;
   method: ConnectionMethod | null;
@@ -34,7 +46,10 @@ export function useWizardState() {
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    debugLog("mount");
     return () => {
+      debugLog("unmount");
       mountedRef.current = false;
     };
   }, []);
@@ -44,32 +59,55 @@ export function useWizardState() {
     let cancelled = false;
 
     const hydrate = async () => {
+      debugLog("hydrate:start");
       const stored = getStoredApiKey();
-      if (!stored) return;
+      if (!stored) {
+        debugLog("hydrate:no_stored_key");
+        return;
+      }
 
       // Hydrate the key into state so the UI can show the masked key
       setApiKeyState(stored);
       setAutoVerifying(true);
+      debugLog("hydrate:auto_verify_started", { key_present: true, timeout_ms: AUTO_VERIFY_TIMEOUT_MS });
 
+      let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
       try {
-        const res = await apiRequest<{ data: AgentMeResponse }>({
+        const verifyPromise = apiRequest<{ data: AgentMeResponse }>({
           path: "/v1/agents/me",
           method: "GET",
           apiKey: stored
         });
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error("AUTO_VERIFY_TIMEOUT")), AUTO_VERIFY_TIMEOUT_MS);
+        });
+
+        const res = await Promise.race([verifyPromise, timeoutPromise]);
+        debugLog("hydrate:verify_resolved");
         if (cancelled || !mountedRef.current) return;
         const data = res.data?.data;
         if (data?.agent_id) {
+          debugLog("hydrate:verify_success", { agent_id: data.agent_id });
           setAgentMe(data);
           setAgentId(data.agent_id);
           setMethod("apikey");
           setVerifiedState(true);
+        } else {
+          debugLog("hydrate:verify_missing_agent_id");
         }
-      } catch {
+      } catch (error: any) {
         // Key is invalid or expired -- don't clear it, just don't auto-advance
+        debugLog("hydrate:verify_failed", { message: String(error?.message || "unknown_error") });
       } finally {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
         if (!cancelled && mountedRef.current) {
           setAutoVerifying(false);
+          debugLog("hydrate:auto_verify_stopped");
+        } else {
+          debugLog("hydrate:auto_verify_skip_stop", {
+            cancelled,
+            mounted: mountedRef.current
+          });
         }
       }
     };

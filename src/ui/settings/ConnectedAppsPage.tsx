@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import SkeletonTable from "../console/shared/SkeletonTable";
@@ -11,6 +12,7 @@ import TruncatedId from "../console/shared/TruncatedId";
 import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
 import { V1_SCOPES_UPGRADE_ONLY, sortScopesStable } from "../../shared/scopes/v1";
+import SettingsNav from "./SettingsNav";
 
 function randomIdempotencyKey(): string {
   try {
@@ -22,6 +24,12 @@ function randomIdempotencyKey(): string {
 
 function getErrorMessage(body: any, status: number): string {
   return body?.error?.message || body?.message || `HTTP ${status}`;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function pickString(...values: any[]): string | null {
@@ -123,6 +131,7 @@ export default function ConnectedAppsPage() {
   const { toasts, show } = useToast();
 
   const [items, setItems] = useState<Installation[]>([]);
+  const [authRequired, setAuthRequired] = useState(false);
   const [fetchState, setFetchState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -135,17 +144,36 @@ export default function ConnectedAppsPage() {
 
     setFetchState("loading");
     setError(null);
+    setAuthRequired(false);
 
     try {
-      const resp = await fetch("/api/console/owner/installations", { signal: controller.signal });
-      const body = await resp.json().catch(() => ({}));
-      if (!resp.ok) {
-        throw new Error(getErrorMessage(body, resp.status));
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const resp = await fetch("/api/console/owner/installations", { signal: controller.signal });
+        const body = await resp.json().catch(() => ({}));
+
+        if (resp.status === 401 && attempt < 2) {
+          await sleep(140 * (attempt + 1));
+          continue;
+        }
+
+        if (resp.status === 401) {
+          setItems([]);
+          setAuthRequired(true);
+          setFetchState("done");
+          return;
+        }
+
+        if (!resp.ok) {
+          throw new Error(getErrorMessage(body, resp.status));
+        }
+
+        setItems(Array.isArray(body.installations) ? body.installations : []);
+        setFetchState("done");
+        return;
       }
-      setItems(Array.isArray(body.installations) ? body.installations : []);
-      setFetchState("done");
     } catch (err: any) {
       if (err?.name === "AbortError") return;
+      setAuthRequired(false);
       setError(String(err?.message || "Failed to load installations"));
       setFetchState("error");
     }
@@ -395,6 +423,7 @@ export default function ConnectedAppsPage() {
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>CONNECTED APPS
           </h1>
+          <SettingsNav current="connected-apps" />
         </div>
       </header>
 
@@ -412,25 +441,38 @@ export default function ConnectedAppsPage() {
           </button>
         </div>
 
-        {fetchState === "loading" && (
+        {authRequired && (
+          <div data-testid="connected-apps-missing-owner" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-red-400">Login required</div>
+            <div className="text-xs font-mono text-muted mt-1">
+              Go to{" "}
+              <Link className="text-text underline" href="/auth/login">
+                /auth/login
+              </Link>{" "}
+              to authenticate your owner session.
+            </div>
+          </div>
+        )}
+
+        {!authRequired && fetchState === "loading" && (
           <div data-testid="connected-apps-loading">
             <SkeletonTable columns={9} rows={8} />
           </div>
         )}
 
-        {fetchState === "error" && (
+        {!authRequired && fetchState === "error" && (
           <div data-testid="connected-apps-error">
             <ErrorState message={error || "Failed to load connected apps"} onRetry={refetch} />
           </div>
         )}
 
-        {fetchState === "done" && items.length === 0 && (
+        {!authRequired && fetchState === "done" && items.length === 0 && (
           <div data-testid="connected-apps-empty">
             <EmptyState title="No connected apps found" subtitle="Installations will appear here after you connect a client." />
           </div>
         )}
 
-        {fetchState === "done" && items.length > 0 && (
+        {!authRequired && fetchState === "done" && items.length > 0 && (
           <div data-testid="connected-apps-table">
             <ConsoleTable
               columns={columns}
