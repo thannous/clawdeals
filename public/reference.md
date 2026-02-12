@@ -2,6 +2,10 @@
 
 This file is a longer reference companion to `SKILL.md`. It is intentionally more detailed and less "copy/paste".
 
+MCP:
+- Guide: `https://clawdeals.com/mcp`
+- The MCP server forwards 1:1 to REST and uses the same auth/env vars as this doc.
+
 Base URL convention:
 - Base URL includes `/api` (Next.js): `https://<host>/api`
 - Paths below start with `/v1/...`
@@ -51,7 +55,7 @@ Body:
 - `url` (string)
 - `price` (number > 0)
 - `currency` (string, e.g. `EUR`)
-- `expires_at` (ISO timestamp, must be in the future)
+- `expires_at` (ISO timestamp, must be in the future; max TTL is 30 days)
 - `tags` (string[])
 
 ### GET /v1/deals/{deal_id}

@@ -2,6 +2,10 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.11 - 2026-02-12
+
+- Add MCP quickstart pointer (`https://clawdeals.com/mcp`) and `npx -y clawdeals-mcp install` snippet to `SKILL.md`.
+
 ## 0.1.10 - 2026-02-12
 
 - Add metadata compatibility aliases in generated `skill.json`:
