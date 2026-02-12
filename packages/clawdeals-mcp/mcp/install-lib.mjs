@@ -106,6 +106,20 @@ export function buildClawdealsServerConfig({ serverPath, apiKey, apiBase, origin
   };
 }
 
+export function buildClawdealsNpxServerConfig({ packageName = "clawdeals-mcp", apiKey, apiBase, origin, timeoutMs }) {
+  return {
+    type: "stdio",
+    command: "npx",
+    args: ["-y", packageName],
+    env: {
+      CLAWDEALS_API_KEY: apiKey,
+      CLAWDEALS_API_BASE: apiBase,
+      CLAWDEALS_ORIGIN: origin,
+      CLAWDEALS_TIMEOUT_MS: timeoutMs
+    }
+  };
+}
+
 export function upsertServer({ config, keyName, serverName, serverConfig }) {
   const root = ensureObject(config);
   const container = ensureObject(root[keyName]);
@@ -115,7 +129,7 @@ export function upsertServer({ config, keyName, serverName, serverConfig }) {
 }
 
 export function resolveRepoServerPath({ installScriptUrl }) {
-  // scripts/mcp/install.mjs -> scripts/mcp-server.mjs
+  // <pkg>/mcp/install.mjs -> <pkg>/mcp-server.mjs
   const installFilePath = fileURLToPath(installScriptUrl);
   const installDir = path.dirname(installFilePath);
   return path.resolve(installDir, "..", "mcp-server.mjs");

@@ -4,10 +4,10 @@ import path from "node:path";
 
 import {
   buildClawdealsServerConfig,
+  buildClawdealsNpxServerConfig,
   ensureObject,
   formatJson,
   parseJsonLike,
-  resolveRepoServerPath,
   upsertServer
 } from "./install-lib.mjs";
 
@@ -143,10 +143,23 @@ function installIntoFile({ filePath, defaultKey, serverName, serverConfig, dryRu
 async function main() {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
+  const local = argv.includes("--local") || argv.includes("--repo");
   const fileArgIdx = argv.findIndex((a) => a === "--file" || a === "--path");
   const explicitFile = fileArgIdx >= 0 ? argv[fileArgIdx + 1] : null;
   if (fileArgIdx >= 0 && !explicitFile) {
     fail("Missing value for --file (expected a path to a config file)");
+  }
+
+  const serverPathIdx = argv.findIndex((a) => a === "--server-path");
+  const explicitServerPath = serverPathIdx >= 0 ? argv[serverPathIdx + 1] : null;
+  if (serverPathIdx >= 0 && !explicitServerPath) {
+    fail("Missing value for --server-path (expected an absolute path to a local mcp-server.mjs)");
+  }
+
+  const packageIdx = argv.findIndex((a) => a === "--package");
+  const packageName = packageIdx >= 0 ? argv[packageIdx + 1] : "clawdeals-mcp";
+  if (packageIdx >= 0 && !packageName) {
+    fail("Missing value for --package (expected an npm package name)");
   }
 
   const apiKey = String(process.env.CLAWDEALS_API_KEY || "").trim();
@@ -157,16 +170,17 @@ async function main() {
   const origin = String(process.env.CLAWDEALS_ORIGIN || "mcp").trim();
   const timeoutMs = String(process.env.CLAWDEALS_TIMEOUT_MS || "15000").trim();
 
-  const serverPath = resolveRepoServerPath({ installScriptUrl: import.meta.url });
-  if (!existsFile(serverPath)) fail(`Missing server script: ${serverPath}`);
-
-  const serverConfig = buildClawdealsServerConfig({
-    serverPath,
-    apiKey,
-    apiBase,
-    origin,
-    timeoutMs
-  });
+  const serverConfig = local
+    ? (() => {
+        const raw = String(explicitServerPath || process.env.CLAWDEALS_MCP_SERVER_PATH || "").trim();
+        if (!raw) {
+          fail("Missing --server-path (or env CLAWDEALS_MCP_SERVER_PATH) for --local installs");
+        }
+        const serverPath = path.resolve(raw);
+        if (!existsFile(serverPath)) fail(`Missing server script: ${serverPath}`);
+        return buildClawdealsServerConfig({ serverPath, apiKey, apiBase, origin, timeoutMs });
+      })()
+    : buildClawdealsNpxServerConfig({ packageName, apiKey, apiBase, origin, timeoutMs });
 
   const targets = [];
 
