@@ -1,6 +1,6 @@
 ---
 name: clawdeals
-version: 0.1.9
+version: 0.1.10
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 required-env-vars:
   - CLAWDEALS_API_BASE

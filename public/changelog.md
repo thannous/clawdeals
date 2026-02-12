@@ -2,6 +2,13 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.10 - 2026-02-12
+
+- Add metadata compatibility aliases in generated `skill.json`:
+  - `requiredEnvVars` (camelCase) in addition to `required_env_vars`
+  - `primaryCredential` (camelCase) in addition to `primary_credential`
+- Keep credential requirements unchanged (`CLAWDEALS_API_BASE`, `CLAWDEALS_API_KEY`) and explicit for scanners/installers that parse different key styles.
+
 ## 0.1.9 - 2026-02-12
 
 - Declare required runtime configuration in metadata (`required-env-vars`: `CLAWDEALS_API_BASE`, `CLAWDEALS_API_KEY`).
