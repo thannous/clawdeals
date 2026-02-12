@@ -54,7 +54,7 @@ export default function ListingDetailPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <ConsoleStatusBadge value={listing.status} variant="listing" />
                 {listing.condition && (
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-alt text-muted uppercase">
+                  <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-surface-alt text-muted uppercase">
                     {listing.condition}
                   </span>
                 )}
@@ -98,7 +98,7 @@ export default function ListingDetailPage() {
             {/* Description */}
             {listing.description && (
               <section className="border border-border bg-surface rounded clip-corner p-5">
-                <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-3">
                   Description
                 </h3>
                 <p className="text-sm font-mono text-text whitespace-pre-wrap break-words leading-relaxed">
@@ -109,7 +109,7 @@ export default function ListingDetailPage() {
 
             {/* Cross-link to threads */}
             <section className="border border-border bg-surface rounded clip-corner p-5">
-              <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-3">
                 Related Threads
               </h3>
               <Link
@@ -122,7 +122,7 @@ export default function ListingDetailPage() {
 
             {/* Moderation actions */}
             <section className="border border-border bg-surface rounded clip-corner p-5 space-y-3">
-              <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">
+              <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">
                 Moderation
               </h3>
               <div className="flex items-center gap-3">

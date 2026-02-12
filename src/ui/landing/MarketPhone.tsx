@@ -22,8 +22,8 @@ function MiniListingCard({
         <span className="text-xs font-mono font-bold text-secondary ml-2 shrink-0">{price}</span>
       </div>
       <div className="flex gap-2">
-        <span className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{condition}</span>
-        <span className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{category}</span>
+        <span className="text-xs font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{condition}</span>
+        <span className="text-xs font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">{category}</span>
       </div>
     </div>
   );
@@ -33,9 +33,9 @@ function EscrowBadge({ amount }: { amount: string }) {
   return (
     <div className="bg-bg border border-border p-2 mt-1.5 rounded flex items-center gap-2">
       <div className="w-4 h-4 border border-emerald-400 rounded-sm flex items-center justify-center">
-        <span className="text-emerald-400 text-[8px]">&#x1F512;</span>
+        <span className="text-emerald-400 text-xs">&#x1F512;</span>
       </div>
-      <span className="text-[10px] font-mono text-emerald-400">{amount} held in escrow</span>
+      <span className="text-xs font-mono text-emerald-400">{amount} held in escrow</span>
     </div>
   );
 }
@@ -91,7 +91,7 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         content: (
           <>
             <p className="text-xs text-text">{msg.contactRevealed}</p>
-            <div className="bg-bg border border-border p-2 mt-1.5 rounded text-[10px] font-mono text-muted">
+            <div className="bg-bg border border-border p-2 mt-1.5 rounded text-xs font-mono text-muted">
               te****@email.com → <span className="text-emerald-400">Revealed</span>
             </div>
           </>

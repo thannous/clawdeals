@@ -20,13 +20,13 @@ export default function ModerationActionsList({ items }: Props) {
     switch (col.key) {
       case "action_type":
         return (
-          <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
             {row.action_type || "\u2014"}
           </span>
         );
       case "entity_type":
         return (
-          <span className="text-[10px] font-mono uppercase text-subtle">
+          <span className="text-xs font-mono uppercase text-subtle">
             {row.entity_type || "\u2014"}
           </span>
         );

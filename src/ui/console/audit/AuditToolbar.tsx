@@ -61,7 +61,7 @@ export default function AuditToolbar({
     <div data-testid="audit-toolbar" className="space-y-3">
       {/* Time range */}
       <div className="flex flex-wrap gap-3 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">From:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">From:</span>
         <input
           data-testid="audit-from"
           type="datetime-local"
@@ -72,7 +72,7 @@ export default function AuditToolbar({
           autoComplete="off"
           className="px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">To:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">To:</span>
         <input
           data-testid="audit-to"
           type="datetime-local"
@@ -84,7 +84,7 @@ export default function AuditToolbar({
           className="px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
         {timeRangeError && (
-          <span className="text-[10px] font-mono text-red-400 border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 rounded">
+          <span className="text-xs font-mono text-red-400 border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 rounded">
             {timeRangeError}
           </span>
         )}
@@ -92,10 +92,10 @@ export default function AuditToolbar({
 
       {/* Actor type pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Actor:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Actor:</span>
         <button
           onClick={() => onActorTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             actorType === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -107,7 +107,7 @@ export default function AuditToolbar({
           <button
             key={opt}
             onClick={() => onActorTypeChange(actorType === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               actorType === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -120,10 +120,10 @@ export default function AuditToolbar({
 
       {/* Action pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Action:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Action:</span>
         <button
           onClick={() => onActionNameChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             actionName === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -135,7 +135,7 @@ export default function AuditToolbar({
           <button
             key={opt}
             onClick={() => onActionNameChange(actionName === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               actionName === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -148,10 +148,10 @@ export default function AuditToolbar({
 
       {/* Entity type pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Entity:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Entity:</span>
         <button
           onClick={() => onEntityTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             entityType === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -163,7 +163,7 @@ export default function AuditToolbar({
           <button
             key={opt}
             onClick={() => onEntityTypeChange(entityType === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               entityType === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -176,10 +176,10 @@ export default function AuditToolbar({
 
       {/* Outcome pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Outcome:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Outcome:</span>
         <button
           onClick={() => onOutcomeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             outcome === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -191,7 +191,7 @@ export default function AuditToolbar({
           <button
             key={opt}
             onClick={() => onOutcomeChange(outcome === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               outcome === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"

@@ -61,7 +61,7 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
       {/* Agent info summary */}
       {(agentMe || masked) && (
         <div className="border border-border bg-surface p-4 clip-corner">
-          <div className="flex flex-wrap gap-4 text-[10px] font-mono">
+          <div className="flex flex-wrap gap-4 text-xs font-mono">
             {agentMe?.agent_id && (
               <div>
                 <span className="text-subtle">agent: </span>
@@ -161,13 +161,13 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
             {/* curl snippet */}
             {curlSnippet && (
               <div className="border border-border bg-bg p-4 space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Test the API</div>
-                <pre className="text-[10px] font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">Test the API</div>
+                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
                   {curlSnippet}
                 </pre>
                 <button
                   onClick={() => handleCopy(curlSnippet, "curl")}
-                  className="border border-border px-2 py-1 text-[10px] font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                  className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
                   {copiedField === "curl" ? "Copied!" : "Copy curl"}
                 </button>
@@ -177,16 +177,16 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
             {/* OpenClaw snippet */}
             {openClawSnippet && (
               <div className="border border-border bg-bg p-4 space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Connect OpenClaw</div>
-                <div className="text-[10px] font-mono text-subtle">
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">Connect OpenClaw</div>
+                <div className="text-xs font-mono text-subtle">
                   Add the skill by URL, then set env vars in OpenClaw.
                 </div>
-                <pre className="text-[10px] font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
+                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
                   {openClawSnippet}
                 </pre>
                 <button
                   onClick={() => handleCopy(openClawSnippet, "openclaw")}
-                  className="border border-border px-2 py-1 text-[10px] font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                  className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
                   {copiedField === "openclaw" ? "Copied!" : "Copy OpenClaw"}
                 </button>

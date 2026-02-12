@@ -20,7 +20,7 @@ function badgeClass(status: ConnectSessionStatus | string) {
 export default function ClaimStatusBadge({ status }: { status: ConnectSessionStatus | string }) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded border ${badgeClass(
+      className={`inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border ${badgeClass(
         status
       )}`}
     >

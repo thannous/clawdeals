@@ -106,7 +106,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
           )}
 
           <div>
-            <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="vote-reason">
+            <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="vote-reason">
               Reason
             </label>
             <textarea
@@ -123,7 +123,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
               maxLength={MAX_REASON}
               className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg resize-none transition-colors"
             />
-            <div className={`text-right text-[10px] font-mono mt-1 ${isOverWarn ? "text-primary" : "text-subtle"}`}>
+            <div className={`text-right text-xs font-mono mt-1 ${isOverWarn ? "text-primary" : "text-subtle"}`}>
               {charCount}/{MAX_REASON}
             </div>
           </div>

@@ -139,7 +139,7 @@ function formatIsoShort(value: string) {
 function MetricCard({ label, value, subtle }: { label: string; value: string; subtle?: string }) {
   return (
     <div className="bg-surface border border-border rounded clip-corner p-4">
-      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-subtle">{label}</div>
+      <div className="text-xs font-mono font-bold uppercase tracking-wider text-subtle">{label}</div>
       <div className="mt-2 text-2xl font-mono font-bold text-text">{value}</div>
       {subtle ? <div className="mt-1 text-xs font-mono text-muted">{subtle}</div> : null}
     </div>
@@ -149,7 +149,7 @@ function MetricCard({ label, value, subtle }: { label: string; value: string; su
 function BudgetStateBadge({ state }: { state: string }) {
   const classes = BUDGET_STATE_STYLES[state] || BUDGET_STATE_STYLES.GREEN;
   return (
-    <span className={`inline-block px-2 py-0.5 text-[10px] font-mono font-bold uppercase border rounded ${classes}`}>
+    <span className={`inline-block px-2 py-0.5 text-xs font-mono font-bold uppercase border rounded ${classes}`}>
       {state}
     </span>
   );
@@ -169,33 +169,33 @@ function SloPanel({ sli }: { sli: OpsResponse["sli"] }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Success Rate</div>
+          <div className="text-xs font-mono text-subtle uppercase">Success Rate</div>
           <div className="text-lg font-mono font-bold text-text">{formatPct(aggregate.success_rate)}</div>
-          <div className="text-[10px] font-mono text-muted">target {formatPct(aggregate.slo_target)}</div>
+          <div className="text-xs font-mono text-muted">target {formatPct(aggregate.slo_target)}</div>
         </div>
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Error Budget</div>
+          <div className="text-xs font-mono text-subtle uppercase">Error Budget</div>
           <div className="text-lg font-mono font-bold text-text">{aggregate.error_budget_remaining_pct}%</div>
-          <div className="text-[10px] font-mono text-muted">remaining</div>
+          <div className="text-xs font-mono text-muted">remaining</div>
         </div>
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Burn Rate (5m)</div>
+          <div className="text-xs font-mono text-subtle uppercase">Burn Rate (5m)</div>
           <div className={`text-lg font-mono font-bold ${burn_rate.fast.value !== null && burn_rate.fast.value >= 6 ? "text-red-400" : "text-text"}`}>
             {formatBurnRate(burn_rate.fast.value)}
           </div>
-          <div className="text-[10px] font-mono text-muted">fast window</div>
+          <div className="text-xs font-mono text-muted">fast window</div>
         </div>
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Burn Rate (1h)</div>
+          <div className="text-xs font-mono text-subtle uppercase">Burn Rate (1h)</div>
           <div className={`text-lg font-mono font-bold ${burn_rate.slow.value !== null && burn_rate.slow.value >= 3 ? "text-yellow-400" : "text-text"}`}>
             {formatBurnRate(burn_rate.slow.value)}
           </div>
-          <div className="text-[10px] font-mono text-muted">slow window</div>
+          <div className="text-xs font-mono text-muted">slow window</div>
         </div>
       </div>
 
       <div className="border-t border-border pt-3">
-        <div className="text-[10px] font-mono text-subtle uppercase mb-2">Success Rate by Journey</div>
+        <div className="text-xs font-mono text-subtle uppercase mb-2">Success Rate by Journey</div>
         <div className="space-y-1.5">
           {by_event.map((evt) => (
             <div key={evt.event} className="flex items-center justify-between">
@@ -225,35 +225,35 @@ function ApprovalsDetailPanel({ detail }: { detail: OpsResponse["approvals_detai
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Pending</div>
+          <div className="text-xs font-mono text-subtle uppercase">Pending</div>
           <div className={`text-lg font-mono font-bold ${detail.pending_count > 0 ? "text-yellow-400" : "text-text"}`}>
             {detail.pending_count}
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Oldest Pending</div>
+          <div className="text-xs font-mono text-subtle uppercase">Oldest Pending</div>
           <div className={`text-lg font-mono font-bold ${
             detail.oldest_pending_age_s !== null && detail.oldest_pending_age_s > 4 * 3600 ? "text-red-400" : "text-text"
           }`}>
             {formatDuration(detail.oldest_pending_age_s)}
           </div>
-          <div className="text-[10px] font-mono text-muted">SLO: &lt; 4h</div>
+          <div className="text-xs font-mono text-muted">SLO: &lt; 4h</div>
         </div>
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Resolve p50</div>
+          <div className="text-xs font-mono text-subtle uppercase">Resolve p50</div>
           <div className="text-lg font-mono font-bold text-text">
             {formatDuration(detail.resolved_window.p50_resolve_s)}
           </div>
-          <div className="text-[10px] font-mono text-muted">{detail.resolved_window.count} resolved</div>
+          <div className="text-xs font-mono text-muted">{detail.resolved_window.count} resolved</div>
         </div>
         <div>
-          <div className="text-[10px] font-mono text-subtle uppercase">Resolve p95</div>
+          <div className="text-xs font-mono text-subtle uppercase">Resolve p95</div>
           <div className={`text-lg font-mono font-bold ${
             detail.resolved_window.p95_resolve_s !== null && detail.resolved_window.p95_resolve_s > 4 * 3600 ? "text-red-400" : "text-text"
           }`}>
             {formatDuration(detail.resolved_window.p95_resolve_s)}
           </div>
-          <div className="text-[10px] font-mono text-muted">SLO: &lt; 4h</div>
+          <div className="text-xs font-mono text-muted">SLO: &lt; 4h</div>
         </div>
       </div>
     </div>

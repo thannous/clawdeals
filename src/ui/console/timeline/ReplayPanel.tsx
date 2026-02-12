@@ -33,13 +33,13 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
         <div className="flex gap-2">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+            className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
           >
             {expanded ? "Collapse" : "Expand"}
           </button>
           <button
             onClick={onClear}
-            className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+            className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
           >
             Clear
           </button>
@@ -57,15 +57,15 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
       {replayState === "done" && expanded && replay && (
         <div className="space-y-4">
           <div>
-            <p className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider mb-1">Current State</p>
-            <pre className="text-[11px] font-mono text-text bg-bg/60 border border-border rounded p-3 overflow-x-auto max-h-60 overflow-y-auto">
+            <p className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-1">Current State</p>
+            <pre className="text-xs font-mono text-text bg-bg/60 border border-border rounded p-3 overflow-x-auto max-h-60 overflow-y-auto">
               {JSON.stringify(replay.current_state, null, 2)}
             </pre>
           </div>
 
           {replay.steps && replay.steps.length > 0 && (
             <div>
-              <p className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider mb-2">
+              <p className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-2">
                 Steps ({replay.steps.length})
               </p>
               <ol className="space-y-2">
@@ -76,7 +76,7 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
                       className="w-full flex items-center justify-between text-left"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-subtle tabular-nums">
+                        <span className="text-xs font-mono text-subtle tabular-nums">
                           {formatDate(step.ts)}
                         </span>
                         <span className="text-xs font-mono font-bold text-text">
@@ -84,12 +84,12 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
                         </span>
                         <ConsoleStatusBadge value={step.outcome || "UNKNOWN"} variant="audit" />
                       </div>
-                      <span className="text-[10px] font-mono text-subtle">
+                      <span className="text-xs font-mono text-subtle">
                         {expandedSteps.has(idx) ? "\u25B2" : "\u25BC"}
                       </span>
                     </button>
                     {expandedSteps.has(idx) && step.delta && (
-                      <pre className="mt-2 text-[11px] font-mono text-text bg-bg/60 border border-border rounded p-2 overflow-x-auto max-h-40 overflow-y-auto">
+                      <pre className="mt-2 text-xs font-mono text-text bg-bg/60 border border-border rounded p-2 overflow-x-auto max-h-40 overflow-y-auto">
                         {JSON.stringify(step.delta, null, 2)}
                       </pre>
                     )}

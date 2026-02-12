@@ -4,7 +4,7 @@ export default function TerminalEmulator() {
   return (
     <div className="mt-20 border border-border-strong bg-bg p-1 shadow-2xl">
       <div className="bg-surface-alt px-4 py-1 flex items-center justify-between border-b border-border">
-        <span className="text-[10px] font-mono text-muted">TERMINAL_RELAY_V2.0</span>
+        <span className="text-xs font-mono text-muted">TERMINAL_RELAY_V2.0</span>
         <div className="flex gap-2">
           <div className="w-2 h-2 bg-border-strong rounded-full" />
           <div className="w-2 h-2 bg-border-strong rounded-full" />

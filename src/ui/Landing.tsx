@@ -179,7 +179,7 @@ function WaitlistForm({
 
 function ComingSoonBadge({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
+    <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-subtle border border-border bg-bg px-3 py-2 w-fit">
       <span className="w-2 h-2 bg-primary animate-pulse" />
       {label}
     </div>
@@ -322,7 +322,7 @@ function TabbedShowcase({
               >
                 <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3">
                   <Icon className={`w-4 h-4 md:w-5 md:h-5 ${colorClass}`} />
-                  <span className={`font-mono text-[9px] md:text-xs ${colorClass} tracking-widest uppercase`}>
+                  <span className={`font-mono text-xs md:text-xs ${colorClass} tracking-widest uppercase`}>
                     {heroData[key].subtitle}
                   </span>
                 </div>
@@ -334,7 +334,7 @@ function TabbedShowcase({
                 </p>
                 {/* Hover hint on inactive card — desktop only */}
                 {!isActive && (
-                  <span className={`hidden md:flex absolute bottom-4 right-0 font-mono text-[10px] ${colorClass} tracking-widest uppercase opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 items-center gap-1.5`}>
+                  <span className={`hidden md:flex absolute bottom-4 right-0 font-mono text-xs ${colorClass} tracking-widest uppercase opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 items-center gap-1.5`}>
                     <ChevronDown className="w-3 h-3" />
                     VOIR LA DEMO
                   </span>
@@ -349,7 +349,7 @@ function TabbedShowcase({
                 isActive ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"
               }`}>
                 <ChevronDown className={`w-3.5 h-3.5 ${colorClass} animate-bounce`} />
-                <span className={`font-mono text-[10px] ${colorClass} tracking-widest uppercase`}>SHOWCASE</span>
+                <span className={`font-mono text-xs ${colorClass} tracking-widest uppercase`}>SHOWCASE</span>
               </div>
             </div>
           );
@@ -365,7 +365,7 @@ function TabbedShowcase({
             <ul className="space-y-3 mb-8">
               {showcase.bullets.map((bullet, index) => (
                 <li key={bullet} className="flex items-start gap-3">
-                  <span className={`w-5 h-5 border ${activeTab.borderClass} flex items-center justify-center text-[10px] font-mono ${activeTab.colorClass} flex-shrink-0 mt-0.5`}>
+                  <span className={`w-5 h-5 border ${activeTab.borderClass} flex items-center justify-center text-xs font-mono ${activeTab.colorClass} flex-shrink-0 mt-0.5`}>
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <span className="text-sm text-muted font-mono">{bullet}</span>

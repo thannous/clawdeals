@@ -95,14 +95,14 @@ export default function WebMcpPage() {
           {lastRegisterError ? (
             <div className="text-xs font-mono text-red-400">Register error: {lastRegisterError}</div>
           ) : null}
-          <div className="text-[11px] font-mono text-subtle">
+          <div className="text-xs font-mono text-subtle">
             This page can run tool handlers locally to validate strict schemas, confirmation gate, redaction, and output caps.
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="border border-border bg-surface p-4 space-y-3 md:col-span-1">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Tools</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-subtle">Tools</div>
             <div className="space-y-2">
               {WEBMCP_TOOLS.map((t) => (
                 <button
@@ -115,7 +115,7 @@ export default function WebMcpPage() {
                   }`}
                 >
                   <div className="text-xs font-mono font-bold text-text">{t.name}</div>
-                  <div className="text-[11px] font-mono text-muted">
+                  <div className="text-xs font-mono text-muted">
                     scope={t.scope} confirm={t.requiresConfirmation ? "yes" : "no"}
                   </div>
                 </button>
@@ -126,7 +126,7 @@ export default function WebMcpPage() {
           <div className="border border-border bg-surface p-4 space-y-3 md:col-span-2">
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-1">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Invoke</div>
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">Invoke</div>
                 <div className="text-xs font-mono text-muted">{tool?.description || ""}</div>
               </div>
               <button
@@ -140,7 +140,7 @@ export default function WebMcpPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] font-mono uppercase tracking-widest text-subtle" htmlFor="webmcp-args">
+                <label className="text-xs font-mono uppercase tracking-widest text-subtle" htmlFor="webmcp-args">
                   Args (JSON)
                 </label>
                 <textarea
@@ -154,7 +154,7 @@ export default function WebMcpPage() {
                 />
               </div>
               <div className="space-y-2">
-                <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Result</div>
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">Result</div>
                 <pre className="w-full min-h-[220px] text-xs font-mono bg-bg border border-border rounded p-2 text-text whitespace-pre-wrap break-words">
                   {result || "(no result yet)"}
                 </pre>
@@ -162,8 +162,8 @@ export default function WebMcpPage() {
             </div>
 
             <div className="border border-border bg-bg/40 rounded p-3 space-y-2">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Schemas</div>
-              <pre className="text-[11px] font-mono text-muted whitespace-pre-wrap break-words">{toolsJson}</pre>
+              <div className="text-xs font-mono uppercase tracking-widest text-subtle">Schemas</div>
+              <pre className="text-xs font-mono text-muted whitespace-pre-wrap break-words">{toolsJson}</pre>
             </div>
           </div>
         </div>

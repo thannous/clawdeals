@@ -49,7 +49,7 @@ function PhoneFrame({
       <div className="flex justify-center pt-2 pb-1 bg-bg">
         <div className="w-24 h-5 rounded-full bg-border" />
       </div>
-      <div className="flex items-center justify-between px-6 py-1 text-[9px] font-mono text-subtle">
+      <div className="flex items-center justify-between px-6 py-1 text-xs font-mono text-subtle">
         <span>9:41</span>
         <div className="flex items-center gap-1">
           <span>5G</span>
@@ -66,7 +66,7 @@ function PhoneFrame({
         </div>
         <div>
           <div className="text-sm font-bold text-text">{header}</div>
-          <div className="flex items-center gap-1 text-[10px] text-subtle">
+          <div className="flex items-center gap-1 text-xs text-subtle">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             {online}
           </div>
@@ -104,7 +104,7 @@ function ChatBubble({
   return (
     <div className="flex gap-2 items-end chat-bubble">
       <div
-        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-[7px] font-bold shrink-0`}
+        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-xs font-bold shrink-0`}
       >
         CD
       </div>
@@ -122,7 +122,7 @@ function TypingIndicator({ visible, tone }: { visible: boolean; tone: ChatTone }
   return (
     <div className="flex gap-2 items-end chat-bubble">
       <div
-        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-[7px] font-bold shrink-0`}
+        className={`w-5 h-5 ${toneStyle.avatarClass} clip-corner-top-right flex items-center justify-center text-bg text-xs font-bold shrink-0`}
       >
         CD
       </div>

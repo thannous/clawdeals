@@ -52,7 +52,7 @@ function EventRow({ event, onClick }) {
       {/* Type badge */}
       <span
         data-testid="event-type"
-        className={`shrink-0 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase ${typeBadgeClasses}`}
+        className={`shrink-0 px-1.5 py-0.5 rounded border text-xs font-bold uppercase ${typeBadgeClasses}`}
       >
         {event.type || "unknown"}
       </span>

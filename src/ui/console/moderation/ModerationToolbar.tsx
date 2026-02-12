@@ -28,10 +28,10 @@ export default function ModerationToolbar({
     <div data-testid="moderation-toolbar" className="space-y-3">
       {/* Action type pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Action:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Action:</span>
         <button
           onClick={() => onActionTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             actionType === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -43,7 +43,7 @@ export default function ModerationToolbar({
           <button
             key={opt}
             onClick={() => onActionTypeChange(actionType === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               actionType === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -56,10 +56,10 @@ export default function ModerationToolbar({
 
       {/* Entity type pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Entity:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Entity:</span>
         <button
           onClick={() => onEntityTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             entityType === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -71,7 +71,7 @@ export default function ModerationToolbar({
           <button
             key={opt}
             onClick={() => onEntityTypeChange(entityType === opt ? null : opt)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               entityType === opt
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"

@@ -24,7 +24,7 @@ export default function ReportsList({
       <table className="w-full">
         <thead>
           <tr className="bg-bg/60 border-b border-border">
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left w-8">
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left w-8">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -32,16 +32,16 @@ export default function ReportsList({
                 className="accent-primary"
               />
             </th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">ID</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Entity Type</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Entity ID</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Reporter</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Reason</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Weight</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Status</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Created</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Resolved By</th>
-            <th className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Resolved At</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">ID</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Entity Type</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Entity ID</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Reporter</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Reason</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Weight</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Status</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Created</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Resolved By</th>
+            <th className="text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left">Resolved At</th>
           </tr>
         </thead>
         <tbody>
@@ -67,7 +67,7 @@ export default function ReportsList({
                 <TruncatedId id={row.report_id} />
               </td>
               <td className="text-xs font-mono text-text px-3 py-2.5 whitespace-nowrap">
-                <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+                <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
                   {row.entity_type || "\u2014"}
                 </span>
               </td>
@@ -78,7 +78,7 @@ export default function ReportsList({
                 <TruncatedId id={row.reporter_owner_id} />
               </td>
               <td className="text-xs font-mono text-text px-3 py-2.5 whitespace-nowrap">
-                <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+                <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
                   {row.reason_code || "\u2014"}
                 </span>
               </td>

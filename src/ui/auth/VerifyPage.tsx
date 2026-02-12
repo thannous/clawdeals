@@ -194,19 +194,19 @@ export default function VerifyPage() {
             </div>
 
             {email && (
-              <div className="text-[10px] font-mono text-subtle">
+              <div className="text-xs font-mono text-subtle">
                 Email: <span className="text-text">{email}</span>
               </div>
             )}
 
             {sessionId.trim() && (
-              <div className="text-[10px] font-mono text-subtle">
+              <div className="text-xs font-mono text-subtle">
                 Session ID: <span className="text-text">{sessionId}</span>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="auth-token">
+              <label className="block text-xs font-mono text-subtle uppercase" htmlFor="auth-token">
                 Verification token
               </label>
               <input
@@ -226,7 +226,7 @@ export default function VerifyPage() {
             </div>
 
             {expiresAt && (
-              <div className="text-[10px] font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
+              <div className="text-xs font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
             )}
 
             {error && (
@@ -278,7 +278,7 @@ export default function VerifyPage() {
           </div>
 
           {!sessionId.trim() && (
-            <div className="text-[10px] font-mono text-subtle">
+            <div className="text-xs font-mono text-subtle">
               Missing session ID. Return to{" "}
               <Link href="/auth/login-legacy" className="text-text underline">
                 /auth/login-legacy

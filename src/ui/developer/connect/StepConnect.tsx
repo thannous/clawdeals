@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import QRCode from "react-qr-code";
 
 import { apiRequest } from "../api";
 import { setStoredApiKey } from "../storage";
@@ -54,6 +55,8 @@ export default function StepConnect({
   // --- Claim Link state ---
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimCopied, setClaimCopied] = useState(false);
+  const [claimQrOpen, setClaimQrOpen] = useState(false);
+  const [claimOpenMsg, setClaimOpenMsg] = useState("");
 
   // --- API Key state ---
   const [keyMode, setKeyMode] = useState<"generate" | "paste">("generate");
@@ -91,6 +94,8 @@ export default function StepConnect({
   // --- Claim Link handlers ---
   const handleCreateClaim = useCallback(async () => {
     setClaimError(null);
+    setClaimOpenMsg("");
+    setClaimQrOpen(false);
     try {
       const session = await onCreateSession();
       onClaimSessionCreated(session);
@@ -105,10 +110,23 @@ export default function StepConnect({
     try {
       await navigator.clipboard.writeText(claimSession.claim_url);
       setClaimCopied(true);
+      setClaimOpenMsg("");
       setTimeout(() => setClaimCopied(false), 2000);
     } catch {
       // ignore
     }
+  }, [claimSession]);
+
+  const handleOpenClaimUrl = useCallback(() => {
+    if (!claimSession?.claim_url) return;
+
+    const opened = window.open(claimSession.claim_url, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      setClaimOpenMsg("Popup blocked. Use Copy Link instead.");
+      return;
+    }
+
+    setClaimOpenMsg("Approval page opened in a new tab.");
   }, [claimSession]);
 
   // --- API Key handlers ---
@@ -210,13 +228,13 @@ export default function StepConnect({
       <div className="border border-secondary/30 bg-surface p-6 md:p-8 space-y-6 clip-corner">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
           <div className="space-y-3 max-w-md">
-            <span className="inline-block px-2.5 py-1 text-[10px] font-mono font-bold uppercase border border-secondary/40 text-secondary rounded">
+            <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary rounded">
               Recommended
             </span>
             <div className="text-lg font-bold tracking-wide">Connect via Claim Link</div>
             <div className="text-sm font-mono text-subtle leading-relaxed">
-              Approve in 1 click from any device. No key to copy-paste.
-              Revoke anytime from your dashboard.
+              Use Approve now if you are the owner on this device.
+              Use link or QR for another device or teammate.
             </div>
           </div>
 
@@ -230,7 +248,7 @@ export default function StepConnect({
                   : "bg-primary text-bg hover:bg-text hover:text-bg"
               } transition-colors`}
             >
-              {isCreatingSession ? "Creating..." : "Generate Claim Link"}
+              {isCreatingSession ? "Creating..." : "Generate Approval Link"}
             </button>
           )}
         </div>
@@ -243,31 +261,64 @@ export default function StepConnect({
 
         {claimSession && (
           <div className="border-t border-border pt-6 space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
               <div className="border border-border bg-bg p-4 space-y-2 sm:min-w-[200px]">
-                <div className="text-[10px] font-mono text-subtle uppercase tracking-wider">Verification Code</div>
+                <div className="text-xs font-mono text-subtle uppercase tracking-wider">Verification Code</div>
                 <div className="text-2xl font-bold tracking-widest text-text">
                   {claimSession.verification_code}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
+              <div className="space-y-3 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleOpenClaimUrl}
+                    className="border border-primary bg-primary text-bg px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+                  >
+                    Approve now
+                  </button>
                   <button
                     onClick={handleCopyClaimUrl}
-                    className="border border-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                    className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                   >
                     {claimCopied ? "Copied!" : "Copy Link"}
                   </button>
-                  <span className="text-[10px] font-mono text-subtle truncate max-w-[300px]">
-                    {claimSession.claim_url}
-                  </span>
+                  <button
+                    onClick={() => setClaimQrOpen((prev) => !prev)}
+                    className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                  >
+                    {claimQrOpen ? "Hide QR" : "Show QR"}
+                  </button>
                 </div>
-                <div className="text-[10px] font-mono text-muted">
-                  Share this link with the account owner to approve.
+                <div className="text-xs font-mono text-subtle break-all">
+                  {claimSession.claim_url}
                 </div>
+                <div className="text-xs font-mono text-muted">
+                  Open approval page on this device, or share this link/QR to another owner device.
+                </div>
+                {claimOpenMsg && (
+                  <div className="text-xs font-mono text-emerald-400" aria-live="polite">
+                    {claimOpenMsg}
+                  </div>
+                )}
               </div>
             </div>
+
+            {claimQrOpen && (
+              <div className="border border-border bg-bg p-4 flex flex-col items-center gap-3">
+                <div className="text-xs font-mono text-subtle uppercase tracking-wider">Scan to approve</div>
+                <QRCode
+                  value={claimSession.claim_url}
+                  size={172}
+                  bgColor="transparent"
+                  fgColor="currentColor"
+                  className="text-text"
+                />
+                <div className="text-xs font-mono text-subtle text-center">
+                  Scan from your phone, then approve code <span className="text-text">{claimSession.verification_code}</span>.
+                </div>
+              </div>
+            )}
 
             {isPolling && (
               <div className="flex items-center gap-2" aria-live="polite">
@@ -300,7 +351,7 @@ export default function StepConnect({
       {/* Separator */}
       <div className="flex items-center gap-4">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-[10px] font-mono text-subtle uppercase tracking-widest">Or choose another method</span>
+        <span className="text-xs font-mono text-subtle uppercase tracking-widest">Or choose another method</span>
         <div className="flex-1 h-px bg-border" />
       </div>
 
@@ -310,7 +361,7 @@ export default function StepConnect({
         <div className="border border-border bg-surface p-6 space-y-4 clip-corner">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-border text-subtle rounded">
+              <span className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-subtle rounded">
                 Advanced
               </span>
             </div>
@@ -323,7 +374,7 @@ export default function StepConnect({
           <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
             <button
               onClick={() => setKeyMode("generate")}
-              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+              className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
                 keyMode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
               } transition-colors`}
             >
@@ -331,7 +382,7 @@ export default function StepConnect({
             </button>
             <button
               onClick={() => setKeyMode("paste")}
-              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${
+              className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
                 keyMode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
               } transition-colors`}
             >
@@ -342,7 +393,7 @@ export default function StepConnect({
           {keyMode === "generate" ? (
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="connect-agent-name">
+                <label className="block text-xs font-mono text-subtle uppercase" htmlFor="connect-agent-name">
                   Agent name (optional)
                 </label>
                 <input
@@ -372,7 +423,7 @@ export default function StepConnect({
           ) : (
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="connect-paste-key">
+                <label className="block text-xs font-mono text-subtle uppercase" htmlFor="connect-paste-key">
                   API key
                 </label>
                 <input
@@ -417,13 +468,13 @@ export default function StepConnect({
         <div className="border border-border bg-surface p-6 space-y-4 clip-corner">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-border text-subtle rounded">
+              <span className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-subtle rounded">
                 IDE
               </span>
             </div>
             <div className="text-sm font-bold tracking-wide">Connect IDE</div>
             <div className="text-xs font-mono text-subtle leading-relaxed">
-              For Cursor, Claude Desktop, Windsurf, and other MCP-compatible editors.
+              For Cursor, Claude Desktop, Claude Code, Codex, Windsurf, and other MCP-compatible editors.
             </div>
           </div>
 
@@ -446,18 +497,18 @@ export default function StepConnect({
 
             {mcpShowInstall && (
               <div className="space-y-3">
-                <pre className="text-[10px] font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
+                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
                   {mcpInstallSnippet}
                 </pre>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopyMcpInstall}
-                    className="border border-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                    className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                   >
                     Copy Install
                   </button>
                   {mcpCopyMsg && (
-                    <span className="text-[10px] font-mono text-emerald-400">{mcpCopyMsg}</span>
+                    <span className="text-xs font-mono text-emerald-400">{mcpCopyMsg}</span>
                   )}
                 </div>
               </div>
@@ -474,7 +525,7 @@ export default function StepConnect({
           {/* Advanced accordion */}
           <button
             onClick={() => setMcpAdvancedOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 text-[10px] font-mono text-subtle hover:text-text transition-colors"
+            className="flex items-center gap-1.5 text-xs font-mono text-subtle hover:text-text transition-colors"
           >
             <svg
               className={`w-3 h-3 transition-transform ${mcpAdvancedOpen ? "rotate-90" : ""}`}
@@ -499,7 +550,7 @@ export default function StepConnect({
                   <button
                     key={opt.label}
                     onClick={() => setMcpApiBase(opt.value)}
-                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest border ${
+                    className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest border ${
                       mcpApiBase === opt.value
                         ? "border-primary text-primary"
                         : "border-border text-subtle hover:border-border-strong hover:text-text"
@@ -510,19 +561,19 @@ export default function StepConnect({
                 ))}
               </div>
 
-              <div className="text-[10px] font-mono text-subtle">
+              <div className="text-xs font-mono text-subtle">
                 Custom path:{" "}
                 <span className="text-text">npm run mcp:install -- --file /path/to/mcp.json</span>
               </div>
 
               <div className="space-y-2">
-                <div className="text-[10px] font-mono text-subtle uppercase">Manual JSON (fallback)</div>
-                <pre className="text-[10px] font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
+                <div className="text-xs font-mono text-subtle uppercase">Manual JSON (fallback)</div>
+                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
                   {mcpManualJson}
                 </pre>
                 <button
                   onClick={handleCopyMcpJson}
-                  className="border border-border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                  className="border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
                   Copy JSON
                 </button>

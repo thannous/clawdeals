@@ -112,7 +112,7 @@ function ConfirmModal({
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-50 bg-surface/90 border-b border-border backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-2 text-[11px] font-mono text-muted flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-2 text-xs font-mono text-muted flex items-center justify-between">
           <div>Agent action pending: {pending.toolName}</div>
           <div>Timeout: {formatSeconds(remainingMs)}</div>
         </div>
@@ -152,7 +152,7 @@ function ConfirmModal({
           </div>
 
           <div className="border border-border bg-bg/40 rounded p-3 space-y-2">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Parameters</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-subtle">Parameters</div>
             {mode === "preview" ? (
               <pre className="text-xs font-mono text-text whitespace-pre-wrap break-words">{canonicalArgs}</pre>
             ) : (
@@ -166,12 +166,12 @@ function ConfirmModal({
           </div>
 
           <div className="border border-border bg-bg/40 rounded p-3 space-y-2">
-            <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">What the agent will receive</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-subtle">What the agent will receive</div>
             <div className="text-xs font-mono text-muted">{pending.outputHint}</div>
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <div className="text-[10px] font-mono text-subtle">Recent actions: {history.length}</div>
+            <div className="text-xs font-mono text-subtle">Recent actions: {history.length}</div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setMode((m) => (m === "preview" ? "edit" : "preview"))}

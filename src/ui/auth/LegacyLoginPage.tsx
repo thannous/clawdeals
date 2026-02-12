@@ -114,7 +114,7 @@ export default function LegacyLoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="auth-email">
+              <label className="block text-xs font-mono text-subtle uppercase" htmlFor="auth-email">
                 Email
               </label>
               <input
@@ -135,7 +135,7 @@ export default function LegacyLoginPage() {
             </div>
 
             {sessionId && (
-              <div className="text-[10px] font-mono text-subtle">
+              <div className="text-xs font-mono text-subtle">
                 Session ID:{" "}
                 <span className="text-text" data-testid="auth-login-session-id">
                   {sessionId}
@@ -157,7 +157,7 @@ export default function LegacyLoginPage() {
                   Check your inbox for the login link. You can also verify manually below.
                 </div>
                 {expiresAt && (
-                  <div className="text-[10px] font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
+                  <div className="text-xs font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
                 )}
                 {token && (
                   <div className="text-xs font-mono text-text break-all" data-testid="auth-login-token">
@@ -204,7 +204,7 @@ export default function LegacyLoginPage() {
             </div>
           </div>
 
-          <div className="text-[10px] font-mono text-subtle">
+          <div className="text-xs font-mono text-subtle">
             Tip: if you already verified, head straight to <span className="text-text">/settings/account</span>.
           </div>
         </div>

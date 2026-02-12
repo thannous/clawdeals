@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import QRCode from "react-qr-code";
 
 import { apiRequest, maskApiKey } from "../api";
 import type { AgentMeResponse, ConnectionMethod, ConnectSessionData, ExchangeResult, PollStatus } from "./types";
@@ -33,6 +34,9 @@ export default function StepVerify({
   const [agentMe, setAgentMe] = useState<AgentMeResponse | null>(null);
   const [exchangeStatus, setExchangeStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [exchangeError, setExchangeError] = useState<string | null>(null);
+  const [claimCopied, setClaimCopied] = useState(false);
+  const [claimQrOpen, setClaimQrOpen] = useState(false);
+  const [claimOpenMsg, setClaimOpenMsg] = useState("");
 
   // MCP verify state
   const [mcpPastedKey, setMcpPastedKey] = useState("");
@@ -75,6 +79,7 @@ export default function StepVerify({
 
     return () => {
       cancelled = true;
+      verifyStartedRef.current = false;
     };
   }, [method, apiKey, onVerified]);
 
@@ -108,6 +113,7 @@ export default function StepVerify({
 
     return () => {
       cancelled = true;
+      exchangeStartedRef.current = false;
     };
   }, [method, pollStatus, claimSession, onExchangeForApiKey, onApiKeySet, onVerified]);
 
@@ -155,17 +161,45 @@ export default function StepVerify({
     }
   }, [mcpVerifyPrompt]);
 
+  const handleOpenClaimUrl = useCallback(() => {
+    if (!claimSession?.claim_url) return;
+
+    const opened = window.open(claimSession.claim_url, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      setClaimOpenMsg("Popup blocked. Use Copy Link instead.");
+      return;
+    }
+
+    setClaimOpenMsg("Approval page opened in a new tab.");
+  }, [claimSession]);
+
+  const handleCopyClaimUrl = useCallback(async () => {
+    if (!claimSession?.claim_url) return;
+    try {
+      await navigator.clipboard.writeText(claimSession.claim_url);
+      setClaimCopied(true);
+      setClaimOpenMsg("");
+      setTimeout(() => setClaimCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }, [claimSession]);
+
   const masked = apiKey ? maskApiKey(apiKey) : null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-xl font-bold tracking-tight">Verify connection</h2>
+          <h2 className="text-xl font-bold tracking-tight">
+            {method === "claim" && "Waiting for owner approval"}
+            {method === "apikey" && "Verify connection"}
+            {method === "mcp" && "Verify MCP installation"}
+          </h2>
           <p className="text-xs font-mono text-subtle">
-            {method === "claim" && "Waiting for claim approval..."}
+            {method === "claim" && "An owner must approve this connection before your agent can access the API."}
             {method === "apikey" && "Checking your API key..."}
-            {method === "mcp" && "Verify your MCP installation."}
+            {method === "mcp" && "Confirm your MCP server is connected."}
           </p>
         </div>
         <button
@@ -178,41 +212,84 @@ export default function StepVerify({
 
       {/* Claim Link verify */}
       {method === "claim" && (
-        <div className="border border-border bg-surface p-5 space-y-4 clip-corner">
+        <div className="space-y-5">
           {claimSession && (pollStatus === "polling" || pollStatus === "idle") && (
             <>
-              <div className="border border-border bg-bg p-4 space-y-2 text-center">
-                <div className="text-[10px] font-mono text-subtle uppercase">Verification Code</div>
-                <div className="text-2xl font-bold tracking-widest text-text">
-                  {claimSession.verification_code}
-                </div>
-                <div className="text-[10px] font-mono text-subtle">
-                  Open the claim link and approve this code.
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center gap-2">
+              {/* Status indicator */}
+              <div className="flex items-center gap-2">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400" />
                 </span>
-                <span className="text-xs font-mono text-yellow-400">Waiting for approval...</span>
+                <span className="text-xs font-mono text-yellow-400">Polling for approval...</span>
               </div>
 
-              <div className="text-[10px] font-mono text-muted text-center">
-                Share this link with the account owner:{" "}
-                <span className="text-text break-all">{claimSession.claim_url}</span>
+              {/* Actions */}
+              <div className="border border-border bg-surface p-5 space-y-4 clip-corner">
+                <button
+                  onClick={handleOpenClaimUrl}
+                  className="w-full h-11 border border-primary bg-primary text-bg text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+                >
+                  Open approval page
+                </button>
+                {claimOpenMsg && (
+                  <div className="text-xs font-mono text-emerald-400" aria-live="polite">
+                    {claimOpenMsg}
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-subtle">Or share the link:</span>
+                  <button
+                    onClick={handleCopyClaimUrl}
+                    className="h-8 px-3 border border-border text-xs font-bold uppercase tracking-widest hover:border-border-strong hover:text-text transition-colors"
+                  >
+                    {claimCopied ? "Copied!" : "Copy link"}
+                  </button>
+                  <button
+                    onClick={() => setClaimQrOpen((prev) => !prev)}
+                    className="h-8 px-3 border border-border text-xs font-bold uppercase tracking-widest hover:border-border-strong hover:text-text transition-colors"
+                  >
+                    {claimQrOpen ? "Hide QR" : "QR code"}
+                  </button>
+                </div>
               </div>
+
+              {/* Verification code — shared context for both paths */}
+              <div className="border border-border bg-bg p-4 flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-mono text-subtle uppercase tracking-wider">Confirmation code</div>
+                  <div className="text-xs font-mono text-muted">The owner will see this code and must confirm it matches.</div>
+                </div>
+                <div className="text-2xl font-bold tracking-widest text-text whitespace-nowrap">
+                  {claimSession.verification_code}
+                </div>
+              </div>
+
+              {/* QR code panel */}
+              {claimQrOpen && (
+                <div className="border border-border bg-bg p-5 flex flex-col items-center gap-3">
+                  <QRCode
+                    value={claimSession.claim_url}
+                    size={172}
+                    bgColor="transparent"
+                    fgColor="currentColor"
+                    className="text-text"
+                  />
+                  <div className="text-xs font-mono text-subtle text-center">
+                    The owner scans this QR, then confirms code <span className="font-bold text-text">{claimSession.verification_code}</span>.
+                  </div>
+                </div>
+              )}
             </>
           )}
 
           {pollStatus === "claimed" && exchangeStatus === "loading" && (
-            <div className="flex items-center justify-center gap-2 py-6">
+            <div className="border border-emerald-400/20 bg-emerald-400/5 p-5 flex items-center justify-center gap-2 clip-corner">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
               </span>
-              <span className="text-xs font-mono text-emerald-400">Claimed! Exchanging credentials...</span>
+              <span className="text-sm font-mono text-emerald-400">Approved! Setting up credentials...</span>
             </div>
           )}
 
@@ -276,16 +353,16 @@ export default function StepVerify({
 
           <button
             onClick={handleCopyVerifyPrompt}
-            className="border border-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+            className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
           >
             {mcpCopied ? "Copied!" : "Copy Prompt"}
           </button>
 
           <div className="border-t border-border pt-4 space-y-2">
-            <div className="text-[10px] font-mono text-subtle uppercase">
+            <div className="text-xs font-mono text-subtle uppercase">
               Verify connection (optional)
             </div>
-            <div className="text-[10px] font-mono text-muted">
+            <div className="text-xs font-mono text-muted">
               Paste your API key to confirm the connection is working:
             </div>
             <input
@@ -312,7 +389,7 @@ export default function StepVerify({
               </button>
             </div>
             {verifyError && (
-              <div className="text-[10px] font-mono text-red-400" aria-live="polite">
+              <div className="text-xs font-mono text-red-400" aria-live="polite">
                 {verifyError}
               </div>
             )}
@@ -329,7 +406,7 @@ export default function StepVerify({
             </span>
             <span className="text-xs font-mono font-bold text-emerald-400 uppercase">Connected</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
             <div>
               <span className="text-subtle">agent_id: </span>
               <span className="text-text">{agentMe.agent_id}</span>
@@ -355,9 +432,9 @@ export default function StepVerify({
           </div>
           {masked && (
             <div>
-              <span className="text-[10px] font-mono text-subtle">key: </span>
-              <span className="text-[10px] font-mono text-text">{masked}</span>
-              <span className="text-[10px] font-mono text-muted ml-2">Stored locally on this device.</span>
+              <span className="text-xs font-mono text-subtle">key: </span>
+              <span className="text-xs font-mono text-text">{masked}</span>
+              <span className="text-xs font-mono text-muted ml-2">Stored locally on this device.</span>
             </div>
           )}
         </div>

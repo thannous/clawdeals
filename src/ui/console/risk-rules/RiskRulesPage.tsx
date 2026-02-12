@@ -168,7 +168,7 @@ export default function RiskRulesPage() {
           </div>
           {runner.error && <p className="text-xs font-mono text-red-300">{runner.error}</p>}
           {runner.result && (
-            <pre className="bg-bg border border-border rounded p-3 text-[11px] font-mono text-muted overflow-x-auto">
+            <pre className="bg-bg border border-border rounded p-3 text-xs font-mono text-muted overflow-x-auto">
               {JSON.stringify(runner.result, null, 2)}
             </pre>
           )}
@@ -188,13 +188,13 @@ export default function RiskRulesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-bg/60 border-b border-border">
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Rule</th>
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Signal</th>
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Threshold</th>
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Window</th>
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Cooldown</th>
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Flag</th>
-                    <th className="text-left px-3 py-2 text-[10px] font-mono uppercase text-subtle">Action</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Rule</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Signal</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Threshold</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Window</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Cooldown</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Flag</th>
+                    <th className="text-left px-3 py-2 text-xs font-mono uppercase text-subtle">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -204,7 +204,7 @@ export default function RiskRulesPage() {
                       <tr key={rule.risk_rule_id} className="border-b border-border/50">
                         <td className="px-3 py-2 text-xs font-mono text-text">
                           <div>{rule.rule_key}</div>
-                          <label className="inline-flex items-center gap-2 text-[11px] text-muted mt-1">
+                          <label className="inline-flex items-center gap-2 text-xs text-muted mt-1">
                             <input
                               type="checkbox"
                               checked={Boolean(draft.enabled)}
@@ -232,7 +232,7 @@ export default function RiskRulesPage() {
                             onChange={(event) => setDraftField(rule.risk_rule_id, "window_seconds", event.target.value)}
                             className="w-28 px-2 py-1 text-xs font-mono bg-bg border border-border rounded text-text"
                           />
-                          <div className="text-[10px] font-mono text-subtle mt-1">
+                          <div className="text-xs font-mono text-subtle mt-1">
                             {formatWindow(Number(draft.window_seconds ?? rule.window_seconds))}
                           </div>
                         </td>
@@ -244,7 +244,7 @@ export default function RiskRulesPage() {
                             onChange={(event) => setDraftField(rule.risk_rule_id, "cooldown_seconds", event.target.value)}
                             className="w-28 px-2 py-1 text-xs font-mono bg-bg border border-border rounded text-text"
                           />
-                          <div className="text-[10px] font-mono text-subtle mt-1">
+                          <div className="text-xs font-mono text-subtle mt-1">
                             {formatWindow(Number(draft.cooldown_seconds ?? rule.cooldown_seconds))}
                           </div>
                         </td>
@@ -265,7 +265,7 @@ export default function RiskRulesPage() {
                           <button
                             onClick={() => saveRule(rule)}
                             disabled={mutation.submitState === "loading"}
-                            className="px-3 py-1 text-[11px] font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 disabled:opacity-50"
+                            className="px-3 py-1 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 disabled:opacity-50"
                           >
                             Save
                           </button>
@@ -320,7 +320,7 @@ export default function RiskRulesPage() {
           </div>
           {unflag.error && <p className="text-xs font-mono text-red-300">{unflag.error}</p>}
           {unflag.lastResult && (
-            <pre className="bg-bg border border-border rounded p-3 text-[11px] font-mono text-muted overflow-x-auto">
+            <pre className="bg-bg border border-border rounded p-3 text-xs font-mono text-muted overflow-x-auto">
               {JSON.stringify(unflag.lastResult, null, 2)}
             </pre>
           )}

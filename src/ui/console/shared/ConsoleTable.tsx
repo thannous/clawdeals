@@ -23,7 +23,7 @@ export default function ConsoleTable({ columns, rows, getRowKey, onRowClick, ren
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`text-[10px] font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left ${col.className || ""}`}
+                className={`text-xs font-mono font-bold text-subtle uppercase tracking-wider px-3 py-2 text-left ${col.className || ""}`}
               >
                 {col.label}
               </th>

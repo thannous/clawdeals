@@ -40,7 +40,7 @@ export default function AuditList({ items, onSelect }: Props) {
       case "actor_type":
         return (
           <span
-            className={`inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-border rounded ${
+            className={`inline-block px-1.5 py-0.5 text-xs font-mono font-bold uppercase border border-border rounded ${
               ACTOR_TYPE_COLORS[row.actor?.type] || "text-muted"
             }`}
           >

@@ -50,25 +50,25 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
       <div className="space-y-2">
         {payload.title && (
           <div>
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Title: </span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-wider">Title: </span>
             <span className="text-xs font-mono text-text">{payload.title}</span>
           </div>
         )}
         {payload.price != null && (
           <div>
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Price: </span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-wider">Price: </span>
             <span className="text-xs font-mono text-primary">{payload.price} {payload.currency || "USD"}</span>
           </div>
         )}
         {payload.category && (
           <div>
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Category: </span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-wider">Category: </span>
             <span className="text-xs font-mono text-text">{payload.category}</span>
           </div>
         )}
         {payload.condition && (
           <div>
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Condition: </span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-wider">Condition: </span>
             <span className="text-xs font-mono text-text">{payload.condition}</span>
           </div>
         )}
@@ -81,13 +81,13 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
       <div className="space-y-2">
         {payload.message_type && (
           <div>
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Type: </span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-wider">Type: </span>
             <span className="text-xs font-mono text-text">{payload.message_type}</span>
           </div>
         )}
         {payload.body && (
           <div>
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Body: </span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-wider">Body: </span>
             <span className="text-xs font-mono text-text whitespace-pre-wrap break-words">
               {String(payload.body).slice(0, 500)}
             </span>
@@ -104,7 +104,7 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
         <div className="space-y-1">
           {listingId && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Listing</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Listing</span>
               <Link href={`/console/listings/${listingId}`} className="text-xs font-mono text-primary hover:underline">
                 <TruncatedId id={listingId} />
               </Link>
@@ -112,7 +112,7 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
           )}
           {threadId && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Thread</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Thread</span>
               <Link href={`/console/threads/${threadId}`} className="text-xs font-mono text-primary hover:underline">
                 <TruncatedId id={threadId} />
               </Link>
@@ -123,10 +123,10 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
 
       {offer && (
         <div className="space-y-1">
-          <div className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Offer</div>
+          <div className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Offer</div>
           {"amount" in offer && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Amount</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Amount</span>
               <span className="text-xs font-mono text-text tabular-nums">
                 {offer.amount} {offer.currency || "USD"}
               </span>
@@ -134,7 +134,7 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
           )}
           {offer.expires_at && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Expires</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Expires</span>
               <span className="text-xs font-mono text-text tabular-nums">{String(offer.expires_at)}</span>
             </div>
           )}
@@ -143,22 +143,22 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
 
       {policy && (
         <div className="space-y-1">
-          <div className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Policy</div>
+          <div className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Policy</div>
           {policy.decision && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Decision</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Decision</span>
               <span className="text-xs font-mono text-text">{String(policy.decision)}</span>
             </div>
           )}
           {"reason" in policy && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Reason</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Reason</span>
               <span className="text-xs font-mono text-text">{policy.reason ? String(policy.reason) : "\u2014"}</span>
             </div>
           )}
           {"policy_version" in policy && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Version</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">Version</span>
               <span className="text-xs font-mono text-text tabular-nums">
                 {policy.policy_version != null ? String(policy.policy_version) : "\u2014"}
               </span>
@@ -169,7 +169,7 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
 
       {quarantineApplied !== null && (
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">Quarantine</span>
+          <span className="text-xs font-mono text-subtle uppercase tracking-wider">Quarantine</span>
           <span className="text-xs font-mono text-text">{quarantineApplied ? "Yes" : "No"}</span>
         </div>
       )}
@@ -180,7 +180,7 @@ export default function ApprovalContextPreview({ actionType, payload, actionRef 
           .slice(0, 10)
           .map(([key, val]) => (
             <div key={key}>
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">{key}: </span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-wider">{key}: </span>
               <span className="text-xs font-mono text-text">
                 {typeof val === "object" ? JSON.stringify(val) : String(val)}
               </span>

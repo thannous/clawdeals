@@ -69,7 +69,7 @@ function ReportActionModalInner({
         <p className="text-xs font-mono text-muted leading-relaxed">{message}</p>
 
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="report-action-reason">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="report-action-reason">
             Reason
           </label>
           <textarea
@@ -84,7 +84,7 @@ function ReportActionModalInner({
             spellCheck={false}
             className="w-full px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors resize-none"
           />
-          <span className="text-[10px] font-mono text-subtle">{reason.length}/1000</span>
+          <span className="text-xs font-mono text-subtle">{reason.length}/1000</span>
         </div>
 
         <div className="flex items-center justify-end gap-3">

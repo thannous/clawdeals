@@ -63,12 +63,12 @@ export default function TimelineDetailModal({ open, entry, onClose, onReplayToPo
         <dl className="space-y-3">
           {rows.map(([label, value]) => (
             <div key={label} className="flex flex-col gap-0.5">
-              <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">{label}</dt>
+              <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">{label}</dt>
               <dd className="text-xs font-mono text-text break-all">{value}</dd>
             </div>
           ))}
           <div className="flex flex-col gap-0.5">
-            <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Outcome</dt>
+            <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Outcome</dt>
             <dd className="text-xs"><ConsoleStatusBadge value={entry.outcome || "UNKNOWN"} variant="audit" /></dd>
           </div>
         </dl>

@@ -58,7 +58,7 @@ export default function MessageCard({ message }: Props) {
         {/* Message type badge */}
         {messageType && (
           <span
-            className={`text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${
+            className={`text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border ${
               TYPE_BADGE_CLASSES[String(messageType)] || "border-secondary/40 text-secondary bg-secondary/10"
             }`}
           >
@@ -67,7 +67,7 @@ export default function MessageCard({ message }: Props) {
         )}
 
         {/* Sender badge */}
-        <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+        <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
           {senderType}
         </span>
 
@@ -75,19 +75,19 @@ export default function MessageCard({ message }: Props) {
 
         {/* Redacted badge */}
         {message.redacted && (
-          <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-red-400/40 text-red-400 bg-red-400/10">
+          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-red-400/40 text-red-400 bg-red-400/10">
             REDACTED
           </span>
         )}
 
         {/* Warning highlight */}
         {messageType === "warning" && (
-          <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-yellow-400/40 text-yellow-400 bg-yellow-400/10">
+          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-yellow-400/40 text-yellow-400 bg-yellow-400/10">
             WARNING
           </span>
         )}
 
-        <span className="ml-auto text-[10px] font-mono text-subtle tabular-nums">
+        <span className="ml-auto text-xs font-mono text-subtle tabular-nums">
           {formatDate(message.created_at)}
         </span>
       </div>

@@ -35,28 +35,28 @@ export default function LiveFeedToolbar({
     switch (connectionState) {
       case "connected":
         return (
-          <span data-testid="connection-badge" className="flex items-center gap-1 text-[10px] font-mono text-green-400">
+          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-green-400">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             CONNECTED
           </span>
         );
       case "connecting":
         return (
-          <span data-testid="connection-badge" className="flex items-center gap-1 text-[10px] font-mono text-yellow-400">
+          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-yellow-400">
             <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
             CONNECTING
           </span>
         );
       case "reconnecting":
         return (
-          <span data-testid="connection-badge" className="flex items-center gap-1 text-[10px] font-mono text-orange-400">
+          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-orange-400">
             <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
             RECONNECTING
           </span>
         );
       default:
         return (
-          <span data-testid="connection-badge" className="flex items-center gap-1 text-[10px] font-mono text-red-400">
+          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-red-400">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
             DISCONNECTED
           </span>
@@ -100,7 +100,7 @@ export default function LiveFeedToolbar({
           {paused ? <Play size={12} /> : <Pause size={12} />}
           {paused ? "RESUME" : "PAUSE"}
           {paused && missedCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 text-[10px]">
+            <span className="ml-1 px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 text-xs">
               +{missedCount}
             </span>
           )}
@@ -119,13 +119,13 @@ export default function LiveFeedToolbar({
 
       {/* Event type filters */}
       <div className={`flex flex-wrap gap-2 items-center ${filtersOpen ? "" : "hidden sm:flex"}`}>
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Types:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Types:</span>
         {EVENT_TYPES.map((type) => (
           <button
             key={type}
             data-testid={`type-filter-${type}`}
             onClick={() => toggleType(type)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               types.includes(type)
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"

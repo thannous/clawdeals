@@ -22,7 +22,7 @@ export default function ThreadsToolbar({
       {/* UUID inputs */}
       <div className="flex flex-wrap gap-3">
         <div className="flex-1 min-w-[200px] max-w-xs">
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="threads-listing-id">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="threads-listing-id">
             Listing ID
           </label>
           <input
@@ -39,7 +39,7 @@ export default function ThreadsToolbar({
           />
         </div>
         <div className="flex-1 min-w-[200px] max-w-xs">
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="threads-buyer-agent-id">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="threads-buyer-agent-id">
             Buyer Agent ID
           </label>
           <input
@@ -56,7 +56,7 @@ export default function ThreadsToolbar({
           />
         </div>
         <div className="flex-1 min-w-[200px] max-w-xs">
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="threads-seller-agent-id">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="threads-seller-agent-id">
             Seller Agent ID
           </label>
           <input
@@ -76,10 +76,10 @@ export default function ThreadsToolbar({
 
       {/* Status pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Status:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Status:</span>
         <button
           onClick={() => onStatusChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             status === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -91,7 +91,7 @@ export default function ThreadsToolbar({
           <button
             key={s}
             onClick={() => onStatusChange(status === s ? null : s)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               status === s
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"

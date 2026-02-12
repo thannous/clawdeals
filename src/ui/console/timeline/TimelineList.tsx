@@ -36,7 +36,7 @@ export default function TimelineList({ items, onSelect }: Props) {
           />
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-mono text-subtle tabular-nums">
+            <span className="text-xs font-mono text-subtle tabular-nums">
               {formatDate(item.ts)}
             </span>
 
@@ -44,7 +44,7 @@ export default function TimelineList({ items, onSelect }: Props) {
 
             {item.actor?.type && (
               <span
-                className={`inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-border rounded ${
+                className={`inline-block px-1.5 py-0.5 text-xs font-mono font-bold uppercase border border-border rounded ${
                   ACTOR_TYPE_COLORS[item.actor.type] || "text-muted"
                 }`}
               >
@@ -59,7 +59,7 @@ export default function TimelineList({ items, onSelect }: Props) {
             <ConsoleStatusBadge value={item.outcome || "UNKNOWN"} variant="audit" />
 
             {item.entity?.type && (
-              <span className="text-[10px] font-mono text-subtle uppercase">{item.entity.type}</span>
+              <span className="text-xs font-mono text-subtle uppercase">{item.entity.type}</span>
             )}
 
             {item.entity?.id && (

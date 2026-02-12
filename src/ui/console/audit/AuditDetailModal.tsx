@@ -60,24 +60,24 @@ export default function AuditDetailModal({ open, entry, onClose }: Props) {
         <dl className="space-y-3">
           {rows.map(([label, value]) => (
             <div key={label} className="flex flex-col gap-0.5">
-              <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">{label}</dt>
+              <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">{label}</dt>
               <dd className="text-xs font-mono text-text break-all">{value}</dd>
             </div>
           ))}
           <div className="flex flex-col gap-0.5">
-            <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Outcome</dt>
+            <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Outcome</dt>
             <dd className="text-xs"><ConsoleStatusBadge value={entry.outcome || "UNKNOWN"} variant="audit" /></dd>
           </div>
           <div className="flex flex-col gap-0.5">
-            <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Metadata Hash</dt>
+            <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Metadata Hash</dt>
             <dd className="text-xs font-mono text-text break-all">{entry.metadata?.hash || "\u2014"}</dd>
           </div>
           <div className="flex flex-col gap-0.5">
-            <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Request ID</dt>
+            <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Request ID</dt>
             <dd className="text-xs font-mono text-text break-all">{entry.request_id || "\u2014"}</dd>
           </div>
           <div className="flex flex-col gap-0.5">
-            <dt className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">Redacted</dt>
+            <dt className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">Redacted</dt>
             <dd className="text-xs font-mono text-text">{entry.metadata?.redacted ? "Yes" : "No"}</dd>
           </div>
         </dl>

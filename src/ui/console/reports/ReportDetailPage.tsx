@@ -69,12 +69,12 @@ export default function ReportDetailPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <ConsoleStatusBadge value={report.status} variant="report" />
                 {report.entity_type && (
-                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+                  <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
                     {report.entity_type}
                   </span>
                 )}
                 {report.reason_code && (
-                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+                  <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
                     {report.reason_code}
                   </span>
                 )}
@@ -119,7 +119,7 @@ export default function ReportDetailPage() {
             {/* Free text (redacted) */}
             {report.free_text_redacted && (
               <section className="border border-border bg-surface rounded clip-corner p-5">
-                <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider mb-3">
+                <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-3">
                   Reporter Comment (Redacted)
                 </h3>
                 <p className="text-xs font-mono text-muted leading-relaxed whitespace-pre-wrap">
@@ -131,7 +131,7 @@ export default function ReportDetailPage() {
             {/* Resolution section */}
             {report.resolved_at && (
               <section className="border border-border bg-surface rounded clip-corner p-5 space-y-4">
-                <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">
+                <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">
                   Resolution
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">

@@ -193,7 +193,7 @@ export default function DevicePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="device-user-code">
+              <label className="block text-xs font-mono text-subtle uppercase" htmlFor="device-user-code">
                 User Code
               </label>
               <div className="flex flex-col sm:flex-row gap-2">
@@ -232,20 +232,20 @@ export default function DevicePage() {
               <div data-testid="device-loaded" className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
-                    <div className="text-[10px] font-mono text-subtle uppercase">Client</div>
+                    <div className="text-xs font-mono text-subtle uppercase">Client</div>
                     <div className="text-xs font-mono text-text mt-1">{request.client_id || "\u2014"}</div>
                   </div>
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
-                    <div className="text-[10px] font-mono text-subtle uppercase">Expires</div>
+                    <div className="text-xs font-mono text-subtle uppercase">Expires</div>
                     <div className="text-xs font-mono text-text mt-1">
                       {request.expires_at ? new Date(request.expires_at).toISOString() : "\u2014"}
                     </div>
-                    <div className="text-[10px] font-mono text-muted mt-1">{expires.label}</div>
+                    <div className="text-xs font-mono text-muted mt-1">{expires.label}</div>
                   </div>
                 </div>
 
                 <div className="border border-border bg-surface/40 rounded clip-corner p-3 space-y-2">
-                  <div className="text-[10px] font-mono text-subtle uppercase">Requested Permissions</div>
+                  <div className="text-xs font-mono text-subtle uppercase">Requested Permissions</div>
                   <div className="flex flex-wrap gap-2">
                     {(request.requested_scopes || []).length === 0 && (
                       <span className="text-xs font-mono text-muted">none</span>
@@ -253,7 +253,7 @@ export default function DevicePage() {
                     {(request.requested_scopes || []).map((scope) => (
                       <span
                         key={scope}
-                        className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase border border-border rounded text-subtle bg-surface/20"
+                        className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border rounded text-subtle bg-surface/20"
                       >
                         {scope}
                       </span>
@@ -300,7 +300,7 @@ export default function DevicePage() {
 
                   {mode === "create_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="device-agent-name">
+                      <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="device-agent-name">
                         New Agent Name
                       </label>
                       <input
@@ -314,13 +314,13 @@ export default function DevicePage() {
                         spellCheck={false}
                         className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                       />
-                      <div className="text-[10px] font-mono text-muted mt-1">Defaulted from requested agent name.</div>
+                      <div className="text-xs font-mono text-muted mt-1">Defaulted from requested agent name.</div>
                     </div>
                   )}
 
                   {mode === "attach_agent" && (
                     <div>
-                      <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="device-attach-agent-id">
+                      <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="device-attach-agent-id">
                         Existing Agent ID
                       </label>
                       <input
@@ -334,7 +334,7 @@ export default function DevicePage() {
                         spellCheck={false}
                         className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                       />
-                      <div className="text-[10px] font-mono text-muted mt-1">
+                      <div className="text-xs font-mono text-muted mt-1">
                         Agent must belong to the same owner.
                       </div>
                     </div>
@@ -379,7 +379,7 @@ export default function DevicePage() {
             )}
           </div>
 
-          <div className="text-[10px] font-mono text-subtle">
+          <div className="text-xs font-mono text-subtle">
             If this wasn’t expected, close this page. Never paste codes into chat.
           </div>
         </div>

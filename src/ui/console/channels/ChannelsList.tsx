@@ -32,7 +32,7 @@ export default function ChannelsList({ items, onApprove, onDeny, onRevoke }: Pro
         return <ConsoleStatusBadge value={row.state || "\u2014"} variant="channel" />;
       case "role":
         return (
-          <span className="inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-border rounded text-muted">
+          <span className="inline-block px-1.5 py-0.5 text-xs font-mono font-bold uppercase border border-border rounded text-muted">
             {row.role || "\u2014"}
           </span>
         );
@@ -51,7 +51,7 @@ export default function ChannelsList({ items, onApprove, onDeny, onRevoke }: Pro
                   e.stopPropagation();
                   onApprove(row);
                 }}
-                className="px-2 py-1 text-[10px] font-mono font-bold uppercase border border-secondary/40 text-secondary rounded hover:bg-secondary/10 transition-colors"
+                className="px-2 py-1 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary rounded hover:bg-secondary/10 transition-colors"
               >
                 Approve
               </button>
@@ -60,7 +60,7 @@ export default function ChannelsList({ items, onApprove, onDeny, onRevoke }: Pro
                   e.stopPropagation();
                   onDeny(row);
                 }}
-                className="px-2 py-1 text-[10px] font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
+                className="px-2 py-1 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
               >
                 Deny
               </button>
@@ -74,7 +74,7 @@ export default function ChannelsList({ items, onApprove, onDeny, onRevoke }: Pro
                 e.stopPropagation();
                 onRevoke(row);
               }}
-              className="px-2 py-1 text-[10px] font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
+              className="px-2 py-1 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
             >
               Revoke
             </button>

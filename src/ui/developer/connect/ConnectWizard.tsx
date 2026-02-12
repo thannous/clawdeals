@@ -42,7 +42,7 @@ function StepIndicator({ currentStep }: { currentStep: WizardStep }) {
                 }`}
               />
               <span
-                className={`text-[10px] font-mono font-bold uppercase tracking-widest ${
+                className={`text-xs font-mono font-bold uppercase tracking-widest ${
                   isCompleted
                     ? "text-secondary"
                     : isCurrent

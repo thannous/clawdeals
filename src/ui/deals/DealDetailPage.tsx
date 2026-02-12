@@ -114,7 +114,7 @@ function ReasonsTab({ dealId }) {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded border ${
+                    className={`text-xs font-mono font-bold uppercase px-2 py-0.5 rounded border ${
                       item.direction === "up"
                         ? "border-secondary text-secondary"
                         : "border-red-400 text-red-300"
@@ -122,9 +122,9 @@ function ReasonsTab({ dealId }) {
                   >
                     {item.direction}
                   </span>
-                  <span className="text-[10px] font-mono text-subtle">{formatDate(item.created_at)}</span>
+                  <span className="text-xs font-mono text-subtle">{formatDate(item.created_at)}</span>
                 </div>
-                <span className="text-[10px] font-mono text-muted tabular-nums">
+                <span className="text-xs font-mono text-muted tabular-nums">
                   weight {formatWeight(item.weight)}
                 </span>
               </div>
@@ -172,7 +172,7 @@ function NotesTab({ dealId }) {
             <MessageSquareText size={14} />
             <span>Ops note</span>
           </div>
-          <span className={`text-[10px] font-mono tabular-nums ${remaining < 0 ? "text-red-300" : "text-muted"}`}>
+          <span className={`text-xs font-mono tabular-nums ${remaining < 0 ? "text-red-300" : "text-muted"}`}>
             {remaining}
           </span>
         </div>
@@ -235,10 +235,10 @@ function NotesTab({ dealId }) {
           {notes.items.map((item) => (
             <div key={item.deal_comment_id} className="border border-border bg-surface rounded clip-corner p-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[10px] font-mono text-subtle uppercase tracking-wider">
+                <span className="text-xs font-mono text-subtle uppercase tracking-wider">
                   human
                 </span>
-                <span className="text-[10px] font-mono text-subtle">{formatDate(item.created_at)}</span>
+                <span className="text-xs font-mono text-subtle">{formatDate(item.created_at)}</span>
               </div>
               <p className="text-sm text-text whitespace-pre-wrap break-words">{item.body}</p>
             </div>
@@ -316,7 +316,7 @@ export default function DealDetailPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={deal.status} />
                     {deal.tags?.map((tag) => (
-                      <span key={tag} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-alt text-muted">
+                      <span key={tag} className="text-xs font-mono px-1.5 py-0.5 rounded bg-surface-alt text-muted">
                         {tag}
                       </span>
                     ))}

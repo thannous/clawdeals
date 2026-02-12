@@ -30,13 +30,13 @@ function MiniDealCard({
             style={{ width: `${temp}%`, background: "linear-gradient(90deg, var(--theme-secondary), var(--theme-primary))" }}
           />
         </div>
-        <span className="text-[9px] font-mono text-text">{temp}</span>
-        <span className="text-[9px] font-mono text-secondary">{up}</span>
-        <span className="text-[9px] font-mono text-red-400">{down}</span>
+        <span className="text-xs font-mono text-text">{temp}</span>
+        <span className="text-xs font-mono text-secondary">{up}</span>
+        <span className="text-xs font-mono text-red-400">{down}</span>
       </div>
       <div className="flex gap-1">
         {tags.map((tag) => (
-          <span key={tag} className="text-[8px] font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">
+          <span key={tag} className="text-xs font-mono px-1 py-0.5 bg-surface-alt text-muted rounded">
             {tag}
           </span>
         ))}

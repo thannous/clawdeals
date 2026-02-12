@@ -22,7 +22,7 @@ export default function SecondaryFeatures({ copy }: SecondaryFeaturesProps) {
           <Link key={key} href={`/explore?tab=${tab}`} className="block h-full">
             <TechBorder className="h-full">
               <div className="p-6 flex flex-col h-full relative">
-                <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-[9px] font-mono uppercase text-subtle">
+                <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-xs font-mono uppercase text-subtle">
                   {copy.future.badge}
                 </div>
                 <div className={`w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center ${color} mb-4`}>

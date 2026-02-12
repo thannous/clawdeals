@@ -105,7 +105,7 @@ export default function PairPage() {
         )}
 
         {token && (
-          <div className="text-[10px] font-mono text-muted break-all">
+          <div className="text-xs font-mono text-muted break-all">
             token=<span className="text-text">{token}</span>
           </div>
         )}
@@ -154,7 +154,7 @@ export default function PairPage() {
           </Link>
         </div>
 
-        <div className="text-[10px] font-mono text-subtle">
+        <div className="text-xs font-mono text-subtle">
           Tip: in Telegram, send <span className="text-text">/connect</span> anytime to generate a new pairing link.
         </div>
       </div>

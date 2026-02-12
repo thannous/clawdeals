@@ -29,7 +29,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-bold tracking-tight text-text leading-none">CLAWDEALS</span>
-            <span className="text-[10px] font-mono text-primary tracking-[0.2em] leading-none mt-1">
+            <span className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1">
               SYSTEM_ACCESS_GRANTED
             </span>
           </div>
@@ -72,7 +72,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
             </Link>
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            <span className="text-[10px] font-mono text-subtle tracking-[0.3em] uppercase">THEME</span>
+            <span className="text-xs font-mono text-subtle tracking-[0.3em] uppercase">THEME</span>
             <label className="sr-only" htmlFor="theme-switch">
               Theme
             </label>
@@ -90,7 +90,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
                   </option>
                 ))}
               </select>
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-subtle text-[10px]">
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-subtle text-xs">
                 ▼
               </span>
             </div>

@@ -33,7 +33,7 @@ function DealCard({ deal, retryIn, onVote }) {
           {deal.tags?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1">
               {deal.tags.map((tag) => (
-                <span key={tag} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-alt text-muted">
+                <span key={tag} className="text-xs font-mono px-1.5 py-0.5 rounded bg-surface-alt text-muted">
                   {tag}
                 </span>
               ))}

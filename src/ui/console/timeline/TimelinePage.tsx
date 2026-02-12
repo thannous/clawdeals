@@ -56,7 +56,7 @@ export default function TimelinePage() {
         />
 
         {fetchState === "done" && correlation && (
-          <div className="flex flex-wrap gap-4 text-[10px] font-mono text-subtle uppercase border border-border rounded p-2 bg-surface/50">
+          <div className="flex flex-wrap gap-4 text-xs font-mono text-subtle uppercase border border-border rounded p-2 bg-surface/50">
             <span>Request IDs: <strong className="text-text">{correlation.request_ids?.length ?? 0}</strong></span>
             <span>Idempotency Keys: <strong className="text-text">{correlation.idempotency_keys?.length ?? 0}</strong></span>
             <span>Correlated Entities: <strong className="text-text">{correlation.correlated_entity_count ?? 0}</strong></span>

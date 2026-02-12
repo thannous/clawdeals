@@ -94,7 +94,7 @@ export default function ThreadDetailPage() {
 
             {/* Message timeline */}
             <section className="space-y-3">
-              <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">
+              <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">
                 Messages ({messages.length})
               </h3>
               {messages.length === 0 && (
@@ -112,7 +112,7 @@ export default function ThreadDetailPage() {
 
             {/* Moderation actions */}
             <section className="border border-border bg-surface rounded clip-corner p-5 space-y-3">
-              <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider">
+              <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">
                 Moderation
               </h3>
               <div className="flex items-center gap-3">

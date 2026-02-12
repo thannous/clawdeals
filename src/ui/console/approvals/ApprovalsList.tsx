@@ -63,7 +63,7 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
         return <TruncatedId id={row.approval_id} />;
       case "action_type":
         return (
-          <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
             {row.action_type || "\u2014"}
           </span>
         );
@@ -74,7 +74,7 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
         return (
           <span className={`text-xs tabular-nums ${stale ? "text-red-400 font-bold" : "text-subtle"}`}>
             {text}
-            {stale && <span className="ml-1 text-[9px] border border-red-400/40 bg-red-400/10 px-1 rounded">SLA</span>}
+            {stale && <span className="ml-1 text-xs border border-red-400/40 bg-red-400/10 px-1 rounded">SLA</span>}
           </span>
         );
       }

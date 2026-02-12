@@ -20,7 +20,7 @@ export default function TimelineToolbar({
   return (
     <div data-testid="timeline-toolbar" className="space-y-3">
       <div className="flex flex-wrap gap-3 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Entity Type:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Entity Type:</span>
         <select
           data-testid="timeline-entity-type"
           value={entityType || ""}
@@ -34,7 +34,7 @@ export default function TimelineToolbar({
           ))}
         </select>
 
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Entity ID:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Entity ID:</span>
         <div className="relative max-w-[280px]">
           <input
             data-testid="timeline-entity-id"
@@ -58,7 +58,7 @@ export default function TimelineToolbar({
             onChange={(e) => onIncludeCorrelatedChange(e.target.checked)}
             className="accent-primary"
           />
-          <span className="text-[10px] font-mono text-subtle uppercase">Include correlated</span>
+          <span className="text-xs font-mono text-subtle uppercase">Include correlated</span>
         </label>
       </div>
     </div>

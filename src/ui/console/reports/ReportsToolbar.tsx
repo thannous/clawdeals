@@ -29,12 +29,12 @@ export default function ReportsToolbar({
     <div data-testid="reports-toolbar" className="space-y-3">
       {/* Status pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Status:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Status:</span>
         {STATUS_OPTIONS.map((s) => (
           <button
             key={s}
             onClick={() => onStatusChange(s)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               status === s
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -47,10 +47,10 @@ export default function ReportsToolbar({
 
       {/* Entity type pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Entity:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Entity:</span>
         <button
           onClick={() => onEntityTypeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             entityType === null
               ? "border-secondary/40 text-secondary bg-secondary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -62,7 +62,7 @@ export default function ReportsToolbar({
           <button
             key={t}
             onClick={() => onEntityTypeChange(entityType === t ? null : t)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               entityType === t
                 ? "border-secondary/40 text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -75,10 +75,10 @@ export default function ReportsToolbar({
 
       {/* Reason code pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Reason:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Reason:</span>
         <button
           onClick={() => onReasonCodeChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             reasonCode === null
               ? "border-secondary/40 text-secondary bg-secondary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -90,7 +90,7 @@ export default function ReportsToolbar({
           <button
             key={r}
             onClick={() => onReasonCodeChange(reasonCode === r ? null : r)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               reasonCode === r
                 ? "border-secondary/40 text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -103,7 +103,7 @@ export default function ReportsToolbar({
 
       {/* Reporter owner ID input */}
       <div className="max-w-sm">
-        <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="reports-reporter-owner-id">
+        <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="reports-reporter-owner-id">
           Reporter Owner ID
         </label>
         <input

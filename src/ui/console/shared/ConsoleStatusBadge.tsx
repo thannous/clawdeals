@@ -67,7 +67,7 @@ export default function ConsoleStatusBadge({ value, variant = "listing" }: Props
   const map = VARIANT_MAPS[variant] || LISTING_VARIANTS;
   const classes = map[value] || FALLBACK;
   return (
-    <span className={`inline-block px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border rounded ${classes}`}>
+    <span className={`inline-block px-1.5 py-0.5 text-xs font-mono font-bold uppercase border rounded ${classes}`}>
       {value}
     </span>
   );

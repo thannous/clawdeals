@@ -470,7 +470,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-bold tracking-tight text-text leading-none">CLAWDEALS</span>
-              <span className="text-[10px] font-mono text-primary tracking-[0.2em] leading-none mt-1">
+              <span className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1">
                 SYSTEM_ACCESS_GRANTED
               </span>
             </div>
@@ -532,7 +532,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
             </Link>
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            <span className="text-[10px] font-mono text-subtle tracking-[0.3em] uppercase">THEME</span>
+            <span className="text-xs font-mono text-subtle tracking-[0.3em] uppercase">THEME</span>
             <label className="sr-only" htmlFor="theme-switch-explore">
               Theme
             </label>
@@ -549,7 +549,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
                   </option>
                 ))}
               </select>
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-subtle text-[10px]">
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-subtle text-xs">
                 ▼
               </span>
             </div>
@@ -612,8 +612,8 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
       </div>
 
       <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
-        <div className="absolute top-2 left-2 text-[10px] font-mono text-primary">CAM_01 // LIVE</div>
-        <div className="absolute top-2 right-2 text-[10px] font-mono text-subtle">REC ●</div>
+        <div className="absolute top-2 left-2 text-xs font-mono text-primary">CAM_01 // LIVE</div>
+        <div className="absolute top-2 right-2 text-xs font-mono text-subtle">REC ●</div>
 
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative w-64 h-64 border border-border rounded-full flex items-center justify-center animate-spin-slow">
@@ -703,7 +703,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         </div>
         <div className="text-right">
           <div className="text-primary font-bold font-mono text-lg">{item.price}</div>
-          <div className="text-[10px] text-subtle font-mono">RATE</div>
+          <div className="text-xs text-subtle font-mono">RATE</div>
         </div>
       </div>
 
@@ -714,7 +714,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         {item.description}
       </p>
 
-      <div className="bg-bg border border-border p-3 mb-4 grid grid-cols-2 gap-2 font-mono text-[10px]">
+      <div className="bg-bg border border-border p-3 mb-4 grid grid-cols-2 gap-2 font-mono text-xs">
         {type === "gig" && (
           <>
             <div className="text-subtle">STATUS:</div>
@@ -745,7 +745,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         <div className="flex gap-1">
           {item.tags &&
             item.tags.slice(0, 2).map((tag) => (
-              <span key={tag} className="text-[9px] bg-surface-alt text-muted px-1 py-0.5">
+              <span key={tag} className="text-xs bg-surface-alt text-muted px-1 py-0.5">
                 {tag}
               </span>
             ))}
@@ -821,7 +821,7 @@ const TaskSelector = ({ copy }) => (
           {item.icon}
         </div>
         <div className="relative z-10 flex flex-col justify-end h-full">
-          <div className="font-mono text-[10px] text-subtle mb-1 group-hover:text-primary">
+          <div className="font-mono text-xs text-subtle mb-1 group-hover:text-primary">
             0{idx + 1} {"//"}  SELECT
           </div>
           <div className="font-bold text-text text-sm uppercase">{item.label}</div>

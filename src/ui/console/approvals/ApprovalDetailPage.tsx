@@ -78,7 +78,7 @@ export default function ApprovalDetailPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <ConsoleStatusBadge value={approval.state} variant="approval" />
                 {approval.action_type && (
-                  <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+                  <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
                     {approval.action_type}
                   </span>
                 )}
@@ -117,7 +117,7 @@ export default function ApprovalDetailPage() {
 
               {approval.resolved_reason_text && (
                 <div className="border border-border bg-bg rounded clip-corner px-3 py-2">
-                  <span className="text-subtle uppercase tracking-wider text-[10px] font-mono block mb-1">Reason</span>
+                  <span className="text-subtle uppercase tracking-wider text-xs font-mono block mb-1">Reason</span>
                   <p className="text-xs font-mono text-text whitespace-pre-wrap">{approval.resolved_reason_text}</p>
                 </div>
               )}
@@ -125,7 +125,7 @@ export default function ApprovalDetailPage() {
 
             {/* Context preview */}
             <section className="border border-border bg-surface rounded clip-corner p-5">
-              <h3 className="text-[10px] font-mono font-bold text-subtle uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-3">
                 Action Context
               </h3>
               <ApprovalContextPreview
@@ -182,7 +182,7 @@ export default function ApprovalDetailPage() {
       >
         {confirmAction === "deny" && (
           <div className="space-y-1">
-            <label className="text-[10px] font-mono text-subtle uppercase tracking-wider" htmlFor="approval-deny-reason">
+            <label className="text-xs font-mono text-subtle uppercase tracking-wider" htmlFor="approval-deny-reason">
               Reason (optional)
             </label>
             <textarea

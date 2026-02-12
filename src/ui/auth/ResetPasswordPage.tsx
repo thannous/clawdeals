@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
             {(state === "ready" || state === "saving" || state === "error") && (
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-mono text-subtle uppercase" htmlFor="auth-reset-password">
+                  <label className="block text-xs font-mono text-subtle uppercase" htmlFor="auth-reset-password">
                     New password
                   </label>
                   <input
@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
 
                 <div className="space-y-2">
                   <label
-                    className="block text-[10px] font-mono text-subtle uppercase"
+                    className="block text-xs font-mono text-subtle uppercase"
                     htmlFor="auth-reset-password-confirm"
                   >
                     Confirm password

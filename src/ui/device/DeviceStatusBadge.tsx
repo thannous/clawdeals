@@ -19,7 +19,7 @@ export default function DeviceStatusBadge({ status }: { status: DeviceAuthorizat
   return (
     <span
       data-testid="device-status"
-      className={`inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded border ${badgeClass(
+      className={`inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border ${badgeClass(
         status
       )}`}
     >

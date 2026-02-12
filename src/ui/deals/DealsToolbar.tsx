@@ -77,14 +77,14 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
       {/* Filters row (collapsible on mobile) */}
       <div className={`flex flex-wrap gap-2 items-center ${filtersOpen ? "" : "hidden sm:flex"}`}>
         {/* Status pills */}
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Status:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Status:</span>
         {STATUS_OPTIONS.map((status) => (
           <button
             key={status}
             data-testid={`status-filter-${status}`}
             onClick={() => !isStatusLocked && toggleStatus(status)}
             disabled={isStatusLocked}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
               statuses.includes(status)
                 ? "border-secondary text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -97,13 +97,13 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
         {/* Active tags */}
         {tags?.length > 0 && (
           <>
-            <span className="text-[10px] font-mono text-subtle uppercase ml-2 mr-1">Tags:</span>
+            <span className="text-xs font-mono text-subtle uppercase ml-2 mr-1">Tags:</span>
             {tags.map((tag) => (
               <button
                 key={tag}
                 data-testid={`tag-pill-${tag}`}
                 onClick={() => onTagRemove(tag)}
-                className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded bg-surface-alt text-muted hover:text-text border border-border transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 text-xs font-mono rounded bg-surface-alt text-muted hover:text-text border border-border transition-colors"
               >
                 {tag}
                 <X size={10} />

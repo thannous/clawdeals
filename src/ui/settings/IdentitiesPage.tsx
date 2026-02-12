@@ -222,7 +222,7 @@ export default function IdentitiesPage() {
               <div className="text-sm font-mono text-text" data-testid="identities-email-value">
                 {owner?.email_masked || "\u2014"}
               </div>
-              <div className="text-[10px] font-mono text-subtle" data-testid="identities-email-status">
+              <div className="text-xs font-mono text-subtle" data-testid="identities-email-status">
                 {owner?.email_verified_at ? "VERIFIED" : "UNVERIFIED"}
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function IdentitiesPage() {
                 if (col.key === "last_seen_at") return formatDate(row.last_seen_at);
                 if (col.key === "actions") {
                   if (row.state === "REVOKED") {
-                    return <span className="text-[10px] font-mono text-subtle">\u2014</span>;
+                    return <span className="text-xs font-mono text-subtle">\u2014</span>;
                   }
                   return (
                     <button
@@ -261,7 +261,7 @@ export default function IdentitiesPage() {
                         e.stopPropagation();
                         openConfirm(row);
                       }}
-                      className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
+                      className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
                     >
                       Unlink
                     </button>
@@ -284,7 +284,7 @@ export default function IdentitiesPage() {
         onCancel={closeConfirm}
         onConfirm={onConfirm}
       >
-        {submitError && <div className="text-[10px] font-mono text-red-400">{submitError}</div>}
+        {submitError && <div className="text-xs font-mono text-red-400">{submitError}</div>}
       </ConfirmModal>
 
       <Toast toasts={toasts} />

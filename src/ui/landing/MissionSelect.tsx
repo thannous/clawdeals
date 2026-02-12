@@ -45,7 +45,7 @@ function MissionCard({
       }`}
     >
       <div className="flex items-center justify-between mb-3">
-        <span className={`font-mono text-[10px] tracking-widest ${isActive ? "text-primary" : "text-subtle"}`}>
+        <span className={`font-mono text-xs tracking-widest ${isActive ? "text-primary" : "text-subtle"}`}>
           {String(index + 1).padStart(2, "0")} {"// SELECT"}
         </span>
         <Icon size={18} className={isActive ? "text-primary" : "text-border group-hover:text-muted"} />
@@ -97,7 +97,7 @@ export default function MissionSelect({ copy }: MissionSelectProps) {
       </div>
 
       <div className="mb-10 border border-border bg-surface-alt px-4 py-3 flex flex-col gap-1">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-subtle">ACTIVE_MISSION</div>
+        <div className="font-mono text-xs uppercase tracking-widest text-subtle">ACTIVE_MISSION</div>
         <div className="flex items-center gap-2">
           <activeMission.Icon size={14} className="text-primary" />
           <span className="font-bold text-sm uppercase tracking-wide text-text">{activeMission.label}</span>

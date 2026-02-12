@@ -296,7 +296,7 @@ export default function EventsViewerPage() {
         </div>
 
         <div className="border border-border bg-bg overflow-hidden">
-          <div className="grid grid-cols-12 gap-0 border-b border-border bg-surface-alt text-[10px] font-mono uppercase tracking-widest text-subtle">
+          <div className="grid grid-cols-12 gap-0 border-b border-border bg-surface-alt text-xs font-mono uppercase tracking-widest text-subtle">
             <div className="col-span-3 px-3 py-2">Type</div>
             <div className="col-span-3 px-3 py-2">Entity</div>
             <div className="col-span-4 px-3 py-2">ID</div>

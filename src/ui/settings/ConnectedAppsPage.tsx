@@ -91,7 +91,7 @@ type Installation = {
 function renderScopePills(scopes: string[]) {
   const items = Array.isArray(scopes) ? scopes : [];
   if (items.length === 0) {
-    return <span className="text-[10px] font-mono text-subtle">\u2014</span>;
+    return <span className="text-xs font-mono text-subtle">\u2014</span>;
   }
 
   const sorted = sortScopesStable(items);
@@ -104,14 +104,14 @@ function renderScopePills(scopes: string[]) {
       {visible.map((scope) => (
         <span
           key={scope}
-          className="px-1.5 py-0.5 text-[10px] font-mono uppercase border border-border text-muted rounded"
+          className="px-1.5 py-0.5 text-xs font-mono uppercase border border-border text-muted rounded"
           title={scope}
         >
           {scope}
         </span>
       ))}
       {remaining > 0 && (
-        <span className="px-1.5 py-0.5 text-[10px] font-mono text-subtle" title={sorted.join("\n")}>
+        <span className="px-1.5 py-0.5 text-xs font-mono text-subtle" title={sorted.join("\n")}>
           +{remaining} more
         </span>
       )}
@@ -446,7 +446,7 @@ export default function ConnectedAppsPage() {
                 if (col.key === "last_seen_at") return formatDate(row.last_seen_at);
                 if (col.key === "actions") {
                   if (row.status !== "ACTIVE") {
-                    return <span className="text-[10px] font-mono text-subtle">\u2014</span>;
+                    return <span className="text-xs font-mono text-subtle">\u2014</span>;
                   }
                   return (
                     <div className="flex items-center justify-end gap-2">
@@ -457,7 +457,7 @@ export default function ConnectedAppsPage() {
                           e.stopPropagation();
                           openUpgrade(row);
                         }}
-                        className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
                       >
                         Upgrade
                       </button>
@@ -468,7 +468,7 @@ export default function ConnectedAppsPage() {
                           e.stopPropagation();
                           openRotate(row);
                         }}
-                        className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors"
+                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors"
                       >
                         Rotate
                       </button>
@@ -479,7 +479,7 @@ export default function ConnectedAppsPage() {
                           e.stopPropagation();
                           openRevokeConfirm(row);
                         }}
-                        className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
+                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
                       >
                         Revoke
                       </button>
@@ -504,7 +504,7 @@ export default function ConnectedAppsPage() {
         onConfirm={onRotateCredential}
       >
         <div className="space-y-2">
-          <label className="block text-[10px] font-mono text-subtle uppercase">Grace seconds (optional)</label>
+          <label className="block text-xs font-mono text-subtle uppercase">Grace seconds (optional)</label>
           <input
             data-testid="connected-apps-rotate-grace-seconds"
             type="number"
@@ -516,8 +516,8 @@ export default function ConnectedAppsPage() {
             placeholder="e.g. 300"
             className="w-full h-10 px-3 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
           />
-          <div className="text-[10px] font-mono text-subtle">Leave blank to use server default grace duration.</div>
-          {rotateError && <div className="text-[10px] font-mono text-red-400">{rotateError}</div>}
+          <div className="text-xs font-mono text-subtle">Leave blank to use server default grace duration.</div>
+          {rotateError && <div className="text-xs font-mono text-red-400">{rotateError}</div>}
         </div>
       </ConfirmModal>
 
@@ -532,7 +532,7 @@ export default function ConnectedAppsPage() {
         onConfirm={onConfirm}
       >
         <div className="space-y-2">
-          <label className="block text-[10px] font-mono text-subtle uppercase">Reason (optional)</label>
+          <label className="block text-xs font-mono text-subtle uppercase">Reason (optional)</label>
           <textarea
             data-testid="connected-apps-revoke-reason"
             value={reason}
@@ -540,7 +540,7 @@ export default function ConnectedAppsPage() {
             placeholder="e.g. suspected abuse"
             className="w-full min-h-[72px] px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
           />
-          {submitError && <div className="text-[10px] font-mono text-red-400">{submitError}</div>}
+          {submitError && <div className="text-xs font-mono text-red-400">{submitError}</div>}
         </div>
       </ConfirmModal>
 
@@ -555,7 +555,7 @@ export default function ConnectedAppsPage() {
         onConfirm={onRequestUpgrade}
       >
         <div className="space-y-3">
-          <div className="text-[10px] font-mono text-subtle">
+          <div className="text-xs font-mono text-subtle">
             Current scopes:{" "}
             <span className="text-muted">{selected?.oauth_scopes?.length ? selected.oauth_scopes.length : 0}</span>
           </div>
@@ -591,16 +591,16 @@ export default function ConnectedAppsPage() {
                     <span className="text-xs font-mono text-text">{scope}</span>
                   </div>
                   {granted ? (
-                    <span className="text-[10px] font-mono text-subtle uppercase">Granted</span>
+                    <span className="text-xs font-mono text-subtle uppercase">Granted</span>
                   ) : (
-                    <span className="text-[10px] font-mono text-subtle uppercase">Upgrade</span>
+                    <span className="text-xs font-mono text-subtle uppercase">Upgrade</span>
                   )}
                 </label>
               );
             })}
           </div>
 
-          {upgradeError && <div className="text-[10px] font-mono text-red-400">{upgradeError}</div>}
+          {upgradeError && <div className="text-xs font-mono text-red-400">{upgradeError}</div>}
         </div>
       </ConfirmModal>
 
@@ -615,14 +615,14 @@ export default function ConnectedAppsPage() {
         onConfirm={copyRotatedCredential}
       >
         <div className="space-y-3">
-          <label className="block text-[10px] font-mono text-subtle uppercase">New credential</label>
+          <label className="block text-xs font-mono text-subtle uppercase">New credential</label>
           <textarea
             data-testid="connected-apps-rotate-credential"
             value={rotatedCredential?.credential || ""}
             readOnly
             className="w-full min-h-[84px] px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text"
           />
-          <div className="space-y-1 text-[10px] font-mono text-subtle">
+          <div className="space-y-1 text-xs font-mono text-subtle">
             {rotatedCredential?.credentialId && <div>credential_id: {rotatedCredential.credentialId}</div>}
             {rotatedCredential?.previousCredentialId && (
               <div>previous_credential_id: {rotatedCredential.previousCredentialId}</div>

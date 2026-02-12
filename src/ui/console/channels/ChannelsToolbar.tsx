@@ -38,12 +38,12 @@ export default function ChannelsToolbar({
       {/* State pills */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-[10px] font-mono text-subtle uppercase mr-1">State:</span>
+          <span className="text-xs font-mono text-subtle uppercase mr-1">State:</span>
           {STATE_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => onStateChange(s)}
-              className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+              className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
                 state === s
                   ? "border-primary/40 text-primary bg-primary/10"
                   : "border-border text-subtle hover:border-border-strong"
@@ -69,7 +69,7 @@ export default function ChannelsToolbar({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Channel type select */}
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="channels-channel-type">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="channels-channel-type">
             Channel
           </label>
           <select
@@ -90,7 +90,7 @@ export default function ChannelsToolbar({
 
         {/* Default approve role */}
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="channels-approve-role">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="channels-approve-role">
             Approve Role
           </label>
           <select
@@ -111,7 +111,7 @@ export default function ChannelsToolbar({
 
         {/* Pairing code lookup */}
         <div>
-          <label className="block text-[10px] font-mono text-subtle uppercase mb-1" htmlFor="channels-pairing-code">
+          <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="channels-pairing-code">
             Find by Pairing Code
           </label>
           <div className="flex items-center gap-2">

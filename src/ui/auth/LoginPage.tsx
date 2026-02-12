@@ -29,7 +29,7 @@ async function bridgeOwnerSession(accessToken: string) {
 
 function TerminalBlock() {
   return (
-    <div className="font-mono text-[11px] leading-relaxed text-subtle/70 select-none">
+    <div className="font-mono text-xs leading-relaxed text-subtle/70 select-none">
       <div><span className="text-primary">$</span> clawdeals auth --status</div>
       <div className="text-secondary/60 mt-1">&#9679; gateway&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;online</div>
       <div className="text-secondary/60">&#9679; trust-engine online</div>
@@ -42,7 +42,7 @@ function TerminalBlock() {
 
 function AsciiClaw() {
   return (
-    <pre className="font-mono text-[10px] leading-none text-primary/25 select-none" aria-hidden="true">{
+    <pre className="font-mono text-xs leading-none text-primary/25 select-none" aria-hidden="true">{
 `    /\\  /\\
    /  \\/  \\
   / /\\  /\\ \\
@@ -55,7 +55,7 @@ function AsciiClaw() {
 
 function StatusBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest">
+    <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-widest">
       <span className="text-subtle">{label}</span>
       <span className="h-px flex-1 bg-border" />
       <span className="text-text/70">{value}</span>
@@ -188,7 +188,7 @@ export default function LoginPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,95,31,0.5)]" />
-              <span className="text-[10px] font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
             </div>
             <h2 className="text-4xl xl:text-5xl font-bold tracking-wider text-text text-shadow-glow leading-tight">
               CLAW<span className="text-primary">DEALS</span>
@@ -212,7 +212,7 @@ export default function LoginPage() {
           <AsciiClaw />
           <TerminalBlock />
 
-          <div className="text-[10px] font-mono text-subtle/50">
+          <div className="text-xs font-mono text-subtle/50">
             &copy; {new Date().getFullYear()} Clawdeals &mdash; Agent-to-agent commerce infrastructure
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function LoginPage() {
         <div className="lg:hidden relative z-10 px-6 pt-8 pb-2">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgba(255,95,31,0.5)]" />
-            <span className="text-[10px] font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
           </div>
           <h2 className="text-2xl font-bold tracking-wider text-text text-shadow-glow mt-2">
             CLAW<span className="text-primary">DEALS</span>
@@ -268,7 +268,7 @@ export default function LoginPage() {
               {/* Divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-[10px] font-mono text-subtle uppercase tracking-widest">or</span>
+                <span className="text-xs font-mono text-subtle uppercase tracking-widest">or</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
 
@@ -294,7 +294,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider" htmlFor="auth-email">
+                  <label className="block text-xs font-mono text-subtle uppercase tracking-wider" htmlFor="auth-email">
                     Email
                   </label>
                   <input
@@ -315,7 +315,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider" htmlFor="auth-password">
+                  <label className="block text-xs font-mono text-subtle uppercase tracking-wider" htmlFor="auth-password">
                     Password
                   </label>
                   <input
@@ -368,14 +368,14 @@ export default function LoginPage() {
                       data-testid="auth-login-forgot"
                       onClick={onForgotPassword}
                       disabled={forgotState === "loading" || submitState === "loading"}
-                      className="px-4 py-2 text-[11px] font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors disabled:opacity-50"
+                      className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors disabled:opacity-50"
                     >
                       {forgotState === "loading" ? "Sending…" : "Forgot password"}
                     </button>
                     <Link
                       href="/auth/login-legacy"
                       data-testid="auth-login-legacy-link"
-                      className="px-4 py-2 text-[11px] font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+                      className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
                     >
                       Magic link
                     </Link>
@@ -385,7 +385,7 @@ export default function LoginPage() {
             </div>
 
             {/* Footer hint */}
-            <div className="text-[10px] font-mono text-subtle px-1">
+            <div className="text-xs font-mono text-subtle px-1">
               After login, go to <span className="text-text">/settings/account</span> to view your agents and claims.
             </div>
           </div>

@@ -43,12 +43,12 @@ export default function ListingsToolbar({
     <div data-testid="listings-toolbar" className="space-y-3">
       {/* Sort pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Sort:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Sort:</span>
         {SORT_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onSortChange(opt.value)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               sort === opt.value
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -77,10 +77,10 @@ export default function ListingsToolbar({
 
       {/* Status pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Status:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Status:</span>
         <button
           onClick={() => onStatusChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             status === null
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -92,7 +92,7 @@ export default function ListingsToolbar({
           <button
             key={s}
             onClick={() => onStatusChange(status === s ? null : s)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               status === s
                 ? "border-primary/40 text-primary bg-primary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -105,10 +105,10 @@ export default function ListingsToolbar({
 
       {/* Condition pills */}
       <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[10px] font-mono text-subtle uppercase mr-1">Condition:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">Condition:</span>
         <button
           onClick={() => onConditionChange(null)}
-          className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+          className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             condition === null
               ? "border-secondary/40 text-secondary bg-secondary/10"
               : "border-border text-subtle hover:border-border-strong"
@@ -120,7 +120,7 @@ export default function ListingsToolbar({
           <button
             key={c}
             onClick={() => onConditionChange(condition === c ? null : c)}
-            className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded border transition-colors ${
+            className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               condition === c
                 ? "border-secondary/40 text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -133,7 +133,7 @@ export default function ListingsToolbar({
 
       {/* Price range */}
       <div className="flex gap-2 items-center max-w-xs">
-        <span className="text-[10px] font-mono text-subtle uppercase shrink-0">Price:</span>
+        <span className="text-xs font-mono text-subtle uppercase shrink-0">Price:</span>
         <input
           data-testid="listings-price-min"
           type="number"
@@ -146,7 +146,7 @@ export default function ListingsToolbar({
           autoComplete="off"
           className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
-        <span className="text-[10px] font-mono text-subtle">-</span>
+        <span className="text-xs font-mono text-subtle">-</span>
         <input
           data-testid="listings-price-max"
           type="number"
