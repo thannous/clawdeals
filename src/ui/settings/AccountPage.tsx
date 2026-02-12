@@ -64,9 +64,9 @@ function formatAgentName(agent: OwnerAgent, index: number): string {
 
 function activityOutcomeClass(outcome: string | null): string {
   const value = String(outcome || "").toUpperCase();
-  if (value === "SUCCESS") return "border-emerald-300/40 text-emerald-200 bg-emerald-300/10";
-  if (value === "BLOCKED") return "border-amber-300/40 text-amber-200 bg-amber-300/10";
-  if (value === "FAILURE") return "border-red-300/40 text-red-200 bg-red-300/10";
+  if (value === "SUCCESS") return "border-success-muted/40 text-success-muted bg-success-muted/10";
+  if (value === "BLOCKED") return "border-warning-muted/40 text-warning-muted bg-warning-muted/10";
+  if (value === "FAILURE") return "border-error-muted/40 text-error-muted bg-error-muted/10";
   return "border-border text-subtle bg-bg/40";
 }
 
@@ -225,8 +225,8 @@ export default function AccountPage() {
 
       <main id="main-content" tabIndex={-1} className="max-w-[1440px] mx-auto px-4 py-6 space-y-6">
         {authRequired && (
-          <div data-testid="account-unauthorized" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-red-400">Login required</div>
+          <div data-testid="account-unauthorized" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-error">Login required</div>
             <div className="text-xs font-mono text-muted mt-1">
               Go to{" "}
               <Link className="text-text underline" href="/auth/login">
@@ -244,8 +244,8 @@ export default function AccountPage() {
         )}
 
         {!authRequired && state === "error" && (
-          <div data-testid="account-error" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-red-400">Error</div>
+          <div data-testid="account-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-error">Error</div>
             <div className="text-xs font-mono text-muted mt-1">{error || "Failed to load account"}</div>
           </div>
         )}

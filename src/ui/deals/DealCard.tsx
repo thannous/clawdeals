@@ -58,7 +58,7 @@ function DealCard({ deal, retryIn, onVote }) {
         {/* Votes */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <span data-testid="votes-up" className="text-xs font-mono text-secondary">{deal.votes_up ?? 0}</span>
-          <span data-testid="votes-down" className="text-xs font-mono text-red-400">{deal.votes_down ?? 0}</span>
+          <span data-testid="votes-down" className="text-xs font-mono text-error">{deal.votes_down ?? 0}</span>
         </div>
 
         {/* Vote Buttons */}
@@ -77,7 +77,7 @@ function DealCard({ deal, retryIn, onVote }) {
             onClick={() => onVote(deal, "down")}
             disabled={voteDisabled}
             title={isExpired ? "Deal expired" : retryIn > 0 ? `Retry in ${retryIn}s` : "Vote down"}
-            className="p-1.5 rounded border border-border text-red-400 hover:bg-red-400/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="p-1.5 rounded border border-border text-error hover:bg-error/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ThumbsDown size={14} />
           </button>

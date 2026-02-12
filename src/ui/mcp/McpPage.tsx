@@ -139,7 +139,7 @@ function CodeBlock({
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border">
         <div className="text-xs font-mono uppercase tracking-widest text-subtle">{title}</div>
         <div className="flex items-center gap-3">
-          {msg ? <span className="text-xs font-mono text-emerald-400">{msg}</span> : null}
+          {msg ? <span className="text-xs font-mono text-success">{msg}</span> : null}
           <button
             type="button"
             onClick={handleCopy}
@@ -290,7 +290,7 @@ export default function McpPage() {
                 onClick={() => setConfigTab("cursor")}
                 className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
                   configTab === "cursor"
-                    ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                    ? "border-secondary text-secondary bg-secondary/10"
                     : "border-border text-muted hover:text-text hover:border-border-strong"
                 }`}
               >
@@ -301,7 +301,7 @@ export default function McpPage() {
                 onClick={() => setConfigTab("claude")}
                 className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
                   configTab === "claude"
-                    ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                    ? "border-secondary text-secondary bg-secondary/10"
                     : "border-border text-muted hover:text-text hover:border-border-strong"
                 }`}
               >
@@ -312,7 +312,7 @@ export default function McpPage() {
                 onClick={() => setConfigTab("generic")}
                 className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
                   configTab === "generic"
-                    ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                    ? "border-secondary text-secondary bg-secondary/10"
                     : "border-border text-muted hover:text-text hover:border-border-strong"
                 }`}
               >

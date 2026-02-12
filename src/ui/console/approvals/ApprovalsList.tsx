@@ -72,9 +72,9 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
       case "age": {
         const { text, stale } = formatAge(row.created_at);
         return (
-          <span className={`text-xs tabular-nums ${stale ? "text-red-400 font-bold" : "text-subtle"}`}>
+          <span className={`text-xs tabular-nums ${stale ? "text-error font-bold" : "text-subtle"}`}>
             {text}
-            {stale && <span className="ml-1 text-xs border border-red-400/40 bg-red-400/10 px-1 rounded">SLA</span>}
+            {stale && <span className="ml-1 text-xs border border-error/40 bg-error/10 px-1 rounded">SLA</span>}
           </span>
         );
       }

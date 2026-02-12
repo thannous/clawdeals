@@ -78,8 +78,8 @@ function ReasonsTab({ dealId }) {
             onClick={() => reasons.setDirection("down")}
             className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors ${
               reasons.direction === "down"
-                ? "border-red-400 text-red-400 bg-red-400/10"
-                : "border-border text-muted hover:border-red-400 hover:text-red-300"
+                ? "border-error text-error bg-error/10"
+                : "border-border text-muted hover:border-error hover:text-error-muted"
             }`}
           >
             Down
@@ -90,8 +90,8 @@ function ReasonsTab({ dealId }) {
       {reasons.fetchState === "loading" && <Skeleton />}
 
       {reasons.fetchState === "error" && (
-        <div data-testid="reasons-error" className="border border-red-500/40 bg-red-500/5 rounded clip-corner p-4">
-          <div className="flex items-center gap-2 text-red-300 text-sm">
+        <div data-testid="reasons-error" className="border border-error/40 bg-error/5 rounded clip-corner p-4">
+          <div className="flex items-center gap-2 text-error-muted text-sm">
             <AlertTriangle size={18} />
             <span>{reasons.error || "Failed to load reasons"}</span>
           </div>
@@ -117,7 +117,7 @@ function ReasonsTab({ dealId }) {
                     className={`text-xs font-mono font-bold uppercase px-2 py-0.5 rounded border ${
                       item.direction === "up"
                         ? "border-secondary text-secondary"
-                        : "border-red-400 text-red-300"
+                        : "border-error text-error-muted"
                     }`}
                   >
                     {item.direction}
@@ -172,7 +172,7 @@ function NotesTab({ dealId }) {
             <MessageSquareText size={14} />
             <span>Ops note</span>
           </div>
-          <span className={`text-xs font-mono tabular-nums ${remaining < 0 ? "text-red-300" : "text-muted"}`}>
+          <span className={`text-xs font-mono tabular-nums ${remaining < 0 ? "text-error-muted" : "text-muted"}`}>
             {remaining}
           </span>
         </div>
@@ -195,7 +195,7 @@ function NotesTab({ dealId }) {
         />
 
         {notes.submitError && (
-          <p data-testid="note-error" className="text-xs text-red-300 font-mono">
+          <p data-testid="note-error" className="text-xs text-error-muted font-mono">
             {notes.submitError}
           </p>
         )}
@@ -216,8 +216,8 @@ function NotesTab({ dealId }) {
       {notes.fetchState === "loading" && <Skeleton />}
 
       {notes.fetchState === "error" && (
-        <div data-testid="notes-error" className="border border-red-500/40 bg-red-500/5 rounded clip-corner p-4">
-          <div className="flex items-center gap-2 text-red-300 text-sm">
+        <div data-testid="notes-error" className="border border-error/40 bg-error/5 rounded clip-corner p-4">
+          <div className="flex items-center gap-2 text-error-muted text-sm">
             <AlertTriangle size={18} />
             <span>{notes.error || "Failed to load notes"}</span>
           </div>
@@ -296,9 +296,9 @@ export default function DealDetailPage() {
         {fetchState === "loading" && <Skeleton />}
 
         {fetchState === "error" && (
-          <div data-testid="deal-detail-error" className="border border-red-500/40 bg-red-500/5 rounded clip-corner p-6 text-center">
-            <AlertTriangle size={24} className="mx-auto mb-2 text-red-400" />
-            <p className="text-sm text-red-300 mb-3">{error || "Failed to load deal"}</p>
+          <div data-testid="deal-detail-error" className="border border-error/40 bg-error/5 rounded clip-corner p-6 text-center">
+            <AlertTriangle size={24} className="mx-auto mb-2 text-error" />
+            <p className="text-sm text-error-muted mb-3">{error || "Failed to load deal"}</p>
             <button
               onClick={() => router.reload()}
               className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
@@ -361,8 +361,8 @@ export default function DealDetailPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <ThumbsDown size={14} className="text-red-400" />
-                      <span data-testid="deal-votes-down" className="text-xs font-mono text-red-400 tabular-nums">
+                      <ThumbsDown size={14} className="text-error" />
+                      <span data-testid="deal-votes-down" className="text-xs font-mono text-error tabular-nums">
                         {deal.votes_down ?? 0}
                       </span>
                     </div>

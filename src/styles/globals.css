@@ -14,12 +14,19 @@
   --color-text: var(--theme-text);
   --color-muted: var(--theme-text-muted);
   --color-subtle: var(--theme-text-subtle);
+  --color-error: var(--theme-error);
+  --color-error-muted: var(--theme-error-muted);
+  --color-success: var(--theme-success);
+  --color-success-muted: var(--theme-success-muted);
+  --color-warning: var(--theme-warning);
+  --color-warning-muted: var(--theme-warning-muted);
   --font-sans: var(--theme-font-sans);
   --font-mono: var(--theme-font-mono);
   --animate-spin-slow: spin 12s linear infinite;
 }
 
-:root {
+:root,
+[data-theme="default"] {
   --theme-primary: #ff5f1f; /* Safety Orange */
   --theme-primary-rgb: 255 95 31;
   --theme-secondary: #00f0ff; /* Cyber Cyan */
@@ -31,22 +38,12 @@
   --theme-text: #e2e8f0;
   --theme-text-muted: #94a3b8;
   --theme-text-subtle: #64748b;
-  --theme-font-sans: "Chakra Petch", sans-serif;
-  --theme-font-mono: "JetBrains Mono", monospace;
-}
-
-[data-theme="default"] {
-  --theme-primary: #ff5f1f;
-  --theme-primary-rgb: 255 95 31;
-  --theme-secondary: #00f0ff;
-  --theme-bg: #050505;
-  --theme-surface: #0f1115;
-  --theme-surface-alt: #1f2937;
-  --theme-border: #2a2f3a;
-  --theme-border-strong: #334155;
-  --theme-text: #e2e8f0;
-  --theme-text-muted: #94a3b8;
-  --theme-text-subtle: #64748b;
+  --theme-error: #f87171;
+  --theme-error-muted: #fca5a5;
+  --theme-success: #4ade80;
+  --theme-success-muted: #6ee7b7;
+  --theme-warning: #facc15;
+  --theme-warning-muted: #fde68a;
   --theme-font-sans: "Chakra Petch", sans-serif;
   --theme-font-mono: "JetBrains Mono", monospace;
 }
@@ -63,6 +60,12 @@
   --theme-text: #f5f0e6;
   --theme-text-muted: #c2b59f;
   --theme-text-subtle: #8f7f67;
+  --theme-error: #fb923c;
+  --theme-error-muted: #fdba74;
+  --theme-success: #a3e635;
+  --theme-success-muted: #bef264;
+  --theme-warning: #fbbf24;
+  --theme-warning-muted: #fcd34d;
   --theme-font-sans: "Chakra Petch", sans-serif;
   --theme-font-mono: "JetBrains Mono", monospace;
 }
@@ -111,7 +114,7 @@ body {
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(0, 240, 255, 0.03),
+    color-mix(in srgb, var(--color-secondary) 3%, transparent),
     transparent
   );
   animation: scanline 4s linear infinite;
@@ -187,7 +190,7 @@ body {
 /* Deals page — modal overlay */
 .modal-overlay {
   background: rgb(var(--theme-primary-rgb) / 0.02);
-  background-color: rgba(5, 5, 5, 0.80);
+  background-color: color-mix(in srgb, var(--color-bg) 80%, transparent);
   backdrop-filter: blur(4px);
 }
 

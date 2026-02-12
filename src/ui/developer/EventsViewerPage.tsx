@@ -224,7 +224,7 @@ export default function EventsViewerPage() {
               disabled={!apiKey || connectionState === "connecting" || connectionState === "connected"}
               className={`border px-3 py-1 text-xs font-mono ${
                 connectionState === "connected"
-                  ? "border-emerald-400 text-emerald-400"
+                  ? "border-success text-success"
                   : "border-primary text-primary hover:bg-primary hover:text-bg"
               }`}
             >
@@ -278,7 +278,7 @@ export default function EventsViewerPage() {
         )}
 
         {error && (
-          <div className="border border-red-900/50 bg-[color-mix(in_srgb,#ff0000_6%,transparent)] p-4 text-xs font-mono text-red-300">
+          <div className="border border-error/50 bg-error/5 p-4 text-xs font-mono text-error-muted">
             {error}
           </div>
         )}

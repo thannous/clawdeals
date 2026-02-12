@@ -51,7 +51,7 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
       )}
 
       {replayState === "error" && (
-        <p className="text-xs font-mono text-red-400">{replayError || "Failed to load replay"}</p>
+        <p className="text-xs font-mono text-error">{replayError || "Failed to load replay"}</p>
       )}
 
       {replayState === "done" && expanded && replay && (

@@ -119,7 +119,7 @@ export default function ThreadDetailPage() {
                 <button
                   onClick={() => moderation.execute("hide", { entity_type: "thread", entity_id: thread.thread_id, reason: "Manual hide from console" })}
                   disabled={moderation.submitState === "loading"}
-                  className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-red-400 text-red-400 rounded hover:bg-red-400/10 disabled:opacity-50 transition-colors"
+                  className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-error text-error rounded hover:bg-error/10 disabled:opacity-50 transition-colors"
                 >
                   Hide
                 </button>
@@ -132,7 +132,7 @@ export default function ThreadDetailPage() {
                 </button>
               </div>
               {moderation.error && (
-                <p className="text-xs font-mono text-red-400">{moderation.error}</p>
+                <p className="text-xs font-mono text-error">{moderation.error}</p>
               )}
             </section>
           </>

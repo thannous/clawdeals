@@ -32,9 +32,9 @@ function DealsList({ deals, fetchState, loadMoreState, error, nextCursor, retryI
 
   if (fetchState === "error") {
     return (
-      <div data-testid="deals-error" className="border border-red-500/40 bg-red-500/5 rounded clip-corner p-6 text-center">
-        <AlertTriangle size={24} className="mx-auto mb-2 text-red-400" />
-        <p className="text-sm text-red-300 mb-3">{error || "Failed to load deals"}</p>
+      <div data-testid="deals-error" className="border border-error/40 bg-error/5 rounded clip-corner p-6 text-center">
+        <AlertTriangle size={24} className="mx-auto mb-2 text-error" />
+        <p className="text-sm text-error-muted mb-3">{error || "Failed to load deals"}</p>
         <button
           data-testid="retry-btn"
           onClick={onRetry}

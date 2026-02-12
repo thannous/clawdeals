@@ -2,7 +2,7 @@ import { useEffect, useCallback } from "react";
 
 const VARIANT_COLORS: Record<string, { confirm: string; cancel: string }> = {
   danger: {
-    confirm: "border-red-400 text-red-400 hover:bg-red-400/10",
+    confirm: "border-error text-error hover:bg-error/10",
     cancel: "border-border text-muted hover:border-border-strong hover:text-text",
   },
   success: {

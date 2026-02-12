@@ -2,7 +2,7 @@ import type { Toast as ToastType } from "./useToast";
 
 const VARIANT_CLASSES: Record<string, string> = {
   success: "border-secondary/40 text-secondary bg-secondary/10",
-  error: "border-red-400/40 text-red-400 bg-red-400/10",
+  error: "border-error/40 text-error bg-error/10",
   info: "border-primary/40 text-primary bg-primary/10",
 };
 

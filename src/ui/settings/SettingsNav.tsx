@@ -26,7 +26,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
     if (logoutState === "loading") return;
     setLogoutState("loading");
     try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
+      await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
     } catch {
       // Always clear local state and redirect to login even if logout endpoint fails.
     }
@@ -65,7 +65,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
         data-testid="settings-logout"
         onClick={onLogout}
         disabled={logoutState === "loading"}
-        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
+        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
       >
         {logoutState === "loading" ? "Signing out..." : "Logout"}
       </button>

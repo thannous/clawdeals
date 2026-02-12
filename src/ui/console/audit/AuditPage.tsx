@@ -24,14 +24,14 @@ export default function AuditPage() {
   return (
     <div data-testid="audit-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="w-full px-4 py-3">
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>AUDIT
           </h1>
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         <AuditToolbar
           from={from}
           onFromChange={setFrom}

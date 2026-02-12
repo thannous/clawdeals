@@ -222,8 +222,8 @@ export default function DevicePage() {
             </div>
 
             {error && (
-              <div data-testid="device-error" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-red-400">Error</div>
+              <div data-testid="device-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                <div className="text-xs font-mono text-error">Error</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
               </div>
             )}
@@ -342,8 +342,8 @@ export default function DevicePage() {
                 </div>
 
                 {submitError && (
-                  <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-red-400">Error</div>
+                  <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                    <div className="text-xs font-mono text-error">Error</div>
                     <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
                   </div>
                 )}
@@ -370,7 +370,7 @@ export default function DevicePage() {
                     data-testid="device-deny"
                     disabled={!actionable || submitState === "loading"}
                     onClick={onDeny}
-                    className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
                   >
                     Deny
                   </button>

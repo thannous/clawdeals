@@ -206,8 +206,8 @@ export default function IdentitiesPage() {
         </div>
 
         {authRequired && (
-          <div data-testid="identities-missing-owner" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-red-400">Login required</div>
+          <div data-testid="identities-missing-owner" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-error">Login required</div>
             <div className="text-xs font-mono text-muted mt-1">
               Go to{" "}
               <Link className="text-text underline" href="/auth/login">
@@ -276,7 +276,7 @@ export default function IdentitiesPage() {
                         e.stopPropagation();
                         openConfirm(row);
                       }}
-                      className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors"
+                      className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors"
                     >
                       Unlink
                     </button>
@@ -299,7 +299,7 @@ export default function IdentitiesPage() {
         onCancel={closeConfirm}
         onConfirm={onConfirm}
       >
-        {submitError && <div className="text-xs font-mono text-red-400">{submitError}</div>}
+        {submitError && <div className="text-xs font-mono text-error">{submitError}</div>}
       </ConfirmModal>
 
       <Toast toasts={toasts} />

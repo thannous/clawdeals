@@ -42,8 +42,8 @@ export default function LiveFeedToolbar({
         );
       case "connecting":
         return (
-          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-yellow-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-warning">
+            <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
             CONNECTING
           </span>
         );
@@ -56,8 +56,8 @@ export default function LiveFeedToolbar({
         );
       default:
         return (
-          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-red-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+          <span data-testid="connection-badge" className="flex items-center gap-1 text-xs font-mono text-error">
+            <span className="w-1.5 h-1.5 rounded-full bg-error" />
             DISCONNECTED
           </span>
         );
@@ -93,14 +93,14 @@ export default function LiveFeedToolbar({
           onClick={onPauseToggle}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
             paused
-              ? "border-yellow-400/40 text-yellow-400 bg-yellow-400/10"
+              ? "border-warning/40 text-warning bg-warning/10"
               : "border-border text-muted hover:border-border-strong hover:text-text"
           }`}
         >
           {paused ? <Play size={12} /> : <Pause size={12} />}
           {paused ? "RESUME" : "PAUSE"}
           {paused && missedCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded bg-yellow-400/20 text-yellow-300 text-xs">
+            <span className="ml-1 px-1.5 py-0.5 rounded bg-warning/20 text-warning-muted text-xs">
               +{missedCount}
             </span>
           )}

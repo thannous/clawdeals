@@ -254,7 +254,7 @@ export default function StepConnect({
         </div>
 
         {claimError && (
-          <div className="text-xs font-mono text-red-400" aria-live="polite">
+          <div className="text-xs font-mono text-error" aria-live="polite">
             {claimError}
           </div>
         )}
@@ -297,7 +297,7 @@ export default function StepConnect({
                   Open approval page on this device, or share this link/QR to another owner device.
                 </div>
                 {claimOpenMsg && (
-                  <div className="text-xs font-mono text-emerald-400" aria-live="polite">
+                  <div className="text-xs font-mono text-success" aria-live="polite">
                     {claimOpenMsg}
                   </div>
                 )}
@@ -323,24 +323,24 @@ export default function StepConnect({
             {isPolling && (
               <div className="flex items-center gap-2" aria-live="polite">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
                 </span>
-                <span className="text-xs font-mono text-yellow-400">Waiting for approval...</span>
+                <span className="text-xs font-mono text-warning">Waiting for approval...</span>
               </div>
             )}
 
             {isClaimed && (
               <div className="flex items-center gap-2" aria-live="assertive">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
                 </span>
-                <span className="text-xs font-mono text-emerald-400">Claimed! Connecting...</span>
+                <span className="text-xs font-mono text-success">Claimed! Connecting...</span>
               </div>
             )}
 
             {pollError && (
-              <div className="text-xs font-mono text-red-400" aria-live="polite">
+              <div className="text-xs font-mono text-error" aria-live="polite">
                 {pollError}
               </div>
             )}
@@ -455,7 +455,7 @@ export default function StepConnect({
           {keyMessage && (
             <div
               className={`text-xs font-mono ${
-                keyStatus === "error" ? "text-red-400" : keyStatus === "success" ? "text-emerald-400" : "text-subtle"
+                keyStatus === "error" ? "text-error" : keyStatus === "success" ? "text-success" : "text-subtle"
               }`}
               aria-live="polite"
             >
@@ -508,7 +508,7 @@ export default function StepConnect({
                     Copy Install
                   </button>
                   {mcpCopyMsg && (
-                    <span className="text-xs font-mono text-emerald-400">{mcpCopyMsg}</span>
+                    <span className="text-xs font-mono text-success">{mcpCopyMsg}</span>
                   )}
                 </div>
               </div>
@@ -562,7 +562,7 @@ export default function StepConnect({
               </div>
 
               {mcpApiBase === localApiBase && (
-                <div className="text-xs font-mono text-amber-400">
+                <div className="text-xs font-mono text-warning">
                   Local base works only if you run Clawdeals API on this machine (`npm run dev`).
                 </div>
               )}

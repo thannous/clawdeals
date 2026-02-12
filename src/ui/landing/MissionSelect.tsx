@@ -40,7 +40,7 @@ function MissionCard({
       onClick={() => onSelect(key)}
       className={`group relative bg-surface border p-5 text-left transition-all duration-200 overflow-hidden ${
         isActive
-          ? "border-primary bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]"
+          ? "border-primary bg-primary/5"
           : "border-border hover:border-border-strong"
       }`}
     >

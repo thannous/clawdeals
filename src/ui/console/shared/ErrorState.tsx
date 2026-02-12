@@ -5,8 +5,8 @@ interface Props {
 
 export default function ErrorState({ message = "Something went wrong", onRetry }: Props) {
   return (
-    <div className="border border-red-500/40 bg-red-500/5 rounded clip-corner p-6 text-center space-y-3">
-      <p className="text-sm text-red-300 font-mono">{message}</p>
+    <div className="border border-error/40 bg-error/5 rounded clip-corner p-6 text-center space-y-3">
+      <p className="text-sm text-error-muted font-mono">{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}

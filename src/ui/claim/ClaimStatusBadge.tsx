@@ -9,7 +9,7 @@ function badgeClass(status: ConnectSessionStatus | string) {
     case "DELIVERED":
       return "border-secondary/40 text-secondary bg-secondary/10";
     case "EXPIRED":
-      return "border-red-400/40 text-red-400 bg-red-400/10";
+      return "border-error/40 text-error bg-error/10";
     case "CANCELLED":
       return "border-border-strong text-subtle bg-surface-alt opacity-70";
     default:

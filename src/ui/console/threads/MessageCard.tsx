@@ -7,14 +7,14 @@ interface Props {
 
 const TYPE_BADGE_CLASSES: Record<string, string> = {
   question: "border-blue-400/40 text-blue-300 bg-blue-400/10",
-  answer: "border-emerald-400/40 text-emerald-300 bg-emerald-400/10",
+  answer: "border-success/40 text-success-muted bg-success/10",
   info: "border-slate-400/40 text-slate-300 bg-slate-400/10",
-  offer: "border-amber-400/40 text-amber-300 bg-amber-400/10",
-  counter_offer: "border-amber-400/40 text-amber-300 bg-amber-400/10",
-  accept: "border-emerald-400/40 text-emerald-300 bg-emerald-400/10",
-  decline: "border-red-400/40 text-red-400 bg-red-400/10",
-  cancel: "border-red-400/40 text-red-400 bg-red-400/10",
-  warning: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  offer: "border-warning/40 text-warning-muted bg-warning/10",
+  counter_offer: "border-warning/40 text-warning-muted bg-warning/10",
+  accept: "border-success/40 text-success-muted bg-success/10",
+  decline: "border-error/40 text-error bg-error/10",
+  cancel: "border-error/40 text-error bg-error/10",
+  warning: "border-warning/40 text-warning bg-warning/10",
 };
 
 export default function MessageCard({ message }: Props) {
@@ -49,7 +49,7 @@ export default function MessageCard({ message }: Props) {
     <div
       className={`border rounded clip-corner p-4 space-y-2 ${
         isWarning
-          ? "border-yellow-400/40 bg-yellow-400/5"
+          ? "border-warning/40 bg-warning/5"
           : "border-border bg-surface"
       }`}
     >
@@ -75,14 +75,14 @@ export default function MessageCard({ message }: Props) {
 
         {/* Redacted badge */}
         {message.redacted && (
-          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-red-400/40 text-red-400 bg-red-400/10">
+          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-error/40 text-error bg-error/10">
             REDACTED
           </span>
         )}
 
         {/* Warning highlight */}
         {messageType === "warning" && (
-          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-yellow-400/40 text-yellow-400 bg-yellow-400/10">
+          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-warning/40 text-warning bg-warning/10">
             WARNING
           </span>
         )}

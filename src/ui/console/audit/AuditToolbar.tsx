@@ -84,7 +84,7 @@ export default function AuditToolbar({
           className="px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
         />
         {timeRangeError && (
-          <span className="text-xs font-mono text-red-400 border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 rounded">
+          <span className="text-xs font-mono text-error border border-error/40 bg-error/10 px-1.5 py-0.5 rounded">
             {timeRangeError}
           </span>
         )}

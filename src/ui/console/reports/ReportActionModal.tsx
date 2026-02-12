@@ -41,7 +41,7 @@ function ReportActionModalInner({
   const confirmColors =
     action === "confirm"
       ? "border-secondary text-secondary hover:bg-secondary/10"
-      : "border-red-400 text-red-400 hover:bg-red-400/10";
+      : "border-error text-error hover:bg-error/10";
 
   return (
     <div

@@ -7,9 +7,9 @@ function badgeClass(status: DeviceAuthorizationStatus | string) {
     case "AUTHORIZED":
       return "border-secondary/40 text-secondary bg-secondary/10";
     case "DENIED":
-      return "border-red-400/40 text-red-400 bg-red-400/10";
+      return "border-error/40 text-error bg-error/10";
     case "EXPIRED":
-      return "border-red-400/40 text-red-400 bg-red-400/10";
+      return "border-error/40 text-error bg-error/10";
     default:
       return "border-border text-subtle bg-surface/30";
   }

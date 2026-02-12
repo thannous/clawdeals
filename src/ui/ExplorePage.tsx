@@ -21,7 +21,8 @@ import {
   Zap
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import { getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
+import { getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
+import ShareButton from "./landing/ShareButton";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -445,7 +446,7 @@ const SectionHeader = ({ title, subtitle }) => (
 const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) => {
   const router = useRouter();
   const localePrefix = router.locale === "fr" ? "/fr" : "";
-  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
+  const appEntryUrl = getPublicAppEntryHref(localePrefix);
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
   const tabs = [
@@ -514,7 +515,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
               locale="fr"
               className={`h-9 px-3 border text-xs font-bold uppercase tracking-widest ${
                 router.locale === "fr"
-                  ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                  ? "border-secondary text-secondary bg-secondary/10"
                   : "border-border text-muted hover:text-text hover:border-border-strong"
               }`}
             >
@@ -525,7 +526,7 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
               locale="en"
               className={`h-9 px-3 border text-xs font-bold uppercase tracking-widest ${
                 router.locale === "en"
-                  ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                  ? "border-secondary text-secondary bg-secondary/10"
                   : "border-border text-muted hover:text-text hover:border-border-strong"
               }`}
             >
@@ -555,6 +556,8 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
               </span>
             </div>
           </div>
+
+          <ShareButton locale={router.locale || "en"} />
 
           <Link
             href={appEntryUrl}
@@ -600,7 +603,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
 
         <div className="flex flex-wrap gap-4">
           <Link
-            href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}`)}
+            href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
             className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
           >
             <span className="relative z-10 flex items-center gap-2">
@@ -619,8 +622,8 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
 
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative w-64 h-64 border border-border rounded-full flex items-center justify-center animate-spin-slow">
-            <div className="absolute w-full h-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
-            <div className="absolute h-full w-[1px] bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)]" />
+            <div className="absolute w-full h-[1px] bg-surface-alt/50" />
+            <div className="absolute h-full w-[1px] bg-surface-alt/50" />
             <div className={`w-48 h-48 border-2 border-dashed rounded-full opacity-50 ${orbitBorderClass}`} />
           </div>
           <div className="absolute">
@@ -646,7 +649,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           <div className="flex gap-4">
             <span className="text-subtle">NET</span>{" "}
             <div className="w-24 h-2 bg-surface-alt">
-              <div className="w-[90%] h-full bg-emerald-400" />
+              <div className="w-[90%] h-full bg-success" />
             </div>{" "}
             90%
           </div>
@@ -684,8 +687,8 @@ const DataHero = ({ copy, locale }) => (
   <HeroFrame
     copy={copy}
     hero={copy.hero.data}
-    iconColor="bg-emerald-400"
-    iconClassName="text-emerald-400"
+    iconColor="bg-success"
+    iconClassName="text-success"
     orbitBorderClass="border-border-strong"
     Icon={Database}
     locale={locale}
@@ -698,7 +701,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
   <TechBorder className="h-full" dataTestId={dataTestId}>
     <div className="p-6 flex flex-col h-full relative">
       <div className="flex justify-between items-start mb-4">
-        <div className="w-10 h-10 border border-border-strong bg-[color-mix(in_srgb,var(--color-surface-alt)_50%,transparent)] flex items-center justify-center text-muted">
+        <div className="w-10 h-10 border border-border-strong bg-surface-alt/50 flex items-center justify-center text-muted">
           {type === "npm" && <Code size={20} />}
           {type === "gig" && <Zap size={20} />}
           {type === "data" && <Server size={20} />}
@@ -720,7 +723,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         {type === "gig" && (
           <>
             <div className="text-subtle">STATUS:</div>
-            <div className={item.status === "IDLE" ? "text-emerald-400" : "text-red-400"}>{item.status}</div>
+            <div className={item.status === "IDLE" ? "text-success" : "text-error"}>{item.status}</div>
             <div className="text-subtle">SPEED:</div>
             <div className="text-text">{item.speed}</div>
           </>
@@ -736,7 +739,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         {type === "data" && (
           <>
             <div className="text-subtle">FORMAT:</div>
-            <div className="text-emerald-400">{item.format}</div>
+            <div className="text-success">{item.format}</div>
             <div className="text-subtle">SIZE:</div>
             <div className="text-text">{item.size}</div>
           </>
@@ -753,7 +756,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
             ))}
         </div>
         <Link
-          href={joinUrl(getPublicAppUrl(), `${locale === "fr" ? "/fr" : ""}${getPublicAppEntryPath()}?from=explore-card-${type}-${item.id}`)}
+          href={`${getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}?from=explore-card-${type}-${item.id}`}
           className="bg-text text-bg text-xs font-bold uppercase px-4 py-2 transition-colors hover:bg-primary hover:text-text"
         >
           {type === "gig" ? copy.actions.deploy : copy.actions.acquire}
@@ -774,7 +777,7 @@ const MarketSection = ({ title, items, type, copy, locale }) => (
     <div className="flex justify-between items-center mb-8 bg-surface border border-border p-2">
       <div className="flex gap-4 px-4 font-mono text-xs text-muted">
         <span className="flex items-center gap-2">
-          <Radio className="w-3 h-3 text-red-500 animate-pulse" /> {copy.filters.live}
+          <Radio className="w-3 h-3 text-error animate-pulse" /> {copy.filters.live}
         </span>
         <span>
           {copy.filters.total}: {items.length}

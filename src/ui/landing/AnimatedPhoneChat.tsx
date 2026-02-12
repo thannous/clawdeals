@@ -17,12 +17,12 @@ const TONE_STYLES: Record<ChatTone, {
   primary: {
     avatarClass: "bg-primary",
     userBubbleClass:
-      "bg-[color-mix(in_srgb,var(--color-primary)_15%,transparent)] border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]"
+      "bg-primary/15 border-primary/30"
   },
   secondary: {
     avatarClass: "bg-secondary",
     userBubbleClass:
-      "bg-[color-mix(in_srgb,var(--color-secondary)_15%,transparent)] border-[color-mix(in_srgb,var(--color-secondary)_30%,transparent)]"
+      "bg-secondary/15 border-secondary/30"
   }
 };
 
@@ -67,7 +67,7 @@ function PhoneFrame({
         <div>
           <div className="text-sm font-bold text-text">{header}</div>
           <div className="flex items-center gap-1 text-xs text-subtle">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             {online}
           </div>
         </div>

@@ -218,10 +218,10 @@ export default function StepVerify({
               {/* Status indicator */}
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
                 </span>
-                <span className="text-xs font-mono text-yellow-400">Polling for approval...</span>
+                <span className="text-xs font-mono text-warning">Polling for approval...</span>
               </div>
 
               {/* Actions */}
@@ -233,7 +233,7 @@ export default function StepVerify({
                   Open approval page
                 </button>
                 {claimOpenMsg && (
-                  <div className="text-xs font-mono text-emerald-400" aria-live="polite">
+                  <div className="text-xs font-mono text-success" aria-live="polite">
                     {claimOpenMsg}
                   </div>
                 )}
@@ -284,18 +284,18 @@ export default function StepVerify({
           )}
 
           {pollStatus === "claimed" && exchangeStatus === "loading" && (
-            <div className="border border-emerald-400/20 bg-emerald-400/5 p-5 flex items-center justify-center gap-2 clip-corner">
+            <div className="border border-success/20 bg-success/5 p-5 flex items-center justify-center gap-2 clip-corner">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
               </span>
-              <span className="text-sm font-mono text-emerald-400">Approved! Setting up credentials...</span>
+              <span className="text-sm font-mono text-success">Approved! Setting up credentials...</span>
             </div>
           )}
 
           {exchangeError && (
-            <div className="border border-red-400/30 bg-red-400/5 p-3 clip-corner">
-              <div className="text-xs font-mono text-red-400">{exchangeError}</div>
+            <div className="border border-error/30 bg-error/5 p-3 clip-corner">
+              <div className="text-xs font-mono text-error">{exchangeError}</div>
               <button
                 onClick={onBack}
                 className="mt-2 px-3 py-1.5 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
@@ -306,8 +306,8 @@ export default function StepVerify({
           )}
 
           {pollError && (
-            <div className="border border-red-400/30 bg-red-400/5 p-3 clip-corner">
-              <div className="text-xs font-mono text-red-400">{pollError}</div>
+            <div className="border border-error/30 bg-error/5 p-3 clip-corner">
+              <div className="text-xs font-mono text-error">{pollError}</div>
               <button
                 onClick={onBack}
                 className="mt-2 px-3 py-1.5 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
@@ -325,16 +325,16 @@ export default function StepVerify({
           {verifyStatus === "loading" && (
             <div className="flex items-center gap-2 py-4">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-400" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
               </span>
-              <span className="text-xs font-mono text-yellow-400">Verifying API key...</span>
+              <span className="text-xs font-mono text-warning">Verifying API key...</span>
             </div>
           )}
 
           {verifyError && (
-            <div className="border border-red-400/30 bg-red-400/5 p-3 clip-corner">
-              <div className="text-xs font-mono text-red-400">{verifyError}</div>
+            <div className="border border-error/30 bg-error/5 p-3 clip-corner">
+              <div className="text-xs font-mono text-error">{verifyError}</div>
             </div>
           )}
         </div>
@@ -389,7 +389,7 @@ export default function StepVerify({
               </button>
             </div>
             {verifyError && (
-              <div className="text-xs font-mono text-red-400" aria-live="polite">
+              <div className="text-xs font-mono text-error" aria-live="polite">
                 {verifyError}
               </div>
             )}
@@ -402,9 +402,9 @@ export default function StepVerify({
         <div className="border border-secondary/30 bg-secondary/5 p-4 space-y-2 clip-corner">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
             </span>
-            <span className="text-xs font-mono font-bold text-emerald-400 uppercase">Connected</span>
+            <span className="text-xs font-mono font-bold text-success uppercase">Connected</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
             <div>

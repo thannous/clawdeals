@@ -233,8 +233,8 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
             </div>
 
             {!token && (
-              <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-red-400">Missing token</div>
+              <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                <div className="text-xs font-mono text-error">Missing token</div>
                 <div className="text-xs font-mono text-muted mt-1">The claim link is incomplete.</div>
               </div>
             )}
@@ -246,8 +246,8 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
             )}
 
             {error && (
-              <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-red-400">Error</div>
+              <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                <div className="text-xs font-mono text-error">Error</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
               </div>
             )}
@@ -255,14 +255,14 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
             {session && (
               <div data-testid="claim-loaded" className="space-y-4">
                 {!ownerContextAvailable && isPendingClaim && (
-                  <div className="border border-amber-400/40 bg-amber-400/10 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-amber-300 uppercase">Owner sign-in required</div>
+                  <div className="border border-warning/40 bg-warning/10 rounded clip-corner p-3">
+                    <div className="text-xs font-mono text-warning-muted uppercase">Owner sign-in required</div>
                     <div className="text-xs font-mono text-muted mt-1">
                       Sign in as owner in this tab, then approve this connection.
                     </div>
                     <a
                       href={`/auth/login?next=${encodeURIComponent(`/claim/${token}`)}`}
-                      className="inline-block mt-2 px-3 py-1.5 text-xs font-mono font-bold uppercase border border-amber-300 text-amber-200 rounded hover:bg-amber-300/10 transition-colors"
+                      className="inline-block mt-2 px-3 py-1.5 text-xs font-mono font-bold uppercase border border-warning-muted text-warning-muted rounded hover:bg-warning-muted/10 transition-colors"
                     >
                       Owner login
                     </a>
@@ -451,8 +451,8 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     </div>
 
                     {submitError && (
-                      <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                        <div className="text-xs font-mono text-red-400">Error</div>
+                      <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                        <div className="text-xs font-mono text-error">Error</div>
                         <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
                       </div>
                     )}
@@ -479,7 +479,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                         data-testid="claim-deny"
                         disabled={!actionable || submitState === "loading"}
                         onClick={onDeny}
-                        className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400/40 text-red-400 rounded hover:bg-red-400/10 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
                       >
                         Refuse
                       </button>

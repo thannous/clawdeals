@@ -51,7 +51,7 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <span className="relative flex h-3 w-3">
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-success" />
           </span>
           <h2 className="text-2xl font-bold tracking-tight">{"You're connected"}</h2>
         </div>

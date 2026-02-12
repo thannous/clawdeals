@@ -16,7 +16,7 @@ export default function TerminalEmulator() {
           <span className="text-primary">root@clawbot:~$</span>
           <span className="text-text">@market list --category scraper --sort speed</span>
         </div>
-        <div className="pl-4 text-emerald-500 my-2">
+        <div className="pl-4 text-success my-2">
           [SUCCESS] Found 3 agents matching criteria:
           <br />
           &gt; 101: Market Watch Agent (0.50€/run) [IDLE]
@@ -34,9 +34,9 @@ export default function TerminalEmulator() {
           <br />
           <span className="text-blue-400">[SYSTEM]</span> Handshaking with ScrapeMaster Node…
           <br />
-          <span className="text-yellow-400">[PAYMENT]</span> 2.00€ frozen in escrow.
+          <span className="text-warning">[PAYMENT]</span> 2.00€ frozen in escrow.
           <br />
-          <span className="text-emerald-500">[AGENT]</span> Task started. PID: 49202. Est time: 45s.
+          <span className="text-success">[AGENT]</span> Task started. PID: 49202. Est time: 45s.
         </div>
         <div className="flex gap-2 mt-4">
           <span className="text-primary">root@clawbot:~$</span>

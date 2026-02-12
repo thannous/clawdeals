@@ -92,9 +92,9 @@ const WINDOW_OPTIONS = [
 
 const BUDGET_STATE_STYLES: Record<string, string> = {
   GREEN: "border-secondary/40 text-secondary bg-secondary/10",
-  YELLOW: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
-  RED: "border-red-400/40 text-red-400 bg-red-400/10",
-  EXHAUSTED: "border-red-500/60 text-red-500 bg-red-500/20"
+  YELLOW: "border-warning/40 text-warning bg-warning/10",
+  RED: "border-error/40 text-error bg-error/10",
+  EXHAUSTED: "border-error/60 text-error bg-error/20"
 };
 
 function formatPct(value: number | null) {
@@ -180,14 +180,14 @@ function SloPanel({ sli }: { sli: OpsResponse["sli"] }) {
         </div>
         <div>
           <div className="text-xs font-mono text-subtle uppercase">Burn Rate (5m)</div>
-          <div className={`text-lg font-mono font-bold ${burn_rate.fast.value !== null && burn_rate.fast.value >= 6 ? "text-red-400" : "text-text"}`}>
+          <div className={`text-lg font-mono font-bold ${burn_rate.fast.value !== null && burn_rate.fast.value >= 6 ? "text-error" : "text-text"}`}>
             {formatBurnRate(burn_rate.fast.value)}
           </div>
           <div className="text-xs font-mono text-muted">fast window</div>
         </div>
         <div>
           <div className="text-xs font-mono text-subtle uppercase">Burn Rate (1h)</div>
-          <div className={`text-lg font-mono font-bold ${burn_rate.slow.value !== null && burn_rate.slow.value >= 3 ? "text-yellow-400" : "text-text"}`}>
+          <div className={`text-lg font-mono font-bold ${burn_rate.slow.value !== null && burn_rate.slow.value >= 3 ? "text-warning" : "text-text"}`}>
             {formatBurnRate(burn_rate.slow.value)}
           </div>
           <div className="text-xs font-mono text-muted">slow window</div>
@@ -203,7 +203,7 @@ function SloPanel({ sli }: { sli: OpsResponse["sli"] }) {
               <div className="flex items-center gap-3">
                 <span className="text-xs font-mono text-muted">{evt.total} req</span>
                 <span className={`text-xs font-mono font-bold ${
-                  evt.success_rate !== null && evt.success_rate < (aggregate.slo_target ?? 0.99) ? "text-red-400" : "text-secondary"
+                  evt.success_rate !== null && evt.success_rate < (aggregate.slo_target ?? 0.99) ? "text-error" : "text-secondary"
                 }`}>
                   {formatPct(evt.success_rate)}
                 </span>
@@ -226,14 +226,14 @@ function ApprovalsDetailPanel({ detail }: { detail: OpsResponse["approvals_detai
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <div className="text-xs font-mono text-subtle uppercase">Pending</div>
-          <div className={`text-lg font-mono font-bold ${detail.pending_count > 0 ? "text-yellow-400" : "text-text"}`}>
+          <div className={`text-lg font-mono font-bold ${detail.pending_count > 0 ? "text-warning" : "text-text"}`}>
             {detail.pending_count}
           </div>
         </div>
         <div>
           <div className="text-xs font-mono text-subtle uppercase">Oldest Pending</div>
           <div className={`text-lg font-mono font-bold ${
-            detail.oldest_pending_age_s !== null && detail.oldest_pending_age_s > 4 * 3600 ? "text-red-400" : "text-text"
+            detail.oldest_pending_age_s !== null && detail.oldest_pending_age_s > 4 * 3600 ? "text-error" : "text-text"
           }`}>
             {formatDuration(detail.oldest_pending_age_s)}
           </div>
@@ -249,7 +249,7 @@ function ApprovalsDetailPanel({ detail }: { detail: OpsResponse["approvals_detai
         <div>
           <div className="text-xs font-mono text-subtle uppercase">Resolve p95</div>
           <div className={`text-lg font-mono font-bold ${
-            detail.resolved_window.p95_resolve_s !== null && detail.resolved_window.p95_resolve_s > 4 * 3600 ? "text-red-400" : "text-text"
+            detail.resolved_window.p95_resolve_s !== null && detail.resolved_window.p95_resolve_s > 4 * 3600 ? "text-error" : "text-text"
           }`}>
             {formatDuration(detail.resolved_window.p95_resolve_s)}
           </div>
@@ -321,7 +321,7 @@ export default function OpsPage() {
   return (
     <div data-testid="ops-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div className="w-full px-4 py-3 flex items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
               <span className="text-primary">/ </span>OPS
@@ -359,7 +359,7 @@ export default function OpsPage() {
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         {fetchState === "error" && <ErrorState message={error || "Failed to load ops dashboard"} onRetry={load} />}
 
         {fetchState === "loading" && !data && (
@@ -431,7 +431,7 @@ export default function OpsPage() {
                     // Color-code p95 cells that exceed the SLO latency target.
                     const routeTarget = getP95SloTargetForRoute(row.route_group, sloLatencyTargets);
                     if (col.key === "p95_ms" && routeTarget !== null && typeof val === "number" && val > routeTarget) {
-                      return <span className="text-red-400 font-bold">{text}</span>;
+                      return <span className="text-error font-bold">{text}</span>;
                     }
                     return text;
                   }

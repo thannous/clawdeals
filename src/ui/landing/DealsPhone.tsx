@@ -32,7 +32,7 @@ function MiniDealCard({
         </div>
         <span className="text-xs font-mono text-text">{temp}</span>
         <span className="text-xs font-mono text-secondary">{up}</span>
-        <span className="text-xs font-mono text-red-400">{down}</span>
+        <span className="text-xs font-mono text-error">{down}</span>
       </div>
       <div className="flex gap-1">
         {tags.map((tag) => (

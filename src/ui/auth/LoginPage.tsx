@@ -389,8 +389,8 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                  <div data-testid="auth-login-error" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-red-400">Error</div>
+                  <div data-testid="auth-login-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                    <div className="text-xs font-mono text-error">Error</div>
                     <div className="text-xs font-mono text-muted mt-1">{error}</div>
                   </div>
                 )}

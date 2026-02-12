@@ -80,8 +80,8 @@ export default function AuthCallbackPage() {
             </h1>
             {state === "loading" && <div className="text-xs font-mono text-subtle">Finalizing sign-in…</div>}
             {state === "error" && (
-              <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-red-400">Error</div>
+              <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                <div className="text-xs font-mono text-error">Error</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
                 <Link
                   href="/auth/login"

@@ -1,11 +1,11 @@
 const LISTING_VARIANTS: Record<string, string> = {
   LIVE: "border-secondary/40 text-secondary bg-secondary/10",
-  PENDING_APPROVAL: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  PENDING_APPROVAL: "border-warning/40 text-warning bg-warning/10",
   RESERVED: "border-primary/40 text-primary bg-primary/10",
   CONTACT_REVEALED: "border-primary/40 text-primary bg-primary/10",
   COMPLETED: "border-primary/40 text-primary bg-primary/10",
   DRAFT: "border-border-strong text-subtle bg-surface-alt",
-  REMOVED: "border-red-400/40 text-red-400 bg-red-400/10",
+  REMOVED: "border-error/40 text-error bg-error/10",
   EXPIRED: "border-border-strong text-subtle bg-surface-alt opacity-60",
 
   // Legacy display values (pre listing_status enum migration).
@@ -19,9 +19,9 @@ const THREAD_VARIANTS: Record<string, string> = {
 };
 
 const APPROVAL_VARIANTS: Record<string, string> = {
-  PENDING: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  PENDING: "border-warning/40 text-warning bg-warning/10",
   APPROVED: "border-secondary/40 text-secondary bg-secondary/10",
-  DENIED: "border-red-400/40 text-red-400 bg-red-400/10",
+  DENIED: "border-error/40 text-error bg-error/10",
   EXPIRED: "border-border-strong text-subtle bg-surface-alt opacity-60",
   CANCELLED: "border-border-strong text-subtle bg-surface-alt opacity-60",
 };
@@ -29,22 +29,22 @@ const APPROVAL_VARIANTS: Record<string, string> = {
 const AUDIT_VARIANTS: Record<string, string> = {
   SUCCESS: "border-secondary/40 text-secondary bg-secondary/10",
   EXECUTED: "border-secondary/40 text-secondary bg-secondary/10",
-  STAGED: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
-  BLOCKED: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
-  FAILURE: "border-red-400/40 text-red-400 bg-red-400/10",
+  STAGED: "border-warning/40 text-warning bg-warning/10",
+  BLOCKED: "border-warning/40 text-warning bg-warning/10",
+  FAILURE: "border-error/40 text-error bg-error/10",
   UNKNOWN: "border-border-strong text-subtle bg-surface-alt",
 };
 
 const CHANNEL_VARIANTS: Record<string, string> = {
-  PENDING: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  PENDING: "border-warning/40 text-warning bg-warning/10",
   ACTIVE: "border-secondary/40 text-secondary bg-secondary/10",
-  REVOKED: "border-red-400/40 text-red-400 bg-red-400/10",
+  REVOKED: "border-error/40 text-error bg-error/10",
 };
 
 const REPORT_VARIANTS: Record<string, string> = {
-  UNCONFIRMED: "border-yellow-400/40 text-yellow-400 bg-yellow-400/10",
+  UNCONFIRMED: "border-warning/40 text-warning bg-warning/10",
   CONFIRMED: "border-secondary/40 text-secondary bg-secondary/10",
-  REJECTED: "border-red-400/40 text-red-400 bg-red-400/10",
+  REJECTED: "border-error/40 text-error bg-error/10",
 };
 
 const VARIANT_MAPS: Record<string, Record<string, string>> = {

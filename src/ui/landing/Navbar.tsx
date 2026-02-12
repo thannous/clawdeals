@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Search, Terminal } from "lucide-react";
-import { getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../../shared/urls";
+import { getPublicAppEntryHref } from "../../shared/urls";
+import ShareButton from "./ShareButton";
 import type { LandingCopy, ThemeOption } from "./types";
 
 type NavbarProps = {
@@ -15,7 +16,7 @@ type NavbarProps = {
 export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: NavbarProps) {
   const router = useRouter();
   const localePrefix = router.locale === "fr" ? "/fr" : "";
-  const appEntryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
+  const appEntryUrl = getPublicAppEntryHref(localePrefix);
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
 
@@ -54,7 +55,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
               locale="fr"
               className={`h-9 px-3 border text-xs font-bold uppercase tracking-widest ${
                 router.locale === "fr"
-                  ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                  ? "border-secondary text-secondary bg-secondary/10"
                   : "border-border text-muted hover:text-text hover:border-border-strong"
               }`}
             >
@@ -65,7 +66,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
               locale="en"
               className={`h-9 px-3 border text-xs font-bold uppercase tracking-widest ${
                 router.locale === "en"
-                  ? "border-secondary text-secondary bg-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)]"
+                  ? "border-secondary text-secondary bg-secondary/10"
                   : "border-border text-muted hover:text-text hover:border-border-strong"
               }`}
             >
@@ -96,6 +97,8 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode }: 
               </span>
             </div>
           </div>
+
+          <ShareButton locale={router.locale || "en"} />
 
           {!futureMode && (
             <Link

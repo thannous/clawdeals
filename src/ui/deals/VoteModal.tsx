@@ -60,7 +60,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
 
   const isUp = direction === "up";
   const DirectionIcon = isUp ? ThumbsUp : ThumbsDown;
-  const dirColor = isUp ? "text-secondary" : "text-red-400";
+  const dirColor = isUp ? "text-secondary" : "text-error";
   const charCount = reason.length;
   const isOverWarn = charCount >= WARN_THRESHOLD;
   const isSubmitting = submitState === "submitting";
@@ -99,7 +99,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
         {/* Body */}
         <div className="p-4 space-y-3">
           {displayError && (
-            <div data-testid="vote-error" className="px-3 py-2 text-xs font-mono border border-red-500/40 bg-red-500/10 text-red-300 rounded">
+            <div data-testid="vote-error" className="px-3 py-2 text-xs font-mono border border-error/40 bg-error/10 text-error-muted rounded">
               {displayError}
               {retryIn > 0 && <span className="ml-1 font-bold">({retryIn}s)</span>}
             </div>

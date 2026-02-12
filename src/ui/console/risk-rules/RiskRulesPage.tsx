@@ -166,7 +166,7 @@ export default function RiskRulesPage() {
               {runner.submitState === "loading" ? "Running..." : "Run now"}
             </button>
           </div>
-          {runner.error && <p className="text-xs font-mono text-red-300">{runner.error}</p>}
+          {runner.error && <p className="text-xs font-mono text-error-muted">{runner.error}</p>}
           {runner.result && (
             <pre className="bg-bg border border-border rounded p-3 text-xs font-mono text-muted overflow-x-auto">
               {JSON.stringify(runner.result, null, 2)}
@@ -278,7 +278,7 @@ export default function RiskRulesPage() {
             </div>
           )}
 
-          {mutation.error && <p className="text-xs font-mono text-red-300">{mutation.error}</p>}
+          {mutation.error && <p className="text-xs font-mono text-error-muted">{mutation.error}</p>}
           {saveMessage && <p className="text-xs font-mono text-green-300">{saveMessage}</p>}
         </section>
 
@@ -313,12 +313,12 @@ export default function RiskRulesPage() {
             <button
               onClick={submitUnflag}
               disabled={unflag.submitState === "loading"}
-              className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400 text-red-300 rounded hover:bg-red-400/10 disabled:opacity-50"
+              className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error text-error-muted rounded hover:bg-error/10 disabled:opacity-50"
             >
               {unflag.submitState === "loading" ? "Submitting..." : "Remove flag"}
             </button>
           </div>
-          {unflag.error && <p className="text-xs font-mono text-red-300">{unflag.error}</p>}
+          {unflag.error && <p className="text-xs font-mono text-error-muted">{unflag.error}</p>}
           {unflag.lastResult && (
             <pre className="bg-bg border border-border rounded p-3 text-xs font-mono text-muted overflow-x-auto">
               {JSON.stringify(unflag.lastResult, null, 2)}

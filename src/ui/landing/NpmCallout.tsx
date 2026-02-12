@@ -10,7 +10,7 @@ export default function NpmCallout({ copy }) {
           <h3 className="text-3xl font-bold uppercase text-text mb-4">{copy.mcp.title}</h3>
           <p className="font-mono text-muted mb-6">{copy.mcp.description}</p>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center gap-4 border border-[color-mix(in_srgb,var(--color-secondary)_30%,transparent)] bg-[color-mix(in_srgb,var(--color-secondary)_5%,transparent)] px-6 py-3">
+            <div className="inline-flex items-center gap-4 border border-secondary/30 bg-secondary/5 px-6 py-3">
               <span className="font-mono text-secondary">{copy.mcp.snippet}</span>
               <Code className="w-4 h-4 text-secondary" />
             </div>
@@ -29,7 +29,7 @@ export default function NpmCallout({ copy }) {
           </div>
         </div>
       </div>
-      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-[color-mix(in_srgb,var(--color-secondary)_10%,transparent)] via-transparent to-transparent opacity-50 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-secondary/10 via-transparent to-transparent opacity-50 pointer-events-none" />
     </div>
   );
 }

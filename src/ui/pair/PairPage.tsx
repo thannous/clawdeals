@@ -96,8 +96,8 @@ export default function PairPage() {
         </div>
 
         {!token && (
-          <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-red-400">Missing token</div>
+          <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-error">Missing token</div>
             <div className="text-xs font-mono text-muted mt-1">
               Go back to Telegram and run <span className="text-text">/connect</span> to get a new link.
             </div>
@@ -111,8 +111,8 @@ export default function PairPage() {
         )}
 
         {error && (
-          <div className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-red-400">Error</div>
+          <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-error">Error</div>
             <div className="text-xs font-mono text-muted mt-1">{error}</div>
           </div>
         )}

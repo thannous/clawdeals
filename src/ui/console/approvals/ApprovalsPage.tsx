@@ -59,14 +59,14 @@ export default function ApprovalsPage() {
   return (
     <div data-testid="approvals-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="w-full px-4 py-3">
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>APPROVALS
           </h1>
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         <ApprovalsToolbar
           state={state}
           onStateChange={setState}
@@ -92,7 +92,7 @@ export default function ApprovalsPage() {
             <button
               onClick={() => handleBulkAction("deny")}
               disabled={bulkAction.submitState === "loading"}
-              className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-red-400 text-red-400 rounded hover:bg-red-400/10 disabled:opacity-50 transition-colors"
+              className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-error text-error rounded hover:bg-error/10 disabled:opacity-50 transition-colors"
             >
               Deny Selected
             </button>
@@ -103,7 +103,7 @@ export default function ApprovalsPage() {
               Clear
             </button>
             {bulkAction.error && (
-              <span className="text-xs font-mono text-red-400">{bulkAction.error}</span>
+              <span className="text-xs font-mono text-error">{bulkAction.error}</span>
             )}
           </div>
         )}

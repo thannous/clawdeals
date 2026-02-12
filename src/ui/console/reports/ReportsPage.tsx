@@ -53,14 +53,14 @@ export default function ReportsPage() {
   return (
     <div data-testid="reports-page" className="min-h-screen bg-bg">
       <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="w-full px-4 py-3">
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
             <span className="text-primary">/ </span>REPORTS
           </h1>
         </div>
       </header>
 
-      <main id="main-content" tabIndex={-1} className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         <ReportsToolbar
           status={status}
           onStatusChange={setStatus}
@@ -100,15 +100,15 @@ export default function ReportsPage() {
 
       {/* Bulk action error */}
       {bulkAction.error && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 border border-red-500/40 bg-red-500/5 rounded clip-corner p-4">
-          <p className="text-xs text-red-300 font-mono">{bulkAction.error}</p>
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 border border-error/40 bg-error/5 rounded clip-corner p-4">
+          <p className="text-xs text-error-muted font-mono">{bulkAction.error}</p>
         </div>
       )}
 
       {/* Floating bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 inset-x-0 z-40 border-t border-border bg-surface/95 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="w-full px-4 py-3 flex items-center justify-between">
             <span className="text-xs font-mono text-muted">
               {selectedIds.size} report{selectedIds.size === 1 ? "" : "s"} selected
             </span>
@@ -129,7 +129,7 @@ export default function ReportsPage() {
               <button
                 onClick={() => setBulkModalAction("reject")}
                 disabled={bulkAction.submitState === "loading"}
-                className="px-4 py-2 text-xs font-mono font-bold uppercase border border-red-400 text-red-400 rounded hover:bg-red-400/10 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error text-error rounded hover:bg-error/10 disabled:opacity-50 transition-colors"
               >
                 Reject All
               </button>

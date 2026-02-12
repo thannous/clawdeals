@@ -37,7 +37,7 @@ export default function LegacyLoginPage() {
   const canSubmit = useMemo(() => email.trim().length > 0 && submitState !== "loading", [email, submitState]);
 
   const resetAuth = useCallback(() => {
-    void fetch("/api/v1/auth/logout", { method: "POST" }).catch(() => {});
+    void fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
     clearStoredOwnerAuth();
     setSessionId(null);
     setToken(null);
@@ -144,8 +144,8 @@ export default function LegacyLoginPage() {
             )}
 
             {error && (
-              <div data-testid="auth-login-error" className="border border-red-400/30 bg-red-400/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-red-400">Error</div>
+              <div data-testid="auth-login-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                <div className="text-xs font-mono text-error">Error</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
               </div>
             )}

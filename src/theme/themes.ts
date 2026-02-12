@@ -13,6 +13,12 @@ export type Theme = {
     text: string;
     textMuted: string;
     textSubtle: string;
+    error: string;
+    errorMuted: string;
+    success: string;
+    successMuted: string;
+    warning: string;
+    warningMuted: string;
   };
   fonts: {
     sans: string;
@@ -38,7 +44,13 @@ export const THEMES: Theme[] = [
       borderStrong: "#334155",
       text: "#e2e8f0",
       textMuted: "#94a3b8",
-      textSubtle: "#64748b"
+      textSubtle: "#64748b",
+      error: "#f87171",
+      errorMuted: "#fca5a5",
+      success: "#4ade80",
+      successMuted: "#6ee7b7",
+      warning: "#facc15",
+      warningMuted: "#fde68a"
     },
     fonts: {
       sans: "\"Chakra Petch\", sans-serif",
@@ -62,7 +74,13 @@ export const THEMES: Theme[] = [
       borderStrong: "#524032",
       text: "#f5f0e6",
       textMuted: "#c2b59f",
-      textSubtle: "#8f7f67"
+      textSubtle: "#8f7f67",
+      error: "#fb923c",
+      errorMuted: "#fdba74",
+      success: "#a3e635",
+      successMuted: "#bef264",
+      warning: "#fbbf24",
+      warningMuted: "#fcd34d"
     },
     fonts: {
       sans: "\"Chakra Petch\", sans-serif",

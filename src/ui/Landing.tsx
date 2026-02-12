@@ -3,7 +3,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import { getPublicApiBaseUrl, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
+import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
 import { LANDING_COPY } from "./landing/copy";
 import Faq from "./landing/Faq";
 import HowItWorks from "./landing/HowItWorks";
@@ -168,7 +168,7 @@ function WaitlistForm({
         </button>
       </form>
       <div
-        className={`mt-2 text-xs font-mono ${isError ? "text-red-400" : isSuccess ? "text-emerald-400" : "text-subtle"}`}
+        className={`mt-2 text-xs font-mono ${isError ? "text-error" : isSuccess ? "text-success" : "text-subtle"}`}
         aria-live="polite"
       >
         {helperText}
@@ -229,9 +229,8 @@ function Hero({
   futureMode: boolean;
   locale: LandingLocale;
 }) {
-  const appUrl = getPublicAppUrl();
   const localePrefix = locale === "fr" ? "/fr" : "";
-  const entryUrl = joinUrl(appUrl, `${localePrefix}${getPublicAppEntryPath()}`);
+  const entryUrl = getPublicAppEntryHref(localePrefix);
 
   return (
     <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
@@ -287,7 +286,7 @@ function TabbedShowcase({
   const [active, setActive] = useState<ShowcaseTab>("marketplace");
   const tabsRef = useRef<HTMLDivElement>(null);
   const localePrefix = locale === "fr" ? "/fr" : "";
-  const entryUrl = joinUrl(getPublicAppUrl(), `${localePrefix}${getPublicAppEntryPath()}`);
+  const entryUrl = getPublicAppEntryHref(localePrefix);
 
   const handleTabClick = (key: ShowcaseTab) => {
     setActive(key);
