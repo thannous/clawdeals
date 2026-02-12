@@ -22,7 +22,7 @@ function normalizeClaimError(rawError: string, options: { ownerAgentsCount: numb
     if (options.ownerAgentsCount > 0) {
       return "Agent limit reached for this owner. Select Attach and choose an existing agent.";
     }
-    return "Agent limit reached for this owner. Sign in with the right owner or increase OWNER_AGENT_LIMIT in local dev.";
+    return "Agent limit reached for this owner. Sign in with the right owner, or attach this installation to an existing agent.";
   }
   if (/owner authentication required/i.test(message) || /unauthorized/i.test(message)) {
     return "You must be signed in as owner to approve this connection.";

@@ -544,7 +544,7 @@ export default function StepConnect({
               <div className="flex flex-wrap gap-1.5">
                 {[
                   { label: "Hosted", value: hostedApiBase },
-                  { label: "Local", value: localApiBase },
+                  { label: "Local (dev only)", value: localApiBase },
                   { label: "This site", value: siteApiBase }
                 ].map((opt) => (
                   <button
@@ -560,6 +560,12 @@ export default function StepConnect({
                   </button>
                 ))}
               </div>
+
+              {mcpApiBase === localApiBase && (
+                <div className="text-xs font-mono text-amber-400">
+                  Local base works only if you run Clawdeals API on this machine (`npm run dev`).
+                </div>
+              )}
 
               <div className="text-xs font-mono text-subtle">
                 Custom path:{" "}

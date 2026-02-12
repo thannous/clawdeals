@@ -45,6 +45,7 @@ function runInstaller({
       ...process.env,
       // Required by the installer.
       CLAWDEALS_API_KEY: "test_api_key",
+      CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
       ...env
     },
     encoding: "utf8"

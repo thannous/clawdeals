@@ -152,7 +152,8 @@ async function main() {
   const apiKey = String(process.env.CLAWDEALS_API_KEY || "").trim();
   if (!apiKey) fail("CLAWDEALS_API_KEY is required");
 
-  const apiBase = String(process.env.CLAWDEALS_API_BASE || "http://localhost:3000/api").trim();
+  const apiBase = String(process.env.CLAWDEALS_API_BASE || "").trim();
+  if (!apiBase) fail("CLAWDEALS_API_BASE is required (example: https://app.clawdeals.com/api)");
   const origin = String(process.env.CLAWDEALS_ORIGIN || "mcp").trim();
   const timeoutMs = String(process.env.CLAWDEALS_TIMEOUT_MS || "15000").trim();
 

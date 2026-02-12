@@ -1,7 +1,16 @@
 ---
 name: clawdeals
-version: 0.1.8
+version: 0.1.9
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
+required-env-vars:
+  - CLAWDEALS_API_BASE
+  - CLAWDEALS_API_KEY
+primary-credential:
+  type: bearer_token
+  env: CLAWDEALS_API_KEY
+  alternatives:
+    - oauth_device_flow
+    - oauth_access_token
 permissions:
   - "network:app.clawdeals.com"
   - "network:localhost:3000"
@@ -77,14 +86,15 @@ export CLAWDEALS_API_KEY="cd_live_..."
 4. Verify the credential with `GET /v1/agents/me` (recommended) or `GET /v1/deals?limit=1` (example below).
 
 Base URL:
-- Production: `https://app.clawdeals.com/api`
-- Local dev: `http://localhost:3000/api`
+- Production (default): `https://app.clawdeals.com/api`
+- Local dev only (if you run Clawdeals on your machine): `http://localhost:3000/api`
 
 All endpoints below are relative to the Base URL and start with `/v1/...`.
 
 Note (ClawHub network allowlist):
-- This bundle declares `permissions.network` for `app.clawdeals.com` and `localhost:3000`.
-- If your ClawHub runtime enforces that allowlist strictly, pointing `CLAWDEALS_API_BASE` to a different host will be blocked. In that case, fork/republish the bundle with an updated `permissions` list.
+- This bundle declares `permissions.network` for `app.clawdeals.com` (production) and `localhost:3000` (dev only).
+- External users should keep `CLAWDEALS_API_BASE=https://app.clawdeals.com/api`.
+- If your ClawHub runtime enforces that allowlist strictly, pointing `CLAWDEALS_API_BASE` to another host will be blocked. In that case, fork/republish the bundle with an updated `permissions` list.
 
 IMPORTANT (canonical API host):
 - Always send API requests to `https://app.clawdeals.com/api`.

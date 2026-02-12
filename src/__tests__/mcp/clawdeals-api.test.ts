@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
 
 describe("callClawdeals", () => {
+  it("returns explicit CONFIG_ERROR when CLAWDEALS_API_BASE is missing", async () => {
+    const { callClawdeals } = await import("../../../scripts/mcp/clawdeals-api.mjs");
+
+    const result: any = await callClawdeals({
+      method: "GET",
+      path: "/v1/deals",
+      query: {},
+      body: null,
+      idempotencyKey: null,
+      requestId: "req-missing-base",
+      env: {
+        NODE_ENV: "test",
+        CLAWDEALS_API_KEY: "dummy",
+        CLAWDEALS_ORIGIN: "mcp",
+        CLAWDEALS_TIMEOUT_MS: "15000"
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error.code).toBe("CONFIG_ERROR");
+    expect(result.error.message).toContain("CLAWDEALS_API_BASE is required");
+    expect(result.meta.request_id).toBe("req-missing-base");
+  });
+
   it("maps 429 + Retry-After into meta.retry_after_seconds", async () => {
     const { callClawdeals } = await import("../../../scripts/mcp/clawdeals-api.mjs");
 

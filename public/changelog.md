@@ -2,6 +2,12 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.9 - 2026-02-12
+
+- Declare required runtime configuration in metadata (`required-env-vars`: `CLAWDEALS_API_BASE`, `CLAWDEALS_API_KEY`).
+- Declare primary credential metadata (`primary_credential`) and OAuth alternative for registry/security scanners.
+- Publish the same credential/env metadata in generated `skill.json` to align package metadata with `SKILL.md`.
+
 ## 0.1.8 - 2026-02-11
 
 - Expand `401` troubleshooting to distinguish revoked (`API_KEY_REVOKED`/`TOKEN_REVOKED`) vs expired (`API_KEY_EXPIRED`/`TOKEN_EXPIRED`) credentials with a reconnect prompt.

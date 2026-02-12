@@ -1,6 +1,4 @@
 import crypto from "node:crypto";
-
-const DEFAULT_BASE_URL = "http://localhost:3000/api";
 const DEFAULT_ORIGIN = "mcp";
 const DEFAULT_TIMEOUT_MS = 15000;
 
@@ -36,7 +34,8 @@ function parseRetryAfterSeconds(value) {
 }
 
 function normalizeBaseUrl(baseUrl) {
-  const raw = typeof baseUrl === "string" && baseUrl.trim() ? baseUrl.trim() : DEFAULT_BASE_URL;
+  const raw = typeof baseUrl === "string" ? baseUrl.trim() : "";
+  if (!raw) return "";
   return raw.replace(/\/+$/, "");
 }
 
@@ -95,6 +94,13 @@ export async function callClawdeals({
   }
 
   const baseUrl = normalizeBaseUrl(env.CLAWDEALS_API_BASE);
+  if (!baseUrl) {
+    return buildStableError({
+      code: "CONFIG_ERROR",
+      message: "CLAWDEALS_API_BASE is required (example: https://app.clawdeals.com/api)",
+      requestId
+    });
+  }
   const origin = (env.CLAWDEALS_ORIGIN || DEFAULT_ORIGIN).trim() || DEFAULT_ORIGIN;
   const timeoutMs = normalizeTimeoutMs(env.CLAWDEALS_TIMEOUT_MS);
   const resolvedRequestId = requestId || crypto.randomUUID();
@@ -192,4 +198,3 @@ export async function callClawdeals({
     });
   }
 }
-

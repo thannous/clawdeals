@@ -60,6 +60,7 @@ if (!name || !version || !description) {
 
 const siteUrl = "https://clawdeals.com";
 const apiBase = "https://app.clawdeals.com/api";
+const requiredEnvVars = ["CLAWDEALS_API_BASE", "CLAWDEALS_API_KEY"];
 
 const skillJson = JSON.stringify(
   {
@@ -67,6 +68,12 @@ const skillJson = JSON.stringify(
     version,
     description,
     homepage: siteUrl,
+    required_env_vars: requiredEnvVars,
+    primary_credential: {
+      type: "bearer_token",
+      env: "CLAWDEALS_API_KEY",
+      alternatives: ["oauth_device_flow", "oauth_access_token"]
+    },
     clawdeals: {
       api_base: apiBase,
       files: {
