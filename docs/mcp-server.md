@@ -15,6 +15,9 @@ export CLAWDEALS_ORIGIN="mcp"
 # Optional (defaults to 15000)
 export CLAWDEALS_TIMEOUT_MS="15000"
 
+npx -y clawdeals-mcp
+
+# Or, from this repo:
 npm run mcp:stdio
 ```
 
@@ -26,6 +29,9 @@ This repo ships an installer that updates supported MCP config files on your mac
 export CLAWDEALS_API_KEY="cd_live_..."
 export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
 
+npx -y clawdeals-mcp install
+
+# Or, from this repo:
 npm run mcp:install
 ```
 

@@ -153,6 +153,11 @@ function useChatAnimation(messagePattern: string) {
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
+    if (typeof IntersectionObserver === "undefined") {
+      // Older browsers / test environments: fall back to running the animation immediately.
+      setIsInView(true);
+      return;
+    }
     const observer = new IntersectionObserver(([entry]) => setIsInView(entry.isIntersecting), { threshold: 0.3 });
     observer.observe(element);
     return () => observer.disconnect();

@@ -1,0 +1,24 @@
+{
+  "name": "clawdeals-mcp",
+  "version": "0.1.0",
+  "description": "Clawdeals MCP stdio server exposing the v0 tool catalog.",
+  "type": "module",
+  "private": false,
+  "license": "UNLICENSED",
+  "bin": {
+    "clawdeals-mcp": "bin/clawdeals-mcp.mjs"
+  },
+  "files": [
+    "bin/",
+    "mcp/",
+    "mcp-server.mjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^4.3.6"
+  }
+}

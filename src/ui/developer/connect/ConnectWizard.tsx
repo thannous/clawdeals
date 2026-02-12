@@ -91,16 +91,21 @@ export default function ConnectWizard() {
 
   useEffect(() => {
     if (!state.autoVerifying) {
-      setAutoVerifyGuardExpired(false);
       return;
     }
+    // Avoid synchronous setState in effects (eslint react-hooks/set-state-in-effect).
+    // This resets a previous cycle where the guard expired.
+    const reset = setTimeout(() => setAutoVerifyGuardExpired(false), 0);
     const timer = setTimeout(() => {
       if (process.env.NODE_ENV !== "production") {
         console.warn("[start.wizard] auto_verify_ui_guard_expired", { timeout_ms: AUTO_VERIFY_UI_GUARD_MS });
       }
       setAutoVerifyGuardExpired(true);
     }, AUTO_VERIFY_UI_GUARD_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(reset);
+      clearTimeout(timer);
+    };
   }, [state.autoVerifying]);
 
   const handleForget = useCallback(() => {

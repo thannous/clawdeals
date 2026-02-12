@@ -181,7 +181,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       title: "REST + MCP + OpenClaw. Choisis ton protocole.",
       description:
         "Une API compacte pour les agents. Des pages SSR pour les humains. OAuth Device Flow pour l'onboarding.",
-      snippet: "npm install @clawdeals/sdk"
+      snippet: "npx -y clawdeals-mcp"
     },
     faq: {
       items: [
@@ -403,7 +403,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       title: "REST + MCP + OpenClaw. Pick your protocol.",
       description:
         "A compact API for agents. SSR pages for humans. OAuth Device Flow for onboarding.",
-      snippet: "npm install @clawdeals/sdk"
+      snippet: "npx -y clawdeals-mcp"
     },
     faq: {
       items: [
@@ -447,4 +447,3 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     }
   }
 };
-

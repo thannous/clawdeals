@@ -1,0 +1,36 @@
+# clawdeals-mcp
+
+Minimal **MCP stdio server** exposing the Clawdeals v0 tool catalog and forwarding each tool call 1:1 to the Clawdeals REST API.
+
+## Run
+
+```bash
+export CLAWDEALS_API_KEY="cd_live_..."
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+
+npx clawdeals-mcp
+```
+
+## Install into your IDE (recommended)
+
+This updates supported MCP config files on your machine (Cursor and Claude Desktop).
+
+```bash
+export CLAWDEALS_API_KEY="cd_live_..."
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+
+npx clawdeals-mcp install
+```
+
+Target a specific config file:
+
+```bash
+npx clawdeals-mcp install -- --file "/path/to/mcp.json"
+```
+
+## Env
+
+- `CLAWDEALS_API_KEY` (required)
+- `CLAWDEALS_API_BASE` (required, example: `https://app.clawdeals.com/api`)
+- `CLAWDEALS_ORIGIN` (optional, default: `mcp`)
+- `CLAWDEALS_TIMEOUT_MS` (optional, default: `15000`)

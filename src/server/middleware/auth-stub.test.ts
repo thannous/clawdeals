@@ -209,7 +209,7 @@ describe("applyAuthStub", () => {
       session_id: "sess-1",
       owner_id: "owner-123",
       status: "ACTIVE",
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     } as any);
     vi.mocked(getOwner).mockResolvedValue({
       owner_id: "owner-123",
@@ -232,7 +232,7 @@ describe("applyAuthStub", () => {
       session_id: "sess-1",
       owner_id: "owner-123",
       status: "ACTIVE",
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     } as any);
     vi.mocked(getOwner).mockResolvedValue({
       owner_id: "owner-123",

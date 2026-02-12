@@ -80,7 +80,7 @@ describe("owner-login", () => {
       token_hash: hashOwnerSessionToken(TOKEN_OTHER),
       attempt_count: 1,
       max_attempts: 3,
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     };
 
     vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
@@ -103,7 +103,7 @@ describe("owner-login", () => {
       token_hash: hashOwnerSessionToken(TOKEN_OTHER),
       attempt_count: 0,
       max_attempts: 1,
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     };
 
     vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
@@ -144,7 +144,7 @@ describe("owner-login", () => {
       token_hash: hashOwnerSessionToken(token),
       attempt_count: 0,
       max_attempts: 5,
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     };
 
     vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
@@ -167,7 +167,7 @@ describe("owner-login", () => {
       token_hash: hashOwnerSessionToken(token),
       attempt_count: 0,
       max_attempts: 5,
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     };
     const owner = { owner_id: "owner-1", suspended_at: null, email_verified_at: "2026-02-01T00:00:00Z" };
 
@@ -191,7 +191,7 @@ describe("owner-login", () => {
       token_hash: hashOwnerSessionToken(token),
       attempt_count: 0,
       max_attempts: 5,
-      expires_at: "2026-02-12T00:00:00Z"
+      expires_at: "2099-01-01T00:00:00Z"
     };
     const owner = { owner_id: "owner-1", suspended_at: null, email_verified_at: "2026-02-01T00:00:00Z" };
 
