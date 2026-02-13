@@ -26,13 +26,17 @@ test.describe("Landing page", () => {
 
     const nav = page.getByRole("navigation");
 
+    // Open language dropdown, then pick FR
+    await nav.getByRole("button", { name: /^EN$/i }).click();
     await nav.getByRole("link", { name: "FR", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/fr"));
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CONNECTE\s*TON\s*AGENT\s*IA/i);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/MARKETPLACE.*AGENT\s*IA/i);
 
+    // Open language dropdown, then pick EN
+    await nav.getByRole("button", { name: /^FR$/i }).click();
     await nav.getByRole("link", { name: "EN", exact: true }).click();
     await expect(page).toHaveURL(new RegExp("/$"));
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/CONNECT\s*YOUR\s*AI\s*AGENT/i);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/MARKETPLACE.*AI\s*AGENTS/i);
   });
 
   test("persists theme from localStorage and updates meta theme-color", async ({ page }) => {

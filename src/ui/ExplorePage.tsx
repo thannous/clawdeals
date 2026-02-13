@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
-import ShareButton from "./landing/ShareButton";
+import Navbar from "./landing/Navbar";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -584,14 +584,9 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 );
 
-/* ── Navbar with tabs ── */
+/* ── Explore tabs (center slot for shared Navbar) ── */
 
-const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) => {
-  const router = useRouter();
-  const localePrefix = router.locale === "fr" ? "/fr" : "";
-  const appEntryUrl = getPublicAppEntryHref(localePrefix);
-  const asPathNoLocale =
-    (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
+const ExploreTabs = ({ activeTab, setActiveTab, copy }) => {
   const tabs = [
     { id: "gig", label: copy.tabs.gig },
     { id: "npm", label: copy.tabs.npm },
@@ -604,108 +599,23 @@ const Navbar = ({ activeTab, setActiveTab, copy, themeId, setTheme, themes }) =>
   }
 
   return (
-    <header className="fixed top-0 w-full z-50">
-      <nav className="bg-bg backdrop-blur-md border-b border-border h-16">
-        <div className="max-w-[1440px] mx-auto px-6 h-full flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
-              <div className="absolute inset-0 hazard-stripe opacity-20" />
-              CD
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-text leading-none">CLAWDEALS</span>
-              <span className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1">
-                SYSTEM_ACCESS_GRANTED
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        <div className="hidden md:flex gap-1 bg-surface p-1 clip-corner">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              onMouseEnter={() => maybePreload(tab.id)}
-              onFocus={() => maybePreload(tab.id)}
-              className={`px-6 py-2 text-sm font-bold tracking-wide transition-all duration-300 clip-corner ${
-                activeTab === tab.id
-                  ? "bg-text text-bg shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                  : "text-subtle hover:text-text hover:bg-surface-alt"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2">
-            <Link
-              href={asPathNoLocale}
-              locale="fr"
-              className={`h-9 px-3 border text-xs font-bold uppercase tracking-widest ${
-                router.locale === "fr"
-                  ? "border-secondary text-secondary bg-secondary/10"
-                  : "border-border text-muted hover:text-text hover:border-border-strong"
-              }`}
-            >
-              FR
-            </Link>
-            <Link
-              href={asPathNoLocale}
-              locale="en"
-              className={`h-9 px-3 border text-xs font-bold uppercase tracking-widest ${
-                router.locale === "en"
-                  ? "border-secondary text-secondary bg-secondary/10"
-                  : "border-border text-muted hover:text-text hover:border-border-strong"
-              }`}
-            >
-              EN
-            </Link>
-          </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-xs font-mono text-subtle tracking-[0.3em] uppercase">THEME</span>
-            <label className="sr-only" htmlFor="theme-switch-explore">
-              Theme
-            </label>
-            <div className="relative">
-              <select
-                id="theme-switch-explore"
-                value={themeId}
-                onChange={(event) => setTheme(event.target.value)}
-                className="h-9 min-w-[140px] appearance-none px-3 pr-8 border border-border bg-surface-alt text-text text-xs font-mono uppercase tracking-widest focus:outline-none"
-              >
-                {themes.map((theme) => (
-                  <option key={theme.id} value={theme.id}>
-                    {theme.label}
-                  </option>
-                ))}
-              </select>
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-subtle text-xs">
-                ▼
-              </span>
-            </div>
-          </div>
-
-          <ShareButton locale={router.locale || "en"} />
-
-          <Link
-            href={appEntryUrl}
-            className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
-          >
-            <Terminal className="w-4 h-4" />
-            {copy.connect}
-          </Link>
-        </div>
-      </div>
-
-      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-surface-alt">
-        <div className="absolute left-0 top-0 h-full w-1/3 bg-primary opacity-50" />
-      </div>
-      </nav>
-    </header>
+    <div className="hidden md:flex gap-1 bg-surface p-1 clip-corner">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          onMouseEnter={() => maybePreload(tab.id)}
+          onFocus={() => maybePreload(tab.id)}
+          className={`px-6 py-2 text-sm font-bold tracking-wide transition-all duration-300 clip-corner ${
+            activeTab === tab.id
+              ? "bg-text text-bg shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+              : "text-subtle hover:text-text hover:bg-surface-alt"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
   );
 };
 
@@ -1043,12 +953,11 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
   return (
     <div className="min-h-screen">
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
         copy={copy}
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
+        center={<ExploreTabs activeTab={activeTab} setActiveTab={setActiveTab} copy={copy} />}
       />
 
       <main id="main-content" tabIndex={-1} className="pb-32">

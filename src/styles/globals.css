@@ -206,3 +206,15 @@ body {
 .temp-bar-active {
   animation: tempPulse 2s ease-in-out infinite;
 }
+
+/* Readability scale for all pages except landing (`/`).
+   Scoped to <main> so the shared <header> (Navbar) stays uniform. */
+.app-readable-ui main .text-xs {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.app-readable-ui main .text-sm {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
