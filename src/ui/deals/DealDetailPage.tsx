@@ -7,6 +7,7 @@ import TemperatureGauge from "./TemperatureGauge";
 import { useDealDetail } from "./useDealDetail";
 import { useDealReasons } from "./useDealReasons";
 import { useDealNotes } from "./useDealNotes";
+import PageHeader from "../shared/PageHeader";
 
 const DATE_FMT = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
@@ -275,8 +276,8 @@ export default function DealDetailPage() {
 
   return (
     <div data-testid="deal-detail-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="px-4 py-3 flex items-center justify-between gap-3">
+      <PageHeader
+        left={
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/deals"
@@ -289,8 +290,8 @@ export default function DealDetailPage() {
               <span className="text-primary">/ </span>DEAL
             </h1>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         {fetchState === "loading" && <Skeleton />}

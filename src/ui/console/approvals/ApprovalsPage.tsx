@@ -9,6 +9,7 @@ import ErrorState from "../shared/ErrorState";
 import SkeletonTable from "../shared/SkeletonTable";
 import ToastContainer from "../shared/Toast";
 import { useToast } from "../shared/useToast";
+import PageHeader from "../../shared/PageHeader";
 
 export default function ApprovalsPage() {
   const {
@@ -58,13 +59,7 @@ export default function ApprovalsPage() {
 
   return (
     <div data-testid="approvals-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-3">
-          <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>APPROVALS
-          </h1>
-        </div>
-      </header>
+      <PageHeader title="APPROVALS" />
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         <ApprovalsToolbar

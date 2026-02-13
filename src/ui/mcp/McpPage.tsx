@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Copy, ExternalLink, Terminal } from "lucide-react";
 
 import { SectionHeader, TechBorder } from "../landing/primitives";
+import PageHeader from "../shared/PageHeader";
 
 type McpLocale = "fr" | "en";
 
@@ -230,25 +231,27 @@ export default function McpPage() {
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <PageHeader
+        containerClassName="max-w-6xl mx-auto px-4 py-4"
+        htmlTitle={
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
               <div className="absolute inset-0 hazard-stripe opacity-20" />
               CD
             </div>
             <div className="space-y-0.5 leading-none">
-              <div className="font-bold tracking-wider">
+              <h1 className="font-bold tracking-wider">
                 <span className="text-primary">/ </span>
                 {copy.title}
-              </div>
+              </h1>
               <div className="text-xs font-mono text-subtle uppercase tracking-[0.25em]">
                 {copy.subtitle}
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
+        }
+        actions={
+          <>
             <Link
               href="/start"
               className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
@@ -263,9 +266,9 @@ export default function McpPage() {
               <ExternalLink className="w-4 h-4" />
               Tools
             </a>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-10 space-y-10">
         <div className="space-y-4">

@@ -12,6 +12,7 @@ import { useToast } from "../shared/useToast";
 import ErrorState from "../shared/ErrorState";
 import SkeletonTable from "../shared/SkeletonTable";
 import { formatDate } from "../shared/formatDate";
+import PageHeader from "../../shared/PageHeader";
 
 export default function ApprovalDetailPage() {
   const router = useRouter();
@@ -52,19 +53,21 @@ export default function ApprovalDetailPage() {
 
   return (
     <div data-testid="approval-detail-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <Link
-            href="/console/approvals"
-            className="inline-flex items-center gap-2 text-xs font-mono text-muted hover:text-primary transition-colors"
-          >
-            &larr; Back
-          </Link>
-          <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>APPROVAL
-          </h1>
-        </div>
-      </header>
+      <PageHeader
+        left={
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/console/approvals"
+              className="inline-flex items-center gap-2 text-xs font-mono text-muted hover:text-primary transition-colors"
+            >
+              &larr; Back
+            </Link>
+            <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
+              <span className="text-primary">/ </span>APPROVAL
+            </h1>
+          </div>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         {fetchState === "loading" && <SkeletonTable columns={4} rows={6} />}

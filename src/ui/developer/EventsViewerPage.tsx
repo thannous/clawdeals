@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getStoredApiKey, getStoredLastEventId, setStoredLastEventId, clearStoredLastEventId } from "./storage";
 import { SseParser } from "./sse-parser";
 import { buildApiUrl } from "./api";
+import PageHeader from "../shared/PageHeader";
 
 type UiEvent = {
   id: string;
@@ -209,12 +210,10 @@ export default function EventsViewerPage() {
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-          <div className="font-bold tracking-wider whitespace-nowrap">
-            <span className="text-primary">/ </span>EVENTS
-          </div>
-
+      <PageHeader
+        title="EVENTS"
+        containerClassName="max-w-6xl mx-auto px-4 py-4"
+        actions={
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <Link href="/developer" className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong">
               Dashboard
@@ -267,8 +266,8 @@ export default function EventsViewerPage() {
               className="h-8 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             />
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-8 space-y-4">
         {!apiKey && (

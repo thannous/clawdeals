@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ConsoleTable from "../shared/ConsoleTable";
 import SkeletonTable from "../shared/SkeletonTable";
 import ErrorState from "../shared/ErrorState";
+import PageHeader from "../../shared/PageHeader";
 
 type SliByEvent = {
   event: string;
@@ -320,22 +321,10 @@ export default function OpsPage() {
 
   return (
     <div data-testid="ops-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-3 flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-              <span className="text-primary">/ </span>OPS
-            </h1>
-            {data?.window ? (
-              <p className="text-xs font-mono text-muted mt-0.5">
-                Window: {data.window.minutes}m ({formatIsoShort(data.window.from)} &rarr; {formatIsoShort(data.window.to)})
-              </p>
-            ) : (
-              <p className="text-xs font-mono text-muted mt-0.5">Window: {windowMinutes}m</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
+      <PageHeader
+        title="OPS"
+        actions={
+          <>
             <select
               value={windowMinutes}
               onChange={(e) => setWindowMinutes(Number.parseInt(e.target.value, 10))}
@@ -355,9 +344,17 @@ export default function OpsPage() {
             >
               Refresh
             </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      >
+        {data?.window ? (
+          <p className="text-xs font-mono text-muted mt-0.5">
+            Window: {data.window.minutes}m ({formatIsoShort(data.window.from)} &rarr; {formatIsoShort(data.window.to)})
+          </p>
+        ) : (
+          <p className="text-xs font-mono text-muted mt-0.5">Window: {windowMinutes}m</p>
+        )}
+      </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         {fetchState === "error" && <ErrorState message={error || "Failed to load ops dashboard"} onRetry={load} />}

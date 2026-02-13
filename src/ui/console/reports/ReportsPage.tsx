@@ -11,6 +11,7 @@ import SkeletonTable from "../shared/SkeletonTable";
 import ToastContainer from "../shared/Toast";
 import { useToast } from "../shared/useToast";
 import { useRouter } from "next/router";
+import PageHeader from "../../shared/PageHeader";
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -52,13 +53,7 @@ export default function ReportsPage() {
 
   return (
     <div data-testid="reports-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-3">
-          <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>REPORTS
-          </h1>
-        </div>
-      </header>
+      <PageHeader title="REPORTS" />
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         <ReportsToolbar

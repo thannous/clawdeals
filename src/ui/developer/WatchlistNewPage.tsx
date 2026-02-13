@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { apiRequest } from "./api";
 import { getStoredApiKey } from "./storage";
+import PageHeader from "../shared/PageHeader";
 
 function parseTags(input: string): string[] {
   return String(input || "")
@@ -78,21 +79,22 @@ export default function WatchlistNewPage() {
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-4 flex items-center justify-between">
-          <div className="font-bold tracking-wider">
-            <span className="text-primary">/ </span>WATCHLIST NEW
-          </div>
-          <div className="flex gap-2">
+      <PageHeader
+        title="WATCHLIST NEW"
+        actions={
+          <div className="flex items-center gap-2">
             <Link href="/developer" className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong">
               Dashboard
             </Link>
-            <Link href="/developer/events" className="border border-primary px-3 py-1 text-xs font-mono text-primary hover:bg-primary hover:text-bg">
+            <Link
+              href="/developer/events"
+              className="border border-primary px-3 py-1 text-xs font-mono text-primary hover:bg-primary hover:text-bg"
+            >
               Events
             </Link>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-10 space-y-6">
         <div className="border border-border bg-surface p-6 space-y-4">

@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { WEBMCP_TOOLS } from "../../webmcp/tools";
 import { canonicalJsonStringify } from "../../webmcp/utils";
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
+import PageHeader from "../shared/PageHeader";
 
 const SAMPLE_ARGS: Record<string, any> = {
   "clawdeals.deals_search": { limit: 1 },
@@ -74,18 +75,17 @@ export default function WebMcpPage() {
 
   return (
     <div data-testid="webmcp-page" className="min-h-screen bg-bg text-text">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="font-bold tracking-wider">
-            <span className="text-primary">/ </span>DEV WEBMCP
-          </div>
+      <PageHeader
+        title="DEV WEBMCP"
+        containerClassName="max-w-5xl mx-auto px-4 py-4"
+        actions={
           <div className="text-xs font-mono text-subtle flex items-center gap-4">
             <span data-testid="webmcp-enabled">ENABLED: {enabled ? "YES" : "NO"}</span>
             <span data-testid="webmcp-supported">SUPPORTED: {supported ? "YES" : "NO"}</span>
             <span data-testid="webmcp-registered">REGISTERED: {registered ? "YES" : "NO"}</span>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         <div className="border border-border bg-surface p-4 space-y-2">

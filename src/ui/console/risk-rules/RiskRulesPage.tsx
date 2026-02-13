@@ -7,6 +7,7 @@ import { useRiskRuleUnflag } from "./useRiskRuleUnflag";
 import EmptyState from "../shared/EmptyState";
 import ErrorState from "../shared/ErrorState";
 import SkeletonTable from "../shared/SkeletonTable";
+import PageHeader from "../../shared/PageHeader";
 
 function formatWindow(seconds: number) {
   const s = Number(seconds);
@@ -122,13 +123,7 @@ export default function RiskRulesPage() {
 
   return (
     <div data-testid="risk-rules-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="px-4 py-3">
-          <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>RISK RULES
-          </h1>
-        </div>
-      </header>
+      <PageHeader title="RISK RULES" />
 
       <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
         <section className="bg-surface border border-border rounded p-4 space-y-4">

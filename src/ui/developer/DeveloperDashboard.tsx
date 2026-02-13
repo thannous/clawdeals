@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
+import PageHeader from "../shared/PageHeader";
 
 export default function DeveloperDashboard() {
   const [apiKey, setApiKey] = useState<string | null>(() => getStoredApiKey());
@@ -52,20 +53,14 @@ export default function DeveloperDashboard() {
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-4 flex items-center justify-between">
-          <div className="font-bold tracking-wider">
-            <span className="text-primary">/ </span>DEVELOPER
-          </div>
-          <div className="text-xs font-mono text-subtle">
-            {masked ? (
-              <span data-testid="dev-key">KEY: {masked}</span>
-            ) : (
-              <span>NO KEY</span>
-            )}
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title="DEVELOPER"
+        actions={
+          <span className="text-xs font-mono text-subtle">
+            {masked ? <span data-testid="dev-key">KEY: {masked}</span> : <span>NO KEY</span>}
+          </span>
+        }
+      />
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-10 space-y-8">
         <div className="border border-border bg-surface p-6 space-y-4">
