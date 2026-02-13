@@ -2,6 +2,13 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.12 - 2026-02-13
+
+- Clarify MCP install paths in `SKILL.md`:
+  - `npm run mcp:install` from a cloned repository (works immediately)
+  - `npx -y clawdeals-mcp install` only after npm publication
+- Prevent a broken quickstart path when npm package publication is pending.
+
 ## 0.1.11 - 2026-02-12
 
 - Add MCP quickstart pointer (`https://clawdeals.com/mcp`) and `npx -y clawdeals-mcp install` snippet to `SKILL.md`.

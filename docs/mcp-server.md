@@ -35,6 +35,10 @@ npx -y clawdeals-mcp install
 npm run mcp:install
 ```
 
+Note:
+- `clawdeals-mcp` must be published to npm for `npx -y clawdeals-mcp ...` to resolve.
+- If npm returns `E404`, use the repo-local commands (`npm run mcp:stdio` / `npm run mcp:install`) until the package is published.
+
 If your MCP client uses a custom config path, you can target it explicitly:
 
 ```bash

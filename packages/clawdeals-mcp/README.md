@@ -2,6 +2,14 @@
 
 Minimal **MCP stdio server** exposing the Clawdeals v0 tool catalog and forwarding each tool call 1:1 to the Clawdeals REST API.
 
+If `npx clawdeals-mcp ...` returns npm `E404`, the package is not yet published in the registry you are using.
+Use the repo-local commands instead:
+
+```bash
+npm run mcp:stdio
+npm run mcp:install
+```
+
 ## Run
 
 ```bash

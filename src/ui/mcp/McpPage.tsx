@@ -38,9 +38,9 @@ const COPY: Record<
     title: "MCP",
     subtitle: "3 minutes",
     lead:
-      "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et forward 1:1 vers l’API REST. Installation via npx, pas besoin de cloner le repo.",
+      "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et forward 1:1 vers l’API REST. Utilise d’abord l’installation depuis le repo; passe à npx après publication npm.",
     stepsTitle: "Demarrage",
-    step1Title: "1) Lancer via npx",
+    step1Title: "1) Lancer l’install",
     step1Body: "Recommande: utilise l’installer pour ecrire ta config MCP automatiquement.",
     step2Title: "2) Ajouter la config (manuel)",
     step2Body:
@@ -77,9 +77,9 @@ const COPY: Record<
     title: "MCP",
     subtitle: "3 minutes",
     lead:
-      "Minimal STDIO MCP server exposing ClawDeals tools and forwarding 1:1 to the REST API. Install via npx, no repo clone required.",
+      "Minimal STDIO MCP server exposing ClawDeals tools and forwarding 1:1 to the REST API. Use repo install first, then switch to npx after npm publication.",
     stepsTitle: "Quick Start",
-    step1Title: "1) Run with npx",
+    step1Title: "1) Run install",
     step1Body: "Recommended: use the installer to write your MCP config automatically.",
     step2Title: "2) Add config (manual)",
     step2Body: "If you prefer no auto edits, paste this JSON into your MCP client.",
@@ -197,15 +197,15 @@ export default function McpPage() {
   const [configTab, setConfigTab] = useState<"cursor" | "claude" | "generic">("cursor");
 
   const installSnippet = useMemo(() => {
-    return `export CLAWDEALS_API_KEY=\"cd_live_...\"\nexport CLAWDEALS_API_BASE=\"https://app.clawdeals.com/api\"\n\nnpx -y clawdeals-mcp install`;
+    return `export CLAWDEALS_API_KEY=\"cd_live_...\"\nexport CLAWDEALS_API_BASE=\"https://app.clawdeals.com/api\"\n\n# From a cloned clawdeals repo (works now)\nnpm run mcp:install\n\n# After npm publication\nnpx -y clawdeals-mcp install`;
   }, []);
 
   const manualConfig = useMemo(() => {
     const base = {
       clawdeals: {
         type: "stdio",
-        command: "npx",
-        args: ["-y", "clawdeals-mcp"],
+        command: "node",
+        args: ["/absolute/path/to/clawdeals/scripts/mcp-server.mjs"],
         env: {
           CLAWDEALS_API_KEY: "cd_live_…",
           CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",

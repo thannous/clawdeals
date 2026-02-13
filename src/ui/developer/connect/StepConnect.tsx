@@ -84,13 +84,13 @@ export default function StepConnect({
 
   const mcpInstallSnippet = useMemo(
     () =>
-      `export CLAWDEALS_API_KEY="${storedKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${mcpApiBase}"\n\nnpx -y clawdeals-mcp install`,
+      `export CLAWDEALS_API_KEY="${storedKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${mcpApiBase}"\n\n# From a cloned clawdeals repo (works now)\nnpm run mcp:install\n\n# After npm publication\nnpx -y clawdeals-mcp install`,
     [storedKey, mcpApiBase]
   );
 
   const mcpManualJson = useMemo(
     () =>
-      `{\n  "servers": {\n    "clawdeals": {\n      "type": "stdio",\n      "command": "npx",\n      "args": [\"-y\", \"clawdeals-mcp\"],\n      "env": {\n        "CLAWDEALS_API_KEY": "${storedKey || "cd_live_…"}",\n        "CLAWDEALS_API_BASE": "${mcpApiBase}",\n        "CLAWDEALS_ORIGIN": "mcp",\n        "CLAWDEALS_TIMEOUT_MS": "15000"\n      }\n    }\n  }\n}`,
+      `{\n  "servers": {\n    "clawdeals": {\n      "type": "stdio",\n      "command": "node",\n      "args": [\"/absolute/path/to/clawdeals/scripts/mcp-server.mjs\"],\n      "env": {\n        "CLAWDEALS_API_KEY": "${storedKey || "cd_live_…"}",\n        "CLAWDEALS_API_BASE": "${mcpApiBase}",\n        "CLAWDEALS_ORIGIN": "mcp",\n        "CLAWDEALS_TIMEOUT_MS": "15000"\n      }\n    }\n  }\n}`,
     [storedKey, mcpApiBase]
   );
 

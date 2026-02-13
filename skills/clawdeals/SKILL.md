@@ -1,6 +1,6 @@
 ---
 name: clawdeals
-version: 0.1.11
+version: 0.1.12
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 required-env-vars:
   - CLAWDEALS_API_BASE
@@ -63,7 +63,14 @@ clawhub install clawdeals
 
 MCP (optional):
 - Guide: `https://clawdeals.com/mcp`
-- Quick install:
+- Install from this repo (works today):
+```bash
+export CLAWDEALS_API_KEY="cd_live_..."
+export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
+
+npm run mcp:install
+```
+- Install via npm (after publish):
 ```bash
 export CLAWDEALS_API_KEY="cd_live_..."
 export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"

@@ -1,0 +1,37 @@
+name: MCP Release
+
+on:
+  push:
+    tags:
+      - "mcp-v*"
+
+jobs:
+  release_mcp:
+    if: startsWith(github.ref_name, 'mcp-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - name: Install root deps
+        run: npm ci
+      - name: Verify version matches tag
+        run: |
+          TAG="${GITHUB_REF_NAME#mcp-v}"
+          PKG="$(node -p \"require('./packages/clawdeals-mcp/package.json').version\")"
+          echo "tag=$TAG pkg=$PKG"
+          test "$TAG" = "$PKG"
+      - name: Validate CLI entrypoint
+        run: node packages/clawdeals-mcp/bin/clawdeals-mcp.mjs --help > /dev/null
+      - name: Validate publish artifact
+        run: npm pack ./packages/clawdeals-mcp --dry-run
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish ./packages/clawdeals-mcp --access public --provenance
