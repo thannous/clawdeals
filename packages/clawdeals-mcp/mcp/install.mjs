@@ -11,6 +11,8 @@ import {
   upsertServer
 } from "./install-lib.mjs";
 
+const DEFAULT_API_BASE = "https://app.clawdeals.com/api";
+
 function fail(message) {
   console.error(`mcp:install: ${message}`);
   process.exit(1);
@@ -165,8 +167,7 @@ async function main() {
   const apiKey = String(process.env.CLAWDEALS_API_KEY || "").trim();
   if (!apiKey) fail("CLAWDEALS_API_KEY is required");
 
-  const apiBase = String(process.env.CLAWDEALS_API_BASE || "").trim();
-  if (!apiBase) fail("CLAWDEALS_API_BASE is required (example: https://app.clawdeals.com/api)");
+  const apiBase = String(process.env.CLAWDEALS_API_BASE || "").trim() || DEFAULT_API_BASE;
   const origin = String(process.env.CLAWDEALS_ORIGIN || "mcp").trim();
   const timeoutMs = String(process.env.CLAWDEALS_TIMEOUT_MS || "15000").trim();
 

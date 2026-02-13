@@ -515,6 +515,7 @@ export default function ConnectWizard() {
             apiKey={state.apiKey}
             agentMe={state.agentMe}
             locale={locale}
+            hasOwnerSession={state.hasOwnerSession}
           />
         )}
       </main>

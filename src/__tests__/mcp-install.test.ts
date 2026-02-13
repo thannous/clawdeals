@@ -109,4 +109,18 @@ describe("scripts/mcp/install.mjs regression", () => {
     const backups = fs.readdirSync(dir).filter((f) => f.startsWith("mcp.json.bak-"));
     expect(backups.length).toBe(0);
   });
+
+  it("uses default API base when CLAWDEALS_API_BASE is not set", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-install-default-base-"));
+    const filePath = path.join(dir, "mcp.json");
+    fs.writeFileSync(filePath, "", "utf8");
+
+    const res = runInstaller({ repoRoot, filePath, ioDir: dir, env: { CLAWDEALS_API_BASE: "" } });
+
+    expect(res.code).toBe(0);
+    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as any;
+    expect(parsed?.servers?.clawdeals?.env?.CLAWDEALS_API_BASE).toBe("https://app.clawdeals.com/api");
+  });
 });

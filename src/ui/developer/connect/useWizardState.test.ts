@@ -35,7 +35,7 @@ describe("useWizardState owner-session probe", () => {
     expect(getStoredLastEventId()).toBe("evt-123");
   });
 
-  it("clears local connect state when /auth/me returns 401", async () => {
+  it("preserves stored API key when /auth/me returns 401 (anonymous user)", async () => {
     setStoredApiKey("cd_live_clear.me");
     setStoredLastEventId("evt-999");
 
@@ -54,8 +54,12 @@ describe("useWizardState owner-session probe", () => {
       expect(result.current.state.hasOwnerSession).toBe(false);
     });
 
-    expect(getStoredApiKey()).toBeNull();
-    expect(getStoredLastEventId()).toBeNull();
-    expect(apiRequest).not.toHaveBeenCalled();
+    // Key should NOT be cleared — anonymous users keep their generated key
+    expect(getStoredApiKey()).toBe("cd_live_clear.me");
+    expect(getStoredLastEventId()).toBe("evt-999");
+    // Auto-verify should still be attempted with the stored key
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/v1/agents/me", method: "GET", apiKey: "cd_live_clear.me" })
+    );
   });
 });

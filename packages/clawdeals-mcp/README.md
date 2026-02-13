@@ -14,7 +14,6 @@ npm run mcp:install
 
 ```bash
 export CLAWDEALS_API_KEY="cd_live_..."
-export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
 
 npx clawdeals-mcp
 ```
@@ -25,7 +24,6 @@ This updates supported MCP config files on your machine (Cursor and Claude Deskt
 
 ```bash
 export CLAWDEALS_API_KEY="cd_live_..."
-export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
 
 npx clawdeals-mcp install
 ```
@@ -39,6 +37,8 @@ npx clawdeals-mcp install -- --file "/path/to/mcp.json"
 ## Env
 
 - `CLAWDEALS_API_KEY` (required)
-- `CLAWDEALS_API_BASE` (required, example: `https://app.clawdeals.com/api`)
+- `CLAWDEALS_API_BASE` (optional, default: `https://app.clawdeals.com/api`)
 - `CLAWDEALS_ORIGIN` (optional, default: `mcp`)
 - `CLAWDEALS_TIMEOUT_MS` (optional, default: `15000`)
+
+Use `CLAWDEALS_API_BASE` only to target non-default environments (for example local dev: `http://localhost:3000/api`).

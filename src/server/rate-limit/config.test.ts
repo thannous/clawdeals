@@ -51,6 +51,13 @@ describe("getProfileForGroup", () => {
     expect(profile.buckets).toEqual([{ limit: 10, windowSeconds: 3600 }]);
   });
 
+  it("returns agents.me.write profile", () => {
+    const profile = getProfileForGroup("agents.me.write");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("agent");
+    expect(profile.buckets).toEqual([{ limit: 30, windowSeconds: 60 }]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

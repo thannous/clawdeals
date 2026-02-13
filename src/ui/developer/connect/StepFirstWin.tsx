@@ -1,20 +1,37 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
-import { maskApiKey } from "../api";
+import { apiRequest, maskApiKey } from "../api";
 import type { AgentMeResponse, ConnectLocale } from "./types";
 
 function subscribeToNothing() {
   return () => {};
 }
 
+function localizeNameSaveError(err: any, isFr: boolean): string {
+  const code = String(err?.code || "");
+  const message = String(err?.message || "");
+
+  if (code === "VALIDATION_ERROR") {
+    if (message.includes("name must be 80 characters or less")) {
+      return isFr ? "Le nom doit contenir 80 caracteres maximum." : "Name must be 80 characters or less.";
+    }
+    return isFr ? "Veuillez saisir un nom valide." : "Please provide a valid name.";
+  }
+  if (code === "UNAUTHORIZED" || err?.status === 401) {
+    return isFr ? "Authentification requise pour enregistrer le nom." : "Authentication is required to save the name.";
+  }
+  return isFr ? "Impossible d'enregistrer le nom." : "Failed to save name.";
+}
+
 type Props = {
   locale: ConnectLocale;
   apiKey: string | null;
   agentMe: AgentMeResponse | null;
+  hasOwnerSession: boolean;
 };
 
-export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
+export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession }: Props) {
   const isFr = locale === "fr";
   const baseUrl = useSyncExternalStore(
     subscribeToNothing,
@@ -23,6 +40,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
   );
 
   const masked = apiKey ? maskApiKey(apiKey) : null;
+  const [keyRevealed, setKeyRevealed] = useState(true);
 
   const curlSnippet = apiKey
     ? `curl -sS \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  "${baseUrl}/api/v1/deals?limit=10"`
@@ -33,6 +51,13 @@ export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
   const openClawSnippet = apiKey
     ? `Skill URL: ${skillUrl}\nCLAWDEALS_API_BASE=${apiBase}\nCLAWDEALS_API_KEY=${apiKey}`
     : null;
+
+  const currentName = agentMe?.name || null;
+  const needsNaming = !currentName;
+  const [nameInput, setNameInput] = useState("");
+  const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savedName, setSavedName] = useState<string | null>(null);
 
   const [devOpen, setDevOpen] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -46,6 +71,28 @@ export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
       // ignore
     }
   }, []);
+
+  const handleSaveName = useCallback(async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed) return;
+    setNameStatus("saving");
+    setNameError(null);
+    try {
+      await apiRequest({
+        path: "/v1/agents/me",
+        method: "PATCH",
+        apiKey: apiKey || undefined,
+        body: { name: trimmed }
+      });
+      setNameStatus("saved");
+      setSavedName(trimmed);
+    } catch (err: any) {
+      setNameStatus("error");
+      setNameError(localizeNameSaveError(err, isFr));
+    }
+  }, [nameInput, apiKey, isFr]);
+
+  const displayName = savedName || currentName;
 
   return (
     <div className="space-y-8">
@@ -61,6 +108,132 @@ export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
           {isFr ? "Commencez avec votre premiere action." : "Start building with your first action."}
         </p>
       </div>
+
+      {/* Your API key — prominent one-time display */}
+      {apiKey && (
+        <div className="border border-primary/60 bg-surface p-5 space-y-3 clip-corner">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-mono uppercase tracking-widest text-primary font-bold">
+              {isFr ? "Votre cle API" : "Your API key"}
+            </div>
+            {keyRevealed && (
+              <button
+                onClick={() => setKeyRevealed(false)}
+                className="text-xs font-mono text-subtle hover:text-text transition-colors"
+              >
+                {isFr ? "Masquer" : "Hide"}
+              </button>
+            )}
+          </div>
+
+          {keyRevealed ? (
+            <>
+              <pre className="text-sm font-mono text-text bg-bg border border-border p-3 overflow-x-auto select-all break-all">
+                {apiKey}
+              </pre>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleCopy(apiKey, "key")}
+                  className="border border-primary px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+                >
+                  {copiedField === "key" ? (isFr ? "Copiee !" : "Copied!") : (isFr ? "Copier la cle" : "Copy key")}
+                </button>
+              </div>
+              <div className="border border-warning/30 bg-warning/5 p-3 clip-corner">
+                <div className="text-xs font-mono text-warning">
+                  {isFr
+                    ? "Enregistrez cette cle maintenant. Elle reste stockee sur cet appareil jusqu'a ce que vous cliquiez sur \"Forget\"."
+                    : "Save this key now. It stays stored on this device until you click \"Forget\"."}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-xs font-mono text-subtle">
+              <span className="text-text">{masked}</span>
+              <span className="ml-2">
+                {isFr ? "Cle masquee. Voir les ressources developpeur ci-dessous." : "Key hidden. See developer resources below."}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Agent naming */}
+      {needsNaming && !savedName ? (
+        <div className="border border-border bg-surface p-5 space-y-3 clip-corner">
+          <div className="text-sm font-bold tracking-wide">
+            {isFr ? "Nommez votre agent" : "Name your agent"}
+          </div>
+          <div className="text-xs font-mono text-subtle leading-relaxed">
+            {isFr
+              ? "Donnez un nom a votre agent pour le retrouver facilement."
+              : "Give your agent a name so you can find it easily."}
+          </div>
+          <label htmlFor="agent-name-input" className="sr-only">
+            {isFr ? "Nom de l'agent" : "Agent name"}
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="agent-name-input"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
+              maxLength={80}
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={nameStatus === "error" ? "true" : "false"}
+              aria-describedby={nameError ? "agent-name-error" : undefined}
+              className="flex-1 h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+              disabled={nameStatus === "saving"}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+            />
+            <button
+              onClick={handleSaveName}
+              disabled={!nameInput.trim() || nameStatus === "saving"}
+              className={`h-10 px-4 text-xs font-bold uppercase tracking-widest border border-primary ${
+                !nameInput.trim() || nameStatus === "saving"
+                  ? "bg-surface-alt text-subtle cursor-not-allowed"
+                  : "bg-primary text-bg hover:bg-text hover:text-bg"
+              } transition-colors`}
+            >
+              {nameStatus === "saving" ? (isFr ? "Enregistrement..." : "Saving...") : (isFr ? "Enregistrer" : "Save")}
+            </button>
+          </div>
+          {nameError && (
+            <div id="agent-name-error" className="text-xs font-mono text-error" aria-live="polite">
+              {nameError}
+            </div>
+          )}
+        </div>
+      ) : displayName ? (
+        <div className="border border-border bg-surface p-4 clip-corner">
+          <div className="flex items-center gap-2 text-xs font-mono" role="status" aria-live="polite">
+            <span className="text-subtle">{isFr ? "agent:" : "agent:"}</span>
+            <span className="text-text font-bold">{displayName}</span>
+            <span className="text-success">{isFr ? "Enregistre" : "Saved"}</span>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Link to account CTA for anonymous users */}
+      {!hasOwnerSession && (
+        <div className="border border-secondary/30 bg-secondary/5 p-5 space-y-3 clip-corner">
+          <div className="text-sm font-bold tracking-wide">
+            {isFr ? "Associer a votre compte" : "Link to your account"}
+          </div>
+          <div className="text-xs font-mono text-subtle leading-relaxed">
+            {isFr
+              ? "Connectez-vous ou creez un compte pour associer cette cle API a votre profil proprietaire. Vous pourrez ensuite gerer, revoquer ou renouveler vos cles depuis vos parametres."
+              : "Sign in or create an account to link this API key to your owner profile. You'll be able to manage, revoke, or rotate your keys from your settings."}
+          </div>
+          <Link
+            href="/auth/login?next=/start"
+            className="inline-block border border-secondary bg-secondary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+          >
+            {isFr ? "Se connecter / Creer un compte" : "Sign in / Create account"}
+          </Link>
+        </div>
+      )}
 
       {/* Agent info summary */}
       {(agentMe || masked) && (
@@ -94,8 +267,8 @@ export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
         </div>
       )}
 
-      {/* CTA cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* CTA cards — only shown for authenticated users */}
+      {hasOwnerSession && <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href="/developer/watchlists/new"
           className="group border border-primary bg-surface p-5 space-y-2 clip-corner hover:bg-primary/5 transition-colors"
@@ -144,7 +317,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
             {isFr ? "Ouvrir" : "Open"}
           </div>
         </Link>
-      </div>
+      </div>}
 
       {/* Developer resources (collapsible) */}
       <div className="space-y-2">

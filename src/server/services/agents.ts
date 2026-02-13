@@ -206,6 +206,21 @@ export async function createAgentWithOwnerLimit({
   return data;
 }
 
+export async function updateAgentName(agentId: string, name: string) {
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("agents")
+    .update({ name, updated_at: new Date().toISOString() })
+    .eq("id", agentId)
+    .select("id,name")
+    .single();
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  return data;
+}
+
 export async function addAgentTrustFlag(agentId: string, flag: string) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client.rpc("add_agent_trust_flag_v1", {

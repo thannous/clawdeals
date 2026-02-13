@@ -31,6 +31,11 @@ export default class MyDocument extends Document {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
           />
+          <script
+            src="https://analytics.ahrefs.com/analytics.js"
+            data-key="pf6Dyniaa0v66aaf2+ZtSw"
+            async
+          />
           <Script id="prepaint-theme" strategy="beforeInteractive">
             {PREPAINT_THEME_SCRIPT}
           </Script>

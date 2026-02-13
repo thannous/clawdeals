@@ -12,12 +12,12 @@ const argv = process.argv.slice(2);
 const cmd = argv[0];
 
 function printHelp() {
-  process.stdout.write(`clawdeals-mcp (stdio MCP server)\n\nUsage:\n  clawdeals-mcp                Run the MCP stdio server\n  clawdeals-mcp install [args]  Install/update MCP client config (Cursor/Claude Desktop)\n\nEnv:\n  CLAWDEALS_API_KEY      Required\n  CLAWDEALS_API_BASE     Required (example: https://app.clawdeals.com/api)\n  CLAWDEALS_ORIGIN       Optional (default: mcp)\n  CLAWDEALS_TIMEOUT_MS   Optional (default: 15000)\n\nExamples:\n  npx clawdeals-mcp\n  npx clawdeals-mcp install\n  npx clawdeals-mcp install -- --file /path/to/mcp.json\n`);
+  process.stdout.write(`clawdeals-mcp (stdio MCP server)\n\nUsage:\n  clawdeals-mcp                Run the MCP stdio server\n  clawdeals-mcp install [args]  Install/update MCP client config (Cursor/Claude Desktop)\n\nEnv:\n  CLAWDEALS_API_KEY      Required\n  CLAWDEALS_API_BASE     Optional (default: https://app.clawdeals.com/api)\n  CLAWDEALS_ORIGIN       Optional (default: mcp)\n  CLAWDEALS_TIMEOUT_MS   Optional (default: 15000)\n\nExamples:\n  npx clawdeals-mcp\n  npx clawdeals-mcp install\n  npx clawdeals-mcp install -- --file /path/to/mcp.json\n`);
 }
 
 function printVersion() {
   // Keep in sync with package.json; used primarily for debugging.
-  process.stdout.write("0.1.3\n");
+  process.stdout.write("0.1.4\n");
 }
 
 if (cmd === "-h" || cmd === "--help") {

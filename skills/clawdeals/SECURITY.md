@@ -11,6 +11,7 @@ This document applies to the **Clawdeals** skill pack distributed via ClawHub.
 
 - No scripts, no binaries, no post-install hooks.
 - No local execution required (or allowed) to use the documentation.
+- Optional MCP tooling is distributed separately and is not part of this docs-only bundle.
 
 ## Supply-chain / prompt-injection guidance
 
@@ -24,4 +25,3 @@ If you install this skill pack from a registry:
 
 - Security contact: `security@clawdeals.example`
 - For urgent operational incidents, follow the escalation paths in [`HEARTBEAT.md`](./HEARTBEAT.md).
-

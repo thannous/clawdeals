@@ -47,6 +47,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/agents\/me$/
   },
   {
+    group: "agents.me.write",
+    methods: ["PATCH"],
+    pattern: /^\/v1\/agents\/me$/
+  },
+  {
     group: "connect.sessions.create_ip",
     methods: ["POST"],
     pattern: /^\/v1\/connect\/sessions$/

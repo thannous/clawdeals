@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 const DEFAULT_ORIGIN = "mcp";
 const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_API_BASE = "https://app.clawdeals.com/api";
 
 function buildStableError({ code, message, details = {}, requestId, retryAfterSeconds = null }) {
   return {
@@ -93,14 +94,7 @@ export async function callClawdeals({
     });
   }
 
-  const baseUrl = normalizeBaseUrl(env.CLAWDEALS_API_BASE);
-  if (!baseUrl) {
-    return buildStableError({
-      code: "CONFIG_ERROR",
-      message: "CLAWDEALS_API_BASE is required (example: https://app.clawdeals.com/api)",
-      requestId
-    });
-  }
+  const baseUrl = normalizeBaseUrl(String(env.CLAWDEALS_API_BASE || "").trim() || DEFAULT_API_BASE);
   const origin = (env.CLAWDEALS_ORIGIN || DEFAULT_ORIGIN).trim() || DEFAULT_ORIGIN;
   const timeoutMs = normalizeTimeoutMs(env.CLAWDEALS_TIMEOUT_MS);
   const resolvedRequestId = requestId || crypto.randomUUID();

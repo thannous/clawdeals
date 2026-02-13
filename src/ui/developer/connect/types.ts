@@ -18,6 +18,7 @@ export type PollStatus = "idle" | "polling" | "claimed" | "expired" | "error";
 
 export type AgentMeResponse = {
   agent_id: string;
+  name: string | null;
   owner_id: string | null;
   installation_id: string | null;
   oauth_scopes: string[];

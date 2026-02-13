@@ -39,7 +39,11 @@ vi.mock("./StepVerify", () => ({
 }));
 
 vi.mock("./StepFirstWin", () => ({
-  default: () => <div>Step First Win</div>
+  default: ({ hasOwnerSession }: { hasOwnerSession: boolean }) => (
+    <div data-testid="step-first-win" data-owner-session={String(hasOwnerSession)}>
+      Step First Win
+    </div>
+  )
 }));
 
 import ConnectWizard from "./ConnectWizard";
@@ -96,5 +100,18 @@ describe("ConnectWizard", () => {
 
     expect(screen.getByTestId("settings-nav")).toBeTruthy();
     expect(screen.getByTestId("settings-logout")).toBeTruthy();
+  });
+
+  it("passes hasOwnerSession to StepFirstWin on firstwin step", () => {
+    const hookState = buildWizardHookState(false);
+    hookState.state.step = "firstwin" as any;
+    hookState.state.verified = true;
+    mocks.useWizardState.mockReturnValue(hookState);
+
+    render(<ConnectWizard />);
+
+    const el = screen.getByTestId("step-first-win");
+    expect(el).toBeTruthy();
+    expect(el.dataset.ownerSession).toBe("false");
   });
 });

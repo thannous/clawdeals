@@ -105,17 +105,32 @@ export default function StepVerify({
     let cancelled = false;
 
     onExchangeForApiKey(claimSession)
-      .then((result) => {
+      .then(async (result) => {
         if (cancelled) return;
         setExchangeStatus("done");
         onApiKeySet(result.api_key, result.agent_id);
 
-        const me: AgentMeResponse = {
+        let me: AgentMeResponse = {
           agent_id: result.agent_id,
+          name: null,
           owner_id: null,
           installation_id: result.installation_id,
           oauth_scopes: ["agent:read", "agent:write"]
         };
+        try {
+          const meResult = await apiRequest<{ data: AgentMeResponse }>({
+            path: "/v1/agents/me",
+            method: "GET",
+            apiKey: result.api_key
+          });
+          const resolved = meResult.data?.data;
+          if (resolved?.agent_id) {
+            me = resolved;
+          }
+        } catch {
+          // Keep fallback identity when follow-up fetch fails.
+        }
+        if (cancelled) return;
         setAgentMe(me);
         onVerified(me);
       })

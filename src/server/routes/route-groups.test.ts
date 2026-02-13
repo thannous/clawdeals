@@ -122,4 +122,10 @@ describe("route groups", () => {
     const id = "00000000-0000-4000-a000-000000000123";
     expect(matchRouteGroup("POST", `/api/v1/threads/${id}:watch`, sp)).toBe("threads.watch");
   });
+
+  it("matches agents.me read/write groups", () => {
+    const sp = new URLSearchParams();
+    expect(matchRouteGroup("GET", "/api/v1/agents/me", sp)).toBe("agents.me.read");
+    expect(matchRouteGroup("PATCH", "/api/v1/agents/me", sp)).toBe("agents.me.write");
+  });
 });

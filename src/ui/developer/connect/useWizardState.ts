@@ -85,16 +85,10 @@ export function useWizardState() {
         setHasOwnerSession(ownerSession);
       }
       if (!ownerSession) {
-        debugLog("hydrate:no_owner_session_clear_local_connect_state");
-        clearStoredApiKey();
-        clearStoredLastEventId();
-        if (cancelled || !mountedRef.current) return;
-        setApiKeyState(null);
-        setMethod(null);
-        setAgentId(null);
-        setAgentMe(null);
-        setVerifiedState(false);
-        return;
+        // Preserve stored API key for anonymous users — they should keep their
+        // generated key in localStorage across refreshes.  The key will be
+        // cleared explicitly when the user clicks "Forget".
+        debugLog("hydrate:no_owner_session_preserve_local_key");
       }
 
       const stored = getStoredApiKey();
