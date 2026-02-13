@@ -1,36 +1,173 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import ClaimStatusBadge from "./ClaimStatusBadge";
 import { claimSession, denySession, fetchClaimSession } from "./api";
-import type { ClaimMode, ConnectSessionClaimView } from "./types";
+import type { ClaimLocale, ClaimMode, ConnectSessionClaimView } from "./types";
 
-const SCOPE_EXPLANATIONS: Record<string, string> = {
-  "agent:read": "Read listings, offers, and account state for this installation.",
-  "agent:write": "Create and update listings, offers, and messages.",
-  "approvals:read": "View pending approval requests from this installation.",
-  "approvals:write": "Approve or deny sensitive actions from this installation.",
-  "installations:read": "View connected app installation status and metadata."
+const SCOPE_EXPLANATIONS: Record<ClaimLocale, Record<string, string>> = {
+  en: {
+    "agent:read": "Read listings, offers, and account state for this installation.",
+    "agent:write": "Create and update listings, offers, and messages.",
+    "approvals:read": "View pending approval requests from this installation.",
+    "approvals:write": "Approve or deny sensitive actions from this installation.",
+    "installations:read": "View connected app installation status and metadata."
+  },
+  fr: {
+    "agent:read": "Lire les listings, offres et etat du compte pour cette installation.",
+    "agent:write": "Creer et mettre a jour listings, offres et messages.",
+    "approvals:read": "Voir les demandes de validation en attente pour cette installation.",
+    "approvals:write": "Valider ou refuser les actions sensibles de cette installation.",
+    "installations:read": "Voir le statut et les metadonnees des integrations connectees."
+  }
 };
 
-function describeScope(scope: string) {
-  return SCOPE_EXPLANATIONS[String(scope || "").trim()] || "Additional API access requested by this installation.";
+const COPY: Record<
+  ClaimLocale,
+  {
+    subtitle: string;
+    missingTokenTitle: string;
+    missingTokenBody: string;
+    loading: string;
+    errorTitle: string;
+    ownerSignInRequired: string;
+    ownerSignInBody: string;
+    ownerLogin: string;
+    client: string;
+    expires: string;
+    requestedPermissions: string;
+    none: string;
+    notClaimable: (status: string) => string;
+    alreadyApproved: string;
+    chooseAgent: string;
+    create: string;
+    attach: string;
+    ownerLimitReached: (limit: string) => string;
+    newAgentName: string;
+    requestedAgentDefault: string;
+    existingAgent: string;
+    existingAgentId: string;
+    agentOwnerHint: string;
+    successTitle: string;
+    signedInAs: string;
+    approving: string;
+    approveAndConnect: string;
+    refuse: string;
+    denyConfirm: string;
+    denyFailed: string;
+    selectAttachAgent: string;
+    claimFailed: string;
+    signInRequiredToApprove: string;
+    footerWarning: string;
+    in: (rel: string) => string;
+    expiredAgo: (rel: string) => string;
+  }
+> = {
+  en: {
+    subtitle: "Connect an external client to your Clawdeals owner account.",
+    missingTokenTitle: "Missing token",
+    missingTokenBody: "The claim link is incomplete.",
+    loading: "Loading...",
+    errorTitle: "Error",
+    ownerSignInRequired: "Owner sign-in required",
+    ownerSignInBody: "Sign in as owner in this tab, then approve this connection.",
+    ownerLogin: "Owner login",
+    client: "Client",
+    expires: "Expires",
+    requestedPermissions: "Requested Permissions",
+    none: "none",
+    notClaimable: (status) => `This session is not claimable (status=${status}).`,
+    alreadyApproved: "Connection already approved",
+    chooseAgent: "Choose agent",
+    create: "Create",
+    attach: "Attach",
+    ownerLimitReached: (limit) => `This owner already reached the agent limit (${limit}). Attach to an existing agent.`,
+    newAgentName: "New Agent Name",
+    requestedAgentDefault: "Defaulted from requested agent name.",
+    existingAgent: "Existing Agent",
+    existingAgentId: "Existing Agent ID",
+    agentOwnerHint: "Agent must belong to the same owner.",
+    successTitle: "Success",
+    signedInAs: "Signed in as",
+    approving: "Approving...",
+    approveAndConnect: "Approve & Connect",
+    refuse: "Refuse",
+    denyConfirm: "Refuse this connection request? This cannot be undone.",
+    denyFailed: "Deny failed",
+    selectAttachAgent: "Select an existing agent to attach.",
+    claimFailed: "Claim failed",
+    signInRequiredToApprove: "You must be signed in as owner to approve this connection.",
+    footerWarning: "If this wasn't expected, close this page. Never paste tokens into chat.",
+    in: (rel) => `in ${rel}`,
+    expiredAgo: (rel) => `expired ${rel} ago`
+  },
+  fr: {
+    subtitle: "Connectez un client externe a votre compte owner Clawdeals.",
+    missingTokenTitle: "Token manquant",
+    missingTokenBody: "Le lien de connexion est incomplet.",
+    loading: "Chargement...",
+    errorTitle: "Erreur",
+    ownerSignInRequired: "Connexion owner requise",
+    ownerSignInBody: "Connectez-vous en owner dans cet onglet, puis validez cette connexion.",
+    ownerLogin: "Connexion owner",
+    client: "Client",
+    expires: "Expiration",
+    requestedPermissions: "Permissions demandees",
+    none: "aucune",
+    notClaimable: (status) => `Cette session ne peut pas etre validee (status=${status}).`,
+    alreadyApproved: "Connexion deja validee",
+    chooseAgent: "Choisir un agent",
+    create: "Creer",
+    attach: "Attacher",
+    ownerLimitReached: (limit) => `Ce owner a deja atteint la limite d'agents (${limit}). Attachez un agent existant.`,
+    newAgentName: "Nom du nouvel agent",
+    requestedAgentDefault: "Nom initialise depuis la demande.",
+    existingAgent: "Agent existant",
+    existingAgentId: "ID agent existant",
+    agentOwnerHint: "L'agent doit appartenir au meme owner.",
+    successTitle: "Succes",
+    signedInAs: "Connecte en tant que",
+    approving: "Validation...",
+    approveAndConnect: "Valider et connecter",
+    refuse: "Refuser",
+    denyConfirm: "Refuser cette demande de connexion ? Cette action est irreversible.",
+    denyFailed: "Echec du refus",
+    selectAttachAgent: "Selectionnez un agent existant a attacher.",
+    claimFailed: "Validation echouee",
+    signInRequiredToApprove: "Vous devez etre connecte en owner pour valider cette connexion.",
+    footerWarning: "Si ce n'etait pas attendu, fermez cette page. Ne collez jamais de token dans un chat.",
+    in: (rel) => `dans ${rel}`,
+    expiredAgo: (rel) => `expire depuis ${rel}`
+  }
+};
+
+function describeScope(scope: string, locale: ClaimLocale) {
+  return SCOPE_EXPLANATIONS[locale][String(scope || "").trim()] ||
+    (locale === "fr"
+      ? "Acces API supplementaire demande par cette installation."
+      : "Additional API access requested by this installation.");
 }
 
-function normalizeClaimError(rawError: string, options: { ownerAgentsCount: number }) {
-  const message = String(rawError || "Claim failed");
+function normalizeClaimError(rawError: string, options: { ownerAgentsCount: number; locale: ClaimLocale }) {
+  const message = String(rawError || COPY[options.locale].claimFailed);
   if (/owner agent limit reached/i.test(message)) {
     if (options.ownerAgentsCount > 0) {
-      return "Agent limit reached for this owner. Select Attach and choose an existing agent.";
+      return options.locale === "fr"
+        ? "Limite d'agents atteinte pour ce owner. Selectionnez Attacher et choisissez un agent existant."
+        : "Agent limit reached for this owner. Select Attach and choose an existing agent.";
     }
-    return "Agent limit reached for this owner. Sign in with the right owner, or attach this installation to an existing agent.";
+    return options.locale === "fr"
+      ? "Limite d'agents atteinte pour ce owner. Connectez-vous avec le bon owner, ou attachez cette installation a un agent existant."
+      : "Agent limit reached for this owner. Sign in with the right owner, or attach this installation to an existing agent.";
   }
   if (/owner authentication required/i.test(message) || /unauthorized/i.test(message)) {
-    return "You must be signed in as owner to approve this connection.";
+    return COPY[options.locale].signInRequiredToApprove;
   }
   return message;
 }
 
-function formatExpires(expiresAt: string | null) {
+function formatExpires(expiresAt: string | null, locale: ClaimLocale) {
   if (!expiresAt) return { label: "\u2014", isExpired: false };
 
   const dt = new Date(expiresAt);
@@ -50,11 +187,44 @@ function formatExpires(expiresAt: string | null) {
   else if (minutes > 0) rel = `${minutes}m ${seconds % 60}s`;
   else rel = `${seconds}s`;
 
-  return { label: isExpired ? `expired ${rel} ago` : `in ${rel}`, isExpired };
+  return { label: isExpired ? COPY[locale].expiredAgo(rel) : COPY[locale].in(rel), isExpired };
+}
+
+function subscribeToNothing() {
+  return () => {};
 }
 
 export default function ClaimPage({ claimToken }: { claimToken: string }) {
-  const token = useMemo(() => String(claimToken || "").trim(), [claimToken]);
+  const router = useRouter();
+  const locale: ClaimLocale = router.locale === "fr" ? "fr" : "en";
+  const copy = COPY[locale];
+  const pathToken = useSyncExternalStore(
+    subscribeToNothing,
+    () => {
+      if (typeof window === "undefined") return "";
+      const match = window.location.pathname.match(/^\/(?:fr\/|en\/)?claim\/([^/?#]+)/);
+      if (!match?.[1]) return "";
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        return match[1];
+      }
+    },
+    () => ""
+  );
+  const asPathNoLocale = useMemo(
+    () => ((router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/"),
+    [router.asPath]
+  );
+  const token = useMemo(() => {
+    const fromProp = String(claimToken || "").trim();
+    if (fromProp) return fromProp;
+    return String(pathToken || "").trim();
+  }, [claimToken, pathToken]);
+  const localeSwitchHref = useMemo(
+    () => (token ? `/claim/${encodeURIComponent(token)}` : asPathNoLocale),
+    [token, asPathNoLocale]
+  );
 
   const [session, setSession] = useState<ConnectSessionClaimView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +255,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     fetchClaimSession(token).then((res) => {
       if (cancelled) return;
       if (!res.ok) {
-        setError(res.error || "Failed to load claim session");
+        setError(res.error || (locale === "fr" ? "Impossible de charger la session de connexion" : "Failed to load claim session"));
         return;
       }
       setError(null);
@@ -101,9 +271,9 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, locale]);
 
-  const expires = useMemo(() => formatExpires(session?.expires_at || null), [session?.expires_at]);
+  const expires = useMemo(() => formatExpires(session?.expires_at || null, locale), [session?.expires_at, locale]);
   const ownerAgents = useMemo(
     () => (Array.isArray(session?.owner_agents) ? session.owner_agents : []),
     [session]
@@ -128,7 +298,9 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         if (email) setOwnerEmail(String(email));
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [ownerContextAvailable]);
   const allowCreateAgent = session?.allow_create_agent !== false;
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
@@ -153,7 +325,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     if (!session) return;
     if (submitState === "loading") return;
     if (mode === "attach_agent" && !resolvedAttachAgentId) {
-      setSubmitError("Select an existing agent to attach.");
+      setSubmitError(copy.selectAttachAgent);
       setSubmitState("error");
       return;
     }
@@ -171,11 +343,11 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     });
 
     if (!resp.ok) {
-      const rawError = resp.error || "Claim failed";
+      const rawError = resp.error || copy.claimFailed;
       if (/owner agent limit reached/i.test(rawError) && ownerAgents.length > 0) {
         setMode("attach_agent");
       }
-      setSubmitError(normalizeClaimError(rawError, { ownerAgentsCount: ownerAgents.length }));
+      setSubmitError(normalizeClaimError(rawError, { ownerAgentsCount: ownerAgents.length, locale }));
       setSubmitState("error");
       queueMicrotask(() => feedbackRef.current?.focus());
       return;
@@ -195,12 +367,12 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     );
     setSubmitState("done");
     queueMicrotask(() => feedbackRef.current?.focus());
-  }, [session, submitState, token, mode, agentName, resolvedAttachAgentId, ownerAgents.length]);
+  }, [session, submitState, mode, resolvedAttachAgentId, token, agentName, copy, ownerAgents.length, locale]);
 
   const onDeny = useCallback(async () => {
     if (!session) return;
     if (submitState === "loading") return;
-    const confirmed = window.confirm("Refuse this connection request? This cannot be undone.");
+    const confirmed = window.confirm(copy.denyConfirm);
     if (!confirmed) return;
 
     setSubmitState("loading");
@@ -209,7 +381,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
     const resp = await denySession({ sessionId: session.session_id, claimToken: token });
     if (!resp.ok) {
-      setSubmitError(resp.error || "Deny failed");
+      setSubmitError(resp.error || copy.denyFailed);
       setSubmitState("error");
       queueMicrotask(() => feedbackRef.current?.focus());
       return;
@@ -227,7 +399,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     );
     setSubmitState("done");
     queueMicrotask(() => feedbackRef.current?.focus());
-  }, [session, submitState, token]);
+  }, [session, submitState, token, copy]);
 
   return (
     <div data-testid="claim-page" className="min-h-screen bg-bg relative overflow-hidden">
@@ -242,33 +414,51 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                 <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
                   <span className="text-primary">/ </span>CLAIM
                 </h1>
-                <p className="text-xs font-mono text-subtle">
-                  Connect an external client to your Clawdeals owner account.
-                </p>
+                <p className="text-xs font-mono text-subtle">{copy.subtitle}</p>
               </div>
-              {session?.status && (
-                <div data-testid="claim-status">
-                  <ClaimStatusBadge status={session.status} />
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <Link
+                  href={localeSwitchHref}
+                  locale="fr"
+                  className={`px-2 py-1 text-[10px] font-mono font-bold uppercase border rounded ${
+                    locale === "fr" ? "border-primary text-primary bg-primary/10" : "border-border text-subtle hover:text-text"
+                  }`}
+                >
+                  FR
+                </Link>
+                <Link
+                  href={localeSwitchHref}
+                  locale="en"
+                  className={`px-2 py-1 text-[10px] font-mono font-bold uppercase border rounded ${
+                    locale === "en" ? "border-primary text-primary bg-primary/10" : "border-border text-subtle hover:text-text"
+                  }`}
+                >
+                  EN
+                </Link>
+                {session?.status && (
+                  <div data-testid="claim-status">
+                    <ClaimStatusBadge status={session.status} locale={locale} />
+                  </div>
+                )}
+              </div>
             </div>
 
             {!token && (
               <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-error">Missing token</div>
-                <div className="text-xs font-mono text-muted mt-1">The claim link is incomplete.</div>
+                <div className="text-xs font-mono text-error">{copy.missingTokenTitle}</div>
+                <div className="text-xs font-mono text-muted mt-1">{copy.missingTokenBody}</div>
               </div>
             )}
 
             {fetchState === "loading" && (
               <div className="border border-border bg-surface/40 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-subtle">Loading…</div>
+                <div className="text-xs font-mono text-subtle">{copy.loading}</div>
               </div>
             )}
 
             {error && (
               <div role="alert" aria-live="polite" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-error">Error</div>
+                <div className="text-xs font-mono text-error">{copy.errorTitle}</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
               </div>
             )}
@@ -277,31 +467,28 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
               <div data-testid="claim-loaded" className="space-y-4">
                 {!ownerContextAvailable && isPendingClaim && (
                   <div className="border border-warning/40 bg-warning/10 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-warning-muted uppercase">Owner sign-in required</div>
-                    <div className="text-xs font-mono text-muted mt-1">
-                      Sign in as owner in this tab, then approve this connection.
-                    </div>
-                    <a
+                    <div className="text-xs font-mono text-warning-muted uppercase">{copy.ownerSignInRequired}</div>
+                    <div className="text-xs font-mono text-muted mt-1">{copy.ownerSignInBody}</div>
+                    <Link
                       href={`/auth/login?next=${encodeURIComponent(`/claim/${token}`)}`}
+                      locale={locale}
                       className="inline-block mt-2 px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
                     >
-                      Owner login
-                    </a>
+                      {copy.ownerLogin}
+                    </Link>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-subtle uppercase">Client</div>
+                    <div className="text-xs font-mono text-subtle uppercase">{copy.client}</div>
                     <div className="text-xs font-mono text-text mt-1">
                       {session.client_type || "\u2014"}
-                      {session.client_version ? (
-                        <span className="text-muted"> v{session.client_version}</span>
-                      ) : null}
+                      {session.client_version ? <span className="text-muted"> v{session.client_version}</span> : null}
                     </div>
                   </div>
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-subtle uppercase">Expires</div>
+                    <div className="text-xs font-mono text-subtle uppercase">{copy.expires}</div>
                     <div className="text-xs font-mono text-text mt-1">
                       {session.expires_at ? new Date(session.expires_at).toISOString() : "\u2014"}
                     </div>
@@ -310,18 +497,15 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                 </div>
 
                 <div className="border border-border bg-surface/40 rounded clip-corner p-3 space-y-2">
-                  <div className="text-xs font-mono text-subtle uppercase">Requested Permissions</div>
+                  <div className="text-xs font-mono text-subtle uppercase">{copy.requestedPermissions}</div>
                   <div className="space-y-2" data-testid="claim-requested-scopes">
                     {(session.requested_scopes || []).length === 0 && (
-                      <span className="text-xs font-mono text-muted">none</span>
+                      <span className="text-xs font-mono text-muted">{copy.none}</span>
                     )}
                     {(session.requested_scopes || []).map((scope) => (
-                      <div
-                        key={scope}
-                        className="border border-border rounded bg-surface/20 px-2 py-1 space-y-1"
-                      >
+                      <div key={scope} className="border border-border rounded bg-surface/20 px-2 py-1 space-y-1">
                         <div className="text-xs font-mono font-bold uppercase text-subtle">{scope}</div>
-                        <div className="text-xs font-mono text-muted">{describeScope(scope)}</div>
+                        <div className="text-xs font-mono text-muted">{describeScope(scope, locale)}</div>
                       </div>
                     ))}
                   </div>
@@ -329,15 +513,13 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                 {session.status !== "PENDING_CLAIM" && (
                   <div className="border border-border bg-surface-alt/20 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-subtle">
-                      This session is not claimable (status={session.status}).
-                    </div>
+                    <div className="text-xs font-mono text-subtle">{copy.notClaimable(session.status)}</div>
                   </div>
                 )}
 
                 {isClaimFinalized && (
                   <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-secondary uppercase">Connection already approved</div>
+                    <div className="text-xs font-mono text-secondary uppercase">{copy.alreadyApproved}</div>
                     <div className="text-xs font-mono text-muted mt-1">
                       status={String(session.status)} agent_id={String(session.agent_id || result?.agent_id || "\u2014")}
                     </div>
@@ -348,7 +530,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   <>
                     <div className="border border-border rounded clip-corner p-4 space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="text-xs font-mono text-subtle uppercase">Choose agent</div>
+                        <div className="text-xs font-mono text-subtle uppercase">{copy.chooseAgent}</div>
                         <div className="flex items-center gap-2">
                           {showCreateMode && (
                             <button
@@ -361,7 +543,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                                   : "border-border text-muted hover:border-border-strong hover:text-text"
                               }`}
                             >
-                              Create
+                              {copy.create}
                             </button>
                           )}
                           <button
@@ -374,26 +556,20 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                                 : "border-border text-muted hover:border-border-strong hover:text-text"
                             }`}
                           >
-                            Attach
+                            {copy.attach}
                           </button>
                         </div>
                       </div>
                       {ownerContextAvailable && !allowCreateAgent && (
-                        <div
-                          data-testid="claim-agent-limit-note"
-                          className="border border-border bg-surface-alt/20 rounded clip-corner p-3"
-                        >
-                          <div className="text-xs font-mono text-subtle">
-                            This owner already reached the agent limit ({String(session.owner_agent_limit || 1)}). Attach to
-                            an existing agent.
-                          </div>
+                        <div data-testid="claim-agent-limit-note" className="border border-border bg-surface-alt/20 rounded clip-corner p-3">
+                          <div className="text-xs font-mono text-subtle">{copy.ownerLimitReached(String(session.owner_agent_limit || 1))}</div>
                         </div>
                       )}
 
                       {mode === "create_agent" && showCreateMode && (
                         <div>
                           <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="claim-agent-name">
-                            New Agent Name
+                            {copy.newAgentName}
                           </label>
                           <input
                             id="claim-agent-name"
@@ -409,7 +585,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                             spellCheck={false}
                             className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors disabled:opacity-50"
                           />
-                          <div className="text-xs font-mono text-muted mt-1">Defaulted from requested agent name.</div>
+                          <div className="text-xs font-mono text-muted mt-1">{copy.requestedAgentDefault}</div>
                         </div>
                       )}
 
@@ -417,11 +593,8 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                         <div>
                           {ownerContextAvailable && ownerAgents.length > 0 ? (
                             <>
-                              <label
-                                className="block text-xs font-mono text-subtle uppercase mb-1"
-                                htmlFor="claim-attach-agent-select"
-                              >
-                                Existing Agent
+                              <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="claim-attach-agent-select">
+                                {copy.existingAgent}
                               </label>
                               <select
                                 id="claim-attach-agent-select"
@@ -443,11 +616,8 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                             </>
                           ) : (
                             <>
-                              <label
-                                className="block text-xs font-mono text-subtle uppercase mb-1"
-                                htmlFor="claim-attach-agent-id"
-                              >
-                                Existing Agent ID
+                              <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="claim-attach-agent-id">
+                                {copy.existingAgentId}
                               </label>
                               <input
                                 id="claim-attach-agent-id"
@@ -466,21 +636,33 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                               />
                             </>
                           )}
-                          <div className="text-xs font-mono text-muted mt-1">Agent must belong to the same owner.</div>
+                          <div className="text-xs font-mono text-muted mt-1">{copy.agentOwnerHint}</div>
                         </div>
                       )}
                     </div>
 
                     {submitError && (
-                      <div ref={feedbackRef} tabIndex={-1} role="alert" aria-live="assertive" className="border border-error/30 bg-error/5 rounded clip-corner p-3 focus:outline-none">
-                        <div className="text-xs font-mono text-error">Error</div>
+                      <div
+                        ref={feedbackRef}
+                        tabIndex={-1}
+                        role="alert"
+                        aria-live="assertive"
+                        className="border border-error/30 bg-error/5 rounded clip-corner p-3 focus:outline-none"
+                      >
+                        <div className="text-xs font-mono text-error">{copy.errorTitle}</div>
                         <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
                       </div>
                     )}
 
                     {submitState === "done" && result && (
-                      <div ref={feedbackRef} tabIndex={-1} role="status" aria-live="polite" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 focus:outline-none">
-                        <div className="text-xs font-mono text-secondary">Success</div>
+                      <div
+                        ref={feedbackRef}
+                        tabIndex={-1}
+                        role="status"
+                        aria-live="polite"
+                        className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 focus:outline-none"
+                      >
+                        <div className="text-xs font-mono text-secondary">{copy.successTitle}</div>
                         <div className="text-xs font-mono text-muted mt-1">
                           status={String(result.status || session.status)} agent_id={String(result.agent_id || session.agent_id || "\u2014")}
                         </div>
@@ -489,7 +671,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
 
                     {ownerEmail && (
                       <div className="text-xs font-mono text-subtle">
-                        Signed in as <span className="text-text">{ownerEmail}</span>
+                        {copy.signedInAs} <span className="text-text">{ownerEmail}</span>
                       </div>
                     )}
 
@@ -500,7 +682,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                         onClick={onClaim}
                         className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                       >
-                        {submitState === "loading" ? "Approving..." : "Approve & Connect"}
+                        {submitState === "loading" ? copy.approving : copy.approveAndConnect}
                       </button>
                       <button
                         data-testid="claim-deny"
@@ -508,7 +690,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                         onClick={onDeny}
                         className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
                       >
-                        Refuse
+                        {copy.refuse}
                       </button>
                     </div>
                   </>
@@ -517,9 +699,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
             )}
           </div>
 
-          <div className="text-xs font-mono text-subtle">
-            If this wasn’t expected, close this page. Never paste tokens into chat.
-          </div>
+          <div className="text-xs font-mono text-subtle">{copy.footerWarning}</div>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import type { ConnectSessionStatus } from "./types";
+import type { ClaimLocale, ConnectSessionStatus } from "./types";
 
 function badgeClass(status: ConnectSessionStatus | string) {
   switch (status) {
@@ -17,15 +17,33 @@ function badgeClass(status: ConnectSessionStatus | string) {
   }
 }
 
-export default function ClaimStatusBadge({ status }: { status: ConnectSessionStatus | string }) {
+function statusLabel(status: ConnectSessionStatus | string, locale: ClaimLocale) {
+  const value = String(status || "").toUpperCase();
+  if (locale === "fr") {
+    if (value === "PENDING_CLAIM") return "EN_ATTENTE";
+    if (value === "CLAIMED") return "VALIDE";
+    if (value === "DELIVERED") return "LIVRE";
+    if (value === "EXPIRED") return "EXPIRE";
+    if (value === "CANCELLED") return "ANNULE";
+    return value || "\u2014";
+  }
+  return value || "\u2014";
+}
+
+export default function ClaimStatusBadge({
+  status,
+  locale = "en"
+}: {
+  status: ConnectSessionStatus | string;
+  locale?: ClaimLocale;
+}) {
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border ${badgeClass(
         status
       )}`}
     >
-      {status || "\u2014"}
+      {statusLabel(status, locale)}
     </span>
   );
 }
-

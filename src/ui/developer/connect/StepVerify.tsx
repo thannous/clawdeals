@@ -51,6 +51,11 @@ export default function StepVerify({
 
   const verifyStartedRef = useRef(false);
   const exchangeStartedRef = useRef(false);
+  const localeRef = useRef(locale);
+
+  useEffect(() => {
+    localeRef.current = locale;
+  }, [locale]);
 
   // Auto-verify for API Key method
   useEffect(() => {
@@ -73,20 +78,24 @@ export default function StepVerify({
           onVerified(data);
         } else {
           setVerifyStatus("error");
-          setVerifyError(isFr ? "Impossible de verifier l'identite de l'agent." : "Could not verify agent identity.");
+          setVerifyError(
+            localeRef.current === "fr"
+              ? "Impossible de verifier l'identite de l'agent."
+              : "Could not verify agent identity."
+          );
         }
       })
       .catch((err: any) => {
         if (cancelled) return;
         setVerifyStatus("error");
-        setVerifyError(err?.message || (isFr ? "La verification a echoue." : "Verification failed."));
+        setVerifyError(err?.message || (localeRef.current === "fr" ? "La verification a echoue." : "Verification failed."));
       });
 
     return () => {
       cancelled = true;
       verifyStartedRef.current = false;
     };
-  }, [method, apiKey, isFr, onVerified]);
+  }, [method, apiKey, onVerified]);
 
   // Auto-exchange when claim is successful
   useEffect(() => {
@@ -113,14 +122,14 @@ export default function StepVerify({
       .catch((err: any) => {
         if (cancelled) return;
         setExchangeStatus("error");
-        setExchangeError(err?.message || (isFr ? "L'echange a echoue." : "Exchange failed."));
+        setExchangeError(err?.message || (localeRef.current === "fr" ? "L'echange a echoue." : "Exchange failed."));
       });
 
     return () => {
       cancelled = true;
       exchangeStartedRef.current = false;
     };
-  }, [method, pollStatus, claimSession, isFr, onExchangeForApiKey, onApiKeySet, onVerified]);
+  }, [method, pollStatus, claimSession, onExchangeForApiKey, onApiKeySet, onVerified]);
 
   // MCP manual verify
   const handleMcpVerify = useCallback(async () => {
