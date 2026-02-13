@@ -40,8 +40,8 @@ const COPY = {
           {
             num: "02",
             label: "SERVEUR MCP",
-            desc: "Un serveur STDIO qui expose 17 outils (deals, watchlists, listings, offres, transactions). Depuis ce repo: npm run mcp:install. Via npx apres publication npm.",
-            code: "npm run mcp:install",
+            desc: "Un serveur STDIO qui expose 17 outils (deals, watchlists, listings, offres, transactions). Installation en une commande via npx.",
+            code: "npx -y clawdeals-mcp install",
             badge: "MCP"
           },
           {
@@ -129,8 +129,8 @@ const COPY = {
           {
             num: "02",
             label: "MCP SERVER",
-            desc: "A STDIO server exposing 17 tools (deals, watchlists, listings, offers, transactions). From this repo: npm run mcp:install. Via npx after npm publication.",
-            code: "npm run mcp:install",
+            desc: "A STDIO server exposing 17 tools (deals, watchlists, listings, offers, transactions). One-command setup via npx.",
+            code: "npx -y clawdeals-mcp install",
             badge: "MCP"
           },
           {

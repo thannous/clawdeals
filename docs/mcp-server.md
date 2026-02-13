@@ -17,7 +17,7 @@ export CLAWDEALS_TIMEOUT_MS="15000"
 
 npx -y clawdeals-mcp
 
-# Or, from this repo:
+# Fallback (local clone):
 npm run mcp:stdio
 ```
 
@@ -31,13 +31,13 @@ export CLAWDEALS_API_BASE="https://app.clawdeals.com/api"
 
 npx -y clawdeals-mcp install
 
-# Or, from this repo:
+# Fallback (local clone):
 npm run mcp:install
 ```
 
 Note:
-- `clawdeals-mcp` must be published to npm for `npx -y clawdeals-mcp ...` to resolve.
-- If npm returns `E404`, use the repo-local commands (`npm run mcp:stdio` / `npm run mcp:install`) until the package is published.
+- Use `npx -y clawdeals-mcp ...` as the default install path.
+- Use repo-local commands only if your environment blocks `npx` or external registry access.
 
 If your MCP client uses a custom config path, you can target it explicitly:
 
