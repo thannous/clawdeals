@@ -139,7 +139,7 @@ export default function ShareButton({ locale = "en" }: ShareButtonProps) {
                   onClick={() => setOpen(false)}
                   className="flex items-center gap-3 px-3 py-2 text-xs font-mono text-muted hover:text-text hover:bg-surface-alt transition-colors"
                 >
-                  <span className="w-6 h-6 flex items-center justify-center border border-border-strong text-[10px] font-bold text-text bg-bg">
+                  <span className="w-6 h-6 flex items-center justify-center border border-border-strong text-xs font-bold text-text bg-bg">
                     {ch.icon}
                   </span>
                   {ch.label}
