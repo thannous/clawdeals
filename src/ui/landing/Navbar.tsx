@@ -150,7 +150,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
             <button
               type="button"
               onClick={() => mobileSettings.setOpen((p) => !p)}
-              className="h-9 w-9 border border-border flex items-center justify-center text-muted hover:text-text hover:border-border-strong transition-colors"
+              className="h-9 w-9 border border-primary flex items-center justify-center text-primary hover:bg-primary/10 hover:border-primary transition-colors"
               aria-label="Settings"
             >
               <Settings className="w-4 h-4" />

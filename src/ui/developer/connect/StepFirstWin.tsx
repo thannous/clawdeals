@@ -2,18 +2,20 @@ import Link from "next/link";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 
 import { maskApiKey } from "../api";
-import type { AgentMeResponse } from "./types";
+import type { AgentMeResponse, ConnectLocale } from "./types";
 
 function subscribeToNothing() {
   return () => {};
 }
 
 type Props = {
+  locale: ConnectLocale;
   apiKey: string | null;
   agentMe: AgentMeResponse | null;
 };
 
-export default function StepFirstWin({ apiKey, agentMe }: Props) {
+export default function StepFirstWin({ locale, apiKey, agentMe }: Props) {
+  const isFr = locale === "fr";
   const baseUrl = useSyncExternalStore(
     subscribeToNothing,
     () => window.location.origin,
@@ -53,9 +55,11 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
           <span className="relative flex h-3 w-3">
             <span className="relative inline-flex rounded-full h-3 w-3 bg-success" />
           </span>
-          <h2 className="text-2xl font-bold tracking-tight">{"You're connected"}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{isFr ? "Connexion etablie" : "You're connected"}</h2>
         </div>
-        <p className="text-muted font-mono text-sm">Start building with your first action.</p>
+        <p className="text-muted font-mono text-sm">
+          {isFr ? "Commencez avec votre premiere action." : "Start building with your first action."}
+        </p>
       </div>
 
       {/* Agent info summary */}
@@ -97,13 +101,15 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
           className="group border border-primary bg-surface p-5 space-y-2 clip-corner hover:bg-primary/5 transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-primary transition-colors">
-            Create a watchlist
+            {isFr ? "Creer une watchlist" : "Create a watchlist"}
           </div>
           <div className="text-xs font-mono text-subtle">
-            Stop manually checking. Get alerts when deals match your criteria.
+            {isFr
+              ? "Arretez la surveillance manuelle. Recevez des alertes quand des deals correspondent a vos criteres."
+              : "Stop manually checking. Get alerts when deals match your criteria."}
           </div>
           <div className="text-xs font-mono font-bold text-primary uppercase tracking-wider">
-            Get started
+            {isFr ? "Demarrer" : "Get started"}
           </div>
         </Link>
 
@@ -112,13 +118,15 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
           className="group border border-border bg-surface p-5 space-y-2 clip-corner hover:border-border-strong transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-text transition-colors">
-            Browse deals
+            {isFr ? "Parcourir les deals" : "Browse deals"}
           </div>
           <div className="text-xs font-mono text-subtle">
-            {"Explore live deals and see what's trading right now."}
+            {isFr
+              ? "Explorez les deals en direct et voyez ce qui se traite en ce moment."
+              : "Explore live deals and see what's trading right now."}
           </div>
           <div className="text-xs font-mono font-bold text-subtle uppercase tracking-wider group-hover:text-text transition-colors">
-            Explore
+            {isFr ? "Explorer" : "Explore"}
           </div>
         </Link>
 
@@ -127,13 +135,13 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
           className="group border border-border bg-surface p-5 space-y-2 clip-corner hover:border-border-strong transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-text transition-colors">
-            Events viewer
+            {isFr ? "Lecteur d'evenements" : "Events viewer"}
           </div>
           <div className="text-xs font-mono text-subtle">
-            Watch real-time SSE events from your agent.
+            {isFr ? "Suivez les evenements SSE en temps reel de votre agent." : "Watch real-time SSE events from your agent."}
           </div>
           <div className="text-xs font-mono font-bold text-subtle uppercase tracking-wider group-hover:text-text transition-colors">
-            Open
+            {isFr ? "Ouvrir" : "Open"}
           </div>
         </Link>
       </div>
@@ -153,7 +161,7 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          Developer resources
+          {isFr ? "Ressources developpeur" : "Developer resources"}
         </button>
 
         {devOpen && (
@@ -161,7 +169,9 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
             {/* curl snippet */}
             {curlSnippet && (
               <div className="border border-border bg-bg p-4 space-y-2">
-                <div className="text-xs font-mono uppercase tracking-widest text-subtle">Test the API</div>
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">
+                  {isFr ? "Tester l'API" : "Test the API"}
+                </div>
                 <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
                   {curlSnippet}
                 </pre>
@@ -169,7 +179,7 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
                   onClick={() => handleCopy(curlSnippet, "curl")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "curl" ? "Copied!" : "Copy curl"}
+                  {copiedField === "curl" ? (isFr ? "Copie." : "Copied!") : (isFr ? "Copier curl" : "Copy curl")}
                 </button>
               </div>
             )}
@@ -177,9 +187,13 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
             {/* OpenClaw snippet */}
             {openClawSnippet && (
               <div className="border border-border bg-bg p-4 space-y-2">
-                <div className="text-xs font-mono uppercase tracking-widest text-subtle">Connect OpenClaw</div>
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">
+                  {isFr ? "Connecter OpenClaw" : "Connect OpenClaw"}
+                </div>
                 <div className="text-xs font-mono text-subtle">
-                  Add the skill by URL, then set env vars in OpenClaw.
+                  {isFr
+                    ? "Ajoutez le skill par URL, puis configurez les variables d'environnement dans OpenClaw."
+                    : "Add the skill by URL, then set env vars in OpenClaw."}
                 </div>
                 <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
                   {openClawSnippet}
@@ -188,7 +202,7 @@ export default function StepFirstWin({ apiKey, agentMe }: Props) {
                   onClick={() => handleCopy(openClawSnippet, "openclaw")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "openclaw" ? "Copied!" : "Copy OpenClaw"}
+                  {copiedField === "openclaw" ? (isFr ? "Copie." : "Copied!") : (isFr ? "Copier OpenClaw" : "Copy OpenClaw")}
                 </button>
               </div>
             )}

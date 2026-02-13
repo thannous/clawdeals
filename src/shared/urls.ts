@@ -32,6 +32,10 @@ export function getPublicAppEntryHref(localePrefix = ""): string {
   return joinUrl(configured, entryPath);
 }
 
+export function getPublicLandingUrl(): string {
+  return normalizeBaseUrl(process.env.NEXT_PUBLIC_LANDING_URL || "") || "/";
+}
+
 export function getPublicApiBaseUrl(): string {
   // When set, landing can call the API cross-origin (e.g. www -> app).
   // When empty, callers should use relative URLs (same-origin).

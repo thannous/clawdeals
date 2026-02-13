@@ -63,6 +63,6 @@ describe("SettingsNav logout", () => {
     expect(mocks.clearStoredApiKey).toHaveBeenCalledTimes(1);
     expect(mocks.clearStoredLastEventId).toHaveBeenCalledTimes(1);
     expect(mocks.clearStoredOwnerAuth).toHaveBeenCalledTimes(1);
-    expect(mocks.replace).toHaveBeenCalledWith("/auth/login");
+    expect(mocks.replace).toHaveBeenCalledWith("/auth/login", undefined, { locale: "en" });
   });
 });
