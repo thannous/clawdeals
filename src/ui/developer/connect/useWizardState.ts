@@ -5,7 +5,13 @@ import { clearStoredApiKey, clearStoredLastEventId, getStoredApiKey, setStoredAp
 import type { AgentMeResponse, ConnectionMethod, ConnectSessionData, WizardStep } from "./types";
 
 const AUTO_VERIFY_TIMEOUT_MS = 8000;
+const OWNER_SESSION_RECONCILE_INTERVAL_MS = 5000;
 const DEBUG_PREFIX = "[start.wizard]";
+
+type OwnerSessionProbe = {
+  hasSession: boolean;
+  ownerId: string | null;
+};
 
 function debugLog(event: string, payload?: Record<string, unknown>) {
   if (process.env.NODE_ENV === "production") return;
@@ -14,6 +20,29 @@ function debugLog(event: string, payload?: Record<string, unknown>) {
     return;
   }
   console.info(DEBUG_PREFIX, event);
+}
+
+async function probeOwnerSession(): Promise<OwnerSessionProbe> {
+  try {
+    const resp = await fetch("/api/v1/auth/me", {
+      method: "GET",
+      cache: "no-store"
+    });
+    if (resp.status === 401) {
+      return { hasSession: false, ownerId: null };
+    }
+    if (!resp.ok) {
+      debugLog("owner_session_probe_non_401_preserve_local_state", { status: resp.status });
+      // Only explicit unauthenticated responses should clear local connect state.
+      return { hasSession: true, ownerId: null };
+    }
+    const body = await resp.json().catch(() => null);
+    const ownerId = body?.data?.owner_id ? String(body.data.owner_id) : null;
+    return { hasSession: true, ownerId };
+  } catch {
+    // Keep local state on transient network failures.
+    return { hasSession: true, ownerId: null };
+  }
 }
 
 export type WizardState = {
@@ -46,6 +75,65 @@ export function useWizardState() {
   const [hasOwnerSession, setHasOwnerSession] = useState(false);
 
   const mountedRef = useRef(true);
+  const claimInFlightRef = useRef(false);
+
+  const tryAutoClaim = useCallback(
+    async ({
+      key,
+      ownerId,
+      me,
+      source
+    }: {
+      key: string;
+      ownerId: string | null;
+      me: AgentMeResponse;
+      source: "hydrate" | "reconcile";
+    }) => {
+      if (!ownerId || !me?.agent_id) return me;
+      if (me.owner_id === ownerId) return me;
+      if (claimInFlightRef.current) return me;
+
+      claimInFlightRef.current = true;
+      debugLog(`${source}:auto_claim_start`, {
+        agent_id: me.agent_id,
+        current_owner_id: me.owner_id || null,
+        target_owner_id: ownerId
+      });
+
+      try {
+        await apiRequest({
+          path: "/v1/agents/me/claim",
+          method: "POST",
+          apiKey: key,
+          body: {}
+        });
+        const claimed = await apiRequest<{ data: AgentMeResponse }>({
+          path: "/v1/agents/me",
+          method: "GET",
+          apiKey: key
+        });
+        const claimedData = claimed.data?.data;
+        if (claimedData?.agent_id) {
+          debugLog(`${source}:auto_claim_success`, {
+            agent_id: claimedData.agent_id,
+            owner_id: claimedData.owner_id || null
+          });
+          return claimedData;
+        }
+      } catch (claimErr: any) {
+        debugLog(`${source}:auto_claim_failed`, {
+          message: String(claimErr?.message || "unknown_error"),
+          code: String(claimErr?.code || ""),
+          status: claimErr?.status || null
+        });
+      } finally {
+        claimInFlightRef.current = false;
+      }
+
+      return me;
+    },
+    []
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -60,27 +148,10 @@ export function useWizardState() {
   useEffect(() => {
     let cancelled = false;
 
-    const hasOwnerSession = async () => {
-      try {
-        const resp = await fetch("/api/v1/auth/me", {
-          method: "GET",
-          cache: "no-store"
-        });
-        if (resp.status === 401) return false;
-        if (!resp.ok) {
-          debugLog("hydrate:owner_session_probe_non_401_preserve_local_state", { status: resp.status });
-        }
-        // Only explicit unauthenticated responses should clear local connect state.
-        return true;
-      } catch {
-        // Keep local state on transient network failures.
-        return true;
-      }
-    };
-
     const hydrate = async () => {
       debugLog("hydrate:start");
-      const ownerSession = await hasOwnerSession();
+      const ownerProbe = await probeOwnerSession();
+      const ownerSession = ownerProbe.hasSession;
       if (!cancelled && mountedRef.current) {
         setHasOwnerSession(ownerSession);
       }
@@ -118,9 +189,15 @@ export function useWizardState() {
         if (cancelled || !mountedRef.current) return;
         const data = res.data?.data;
         if (data?.agent_id) {
-          debugLog("hydrate:verify_success", { agent_id: data.agent_id });
-          setAgentMe(data);
-          setAgentId(data.agent_id);
+          const resolvedData = await tryAutoClaim({
+            key: stored,
+            ownerId: ownerProbe.ownerId,
+            me: data,
+            source: "hydrate"
+          });
+          debugLog("hydrate:verify_success", { agent_id: resolvedData.agent_id });
+          setAgentMe(resolvedData);
+          setAgentId(resolvedData.agent_id);
           setMethod("apikey");
           setVerifiedState(true);
         } else {
@@ -148,7 +225,81 @@ export function useWizardState() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tryAutoClaim]);
+
+  // Reconcile owner session and auto-claim after initial mount (ex: user logs in later).
+  useEffect(() => {
+    if (!apiKey) return;
+    let cancelled = false;
+    let intervalHandle: ReturnType<typeof setInterval> | null = null;
+
+    const reconcile = async () => {
+      const ownerProbe = await probeOwnerSession();
+      if (cancelled || !mountedRef.current) return;
+      setHasOwnerSession(ownerProbe.hasSession);
+
+      if (!ownerProbe.ownerId) return;
+
+      let me = agentMe;
+      if (!me?.agent_id) {
+        try {
+          const meResp = await apiRequest<{ data: AgentMeResponse }>({
+            path: "/v1/agents/me",
+            method: "GET",
+            apiKey
+          });
+          me = meResp.data?.data || null;
+          if (me?.agent_id && !cancelled && mountedRef.current) {
+            setAgentMe(me);
+            setAgentId(me.agent_id);
+            setMethod("apikey");
+            setVerifiedState(true);
+          }
+        } catch {
+          return;
+        }
+      }
+
+      if (!me?.agent_id) return;
+
+      const resolved = await tryAutoClaim({
+        key: apiKey,
+        ownerId: ownerProbe.ownerId,
+        me,
+        source: "reconcile"
+      });
+
+      if (cancelled || !mountedRef.current) return;
+      if (resolved.agent_id !== me.agent_id || resolved.owner_id !== me.owner_id || resolved.name !== me.name) {
+        setAgentMe(resolved);
+        setAgentId(resolved.agent_id);
+      }
+    };
+
+    void reconcile();
+    intervalHandle = setInterval(() => {
+      void reconcile();
+    }, OWNER_SESSION_RECONCILE_INTERVAL_MS);
+
+    const onWindowFocus = () => {
+      void reconcile();
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void reconcile();
+      }
+    };
+
+    window.addEventListener("focus", onWindowFocus);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      if (intervalHandle) clearInterval(intervalHandle);
+      window.removeEventListener("focus", onWindowFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [agentMe, apiKey, tryAutoClaim]);
 
   const step = deriveStep(method, verified);
 

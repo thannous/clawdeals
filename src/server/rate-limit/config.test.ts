@@ -58,6 +58,13 @@ describe("getProfileForGroup", () => {
     expect(profile.buckets).toEqual([{ limit: 30, windowSeconds: 60 }]);
   });
 
+  it("returns agents.me.claim_owner profile", () => {
+    const profile = getProfileForGroup("agents.me.claim_owner");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("agent");
+    expect(profile.buckets).toEqual([{ limit: 20, windowSeconds: 3600 }]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

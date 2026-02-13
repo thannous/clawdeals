@@ -10,7 +10,7 @@ vi.mock("./owners", () => ({
 
 import { getSupabaseServiceClient } from "../db/supabase";
 import { ensureOwnerExists } from "./owners";
-import { addAgentTrustFlag, createAgentWithOwnerLimit } from "./agents";
+import { addAgentTrustFlag, claimUnownedAgentToOwner, createAgentWithOwnerLimit } from "./agents";
 
 const ensureOwnerExistsMock = vi.mocked(ensureOwnerExists);
 
@@ -101,6 +101,195 @@ describe("createAgentWithOwnerLimit", () => {
       status: 409,
       code: "OWNER_AGENT_LIMIT_REACHED",
       details: { owner_agent_limit: 1 }
+    });
+  });
+});
+
+describe("claimUnownedAgentToOwner", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("claims an unowned agent", async () => {
+    const selectChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "agent-1", owner_id: null, name: "Bot" },
+        error: null
+      })
+    };
+    const updateChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "agent-1", owner_id: "owner-1", name: "Bot" },
+        error: null
+      })
+    };
+    const client: any = {
+      from: vi.fn((table: string) => {
+        if (table !== "agents") throw new Error("unexpected table");
+        const state = { step: 0 };
+        return {
+          select: vi.fn(() => {
+            state.step += 1;
+            return state.step === 1 ? selectChain : updateChain;
+          }),
+          update: vi.fn(() => updateChain)
+        };
+      })
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    const out = await claimUnownedAgentToOwner({ agentId: "agent-1", ownerId: "owner-1" });
+    expect(out).toEqual({
+      agent_id: "agent-1",
+      owner_id: "owner-1",
+      name: "Bot",
+      claimed: true
+    });
+  });
+
+  it("is idempotent when agent is already owned by same owner", async () => {
+    const client: any = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: "agent-1", owner_id: "owner-1", name: "Bot" },
+            error: null
+          })
+        }))
+      }))
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    const out = await claimUnownedAgentToOwner({ agentId: "agent-1", ownerId: "owner-1" });
+    expect(out.claimed).toBe(false);
+    expect(out.owner_id).toBe("owner-1");
+  });
+
+  it("rejects claim when already owned by another owner", async () => {
+    const client: any = {
+      from: vi.fn((table: string) => {
+        if (table === "agents") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: "agent-1", owner_id: "owner-2", name: "Bot" },
+                error: null
+              })
+            }))
+          };
+        }
+        if (table === "owners") {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn().mockReturnThis(),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: {
+                  owner_id: "owner-2",
+                  email: "owner2@example.com",
+                  phone_e164: null,
+                  email_verified_at: null,
+                  phone_verified_at: null
+                },
+                error: null
+              })
+            }))
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      })
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    await expect(claimUnownedAgentToOwner({ agentId: "agent-1", ownerId: "owner-1" })).rejects.toMatchObject({
+      status: 409,
+      code: "AGENT_ALREADY_CLAIMED"
+    });
+  });
+
+  it("claims agent from placeholder owner without auth links or sessions", async () => {
+    const selectAgentChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "agent-1", owner_id: "owner-placeholder", name: "Bot" },
+        error: null
+      })
+    };
+    const selectOwnerChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: {
+          owner_id: "owner-placeholder",
+          email: null,
+          phone_e164: null,
+          email_verified_at: null,
+          phone_verified_at: null
+        },
+        error: null
+      })
+    };
+    const linksChain: any = {
+      eq: vi.fn().mockResolvedValue({ count: 0, error: null })
+    };
+    const sessionsChain: any = {
+      eq: vi.fn().mockResolvedValue({ count: 0, error: null })
+    };
+    const updateChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "agent-1", owner_id: "owner-1", name: "Bot" },
+        error: null
+      })
+    };
+
+    const client: any = {
+      from: vi.fn((table: string) => {
+        if (table === "agents") {
+          const step = (client.__agentStep = (client.__agentStep || 0) + 1);
+          if (step === 1) {
+            return {
+              select: vi.fn(() => selectAgentChain)
+            };
+          }
+          return {
+            update: vi.fn(() => {
+              updateChain.eq = vi.fn().mockReturnThis();
+              return updateChain;
+            })
+          };
+        }
+        if (table === "owners") {
+          return {
+            select: vi.fn(() => selectOwnerChain)
+          };
+        }
+        if (table === "owner_auth_links") {
+          return {
+            select: vi.fn(() => linksChain)
+          };
+        }
+        if (table === "owner_sessions") {
+          return {
+            select: vi.fn(() => sessionsChain)
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      })
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    const out = await claimUnownedAgentToOwner({ agentId: "agent-1", ownerId: "owner-1" });
+    expect(out).toEqual({
+      agent_id: "agent-1",
+      owner_id: "owner-1",
+      name: "Bot",
+      claimed: true
     });
   });
 });

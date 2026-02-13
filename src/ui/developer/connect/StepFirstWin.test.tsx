@@ -69,8 +69,7 @@ describe("StepFirstWin", () => {
 
     expect(screen.queryByText("Name your agent")).toBeNull();
     expect(screen.getByText("Owner Bot")).toBeTruthy();
-    // "Saved" only appears after an in-session save, not for pre-existing names
-    expect(screen.queryByText("Saved")).toBeNull();
+    expect(screen.getByText("Saved")).toBeTruthy();
   });
 
   it("saves a new name and replaces the prompt with confirmation", async () => {

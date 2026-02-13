@@ -221,6 +221,142 @@ export async function updateAgentName(agentId: string, name: string) {
   return data;
 }
 
+export async function claimUnownedAgentToOwner({
+  agentId,
+  ownerId
+}: {
+  agentId: string;
+  ownerId: string;
+}) {
+  const client = getSupabaseServiceClient();
+  const { data: existing, error: existingError } = await client
+    .from("agents")
+    .select("id,owner_id,name")
+    .eq("id", agentId)
+    .maybeSingle();
+  if (existingError) {
+    const mapped = mapSupabaseError(existingError);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  if (!existing?.id) {
+    throw Object.assign(new Error("Agent not found"), { status: 404, code: "NOT_FOUND" });
+  }
+
+  const currentOwnerId = existing.owner_id ? String(existing.owner_id) : null;
+  if (currentOwnerId && currentOwnerId !== ownerId) {
+    const { data: currentOwner, error: ownerError } = await client
+      .from("owners")
+      .select("owner_id,email,phone_e164,email_verified_at,phone_verified_at")
+      .eq("owner_id", currentOwnerId)
+      .maybeSingle();
+    if (ownerError) {
+      const mapped = mapSupabaseError(ownerError);
+      throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+    }
+
+    const hasOwnerIdentityData = Boolean(
+      currentOwner?.email ||
+        currentOwner?.phone_e164 ||
+        currentOwner?.email_verified_at ||
+        currentOwner?.phone_verified_at
+    );
+
+    let hasOwnerAuthLink = false;
+    let hasOwnerSession = false;
+    if (!hasOwnerIdentityData) {
+      const [{ count: linkCount, error: linksError }, { count: sessionCount, error: sessionsError }] = await Promise.all(
+        [
+          client
+            .from("owner_auth_links")
+            .select("link_id", { count: "exact", head: true })
+            .eq("owner_id", currentOwnerId),
+          client
+            .from("owner_sessions")
+            .select("session_id", { count: "exact", head: true })
+            .eq("owner_id", currentOwnerId)
+        ]
+      );
+      if (linksError) {
+        const mapped = mapSupabaseError(linksError);
+        throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+      }
+      if (sessionsError) {
+        const mapped = mapSupabaseError(sessionsError);
+        throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+      }
+      hasOwnerAuthLink = Number(linkCount || 0) > 0;
+      hasOwnerSession = Number(sessionCount || 0) > 0;
+    }
+
+    const canTransferPlaceholderOwner = !hasOwnerIdentityData && !hasOwnerAuthLink && !hasOwnerSession;
+    if (!canTransferPlaceholderOwner) {
+      throw Object.assign(new Error("Agent already linked to another owner"), {
+        status: 409,
+        code: "AGENT_ALREADY_CLAIMED"
+      });
+    }
+  }
+  if (currentOwnerId === ownerId) {
+    return {
+      agent_id: String(existing.id),
+      owner_id: ownerId,
+      name: existing.name ? String(existing.name) : null,
+      claimed: false
+    };
+  }
+
+  let updateQuery = client
+    .from("agents")
+    .update({ owner_id: ownerId, updated_at: new Date().toISOString() })
+    .eq("id", agentId);
+  if (currentOwnerId) {
+    updateQuery = updateQuery.eq("owner_id", currentOwnerId);
+  } else {
+    updateQuery = updateQuery.is("owner_id", null);
+  }
+  const { data: updated, error: updateError } = await updateQuery.select("id,owner_id,name").maybeSingle();
+  if (updateError) {
+    const mapped = mapSupabaseError(updateError);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+
+  // Lost update race: re-read and resolve deterministically.
+  if (!updated?.id) {
+    const { data: reread, error: rereadError } = await client
+      .from("agents")
+      .select("id,owner_id,name")
+      .eq("id", agentId)
+      .maybeSingle();
+    if (rereadError) {
+      const mapped = mapSupabaseError(rereadError);
+      throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+    }
+    const rereadOwnerId = reread?.owner_id ? String(reread.owner_id) : null;
+    if (!reread?.id) {
+      throw Object.assign(new Error("Agent not found"), { status: 404, code: "NOT_FOUND" });
+    }
+    if (rereadOwnerId && rereadOwnerId !== ownerId) {
+      throw Object.assign(new Error("Agent already linked to another owner"), {
+        status: 409,
+        code: "AGENT_ALREADY_CLAIMED"
+      });
+    }
+    return {
+      agent_id: String(reread.id),
+      owner_id: ownerId,
+      name: reread.name ? String(reread.name) : null,
+      claimed: rereadOwnerId === ownerId ? false : true
+    };
+  }
+
+  return {
+    agent_id: String(updated.id),
+    owner_id: updated.owner_id ? String(updated.owner_id) : ownerId,
+    name: updated.name ? String(updated.name) : null,
+    claimed: true
+  };
+}
+
 export async function addAgentTrustFlag(agentId: string, flag: string) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client.rpc("add_agent_trust_flag_v1", {

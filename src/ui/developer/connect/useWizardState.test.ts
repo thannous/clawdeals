@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiRequest } from "../api";
 import { getStoredApiKey, getStoredLastEventId, setStoredApiKey, setStoredLastEventId } from "../storage";
@@ -13,6 +13,10 @@ describe("useWizardState owner-session probe", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("preserves local connect state when /auth/me returns non-401", async () => {
@@ -62,4 +66,137 @@ describe("useWizardState owner-session probe", () => {
       expect.objectContaining({ path: "/v1/agents/me", method: "GET", apiKey: "cd_live_clear.me" })
     );
   });
+
+  it("auto-claims anonymous agent when owner session is present", async () => {
+    setStoredApiKey("cd_live_claim.me");
+    let claimed = false;
+    vi.mocked(apiRequest).mockImplementation(async (request: any) => {
+      if (request?.path === "/v1/agents/me" && request?.method === "GET") {
+        return {
+          data: {
+            data: {
+              agent_id: "agent-1",
+              name: "chacha",
+              owner_id: claimed ? "owner-1" : null,
+              installation_id: "install-1",
+              oauth_scopes: ["agent:read", "agent:write"]
+            }
+          },
+          headers: new Headers()
+        } as any;
+      }
+      if (request?.path === "/v1/agents/me/claim" && request?.method === "POST") {
+        claimed = true;
+        return {
+          data: {
+            data: {
+              agent_id: "agent-1",
+              owner_id: "owner-1",
+              name: "chacha",
+              claimed: true
+            }
+          },
+          headers: new Headers()
+        } as any;
+      }
+      throw new Error(`Unexpected apiRequest: ${request?.method} ${request?.path}`);
+    });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        data: {
+          owner_id: "owner-1"
+        }
+      })
+    } as any);
+
+    const { result } = renderHook(() => useWizardState());
+
+    await waitFor(() => {
+      expect(result.current.state.verified).toBe(true);
+      expect(result.current.state.agentMe?.owner_id).toBe("owner-1");
+    });
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/v1/agents/me/claim", method: "POST", apiKey: "cd_live_claim.me" })
+    );
+  });
+
+  it("auto-claims when owner session appears after initial anonymous probe", async () => {
+    setStoredApiKey("cd_live_claim_later.me");
+    let claimed = false;
+    vi.mocked(apiRequest).mockImplementation(async (request: any) => {
+      if (request?.path === "/v1/agents/me" && request?.method === "GET") {
+        return {
+          data: {
+            data: {
+              agent_id: "agent-1",
+              name: "chacha",
+              owner_id: claimed ? "owner-1" : "owner-placeholder",
+              installation_id: "install-1",
+              oauth_scopes: ["agent:read", "agent:write"]
+            }
+          },
+          headers: new Headers()
+        } as any;
+      }
+      if (request?.path === "/v1/agents/me/claim" && request?.method === "POST") {
+        claimed = true;
+        return {
+          data: {
+            data: {
+              agent_id: "agent-1",
+              owner_id: "owner-1",
+              name: "chacha",
+              claimed: true
+            }
+          },
+          headers: new Headers()
+        } as any;
+      }
+      throw new Error(`Unexpected apiRequest: ${request?.method} ${request?.path}`);
+    });
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        status: 401,
+        ok: false
+      } as Response)
+      .mockResolvedValueOnce({
+        status: 401,
+        ok: false
+      } as Response)
+      .mockResolvedValue({
+        status: 200,
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          data: {
+            owner_id: "owner-1"
+          }
+        })
+      } as any);
+    globalThis.fetch = fetchMock as any;
+
+    const { result } = renderHook(() => useWizardState());
+
+    await waitFor(() => {
+      expect(result.current.state.verified).toBe(true);
+      expect(result.current.state.hasOwnerSession).toBe(false);
+    });
+
+    await waitFor(
+      () => {
+        expect(result.current.state.hasOwnerSession).toBe(true);
+        expect(result.current.state.agentMe?.owner_id).toBe("owner-1");
+      },
+      { timeout: 12000 }
+    );
+
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/v1/agents/me/claim", method: "POST", apiKey: "cd_live_claim_later.me" })
+    );
+  }, 15000);
 });
