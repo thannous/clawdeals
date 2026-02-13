@@ -118,7 +118,9 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
               onClick={() => theme.setOpen((p) => !p)}
               className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-text hover:border-border-strong transition-colors"
             >
-              {activeTheme ? themeShortLabel(activeTheme.label) : "THEME"}
+              <span suppressHydrationWarning>
+                {activeTheme ? themeShortLabel(activeTheme.label) : "THEME"}
+              </span>
               <ChevronDown className="w-3 h-3" />
             </button>
             {theme.open && (

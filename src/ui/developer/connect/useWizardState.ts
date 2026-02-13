@@ -25,6 +25,7 @@ export type WizardState = {
   agentMe: AgentMeResponse | null;
   verified: boolean;
   autoVerifying: boolean;
+  hasOwnerSession: boolean;
 };
 
 function deriveStep(method: ConnectionMethod | null, verified: boolean): WizardStep {
@@ -42,6 +43,7 @@ export function useWizardState() {
   const [agentMe, setAgentMe] = useState<AgentMeResponse | null>(null);
   const [verified, setVerifiedState] = useState(false);
   const [autoVerifying, setAutoVerifying] = useState(false);
+  const [hasOwnerSession, setHasOwnerSession] = useState(false);
 
   const mountedRef = useRef(true);
 
@@ -75,6 +77,9 @@ export function useWizardState() {
     const hydrate = async () => {
       debugLog("hydrate:start");
       const ownerSession = await hasOwnerSession();
+      if (!cancelled && mountedRef.current) {
+        setHasOwnerSession(ownerSession);
+      }
       if (!ownerSession) {
         debugLog("hydrate:no_owner_session_clear_local_connect_state");
         clearStoredApiKey();
@@ -185,7 +190,8 @@ export function useWizardState() {
       claimSession,
       agentMe,
       verified,
-      autoVerifying
+      autoVerifying,
+      hasOwnerSession
     } as WizardState,
     selectMethod,
     setApiKey,

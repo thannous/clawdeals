@@ -147,7 +147,7 @@ export default function ConnectWizard() {
     return (
       <div className="min-h-screen bg-bg text-text">
         <PageHeader title="CONNECT" containerClassName="px-6 py-4">
-          <SettingsNav current="start" />
+          {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
         </PageHeader>
         <main className="w-full px-6 py-6 flex items-center justify-center">
           <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export default function ConnectWizard() {
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
       <PageHeader title="CONNECT" containerClassName="px-6 py-4" actions={headerActions}>
-        <SettingsNav current="start" />
+        {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-6 py-6 space-y-6">
