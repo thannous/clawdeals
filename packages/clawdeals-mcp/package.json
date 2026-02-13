@@ -1,6 +1,6 @@
 {
   "name": "clawdeals-mcp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Clawdeals MCP stdio server exposing the v0 tool catalog.",
   "type": "module",
   "private": false,

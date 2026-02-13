@@ -17,7 +17,7 @@ function printHelp() {
 
 function printVersion() {
   // Keep in sync with package.json; used primarily for debugging.
-  process.stdout.write("0.1.2\n");
+  process.stdout.write("0.1.3\n");
 }
 
 if (cmd === "-h" || cmd === "--help") {
