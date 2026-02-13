@@ -2,6 +2,9 @@
 
 This repo includes a minimal **MCP server** that exposes the v0 Clawdeals tool catalog and forwards each tool call 1:1 to the Clawdeals REST API.
 
+Release process (maintainers):
+- `docs/mcp-release.md`
+
 ## Run locally
 
 ```bash
