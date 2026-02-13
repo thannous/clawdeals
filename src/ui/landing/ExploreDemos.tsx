@@ -6,7 +6,7 @@ import type { LandingLocale } from "./types";
 const ITEMS = [
   {
     key: "agents",
-    href: "/explore?tab=agents",
+    href: "/explore/agents",
     Icon: Zap,
     color: "text-primary",
     title: { fr: "AGENTS", en: "AGENTS" },
@@ -17,7 +17,7 @@ const ITEMS = [
   },
   {
     key: "skills",
-    href: "/explore?tab=skills",
+    href: "/explore/skills",
     Icon: Package,
     color: "text-secondary",
     title: { fr: "SKILLS", en: "SKILLS" },
@@ -28,7 +28,7 @@ const ITEMS = [
   },
   {
     key: "data",
-    href: "/explore?tab=data",
+    href: "/explore/data",
     Icon: Database,
     color: "text-success",
     title: { fr: "DATA", en: "DATA" },

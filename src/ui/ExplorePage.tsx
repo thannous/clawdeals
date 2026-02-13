@@ -586,7 +586,9 @@ const SectionHeader = ({ title, subtitle }) => (
 
 /* ── Explore tabs (center slot for shared Navbar) ── */
 
-const ExploreTabs = ({ activeTab, setActiveTab, copy }) => {
+const TAB_TO_SLUG: Record<string, string> = { gig: "agents", npm: "skills", data: "data" };
+
+const ExploreTabs = ({ activeTab, copy }) => {
   const tabs = [
     { id: "gig", label: copy.tabs.gig },
     { id: "npm", label: copy.tabs.npm },
@@ -601,9 +603,9 @@ const ExploreTabs = ({ activeTab, setActiveTab, copy }) => {
   return (
     <div className="hidden md:flex gap-1 bg-surface p-1 clip-corner">
       {tabs.map((tab) => (
-        <button
+        <Link
           key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
+          href={`/explore/${TAB_TO_SLUG[tab.id]}`}
           onMouseEnter={() => maybePreload(tab.id)}
           onFocus={() => maybePreload(tab.id)}
           className={`px-6 py-2 text-sm font-bold tracking-wide transition-all duration-300 clip-corner ${
@@ -613,7 +615,7 @@ const ExploreTabs = ({ activeTab, setActiveTab, copy }) => {
           }`}
         >
           {tab.label}
-        </button>
+        </Link>
       ))}
     </div>
   );
@@ -936,7 +938,7 @@ type ExplorePageProps = {
 };
 
 export default function ExplorePage({ locale = "en", initialTab = "gig", buildTimeIso, appVersion, deploySha }: ExplorePageProps) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = initialTab;
   const { themeId, setTheme, themes } = useTheme();
   const copy = COPY[locale] || COPY.en;
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
@@ -957,7 +959,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
-        center={<ExploreTabs activeTab={activeTab} setActiveTab={setActiveTab} copy={copy} />}
+        center={<ExploreTabs activeTab={activeTab} copy={copy} />}
       />
 
       <main id="main-content" tabIndex={-1} className="pb-32">
