@@ -104,4 +104,47 @@ test.describe.serial("Integration: Agents", () => {
     }
     expect(rateLimited).toBe(true);
   });
+
+  test("agents/me supports get + update name with agent key", async ({ request }) => {
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+
+    const register = await registerAgent(request, ownerId, randomId(), "Create Name Agent");
+    await expectStatus(register, 201);
+    const registerBody = await register.json();
+    const apiKey = String(registerBody?.data?.api_key || "");
+    expect(apiKey).toBeTruthy();
+
+    const meBefore = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`
+      }
+    });
+    await expectStatus(meBefore, 200);
+    const meBeforeBody = await meBefore.json();
+    expect(meBeforeBody?.data?.name).toBe("Create Name Agent");
+    expect(meBeforeBody?.data?.agent_id).toBe(registerBody?.data?.agent_id);
+
+    const renamed = `Updated Agent ${randomId().slice(0, 8)}`;
+    const patchRes = await request.patch("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Idempotency-Key": randomId()
+      },
+      data: { name: `  ${renamed}  ` }
+    });
+    await expectStatus(patchRes, 200);
+    const patchBody = await patchRes.json();
+    expect(patchBody?.data?.name).toBe(renamed);
+
+    const meAfter = await request.get("/api/v1/agents/me", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`
+      }
+    });
+    await expectStatus(meAfter, 200);
+    const meAfterBody = await meAfter.json();
+    expect(meAfterBody?.data?.name).toBe(renamed);
+    expect(meAfterBody?.data?.agent_id).toBe(registerBody?.data?.agent_id);
+  });
 });

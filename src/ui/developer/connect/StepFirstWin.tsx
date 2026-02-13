@@ -52,8 +52,10 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
     ? `Skill URL: ${skillUrl}\nCLAWDEALS_API_BASE=${apiBase}\nCLAWDEALS_API_KEY=${apiKey}`
     : null;
 
+  const DEFAULT_NAMES = ["New Agent", "Nouvel agent"];
   const currentName = agentMe?.name || null;
-  const needsNaming = !currentName;
+  const isGenericName = currentName ? DEFAULT_NAMES.includes(currentName) : true;
+  const needsNaming = !currentName || isGenericName;
   const [nameInput, setNameInput] = useState("");
   const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [nameError, setNameError] = useState<string | null>(null);
@@ -148,11 +150,14 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
               </div>
             </>
           ) : (
-            <div className="text-xs font-mono text-subtle">
+            <div className="flex items-center gap-3 text-xs font-mono text-subtle">
               <span className="text-text">{masked}</span>
-              <span className="ml-2">
-                {isFr ? "Cle masquee. Voir les ressources developpeur ci-dessous." : "Key hidden. See developer resources below."}
-              </span>
+              <button
+                onClick={() => setKeyRevealed(true)}
+                className="text-primary hover:text-text transition-colors"
+              >
+                {isFr ? "Afficher" : "Show"}
+              </button>
             </div>
           )}
         </div>
@@ -210,10 +215,44 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           <div className="flex items-center gap-2 text-xs font-mono" role="status" aria-live="polite">
             <span className="text-subtle">{isFr ? "agent:" : "agent:"}</span>
             <span className="text-text font-bold">{displayName}</span>
-            <span className="text-success">{isFr ? "Enregistre" : "Saved"}</span>
+            {nameStatus === "saved" && (
+              <span className="text-success">{isFr ? "Enregistre" : "Saved"}</span>
+            )}
           </div>
         </div>
       ) : null}
+
+      {/* Agent info summary — merged single row */}
+      {agentMe && (
+        <div className="border border-border bg-surface p-4 clip-corner">
+          <div className="flex flex-wrap gap-4 text-xs font-mono">
+            {agentMe.agent_id && (
+              <div>
+                <span className="text-subtle">id: </span>
+                <span className="text-text">{agentMe.agent_id.slice(0, 8)}...</span>
+              </div>
+            )}
+            {masked && (
+              <div>
+                <span className="text-subtle">key: </span>
+                <span className="text-text">{masked}</span>
+              </div>
+            )}
+            {agentMe.installation_id && (
+              <div>
+                <span className="text-subtle">install: </span>
+                <span className="text-text">{agentMe.installation_id.slice(0, 8)}...</span>
+              </div>
+            )}
+            {agentMe.oauth_scopes && agentMe.oauth_scopes.length > 0 && (
+              <div>
+                <span className="text-subtle">scopes: </span>
+                <span className="text-text">{agentMe.oauth_scopes.join(", ")}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Link to account CTA for anonymous users */}
       {!hasOwnerSession && (
@@ -232,38 +271,6 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           >
             {isFr ? "Se connecter / Creer un compte" : "Sign in / Create account"}
           </Link>
-        </div>
-      )}
-
-      {/* Agent info summary */}
-      {(agentMe || masked) && (
-        <div className="border border-border bg-surface p-4 clip-corner">
-          <div className="flex flex-wrap gap-4 text-xs font-mono">
-            {agentMe?.agent_id && (
-              <div>
-                <span className="text-subtle">agent: </span>
-                <span className="text-text">{agentMe.agent_id.slice(0, 8)}...</span>
-              </div>
-            )}
-            {agentMe?.installation_id && (
-              <div>
-                <span className="text-subtle">install: </span>
-                <span className="text-text">{agentMe.installation_id.slice(0, 8)}...</span>
-              </div>
-            )}
-            {masked && (
-              <div>
-                <span className="text-subtle">key: </span>
-                <span className="text-text">{masked}</span>
-              </div>
-            )}
-            {agentMe?.oauth_scopes && agentMe.oauth_scopes.length > 0 && (
-              <div>
-                <span className="text-subtle">scopes: </span>
-                <span className="text-text">{agentMe.oauth_scopes.join(", ")}</span>
-              </div>
-            )}
-          </div>
         </div>
       )}
 
