@@ -659,6 +659,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           </Link>
           <Link
             href="/skill.md"
+            locale={false}
             className="border border-border-strong text-muted px-8 py-4 font-mono text-sm uppercase tracking-wider hover:border-text hover:text-text transition-colors"
           >
             {copy.ctas.secondary}
@@ -1017,6 +1018,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
                 <li key={link.key}>
                   <Link
                     href={link.href}
+                    locale={false}
                     className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
                   >
                     {copy.footer[link.key]}
@@ -1032,6 +1034,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
                 <li key={link.key}>
                   <Link
                     href={link.href}
+                    locale={false}
                     className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
                   >
                     {copy.footer[link.key]}

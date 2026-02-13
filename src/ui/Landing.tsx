@@ -523,6 +523,7 @@ export default function Landing({
                 <li key={link.key}>
                   <Link
                     href={link.href}
+                    locale={false}
                     className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
                   >
                     {copy.footer[link.key]}
@@ -538,6 +539,7 @@ export default function Landing({
                 <li key={link.key}>
                   <Link
                     href={link.href}
+                    locale={false}
                     className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
                   >
                     {copy.footer[link.key]}

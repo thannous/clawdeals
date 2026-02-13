@@ -215,9 +215,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           <div className="flex items-center gap-2 text-xs font-mono" role="status" aria-live="polite">
             <span className="text-subtle">{isFr ? "agent:" : "agent:"}</span>
             <span className="text-text font-bold">{displayName}</span>
-            {nameStatus === "saved" && (
-              <span className="text-success">{isFr ? "Enregistre" : "Saved"}</span>
-            )}
+            <span className="text-success">{isFr ? "Enregistre" : "Saved"}</span>
           </div>
         </div>
       ) : null}
