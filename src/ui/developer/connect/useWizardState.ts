@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiRequest } from "../api";
-import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "../storage";
+import { clearStoredApiKey, clearStoredLastEventId, getStoredApiKey, setStoredApiKey } from "../storage";
 import type { AgentMeResponse, ConnectionMethod, ConnectSessionData, WizardStep } from "./types";
 
 const AUTO_VERIFY_TIMEOUT_MS = 8000;
@@ -58,8 +58,36 @@ export function useWizardState() {
   useEffect(() => {
     let cancelled = false;
 
+    const hasOwnerSession = async () => {
+      try {
+        const resp = await fetch("/api/v1/auth/me", {
+          method: "GET",
+          cache: "no-store"
+        });
+        if (resp.status === 401) return false;
+        return resp.ok;
+      } catch {
+        // Keep local state on transient network failures.
+        return true;
+      }
+    };
+
     const hydrate = async () => {
       debugLog("hydrate:start");
+      const ownerSession = await hasOwnerSession();
+      if (!ownerSession) {
+        debugLog("hydrate:no_owner_session_clear_local_connect_state");
+        clearStoredApiKey();
+        clearStoredLastEventId();
+        if (cancelled || !mountedRef.current) return;
+        setApiKeyState(null);
+        setMethod(null);
+        setAgentId(null);
+        setAgentMe(null);
+        setVerifiedState(false);
+        return;
+      }
+
       const stored = getStoredApiKey();
       if (!stored) {
         debugLog("hydrate:no_stored_key");

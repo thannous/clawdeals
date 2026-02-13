@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import SkeletonTable from "../console/shared/SkeletonTable";
@@ -13,6 +13,7 @@ import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
 import { V1_SCOPES_UPGRADE_ONLY, sortScopesStable } from "../../shared/scopes/v1";
 import SettingsNav from "./SettingsNav";
+import PageHeader from "../shared/PageHeader";
 
 function randomIdempotencyKey(): string {
   try {
@@ -128,6 +129,7 @@ function renderScopePills(scopes: string[]) {
 }
 
 export default function ConnectedAppsPage() {
+  const router = useRouter();
   const { toasts, show } = useToast();
 
   const [items, setItems] = useState<Installation[]>([]);
@@ -148,7 +150,7 @@ export default function ConnectedAppsPage() {
 
     try {
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        const resp = await fetch("/api/console/owner/installations", { signal: controller.signal });
+        const resp = await fetch("/api/v1/owner/installations", { signal: controller.signal });
         const body = await resp.json().catch(() => ({}));
 
         if (resp.status === 401 && attempt < 2) {
@@ -185,6 +187,12 @@ export default function ConnectedAppsPage() {
       if (abortRef.current) abortRef.current.abort();
     };
   }, [fetchInstallations]);
+
+  useEffect(() => {
+    if (!authRequired) return;
+    const next = encodeURIComponent(router.asPath || "/settings/connected-apps");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [authRequired, router]);
 
   const refetch = useCallback(() => {
     void fetchInstallations();
@@ -294,7 +302,7 @@ export default function ConnectedAppsPage() {
 
     try {
       const idempotencyKey = randomIdempotencyKey();
-      const resp = await fetch(`/api/console/installations/${encodeURIComponent(selected.installation_id)}:revoke`, {
+      const resp = await fetch(`/api/v1/installations/${encodeURIComponent(selected.installation_id)}:revoke`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -328,7 +336,7 @@ export default function ConnectedAppsPage() {
     try {
       const idempotencyKey = randomIdempotencyKey();
       const resp = await fetch(
-        `/api/console/installations/${encodeURIComponent(selected.installation_id)}:scopes-upgrade`,
+        `/api/v1/installations/${encodeURIComponent(selected.installation_id)}:scopes-upgrade`,
         {
           method: "POST",
           headers: {
@@ -383,7 +391,7 @@ export default function ConnectedAppsPage() {
 
     try {
       const idempotencyKey = randomIdempotencyKey();
-      const resp = await fetch(`/api/console/installations/${encodeURIComponent(selected.installation_id)}:rotate`, {
+      const resp = await fetch(`/api/v1/installations/${encodeURIComponent(selected.installation_id)}:rotate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -418,16 +426,11 @@ export default function ConnectedAppsPage() {
 
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="px-4 py-3">
-          <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>CONNECTED APPS
-          </h1>
-          <SettingsNav current="connected-apps" />
-        </div>
-      </header>
+      <PageHeader title="CONNECTED APPS" containerClassName="px-6 py-4">
+        <SettingsNav current="connected-apps" />
+      </PageHeader>
 
-      <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="px-6 py-6 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-mono text-subtle">
             Manage your connected installations (OpenClaw/ClawdBot). Revoke to invalidate immediately, or rotate to issue
@@ -440,19 +443,6 @@ export default function ConnectedAppsPage() {
             Refresh
           </button>
         </div>
-
-        {authRequired && (
-          <div data-testid="connected-apps-missing-owner" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-error">Login required</div>
-            <div className="text-xs font-mono text-muted mt-1">
-              Go to{" "}
-              <Link className="text-text underline" href="/auth/login">
-                /auth/login
-              </Link>{" "}
-              to authenticate your owner session.
-            </div>
-          </div>
-        )}
 
         {!authRequired && fetchState === "loading" && (
           <div data-testid="connected-apps-loading">

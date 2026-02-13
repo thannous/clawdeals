@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SettingsNav from "./SettingsNav";
+import PageHeader from "../shared/PageHeader";
 
 type OwnerSummary = {
   owner_id: string;
@@ -84,6 +86,7 @@ function trustScoreColor(score: number | null): string {
 }
 
 export default function AccountPage() {
+  const router = useRouter();
   const [owner, setOwner] = useState<OwnerSummary | null>(null);
   const [agents, setAgents] = useState<OwnerAgent[]>([]);
   const [claims, setClaims] = useState<OwnerClaim[]>([]);
@@ -173,6 +176,12 @@ export default function AccountPage() {
   }, [fetchAccount]);
 
   useEffect(() => {
+    if (!authRequired) return;
+    const next = encodeURIComponent(router.asPath || "/settings/account");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [authRequired, router]);
+
+  useEffect(() => {
     if (agents.length === 0) {
       setSelectedAgentId("");
       return;
@@ -213,40 +222,12 @@ export default function AccountPage() {
   return (
     <div data-testid="account-page" className="min-h-screen bg-bg">
       {/* ---- Header ---- */}
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full max-w-[1440px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <h1 className="text-xl font-bold tracking-wider text-text text-shadow-glow">
-              <span className="text-primary">/ </span>MY ACCOUNT
-            </h1>
-            <button
-              data-testid="account-refresh"
-              onClick={fetchAccount}
-              className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary/50 hover:text-primary transition-colors"
-            >
-              Refresh
-            </button>
-          </div>
-          <SettingsNav current="account" />
-        </div>
-      </header>
+      <PageHeader title="MY ACCOUNT" containerClassName="px-6 py-4">
+        <SettingsNav current="account" />
+      </PageHeader>
 
       {/* ---- Main ---- */}
-      <main id="main-content" tabIndex={-1} className="w-full max-w-[1440px] mx-auto px-6 py-8">
-        {/* Auth required */}
-        {authRequired && (
-          <div data-testid="account-unauthorized" className="border border-error/30 bg-error/5 rounded clip-corner p-4">
-            <div className="text-sm font-mono font-semibold text-error">Login required</div>
-            <div className="text-sm font-mono text-muted mt-1.5">
-              Go to{" "}
-              <Link className="text-primary hover:underline" href="/auth/login">
-                /auth/login
-              </Link>{" "}
-              to authenticate your owner session.
-            </div>
-          </div>
-        )}
-
+      <main id="main-content" tabIndex={-1} className="w-full px-6 py-6">
         {/* Loading */}
         {!authRequired && state === "loading" && (
           <div data-testid="account-loading" className="flex items-center gap-3 py-12">

@@ -5,7 +5,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   signOut: vi.fn(),
-  clearStoredOwnerAuth: vi.fn()
+  clearStoredOwnerAuth: vi.fn(),
+  clearStoredApiKey: vi.fn(),
+  clearStoredLastEventId: vi.fn()
 }));
 
 vi.mock("next/link", () => ({
@@ -34,6 +36,11 @@ vi.mock("../auth/supabase-client", () => ({
   })
 }));
 
+vi.mock("../developer/storage", () => ({
+  clearStoredApiKey: mocks.clearStoredApiKey,
+  clearStoredLastEventId: mocks.clearStoredLastEventId
+}));
+
 import SettingsNav from "./SettingsNav";
 
 describe("SettingsNav logout", () => {
@@ -53,6 +60,8 @@ describe("SettingsNav logout", () => {
 
     expect(globalThis.fetch).toHaveBeenCalledWith("/api/v1/auth/logout", { method: "POST", credentials: "include" });
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
+    expect(mocks.clearStoredApiKey).toHaveBeenCalledTimes(1);
+    expect(mocks.clearStoredLastEventId).toHaveBeenCalledTimes(1);
     expect(mocks.clearStoredOwnerAuth).toHaveBeenCalledTimes(1);
     expect(mocks.replace).toHaveBeenCalledWith("/auth/login");
   });

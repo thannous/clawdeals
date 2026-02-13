@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { maskApiKey } from "../api";
 import { useConnectSession } from "./useConnectSession";
 import { useWizardState } from "./useWizardState";
+import PageHeader from "../../shared/PageHeader";
+import SettingsNav from "../../settings/SettingsNav";
 import StepConnect from "./StepConnect";
 import StepVerify from "./StepVerify";
 import StepFirstWin from "./StepFirstWin";
@@ -114,6 +115,20 @@ export default function ConnectWizard() {
     reset();
   }, [stopPolling, resetSession, reset]);
 
+  const headerActions = masked ? (
+    <div className="flex items-center gap-2 text-xs font-mono">
+      <span data-testid="api-key-masked" className="text-muted">
+        KEY: {masked}
+      </span>
+      <button
+        onClick={handleForget}
+        className="border border-border px-3 py-1 hover:border-border-strong hover:text-text transition-colors"
+      >
+        Forget
+      </button>
+    </div>
+  ) : null;
+
   const handleCreateSession = useCallback(async (agentName?: string) => {
     const session = await createSession(agentName);
     setClaimSession(session);
@@ -131,14 +146,10 @@ export default function ConnectWizard() {
   if (state.autoVerifying && !autoVerifyGuardExpired) {
     return (
       <div className="min-h-screen bg-bg text-text">
-        <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-          <div className="w-full px-4 py-4 flex items-center justify-between">
-            <div className="font-bold tracking-wider">
-              <span className="text-primary">/ </span>CONNECT
-            </div>
-          </div>
-        </header>
-        <main className="w-full px-4 py-10 flex items-center justify-center">
+        <PageHeader title="CONNECT" containerClassName="px-6 py-4">
+          <SettingsNav current="start" />
+        </PageHeader>
+        <main className="w-full px-6 py-6 flex items-center justify-center">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
@@ -154,44 +165,11 @@ export default function ConnectWizard() {
   return (
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="w-full px-4 py-4 flex items-center justify-between">
-          <div className="font-bold tracking-wider">
-            <span className="text-primary">/ </span>CONNECT
-          </div>
-          <div className="flex items-center gap-3 text-xs font-mono text-subtle">
-            {masked ? (
-              <>
-                <span data-testid="api-key-masked">KEY: {masked}</span>
-                <button
-                  onClick={handleForget}
-                  className="border border-border px-3 py-1 hover:border-border-strong hover:text-text transition-colors"
-                >
-                  Forget
-                </button>
-                <Link
-                  href="/settings/account"
-                  className="border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-bg transition-colors"
-                >
-                  Owner login
-                </Link>
-              </>
-            ) : (
-              <>
-                <span>NO KEY</span>
-                <Link
-                  href="/settings/account"
-                  className="border border-primary px-3 py-1 text-primary hover:bg-primary hover:text-bg transition-colors"
-                >
-                  Owner login
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <PageHeader title="CONNECT" containerClassName="px-6 py-4" actions={headerActions}>
+        <SettingsNav current="start" />
+      </PageHeader>
 
-      <main id="main-content" tabIndex={-1} className="w-full px-4 py-10 space-y-6">
+      <main id="main-content" tabIndex={-1} className="w-full px-6 py-6 space-y-6">
         {state.autoVerifying && autoVerifyGuardExpired && (
           <div className="border border-warning/30 bg-warning/5 rounded clip-corner p-3">
             <div className="text-xs font-mono text-warning-muted uppercase">Auto-check timed out</div>

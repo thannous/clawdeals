@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ConsoleTable, { type Column } from "../console/shared/ConsoleTable";
@@ -12,6 +12,7 @@ import TruncatedId from "../console/shared/TruncatedId";
 import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
 import SettingsNav from "./SettingsNav";
+import PageHeader from "../shared/PageHeader";
 
 function randomIdempotencyKey(): string {
   try {
@@ -44,6 +45,7 @@ type ChannelIdentity = {
 };
 
 export default function IdentitiesPage() {
+  const router = useRouter();
   const { toasts, show } = useToast();
 
   const [owner, setOwner] = useState<{ owner_id: string; email_masked: string | null; email_verified_at: string | null } | null>(
@@ -107,6 +109,12 @@ export default function IdentitiesPage() {
       if (abortRef.current) abortRef.current.abort();
     };
   }, [fetchIdentities]);
+
+  useEffect(() => {
+    if (!authRequired) return;
+    const next = encodeURIComponent(router.asPath || "/settings/identities");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [authRequired, router]);
 
   const refetch = useCallback(() => {
     void fetchIdentities();
@@ -183,16 +191,11 @@ export default function IdentitiesPage() {
 
   return (
     <div data-testid="identities-page" className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="px-4 py-3">
-          <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>LINKED IDENTITIES
-          </h1>
-          <SettingsNav current="identities" />
-        </div>
-      </header>
+      <PageHeader title="LINKED IDENTITIES" containerClassName="px-6 py-4">
+        <SettingsNav current="identities" />
+      </PageHeader>
 
-      <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">
+      <main id="main-content" tabIndex={-1} className="px-6 py-6 space-y-6">
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs font-mono text-subtle">
             Linked identities are stored securely. Values may be hidden for privacy.
@@ -204,19 +207,6 @@ export default function IdentitiesPage() {
             Refresh
           </button>
         </div>
-
-        {authRequired && (
-          <div data-testid="identities-missing-owner" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-error">Login required</div>
-            <div className="text-xs font-mono text-muted mt-1">
-              Go to{" "}
-              <Link className="text-text underline" href="/auth/login">
-                /auth/login
-              </Link>{" "}
-              to authenticate your owner session.
-            </div>
-          </div>
-        )}
 
         {!authRequired && fetchState === "loading" && (
           <div data-testid="identities-loading">

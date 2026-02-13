@@ -4,8 +4,9 @@ import { useCallback, useState } from "react";
 
 import { clearStoredOwnerAuth } from "../auth/ownerAuth";
 import { getBrowserSupabaseClient } from "../auth/supabase-client";
+import { clearStoredApiKey, clearStoredLastEventId } from "../developer/storage";
 
-type SettingsNavCurrent = "account" | "identities" | "connected-apps";
+type SettingsNavCurrent = "account" | "identities" | "connected-apps" | "start";
 
 type NavItem = {
   key: SettingsNavCurrent;
@@ -16,7 +17,8 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { key: "account", href: "/settings/account", label: "Account" },
   { key: "identities", href: "/settings/identities", label: "Linked Identities" },
-  { key: "connected-apps", href: "/settings/connected-apps", label: "Connected Apps" }
+  { key: "connected-apps", href: "/settings/connected-apps", label: "Connected Apps" },
+  { key: "start", href: "/start", label: "Connect" }
 ];
 
 export default function SettingsNav({ current }: { current: SettingsNavCurrent }) {
@@ -38,6 +40,9 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
     } catch {
       // Best-effort only.
     }
+    // Keep owner logout semantics consistent with /start: remove local developer session artifacts.
+    clearStoredApiKey();
+    clearStoredLastEventId();
     clearStoredOwnerAuth();
     void router.replace("/auth/login");
   }, [logoutState, router]);
@@ -62,12 +67,6 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
           </Link>
         );
       })}
-      <Link
-        href="/start"
-        className="px-3.5 py-2 text-xs font-mono font-bold uppercase border border-transparent text-muted rounded-md hover:text-text hover:bg-surface-alt/40 transition-all"
-      >
-        Start
-      </Link>
       <div className="ml-auto">
         <button
           type="button"

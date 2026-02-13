@@ -97,4 +97,18 @@ test.describe("Settings: Linked Identities", () => {
 
     await expect(page.getByTestId("identities-table").getByText("REVOKED")).toBeVisible();
   });
+
+  test("redirects to login when owner session is missing", async ({ page }) => {
+    await page.route("**/api/v1/owner/identities**", async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      return route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Owner authentication required" } })
+      });
+    });
+
+    await page.goto("/settings/identities");
+    await expect(page).toHaveURL(/\/auth\/login\?next=/);
+  });
 });

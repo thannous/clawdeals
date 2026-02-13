@@ -17,7 +17,7 @@ test.describe("Settings: Connected Apps", () => {
       },
     ];
 
-    await page.route("**/api/console/owner/installations**", async (route) => {
+    await page.route("**/api/v1/owner/installations**", async (route) => {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -25,7 +25,7 @@ test.describe("Settings: Connected Apps", () => {
       });
     });
 
-    await page.route("**/api/console/installations/*:revoke", async (route) => {
+    await page.route("**/api/v1/installations/*:revoke", async (route) => {
       const headers = route.request().headers();
       expect(headers["idempotency-key"]).toBeTruthy();
 
@@ -81,7 +81,7 @@ test.describe("Settings: Connected Apps", () => {
       },
     ];
 
-    await page.route("**/api/console/owner/installations**", async (route) => {
+    await page.route("**/api/v1/owner/installations**", async (route) => {
       return route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -89,7 +89,7 @@ test.describe("Settings: Connected Apps", () => {
       });
     });
 
-    await page.route("**/api/console/installations/*:rotate", async (route) => {
+    await page.route("**/api/v1/installations/*:rotate", async (route) => {
       const headers = route.request().headers();
       expect(headers["idempotency-key"]).toBeTruthy();
       expect(route.request().postDataJSON()).toEqual({ grace_seconds: 120 });
@@ -124,5 +124,18 @@ test.describe("Settings: Connected Apps", () => {
     await page.getByTestId("confirm-modal").getByRole("button", { name: "Close", exact: true }).click();
     await expect(page.getByTestId("confirm-modal")).toHaveCount(0);
     await expect(page.getByTestId("connected-apps-rotate-credential")).toHaveCount(0);
+  });
+
+  test("redirects to login when owner session is missing", async ({ page }) => {
+    await page.route("**/api/v1/owner/installations**", async (route) => {
+      return route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Owner authentication required" } }),
+      });
+    });
+
+    await page.goto("/settings/connected-apps");
+    await expect(page).toHaveURL(/\/auth\/login\?next=/);
   });
 });
