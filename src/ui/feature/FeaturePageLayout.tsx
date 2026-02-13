@@ -81,7 +81,7 @@ export default function FeaturePageLayout({
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
             {locale === "fr" ? "EXPLORER LA PLATEFORME" : "EXPLORE THE PLATFORM"}
           </div>
-          <div className="flex flex-wrap gap-3 justify-center">
+          <div className="flex flex-wrap gap-3 justify-center mb-6">
             <Link
               href="/"
               className="px-6 py-3 font-bold uppercase tracking-wider text-xs border border-border-strong text-muted hover:border-text hover:text-text transition-colors bg-bg"
@@ -117,6 +117,41 @@ export default function FeaturePageLayout({
               }`}
             >
               Audit Trail
+            </Link>
+          </div>
+          <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
+            {locale === "fr" ? "INTEGRATIONS & GUIDES" : "INTEGRATIONS & GUIDES"}
+          </div>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link
+              href="/integrations/openclaw"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/integrations/openclaw"
+                  ? "border-secondary bg-secondary/10 text-secondary"
+                  : "border-border text-muted hover:border-secondary hover:text-secondary"
+              }`}
+            >
+              OpenClaw
+            </Link>
+            <Link
+              href="/guides/openclaw-dealwatch"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/guides/openclaw-dealwatch"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted hover:border-primary hover:text-primary"
+              }`}
+            >
+              DealWatch
+            </Link>
+            <Link
+              href="/guides/mcp-marketplace-safety"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/guides/mcp-marketplace-safety"
+                  ? "border-success bg-success/10 text-success"
+                  : "border-border text-muted hover:border-success hover:text-success"
+              }`}
+            >
+              MCP Safety
             </Link>
           </div>
         </div>

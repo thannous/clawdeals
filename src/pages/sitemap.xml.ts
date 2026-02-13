@@ -23,7 +23,10 @@ function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
     { en: `${baseUrl}/explore/data`, fr: `${baseUrl}/fr/explore/data` },
     { en: `${baseUrl}/trust-engine`, fr: `${baseUrl}/fr/trust-engine` },
     { en: `${baseUrl}/policy-control`, fr: `${baseUrl}/fr/policy-control` },
-    { en: `${baseUrl}/audit-trail`, fr: `${baseUrl}/fr/audit-trail` }
+    { en: `${baseUrl}/audit-trail`, fr: `${baseUrl}/fr/audit-trail` },
+    { en: `${baseUrl}/integrations/openclaw`, fr: `${baseUrl}/fr/integrations/openclaw` },
+    { en: `${baseUrl}/guides/openclaw-dealwatch`, fr: `${baseUrl}/fr/guides/openclaw-dealwatch` },
+    { en: `${baseUrl}/guides/mcp-marketplace-safety`, fr: `${baseUrl}/fr/guides/mcp-marketplace-safety` }
   ];
 
   const urls = pages
