@@ -57,6 +57,65 @@ function stepLabel(step: WizardStep, locale: ConnectLocale) {
   return locale === "fr" ? "Lancement" : "Go";
 }
 
+const START_SOURCE_LABELS = {
+  gig: {
+    bucket: "Agents",
+    items: {
+      "101": "Market Watch Agent",
+      "102": "SEO Auditor Agent",
+      "103": "Meeting Summarizer",
+      "104": "Invoice OCR Core"
+    }
+  },
+  npm: {
+    bucket: "Skills",
+    items: {
+      "1": "AgentAuth SDK",
+      "2": "Bounties Bridge",
+      "3": "Activity Feed Adapter"
+    }
+  },
+  data: {
+    bucket: "Data",
+    items: {
+      "201": "Ops Playbooks (FR/EN)",
+      "202": "Policy & Compliance Pack",
+      "203": "Product Knowledge Base"
+    }
+  }
+} as const;
+
+function normalizeFromParam(value: unknown): string | null {
+  if (Array.isArray(value)) return typeof value[0] === "string" ? value[0] : null;
+  return typeof value === "string" ? value : null;
+}
+
+function describeStartSource(fromParam: unknown, locale: ConnectLocale): string | null {
+  const raw = normalizeFromParam(fromParam);
+  if (!raw) return null;
+
+  const match = /^explore-card-(gig|npm|data)-(\d+)$/.exec(raw);
+  if (!match) {
+    return locale === "fr"
+      ? `Flux initialise via ${raw}.`
+      : `Flow initialized from ${raw}.`;
+  }
+
+  const sourceType = match[1] as keyof typeof START_SOURCE_LABELS;
+  const sourceId = match[2];
+  const bucket = START_SOURCE_LABELS[sourceType];
+  const itemTitle = bucket.items[sourceId as keyof typeof bucket.items];
+  if (!itemTitle) {
+    return locale === "fr"
+      ? `Flux initialise depuis Explore > ${bucket.bucket}.`
+      : `Flow initialized from Explore > ${bucket.bucket}.`;
+  }
+
+  return locale === "fr"
+    ? `Flux initialise depuis Explore > ${bucket.bucket} > ${itemTitle}.`
+    : `Flow initialized from Explore > ${bucket.bucket} > ${itemTitle}.`;
+}
+
 function StepIndicator({ currentStep, locale }: { currentStep: WizardStep; locale: ConnectLocale }) {
   const stepIndex = STEPS.findIndex((s) => s === currentStep);
 
@@ -272,6 +331,7 @@ export default function ConnectWizard() {
   const router = useRouter();
   const locale: ConnectLocale = router.locale === "fr" ? "fr" : "en";
   const isFr = locale === "fr";
+  const startSourceHint = useMemo(() => describeStartSource(router.query?.from, locale), [router.query?.from, locale]);
 
   const {
     state,
@@ -404,6 +464,15 @@ export default function ConnectWizard() {
                 ? "Passage en mode manuel. Vous pouvez verifier a nouveau ou coller une cle API."
                 : "Continuing in manual mode. You can verify again or paste an API key."}
             </div>
+          </div>
+        )}
+
+        {startSourceHint && (
+          <div className="border border-border bg-surface/70 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-subtle uppercase">
+              {isFr ? "Contexte de depart" : "Start context"}
+            </div>
+            <div className="text-xs font-mono text-text mt-1">{startSourceHint}</div>
           </div>
         )}
 

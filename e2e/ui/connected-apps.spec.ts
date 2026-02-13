@@ -138,4 +138,44 @@ test.describe("Settings: Connected Apps", () => {
     await page.goto("/settings/connected-apps");
     await expect(page).toHaveURL(/\/auth\/login\?next=/);
   });
+
+  test("redirects to login when revoke returns 401 after page load", async ({ page }) => {
+    const installationId = "77777777-7777-4777-8777-777777777777";
+
+    await page.route("**/api/v1/owner/installations**", async (route) => {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          installations: [
+            {
+              installation_id: installationId,
+              agent_id: "88888888-8888-4888-8888-888888888888",
+              client_type: "openclaw",
+              client_version: "2.0.0",
+              oauth_scopes: ["watchlists:read"],
+              status: "ACTIVE",
+              created_at: "2026-02-10T12:00:00Z",
+              last_seen_at: "2026-02-10T12:30:00Z"
+            }
+          ]
+        })
+      });
+    });
+
+    await page.route("**/api/v1/installations/*:revoke", async (route) => {
+      return route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Owner authentication required" } })
+      });
+    });
+
+    await page.goto("/settings/connected-apps");
+
+    await page.getByTestId(`connected-apps-revoke-${installationId}`).click();
+    await page.getByTestId("confirm-modal").getByRole("button", { name: "Revoke" }).click();
+
+    await expect(page).toHaveURL(/\/auth\/login\?next=/);
+  });
 });

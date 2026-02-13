@@ -67,7 +67,11 @@ export function useWizardState() {
           cache: "no-store"
         });
         if (resp.status === 401) return false;
-        return resp.ok;
+        if (!resp.ok) {
+          debugLog("hydrate:owner_session_probe_non_401_preserve_local_state", { status: resp.status });
+        }
+        // Only explicit unauthenticated responses should clear local connect state.
+        return true;
       } catch {
         // Keep local state on transient network failures.
         return true;

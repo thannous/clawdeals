@@ -219,11 +219,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     footer: {
       sysLinks: "System Links",
       legal: "Legal",
-      status: "> STATUS PAGE",
-      api: "> API DOCS",
-      audit: "> SECURITY AUDIT",
-      terms: "> TERMS OF SERVICE",
-      privacy: "> PRIVACY PROTOCOL",
+      status: "> STATUS PAGE (MARKDOWN)",
+      api: "> API DOCS (MARKDOWN)",
+      audit: "> SECURITY AUDIT (MARKDOWN)",
+      terms: "> TERMS OF SERVICE (MARKDOWN)",
+      privacy: "> PRIVACY PROTOCOL (MARKDOWN)",
       tagline:
         "Marketplace agent-first. Contrôle humain par défaut.",
       serverTime: "SERVER TIME"
@@ -446,11 +446,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     footer: {
       sysLinks: "System Links",
       legal: "Legal",
-      status: "> STATUS PAGE",
-      api: "> API DOCS",
-      audit: "> SECURITY AUDIT",
-      terms: "> TERMS OF SERVICE",
-      privacy: "> PRIVACY PROTOCOL",
+      status: "> STATUS PAGE (MARKDOWN)",
+      api: "> API DOCS (MARKDOWN)",
+      audit: "> SECURITY AUDIT (MARKDOWN)",
+      terms: "> TERMS OF SERVICE (MARKDOWN)",
+      privacy: "> PRIVACY PROTOCOL (MARKDOWN)",
       tagline:
         "Agent-first marketplace. Human control by default.",
       serverTime: "SERVER TIME"

@@ -235,11 +235,11 @@ const COPY = {
     footer: {
       sysLinks: "System Links",
       legal: "Legal",
-      status: "> STATUS PAGE",
-      api: "> API DOCS",
-      audit: "> SECURITY AUDIT",
-      terms: "> TERMS OF SERVICE",
-      privacy: "> PRIVACY PROTOCOL",
+      status: "> STATUS PAGE (MARKDOWN)",
+      api: "> API DOCS (MARKDOWN)",
+      audit: "> SECURITY AUDIT (MARKDOWN)",
+      terms: "> TERMS OF SERVICE (MARKDOWN)",
+      privacy: "> PRIVACY PROTOCOL (MARKDOWN)",
       tagline:
         "Plateforme communautaire de deals et marketplace sécurisé pour agents.",
       serverTime: "SERVER TIME"
@@ -420,11 +420,11 @@ const COPY = {
     footer: {
       sysLinks: "System Links",
       legal: "Legal",
-      status: "> STATUS PAGE",
-      api: "> API DOCS",
-      audit: "> SECURITY AUDIT",
-      terms: "> TERMS OF SERVICE",
-      privacy: "> PRIVACY PROTOCOL",
+      status: "> STATUS PAGE (MARKDOWN)",
+      api: "> API DOCS (MARKDOWN)",
+      audit: "> SECURITY AUDIT (MARKDOWN)",
+      terms: "> TERMS OF SERVICE (MARKDOWN)",
+      privacy: "> PRIVACY PROTOCOL (MARKDOWN)",
       tagline:
         "Community deal sharing and secure P2P marketplace for agents.",
       serverTime: "SERVER TIME"

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
+import { safeRedirectUrl } from "./safeRedirect";
 import { getBrowserSupabaseClient } from "./supabase-client";
 
 function getErrorMessage(body: any, status: number) {
@@ -78,6 +79,11 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [forgotState, setForgotState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
+  const redirectTarget = useMemo(
+    () => (router.isReady ? safeRedirectUrl(router.query.next) : "/settings/account"),
+    [router.isReady, router.query.next]
+  );
+
   const canSubmit = useMemo(
     () => Boolean(email.trim() && password.trim() && submitState !== "loading"),
     [email, password, submitState]
@@ -100,14 +106,14 @@ export default function LoginPage() {
           await bridgeOwnerSession(accessToken);
           await waitForOwnerSessionReady();
           if (!cancelled) {
-            void router.replace("/settings/account");
+            void router.replace(redirectTarget);
           }
           return;
         }
 
         const hasOwnerSession = await waitForOwnerSessionReady({ attempts: 1 });
         if (hasOwnerSession && !cancelled) {
-          void router.replace("/settings/account");
+          void router.replace(redirectTarget);
         }
       } catch {
         // Ignore recoverability errors and keep login form available.
@@ -118,7 +124,7 @@ export default function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, redirectTarget]);
 
   const onGoogle = useCallback(async () => {
     setSubmitState("loading");
@@ -126,7 +132,8 @@ export default function LoginPage() {
     setNotice(null);
     try {
       const supabase = getBrowserSupabaseClient();
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      try { sessionStorage.setItem("clawdeals.auth_next", redirectTarget); } catch {}
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTarget)}`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo }
@@ -138,7 +145,7 @@ export default function LoginPage() {
       setSubmitState("error");
       setError(String(err?.message || "Google sign-in failed"));
     }
-  }, []);
+  }, [redirectTarget]);
 
   const onEmailPassword = useCallback(async () => {
     if (!canSubmit) return;
@@ -161,11 +168,11 @@ export default function LoginPage() {
         await bridgeOwnerSession(accessToken);
         await waitForOwnerSessionReady();
         setSubmitState("done");
-        void router.replace("/settings/account");
+        void router.replace(redirectTarget);
         return;
       }
 
-      const emailRedirectTo = `${window.location.origin}/auth/callback`;
+      const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTarget)}`;
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -178,7 +185,7 @@ export default function LoginPage() {
         await bridgeOwnerSession(accessToken);
         await waitForOwnerSessionReady();
         setSubmitState("done");
-        void router.replace("/settings/account");
+        void router.replace(redirectTarget);
         return;
       }
 
@@ -188,7 +195,7 @@ export default function LoginPage() {
       setSubmitState("error");
       setError(String(err?.message || "Authentication failed"));
     }
-  }, [canSubmit, email, mode, password, router]);
+  }, [canSubmit, email, mode, password, router, redirectTarget]);
 
   const onForgotPassword = useCallback(async () => {
     if (!email.trim()) {
@@ -444,7 +451,8 @@ export default function LoginPage() {
 
             {/* Footer hint */}
             <div className="text-xs font-mono text-subtle px-1">
-              After login, go to <span className="text-text">/settings/account</span> to view your agents and claims.
+              After login, you'll continue to <span className="text-text">{redirectTarget}</span>
+              {redirectTarget === "/settings/account" ? " to view your agents and claims." : "."}
             </div>
           </div>
         </div>

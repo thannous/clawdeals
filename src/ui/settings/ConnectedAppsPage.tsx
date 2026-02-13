@@ -198,6 +198,10 @@ export default function ConnectedAppsPage() {
     void fetchInstallations();
   }, [fetchInstallations]);
 
+  const redirectToLogin = useCallback(() => {
+    setAuthRequired(true);
+  }, []);
+
   const columns: Column[] = useMemo(
     () => [
       { key: "installation_id", label: "Installation" },
@@ -311,6 +315,11 @@ export default function ConnectedAppsPage() {
         body: JSON.stringify({ reason: reason.trim() || null }),
       });
       const body = await resp.json().catch(() => ({}));
+      if (resp.status === 401) {
+        setSubmitState("idle");
+        redirectToLogin();
+        return;
+      }
       if (!resp.ok) {
         throw new Error(getErrorMessage(body, resp.status));
       }
@@ -324,7 +333,7 @@ export default function ConnectedAppsPage() {
       setSubmitState("error");
       show(message, "error");
     }
-  }, [selected, submitState, reason, closeConfirm, refetch, show]);
+  }, [selected, submitState, reason, closeConfirm, refetch, show, redirectToLogin]);
 
   const onRequestUpgrade = useCallback(async () => {
     if (!selected) return;
@@ -347,6 +356,11 @@ export default function ConnectedAppsPage() {
         }
       );
       const body = await resp.json().catch(() => ({}));
+      if (resp.status === 401) {
+        setUpgradeState("idle");
+        redirectToLogin();
+        return;
+      }
       if (!resp.ok) {
         throw new Error(getErrorMessage(body, resp.status));
       }
@@ -368,7 +382,7 @@ export default function ConnectedAppsPage() {
       setUpgradeState("error");
       show(message, "error");
     }
-  }, [selected, upgradeState, upgradeSelectedScopes, closeUpgrade, refetch, show]);
+  }, [selected, upgradeState, upgradeSelectedScopes, closeUpgrade, refetch, show, redirectToLogin]);
 
   const onRotateCredential = useCallback(async () => {
     if (!selected) return;
@@ -400,6 +414,11 @@ export default function ConnectedAppsPage() {
         body: JSON.stringify(typeof graceSeconds === "number" ? { grace_seconds: graceSeconds } : {}),
       });
       const body = await resp.json().catch(() => ({}));
+      if (resp.status === 401) {
+        setRotateState("idle");
+        redirectToLogin();
+        return;
+      }
       if (!resp.ok) {
         throw new Error(getErrorMessage(body, resp.status));
       }
@@ -422,7 +441,7 @@ export default function ConnectedAppsPage() {
       setRotateState("error");
       show(message, "error");
     }
-  }, [selected, rotateState, rotateGraceSeconds, show, closeRotate, refetch]);
+  }, [selected, rotateState, rotateGraceSeconds, show, closeRotate, refetch, redirectToLogin]);
 
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">

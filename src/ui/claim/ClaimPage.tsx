@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ClaimStatusBadge from "./ClaimStatusBadge";
 import { claimSession, denySession, fetchClaimSession } from "./api";
@@ -66,6 +66,9 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<any | null>(null);
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+
+  const feedbackRef = useRef<HTMLDivElement>(null);
 
   const fetchState: "idle" | "loading" | "done" | "error" = !token
     ? "idle"
@@ -113,12 +116,26 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     return stillAvailable ? selected : fallbackAttachAgentId;
   }, [attachAgentId, fallbackAttachAgentId, ownerAgents]);
   const ownerContextAvailable = Boolean(session?.owner_context_available);
+
+  useEffect(() => {
+    if (!ownerContextAvailable) return;
+    let cancelled = false;
+    fetch("/api/v1/auth/me", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        if (cancelled) return;
+        const email = body?.data?.email || body?.email || null;
+        if (email) setOwnerEmail(String(email));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [ownerContextAvailable]);
   const allowCreateAgent = session?.allow_create_agent !== false;
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
   const isPendingClaim = session?.status === "PENDING_CLAIM";
   const isClaimFinalized = session?.status === "CLAIMED" || session?.status === "DELIVERED";
 
-  const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired);
+  const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired && ownerContextAvailable);
   const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(resolvedAttachAgentId));
 
   const clearSubmitFeedback = useCallback(() => {
@@ -160,6 +177,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
       }
       setSubmitError(normalizeClaimError(rawError, { ownerAgentsCount: ownerAgents.length }));
       setSubmitState("error");
+      queueMicrotask(() => feedbackRef.current?.focus());
       return;
     }
 
@@ -176,6 +194,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         : prev
     );
     setSubmitState("done");
+    queueMicrotask(() => feedbackRef.current?.focus());
   }, [session, submitState, token, mode, agentName, resolvedAttachAgentId, ownerAgents.length]);
 
   const onDeny = useCallback(async () => {
@@ -192,6 +211,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     if (!resp.ok) {
       setSubmitError(resp.error || "Deny failed");
       setSubmitState("error");
+      queueMicrotask(() => feedbackRef.current?.focus());
       return;
     }
 
@@ -206,6 +226,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         : prev
     );
     setSubmitState("done");
+    queueMicrotask(() => feedbackRef.current?.focus());
   }, [session, submitState, token]);
 
   return (
@@ -246,7 +267,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
             )}
 
             {error && (
-              <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+              <div role="alert" aria-live="polite" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
                 <div className="text-xs font-mono text-error">Error</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
               </div>
@@ -262,7 +283,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     </div>
                     <a
                       href={`/auth/login?next=${encodeURIComponent(`/claim/${token}`)}`}
-                      className="inline-block mt-2 px-3 py-1.5 text-xs font-mono font-bold uppercase border border-warning-muted text-warning-muted rounded hover:bg-warning-muted/10 transition-colors"
+                      className="inline-block mt-2 px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
                     >
                       Owner login
                     </a>
@@ -451,18 +472,24 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     </div>
 
                     {submitError && (
-                      <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                      <div ref={feedbackRef} tabIndex={-1} role="alert" aria-live="assertive" className="border border-error/30 bg-error/5 rounded clip-corner p-3 focus:outline-none">
                         <div className="text-xs font-mono text-error">Error</div>
                         <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
                       </div>
                     )}
 
                     {submitState === "done" && result && (
-                      <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
+                      <div ref={feedbackRef} tabIndex={-1} role="status" aria-live="polite" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 focus:outline-none">
                         <div className="text-xs font-mono text-secondary">Success</div>
                         <div className="text-xs font-mono text-muted mt-1">
                           status={String(result.status || session.status)} agent_id={String(result.agent_id || session.agent_id || "\u2014")}
                         </div>
+                      </div>
+                    )}
+
+                    {ownerEmail && (
+                      <div className="text-xs font-mono text-subtle">
+                        Signed in as <span className="text-text">{ownerEmail}</span>
                       </div>
                     )}
 

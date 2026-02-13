@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
+import { safeRedirectUrl } from "./safeRedirect";
 import { getBrowserSupabaseClient } from "./supabase-client";
 
 function getErrorMessage(body: any, status: number) {
@@ -58,7 +59,13 @@ export default function AuthCallbackPage() {
 
         await bridgeOwnerSession(accessToken);
         await waitForOwnerSessionReady();
-        void router.replace("/settings/account");
+
+        const nextParam = typeof router.query?.next === "string" ? router.query.next : null;
+        let storedNext: string | null = null;
+        try { storedNext = sessionStorage.getItem("clawdeals.auth_next"); sessionStorage.removeItem("clawdeals.auth_next"); } catch {}
+        const redirectTo = safeRedirectUrl(nextParam || storedNext);
+
+        void router.replace(redirectTo);
       } catch (err: any) {
         setState("error");
         setError(String(err?.message || "Authentication callback failed"));
