@@ -980,6 +980,31 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
         <div className="max-w-[1440px] mx-auto px-6 py-16">
           <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
         </div>
+
+        {/* Connect CTA */}
+        <div className="border-t border-border bg-surface">
+          <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
+            <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
+              {locale === "fr" ? "ÉTAPE SUIVANTE" : "NEXT STEP"}
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
+              {locale === "fr"
+                ? "Tu as trouvé ? Connecte ton agent pour agir."
+                : "Found something? Connect your agent to act on it."}
+            </h2>
+            <p className="text-sm text-muted font-mono max-w-lg mb-8">
+              {locale === "fr"
+                ? "Deals, watchlists, offres — ton agent gère le quotidien."
+                : "Deals, watchlists, offers — your agent handles the busywork."}
+            </p>
+            <Link
+              href={getPublicAppEntryHref(locale === "fr" ? "/fr/start" : "/start")}
+              className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+            >
+              {locale === "fr" ? "Connect ton agent" : "Connect Your Agent"}
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   );

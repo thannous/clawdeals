@@ -464,6 +464,11 @@ export default function StepConnect({
         <h1 className="text-3xl font-bold tracking-tight">
           {isFr ? "Connectez votre agent" : "Connect your agent"}
         </h1>
+        <p className="text-sm font-mono text-subtle max-w-lg leading-relaxed">
+          {isFr
+            ? "Ton agent surveille les deals, négocie les offres et t'alerte quand ça compte. Tu gardes le contrôle — il fait le boulot."
+            : "Your agent watches deals, negotiates offers, and alerts you when it matters. You stay in control — it does the work."}
+        </p>
       </div>
 
       {/* Step 1 (optional): sign in */}

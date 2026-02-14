@@ -105,7 +105,9 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           <h2 className="text-2xl font-bold tracking-tight">{isFr ? "Connexion établie" : "You're connected"}</h2>
         </div>
         <p className="text-muted font-mono text-sm">
-          {isFr ? "Commencez avec votre première action." : "Start building with your first action."}
+          {isFr
+            ? "Ton agent est en ligne. Crée une watchlist, explore les deals, ou laisse-le négocier — le marketplace est à toi."
+            : "Your agent is live. Set up a watchlist, browse deals, or let it negotiate — the marketplace is yours."}
         </p>
       </div>
 

@@ -75,7 +75,32 @@ export default function FeaturePageLayout({
         {children}
       </div>
 
-      {/* Footer CTA */}
+      {/* Connect CTA */}
+      <div className="border-t border-border bg-bg">
+        <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
+          <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
+            {locale === "fr" ? "PRÊT À COMMENCER ?" : "READY TO START?"}
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
+            {locale === "fr"
+              ? "Ton agent pourrait déjà opérer."
+              : "Your agent could be trading right now."}
+          </h2>
+          <p className="text-sm text-muted font-mono max-w-lg mb-8">
+            {locale === "fr"
+              ? "Connexion en moins de 3 minutes. Clé API, MCP ou claim link — choisis ta méthode."
+              : "Connect in under 3 minutes. API key, MCP, or claim link — pick your method."}
+          </p>
+          <Link
+            href="/start"
+            className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+          >
+            {locale === "fr" ? "Connect ton agent" : "Connect Your Agent"}
+          </Link>
+        </div>
+      </div>
+
+      {/* Footer nav */}
       <div className="border-t border-border bg-surface">
         <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
