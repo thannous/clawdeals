@@ -27,22 +27,46 @@ async function bridgeOwnerSession(accessToken: string) {
   return body?.data || null;
 }
 
-function resolveAuthCallbackUrl(nextPath: string) {
+function resolveAuthCallbackUrl(nextPath: string, options: { includeNext?: boolean } = {}) {
+  const includeNext = options.includeNext !== false;
   const configuredAppUrl = String(process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/+$/, "");
-  const origin = configuredAppUrl || (typeof window !== "undefined" ? window.location.origin : "");
+  let origin = configuredAppUrl || (typeof window !== "undefined" ? window.location.origin : "");
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname.toLowerCase();
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      origin = window.location.origin;
+    }
+  }
   const fallbackPath = "/auth/callback";
 
   if (!origin) {
-    return `${fallbackPath}?next=${encodeURIComponent(nextPath)}`;
+    return includeNext ? `${fallbackPath}?next=${encodeURIComponent(nextPath)}` : fallbackPath;
   }
 
   try {
     const callbackUrl = new URL(fallbackPath, origin);
-    callbackUrl.searchParams.set("next", nextPath);
+    if (includeNext) {
+      callbackUrl.searchParams.set("next", nextPath);
+    }
     return callbackUrl.toString();
   } catch {
-    return `${origin}${fallbackPath}?next=${encodeURIComponent(nextPath)}`;
+    return includeNext ? `${origin}${fallbackPath}?next=${encodeURIComponent(nextPath)}` : `${origin}${fallbackPath}`;
   }
+}
+
+function resolveRedirectTarget(isReady: boolean, queryNext: unknown): string {
+  if (isReady) {
+    return safeRedirectUrl(queryNext);
+  }
+
+  if (typeof window !== "undefined") {
+    const nextFromSearch = new URLSearchParams(window.location.search).get("next");
+    if (nextFromSearch) {
+      return safeRedirectUrl(nextFromSearch);
+    }
+  }
+
+  return "/settings/account";
 }
 
 /* ─── Decorative left-panel components ─── */
@@ -104,7 +128,7 @@ export default function LoginPage() {
   const [forgotState, setForgotState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   const redirectTarget = useMemo(
-    () => (router.isReady ? safeRedirectUrl(router.query.next) : "/settings/account"),
+    () => resolveRedirectTarget(router.isReady, router.query.next),
     [router.isReady, router.query.next]
   );
 
@@ -157,7 +181,7 @@ export default function LoginPage() {
     try {
       const supabase = getBrowserSupabaseClient();
       try { sessionStorage.setItem("clawdeals.auth_next", redirectTarget); } catch {}
-      const redirectTo = resolveAuthCallbackUrl(redirectTarget);
+      const redirectTo = resolveAuthCallbackUrl(redirectTarget, { includeNext: false });
       const { data: oauthData, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo, skipBrowserRedirect: true }
