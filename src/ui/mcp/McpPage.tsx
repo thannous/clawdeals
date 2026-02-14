@@ -45,16 +45,16 @@ const COPY: Record<
     subtitle: "3 minutes",
     lead:
       "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et forward 1:1 vers l’API REST. Installation simple via npx.",
-    stepsTitle: "Demarrage",
-    step1Title: "Option A: Installer via npx (recommande)",
+    stepsTitle: "Démarrage",
+    step1Title: "Option A: Installer via npx (recommandé)",
     step1Body: "Installation automatique pour Cursor et Claude Desktop.",
     step1Hint: "Chemin principal.",
     step2Title: "Option B: Config manuelle (secours)",
     step2Body:
-      "Utilise cette option pour Codex, Claude Code, ou si l'installation auto est bloquee.",
-    step2Hint: "A utiliser seulement si la commande npx echoue.",
-    step3Title: "Verifier",
-    step3Body: "Appelle un outil de lecture pour verifier la connexion et l’auth.",
+      "Utilise cette option pour Codex, Claude Code, ou si l'installation auto est bloquée.",
+    step2Hint: "À utiliser seulement si la commande npx échoue.",
+    step3Title: "Vérifier",
+    step3Body: "Appelle un outil de lecture pour vérifier la connexion et l'auth.",
     configTitle: "Config client",
     configCursor: "Cursor (servers)",
     configClaude: "Claude Desktop (mcpServers)",
@@ -63,26 +63,26 @@ const COPY: Record<
     configWindsurf: "Windsurf (mcpServers)",
     configGemini: "Gemini CLI (mcpServers)",
     configGeneric: "Generic (servers)",
-    verifyTitle: "Verification",
+    verifyTitle: "Vérification",
     verifyBody: "Attendu: ok=true et un champ meta.request_id.",
     errorsTitle: "Erreurs courantes",
-    errorsLead: "Les 3 causes les plus frequentes de blocage en phase de test.",
+    errorsLead: "Les 3 causes les plus fréquentes de blocage en phase de test.",
     errors: [
       {
         code: "UNAUTHORIZED",
-        fix: "Verifie CLAWDEALS_API_KEY (cd_live_...). Si vous utilisez un endpoint custom, verifie aussi CLAWDEALS_API_BASE."
+        fix: "Vérifie CLAWDEALS_API_KEY (cd_live_...). Si vous utilisez un endpoint custom, vérifie aussi CLAWDEALS_API_BASE."
       },
       {
         code: "EXPIRES_AT_INVALID",
-        fix: "Pour deals.create: expires_at doit etre dans le futur et <= 30 jours."
+        fix: "Pour deals.create: expires_at doit être dans le futur et <= 30 jours."
       },
       {
         code: "NOT_SUPPORTED (dry_run)",
-        fix: "Les write tools refusent dry_run=true. Utilise un idempotency_key pour etre safe."
+        fix: "Les write tools refusent dry_run=true. Utilise un idempotency_key pour être safe."
       }
     ],
     footerHint:
-      "Le catalogue d’outils v0 est documente dans docs/mcp-tools-spec.md. Chaque write doit fournir idempotency_key.",
+      "Le catalogue d'outils v0 est documenté dans docs/mcp-tools-spec.md. Chaque write doit fournir idempotency_key.",
     openStart: "Ouvrir l’onboarding"
   },
   en: {
@@ -279,11 +279,11 @@ export default function McpPage() {
   const installStepTitle = locale === "fr" ? "Installer (choisir A ou B)" : "Install (choose A or B)";
   const installStepBody =
     locale === "fr"
-      ? "Option A = automatique (recommande). Option B = manuel (secours)."
+      ? "Option A = automatique (recommandé). Option B = manuel (secours)."
       : "Option A = automatic (recommended). Option B = manual (fallback).";
-  const optionALabel = locale === "fr" ? "Option A (recommande)" : "Option A (recommended)";
+  const optionALabel = locale === "fr" ? "Option A (recommandé)" : "Option A (recommended)";
   const optionBLabel = locale === "fr" ? "Option B (secours)" : "Option B (fallback)";
-  const verifyStepTitle = locale === "fr" ? "Verifier" : "Verify";
+  const verifyStepTitle = locale === "fr" ? "Vérifier" : "Verify";
 
   return (
     <div className="min-h-screen bg-bg text-text">

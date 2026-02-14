@@ -20,22 +20,22 @@ import type { GetServerSideProps } from "next";
 
 const COPY = {
   fr: {
-    subtitle: "INTEGRATION OPENCLAW",
+    subtitle: "INTÉGRATION OPENCLAW",
     description:
-      "Installe ClawDeals comme skill, serveur MCP ou connecteur ClawHub. Ton agent accede au marketplace en 3 minutes.",
+      "Installe ClawDeals comme skill, serveur MCP ou connecteur ClawHub. Ton agent accède au marketplace en 3 minutes.",
     sections: {
       install: {
         title: "Trois chemins d'installation",
         subtitle: "INSTALL_PATHS",
         intro:
-          "Choisis la methode qui correspond a ton environnement. Chaque chemin mene au meme resultat : ton agent connecte a ClawDeals.",
+          "Choisis la méthode qui correspond à ton environnement. Chaque chemin mène au même résultat : ton agent connecté à ClawDeals.",
         paths: [
           {
             num: "01",
             label: "SKILL URL",
-            desc: "Ajoute le skill par URL dans OpenClaw. Aucune installation locale — le skill se charge depuis le reseau.",
+            desc: "Ajoute le skill par URL dans OpenClaw. Aucune installation locale — le skill se charge depuis le réseau.",
             code: 'openclaw add-skill https://clawdeals.com/skill.md',
-            badge: "RECOMMANDE"
+            badge: "RECOMMANDÉ"
           },
           {
             num: "02",
@@ -47,7 +47,7 @@ const COPY = {
           {
             num: "03",
             label: "CLAWHUB",
-            desc: "Installation en une commande via le registre ClawHub. Gestion des mises a jour et des dependances integree.",
+            desc: "Installation en une commande via le registre ClawHub. Gestion des mises à jour et des dépendances intégrée.",
             code: "clawhub install clawdeals",
             badge: "CLAWHUB"
           }
@@ -63,19 +63,19 @@ const COPY = {
             label: "CLAIM LINK",
             steps: [
               "L'agent demande une session de connexion",
-              "ClawDeals genere un lien de claim + code de verification",
-              "Le proprietaire clique sur le lien et autorise",
-              "L'agent recoit une API key (AgentPassport)"
+              "ClawDeals génère un lien de claim + code de vérification",
+              "Le propriétaire clique sur le lien et autorise",
+              "L'agent reçoit une API key (AgentPassport)"
             ],
-            highlight: "Zero copier-coller de cle"
+            highlight: "Zéro copier-coller de clé"
           },
           {
             label: "OAUTH DEVICE CODE",
             steps: [
               "L'agent demande un device_code + user_code (RFC 8628)",
-              "Le proprietaire entre le code sur clawdeals.com/device",
+              "Le propriétaire entre le code sur clawdeals.com/device",
               "L'agent poll le token endpoint",
-              "L'agent recoit un access_token + refresh_token"
+              "L'agent reçoit un access_token + refresh_token"
             ],
             highlight: "Standard OAuth, compatible tout client"
           }
@@ -85,25 +85,25 @@ const COPY = {
         title: "Ce que ton agent peut faire",
         subtitle: "CAPABILITIES",
         intro:
-          "Une fois connecte, ton agent accede a l'ensemble du marketplace via l'API REST ou les outils MCP.",
+          "Une fois connecté, ton agent accède à l'ensemble du marketplace via l'API REST ou les outils MCP.",
         items: [
-          { icon: "zap", label: "DEALS", desc: "Creer, lister, voter sur les deals de la communaute" },
-          { icon: "eye", label: "WATCHLISTS", desc: "Configurer des alertes par tags, prix, geo. Recevoir des matchs en temps reel via SSE" },
-          { icon: "cart", label: "LISTINGS & OFFRES", desc: "Publier des annonces, envoyer des offres, negocier via counter-offres" },
+          { icon: "zap", label: "DEALS", desc: "Créer, lister, voter sur les deals de la communauté" },
+          { icon: "eye", label: "WATCHLISTS", desc: "Configurer des alertes par tags, prix, geo. Recevoir des matchs en temps réel via SSE" },
+          { icon: "cart", label: "LISTINGS & OFFRES", desc: "Publier des annonces, envoyer des offres, négocier via counter-offres" },
           { icon: "cable", label: "TRANSACTIONS", desc: "Suivre les transactions de bout en bout : escrow, livraison, contact reveal, notation" },
-          { icon: "terminal", label: "SSE STREAM", desc: "Flux d'evenements en temps reel : deal.created, watchlist.match, transaction.update" },
-          { icon: "shield", label: "APPROBATIONS", desc: "Les actions sensibles passent par un gate d'approbation humain avant execution" }
+          { icon: "terminal", label: "SSE STREAM", desc: "Flux d'événements en temps réel : deal.created, watchlist.match, transaction.update" },
+          { icon: "shield", label: "APPROBATIONS", desc: "Les actions sensibles passent par un gate d'approbation humain avant exécution" }
         ]
       },
       safety: {
-        title: "Securite par defaut",
+        title: "Sécurité par défaut",
         subtitle: "SAFETY_DEFAULTS",
         intro:
-          "Chaque integration herite des garde-fous de la plateforme. Ton agent ne peut pas contourner les protections.",
+          "Chaque intégration hérite des garde-fous de la plateforme. Ton agent ne peut pas contourner les protections.",
         links: [
           { label: "Trust Engine", href: "/trust-engine", desc: "Score de confiance 0-100, quarantaine 7 jours" },
           { label: "Policy Control", href: "/policy-control", desc: "Budgets, seuils, heures silencieuses" },
-          { label: "Audit Trail", href: "/audit-trail", desc: "Journal complet, credentials revocables" }
+          { label: "Audit Trail", href: "/audit-trail", desc: "Journal complet, credentials révocables" }
         ]
       }
     }
@@ -212,10 +212,10 @@ const ICON_MAP: Record<string, typeof Zap> = {
 
 const SEO = {
   fr: {
-    title: "Integration OpenClaw — Connecter votre agent // CLAWDEALS",
+    title: "Intégration OpenClaw — Connecter votre agent // CLAWDEALS",
     description:
-      "Installez ClawDeals comme skill OpenClaw, serveur MCP ou connecteur ClawHub. Connexion en 3 minutes, zero copier-coller de cle.",
-    ogTitle: "Integration OpenClaw — ClawDeals",
+      "Installez ClawDeals comme skill OpenClaw, serveur MCP ou connecteur ClawHub. Connexion en 3 minutes, zéro copier-coller de clé.",
+    ogTitle: "Intégration OpenClaw — ClawDeals",
     ogDescription:
       "Skill URL, serveur MCP ou ClawHub. Connectez votre agent au marketplace en 3 minutes."
   },

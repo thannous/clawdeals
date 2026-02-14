@@ -15,11 +15,11 @@ const SCOPE_EXPLANATIONS: Record<ClaimLocale, Record<string, string>> = {
     "installations:read": "View connected app installation status and metadata."
   },
   fr: {
-    "agent:read": "Lire les listings, offres et etat du compte pour cette installation.",
-    "agent:write": "Creer et mettre a jour listings, offres et messages.",
+    "agent:read": "Lire les listings, offres et état du compte pour cette installation.",
+    "agent:write": "Créer et mettre à jour listings, offres et messages.",
     "approvals:read": "Voir les demandes de validation en attente pour cette installation.",
     "approvals:write": "Valider ou refuser les actions sensibles de cette installation.",
-    "installations:read": "Voir le statut et les metadonnees des integrations connectees."
+    "installations:read": "Voir le statut et les métadonnées des intégrations connectées."
   }
 };
 
@@ -103,7 +103,7 @@ const COPY: Record<
     expiredAgo: (rel) => `expired ${rel} ago`
   },
   fr: {
-    subtitle: "Connectez un client externe a votre compte owner Clawdeals.",
+    subtitle: "Connectez un client externe à votre compte owner Clawdeals.",
     missingTokenTitle: "Token manquant",
     missingTokenBody: "Le lien de connexion est incomplet.",
     loading: "Chargement...",
@@ -113,39 +113,39 @@ const COPY: Record<
     ownerLogin: "Connexion owner",
     client: "Client",
     expires: "Expiration",
-    requestedPermissions: "Permissions demandees",
+    requestedPermissions: "Permissions demandées",
     none: "aucune",
-    notClaimable: (status) => `Cette session ne peut pas etre validee (status=${status}).`,
-    alreadyApproved: "Connexion deja validee",
+    notClaimable: (status) => `Cette session ne peut pas être validée (status=${status}).`,
+    alreadyApproved: "Connexion déjà validée",
     chooseAgent: "Choisir un agent",
-    create: "Creer",
+    create: "Créer",
     attach: "Attacher",
-    ownerLimitReached: (limit) => `Ce owner a deja atteint la limite d'agents (${limit}). Attachez un agent existant.`,
+    ownerLimitReached: (limit) => `Ce owner a déjà atteint la limite d'agents (${limit}). Attachez un agent existant.`,
     newAgentName: "Nom du nouvel agent",
-    requestedAgentDefault: "Nom initialise depuis la demande.",
+    requestedAgentDefault: "Nom initialisé depuis la demande.",
     existingAgent: "Agent existant",
     existingAgentId: "ID agent existant",
-    agentOwnerHint: "L'agent doit appartenir au meme owner.",
-    successTitle: "Succes",
-    signedInAs: "Connecte en tant que",
+    agentOwnerHint: "L'agent doit appartenir au même owner.",
+    successTitle: "Succès",
+    signedInAs: "Connecté en tant que",
     approving: "Validation...",
     approveAndConnect: "Valider et connecter",
     refuse: "Refuser",
-    denyConfirm: "Refuser cette demande de connexion ? Cette action est irreversible.",
-    denyFailed: "Echec du refus",
-    selectAttachAgent: "Selectionnez un agent existant a attacher.",
-    claimFailed: "Validation echouee",
-    signInRequiredToApprove: "Vous devez etre connecte en owner pour valider cette connexion.",
-    footerWarning: "Si ce n'etait pas attendu, fermez cette page. Ne collez jamais de token dans un chat.",
+    denyConfirm: "Refuser cette demande de connexion ? Cette action est irréversible.",
+    denyFailed: "Échec du refus",
+    selectAttachAgent: "Sélectionnez un agent existant à attacher.",
+    claimFailed: "Validation échouée",
+    signInRequiredToApprove: "Vous devez être connecté en owner pour valider cette connexion.",
+    footerWarning: "Si ce n'était pas attendu, fermez cette page. Ne collez jamais de token dans un chat.",
     in: (rel) => `dans ${rel}`,
-    expiredAgo: (rel) => `expire depuis ${rel}`
+    expiredAgo: (rel) => `expiré depuis ${rel}`
   }
 };
 
 function describeScope(scope: string, locale: ClaimLocale) {
   return SCOPE_EXPLANATIONS[locale][String(scope || "").trim()] ||
     (locale === "fr"
-      ? "Acces API supplementaire demande par cette installation."
+      ? "Accès API supplémentaire demandé par cette installation."
       : "Additional API access requested by this installation.");
 }
 
@@ -154,11 +154,11 @@ function normalizeClaimError(rawError: string, options: { ownerAgentsCount: numb
   if (/owner agent limit reached/i.test(message)) {
     if (options.ownerAgentsCount > 0) {
       return options.locale === "fr"
-        ? "Limite d'agents atteinte pour ce owner. Selectionnez Attacher et choisissez un agent existant."
+        ? "Limite d'agents atteinte pour ce owner. Sélectionnez Attacher et choisissez un agent existant."
         : "Agent limit reached for this owner. Select Attach and choose an existing agent.";
     }
     return options.locale === "fr"
-      ? "Limite d'agents atteinte pour ce owner. Connectez-vous avec le bon owner, ou attachez cette installation a un agent existant."
+      ? "Limite d'agents atteinte pour ce owner. Connectez-vous avec le bon owner, ou attachez cette installation à un agent existant."
       : "Agent limit reached for this owner. Sign in with the right owner, or attach this installation to an existing agent.";
   }
   if (/owner authentication required/i.test(message) || /unauthorized/i.test(message)) {

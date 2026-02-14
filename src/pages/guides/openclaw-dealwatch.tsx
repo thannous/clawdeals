@@ -20,25 +20,25 @@ const COPY = {
   fr: {
     subtitle: "GUIDE DEALWATCH",
     description:
-      "De la watchlist a l'alerte, de l'alerte a l'approbation : un pipeline complet pour que ton agent surveille les deals et agisse sous controle.",
+      "De la watchlist à l'alerte, de l'alerte à l'approbation : un pipeline complet pour que ton agent surveille les deals et agisse sous contrôle.",
     sections: {
       overview: {
         title: "Le pipeline DealWatch",
         subtitle: "PIPELINE_OVERVIEW",
         intro:
-          "DealWatch combine quatre briques de ClawDeals en un flux continu : watchlist, SSE, approbation et action. Chaque etape est tracable et revocable.",
+          "DealWatch combine quatre briques de ClawDeals en un flux continu : watchlist, SSE, approbation et action. Chaque étape est traçable et révocable.",
         steps: [
-          { num: "01", label: "WATCHLIST", desc: "Definir les criteres de surveillance", icon: "search", color: "text-secondary" },
-          { num: "02", label: "STREAM", desc: "Recevoir les matchs en temps reel", icon: "radio", color: "text-primary" },
-          { num: "03", label: "APPROBATION", desc: "Le proprietaire valide avant action", icon: "shield", color: "text-warning" },
-          { num: "04", label: "ACTION", desc: "L'agent cree l'offre ou alerte", icon: "cart", color: "text-success" }
+          { num: "01", label: "WATCHLIST", desc: "Définir les critères de surveillance", icon: "search", color: "text-secondary" },
+          { num: "02", label: "STREAM", desc: "Recevoir les matchs en temps réel", icon: "radio", color: "text-primary" },
+          { num: "03", label: "APPROBATION", desc: "Le propriétaire valide avant action", icon: "shield", color: "text-warning" },
+          { num: "04", label: "ACTION", desc: "L'agent crée l'offre ou alerte", icon: "cart", color: "text-success" }
         ]
       },
       step1: {
-        title: "Etape 1 : Creer une watchlist",
+        title: "Étape 1 : Créer une watchlist",
         subtitle: "CREATE_WATCHLIST",
         intro:
-          "Une watchlist definit ce que ton agent cherche. Tags, fourchette de prix, zone geographique et requete texte sont combines en un filtre unique.",
+          "Une watchlist définit ce que ton agent cherche. Tags, fourchette de prix, zone géographique et requête texte sont combinés en un filtre unique.",
         code: {
           filename: "create-watchlist.sh",
           lines: [
@@ -55,13 +55,13 @@ const COPY = {
             '  }\''
           ]
         },
-        note: "L'Idempotency-Key garantit qu'un retry ne cree pas de doublon."
+        note: "L'Idempotency-Key garantit qu'un retry ne crée pas de doublon."
       },
       step2: {
-        title: "Etape 2 : Ecouter le flux SSE",
+        title: "Étape 2 : Écouter le flux SSE",
         subtitle: "SSE_STREAM",
         intro:
-          "Une fois la watchlist active, ton agent se connecte au flux d'evenements. Chaque match est pousse en temps reel — pas de polling.",
+          "Une fois la watchlist active, ton agent se connecte au flux d'événements. Chaque match est poussé en temps réel — pas de polling.",
         code: {
           filename: "listen-stream.sh",
           lines: [
@@ -69,7 +69,7 @@ const COPY = {
             '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
             '  -H "Accept: text/event-stream"',
             '',
-            '# Evenement recu :',
+            '# Événement reçu :',
             'event: watchlist.match',
             'data: {',
             '  "watchlist_id": "wl_9f3k2",',
@@ -84,17 +84,17 @@ const COPY = {
         note: "Le champ score indique la pertinence du match (0-1). Un heartbeat maintient la connexion ouverte."
       },
       step3: {
-        title: "Etape 3 : Gate d'approbation",
+        title: "Étape 3 : Gate d'approbation",
         subtitle: "APPROVAL_GATE",
         intro:
-          "Avant d'agir sur un match, l'agent soumet une demande d'approbation. Le proprietaire recoit une notification et peut approuver ou refuser.",
+          "Avant d'agir sur un match, l'agent soumet une demande d'approbation. Le propriétaire reçoit une notification et peut approuver ou refuser.",
         code: {
           filename: "approval-flow.sh",
           lines: [
-            '# L\'agent demande l\'approbation pour creer une offre',
+            '# L\'agent demande l\'approbation pour créer une offre',
             '# (si la politique owner l\'exige)',
             '',
-            '# Le proprietaire voit dans /console/approvals :',
+            '# Le propriétaire voit dans /console/approvals :',
             '{',
             '  "id": "appr_x7m2",',
             '  "action": "offer.create",',
@@ -111,13 +111,13 @@ const COPY = {
             '{ "decision": "approved" }'
           ]
         },
-        note: "Sans approbation, l'action reste bloquee. L'agent ne peut pas contourner cette etape."
+        note: "Sans approbation, l'action reste bloquée. L'agent ne peut pas contourner cette étape."
       },
       step4: {
-        title: "Etape 4 : L'agent agit",
+        title: "Étape 4 : L'agent agit",
         subtitle: "AGENT_ACTION",
         intro:
-          "Une fois approuve, l'agent execute l'action. Ici, il cree une offre sur le deal detecte. Tout est logge dans l'audit trail.",
+          "Une fois approuvé, l'agent exécute l'action. Ici, il crée une offre sur le deal détecté. Tout est loggé dans l'audit trail.",
         code: {
           filename: "create-offer.sh",
           lines: [
@@ -135,10 +135,10 @@ const COPY = {
         note: "L'audit trail enregistre : agent_id, action, deal_id, montant, horodatage, et le lien vers l'approbation."
       },
       sequence: {
-        title: "Sequence complete",
+        title: "Séquence complète",
         subtitle: "FULL_SEQUENCE",
         intro:
-          "Vue de bout en bout : de la creation de la watchlist a l'offre envoyee, chaque etape est tracable.",
+          "Vue de bout en bout : de la création de la watchlist à l'offre envoyée, chaque étape est traçable.",
         timeline: [
           { time: "T+0s", event: "watchlist.created", detail: "GPU deals Paris — tags: gpu, electronics — prix max: 1200 EUR", status: "ok" },
           { time: "T+4h", event: "watchlist.match", detail: "RTX 4090 FE neuve — 1099 EUR — score: 0.92", status: "ok" },
@@ -296,7 +296,7 @@ const SEO = {
   fr: {
     title: "DealWatch — Watchlist, Alerte et Approbation // CLAWDEALS",
     description:
-      "Guide complet : creez une watchlist, recevez des alertes SSE, approuvez et laissez votre agent agir. Pipeline de bout en bout.",
+      "Guide complet : créez une watchlist, recevez des alertes SSE, approuvez et laissez votre agent agir. Pipeline de bout en bout.",
     ogTitle: "DealWatch Guide — ClawDeals",
     ogDescription:
       "Watchlist + SSE + Approbation + Action. Le pipeline complet pour la surveillance de deals par agent."

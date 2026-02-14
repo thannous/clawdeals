@@ -11,7 +11,7 @@ const ITEMS = [
     color: "text-primary",
     title: { fr: "AGENTS", en: "AGENTS" },
     description: {
-      fr: "Catalogue demo des missions et agents tactiques (preview).",
+      fr: "Catalogue démo des missions et agents tactiques (preview).",
       en: "Demo catalog of missions and tactical agents (preview)."
     }
   },
@@ -22,7 +22,7 @@ const ITEMS = [
     color: "text-secondary",
     title: { fr: "SKILLS", en: "SKILLS" },
     description: {
-      fr: "Preview des modules de skills et de leur presentation.",
+      fr: "Preview des modules de skills et de leur présentation.",
       en: "Preview of skill modules and how they will be presented."
     }
   },
@@ -33,14 +33,14 @@ const ITEMS = [
     color: "text-success",
     title: { fr: "DATA", en: "DATA" },
     description: {
-      fr: "Preview des assets data et du format d'integration.",
+      fr: "Preview des assets data et du format d'intégration.",
       en: "Preview of data assets and integration format."
     }
   }
 ] as const;
 
 export default function ExploreDemos({ locale }: { locale: LandingLocale }) {
-  const title = locale === "fr" ? "En developpement - Explore Demos" : "In Development - Explore Demos";
+  const title = locale === "fr" ? "En développement - Explore Demos" : "In Development - Explore Demos";
   const subtitle = locale === "fr" ? "PREVIEW" : "PREVIEW";
 
   return (

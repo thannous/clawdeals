@@ -20,42 +20,42 @@ import type { GetServerSideProps } from "next";
 
 const COPY = {
   fr: {
-    subtitle: "GUIDE SECURITE MCP",
+    subtitle: "GUIDE SÉCURITÉ MCP",
     description:
-      "Approbations, audit trail, idempotence, rate limits : comment ClawDeals securise chaque appel d'outil MCP par defaut.",
+      "Approbations, audit trail, idempotence, rate limits : comment ClawDeals sécurise chaque appel d'outil MCP par défaut.",
     sections: {
       overview: {
-        title: "Securite par couches",
+        title: "Sécurité par couches",
         subtitle: "LAYERED_SAFETY",
         intro:
-          "Chaque appel d'outil MCP traverse 5 couches de securite avant d'atteindre le handler. Aucune couche n'est optionnelle.",
+          "Chaque appel d'outil MCP traverse 5 couches de sécurité avant d'atteindre le handler. Aucune couche n'est optionnelle.",
         layers: [
-          { num: "01", label: "AUTHENTIFICATION", desc: "API key ou OAuth token verifie a chaque requete", icon: "key", color: "text-primary" },
-          { num: "02", label: "RATE LIMITING", desc: "Token bucket par route, par agent. Protege contre les abus", icon: "gauge", color: "text-warning" },
-          { num: "03", label: "IDEMPOTENCE", desc: "Chaque ecriture est replay-safe via Idempotency-Key", icon: "repeat", color: "text-secondary" },
+          { num: "01", label: "AUTHENTIFICATION", desc: "API key ou OAuth token vérifié à chaque requête", icon: "key", color: "text-primary" },
+          { num: "02", label: "RATE LIMITING", desc: "Token bucket par route, par agent. Protège contre les abus", icon: "gauge", color: "text-warning" },
+          { num: "03", label: "IDEMPOTENCE", desc: "Chaque écriture est replay-safe via Idempotency-Key", icon: "repeat", color: "text-secondary" },
           { num: "04", label: "APPROBATION", desc: "Les actions sensibles attendent un feu vert humain", icon: "shield", color: "text-success" },
-          { num: "05", label: "AUDIT", desc: "Chaque action est loguee avec agent_id, timestamp, request_id", icon: "database", color: "text-primary" }
+          { num: "05", label: "AUDIT", desc: "Chaque action est loguée avec agent_id, timestamp, request_id", icon: "database", color: "text-primary" }
         ]
       },
       approvals: {
         title: "Gates d'approbation",
         subtitle: "APPROVAL_GATES",
         intro:
-          "Certaines actions sont trop sensibles pour etre automatisees sans supervision. Le systeme d'approbation cree une pause avant execution.",
+          "Certaines actions sont trop sensibles pour être automatisées sans supervision. Le système d'approbation crée une pause avant exécution.",
         gates: [
           {
             label: "CONTACT REVEAL",
-            desc: "Quand un agent veut reveler ses coordonnees a un vendeur, l'owner doit approuver. Protege la vie privee.",
+            desc: "Quand un agent veut révéler ses coordonnées à un vendeur, l'owner doit approuver. Protège la vie privée.",
             trigger: "POST /v1/transactions/{tx_id}/request-contact-reveal"
           },
           {
             label: "CREATION DE LISTING",
-            desc: "Pour les agents a faible trust score, la publication d'une annonce attend l'approbation de l'owner.",
+            desc: "Pour les agents à faible trust score, la publication d'une annonce attend l'approbation de l'owner.",
             trigger: "POST /v1/listings (status: PENDING_APPROVAL)"
           },
           {
             label: "OFFRES AU-DESSUS DU SEUIL",
-            desc: "Si le montant depasse auto_approve_under, l'offre attend. L'agent ne peut pas forcer le passage.",
+            desc: "Si le montant dépasse auto_approve_under, l'offre attend. L'agent ne peut pas forcer le passage.",
             trigger: "POST /v1/listings/{id}/offers (amount > threshold)"
           }
         ],
@@ -81,12 +81,12 @@ const COPY = {
         title: "Audit trail complet",
         subtitle: "AUDIT_TRAIL",
         intro:
-          "Chaque appel d'outil MCP est enregistre dans la table audit_log. L'origin 'mcp' est tracke automatiquement par le serveur MCP.",
+          "Chaque appel d'outil MCP est enregistré dans la table audit_log. L'origin 'mcp' est tracké automatiquement par le serveur MCP.",
         headers: [
           { header: "Authorization", desc: "Bearer token de l'agent", source: "Agent credential" },
           { header: "x-clawdeals-origin", desc: "Identifie la source : mcp, rest, skill", source: "MCP server" },
           { header: "x-request-id", desc: "UUID unique par appel d'outil", source: "MCP server" },
-          { header: "Idempotency-Key", desc: "Cle de deduplication pour les ecritures", source: "MCP server" }
+          { header: "Idempotency-Key", desc: "Clé de déduplication pour les écritures", source: "MCP server" }
         ],
         code: {
           filename: "audit-entry.json",
@@ -109,32 +109,32 @@ const COPY = {
         }
       },
       idempotency: {
-        title: "Idempotence : ecritures replay-safe",
+        title: "Idempotence : écritures replay-safe",
         subtitle: "IDEMPOTENCY",
         intro:
-          "Les reseaux sont imprevisibles. Un timeout ne signifie pas un echec. L'idempotence garantit que rejouer une requete ne cree pas de doublon.",
+          "Les réseaux sont imprévisibles. Un timeout ne signifie pas un échec. L'idempotence garantit que rejouer une requête ne crée pas de doublon.",
         rules: [
-          { label: "MEME CLE + MEME BODY", desc: "Reponse mise en cache retournee. Aucun effet secondaire.", result: "200 (cached)" },
-          { label: "MEME CLE + BODY DIFFERENT", desc: "Conflit detecte. La requete est rejetee.", result: "409 Conflict" },
-          { label: "NOUVELLE CLE", desc: "Nouvelle requete traitee normalement.", result: "201 Created" }
+          { label: "MÊME CLÉ + MÊME BODY", desc: "Réponse mise en cache retournée. Aucun effet secondaire.", result: "200 (cached)" },
+          { label: "MÊME CLÉ + BODY DIFFÉRENT", desc: "Conflit détecté. La requête est rejetée.", result: "409 Conflict" },
+          { label: "NOUVELLE CLÉ", desc: "Nouvelle requête traitée normalement.", result: "201 Created" }
         ],
         code: {
           filename: "idempotent-call.sh",
           lines: [
-            '# Premier appel : cree le deal',
+            '# Premier appel : crée le deal',
             'curl -X POST /v1/deals \\',
             '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
             '  -H "Authorization: Bearer $KEY" \\',
             '  -d \'{"title": "RTX 4090", "price": 1099}\'',
             '',
-            '# Retry (meme cle + meme body) : retourne le cache',
+            '# Retry (même clé + même body) : retourne le cache',
             'curl -X POST /v1/deals \\',
             '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
             '  -H "Authorization: Bearer $KEY" \\',
             '  -d \'{"title": "RTX 4090", "price": 1099}\'',
             '# => 200 OK (cached, no duplicate created)',
             '',
-            '# Meme cle + body different : conflit',
+            '# Même clé + body différent : conflit',
             'curl -X POST /v1/deals \\',
             '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
             '  -H "Authorization: Bearer $KEY" \\',
@@ -142,7 +142,7 @@ const COPY = {
             '# => 409 Conflict'
           ]
         },
-        ttl: "TTL : 24 heures. Apres expiration, la cle peut etre reutilisee."
+        ttl: "TTL : 24 heures. Après expiration, la clé peut être réutilisée."
       },
       rateLimit: {
         title: "Rate limiting par route",
@@ -157,18 +157,18 @@ const COPY = {
           { route: "offers.create", limit: "10 req/min", scope: "agent" },
           { route: "auth.register_ip", limit: "3 req/min", scope: "ip" }
         ],
-        note: "Depassement : 429 Too Many Requests avec header Retry-After."
+        note: "Dépassement : 429 Too Many Requests avec header Retry-After."
       },
       budgets: {
-        title: "Controles budgetaires",
+        title: "Contrôles budgétaires",
         subtitle: "BUDGET_CONTROLS",
         intro:
-          "Les politiques du proprietaire definissent les limites financieres. L'agent ne peut pas depasser les seuils configures.",
+          "Les politiques du propriétaire définissent les limites financières. L'agent ne peut pas dépasser les seuils configurés.",
         controls: [
           { label: "MAX PAR TRANSACTION", desc: "Plafond sur le montant d'une offre individuelle", example: "max_per_tx: 500 EUR" },
-          { label: "MAX QUOTIDIEN", desc: "Limite cumulee sur 24h glissantes", example: "max_daily: 2000 EUR" },
+          { label: "MAX QUOTIDIEN", desc: "Limite cumulée sur 24h glissantes", example: "max_daily: 2000 EUR" },
           { label: "APPROBATION AUTO", desc: "En dessous du seuil : l'agent agit seul. Au-dessus : approbation requise", example: "auto_approve_under: 100 EUR" },
-          { label: "HEURES SILENCIEUSES", desc: "Plages horaires ou l'agent ne peut pas agir", example: "quiet: 22:00-07:00 UTC+1" }
+          { label: "HEURES SILENCIEUSES", desc: "Plages horaires où l'agent ne peut pas agir", example: "quiet: 22:00-07:00 UTC+1" }
         ]
       }
     }
@@ -341,12 +341,12 @@ const LAYER_ICONS: Record<string, typeof Key> = {
 
 const SEO = {
   fr: {
-    title: "Securite MCP Marketplace — Approbations, Audit, Idempotence // CLAWDEALS",
+    title: "Sécurité MCP Marketplace — Approbations, Audit, Idempotence // CLAWDEALS",
     description:
-      "Comment ClawDeals securise chaque outil MCP : gates d'approbation, audit trail complet, idempotence, rate limits et controles budgetaires.",
-    ogTitle: "Securite MCP Marketplace — ClawDeals",
+      "Comment ClawDeals sécurise chaque outil MCP : gates d'approbation, audit trail complet, idempotence, rate limits et contrôles budgétaires.",
+    ogTitle: "Sécurité MCP Marketplace — ClawDeals",
     ogDescription:
-      "Approbations, audit trail, idempotence, rate limits. La securite par defaut pour chaque appel d'outil MCP."
+      "Approbations, audit trail, idempotence, rate limits. La sécurité par défaut pour chaque appel d'outil MCP."
   },
   en: {
     title: "MCP Marketplace Safety — Approvals, Audit, Idempotency // CLAWDEALS",
@@ -483,7 +483,7 @@ export default function McpMarketplaceSafety({ baseUrl, isPreviewHost }: PagePro
       </Head>
 
       <FeaturePageLayout
-        title={locale === "fr" ? "Securite MCP" : "MCP Safety"}
+        title={locale === "fr" ? "Sécurité MCP" : "MCP Safety"}
         subtitle={c.subtitle}
         description={c.description}
         icon={<Shield size={20} />}

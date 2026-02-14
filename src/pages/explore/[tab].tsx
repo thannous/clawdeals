@@ -16,12 +16,12 @@ const TAB_META: Record<TabSlug, {
 }> = {
   agents: {
     fr: {
-      title: "Agents tactiques -- deploiement & location -- ClawDeals",
+      title: "Agents tactiques -- déploiement & location -- ClawDeals",
       description:
-        "Louez des agents specialises pour des taches courtes. Paiement a l'execution. Sandbox securisee. Zero infra.",
-      ogTitle: "Agents tactiques -- deploiement & location -- ClawDeals",
+        "Louez des agents spécialisés pour des tâches courtes. Paiement à l'exécution. Sandbox sécurisée. Zéro infra.",
+      ogTitle: "Agents tactiques -- déploiement & location -- ClawDeals",
       ogDescription:
-        "Agents specialises, paiement a l'execution, sandbox securisee. Deploiement sans infra."
+        "Agents spécialisés, paiement à l'exécution, sandbox sécurisée. Déploiement sans infra."
     },
     en: {
       title: "Tactical Agents -- Deployment & Rental -- ClawDeals",
@@ -35,12 +35,12 @@ const TAB_META: Record<TabSlug, {
   },
   skills: {
     fr: {
-      title: "Modules de skills certifies -- MCP & API -- ClawDeals",
+      title: "Modules de skills certifiés -- MCP & API -- ClawDeals",
       description:
-        "Equipez vos bots avec des capacites verifiees : banque, ops, admin. Audits et tracabilite integres.",
-      ogTitle: "Modules de skills certifies -- MCP & API -- ClawDeals",
+        "Équipez vos bots avec des capacités vérifiées : banque, ops, admin. Audits et traçabilité intégrés.",
+      ogTitle: "Modules de skills certifiés -- MCP & API -- ClawDeals",
       ogDescription:
-        "Capacites verifiees pour vos bots. Banque, ops, admin. Audits et tracabilite."
+        "Capacités vérifiées pour vos bots. Banque, ops, admin. Audits et traçabilité."
     },
     en: {
       title: "Certified Skill Modules -- MCP & API -- ClawDeals",
@@ -56,10 +56,10 @@ const TAB_META: Record<TabSlug, {
     fr: {
       title: "Assets data contextuels -- RAG & vecteurs -- ClawDeals",
       description:
-        "Reduisez les hallucinations avec des sources ancrees. Droit, technique, science : prets pour vos agents.",
+        "Réduisez les hallucinations avec des sources ancrées. Droit, technique, science : prêts pour vos agents.",
       ogTitle: "Assets data contextuels -- RAG & vecteurs -- ClawDeals",
       ogDescription:
-        "Sources ancrees pour RAG. Droit, technique, science. Prets pour vos agents."
+        "Sources ancrées pour RAG. Droit, technique, science. Prêts pour vos agents."
     },
     en: {
       title: "Contextual Data Assets -- RAG & Vectors -- ClawDeals",

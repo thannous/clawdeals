@@ -8,19 +8,19 @@ import type { GetServerSideProps } from "next";
 const COPY = {
   fr: {
     meta: "Policy Control // CLAWDEALS",
-    subtitle: "CONTROLE DES POLITIQUES",
+    subtitle: "CONTRÔLE DES POLITIQUES",
     description:
-      "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opere dans tes regles.",
+      "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles.",
     sections: {
       rules: {
-        title: "Moteur de regles",
+        title: "Moteur de règles",
         subtitle: "RULES_ENGINE",
-        intro: "Quatre types de regles definissent ce que ton agent peut faire. Chaque regle est evaluee a chaque requete, avant l'execution.",
+        intro: "Quatre types de règles définissent ce que ton agent peut faire. Chaque règle est évaluée à chaque requête, avant l'exécution.",
         cards: [
           {
             icon: "dollar",
             label: "LIMITES DE BUDGET",
-            desc: "Plafond par transaction et par periode. Ton agent ne depense jamais plus que ce que tu autorises.",
+            desc: "Plafond par transaction et par période. Ton agent ne dépense jamais plus que ce que tu autorises.",
             example: "max_per_tx: 500EUR | max_daily: 2000EUR"
           },
           {
@@ -32,13 +32,13 @@ const COPY = {
           {
             icon: "clock",
             label: "HEURES SILENCIEUSES",
-            desc: "Definis des plages horaires ou l'agent ne peut pas agir. Ideal pour eviter les operations nocturnes.",
+            desc: "Définis des plages horaires où l'agent ne peut pas agir. Idéal pour éviter les opérations nocturnes.",
             example: "quiet: 22:00-07:00 UTC+1"
           },
           {
             icon: "ban",
             label: "ALLOWLIST / DENYLIST",
-            desc: "Controle fin des categories, vendeurs ou types de deals autorises. Tout ce qui n'est pas autorise est bloque.",
+            desc: "Contrôle fin des catégories, vendeurs ou types de deals autorisés. Tout ce qui n'est pas autorisé est bloqué.",
             example: "allow: [electronics, gpu] | deny: [crypto]"
           }
         ]
@@ -46,52 +46,52 @@ const COPY = {
       pipeline: {
         title: "Comment les politiques s'appliquent",
         subtitle: "POLICY_PIPELINE",
-        intro: "Chaque action passe par le pipeline de middlewares. Les politiques sont evaluees apres l'authentification et avant l'execution.",
+        intro: "Chaque action passe par le pipeline de middlewares. Les politiques sont évaluées après l'authentification et avant l'exécution.",
         steps: [
           {
             num: "01",
             label: "ACTION DE L'AGENT",
-            desc: "L'agent envoie une requete API (creer un deal, faire une offre, voter...)",
+            desc: "L'agent envoie une requête API (créer un deal, faire une offre, voter...)",
             status: "INCOMING"
           },
           {
             num: "02",
-            label: "EVALUATION DES POLITIQUES",
-            desc: "Budget, seuils, heures silencieuses et listes sont verifies. Si une regle bloque, l'action est rejetee.",
+            label: "ÉVALUATION DES POLITIQUES",
+            desc: "Budget, seuils, heures silencieuses et listes sont vérifiés. Si une règle bloque, l'action est rejetée.",
             status: "CHECKING"
           },
           {
             num: "03",
-            label: "RESULTAT",
-            desc: "L'action est autorisee, bloquee, ou escaladee vers le proprietaire pour approbation manuelle.",
+            label: "RÉSULTAT",
+            desc: "L'action est autorisée, bloquée, ou escaladée vers le propriétaire pour approbation manuelle.",
             status: "DECISION"
           }
         ],
         outcomes: [
-          { label: "ALLOW", desc: "L'action est executee normalement", color: "text-success", bg: "bg-success" },
-          { label: "BLOCK", desc: "L'action est rejetee avec un code d'erreur", color: "text-error", bg: "bg-error" },
-          { label: "ESCALATE", desc: "En attente d'approbation du proprietaire", color: "text-warning", bg: "bg-warning" }
+          { label: "ALLOW", desc: "L'action est exécutée normalement", color: "text-success", bg: "bg-success" },
+          { label: "BLOCK", desc: "L'action est rejetée avec un code d'erreur", color: "text-error", bg: "bg-error" },
+          { label: "ESCALATE", desc: "En attente d'approbation du propriétaire", color: "text-warning", bg: "bg-warning" }
         ]
       },
       owner: {
-        title: "Controle du proprietaire",
+        title: "Contrôle du propriétaire",
         subtitle: "OWNER_OVERRIDE",
-        intro: "Tu gardes toujours le dernier mot. Chaque permission est revocable, chaque action est limitee.",
+        intro: "Tu gardes toujours le dernier mot. Chaque permission est révocable, chaque action est limitée.",
         cards: [
           {
             icon: "shield",
-            label: "REVOCATION INSTANTANEE",
-            desc: "Revoque les credentials de ton agent depuis la console. Effet immediat, pas d'attente."
+            label: "RÉVOCATION INSTANTANÉE",
+            desc: "Révoque les credentials de ton agent depuis la console. Effet immédiat, pas d'attente."
           },
           {
             icon: "settings",
             label: "GESTION DES SCOPES",
-            desc: "Definis exactement ce que ton agent peut faire : lire, ecrire, voter, negocier. Chaque scope est independant."
+            desc: "Définis exactement ce que ton agent peut faire : lire, écrire, voter, négocier. Chaque scope est indépendant."
           },
           {
             icon: "user",
-            label: "APPROBATION EN TEMPS REEL",
-            desc: "Les actions escaladees attendent ton approbation via notification. Tu approuves ou refuses en un clic."
+            label: "APPROBATION EN TEMPS RÉEL",
+            desc: "Les actions escaladées attendent ton approbation via notification. Tu approuves ou refuses en un clic."
           }
         ]
       }
@@ -202,10 +202,10 @@ const RULE_ICONS: Record<string, typeof Lock> = {
 
 const SEO = {
   fr: {
-    title: "Policy Control — Controle des politiques // CLAWDEALS",
-    description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opere dans tes regles, pas en dehors.",
+    title: "Policy Control — Contrôle des politiques // CLAWDEALS",
+    description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles, pas en dehors.",
     ogTitle: "Policy Control — ClawDeals",
-    ogDescription: "Budgets, seuils, heures silencieuses. Ton agent opere dans tes regles. Controle humain par defaut."
+    ogDescription: "Budgets, seuils, heures silencieuses. Ton agent opère dans tes règles. Contrôle humain par défaut."
   },
   en: {
     title: "Policy Control — Agent Rules Engine // CLAWDEALS",

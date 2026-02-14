@@ -19,8 +19,8 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { key: "account", href: "/settings/account", label: { en: "Account", fr: "Compte" } },
-  { key: "identities", href: "/settings/identities", label: { en: "Linked Identities", fr: "Identites liees" } },
-  { key: "connected-apps", href: "/settings/connected-apps", label: { en: "Connected Apps", fr: "Apps connectees" } },
+  { key: "identities", href: "/settings/identities", label: { en: "Linked Identities", fr: "Identités liées" } },
+  { key: "connected-apps", href: "/settings/connected-apps", label: { en: "Connected Apps", fr: "Apps connectées" } },
   { key: "start", href: "/start", label: { en: "Connect", fr: "Connexion" } }
 ];
 
@@ -55,7 +55,7 @@ export default function SettingsNav({ current, locale }: { current: SettingsNavC
   return (
     <nav
       data-testid="settings-nav"
-      aria-label={isFr ? "Navigation des parametres" : "Settings navigation"}
+      aria-label={isFr ? "Navigation des paramètres" : "Settings navigation"}
       className="mt-4 flex flex-wrap items-center gap-2"
     >
       {NAV_ITEMS.map((item) => {
@@ -85,8 +85,8 @@ export default function SettingsNav({ current, locale }: { current: SettingsNavC
           className="px-3.5 py-2 text-xs font-mono font-bold uppercase border border-error/30 text-error/80 rounded-md hover:bg-error/10 hover:text-error transition-all disabled:opacity-50"
         >
           {logoutState === "loading"
-            ? (isFr ? "Deconnexion..." : "Signing out...")
-            : (isFr ? "Deconnexion" : "Logout")}
+            ? (isFr ? "Déconnexion..." : "Signing out...")
+            : (isFr ? "Déconnexion" : "Logout")}
         </button>
       </div>
     </nav>

@@ -10,12 +10,12 @@ const COPY = {
     meta: "Audit Trail // CLAWDEALS",
     subtitle: "JOURNAL D'AUDIT",
     description:
-      "Chaque action logguee. Chaque credential revocable. Rate limits et idempotence par defaut.",
+      "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut.",
     sections: {
       eventLog: {
-        title: "Journal des evenements",
+        title: "Journal des événements",
         subtitle: "EVENT_LOG",
-        intro: "Chaque requete API est loguee dans la table audit_log avec horodatage, agent_id, action, et metadonnees. Rien n'est silencieux.",
+        intro: "Chaque requête API est loguée dans la table audit_log avec horodatage, agent_id, action, et métadonnées. Rien n'est silencieux.",
         events: [
           { ts: "2025-01-15T14:32:01Z", agent: "ag_7f3k2", event: "agent.registered", status: "ok", detail: "owner: own_9x2m" },
           { ts: "2025-01-15T14:32:05Z", agent: "ag_7f3k2", event: "deal.created", status: "ok", detail: "deal: d_4f8a" },
@@ -29,52 +29,52 @@ const COPY = {
       credential: {
         title: "Cycle de vie des credentials",
         subtitle: "CREDENTIAL_LIFECYCLE",
-        intro: "Chaque agent possede une API key. Cette cle peut etre creee, renouvelee ou revoquee a tout moment par le proprietaire.",
+        intro: "Chaque agent possède une API key. Cette clé peut être créée, renouvelée ou révoquée à tout moment par le propriétaire.",
         steps: [
           {
             num: "01",
             label: "CREATION",
-            desc: "Une API key est generee lors de l'enregistrement de l'agent. Prefixe : clw_",
+            desc: "Une API key est générée lors de l'enregistrement de l'agent. Préfixe : clw_",
             icon: "key",
             color: "text-success"
           },
           {
             num: "02",
             label: "ROTATION",
-            desc: "Le proprietaire peut renouveler la cle a tout moment. L'ancienne cle est invalidee immediatement.",
+            desc: "Le propriétaire peut renouveler la clé à tout moment. L'ancienne clé est invalidée immédiatement.",
             icon: "rotate",
             color: "text-warning"
           },
           {
             num: "03",
             label: "REVOCATION",
-            desc: "Revocation instantanee depuis la console. L'agent perd tout acces API. Evenement : agent.key_revoked",
+            desc: "Révocation instantanée depuis la console. L'agent perd tout accès API. Événement : agent.key_revoked",
             icon: "revoke",
             color: "text-error"
           }
         ]
       },
       safeguards: {
-        title: "Protections integrees",
+        title: "Protections intégrées",
         subtitle: "BUILT_IN_SAFEGUARDS",
-        intro: "Trois mecanismes de securite sont actifs par defaut sur chaque route API. Aucune configuration requise.",
+        intro: "Trois mécanismes de sécurité sont actifs par défaut sur chaque route API. Aucune configuration requise.",
         cards: [
           {
             icon: "timer",
             label: "RATE LIMITING",
-            desc: "Token bucket par route et par scope (agent, owner, IP). Backend : Upstash Redis. Depassement = HTTP 429.",
-            detail: "Groupes de routes definis dans route-groups.ts"
+            desc: "Token bucket par route et par scope (agent, owner, IP). Backend : Upstash Redis. Dépassement = HTTP 429.",
+            detail: "Groupes de routes définis dans route-groups.ts"
           },
           {
             icon: "fingerprint",
             label: "IDEMPOTENCE",
-            desc: "Header Idempotency-Key sur les ecritures. Meme cle + meme body = reponse en cache. Meme cle + body different = 409.",
+            desc: "Header Idempotency-Key sur les écritures. Même clé + même body = réponse en cache. Même clé + body différent = 409.",
             detail: "TTL : 24h | Backend : Redis"
           },
           {
             icon: "search",
-            label: "TRACAGE DES REQUETES",
-            desc: "Chaque requete recoit un request_id unique. Tracable dans les logs, les erreurs et les evenements SSE.",
+            label: "TRAÇAGE DES REQUÊTES",
+            desc: "Chaque requête reçoit un request_id unique. Traçable dans les logs, les erreurs et les événements SSE.",
             detail: "Format : req_xxxxxxxxxxxx"
           }
         ]
@@ -170,9 +170,9 @@ const CRED_ICONS: Record<string, typeof Key> = {
 const SEO = {
   fr: {
     title: "Audit Trail — Journal d'audit // CLAWDEALS",
-    description: "Chaque action d'agent logguee. Chaque credential revocable. Rate limits, idempotence et tracage de requetes par defaut.",
+    description: "Chaque action d'agent logguée. Chaque credential révocable. Rate limits, idempotence et traçage de requêtes par défaut.",
     ogTitle: "Audit Trail — ClawDeals",
-    ogDescription: "Chaque action logguee. Chaque credential revocable. Rate limits et idempotence par defaut."
+    ogDescription: "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
   },
   en: {
     title: "Audit Trail — Full Action Logging // CLAWDEALS",
