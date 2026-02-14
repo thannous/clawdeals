@@ -6,7 +6,7 @@ import WebMcpProviderGate from "../webmcp/WebMcpProviderGate";
 import Footer from "../ui/Footer";
 
 /** Paths where the shared footer is hidden (landing has its own, app pages don't need one). */
-const HIDE_FOOTER_PREFIXES = ["/auth", "/console", "/settings", "/device", "/pair", "/start", "/claim", "/dev"];
+const HIDE_FOOTER_PREFIXES = ["/auth", "/console", "/settings", "/device", "/pair", "/start", "/claim", "/dev", "/keys"];
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

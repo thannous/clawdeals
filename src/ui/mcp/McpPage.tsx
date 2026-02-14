@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useMemo, useState } from "react";
-import { Copy, ExternalLink, Terminal } from "lucide-react";
+import { Copy, ExternalLink, Key, Terminal } from "lucide-react";
 
 import { SectionHeader, TechBorder } from "../landing/primitives";
 import PageHeader from "../shared/PageHeader";
+import { getPublicAppUrl, getPublicLandingUrl, joinUrl } from "../../shared/urls";
 
 type McpLocale = "fr" | "en";
 
@@ -38,6 +39,10 @@ const COPY: Record<
     errors: Array<{ code: string; fix: string }>;
     footerHint: string;
     openStart: string;
+    step0Title: string;
+    step0Body: string;
+    step0Cta: string;
+    step0Hint: string;
   }
 > = {
   fr: {
@@ -83,7 +88,11 @@ const COPY: Record<
     ],
     footerHint:
       "Le catalogue d'outils v0 est documenté dans docs/mcp-tools-spec.md. Chaque write doit fournir idempotency_key.",
-    openStart: "Ouvrir l’onboarding"
+    openStart: "Ouvrir l'onboarding",
+    step0Title: "Obtenir ta cle API",
+    step0Body: "Avant d'installer le serveur MCP, tu as besoin d'une cle API pour authentifier ton agent.",
+    step0Cta: "Generer ma cle API",
+    step0Hint: "Gratuit. Aucun compte requis."
   },
   en: {
     title: "MCP",
@@ -127,7 +136,11 @@ const COPY: Record<
     ],
     footerHint:
       "v0 tool catalog is in docs/mcp-tools-spec.md. Every write requires idempotency_key.",
-    openStart: "Open onboarding"
+    openStart: "Open onboarding",
+    step0Title: "Get your API key",
+    step0Body: "Before installing the MCP server, you need an API key to authenticate your agent.",
+    step0Cta: "Generate my API key",
+    step0Hint: "Free. No account required."
   }
 };
 
@@ -271,6 +284,14 @@ export default function McpPage() {
     return `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
   }, []);
 
+  const keysUrl = useMemo(() => {
+    const appBase = getPublicAppUrl();
+    const landingBase = getPublicLandingUrl();
+    const localePrefix = locale === "fr" ? "/fr" : "";
+    const mcpBackUrl = landingBase ? joinUrl(landingBase, "/mcp") : "/mcp";
+    return `${appBase}${localePrefix}/keys?next=${encodeURIComponent(mcpBackUrl)}`;
+  }, [locale]);
+
   const optionsNote =
     locale === "fr"
       ? "Dans STEP_01, choisissez une seule option d'installation: A ou B."
@@ -336,6 +357,29 @@ export default function McpPage() {
           />
           <div className="text-sm text-muted leading-relaxed max-w-3xl font-mono">{copy.lead}</div>
           <div className="text-xs font-mono text-subtle">{optionsNote}</div>
+        </div>
+
+        {/* STEP_00: Get API Key */}
+        <div className="border-2 border-primary bg-primary/5 p-6 space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-10 h-10 bg-primary border border-primary flex items-center justify-center">
+              <span className="text-lg font-bold font-mono text-bg">0</span>
+            </div>
+            <div className="space-y-1 pt-0.5">
+              <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">STEP_00</div>
+              <div className="text-lg font-bold uppercase tracking-wider text-text">{copy.step0Title}</div>
+            </div>
+          </div>
+          <div className="border-t border-primary/20" />
+          <div className="text-xs font-mono text-muted leading-relaxed">{copy.step0Body}</div>
+          <a
+            href={keysUrl}
+            className="inline-flex items-center gap-2 h-10 px-6 bg-primary text-bg font-bold uppercase tracking-wider text-xs border border-primary hover:bg-text hover:border-text transition-colors"
+          >
+            <Key className="w-4 h-4" />
+            {copy.step0Cta}
+          </a>
+          <div className="text-xs font-mono text-subtle">{copy.step0Hint}</div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
