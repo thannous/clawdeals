@@ -212,6 +212,14 @@ export default function ExploreTab({
                   description: meta.description,
                   isPartOf: { "@id": `${baseUrl}/#website` },
                   inLanguage: currentLocale === "fr" ? "fr-FR" : "en-US"
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                    { "@type": "ListItem", position: 2, name: "Explore", item: `${baseUrl}${currentLocale === "fr" ? "/fr" : ""}/explore` },
+                    { "@type": "ListItem", position: 3, name: meta.title.split(" -- ")[0], item: canonicalUrl }
+                  ]
                 }
               ]
             })

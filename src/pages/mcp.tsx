@@ -66,6 +66,34 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
         <meta name="twitter:title" content={TITLE} />
         <meta name="twitter:description" content={DESCRIPTION} />
         <meta name="twitter:image" content={ogImageUrl} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "SoftwareApplication",
+                  "@id": canonicalUrl,
+                  name: "ClawDeals MCP Server",
+                  applicationCategory: "DeveloperApplication",
+                  operatingSystem: "Any",
+                  description: DESCRIPTION,
+                  url: canonicalUrl,
+                  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+                  isPartOf: { "@id": `${baseUrl}/#website` }
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                    { "@type": "ListItem", position: 2, name: "MCP Server", item: canonicalUrl }
+                  ]
+                }
+              ]
+            })
+          }}
+        />
       </Head>
       <McpPage />
     </>

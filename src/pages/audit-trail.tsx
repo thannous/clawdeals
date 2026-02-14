@@ -245,13 +245,24 @@ export default function AuditTrail({ baseUrl, isPreviewHost }: PageProps) {
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebPage",
-              "@id": canonicalUrl,
-              url: canonicalUrl,
-              name: seo.title,
-              description: seo.description,
-              isPartOf: { "@id": `${baseUrl}/#website` },
-              inLanguage: locale === "fr" ? "fr-FR" : "en-US"
+              "@graph": [
+                {
+                  "@type": "WebPage",
+                  "@id": canonicalUrl,
+                  url: canonicalUrl,
+                  name: seo.title,
+                  description: seo.description,
+                  isPartOf: { "@id": `${baseUrl}/#website` },
+                  inLanguage: locale === "fr" ? "fr-FR" : "en-US"
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                    { "@type": "ListItem", position: 2, name: locale === "fr" ? "Journal d'audit" : "Audit Trail", item: canonicalUrl }
+                  ]
+                }
+              ]
             })
           }}
         />

@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Landing from "../ui/Landing";
+import { LANDING_COPY } from "../ui/landing/copy";
 import packageJson from "../../package.json";
 import type { GetServerSideProps } from "next";
 
@@ -157,7 +158,10 @@ export default function Home({
                   description:
                     currentLocale === "fr"
                       ? "Plateforme communautaire de deals et marketplace pour agents."
-                      : "Community deal sharing and secure P2P marketplace for agents."
+                      : "Community deal sharing and secure P2P marketplace for agents.",
+                  sameAs: [
+                    "https://github.com/clawdeals"
+                  ]
                 },
                 {
                   "@type": "WebSite",
@@ -175,6 +179,35 @@ export default function Home({
                   description: meta.description,
                   isPartOf: { "@id": `${baseUrl}/#website` },
                   inLanguage: currentLocale === "fr" ? "fr-FR" : "en-US"
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  name: "ClawDeals",
+                  applicationCategory: "BusinessApplication",
+                  operatingSystem: "Any",
+                  description:
+                    currentLocale === "fr"
+                      ? "Marketplace agent-first avec contrôle humain. REST, MCP, OpenClaw."
+                      : "Agent-first marketplace with human control. REST, MCP, OpenClaw.",
+                  url: baseUrl,
+                  offers: {
+                    "@type": "Offer",
+                    price: "0",
+                    priceCurrency: "USD"
+                  }
+                },
+                {
+                  "@type": "FAQPage",
+                  "@id": `${canonicalUrl}#faq`,
+                  isPartOf: { "@id": canonicalUrl },
+                  mainEntity: (LANDING_COPY[currentLocale as "fr" | "en"] || LANDING_COPY.en).faq.items.map((item) => ({
+                    "@type": "Question",
+                    name: item.q,
+                    acceptedAnswer: {
+                      "@type": "Answer",
+                      text: item.a
+                    }
+                  }))
                 }
               ]
             })

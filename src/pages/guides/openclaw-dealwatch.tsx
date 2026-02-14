@@ -418,19 +418,31 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "HowTo",
-              "@id": canonicalUrl,
-              name: seo.ogTitle,
-              description: seo.description,
-              url: canonicalUrl,
-              inLanguage: locale === "fr" ? "fr-FR" : "en-US",
-              step: c.sections.overview.steps.map((s, i) => ({
-                "@type": "HowToStep",
-                position: i + 1,
-                name: s.label,
-                text: s.desc
-              })),
-              isPartOf: { "@id": `${baseUrl}/#website` }
+              "@graph": [
+                {
+                  "@type": "HowTo",
+                  "@id": canonicalUrl,
+                  name: seo.ogTitle,
+                  description: seo.description,
+                  url: canonicalUrl,
+                  inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+                  step: c.sections.overview.steps.map((s, i) => ({
+                    "@type": "HowToStep",
+                    position: i + 1,
+                    name: s.label,
+                    text: s.desc
+                  })),
+                  isPartOf: { "@id": `${baseUrl}/#website` }
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                    { "@type": "ListItem", position: 2, name: locale === "fr" ? "Guides" : "Guides", item: `${baseUrl}${locale === "fr" ? "/fr" : ""}/guides` },
+                    { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
+                  ]
+                }
+              ]
             })
           }}
         />

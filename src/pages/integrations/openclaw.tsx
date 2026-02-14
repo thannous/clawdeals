@@ -317,6 +317,14 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
                   description: seo.ogDescription,
                   url: canonicalUrl,
                   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                    { "@type": "ListItem", position: 2, name: locale === "fr" ? "Intégrations" : "Integrations", item: `${baseUrl}${locale === "fr" ? "/fr" : ""}/integrations` },
+                    { "@type": "ListItem", position: 3, name: "OpenClaw", item: canonicalUrl }
+                  ]
                 }
               ]
             })

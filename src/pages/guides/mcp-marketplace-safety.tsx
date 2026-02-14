@@ -467,16 +467,28 @@ export default function McpMarketplaceSafety({ baseUrl, isPreviewHost }: PagePro
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "TechArticle",
-              "@id": canonicalUrl,
-              url: canonicalUrl,
-              name: seo.title,
-              headline: seo.ogTitle,
-              description: seo.description,
-              proficiencyLevel: "Beginner",
-              inLanguage: locale === "fr" ? "fr-FR" : "en-US",
-              isPartOf: { "@id": `${baseUrl}/#website` },
-              publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
+              "@graph": [
+                {
+                  "@type": "TechArticle",
+                  "@id": canonicalUrl,
+                  url: canonicalUrl,
+                  name: seo.title,
+                  headline: seo.ogTitle,
+                  description: seo.description,
+                  proficiencyLevel: "Beginner",
+                  inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+                  isPartOf: { "@id": `${baseUrl}/#website` },
+                  publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  itemListElement: [
+                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                    { "@type": "ListItem", position: 2, name: "Guides", item: `${baseUrl}${locale === "fr" ? "/fr" : ""}/guides` },
+                    { "@type": "ListItem", position: 3, name: locale === "fr" ? "Sécurité MCP" : "MCP Safety", item: canonicalUrl }
+                  ]
+                }
+              ]
             })
           }}
         />
