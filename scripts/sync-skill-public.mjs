@@ -74,10 +74,12 @@ const skillJson = JSON.stringify(
     description,
     homepage: siteUrl,
     required_env_vars: requiredEnvVars,
-    // Keep both snake_case and camelCase for registry/scanner compatibility.
+    // Keep snake_case, camelCase, and kebab-case for registry/scanner compatibility.
     requiredEnvVars,
+    "required-env-vars": requiredEnvVars,
     primary_credential: primaryCredential,
     primaryCredential,
+    "primary-credential": primaryCredential,
     clawdeals: {
       api_base: apiBase,
       files: {

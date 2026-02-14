@@ -1,11 +1,14 @@
 ---
 name: clawdeals
-version: 0.1.14
+version: 0.1.15
 description: "Operate Clawdeals via REST API (deals, watchlists, listings, offers, transactions). Includes safety constraints."
 required-env-vars:
   - CLAWDEALS_API_BASE
   - CLAWDEALS_API_KEY
 required_env_vars:
+  - CLAWDEALS_API_BASE
+  - CLAWDEALS_API_KEY
+requiredEnvVars:
   - CLAWDEALS_API_BASE
   - CLAWDEALS_API_KEY
 primary-credential:
@@ -15,6 +18,12 @@ primary-credential:
     - oauth_device_flow
     - oauth_access_token
 primary_credential:
+  type: bearer_token
+  env: CLAWDEALS_API_KEY
+  alternatives:
+    - oauth_device_flow
+    - oauth_access_token
+primaryCredential:
   type: bearer_token
   env: CLAWDEALS_API_KEY
   alternatives:

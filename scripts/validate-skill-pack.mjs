@@ -47,6 +47,63 @@ function extractFrontmatter(md) {
   return m ? m[1] : null;
 }
 
+function readIndentedBlock(lines, startIdx) {
+  const keyLine = lines[startIdx];
+  const baseIndent = keyLine.match(/^\s*/)?.[0]?.length ?? 0;
+  const out = [];
+
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) {
+      out.push(line);
+      continue;
+    }
+    const indent = line.match(/^\s*/)?.[0]?.length ?? 0;
+    if (indent <= baseIndent) break;
+    out.push(line);
+  }
+
+  return out.join("\n");
+}
+
+function findKeyLineIndex(lines, key) {
+  const re = new RegExp(`^${key}:\\s*$`);
+  for (let i = 0; i < lines.length; i++) {
+    if (re.test(lines[i].trimEnd())) return i;
+  }
+  return -1;
+}
+
+function assertFrontmatterHasEnvAndCredential(fm) {
+  const lines = fm.split("\n");
+
+  const requiredEnvKeys = ["required-env-vars", "required_env_vars", "requiredEnvVars"];
+  const requiredVars = ["CLAWDEALS_API_BASE", "CLAWDEALS_API_KEY"];
+  for (const key of requiredEnvKeys) {
+    const idx = findKeyLineIndex(lines, key);
+    if (idx === -1) fail(`SKILL.md frontmatter missing key: ${key}`);
+    const block = readIndentedBlock(lines, idx);
+    for (const v of requiredVars) {
+      if (!new RegExp(`^\\s*-\\s*${v}\\s*$`, "m").test(block)) {
+        fail(`SKILL.md frontmatter ${key} missing value: ${v}`);
+      }
+    }
+  }
+
+  const primaryCredKeys = ["primary-credential", "primary_credential", "primaryCredential"];
+  for (const key of primaryCredKeys) {
+    const idx = findKeyLineIndex(lines, key);
+    if (idx === -1) fail(`SKILL.md frontmatter missing key: ${key}`);
+    const block = readIndentedBlock(lines, idx);
+    if (!/^\s*type:\s*bearer_token\s*$/m.test(block)) {
+      fail(`SKILL.md frontmatter ${key} must include type: bearer_token`);
+    }
+    if (!/^\s*env:\s*CLAWDEALS_API_KEY\s*$/m.test(block)) {
+      fail(`SKILL.md frontmatter ${key} must include env: CLAWDEALS_API_KEY`);
+    }
+  }
+}
+
 function listRelativeLinks(markdown) {
   const links = [];
   const re = /\[[^\]]*\]\(([^)]+)\)/g;
@@ -133,6 +190,8 @@ for (const key of ["name:", "version:", "description:", "permissions:", "entrypo
   if (!fm.includes(key)) fail(`SKILL.md frontmatter missing key: ${key.replace(":", "")}`);
 }
 
+assertFrontmatterHasEnvAndCredential(fm);
+
 const versionLine = fm
   .split("\n")
   .map((l) => l.trim())
@@ -165,6 +224,35 @@ for (const rel of listRelativeLinks(skillMd)) {
 const changelog = readUtf8(path.join(skillDir, "CHANGELOG.md"));
 if (!changelog.includes(version)) {
   fail(`CHANGELOG.md must include current version ${version}`);
+}
+
+// If public/skill.json exists (CI or local build), ensure it exposes the same metadata under multiple key styles.
+const publicSkillJsonPath = path.join(process.cwd(), "public", "skill.json");
+if (existsFile(publicSkillJsonPath)) {
+  let parsed;
+  try {
+    parsed = JSON.parse(readUtf8(publicSkillJsonPath));
+  } catch (e) {
+    fail(`public/skill.json must be valid JSON (${String(e)})`);
+  }
+
+  const required = ["CLAWDEALS_API_BASE", "CLAWDEALS_API_KEY"];
+  const envKeys = ["required_env_vars", "requiredEnvVars", "required-env-vars"];
+  for (const key of envKeys) {
+    const arr = parsed?.[key];
+    if (!Array.isArray(arr)) fail(`public/skill.json missing array: ${key}`);
+    for (const v of required) {
+      if (!arr.includes(v)) fail(`public/skill.json ${key} missing value: ${v}`);
+    }
+  }
+
+  const credKeys = ["primary_credential", "primaryCredential", "primary-credential"];
+  for (const key of credKeys) {
+    const obj = parsed?.[key];
+    if (!obj || typeof obj !== "object") fail(`public/skill.json missing object: ${key}`);
+    if (obj.type !== "bearer_token") fail(`public/skill.json ${key}.type must be bearer_token`);
+    if (obj.env !== "CLAWDEALS_API_KEY") fail(`public/skill.json ${key}.env must be CLAWDEALS_API_KEY`);
+  }
 }
 
 console.log("validate-skill-pack: OK");

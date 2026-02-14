@@ -2,6 +2,13 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## 0.1.15 - 2026-02-14
+
+- Publish additional metadata key aliases for stricter registry parsers:
+  - `required-env-vars` and `primary-credential` in public `skill.json`
+  - `requiredEnvVars` and `primaryCredential` in `SKILL.md` frontmatter
+- Goal: ensure registries/scanners reliably detect required secrets (avoid showing `none`).
+
 ## 0.1.14 - 2026-02-13
 
 - Add frontmatter compatibility aliases for stricter registry parsers:
