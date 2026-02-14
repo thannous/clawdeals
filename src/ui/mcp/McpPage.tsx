@@ -43,6 +43,11 @@ const COPY: Record<
     step0Body: string;
     step0Cta: string;
     step0Hint: string;
+    step0AltTitle: string;
+    step0AltBody: string;
+    step0AltHint: string;
+    step0AltConfigTitle: string;
+    step0AltOr: string;
   }
 > = {
   fr: {
@@ -92,7 +97,13 @@ const COPY: Record<
     step0Title: "Obtenir ta cle API",
     step0Body: "Avant d'installer le serveur MCP, tu as besoin d'une cle API pour authentifier ton agent.",
     step0Cta: "Generer ma cle API",
-    step0Hint: "Gratuit. Aucun compte requis."
+    step0Hint: "Gratuit. Aucun compte requis.",
+    step0AltTitle: "Ou demande a ton agent",
+    step0AltBody:
+      "Ton agent peut installer ClawDeals lui-meme. Ajoute le serveur MCP dans ton IDE sans cle API — quand ton agent essaiera de l'utiliser, il te guidera a travers un flow d'approbation en un clic. Rien a copier-coller.",
+    step0AltHint: "Zero copier-coller. L'agent gere tout.",
+    step0AltConfigTitle: "Config MCP sans cle",
+    step0AltOr: "ou"
   },
   en: {
     title: "MCP",
@@ -140,7 +151,13 @@ const COPY: Record<
     step0Title: "Get your API key",
     step0Body: "Before installing the MCP server, you need an API key to authenticate your agent.",
     step0Cta: "Generate my API key",
-    step0Hint: "Free. No account required."
+    step0Hint: "Free. No account required.",
+    step0AltTitle: "Or just ask your agent",
+    step0AltBody:
+      "Your agent can install ClawDeals itself. Add the MCP server to your IDE config without an API key — when your agent tries to use it, it will walk you through a one-click approval flow. No key to copy.",
+    step0AltHint: "Zero copy-paste. The agent handles everything.",
+    step0AltConfigTitle: "MCP config without key",
+    step0AltOr: "or"
   }
 };
 
@@ -284,6 +301,17 @@ export default function McpPage() {
     return `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
   }, []);
 
+  const bootstrapConfig = useMemo(() => {
+    const base = {
+      clawdeals: {
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "clawdeals-mcp"]
+      }
+    };
+    return JSON.stringify({ mcpServers: base }, null, 2);
+  }, []);
+
   const keysUrl = useMemo(() => {
     const appBase = getPublicAppUrl();
     const landingBase = getPublicLandingUrl();
@@ -380,6 +408,38 @@ export default function McpPage() {
             {copy.step0Cta}
           </a>
           <div className="text-xs font-mono text-subtle">{copy.step0Hint}</div>
+        </div>
+
+        {/* OR separator */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 border-t border-dashed border-border" />
+          <span className="text-xs font-mono font-bold uppercase tracking-[0.3em] text-subtle">
+            {copy.step0AltOr}
+          </span>
+          <div className="flex-1 border-t border-dashed border-border" />
+        </div>
+
+        {/* STEP_00 ALT: Ask your agent */}
+        <div className="border-2 border-secondary/40 bg-secondary/5 p-6 space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-10 h-10 bg-secondary/20 border border-secondary/40 flex items-center justify-center">
+              <span className="text-lg font-bold font-mono text-secondary">0</span>
+            </div>
+            <div className="space-y-1 pt-0.5">
+              <div className="flex items-center gap-2">
+                <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-secondary/60">STEP_00</div>
+                <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-secondary/40 text-secondary">
+                  NEW
+                </span>
+              </div>
+              <div className="text-lg font-bold uppercase tracking-wider text-text">{copy.step0AltTitle}</div>
+            </div>
+          </div>
+          <div className="border-t border-secondary/20" />
+          <div className="text-xs font-mono text-muted leading-relaxed">{copy.step0AltBody}</div>
+          <CodeBlock title="npx" value="npx -y clawdeals-mcp setup" compact />
+          <CodeBlock title={copy.step0AltConfigTitle} value={bootstrapConfig} compact />
+          <div className="text-xs font-mono text-subtle">{copy.step0AltHint}</div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

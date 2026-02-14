@@ -62,6 +62,8 @@ const COPY: Record<
     footerWarning: string;
     in: (rel: string) => string;
     expiredAgo: (rel: string) => string;
+    requestedAgent: string;
+    agentInitiatedHint: string;
   }
 > = {
   en: {
@@ -100,7 +102,9 @@ const COPY: Record<
     signInRequiredToApprove: "You must be signed in as owner to approve this connection.",
     footerWarning: "If this wasn't expected, close this page. Never paste tokens into chat.",
     in: (rel) => `in ${rel}`,
-    expiredAgo: (rel) => `expired ${rel} ago`
+    expiredAgo: (rel) => `expired ${rel} ago`,
+    requestedAgent: "Requested Agent",
+    agentInitiatedHint: "This connection was initiated by your agent. Verify the name matches."
   },
   fr: {
     subtitle: "Connectez un client externe à votre compte owner Clawdeals.",
@@ -138,7 +142,9 @@ const COPY: Record<
     signInRequiredToApprove: "Vous devez être connecté en owner pour valider cette connexion.",
     footerWarning: "Si ce n'était pas attendu, fermez cette page. Ne collez jamais de token dans un chat.",
     in: (rel) => `dans ${rel}`,
-    expiredAgo: (rel) => `expiré depuis ${rel}`
+    expiredAgo: (rel) => `expiré depuis ${rel}`,
+    requestedAgent: "Agent demandé",
+    agentInitiatedHint: "Cette connexion a été initiée par votre agent. Vérifiez que le nom correspond."
   }
 };
 
@@ -479,7 +485,15 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {session.requested_agent_name && (
+                    <div className="border border-border bg-surface/40 rounded clip-corner p-3">
+                      <div className="text-xs font-mono text-subtle uppercase">{copy.requestedAgent}</div>
+                      <div className="text-sm font-mono font-bold text-text mt-1">
+                        {session.requested_agent_name}
+                      </div>
+                    </div>
+                  )}
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-subtle uppercase">{copy.client}</div>
                     <div className="text-xs font-mono text-text mt-1">
@@ -495,6 +509,12 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     <div className="text-xs font-mono text-muted mt-1">{expires.label}</div>
                   </div>
                 </div>
+
+                {session.client_type && (
+                  <div className="border border-secondary/20 bg-secondary/5 rounded clip-corner p-3">
+                    <div className="text-xs font-mono text-secondary">{copy.agentInitiatedHint}</div>
+                  </div>
+                )}
 
                 <div className="border border-border bg-surface/40 rounded clip-corner p-3 space-y-2">
                   <div className="text-xs font-mono text-subtle uppercase">{copy.requestedPermissions}</div>

@@ -739,18 +739,27 @@ export default function StepConnect({
 
       {/* Claim Link */}
       <div className="border border-secondary/30 bg-surface p-6 md:p-8 space-y-6 clip-corner">
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-          <div className="space-y-3 max-w-md">
+        <div className="flex flex-col md:flex-row md:items-start gap-6">
+          <div className="space-y-3 flex-1">
             <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary rounded">
               {isFr ? "Équipes & multi-appareils" : "Teams & multi-device"}
+            </span>
+            <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded">
+              {isFr ? "Auto-install agent" : "Agent self-install"}
             </span>
             <div className="text-lg font-bold tracking-wide">
               Claim Link
             </div>
             <div className="text-sm font-mono text-subtle leading-relaxed">
               {isFr
-                ? "Connectez un agent qui tourne sur une autre machine (serveur, CI, bot). Générez un lien d'approbation, partagez-le par lien ou QR — l'agent reçoit sa clé API automatiquement, sans jamais la voir en clair."
-                : "Connect an agent running on another machine (server, CI, bot). Generate an approval link, share it via link or QR — the agent receives its API key automatically, without ever seeing it in plain text."}
+                ? "Connectez un agent qui tourne sur une autre machine (serveur, CI, bot). Générez un lien d'approbation, partagez-le par lien ou QR — l'agent reçoit sa clé API automatiquement, sans jamais la voir en clair. Votre agent peut aussi lancer ce flow lui-même."
+                : "Connect an agent running on another machine (server, CI, bot). Generate an approval link, share it via link or QR — the agent receives its API key automatically, without ever seeing it in plain text. Your agent can also initiate this flow itself."}
+            </div>
+            <div className="text-xs font-mono text-muted bg-bg border border-border px-3 py-2 mt-2">
+              {isFr ? "Astuce agent:" : "Agent tip:"}{" "}
+              <code className="text-text">npx -y clawdeals-mcp setup</code>
+              {" "}{isFr ? "ou" : "or"}{" "}
+              <code className="text-text">clawdeals.connect.setup</code>
             </div>
           </div>
 
