@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ConfirmModal from "../console/shared/ConfirmModal";
+import Toast from "../console/shared/Toast";
+import { useToast } from "../console/shared/useToast";
 import SettingsNav from "./SettingsNav";
 import PageHeader from "../shared/PageHeader";
 
@@ -41,8 +44,44 @@ type OwnerAgentActivity = {
   request_id: string | null;
 };
 
+type RotateAllResponseData = {
+  agent_id: string;
+  rotated: boolean;
+  api_key?: string;
+  api_key_id?: string;
+  previous_api_key_id?: string | null;
+  grace_seconds?: number | null;
+  revoked_installations_count: number;
+  revoked_installation_ids: string[];
+  rotated_at: string;
+};
+
+type RevokeAllResponseData = {
+  agent_id: string;
+  revoked_global_keys_count: number;
+  revoked_global_api_key_ids: string[];
+  revoked_installations_count: number;
+  revoked_installation_ids: string[];
+  revoked_at: string;
+};
+
 function getErrorMessage(body: any, status: number): string {
   return body?.error?.message || body?.message || `HTTP ${status}`;
+}
+
+function randomIdempotencyKey(): string {
+  try {
+    return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+  } catch {
+    return `${Date.now()}-${Math.random()}`;
+  }
+}
+
+function formatActionError(body: any, status: number) {
+  const base = getErrorMessage(body, status);
+  const installationId = body?.error?.details?.installation_id;
+  if (!installationId) return base;
+  return `${base} (installation: ${installationId})`;
 }
 
 function sleep(ms: number) {
@@ -87,6 +126,7 @@ function trustScoreColor(score: number | null): string {
 
 export default function AccountPage() {
   const router = useRouter();
+  const { toasts, show } = useToast();
   const [owner, setOwner] = useState<OwnerSummary | null>(null);
   const [agents, setAgents] = useState<OwnerAgent[]>([]);
   const [claims, setClaims] = useState<OwnerClaim[]>([]);
@@ -95,6 +135,11 @@ export default function AccountPage() {
   const [authRequired, setAuthRequired] = useState(false);
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [rotateConfirmOpen, setRotateConfirmOpen] = useState(false);
+  const [revokeConfirmOpen, setRevokeConfirmOpen] = useState(false);
+  const [actionState, setActionState] = useState<"idle" | "loading" | "error">("idle");
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [rotatedGlobalSecret, setRotatedGlobalSecret] = useState<RotateAllResponseData | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchAccount = useCallback(async () => {
@@ -218,6 +263,125 @@ export default function AccountPage() {
     () => claims.filter((claim) => String(claim.status || "").toUpperCase() === "PENDING").length,
     [claims]
   );
+
+  const refetchAccount = useCallback(() => {
+    void fetchAccount();
+  }, [fetchAccount]);
+
+  const closeRotateConfirm = useCallback(() => {
+    if (actionState === "loading") return;
+    setRotateConfirmOpen(false);
+    setActionState("idle");
+    setActionError(null);
+  }, [actionState]);
+
+  const closeRevokeConfirm = useCallback(() => {
+    if (actionState === "loading") return;
+    setRevokeConfirmOpen(false);
+    setActionState("idle");
+    setActionError(null);
+  }, [actionState]);
+
+  const closeRotatedGlobalSecret = useCallback(() => {
+    setRotatedGlobalSecret(null);
+  }, []);
+
+  const copyRotatedGlobalSecret = useCallback(async () => {
+    const secret = rotatedGlobalSecret?.api_key || "";
+    if (!secret) return;
+    try {
+      await navigator.clipboard.writeText(secret);
+      show("Global API key copied to clipboard", "success");
+    } catch {
+      show("Copy failed. Copy manually before closing.", "error");
+    }
+  }, [rotatedGlobalSecret, show]);
+
+  const onRotateCredentials = useCallback(async () => {
+    if (!selectedAgentId) return;
+    if (actionState === "loading") return;
+    setActionState("loading");
+    setActionError(null);
+
+    try {
+      const resp = await fetch(`/api/v1/agents/${encodeURIComponent(selectedAgentId)}/keys:rotate-all`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": randomIdempotencyKey()
+        },
+        body: JSON.stringify({})
+      });
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(formatActionError(body, resp.status));
+      }
+
+      const data = body?.data as RotateAllResponseData | undefined;
+      if (!data?.agent_id) {
+        throw new Error("Rotate completed but response was invalid");
+      }
+
+      setActionState("idle");
+      setRotateConfirmOpen(false);
+      show(
+        `Credentials rotated. Revoked ${Number(data.revoked_installations_count || 0)} installation(s).`,
+        "success"
+      );
+
+      if (data.rotated && data.api_key) {
+        setRotatedGlobalSecret(data);
+      }
+      refetchAccount();
+    } catch (err: any) {
+      const message = String(err?.message || "Rotate failed");
+      setActionState("error");
+      setActionError(message);
+      show(message, "error");
+    }
+  }, [selectedAgentId, actionState, show, refetchAccount]);
+
+  const onRevokeCredentials = useCallback(async () => {
+    if (!selectedAgentId) return;
+    if (actionState === "loading") return;
+    setActionState("loading");
+    setActionError(null);
+
+    try {
+      const resp = await fetch(`/api/v1/agents/${encodeURIComponent(selectedAgentId)}/keys:revoke-all`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": randomIdempotencyKey()
+        },
+        body: JSON.stringify({})
+      });
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(formatActionError(body, resp.status));
+      }
+
+      const data = body?.data as RevokeAllResponseData | undefined;
+      if (!data?.agent_id) {
+        throw new Error("Revoke completed but response was invalid");
+      }
+
+      setActionState("idle");
+      setRevokeConfirmOpen(false);
+      show(
+        `Credentials revoked. Global keys: ${Number(data.revoked_global_keys_count || 0)}. Installations: ${Number(
+          data.revoked_installations_count || 0
+        )}.`,
+        "success"
+      );
+      refetchAccount();
+    } catch (err: any) {
+      const message = String(err?.message || "Revoke failed");
+      setActionState("error");
+      setActionError(message);
+      show(message, "error");
+    }
+  }, [selectedAgentId, actionState, show, refetchAccount]);
 
   return (
     <div data-testid="account-page" className="min-h-screen bg-bg">
@@ -427,6 +591,49 @@ export default function AccountPage() {
                         </div>
                       </div>
 
+                      <section
+                        data-testid="account-security-actions"
+                        className="border border-warning/30 bg-warning/5 rounded-lg p-4 space-y-3"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="text-xs font-mono uppercase tracking-wider text-warning">
+                              Credentials Security
+                            </div>
+                            <div className="text-xs font-mono text-muted max-w-2xl leading-relaxed">
+                              Rotate updates the global legacy key and revokes connected installations (reconnect
+                              required). Revoke immediately cuts global and installation credentials.
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              data-testid="account-rotate-credentials"
+                              onClick={() => {
+                                setActionState("idle");
+                                setActionError(null);
+                                setRotateConfirmOpen(true);
+                              }}
+                              disabled={!selectedAgentId || actionState === "loading"}
+                              className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
+                            >
+                              Rotate credentials
+                            </button>
+                            <button
+                              data-testid="account-revoke-credentials"
+                              onClick={() => {
+                                setActionState("idle");
+                                setActionError(null);
+                                setRevokeConfirmOpen(true);
+                              }}
+                              disabled={!selectedAgentId || actionState === "loading"}
+                              className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
+                            >
+                              Revoke credentials
+                            </button>
+                          </div>
+                        </div>
+                      </section>
+
                       {/* Activity log */}
                       <div className="border border-border bg-surface/30 rounded-lg overflow-hidden">
                         <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between">
@@ -487,6 +694,58 @@ export default function AccountPage() {
           </div>
         )}
       </main>
+
+      <ConfirmModal
+        open={rotateConfirmOpen}
+        title="Rotate credentials"
+        message="Rotate global key and revoke all active connected installations for this agent? Clients must reconnect."
+        confirmLabel="Rotate + revoke apps"
+        variant="default"
+        loading={actionState === "loading"}
+        onCancel={closeRotateConfirm}
+        onConfirm={onRotateCredentials}
+      >
+        {actionError && <div className="text-xs font-mono text-error">{actionError}</div>}
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={revokeConfirmOpen}
+        title="Revoke credentials"
+        message="Revoke all global and installation credentials for this agent immediately?"
+        confirmLabel="Revoke all"
+        variant="danger"
+        loading={actionState === "loading"}
+        onCancel={closeRevokeConfirm}
+        onConfirm={onRevokeCredentials}
+      >
+        {actionError && <div className="text-xs font-mono text-error">{actionError}</div>}
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={Boolean(rotatedGlobalSecret)}
+        title="Global key rotated"
+        message="Copy the new global API key now. It may not be shown again."
+        confirmLabel="Copy key"
+        cancelLabel="Close"
+        variant="success"
+        onCancel={closeRotatedGlobalSecret}
+        onConfirm={copyRotatedGlobalSecret}
+      >
+        <div className="space-y-2">
+          <label className="block text-xs font-mono text-subtle uppercase">New global key</label>
+          <textarea
+            data-testid="account-rotated-global-key"
+            value={rotatedGlobalSecret?.api_key || ""}
+            readOnly
+            className="w-full min-h-[84px] px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text"
+          />
+          <div className="text-xs font-mono text-subtle">
+            {rotatedGlobalSecret?.api_key_id ? `api_key_id: ${rotatedGlobalSecret.api_key_id}` : ""}
+          </div>
+        </div>
+      </ConfirmModal>
+
+      <Toast toasts={toasts} />
     </div>
   );
 }

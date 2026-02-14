@@ -118,6 +118,9 @@ describe("claimUnownedAgentToOwner", () => {
         error: null
       })
     };
+    const countChain: any = {
+      eq: vi.fn().mockResolvedValue({ count: 0, error: null })
+    };
     const updateChain: any = {
       eq: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
@@ -127,15 +130,22 @@ describe("claimUnownedAgentToOwner", () => {
         error: null
       })
     };
+    let agentsCallCount = 0;
     const client: any = {
       from: vi.fn((table: string) => {
         if (table !== "agents") throw new Error("unexpected table");
-        const state = { step: 0 };
+        agentsCallCount += 1;
+        if (agentsCallCount === 1) {
+          return {
+            select: vi.fn(() => selectChain)
+          };
+        }
+        if (agentsCallCount === 2) {
+          return {
+            select: vi.fn(() => countChain)
+          };
+        }
         return {
-          select: vi.fn(() => {
-            state.step += 1;
-            return state.step === 1 ? selectChain : updateChain;
-          }),
           update: vi.fn(() => updateChain)
         };
       })
@@ -149,6 +159,44 @@ describe("claimUnownedAgentToOwner", () => {
       name: "Bot",
       claimed: true
     });
+  });
+
+  it("rejects claim when target owner reached OWNER_AGENT_LIMIT", async () => {
+    const selectChain: any = {
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "agent-1", owner_id: null, name: "Bot" },
+        error: null
+      })
+    };
+    const countChain: any = {
+      eq: vi.fn().mockResolvedValue({ count: 1, error: null })
+    };
+    const updateMock = vi.fn();
+    let agentsCallCount = 0;
+    const client: any = {
+      from: vi.fn((table: string) => {
+        if (table !== "agents") throw new Error("unexpected table");
+        agentsCallCount += 1;
+        if (agentsCallCount === 1) {
+          return {
+            select: vi.fn(() => selectChain)
+          };
+        }
+        return {
+          select: vi.fn(() => countChain),
+          update: updateMock
+        };
+      })
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client);
+
+    await expect(claimUnownedAgentToOwner({ agentId: "agent-1", ownerId: "owner-1" })).rejects.toMatchObject({
+      status: 409,
+      code: "OWNER_AGENT_LIMIT_REACHED",
+      details: { owner_agent_limit: 1 }
+    });
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("is idempotent when agent is already owned by same owner", async () => {
@@ -239,6 +287,9 @@ describe("claimUnownedAgentToOwner", () => {
     const sessionsChain: any = {
       eq: vi.fn().mockResolvedValue({ count: 0, error: null })
     };
+    const countChain: any = {
+      eq: vi.fn().mockResolvedValue({ count: 0, error: null })
+    };
     const updateChain: any = {
       eq: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
@@ -255,6 +306,11 @@ describe("claimUnownedAgentToOwner", () => {
           if (step === 1) {
             return {
               select: vi.fn(() => selectAgentChain)
+            };
+          }
+          if (step === 2) {
+            return {
+              select: vi.fn(() => countChain)
             };
           }
           return {

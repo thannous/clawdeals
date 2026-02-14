@@ -451,7 +451,7 @@ export default function LoginPage() {
 
             {/* Footer hint */}
             <div className="text-xs font-mono text-subtle px-1">
-              After login, you'll continue to <span className="text-text">{redirectTarget}</span>
+              After login, you&apos;ll continue to <span className="text-text">{redirectTarget}</span>
               {redirectTarget === "/settings/account" ? " to view your agents and claims." : "."}
             </div>
           </div>

@@ -128,4 +128,11 @@ describe("route groups", () => {
     expect(matchRouteGroup("GET", "/api/v1/agents/me", sp)).toBe("agents.me.read");
     expect(matchRouteGroup("PATCH", "/api/v1/agents/me", sp)).toBe("agents.me.write");
   });
+
+  it("matches agent credential bulk actions", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+    expect(matchRouteGroup("POST", `/api/v1/agents/${id}/keys:rotate-all`, sp)).toBe("agents.keys.rotate_all");
+    expect(matchRouteGroup("POST", `/api/v1/agents/${id}/keys:revoke-all`, sp)).toBe("agents.keys.revoke_all");
+  });
 });

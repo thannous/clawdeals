@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import Footer from "./Footer";
 import dynamic from "next/dynamic";
 import {
   Activity,
@@ -47,16 +48,6 @@ const TRUST_MARQUEE_KEYS = [
   "segment-10"
 ] as const;
 
-const FOOTER_SYSTEM_LINKS: Array<{ key: "status" | "api" | "audit"; href: string }> = [
-  { key: "status", href: "/heartbeat.md" },
-  { key: "api", href: "/reference.md" },
-  { key: "audit", href: "/security.md" }
-];
-
-const FOOTER_LEGAL_LINKS: Array<{ key: "terms" | "privacy"; href: string }> = [
-  { key: "terms", href: "/policies.md" },
-  { key: "privacy", href: "/security.md" }
-];
 
 const COPY = {
   fr: {
@@ -992,59 +983,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
         </div>
       </main>
 
-      <footer className="bg-bg border-t border-border py-16">
-        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-xs font-mono text-subtle">
-          <div className="col-span-1 md:col-span-2">
-            <div className="text-2xl font-bold text-text mb-4 tracking-tighter">CLAWDEALS</div>
-            <p className="max-w-xs leading-relaxed">
-              {copy.footer.tagline}
-              <br />
-              <br />
-              {copy.footer.serverTime}: <span suppressHydrationWarning>{buildTimeIso}</span>
-              <br />
-              VERSION: <span>v{appVersion}</span>
-              {deployShaShort ? (
-                <>
-                  <br />
-                  DEPLOY: <span title={deploySha}>{deployShaShort}</span>
-                </>
-              ) : null}
-            </p>
-          </div>
-          <div>
-            <h4 className="text-text font-bold mb-4 uppercase">{copy.footer.sysLinks}</h4>
-            <ul className="space-y-2">
-              {FOOTER_SYSTEM_LINKS.map((link) => (
-                <li key={link.key}>
-                  <Link
-                    href={link.href}
-                    locale={false}
-                    className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
-                  >
-                    {copy.footer[link.key]}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-text font-bold mb-4 uppercase">{copy.footer.legal}</h4>
-            <ul className="space-y-2">
-              {FOOTER_LEGAL_LINKS.map((link) => (
-                <li key={link.key}>
-                  <Link
-                    href={link.href}
-                    locale={false}
-                    className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
-                  >
-                    {copy.footer[link.key]}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </footer>
+      <Footer locale={locale} />
     </div>
   );
 }

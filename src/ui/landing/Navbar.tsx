@@ -20,10 +20,7 @@ const LOCALES = [
   { code: "en", label: "EN" }
 ] as const;
 
-function useDropdown() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
+function useDropdownDismiss(open: boolean, setOpen: React.Dispatch<React.SetStateAction<boolean>>, ref: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
     if (!open) return;
     function onClickOutside(e: MouseEvent) {
@@ -38,9 +35,7 @@ function useDropdown() {
       document.removeEventListener("mousedown", onClickOutside);
       document.removeEventListener("keydown", onEsc);
     };
-  }, [open]);
-
-  return { open, setOpen, ref } as const;
+  }, [open, ref, setOpen]);
 }
 
 function themeShortLabel(label: string) {
@@ -54,9 +49,15 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
   const asPathNoLocale =
     (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
 
-  const lang = useDropdown();
-  const theme = useDropdown();
-  const mobileSettings = useDropdown();
+  const [langOpen, setLangOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+  const themeRef = useRef<HTMLDivElement>(null);
+  const mobileSettingsRef = useRef<HTMLDivElement>(null);
+  useDropdownDismiss(langOpen, setLangOpen, langRef);
+  useDropdownDismiss(themeOpen, setThemeOpen, themeRef);
+  useDropdownDismiss(mobileSettingsOpen, setMobileSettingsOpen, mobileSettingsRef);
   const activeTheme = themes.find((t) => t.id === themeId);
 
   return (
@@ -80,23 +81,23 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Language dropdown */}
-          <div ref={lang.ref} className="relative hidden sm:block">
+          <div ref={langRef} className="relative hidden sm:block">
             <button
               type="button"
-              onClick={() => lang.setOpen((p) => !p)}
+              onClick={() => setLangOpen((p) => !p)}
               className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-secondary hover:border-border-strong transition-colors"
             >
               {(router.locale || "en").toUpperCase()}
               <ChevronDown className="w-3 h-3" />
             </button>
-            {lang.open && (
+            {langOpen && (
               <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[100px]">
                 {LOCALES.map((loc) => (
                   <Link
                     key={loc.code}
                     href={asPathNoLocale}
                     locale={loc.code}
-                    onClick={() => lang.setOpen(false)}
+                    onClick={() => setLangOpen(false)}
                     className={`block px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
                       router.locale === loc.code
                         ? "text-secondary bg-secondary/10"
@@ -111,11 +112,11 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
           </div>
 
           {/* Theme dropdown */}
-          <div ref={theme.ref} className="relative hidden sm:block">
+          <div ref={themeRef} className="relative hidden sm:block">
             <button
               type="button"
               data-testid="theme-switch"
-              onClick={() => theme.setOpen((p) => !p)}
+              onClick={() => setThemeOpen((p) => !p)}
               className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-text hover:border-border-strong transition-colors"
             >
               <span suppressHydrationWarning>
@@ -123,13 +124,13 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
               </span>
               <ChevronDown className="w-3 h-3" />
             </button>
-            {theme.open && (
+            {themeOpen && (
               <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
                 {themes.map((t) => (
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => { setTheme(t.id); theme.setOpen(false); }}
+                    onClick={() => { setTheme(t.id); setThemeOpen(false); }}
                     className={`block w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
                       t.id === themeId
                         ? "text-secondary bg-secondary/10"
@@ -146,16 +147,16 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
           <ShareButton locale={router.locale || "en"} />
 
           {/* Mobile settings dropdown (language + theme) */}
-          <div ref={mobileSettings.ref} className="relative sm:hidden">
+          <div ref={mobileSettingsRef} className="relative sm:hidden">
             <button
               type="button"
-              onClick={() => mobileSettings.setOpen((p) => !p)}
+              onClick={() => setMobileSettingsOpen((p) => !p)}
               className="h-9 w-9 border border-primary flex items-center justify-center text-primary hover:bg-primary/10 hover:border-primary transition-colors"
               aria-label="Settings"
             >
               <Settings className="w-4 h-4" />
             </button>
-            {mobileSettings.open && (
+            {mobileSettingsOpen && (
               <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
                 <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-border">
                   Language
@@ -165,7 +166,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
                     key={loc.code}
                     href={asPathNoLocale}
                     locale={loc.code}
-                    onClick={() => mobileSettings.setOpen(false)}
+                    onClick={() => setMobileSettingsOpen(false)}
                     className={`block px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
                       router.locale === loc.code
                         ? "text-secondary bg-secondary/10"
@@ -182,7 +183,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
                   <button
                     key={t.id}
                     type="button"
-                    onClick={() => { setTheme(t.id); mobileSettings.setOpen(false); }}
+                    onClick={() => { setTheme(t.id); setMobileSettingsOpen(false); }}
                     className={`block w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
                       t.id === themeId
                         ? "text-secondary bg-secondary/10"
@@ -197,7 +198,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
                     <div className="border-t border-border" />
                     <Link
                       href={appEntryUrl}
-                      onClick={() => mobileSettings.setOpen(false)}
+                      onClick={() => setMobileSettingsOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
                     >
                       <Terminal className="w-3.5 h-3.5" />

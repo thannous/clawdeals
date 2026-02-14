@@ -148,6 +148,39 @@ export async function listInstallationsForOwner({ ownerId, limit = INSTALLATIONS
   return data || [];
 }
 
+export async function listActiveInstallationsForOwnerAgent({
+  ownerId,
+  agentId,
+  limit = INSTALLATIONS_MAX_LIMIT
+}: any = {}) {
+  const resolvedOwnerId = normalizeNonEmptyString(ownerId);
+  if (!resolvedOwnerId) throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
+
+  const resolvedAgentId = normalizeNonEmptyString(agentId);
+  if (!resolvedAgentId) throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
+
+  const resolvedLimit = Math.max(
+    1,
+    Math.min(INSTALLATIONS_MAX_LIMIT, Number.isInteger(limit) ? limit : INSTALLATIONS_MAX_LIMIT)
+  );
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("agent_installations")
+    .select("installation_id, owner_id, agent_id, status")
+    .eq("owner_id", resolvedOwnerId)
+    .eq("agent_id", resolvedAgentId)
+    .eq("status", "ACTIVE")
+    .order("installation_id", { ascending: true })
+    .limit(resolvedLimit);
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+
+  return data || [];
+}
+
 export async function getInstallationById(installationId: string) {
   const resolvedInstallationId = normalizeNonEmptyString(installationId);
   if (!resolvedInstallationId) throw buildServiceError("installationId is required", 400, "VALIDATION_ERROR");

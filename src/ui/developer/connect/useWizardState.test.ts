@@ -199,4 +199,58 @@ describe("useWizardState owner-session probe", () => {
       expect.objectContaining({ path: "/v1/agents/me/claim", method: "POST", apiKey: "cd_live_claim_later.me" })
     );
   }, 15000);
+
+  it("stops auto-claim retries after AGENT_ALREADY_CLAIMED", async () => {
+    setStoredApiKey("cd_live_claim_conflict.me");
+
+    let claimAttemptCount = 0;
+    vi.mocked(apiRequest).mockImplementation(async (request: any) => {
+      if (request?.path === "/v1/agents/me" && request?.method === "GET") {
+        return {
+          data: {
+            data: {
+              agent_id: "agent-1",
+              name: "chacha",
+              owner_id: null,
+              installation_id: "install-1",
+              oauth_scopes: ["agent:read", "agent:write"]
+            }
+          },
+          headers: new Headers()
+        } as any;
+      }
+      if (request?.path === "/v1/agents/me/claim" && request?.method === "POST") {
+        claimAttemptCount += 1;
+        throw {
+          status: 409,
+          code: "AGENT_ALREADY_CLAIMED",
+          message: "Agent already linked to another owner"
+        };
+      }
+      throw new Error(`Unexpected apiRequest: ${request?.method} ${request?.path}`);
+    });
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      status: 200,
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        data: {
+          owner_id: "owner-1"
+        }
+      })
+    } as any);
+
+    const { result } = renderHook(() => useWizardState());
+
+    await waitFor(() => {
+      expect(result.current.state.verified).toBe(true);
+      expect(claimAttemptCount).toBeGreaterThan(0);
+    });
+
+    const attemptsAfterFirstFailure = claimAttemptCount;
+    await new Promise((resolve) => setTimeout(resolve, 11000));
+
+    expect(result.current.state.hasOwnerSession).toBe(true);
+    expect(claimAttemptCount).toBe(attemptsAfterFirstFailure);
+  }, 15000);
 });

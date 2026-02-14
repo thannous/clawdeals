@@ -7,6 +7,7 @@ import type { AgentMeResponse, ConnectionMethod, ConnectSessionData, WizardStep 
 const AUTO_VERIFY_TIMEOUT_MS = 8000;
 const OWNER_SESSION_RECONCILE_INTERVAL_MS = 5000;
 const DEBUG_PREFIX = "[start.wizard]";
+const TERMINAL_AUTO_CLAIM_ERROR_CODES = new Set(["AGENT_ALREADY_CLAIMED"]);
 
 type OwnerSessionProbe = {
   hasSession: boolean;
@@ -76,6 +77,7 @@ export function useWizardState() {
 
   const mountedRef = useRef(true);
   const claimInFlightRef = useRef(false);
+  const terminalAutoClaimFailuresRef = useRef<Set<string>>(new Set());
 
   const tryAutoClaim = useCallback(
     async ({
@@ -92,6 +94,14 @@ export function useWizardState() {
       if (!ownerId || !me?.agent_id) return me;
       if (me.owner_id === ownerId) return me;
       if (claimInFlightRef.current) return me;
+      const claimTargetKey = `${ownerId}:${me.agent_id}`;
+      if (terminalAutoClaimFailuresRef.current.has(claimTargetKey)) {
+        debugLog(`${source}:auto_claim_skipped_terminal_failure`, {
+          agent_id: me.agent_id,
+          target_owner_id: ownerId
+        });
+        return me;
+      }
 
       claimInFlightRef.current = true;
       debugLog(`${source}:auto_claim_start`, {
@@ -114,6 +124,7 @@ export function useWizardState() {
         });
         const claimedData = claimed.data?.data;
         if (claimedData?.agent_id) {
+          terminalAutoClaimFailuresRef.current.delete(claimTargetKey);
           debugLog(`${source}:auto_claim_success`, {
             agent_id: claimedData.agent_id,
             owner_id: claimedData.owner_id || null
@@ -121,9 +132,21 @@ export function useWizardState() {
           return claimedData;
         }
       } catch (claimErr: any) {
+        const code = String(claimErr?.code || "");
+        if (TERMINAL_AUTO_CLAIM_ERROR_CODES.has(code)) {
+          terminalAutoClaimFailuresRef.current.add(claimTargetKey);
+          debugLog(`${source}:auto_claim_terminal_failure`, {
+            message: String(claimErr?.message || "unknown_error"),
+            code,
+            status: claimErr?.status || null,
+            agent_id: me.agent_id,
+            target_owner_id: ownerId
+          });
+          return me;
+        }
         debugLog(`${source}:auto_claim_failed`, {
           message: String(claimErr?.message || "unknown_error"),
-          code: String(claimErr?.code || ""),
+          code,
           status: claimErr?.status || null
         });
       } finally {

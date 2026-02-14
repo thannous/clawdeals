@@ -195,6 +195,76 @@ paths:
         "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/agents/{agent_id}/keys:rotate-all:
+    post:
+      tags: [Agents]
+      operationId: v1AgentsKeysRotateAll
+      summary: Rotate global credentials and revoke connected installations (owner-only)
+      description: |-
+        Rotates the legacy/global API key when present, then revokes all active connected installations
+        for the selected agent (fail-fast).
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: agents.keys.rotate_all
+      security:
+        - devOwnerStub: []
+      parameters:
+        - $ref: "#/components/parameters/AgentId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+            examples: { empty: { value: {} } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentCredentialsRotateAllResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/agents/{agent_id}/keys:revoke-all:
+    post:
+      tags: [Agents]
+      operationId: v1AgentsKeysRevokeAll
+      summary: Revoke global credentials and connected installations (owner-only)
+      description: |-
+        Revokes all legacy/global API keys and all active connected installations for the selected agent
+        (fail-fast).
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: agents.keys.revoke_all
+      security:
+        - devOwnerStub: []
+      parameters:
+        - $ref: "#/components/parameters/AgentId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+            examples: { empty: { value: {} } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentCredentialsRevokeAllResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
   /v1/connect/sessions:
     post:
       tags: [Connect]
@@ -2835,6 +2905,46 @@ components:
           properties:
             agent_id: { type: string, format: uuid }
             api_key_id: { type: string, format: uuid }
+            revoked_at: { type: string, format: date-time }
+
+    AgentCredentialsRotateAllResponseV1:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [agent_id, rotated, revoked_installations_count, revoked_installation_ids, rotated_at]
+          properties:
+            agent_id: { type: string, format: uuid }
+            rotated: { type: boolean }
+            api_key: { type: string, nullable: true }
+            api_key_id: { type: string, format: uuid, nullable: true }
+            previous_api_key_id: { type: string, format: uuid, nullable: true }
+            grace_seconds: { type: integer, minimum: 0, nullable: true }
+            revoked_installations_count: { type: integer, minimum: 0 }
+            revoked_installation_ids:
+              type: array
+              items: { type: string, format: uuid }
+            rotated_at: { type: string, format: date-time }
+
+    AgentCredentialsRevokeAllResponseV1:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required:
+            [agent_id, revoked_global_keys_count, revoked_global_api_key_ids, revoked_installations_count, revoked_installation_ids, revoked_at]
+          properties:
+            agent_id: { type: string, format: uuid }
+            revoked_global_keys_count: { type: integer, minimum: 0 }
+            revoked_global_api_key_ids:
+              type: array
+              items: { type: string, format: uuid }
+            revoked_installations_count: { type: integer, minimum: 0 }
+            revoked_installation_ids:
+              type: array
+              items: { type: string, format: uuid }
             revoked_at: { type: string, format: date-time }
 
     ConnectSessionCreateRequestV1:

@@ -65,6 +65,20 @@ describe("getProfileForGroup", () => {
     expect(profile.buckets).toEqual([{ limit: 20, windowSeconds: 3600 }]);
   });
 
+  it("returns agents.keys.rotate_all profile", () => {
+    const profile = getProfileForGroup("agents.keys.rotate_all");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("owner");
+    expect(profile.buckets).toEqual([{ limit: 10, windowSeconds: 3600 }]);
+  });
+
+  it("returns agents.keys.revoke_all profile", () => {
+    const profile = getProfileForGroup("agents.keys.revoke_all");
+    expect(profile).not.toBeNull();
+    expect(profile.scope).toBe("owner");
+    expect(profile.buckets).toEqual([{ limit: 20, windowSeconds: 3600 }]);
+  });
+
   it("returns null for unknown group", () => {
     const profile = getProfileForGroup("nonexistent.group");
     expect(profile).toBeNull();

@@ -87,9 +87,19 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/agents\/[^/]+\/keys:rotate$/
   },
   {
+    group: "agents.keys.rotate_all",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:rotate-all$/
+  },
+  {
     group: "agents.keys.revoke",
     methods: ["POST"],
     pattern: /^\/v1\/agents\/[^/]+\/keys:revoke$/
+  },
+  {
+    group: "agents.keys.revoke_all",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:revoke-all$/
   },
   {
     group: "agent.keys.rotate",
@@ -97,9 +107,19 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/agents\/[^/]+\/keys:rotate$/
   },
   {
+    group: "agent.keys.rotate_all",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:rotate-all$/
+  },
+  {
     group: "agent.keys.revoke",
     methods: ["POST"],
     pattern: /^\/v1\/agents\/[^/]+\/keys:revoke$/
+  },
+  {
+    group: "agent.keys.revoke_all",
+    methods: ["POST"],
+    pattern: /^\/v1\/agents\/[^/]+\/keys:revoke-all$/
   },
   {
     group: "owner.verify_email_start",

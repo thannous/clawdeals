@@ -27,10 +27,22 @@ describe("safeRedirectUrl", () => {
     expect(safeRedirectUrl("/auth/login")).toBe("/auth/login");
   });
 
+  it("accepts locale-prefixed allowed routes", () => {
+    expect(safeRedirectUrl("/fr/settings/connected-apps")).toBe("/fr/settings/connected-apps");
+    expect(safeRedirectUrl("/en-US/claim/abc-123?step=2")).toBe("/en-US/claim/abc-123?step=2");
+    expect(safeRedirectUrl("/fr/deals#active")).toBe("/fr/deals#active");
+  });
+
   it("rejects paths not in allowed prefixes", () => {
     expect(safeRedirectUrl("/admin")).toBe("/settings/account");
     expect(safeRedirectUrl("/foo")).toBe("/settings/account");
     expect(safeRedirectUrl("/api/v1/something")).toBe("/settings/account");
+  });
+
+  it("rejects traversal attempts that escape allowed routes", () => {
+    expect(safeRedirectUrl("/settings/../admin")).toBe("/settings/account");
+    expect(safeRedirectUrl("/settings/%2E%2E/admin")).toBe("/settings/account");
+    expect(safeRedirectUrl("/fr/settings/../../admin")).toBe("/settings/account");
   });
 
   it("blocks protocol-relative URLs (//)", () => {

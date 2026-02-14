@@ -229,6 +229,7 @@ export async function claimUnownedAgentToOwner({
   ownerId: string;
 }) {
   const client = getSupabaseServiceClient();
+  const ownerAgentLimit = getOwnerAgentLimit();
   const { data: existing, error: existingError } = await client
     .from("agents")
     .select("id,owner_id,name")
@@ -303,6 +304,22 @@ export async function claimUnownedAgentToOwner({
       name: existing.name ? String(existing.name) : null,
       claimed: false
     };
+  }
+
+  const { count: existingOwnerAgentCount, error: countError } = await client
+    .from("agents")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", ownerId);
+  if (countError) {
+    const mapped = mapSupabaseError(countError);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  if (Number(existingOwnerAgentCount || 0) >= ownerAgentLimit) {
+    throw Object.assign(new Error("Owner agent limit reached"), {
+      status: 409,
+      code: "OWNER_AGENT_LIMIT_REACHED",
+      details: { owner_agent_limit: ownerAgentLimit }
+    });
   }
 
   let updateQuery = client

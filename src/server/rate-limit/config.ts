@@ -139,7 +139,15 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 10, windowSeconds: HOUR }],
   },
+  "agents.keys.rotate_all": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
   "agents.keys.revoke": {
+    scope: "owner",
+    buckets: [{ limit: 20, windowSeconds: HOUR }],
+  },
+  "agents.keys.revoke_all": {
     scope: "owner",
     buckets: [{ limit: 20, windowSeconds: HOUR }],
   },
@@ -147,7 +155,15 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 10, windowSeconds: HOUR }],
   },
+  "agent.keys.rotate_all": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: HOUR }],
+  },
   "agent.keys.revoke": {
+    scope: "owner",
+    buckets: [{ limit: 20, windowSeconds: HOUR }],
+  },
+  "agent.keys.revoke_all": {
     scope: "owner",
     buckets: [{ limit: 20, windowSeconds: HOUR }],
   },

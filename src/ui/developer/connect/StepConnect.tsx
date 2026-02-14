@@ -3,6 +3,7 @@ import QRCode from "react-qr-code";
 
 import { apiRequest } from "../api";
 import { setStoredApiKey } from "../storage";
+import { getPublicApiBaseUrl, joinUrl } from "../../../shared/urls";
 import { generateFunnyAgentName } from "./agent-name-generator";
 import type { ConnectLocale, ConnectionMethod, ConnectSessionData, PollStatus } from "./types";
 
@@ -70,14 +71,17 @@ export default function StepConnect({
   const [keyMessage, setKeyMessage] = useState("");
 
   // --- MCP state ---
-  const hostedApiBase = "https://app.clawdeals.com/api";
+  const configuredApiBaseUrl = getPublicApiBaseUrl();
+  const hostedApiBase = configuredApiBaseUrl
+    ? joinUrl(configuredApiBaseUrl, "/api")
+    : "https://app.clawdeals.com/api";
   const localApiBase = "http://localhost:3000/api";
   const baseUrl = useSyncExternalStore(
     subscribeToNothing,
     () => window.location.origin,
     () => "https://app.clawdeals.com"
   );
-  const siteApiBase = `${baseUrl}/api`;
+  const siteApiBase = joinUrl(baseUrl, "/api");
   const [mcpApiBase, setMcpApiBase] = useState(hostedApiBase);
   const [mcpShowInstall, setMcpShowInstall] = useState(false);
   const [mcpAdvancedOpen, setMcpAdvancedOpen] = useState(false);

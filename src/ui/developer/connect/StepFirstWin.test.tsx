@@ -46,7 +46,7 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.getByText("Name your agent")).toBeTruthy();
+    expect(screen.getByLabelText("Name")).toBeTruthy();
     const saveButton = screen.getByRole("button", { name: "Save" }) as HTMLButtonElement;
     expect(saveButton.disabled).toBe(true);
   });
@@ -67,9 +67,8 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.queryByText("Name your agent")).toBeNull();
+    expect(screen.queryByLabelText("Name")).toBeNull();
     expect(screen.getByText("Owner Bot")).toBeTruthy();
-    expect(screen.getByText("Saved")).toBeTruthy();
   });
 
   it("saves a new name and replaces the prompt with confirmation", async () => {
@@ -98,9 +97,8 @@ describe("StepFirstWin", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Alpha Bot")).toBeTruthy();
-      expect(screen.getByText("Saved")).toBeTruthy();
     });
-    expect(screen.queryByText("Name your agent")).toBeNull();
+    expect(screen.queryByLabelText("Name")).toBeNull();
   });
 
   it("shows localized validation message on save error", async () => {
@@ -130,5 +128,76 @@ describe("StepFirstWin", () => {
     await waitFor(() => {
       expect(screen.getByText("Le nom doit contenir 80 caracteres maximum.")).toBeTruthy();
     });
+  });
+
+  it("shows limitation banner when not linked to owner", () => {
+    render(
+      <StepFirstWin
+        locale="en"
+        apiKey="cd_live_test_123456"
+        agentMe={{
+          agent_id: "agt_5",
+          name: "Test Bot",
+          owner_id: null,
+          installation_id: "ins_5",
+          oauth_scopes: ["agent:read"]
+        }}
+        hasOwnerSession={false}
+      />
+    );
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toBeTruthy();
+    expect(screen.getByText(/60%/)).toBeTruthy();
+    expect(screen.getByText(/rotate or revoke/i)).toBeTruthy();
+    expect(screen.getByText(/audit logs/i)).toBeTruthy();
+    expect(screen.getByText(/7-day quarantine/i)).toBeTruthy();
+
+    const cta = screen.getByRole("link", { name: /unlock full access/i });
+    expect(cta).toBeTruthy();
+    expect(cta.getAttribute("href")).toBe("/auth/login?next=/start");
+    expect(screen.getByText(/no credit card/i)).toBeTruthy();
+  });
+
+  it("hides limitation banner when linked to owner", () => {
+    render(
+      <StepFirstWin
+        locale="en"
+        apiKey="cd_live_test_123456"
+        agentMe={{
+          agent_id: "agt_6",
+          name: "Owner Bot",
+          owner_id: "own_1",
+          installation_id: "ins_6",
+          oauth_scopes: ["agent:read"]
+        }}
+        hasOwnerSession={true}
+      />
+    );
+
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("Create a watchlist")).toBeTruthy();
+  });
+
+  it("renders limitation banner in French", () => {
+    render(
+      <StepFirstWin
+        locale="fr"
+        apiKey="cd_live_test_123456"
+        agentMe={{
+          agent_id: "agt_7",
+          name: "Bot FR",
+          owner_id: null,
+          installation_id: "ins_7",
+          oauth_scopes: []
+        }}
+        hasOwnerSession={false}
+      />
+    );
+
+    expect(screen.getByRole("alert")).toBeTruthy();
+    const cta = screen.getByRole("link", { name: /debloquer l'acces complet/i });
+    expect(cta).toBeTruthy();
+    expect(screen.getByText(/sans carte bancaire/i)).toBeTruthy();
   });
 });

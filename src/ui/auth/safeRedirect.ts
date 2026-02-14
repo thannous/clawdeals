@@ -9,6 +9,12 @@ const ALLOWED_PREFIXES = [
 ];
 
 const DEFAULT_REDIRECT = "/settings/account";
+const LOCALE_PREFIX_PATTERN = /^\/[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*(?=\/|$)/;
+
+function stripLocalePrefix(pathname: string): string {
+  const withoutLocale = pathname.replace(LOCALE_PREFIX_PATTERN, "");
+  return withoutLocale || "/";
+}
 
 /**
  * Validate a `?next=` redirect target to prevent open-redirect attacks.
@@ -27,9 +33,18 @@ export function safeRedirectUrl(next: unknown): string {
   // Must start with /
   if (!trimmed.startsWith("/")) return DEFAULT_REDIRECT;
 
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed, "http://localhost");
+  } catch {
+    return DEFAULT_REDIRECT;
+  }
+
+  const normalizedPath = stripLocalePrefix(parsed.pathname);
+
   // Must match an allowed prefix
-  const allowed = ALLOWED_PREFIXES.some((prefix) => trimmed.startsWith(prefix));
+  const allowed = ALLOWED_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
   if (!allowed) return DEFAULT_REDIRECT;
 
-  return trimmed;
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
 }

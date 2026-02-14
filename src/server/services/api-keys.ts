@@ -314,6 +314,107 @@ export async function rotateApiKeyForAgent({ agentId, graceSeconds = API_KEY_GRA
   }
 }
 
+export async function rotateGlobalApiKeyForAgentIfPresent({
+  agentId,
+  graceSeconds = API_KEY_GRACE_SECONDS
+}: any) {
+  try {
+    const rotated = await rotateApiKeyForAgent({ agentId, graceSeconds });
+    return {
+      rotated: true,
+      apiKey: rotated.apiKey,
+      apiKeyId: rotated.apiKeyId,
+      previousApiKeyId: rotated.previousApiKeyId,
+      rotatedAt: rotated.rotatedAt,
+      graceSeconds: rotated.graceSeconds
+    };
+  } catch (error: any) {
+    if (error?.code === "NOT_FOUND") {
+      return {
+        rotated: false,
+        apiKey: null,
+        apiKeyId: null,
+        previousApiKeyId: null,
+        rotatedAt: null,
+        graceSeconds: null
+      };
+    }
+    throw error;
+  }
+}
+
+export async function revokeGlobalApiKeysForAgent({ agentId, now = new Date() }: any) {
+  if (!agentId) {
+    throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
+  }
+
+  const client = getSupabaseServiceClient();
+  const nowIso = now instanceof Date ? now.toISOString() : new Date().toISOString();
+
+  const { data: existingKeys, error: listError } = await client
+    .from("api_keys")
+    .select("api_key_id, key_prefix")
+    .eq("agent_id", agentId)
+    .is("installation_id", null)
+    .in("key_state", ["ACTIVE", "GRACE"]);
+
+  if (listError) {
+    throw mapSupabaseServiceError(listError);
+  }
+
+  if (!Array.isArray(existingKeys) || existingKeys.length === 0) {
+    return {
+      revokedGlobalKeysCount: 0,
+      revokedGlobalApiKeyIds: []
+    };
+  }
+
+  const { data: revokedRows, error: revokeError } = await client
+    .from("api_keys")
+    .update({
+      key_state: "REVOKED",
+      revoked_at: nowIso,
+      grace_expires_at: null
+    })
+    .eq("agent_id", agentId)
+    .is("installation_id", null)
+    .in("key_state", ["ACTIVE", "GRACE"])
+    .select("api_key_id, key_prefix");
+
+  if (revokeError) {
+    throw mapSupabaseServiceError(revokeError);
+  }
+
+  const revokedGlobalApiKeyIds = Array.from(
+    new Set(
+      (revokedRows || [])
+        .map((row: any) => (row?.api_key_id ? String(row.api_key_id) : null))
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const prefixes = Array.from(
+    new Set(
+      [...(existingKeys || []), ...(revokedRows || [])]
+        .map((row: any) => (row?.key_prefix ? String(row.key_prefix) : null))
+        .filter(Boolean)
+    )
+  );
+
+  for (const prefix of prefixes) {
+    try {
+      await deleteCachedApiKeyAuthRecord(prefix);
+    } catch {
+      // Best-effort only: revocation must still succeed if cache invalidation fails.
+    }
+  }
+
+  return {
+    revokedGlobalKeysCount: revokedGlobalApiKeyIds.length,
+    revokedGlobalApiKeyIds
+  };
+}
+
 export async function rotateInstallationApiKeyForOwner({
   ownerId,
   installationId,

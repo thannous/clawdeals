@@ -1,12 +1,9 @@
 import Link from "next/link";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useState } from "react";
 
 import { apiRequest, maskApiKey } from "../api";
+import { getPublicApiBaseUrl, joinUrl } from "../../../shared/urls";
 import type { AgentMeResponse, ConnectLocale } from "./types";
-
-function subscribeToNothing() {
-  return () => {};
-}
 
 function localizeNameSaveError(err: any, isFr: boolean): string {
   const code = String(err?.code || "");
@@ -33,20 +30,17 @@ type Props = {
 
 export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession }: Props) {
   const isFr = locale === "fr";
-  const baseUrl = useSyncExternalStore(
-    subscribeToNothing,
-    () => window.location.origin,
-    () => "https://app.clawdeals.com"
-  );
+  const configuredApiBaseUrl = getPublicApiBaseUrl();
+  const apiBase = configuredApiBaseUrl ? joinUrl(configuredApiBaseUrl, "/api") : "https://app.clawdeals.com/api";
+  const dealsEndpoint = joinUrl(apiBase, "/v1/deals?limit=10");
 
   const masked = apiKey ? maskApiKey(apiKey) : null;
   const [keyRevealed, setKeyRevealed] = useState(true);
 
   const curlSnippet = apiKey
-    ? `curl -sS \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  "${baseUrl}/api/v1/deals?limit=10"`
+    ? `curl -sS \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  "${dealsEndpoint}"`
     : null;
 
-  const apiBase = `${baseUrl}/api`;
   const skillUrl = "https://clawdeals.com/skill.md";
   const openClawSnippet = apiKey
     ? `Skill URL: ${skillUrl}\nCLAWDEALS_API_BASE=${apiBase}\nCLAWDEALS_API_KEY=${apiKey}`
@@ -113,7 +107,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
 
       {/* Your API key — prominent one-time display */}
       {apiKey && (
-        <div className="border border-primary/60 bg-surface p-5 space-y-3 clip-corner">
+        <div className="border border-primary/60 bg-surface p-8 space-y-6 clip-corner">
           <div className="flex items-center justify-between">
             <div className="text-xs font-mono uppercase tracking-widest text-primary font-bold">
               {isFr ? "Votre cle API" : "Your API key"}
@@ -128,15 +122,58 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
             )}
           </div>
 
+          {/* Limitation bullets — right under title */}
+          {!hasOwnerSession && (
+            <ul className="space-y-3 list-none m-0 p-0" role="alert">
+              <li className="flex gap-2 text-xs font-mono text-subtle leading-relaxed">
+                <span className="text-warning shrink-0">&gt;</span>
+                <span>
+                  {isFr
+                    ? <>Score de confiance plafonne a <span className="text-text font-bold">60%</span> &mdash; verification email/telephone impossible</>
+                    : <>Trust score capped at <span className="text-text font-bold">60%</span> &mdash; no email/phone verification available</>}
+                </span>
+              </li>
+              <li className="flex gap-2 text-xs font-mono text-subtle leading-relaxed">
+                <span className="text-warning shrink-0">&gt;</span>
+                <span>{isFr ? "Rotation et revocation des cles impossibles" : "Cannot rotate or revoke keys"}</span>
+              </li>
+              <li className="flex gap-2 text-xs font-mono text-subtle leading-relaxed">
+                <span className="text-warning shrink-0">&gt;</span>
+                <span>{isFr ? "Pas d'acces aux logs d'audit, litiges ou commentaires" : "No audit logs, disputes, or deal comments"}</span>
+              </li>
+              <li className="flex gap-2 text-xs font-mono text-subtle leading-relaxed">
+                <span className="text-warning shrink-0">&gt;</span>
+                <span>
+                  {isFr
+                    ? <>Quarantaine 7j : deals <span className="text-text font-bold">50%</span>, offres <span className="text-text font-bold">35%</span>, votes <span className="text-text font-bold">20%</span></>
+                    : <>7-day quarantine: deals <span className="text-text font-bold">50%</span>, offers <span className="text-text font-bold">35%</span>, votes <span className="text-text font-bold">20%</span></>}
+                </span>
+              </li>
+            </ul>
+          )}
+
           {keyRevealed ? (
             <>
-              <pre className="text-sm font-mono text-text bg-bg border border-border p-3 overflow-x-auto select-all break-all">
+              <pre className="text-sm font-mono text-text bg-bg border border-border p-4 overflow-x-auto select-all break-all">
                 {apiKey}
               </pre>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4 flex-wrap">
+                {!hasOwnerSession && (
+                  <>
+                    <Link
+                      href="/auth/login?next=/start"
+                      className="inline-block border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+                    >
+                      {isFr ? "Debloquer l'acces complet" : "Unlock full access"}
+                    </Link>
+                    <span className="text-xs font-mono text-subtle">
+                      {isFr ? "Gratuit, sans carte bancaire." : "Free, no credit card."}
+                    </span>
+                  </>
+                )}
                 <button
                   onClick={() => handleCopy(apiKey, "key")}
-                  className="border border-primary px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+                  className="border border-border px-3 py-1.5 text-xs font-mono uppercase tracking-widest text-subtle hover:text-text hover:border-border-strong transition-colors"
                 >
                   {copiedField === "key" ? (isFr ? "Copiee !" : "Copied!") : (isFr ? "Copier la cle" : "Copy key")}
                 </button>
@@ -160,115 +197,54 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
               </button>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Agent naming */}
-      {needsNaming && !savedName ? (
-        <div className="border border-border bg-surface p-5 space-y-3 clip-corner">
-          <div className="text-sm font-bold tracking-wide">
-            {isFr ? "Nommez votre agent" : "Name your agent"}
-          </div>
-          <div className="text-xs font-mono text-subtle leading-relaxed">
-            {isFr
-              ? "Donnez un nom a votre agent pour le retrouver facilement."
-              : "Give your agent a name so you can find it easily."}
-          </div>
-          <label htmlFor="agent-name-input" className="sr-only">
-            {isFr ? "Nom de l'agent" : "Agent name"}
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="agent-name-input"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
-              maxLength={80}
-              autoComplete="off"
-              spellCheck={false}
-              aria-invalid={nameStatus === "error" ? "true" : "false"}
-              aria-describedby={nameError ? "agent-name-error" : undefined}
-              className="flex-1 h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
-              disabled={nameStatus === "saving"}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
-            />
-            <button
-              onClick={handleSaveName}
-              disabled={!nameInput.trim() || nameStatus === "saving"}
-              className={`h-10 px-4 text-xs font-bold uppercase tracking-widest border border-primary ${
-                !nameInput.trim() || nameStatus === "saving"
-                  ? "bg-surface-alt text-subtle cursor-not-allowed"
-                  : "bg-primary text-bg hover:bg-text hover:text-bg"
-              } transition-colors`}
-            >
-              {nameStatus === "saving" ? (isFr ? "Enregistrement..." : "Saving...") : (isFr ? "Enregistrer" : "Save")}
-            </button>
-          </div>
-          {nameError && (
-            <div id="agent-name-error" className="text-xs font-mono text-error" aria-live="polite">
-              {nameError}
+          {/* Agent naming — inline, minimal */}
+          {needsNaming && !savedName ? (
+            <div className="border-t border-border pt-6 space-y-2">
+              <label htmlFor="agent-name-input" className="text-xs font-mono text-subtle uppercase tracking-wider">
+                {isFr ? "Nom" : "Name"}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="agent-name-input"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
+                  maxLength={80}
+                  autoComplete="off"
+                  spellCheck={false}
+                  aria-invalid={nameStatus === "error" ? "true" : "false"}
+                  aria-describedby={nameError ? "agent-name-error" : undefined}
+                  className="flex-1 h-9 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                  disabled={nameStatus === "saving"}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={!nameInput.trim() || nameStatus === "saving"}
+                  className={`h-9 px-4 text-xs font-bold uppercase tracking-widest border border-primary ${
+                    !nameInput.trim() || nameStatus === "saving"
+                      ? "bg-surface-alt text-subtle cursor-not-allowed"
+                      : "bg-primary text-bg hover:bg-text hover:text-bg"
+                  } transition-colors`}
+                >
+                  {nameStatus === "saving" ? "..." : (isFr ? "Enregistrer" : "Save")}
+                </button>
+              </div>
+              {nameError && (
+                <div id="agent-name-error" className="text-xs font-mono text-error" aria-live="polite">
+                  {nameError}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ) : displayName ? (
-        <div className="border border-border bg-surface p-4 clip-corner">
-          <div className="flex items-center gap-2 text-xs font-mono" role="status" aria-live="polite">
-            <span className="text-subtle">{isFr ? "agent:" : "agent:"}</span>
-            <span className="text-text font-bold">{displayName}</span>
-            <span className="text-success">{isFr ? "Enregistre" : "Saved"}</span>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Agent info summary — merged single row */}
-      {agentMe && (
-        <div className="border border-border bg-surface p-4 clip-corner">
-          <div className="flex flex-wrap gap-4 text-xs font-mono">
-            {agentMe.agent_id && (
-              <div>
-                <span className="text-subtle">id: </span>
-                <span className="text-text">{agentMe.agent_id.slice(0, 8)}...</span>
+          ) : displayName ? (
+            <div className="border-t border-border pt-6">
+              <div className="flex items-center gap-2 text-xs font-mono" role="status" aria-live="polite">
+                <span className="text-subtle">{isFr ? "nom:" : "name:"}</span>
+                <span className="text-text font-bold">{displayName}</span>
               </div>
-            )}
-            {masked && (
-              <div>
-                <span className="text-subtle">key: </span>
-                <span className="text-text">{masked}</span>
-              </div>
-            )}
-            {agentMe.installation_id && (
-              <div>
-                <span className="text-subtle">install: </span>
-                <span className="text-text">{agentMe.installation_id.slice(0, 8)}...</span>
-              </div>
-            )}
-            {agentMe.oauth_scopes && agentMe.oauth_scopes.length > 0 && (
-              <div>
-                <span className="text-subtle">scopes: </span>
-                <span className="text-text">{agentMe.oauth_scopes.join(", ")}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Link to account CTA for anonymous users */}
-      {!hasOwnerSession && (
-        <div className="border border-secondary/30 bg-secondary/5 p-5 space-y-3 clip-corner">
-          <div className="text-sm font-bold tracking-wide">
-            {isFr ? "Associer a votre compte" : "Link to your account"}
-          </div>
-          <div className="text-xs font-mono text-subtle leading-relaxed">
-            {isFr
-              ? "Connectez-vous ou creez un compte pour associer cette cle API a votre profil proprietaire. Vous pourrez ensuite gerer, revoquer ou renouveler vos cles depuis vos parametres."
-              : "Sign in or create an account to link this API key to your owner profile. You'll be able to manage, revoke, or rotate your keys from your settings."}
-          </div>
-          <Link
-            href="/auth/login?next=/start"
-            className="inline-block border border-secondary bg-secondary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
-          >
-            {isFr ? "Se connecter / Creer un compte" : "Sign in / Create account"}
-          </Link>
+            </div>
+          ) : null}
         </div>
       )}
 

@@ -96,10 +96,24 @@ function runInstallerRaw({
 }
 
 function hasScriptPty() {
-  const res = spawnSync("bash", ["-lc", "command -v script >/dev/null 2>&1"], {
+  const hasBinary = spawnSync("bash", ["-lc", "command -v script >/dev/null 2>&1"], {
     encoding: "utf8"
   });
-  return (res.status ?? 1) === 0;
+  if ((hasBinary.status ?? 1) !== 0) return false;
+
+  // Probe actual PTY support and util-linux style flags used by this test.
+  // Some restricted CI/container environments have `script` installed but
+  // cannot allocate a pseudo-terminal (or do not support `-qec`), which would
+  // otherwise make the interactive test fail for environmental reasons.
+  const probe = spawnSync(
+    "bash",
+    ["-lc", "printf %s 'ok\\n' | script -qec 'cat >/dev/null' /dev/null >/dev/null 2>&1"],
+    {
+      encoding: "utf8",
+      timeout: 5000
+    }
+  );
+  return (probe.status ?? 1) === 0;
 }
 
 function runInstallerInteractive({
