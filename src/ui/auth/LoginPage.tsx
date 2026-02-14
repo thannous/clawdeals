@@ -180,8 +180,13 @@ export default function LoginPage() {
     setNotice(null);
     try {
       const supabase = getBrowserSupabaseClient();
-      try { sessionStorage.setItem("clawdeals.auth_next", redirectTarget); } catch {}
-      const redirectTo = resolveAuthCallbackUrl(redirectTarget, { includeNext: false });
+      let includeNextInCallback = false;
+      try {
+        sessionStorage.setItem("clawdeals.auth_next", redirectTarget);
+      } catch {
+        includeNextInCallback = true;
+      }
+      const redirectTo = resolveAuthCallbackUrl(redirectTarget, { includeNext: includeNextInCallback });
       const { data: oauthData, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo, skipBrowserRedirect: true }

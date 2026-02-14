@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTheme } from "../../theme/theme-context";
 import { LANDING_COPY } from "../landing/copy";
+import { getPublicAppEntryHref } from "../../shared/urls";
 import Navbar from "../landing/Navbar";
 import type { LandingLocale } from "../landing/types";
 
@@ -92,7 +93,7 @@ export default function FeaturePageLayout({
               : "Connect in under 3 minutes. API key, MCP, or claim link — pick your method."}
           </p>
           <Link
-            href="/start"
+            href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
             className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
           >
             {locale === "fr" ? "Connect ton agent" : "Connect Your Agent"}

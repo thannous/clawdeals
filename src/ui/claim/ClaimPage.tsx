@@ -148,6 +148,16 @@ const COPY: Record<
   }
 };
 
+const AGENT_INITIATED_CLIENT_TYPES = new Set([
+  "cursor",
+  "claude-desktop",
+  "claude-code",
+  "codex",
+  "windsurf",
+  "gemini",
+  "openclaw"
+]);
+
 function describeScope(scope: string, locale: ClaimLocale) {
   return SCOPE_EXPLANATIONS[locale][String(scope || "").trim()] ||
     (locale === "fr"
@@ -312,6 +322,11 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
   const isPendingClaim = session?.status === "PENDING_CLAIM";
   const isClaimFinalized = session?.status === "CLAIMED" || session?.status === "DELIVERED";
+  const isAgentInitiatedClaim = useMemo(() => {
+    const normalizedClientType = String(session?.client_type || "").trim().toLowerCase();
+    if (!normalizedClientType) return false;
+    return AGENT_INITIATED_CLIENT_TYPES.has(normalizedClientType);
+  }, [session?.client_type]);
 
   const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired && ownerContextAvailable);
   const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(resolvedAttachAgentId));
@@ -510,7 +525,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   </div>
                 </div>
 
-                {session.client_type && (
+                {isAgentInitiatedClaim && (
                   <div className="border border-secondary/20 bg-secondary/5 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-secondary">{copy.agentInitiatedHint}</div>
                   </div>

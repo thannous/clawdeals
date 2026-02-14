@@ -49,6 +49,7 @@ describe("LoginPage Google OAuth", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
     delete process.env.NEXT_PUBLIC_APP_URL;
     mocks.router.isReady = true;
     mocks.router.query = { next: "/start" };
@@ -87,6 +88,33 @@ describe("LoginPage Google OAuth", () => {
       );
     });
     expect(sessionStorage.getItem("clawdeals.auth_next")).toBe("/start");
+  });
+
+  it("passes next in callback URL when sessionStorage is unavailable", async () => {
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("Private mode");
+    });
+
+    try {
+      render(<LoginPage />);
+
+      fireEvent.click(screen.getByTestId("auth-login-google"));
+
+      await waitFor(() => {
+        expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
+          expect.objectContaining({
+            provider: "google",
+            options: expect.objectContaining({
+              redirectTo: expect.stringMatching(/^http:\/\/localhost(?::\d+)?\/auth\/callback\?next=%2Fstart$/),
+              skipBrowserRedirect: true
+            })
+          })
+        );
+      });
+      expect(sessionStorage.getItem("clawdeals.auth_next")).toBeNull();
+    } finally {
+      setItemSpy.mockRestore();
+    }
   });
 
   it("shows an error when Supabase does not return an OAuth redirect URL", async () => {

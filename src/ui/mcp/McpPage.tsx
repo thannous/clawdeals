@@ -8,6 +8,11 @@ import PageHeader from "../shared/PageHeader";
 import { getPublicAppUrl, getPublicLandingUrl, joinUrl } from "../../shared/urls";
 
 type McpLocale = "fr" | "en";
+type ConfigTab = "cursor" | "claude" | "claudeCode" | "codex" | "windsurf" | "gemini" | "generic";
+
+function usesMcpServersKey(configTab: ConfigTab) {
+  return configTab === "claude" || configTab === "claudeCode" || configTab === "windsurf" || configTab === "gemini";
+}
 
 const COPY: Record<
   McpLocale,
@@ -254,9 +259,7 @@ export default function McpPage() {
   const locale = (router.locale === "fr" ? "fr" : "en") as McpLocale;
   const copy = COPY[locale];
 
-  const [configTab, setConfigTab] = useState<
-    "cursor" | "claude" | "claudeCode" | "codex" | "windsurf" | "gemini" | "generic"
-  >("cursor");
+  const [configTab, setConfigTab] = useState<ConfigTab>("cursor");
 
   const installSnippetNpx = useMemo(() => {
     return `export CLAWDEALS_API_KEY=\"cd_live_...\"\nnpx -y clawdeals-mcp install`;
@@ -278,10 +281,8 @@ export default function McpPage() {
       }
     };
 
-    if (configTab === "claude" || configTab === "claudeCode" || configTab === "windsurf" || configTab === "gemini") {
-      return JSON.stringify({ mcpServers: base }, null, 2);
-    }
-    return JSON.stringify({ servers: base }, null, 2);
+    const rootKey = usesMcpServersKey(configTab) ? "mcpServers" : "servers";
+    return JSON.stringify({ [rootKey]: base }, null, 2);
   }, [configTab]);
 
   const manualConfigTitle = useMemo(() => {
@@ -302,6 +303,10 @@ export default function McpPage() {
   }, []);
 
   const bootstrapConfig = useMemo(() => {
+    if (configTab === "codex") {
+      return `[mcp_servers.clawdeals]\ncommand = "npx"\nargs = ["-y", "clawdeals-mcp"]`;
+    }
+
     const base = {
       clawdeals: {
         type: "stdio",
@@ -309,8 +314,9 @@ export default function McpPage() {
         args: ["-y", "clawdeals-mcp"]
       }
     };
-    return JSON.stringify({ mcpServers: base }, null, 2);
-  }, []);
+    const rootKey = usesMcpServersKey(configTab) ? "mcpServers" : "servers";
+    return JSON.stringify({ [rootKey]: base }, null, 2);
+  }, [configTab]);
 
   const keysUrl = useMemo(() => {
     const appBase = getPublicAppUrl();

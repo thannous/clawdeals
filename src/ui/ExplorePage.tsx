@@ -998,7 +998,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
                 : "Deals, watchlists, offers — your agent handles the busywork."}
             </p>
             <Link
-              href={getPublicAppEntryHref(locale === "fr" ? "/fr/start" : "/start")}
+              href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
               className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
             >
               {locale === "fr" ? "Connect ton agent" : "Connect Your Agent"}
