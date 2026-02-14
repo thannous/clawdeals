@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import QRCode from "react-qr-code";
+import Link from "next/link";
 
-import { apiRequest } from "../api";
-import { setStoredApiKey } from "../storage";
+import { apiRequest, maskApiKey } from "../api";
 import { getPublicApiBaseUrl, joinUrl } from "../../../shared/urls";
 import { generateFunnyAgentName } from "./agent-name-generator";
 import type { ConnectLocale, ConnectionMethod, ConnectSessionData, PollStatus } from "./types";
@@ -42,6 +42,7 @@ type Props = {
   pollError: string | null;
   isCreatingSession: boolean;
   onCreateSession: (agentName?: string) => Promise<ConnectSessionData>;
+  hasOwnerSession: boolean;
 };
 
 export default function StepConnect({
@@ -54,7 +55,8 @@ export default function StepConnect({
   pollStatus,
   pollError,
   isCreatingSession,
-  onCreateSession
+  onCreateSession,
+  hasOwnerSession
 }: Props) {
   const isFr = locale === "fr";
   // --- Claim Link state ---
@@ -89,6 +91,16 @@ export default function StepConnect({
     "cursor" | "claude" | "claudeCode" | "codex" | "windsurf" | "gemini" | "generic"
   >("cursor");
   const [mcpCopyMsg, setMcpCopyMsg] = useState("");
+
+  // --- MCP sub-step state (key → configure) ---
+  const [mcpSubStepOverride, setMcpSubStep] = useState<"key" | "configure" | null>(null);
+  const mcpSubStep: "key" | "configure" = mcpSubStepOverride ?? (storedKey ? "configure" : "key");
+  const [mcpKeyMode, setMcpKeyMode] = useState<"generate" | "paste">("generate");
+  const [mcpAgentName, setMcpAgentName] = useState("");
+  const [mcpPastedKey, setMcpPastedKey] = useState("");
+  const [mcpKeyStatus, setMcpKeyStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [mcpKeyMessage, setMcpKeyMessage] = useState("");
+
   const optionChooseOneLabel = isFr
     ? "STEP_01: choisissez une seule option: A ou B."
     : "STEP_01: choose one option only: A or B.";
@@ -204,7 +216,6 @@ export default function StepConnect({
         setKeyMessage(isFr ? "Reponse serveur inattendue." : "Unexpected response from server.");
         return;
       }
-      setStoredApiKey(apiKey);
       setKeyStatus("success");
       setKeyMessage(
         isFr
@@ -235,7 +246,6 @@ export default function StepConnect({
     setKeyMessage("");
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
-      setStoredApiKey(key);
       setKeyStatus("success");
       setKeyMessage(isFr ? "Cle API validee." : "API key validated.");
       onApiKeySet(key);
@@ -270,6 +280,76 @@ export default function StepConnect({
   const handleMcpDone = useCallback(() => {
     onMethodSelected("mcp");
   }, [onMethodSelected]);
+
+  // --- MCP sub-step: auto-generate agent name ---
+  useEffect(() => {
+    if (mcpKeyMode !== "generate") return;
+    const timer = setTimeout(() => {
+      setMcpAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [mcpKeyMode]);
+
+  // --- MCP key handlers ---
+  const handleMcpGenerate = useCallback(async () => {
+    setMcpKeyStatus("loading");
+    setMcpKeyMessage("");
+    try {
+      const trimmed = mcpAgentName.trim();
+      const name = trimmed || generateFunnyAgentName();
+      if (!trimmed) setMcpAgentName(name);
+      const result = await apiRequest<RegisterResult>({
+        path: "/v1/agents",
+        method: "POST",
+        idempotencyKey: randomIdempotencyKey(),
+        body: { name }
+      });
+      const apiKey = result.data?.data?.api_key;
+      const agent_id = result.data?.data?.agent_id;
+      if (!apiKey || !agent_id) {
+        setMcpKeyStatus("error");
+        setMcpKeyMessage(isFr ? "Reponse serveur inattendue." : "Unexpected response from server.");
+        return;
+      }
+      setMcpKeyStatus("success");
+      setMcpKeyMessage(
+        isFr
+          ? "Cle API generee. Elle sera integree dans la config ci-dessous."
+          : "API key generated. It will be embedded in the config below."
+      );
+      onApiKeySet(apiKey, agent_id);
+      setMcpSubStep("configure");
+    } catch (error: any) {
+      setMcpKeyStatus("error");
+      setMcpKeyMessage(error?.message || (isFr ? "Impossible de generer la cle API." : "Failed to generate API key."));
+    }
+  }, [mcpAgentName, isFr, onApiKeySet]);
+
+  const handleMcpValidate = useCallback(async () => {
+    const key = mcpPastedKey.trim();
+    if (!key) {
+      setMcpKeyStatus("error");
+      setMcpKeyMessage(isFr ? "Collez une cle API." : "Paste an API key.");
+      return;
+    }
+    if (!isLikelyApiKey(key)) {
+      setMcpKeyStatus("error");
+      setMcpKeyMessage(isFr ? "Cette cle ne ressemble pas a une cle API ClawDeals." : "This does not look like a ClawDeals API key.");
+      return;
+    }
+    setMcpKeyStatus("loading");
+    setMcpKeyMessage("");
+    try {
+      await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
+      setMcpKeyStatus("success");
+      setMcpKeyMessage(isFr ? "Cle API validee." : "API key validated.");
+      onApiKeySet(key);
+      setMcpSubStep("configure");
+    } catch (error: any) {
+      setMcpKeyStatus("error");
+      setMcpKeyMessage(error?.message || (isFr ? "Cle API invalide." : "Invalid API key."));
+    }
+  }, [mcpPastedKey, isFr, onApiKeySet]);
 
   const isPolling = pollStatus === "polling";
   const isClaimed = pollStatus === "claimed";
@@ -558,170 +638,329 @@ export default function StepConnect({
         {/* MCP / IDE */}
         <div className="border border-border bg-surface p-6 space-y-4 clip-corner">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
               <span className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-subtle rounded">
                 IDE
               </span>
+              {mcpSubStep === "configure" && (
+                <button
+                  onClick={() => setMcpSubStep("key")}
+                  className="text-[11px] font-mono text-subtle hover:text-text transition-colors"
+                >
+                  {isFr ? "Changer la cle" : "Change key"}
+                </button>
+              )}
             </div>
             <div className="text-sm font-bold tracking-wide">{isFr ? "Connecter IDE" : "Connect IDE"}</div>
             <div className="text-xs font-mono text-subtle leading-relaxed">
-              {isFr
-                ? "Installation auto via npx: Cursor, Claude Desktop, Windsurf et Gemini. Pour Claude Code, Codex et autres clients, utilisez la config manuelle ci-dessous."
-                : "Auto install via npx: Cursor, Claude Desktop, Windsurf, and Gemini. For Claude Code, Codex, and other clients, use the manual config below."}
+              {mcpSubStep === "key"
+                ? (isFr
+                    ? "Configurez votre IDE avec MCP. D'abord, obtenez une cle API pour authentifier la connexion."
+                    : "Configure your IDE with MCP. First, get an API key to authenticate the connection.")
+                : (isFr
+                    ? "Votre cle API est prete. Configurez votre IDE."
+                    : "Your API key is ready. Configure your IDE.")}
             </div>
-            <div className="text-[11px] font-mono text-subtle">{optionChooseOneLabel}</div>
           </div>
 
-          <div className="space-y-3">
-            <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{optionALabel}</div>
-            <button
-              onClick={() => setMcpShowInstall((prev) => !prev)}
-              className="flex items-center gap-1.5 text-xs font-mono text-primary hover:text-text transition-colors"
-            >
-              <svg
-                className={`w-3 h-3 transition-transform ${mcpShowInstall ? "rotate-90" : ""}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-              {mcpShowInstall
-                ? (isFr ? "Masquer la commande d'installation" : "Hide install command")
-                : (isFr ? "Afficher la commande d'installation" : "Show install command")}
-            </button>
-
-            {mcpShowInstall && (
-              <div className="space-y-3">
-                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
-                  {mcpInstallSnippetNpx}
-                </pre>
+          {/* Phase 1: Get API key */}
+          {mcpSubStep === "key" && (
+            <>
+              <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
                 <button
-                  onClick={() => handleCopyMcpInstall(mcpInstallSnippetNpx)}
-                  className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                  onClick={() => setMcpKeyMode("generate")}
+                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+                    mcpKeyMode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
+                  } transition-colors`}
                 >
-                  {isFr ? "Copier npx" : "Copy npx"}
+                  {isFr ? "Generer" : "Generate"}
                 </button>
-                {mcpCopyMsg && (
-                  <span className="text-xs font-mono text-success">{mcpCopyMsg}</span>
-                )}
+                <button
+                  onClick={() => setMcpKeyMode("paste")}
+                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+                    mcpKeyMode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
+                  } transition-colors`}
+                >
+                  {isFr ? "J'ai une cle" : "I have a key"}
+                </button>
               </div>
-            )}
-          </div>
 
-          <button
-            onClick={handleMcpDone}
-            className="w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:text-bg transition-colors"
-          >
-            {isFr ? "J'ai installe" : "I've installed it"}
-          </button>
-
-          {/* Advanced accordion */}
-          <button
-            onClick={() => setMcpAdvancedOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 text-xs font-mono text-subtle hover:text-text transition-colors"
-          >
-            <svg
-              className={`w-3 h-3 transition-transform ${mcpAdvancedOpen ? "rotate-90" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-            {optionBLabel}
-          </button>
-
-          {mcpAdvancedOpen && (
-            <div className="space-y-3 border-t border-border pt-4">
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: isFr ? "Heberge" : "Hosted", value: hostedApiBase },
-                  { label: isFr ? "Local (dev)" : "Local (dev only)", value: localApiBase },
-                  { label: isFr ? "Ce site" : "This site", value: siteApiBase }
-                ].map((opt) => (
+              {mcpKeyMode === "generate" ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-mono text-subtle uppercase" htmlFor="mcp-agent-name">
+                      {isFr ? "Nom de l'agent (optionnel)" : "Agent name (optional)"}
+                    </label>
+                    <input
+                      id="mcp-agent-name"
+                      value={mcpAgentName}
+                      onChange={(e) => setMcpAgentName(e.target.value)}
+                      placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                      disabled={mcpKeyStatus === "loading"}
+                    />
+                  </div>
                   <button
-                    key={opt.label}
-                    onClick={() => setMcpApiBase(opt.value)}
-                    className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest border ${
-                      mcpApiBase === opt.value
-                        ? "border-primary text-primary"
-                        : "border-border text-subtle hover:border-border-strong hover:text-text"
+                    onClick={handleMcpGenerate}
+                    disabled={mcpKeyStatus === "loading"}
+                    className={`w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary ${
+                      mcpKeyStatus === "loading"
+                        ? "bg-surface-alt text-subtle cursor-not-allowed"
+                        : "bg-primary text-bg hover:bg-text hover:text-bg"
                     } transition-colors`}
+                    data-testid="mcp-generate-key"
                   >
-                    {opt.label}
+                    {mcpKeyStatus === "loading" ? (isFr ? "Generation..." : "Generating...") : (isFr ? "Generer" : "Generate")}
                   </button>
-                ))}
-              </div>
-
-              {mcpApiBase === localApiBase && (
-                <div className="text-xs font-mono text-warning">
-                  {isFr
-                    ? "La base locale fonctionne seulement si l'API Clawdeals tourne sur cette machine (`npm run dev`)."
-                    : "Local base works only if you run Clawdeals API on this machine (`npm run dev`)."}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-mono text-subtle uppercase" htmlFor="mcp-paste-key">
+                      {isFr ? "Cle API" : "API key"}
+                    </label>
+                    <input
+                      id="mcp-paste-key"
+                      value={mcpPastedKey}
+                      onChange={(e) => setMcpPastedKey(e.target.value)}
+                      placeholder="cd_live_..."
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                      disabled={mcpKeyStatus === "loading"}
+                    />
+                  </div>
+                  <button
+                    onClick={handleMcpValidate}
+                    disabled={mcpKeyStatus === "loading"}
+                    className={`w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary ${
+                      mcpKeyStatus === "loading"
+                        ? "bg-surface-alt text-subtle cursor-not-allowed"
+                        : "bg-primary text-bg hover:bg-text hover:text-bg"
+                    } transition-colors`}
+                    data-testid="mcp-validate-key"
+                  >
+                    {mcpKeyStatus === "loading" ? (isFr ? "Validation..." : "Validating...") : (isFr ? "Valider" : "Validate")}
+                  </button>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <div className="text-xs font-mono text-subtle uppercase">
-                  {optionBLabel}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: "cursor" as const, label: "Cursor" },
-                    { id: "claude" as const, label: "Claude" },
-                    { id: "claudeCode" as const, label: "Claude Code" },
-                    { id: "codex" as const, label: "Codex" },
-                    { id: "windsurf" as const, label: "Windsurf" },
-                    { id: "gemini" as const, label: "Gemini CLI" },
-                    { id: "generic" as const, label: "Generic" }
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => setMcpManualTarget(opt.id)}
-                      className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest border ${
-                        mcpManualTarget === opt.id
-                          ? "border-primary text-primary"
-                          : "border-border text-subtle hover:border-border-strong hover:text-text"
-                      } transition-colors`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {mcpManualTarget === "codex" && (
-                  <div className="text-xs font-mono text-subtle">
-                    {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codex/config.toml</span>
-                  </div>
-                )}
-                {mcpManualTarget === "claudeCode" && (
-                  <div className="text-xs font-mono text-subtle">
-                    {isFr ? "Fichier: " : "File: "} <span className="text-text">./.mcp.json</span>
-                  </div>
-                )}
-                {mcpManualTarget === "windsurf" && (
-                  <div className="text-xs font-mono text-subtle">
-                    {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codeium/windsurf/mcp_config.json</span>
-                  </div>
-                )}
-                {mcpManualTarget === "gemini" && (
-                  <div className="text-xs font-mono text-subtle">
-                    {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.gemini/settings.json</span>
-                  </div>
-                )}
-                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
-                  {mcpManualConfig}
-                </pre>
-                <button
-                  onClick={handleCopyMcpJson}
-                  className="border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+              {mcpKeyMessage && (
+                <div
+                  className={`text-xs font-mono ${
+                    mcpKeyStatus === "error" ? "text-error" : mcpKeyStatus === "success" ? "text-success" : "text-subtle"
+                  }`}
+                  aria-live="polite"
                 >
-                  {isFr ? "Copier config" : "Copy config"}
-                </button>
+                  {mcpKeyMessage}
+                </div>
+              )}
+
+              {!hasOwnerSession && (
+                <div className="border border-warning/30 bg-warning/5 p-3 clip-corner space-y-3">
+                  <div className="text-xs font-mono text-warning">
+                    {isFr
+                      ? "Recherches limitees sur le marketplace tant que cette cle n'est pas liee a un compte."
+                      : "Limited marketplace searches until this key is linked to an account."}
+                  </div>
+                  <Link
+                    href="/auth/login?next=/start"
+                    className="inline-block border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+                  >
+                    {isFr ? "Creer un compte" : "Create account"}
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Phase 2: Configure IDE (key is ready) */}
+          {mcpSubStep === "configure" && (
+            <>
+              {/* Key success banner */}
+              <div className="flex items-center gap-2 border border-success/30 bg-success/5 px-3 py-2 text-xs font-mono">
+                <span className="text-success">{isFr ? "Cle:" : "Key:"}</span>
+                <span className="text-text">{storedKey ? maskApiKey(storedKey) : "..."}</span>
+                {storedKey && (
+                  <button
+                    onClick={() => handleCopyMcpInstall(storedKey)}
+                    className="ml-auto text-subtle hover:text-text transition-colors"
+                  >
+                    {mcpCopyMsg || (isFr ? "Copier" : "Copy")}
+                  </button>
+                )}
               </div>
-            </div>
+
+              {!hasOwnerSession && (
+                <div className="border border-warning/30 bg-warning/5 p-3 clip-corner space-y-3">
+                  <div className="text-xs font-mono text-warning">
+                    {isFr
+                      ? "Recherches limitees sur le marketplace tant que cette cle n'est pas liee a un compte."
+                      : "Limited marketplace searches until this key is linked to an account."}
+                  </div>
+                  <Link
+                    href="/auth/login?next=/start"
+                    className="inline-block border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+                  >
+                    {isFr ? "Creer un compte" : "Create account"}
+                  </Link>
+                </div>
+              )}
+
+              <div className="text-[11px] font-mono text-subtle">{optionChooseOneLabel}</div>
+
+              <div className="space-y-3">
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{optionALabel}</div>
+                <button
+                  onClick={() => setMcpShowInstall((prev) => !prev)}
+                  className="flex items-center gap-1.5 text-xs font-mono text-primary hover:text-text transition-colors"
+                >
+                  <svg
+                    className={`w-3 h-3 transition-transform ${mcpShowInstall ? "rotate-90" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                  {mcpShowInstall
+                    ? (isFr ? "Masquer la commande d'installation" : "Hide install command")
+                    : (isFr ? "Afficher la commande d'installation" : "Show install command")}
+                </button>
+
+                {mcpShowInstall && (
+                  <div className="space-y-3">
+                    <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
+                      {mcpInstallSnippetNpx}
+                    </pre>
+                    <button
+                      onClick={() => handleCopyMcpInstall(mcpInstallSnippetNpx)}
+                      className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                    >
+                      {isFr ? "Copier npx" : "Copy npx"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handleMcpDone}
+                className="w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:text-bg transition-colors"
+                data-testid="mcp-installed"
+              >
+                {isFr ? "J'ai installe" : "I've installed it"}
+              </button>
+
+              {/* Advanced accordion */}
+              <button
+                onClick={() => setMcpAdvancedOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 text-xs font-mono text-subtle hover:text-text transition-colors"
+              >
+                <svg
+                  className={`w-3 h-3 transition-transform ${mcpAdvancedOpen ? "rotate-90" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+                {optionBLabel}
+              </button>
+
+              {mcpAdvancedOpen && (
+                <div className="space-y-3 border-t border-border pt-4">
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { label: isFr ? "Heberge" : "Hosted", value: hostedApiBase },
+                      { label: isFr ? "Local (dev)" : "Local (dev only)", value: localApiBase },
+                      { label: isFr ? "Ce site" : "This site", value: siteApiBase }
+                    ].map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={() => setMcpApiBase(opt.value)}
+                        className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest border ${
+                          mcpApiBase === opt.value
+                            ? "border-primary text-primary"
+                            : "border-border text-subtle hover:border-border-strong hover:text-text"
+                        } transition-colors`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {mcpApiBase === localApiBase && (
+                    <div className="text-xs font-mono text-warning">
+                      {isFr
+                        ? "La base locale fonctionne seulement si l'API Clawdeals tourne sur cette machine (`npm run dev`)."
+                        : "Local base works only if you run Clawdeals API on this machine (`npm run dev`)."}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <div className="text-xs font-mono text-subtle uppercase">
+                      {optionBLabel}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: "cursor" as const, label: "Cursor" },
+                        { id: "claude" as const, label: "Claude" },
+                        { id: "claudeCode" as const, label: "Claude Code" },
+                        { id: "codex" as const, label: "Codex" },
+                        { id: "windsurf" as const, label: "Windsurf" },
+                        { id: "gemini" as const, label: "Gemini CLI" },
+                        { id: "generic" as const, label: "Generic" }
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setMcpManualTarget(opt.id)}
+                          className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest border ${
+                            mcpManualTarget === opt.id
+                              ? "border-primary text-primary"
+                              : "border-border text-subtle hover:border-border-strong hover:text-text"
+                          } transition-colors`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {mcpManualTarget === "codex" && (
+                      <div className="text-xs font-mono text-subtle">
+                        {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codex/config.toml</span>
+                      </div>
+                    )}
+                    {mcpManualTarget === "claudeCode" && (
+                      <div className="text-xs font-mono text-subtle">
+                        {isFr ? "Fichier: " : "File: "} <span className="text-text">./.mcp.json</span>
+                      </div>
+                    )}
+                    {mcpManualTarget === "windsurf" && (
+                      <div className="text-xs font-mono text-subtle">
+                        {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codeium/windsurf/mcp_config.json</span>
+                      </div>
+                    )}
+                    {mcpManualTarget === "gemini" && (
+                      <div className="text-xs font-mono text-subtle">
+                        {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.gemini/settings.json</span>
+                      </div>
+                    )}
+                    <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
+                      {mcpManualConfig}
+                    </pre>
+                    <button
+                      onClick={handleCopyMcpJson}
+                      className="border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                    >
+                      {isFr ? "Copier config" : "Copy config"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

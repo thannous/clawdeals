@@ -46,7 +46,7 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.getByLabelText("Name")).toBeTruthy();
+    expect(screen.getByLabelText("Agent name")).toBeTruthy();
     const saveButton = screen.getByRole("button", { name: "Save" }) as HTMLButtonElement;
     expect(saveButton.disabled).toBe(true);
   });
@@ -67,7 +67,7 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.queryByLabelText("Name")).toBeNull();
+    expect(screen.queryByLabelText("Agent name")).toBeNull();
     expect(screen.getByText("Owner Bot")).toBeTruthy();
   });
 
@@ -98,7 +98,7 @@ describe("StepFirstWin", () => {
     await waitFor(() => {
       expect(screen.getByText("Alpha Bot")).toBeTruthy();
     });
-    expect(screen.queryByLabelText("Name")).toBeNull();
+    expect(screen.queryByLabelText("Agent name")).toBeNull();
   });
 
   it("shows localized validation message on save error", async () => {
@@ -126,7 +126,7 @@ describe("StepFirstWin", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Le nom doit contenir 80 caracteres maximum.")).toBeTruthy();
+      expect(screen.getByText("Le nom doit contenir 80 caractères maximum.")).toBeTruthy();
     });
   });
 
@@ -146,17 +146,10 @@ describe("StepFirstWin", () => {
       />
     );
 
-    const banner = screen.getByRole("alert");
-    expect(banner).toBeTruthy();
-    expect(screen.getByText(/60%/)).toBeTruthy();
-    expect(screen.getByText(/rotate or revoke/i)).toBeTruthy();
-    expect(screen.getByText(/audit logs/i)).toBeTruthy();
-    expect(screen.getByText(/7-day quarantine/i)).toBeTruthy();
-
-    const cta = screen.getByRole("link", { name: /unlock full access/i });
+    expect(screen.getByText("Limited marketplace searches until this key is linked to an account.")).toBeTruthy();
+    const cta = screen.getByRole("link", { name: /create account/i });
     expect(cta).toBeTruthy();
     expect(cta.getAttribute("href")).toBe("/auth/login?next=/start");
-    expect(screen.getByText(/no credit card/i)).toBeTruthy();
   });
 
   it("hides limitation banner when linked to owner", () => {
@@ -175,7 +168,7 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Limited marketplace searches until this key is linked to an account.")).toBeNull();
     expect(screen.getByText("Create a watchlist")).toBeTruthy();
   });
 
@@ -195,10 +188,10 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.getByRole("alert")).toBeTruthy();
-    const cta = screen.getByRole("link", { name: /debloquer l'acces complet/i });
+    expect(screen.getByText("Recherches limitées sur le marketplace tant que cette clé n'est pas liée à un compte.")).toBeTruthy();
+    const cta = screen.getByRole("link", { name: /créer un compte/i });
     expect(cta).toBeTruthy();
-    expect(screen.getByText(/sans carte bancaire/i)).toBeTruthy();
+    expect(cta.getAttribute("href")).toBe("/auth/login?next=/start");
   });
 
   it("uses current origin for API snippets when NEXT_PUBLIC_API_BASE_URL is unset", async () => {

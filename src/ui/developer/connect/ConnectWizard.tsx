@@ -492,6 +492,7 @@ export default function ConnectWizard() {
             isCreatingSession={isCreating}
             onCreateSession={handleCreateSession}
             locale={locale}
+            hasOwnerSession={state.hasOwnerSession}
           />
         )}
 
