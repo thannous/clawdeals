@@ -23,6 +23,10 @@ export async function waitForOwnerSessionReady(options: { attempts?: number } = 
       if (resp.ok) {
         return true;
       }
+      if (resp.status === 401) {
+        // Unauthorized is terminal for this probe window; retrying only spams logs.
+        return false;
+      }
     } catch {
       // Best-effort only. Keep retrying for transient network or hydration races.
     }

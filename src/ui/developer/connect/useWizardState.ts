@@ -178,16 +178,17 @@ export function useWizardState() {
       if (!cancelled && mountedRef.current) {
         setHasOwnerSession(ownerSession);
       }
-      if (!ownerSession) {
-        // Preserve stored API key for anonymous users — they should keep their
-        // generated key in localStorage across refreshes.  The key will be
-        // cleared explicitly when the user clicks "Forget".
-        debugLog("hydrate:no_owner_session_preserve_local_key");
-      }
-
       const stored = getStoredApiKey();
       if (!stored) {
         debugLog("hydrate:no_stored_key");
+        return;
+      }
+
+      if (!ownerSession) {
+        // Anonymous sessions must not auto-restore API keys on refresh.
+        clearStoredApiKey();
+        clearStoredLastEventId();
+        debugLog("hydrate:no_owner_session_clear_local_key");
         return;
       }
 
@@ -299,10 +300,14 @@ export function useWizardState() {
       }
     };
 
-    void reconcile();
-    intervalHandle = setInterval(() => {
+    if (hasOwnerSession) {
       void reconcile();
-    }, OWNER_SESSION_RECONCILE_INTERVAL_MS);
+      intervalHandle = setInterval(() => {
+        void reconcile();
+      }, OWNER_SESSION_RECONCILE_INTERVAL_MS);
+    } else {
+      debugLog("reconcile:interval_disabled_no_owner_session");
+    }
 
     const onWindowFocus = () => {
       void reconcile();
@@ -322,7 +327,7 @@ export function useWizardState() {
       window.removeEventListener("focus", onWindowFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [agentMe, apiKey, tryAutoClaim]);
+  }, [agentMe, apiKey, hasOwnerSession, tryAutoClaim]);
 
   const step = deriveStep(method, verified);
 
@@ -333,10 +338,14 @@ export function useWizardState() {
   }, []);
 
   const setApiKey = useCallback((key: string, newAgentId?: string) => {
-    setStoredApiKey(key);
+    if (hasOwnerSession) {
+      setStoredApiKey(key);
+    } else {
+      clearStoredApiKey();
+    }
     setApiKeyState(key);
     if (newAgentId) setAgentId(newAgentId);
-  }, []);
+  }, [hasOwnerSession]);
 
   const setVerified = useCallback((me: AgentMeResponse | null) => {
     if (me) setAgentMe(me);

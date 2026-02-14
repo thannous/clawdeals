@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiRequest } from "../api";
@@ -39,7 +39,7 @@ describe("useWizardState owner-session probe", () => {
     expect(getStoredLastEventId()).toBe("evt-123");
   });
 
-  it("preserves stored API key when /auth/me returns 401 (anonymous user)", async () => {
+  it("clears stored API key when /auth/me returns 401 (anonymous user)", async () => {
     setStoredApiKey("cd_live_clear.me");
     setStoredLastEventId("evt-999");
 
@@ -58,13 +58,10 @@ describe("useWizardState owner-session probe", () => {
       expect(result.current.state.hasOwnerSession).toBe(false);
     });
 
-    // Key should NOT be cleared — anonymous users keep their generated key
-    expect(getStoredApiKey()).toBe("cd_live_clear.me");
-    expect(getStoredLastEventId()).toBe("evt-999");
-    // Auto-verify should still be attempted with the stored key
-    expect(apiRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/v1/agents/me", method: "GET", apiKey: "cd_live_clear.me" })
-    );
+    expect(getStoredApiKey()).toBe(null);
+    expect(getStoredLastEventId()).toBe(null);
+    expect(result.current.state.apiKey).toBe(null);
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 
   it("auto-claims anonymous agent when owner session is present", async () => {
@@ -125,7 +122,6 @@ describe("useWizardState owner-session probe", () => {
   });
 
   it("auto-claims when owner session appears after initial anonymous probe", async () => {
-    setStoredApiKey("cd_live_claim_later.me");
     let claimed = false;
     vi.mocked(apiRequest).mockImplementation(async (request: any) => {
       if (request?.path === "/v1/agents/me" && request?.method === "GET") {
@@ -183,22 +179,62 @@ describe("useWizardState owner-session probe", () => {
     const { result } = renderHook(() => useWizardState());
 
     await waitFor(() => {
-      expect(result.current.state.verified).toBe(true);
       expect(result.current.state.hasOwnerSession).toBe(false);
+      expect(result.current.state.verified).toBe(false);
     });
+
+    act(() => {
+      result.current.setApiKey("cd_live_claim_later.me");
+    });
+    window.dispatchEvent(new Event("focus"));
 
     await waitFor(
       () => {
         expect(result.current.state.hasOwnerSession).toBe(true);
         expect(result.current.state.agentMe?.owner_id).toBe("owner-1");
+        expect(result.current.state.verified).toBe(true);
       },
-      { timeout: 12000 }
+      { timeout: 6000 }
     );
 
     expect(apiRequest).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/v1/agents/me/claim", method: "POST", apiKey: "cd_live_claim_later.me" })
     );
-  }, 15000);
+  });
+
+  it("does not start reconcile interval while anonymous", async () => {
+    setStoredApiKey("cd_live_no_poll_anonymous.me");
+    setStoredLastEventId("evt-local");
+    const setIntervalSpy = vi.spyOn(globalThis, "setInterval");
+
+    vi.mocked(apiRequest).mockResolvedValue({
+      data: { data: null },
+      headers: new Headers()
+    });
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      status: 401,
+      ok: false
+    } as Response);
+    globalThis.fetch = fetchMock as any;
+
+    const { result } = renderHook(() => useWizardState());
+
+    await waitFor(() => {
+      expect(result.current.state.hasOwnerSession).toBe(false);
+      expect(result.current.state.verified).toBe(false);
+    });
+
+    expect(result.current.state.apiKey).toBe(null);
+    expect(getStoredApiKey()).toBe(null);
+    expect(getStoredLastEventId()).toBe(null);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(apiRequest).not.toHaveBeenCalled();
+
+    const reconcileIntervals = setIntervalSpy.mock.calls.filter((call) => Number(call[1]) === 5000);
+    expect(reconcileIntervals).toHaveLength(0);
+    setIntervalSpy.mockRestore();
+  });
 
   it("stops auto-claim retries after AGENT_ALREADY_CLAIMED", async () => {
     setStoredApiKey("cd_live_claim_conflict.me");
