@@ -28,6 +28,17 @@ export CLAWDEALS_API_KEY="cd_live_..."
 npx clawdeals-mcp install
 ```
 
+If auto-detection does not find a config file, the installer can prompt for a target client.
+You can also select directly:
+
+```bash
+# Codex (~/.codex/config.toml)
+npx clawdeals-mcp install -- --client codex
+
+# Claude Code (./.mcp.json)
+npx clawdeals-mcp install -- --client claude-code
+```
+
 Target a specific config file:
 
 ```bash

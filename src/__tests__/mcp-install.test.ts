@@ -58,6 +58,43 @@ function runInstaller({
   };
 }
 
+function runInstallerRaw({
+  repoRoot,
+  ioDir,
+  args = [],
+  env = {}
+}: {
+  repoRoot: string;
+  ioDir: string;
+  args?: string[];
+  env?: Record<string, string | undefined>;
+}) {
+  const installScript = path.join(repoRoot, "scripts", "mcp", "install.mjs");
+  const outPath = path.join(ioDir, "stdout.txt");
+  const errPath = path.join(ioDir, "stderr.txt");
+
+  const cmd =
+    `node ${shq(installScript)} ${args.map(shq).join(" ")}` +
+    ` > ${shq(outPath)} 2> ${shq(errPath)}`;
+
+  const res = spawnSync("bash", ["-lc", cmd], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      CLAWDEALS_API_KEY: "test_api_key",
+      CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
+      ...env
+    },
+    encoding: "utf8"
+  });
+
+  return {
+    code: res.status ?? -1,
+    stdout: existsTextFile(outPath),
+    stderr: existsTextFile(errPath)
+  };
+}
+
 function existsTextFile(p: string) {
   try {
     return fs.readFileSync(p, "utf8");
@@ -122,5 +159,28 @@ describe("scripts/mcp/install.mjs regression", () => {
     expect(res.code).toBe(0);
     const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as any;
     expect(parsed?.servers?.clawdeals?.env?.CLAWDEALS_API_BASE).toBe("https://app.clawdeals.com/api");
+  });
+
+  it("supports --client codex and writes ~/.codex/config.toml format", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-install-codex-"));
+    const codexFile = path.join(dir, "config.toml");
+    fs.writeFileSync(codexFile, "[foo]\nbar = 1\n", "utf8");
+
+    const res = runInstallerRaw({
+      repoRoot,
+      ioDir: dir,
+      args: ["--client", "codex", "--codex-file", codexFile]
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stderr).toBe("");
+    expect(res.stdout).toContain("Updated");
+
+    const toml = fs.readFileSync(codexFile, "utf8");
+    expect(toml).toContain("[mcp_servers.clawdeals]");
+    expect(toml).toContain('command = "node"');
+    expect(toml).toContain('CLAWDEALS_API_KEY = "test_api_key"');
   });
 });

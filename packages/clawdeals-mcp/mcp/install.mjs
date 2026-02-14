@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import readline from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 
 import {
   buildClawdealsServerConfig,
@@ -95,6 +97,64 @@ function detectClaudeDesktopConfigPath() {
   return path.join(xdg, "Claude", "claude_desktop_config.json");
 }
 
+function detectClaudeCodeConfigPath() {
+  return path.resolve(process.cwd(), ".mcp.json");
+}
+
+function detectCodexConfigPath() {
+  const home = os.homedir();
+  return path.join(home, ".codex", "config.toml");
+}
+
+function parseArgValue(argv, keys) {
+  const idx = argv.findIndex((a) => keys.includes(a));
+  if (idx < 0) return { present: false, value: null };
+  return { present: true, value: argv[idx + 1] || null };
+}
+
+function escapeTomlString(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function toTomlArray(values) {
+  return `[${values.map((v) => `"${escapeTomlString(v)}"`).join(", ")}]`;
+}
+
+function renderCodexServerBlock({ serverName, serverConfig }) {
+  const args = Array.isArray(serverConfig?.args) ? serverConfig.args.map((a) => String(a)) : [];
+  const envObj = serverConfig?.env && typeof serverConfig.env === "object" ? serverConfig.env : {};
+  const envPairs = Object.entries(envObj).map(([k, v]) => `${k} = "${escapeTomlString(String(v))}"`);
+
+  return [
+    `[mcp_servers.${serverName}]`,
+    `command = "${escapeTomlString(String(serverConfig?.command || "npx"))}"`,
+    `args = ${toTomlArray(args)}`,
+    `env = { ${envPairs.join(", ")} }`
+  ].join("\n");
+}
+
+function upsertCodexTomlServer({ existingToml, serverName, serverConfig }) {
+  const block = renderCodexServerBlock({ serverName, serverConfig });
+  const content = String(existingToml || "");
+  const headerRe = new RegExp(`^\\[mcp_servers\\.${serverName}\\]\\s*$`, "m");
+  const headerMatch = headerRe.exec(content);
+  if (!headerMatch) {
+    const sep = content.trimEnd().length > 0 ? "\n\n" : "";
+    return `${content.trimEnd()}${sep}${block}\n`;
+  }
+
+  const start = headerMatch.index;
+  const afterHeader = start + headerMatch[0].length;
+  const rest = content.slice(afterHeader);
+  const nextSectionRe = /^\[[^\]]+\]\s*$/m;
+  const nextMatch = nextSectionRe.exec(rest);
+  const end = nextMatch ? afterHeader + nextMatch.index : content.length;
+  const before = content.slice(0, start).trimEnd();
+  const after = content.slice(end).trimStart();
+  const merged = `${before}${before ? "\n\n" : ""}${block}${after ? `\n\n${after}` : "\n"}`;
+  return merged;
+}
+
 function chooseKeyName(parsed, defaultKey) {
   const root = ensureObject(parsed);
   if (root.mcpServers && typeof root.mcpServers === "object") return "mcpServers";
@@ -142,13 +202,76 @@ function installIntoFile({ filePath, defaultKey, serverName, serverConfig, dryRu
   return { ok: true, filePath, keyName, backupPath, wrote: true };
 }
 
+function installIntoCodexFile({ filePath, serverName, serverConfig, dryRun }) {
+  let existing = "";
+  try {
+    existing = existsFile(filePath) ? readUtf8(filePath) : "";
+  } catch (err) {
+    console.error(`mcp:install: Skipping (cannot read TOML): ${filePath}`);
+    console.error(`mcp:install: ${String(err?.message || err)}`);
+    return { ok: false, skipped: true, filePath, reason: "unreadable" };
+  }
+
+  const next = upsertCodexTomlServer({ existingToml: existing, serverName, serverConfig });
+
+  if (dryRun) {
+    console.log(`mcp:install: (dry-run) would write ${filePath}`);
+    return { ok: true, filePath, keyName: "mcp_servers", backupPath: null, wrote: false };
+  }
+
+  const dir = path.dirname(filePath);
+  if (!existsDir(dir)) mkdirp(dir);
+  const backupPath = backupIfExists(filePath);
+  writeUtf8(filePath, next);
+  return { ok: true, filePath, keyName: "mcp_servers", backupPath, wrote: true };
+}
+
+async function askClientTarget() {
+  if (!input.isTTY || !output.isTTY) return null;
+  const rl = readline.createInterface({ input, output });
+  try {
+    console.log("mcp:install: No MCP config file auto-detected.");
+    console.log("mcp:install: Choose target client:");
+    console.log("  1) Cursor (~/.cursor/mcp.json)");
+    console.log("  2) Claude Desktop (claude_desktop_config.json)");
+    console.log("  3) Claude Code (./.mcp.json)");
+    console.log("  4) Codex (~/.codex/config.toml)");
+    console.log("  5) Custom JSON/JSONC file path");
+    const answer = String(await rl.question("Choice [1-5] (blank=cancel): ")).trim();
+    if (!answer) return null;
+    if (answer === "1") {
+      const cursor = detectCursorConfigPath();
+      return { kind: "cursor", filePath: (cursor?.filePath || path.join(os.homedir(), ".cursor", "mcp.json")), defaultKey: "servers" };
+    }
+    if (answer === "2") {
+      const p = detectClaudeDesktopConfigPath();
+      if (!p) return null;
+      return { kind: "claude-desktop", filePath: p, defaultKey: "mcpServers" };
+    }
+    if (answer === "3") {
+      return { kind: "claude-code", filePath: detectClaudeCodeConfigPath(), defaultKey: "mcpServers" };
+    }
+    if (answer === "4") {
+      return { kind: "codex", filePath: detectCodexConfigPath() };
+    }
+    if (answer === "5") {
+      const p = String(await rl.question("JSON/JSONC config file path: ")).trim();
+      if (!p) return null;
+      return { kind: "explicit", filePath: path.resolve(p), defaultKey: "servers" };
+    }
+    return null;
+  } finally {
+    rl.close();
+  }
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
   const local = argv.includes("--local") || argv.includes("--repo");
-  const fileArgIdx = argv.findIndex((a) => a === "--file" || a === "--path");
-  const explicitFile = fileArgIdx >= 0 ? argv[fileArgIdx + 1] : null;
-  if (fileArgIdx >= 0 && !explicitFile) {
+  const fileArg = parseArgValue(argv, ["--file", "--path"]);
+  const explicitFile = fileArg.value;
+  if (fileArg.present && !explicitFile) {
     fail("Missing value for --file (expected a path to a config file)");
   }
 
@@ -158,10 +281,23 @@ async function main() {
     fail("Missing value for --server-path (expected an absolute path to a local mcp-server.mjs)");
   }
 
-  const packageIdx = argv.findIndex((a) => a === "--package");
-  const packageName = packageIdx >= 0 ? argv[packageIdx + 1] : "clawdeals-mcp";
-  if (packageIdx >= 0 && !packageName) {
+  const packageArg = parseArgValue(argv, ["--package"]);
+  const packageName = packageArg.present ? packageArg.value : "clawdeals-mcp";
+  if (packageArg.present && !packageName) {
     fail("Missing value for --package (expected an npm package name)");
+  }
+  const clientArg = parseArgValue(argv, ["--client"]);
+  const client = clientArg.present ? String(clientArg.value || "").trim().toLowerCase() : "";
+  if (clientArg.present && !client) {
+    fail("Missing value for --client (expected: cursor|claude-desktop|claude-code|codex)");
+  }
+  const codexFileArg = parseArgValue(argv, ["--codex-file"]);
+  if (codexFileArg.present && !codexFileArg.value) {
+    fail("Missing value for --codex-file (expected a path to config.toml)");
+  }
+  const claudeCodeFileArg = parseArgValue(argv, ["--claude-code-file"]);
+  if (claudeCodeFileArg.present && !claudeCodeFileArg.value) {
+    fail("Missing value for --claude-code-file (expected a path to .mcp.json)");
   }
 
   const apiKey = String(process.env.CLAWDEALS_API_KEY || "").trim();
@@ -187,6 +323,27 @@ async function main() {
 
   if (explicitFile) {
     targets.push({ kind: "explicit", filePath: path.resolve(explicitFile), defaultKey: "servers" });
+  } else if (client) {
+    if (client === "cursor") {
+      const cursor = detectCursorConfigPath();
+      targets.push({
+        kind: "cursor",
+        filePath: cursor?.filePath || path.join(os.homedir(), ".cursor", "mcp.json"),
+        defaultKey: "servers"
+      });
+    } else if (client === "claude-desktop") {
+      const p = detectClaudeDesktopConfigPath();
+      if (!p) fail("Cannot resolve Claude Desktop config path on this platform.");
+      targets.push({ kind: "claude-desktop", filePath: p, defaultKey: "mcpServers" });
+    } else if (client === "claude-code") {
+      const p = path.resolve(String(claudeCodeFileArg.value || detectClaudeCodeConfigPath()));
+      targets.push({ kind: "claude-code", filePath: p, defaultKey: "mcpServers" });
+    } else if (client === "codex") {
+      const p = path.resolve(String(codexFileArg.value || detectCodexConfigPath()));
+      targets.push({ kind: "codex", filePath: p });
+    } else {
+      fail(`Unsupported --client value: ${client} (expected: cursor|claude-desktop|claude-code|codex)`);
+    }
   } else {
     const cursor = detectCursorConfigPath();
     if (cursor) targets.push({ kind: "cursor", ...cursor });
@@ -198,29 +355,43 @@ async function main() {
   }
 
   if (!targets.length) {
-    console.log("mcp:install: No supported MCP config file found.");
-    console.log("mcp:install: Supported: Cursor (~/.cursor/mcp.json) and Claude Desktop (claude_desktop_config.json).");
-    console.log("");
-    console.log("Manual config (Cursor-style):");
-    console.log(
-      formatJson({
-        servers: {
-          clawdeals: serverConfig
-        }
-      }).trimEnd()
-    );
-    process.exit(2);
+    const selected = await askClientTarget();
+    if (selected) {
+      targets.push(selected);
+    } else {
+      console.log("mcp:install: No supported MCP config file found.");
+      console.log("mcp:install: Auto-detect supports Cursor (~/.cursor/mcp.json) and Claude Desktop (claude_desktop_config.json).");
+      console.log("mcp:install: Tip: run with --client codex|claude-code|cursor|claude-desktop");
+      console.log("");
+      console.log("Manual config (Cursor-style):");
+      console.log(
+        formatJson({
+          servers: {
+            clawdeals: serverConfig
+          }
+        }).trimEnd()
+      );
+      process.exit(2);
+    }
   }
 
-  const results = targets.map((t) =>
-    installIntoFile({
+  const results = targets.map((t) => {
+    if (t.kind === "codex") {
+      return installIntoCodexFile({
+        filePath: t.filePath,
+        serverName: "clawdeals",
+        serverConfig,
+        dryRun
+      });
+    }
+    return installIntoFile({
       filePath: t.filePath,
       defaultKey: t.defaultKey,
       serverName: "clawdeals",
       serverConfig,
       dryRun
-    })
-  );
+    });
+  });
 
   const ok = results.filter((r) => r.ok);
   const wrote = results.filter((r) => r.ok && r.wrote);

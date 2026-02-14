@@ -39,6 +39,16 @@ npx -y clawdeals-mcp install
 npm run mcp:install
 ```
 
+If auto-detection does not find a config file, choose a target client explicitly:
+
+```bash
+# Codex (~/.codex/config.toml)
+npx -y clawdeals-mcp install -- --client codex
+
+# Claude Code (./.mcp.json)
+npx -y clawdeals-mcp install -- --client claude-code
+```
+
 Note:
 - Use `npx -y clawdeals-mcp ...` as the default install path.
 - Use repo-local commands only if your environment blocks `npx` or external registry access.
