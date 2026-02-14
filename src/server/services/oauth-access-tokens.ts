@@ -197,7 +197,7 @@ export async function issueOauthAccessToken({
   const accessTokenHash = hashWithSecret(accessToken, secret);
   const key = buildRedisKey(accessTokenHash);
 
-  const payload = JSON.stringify({
+  const payload = {
     v: 1,
     agent_id: resolvedAgentId,
     owner_id: resolvedOwnerId || null,
@@ -205,7 +205,7 @@ export async function issueOauthAccessToken({
     scopes: Array.isArray(scopes) ? scopes : [],
     issued_at: issuedAt,
     expires_at: expiresAt
-  });
+  };
 
   try {
     const redis = getRedis();

@@ -102,8 +102,7 @@ export async function setCachedApiKeyAuthRecord(
   try {
     const redis = getRedis();
     const key = buildCacheKey(prefix);
-    const payload = JSON.stringify(record);
-    await redis.set(key, payload, { ex: ttlSeconds });
+    await redis.set(key, record, { ex: ttlSeconds });
   } catch (error) {
     // Best-effort cache: failures must not break otherwise-valid authentication.
     console.warn("[auth] api key auth cache write failed; continuing without cache", error);

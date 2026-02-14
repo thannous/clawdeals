@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const kv = new Map<string, string>();
+const kv = new Map<string, any>();
 const sets = new Map<string, Set<string>>();
 
 const mockRedis = {
   get: vi.fn(async (key: string) => kv.get(key) ?? null),
-  set: vi.fn(async (key: string, value: string, _options?: any) => {
-    kv.set(key, String(value));
+  set: vi.fn(async (key: string, value: any, _options?: any) => {
+    kv.set(key, value);
     return "OK";
   }),
   del: vi.fn(async (key: string) => {
@@ -58,6 +58,19 @@ describe("oauth-access-tokens (installation index)", () => {
       scopes: ["agent:read"],
       now: new Date("2026-02-10T12:00:00Z"),
     });
+
+    expect(mockRedis.set).toHaveBeenCalledWith(
+      `auth:oauth:access:v1:${issued.access_token_hash}`,
+      expect.objectContaining({
+        v: 1,
+        agent_id: "agent-1",
+        owner_id: "owner-1",
+        installation_id: "install-1",
+      }),
+      { ex: 10 }
+    );
+    const [, payload] = mockRedis.set.mock.calls[0];
+    expect(typeof payload).toBe("object");
 
     const indexKey = "auth:oauth:access_installation:v1:install-1";
     expect(mockRedis.sadd).toHaveBeenCalledWith(indexKey, issued.access_token_hash);

@@ -6,6 +6,7 @@ import {
   normalizeKeyPart
 } from "./config";
 import { createUpstashRedis, resolveUpstashConfig } from "./upstash";
+import { getRedis } from "../redis/upstash";
 import { consumeTokenBucket } from "./token-bucket";
 import { matchRouteGroupFromRequest } from "../routes/route-groups";
 import { getNumberEnv } from "../config/env";
@@ -136,13 +137,21 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
     return null;
   }
 
-  const redisConfig = options.redis ? null : resolveUpstashConfig(options.env);
+  const redis = (() => {
+    if (options.redis) return options.redis;
 
-  if (!options.redis && !redisConfig) {
-    return null;
-  }
+    if (options.env) {
+      const redisConfig = resolveUpstashConfig(options.env);
+      if (!redisConfig) return null;
+      return createUpstashRedis(redisConfig);
+    }
 
-  const redis = options.redis || createUpstashRedis(redisConfig);
+    const redisConfig = resolveUpstashConfig();
+    if (!redisConfig) return null;
+    return getRedis();
+  })();
+
+  if (!redis) return null;
   const nowMs = options.nowMs || Date.now();
   const envMultiplier = getNumberEnv("RATE_LIMIT_MULTIPLIER");
   const limitMultiplier =

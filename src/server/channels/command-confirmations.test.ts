@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const store = new Map<string, string>();
+const store = new Map<string, any>();
 const mockRedis = {
   get: vi.fn(async (key: string) => store.get(key) ?? null),
   eval: vi.fn(async (_lua: string, keys: string[]) => {
@@ -10,7 +10,7 @@ const mockRedis = {
     if (raw) store.delete(key);
     return raw;
   }),
-  set: vi.fn(async (key: string, value: string, opts: any) => {
+  set: vi.fn(async (key: string, value: any, opts: any) => {
     if (opts?.nx && store.has(key)) return null;
     store.set(key, value);
     return "OK";
@@ -114,5 +114,23 @@ describe("command confirmations", () => {
     expect(mockRedis.eval).toHaveBeenCalledTimes(2);
     expect(mockRedis.get).toHaveBeenCalledTimes(0);
     expect(mockRedis.del).toHaveBeenCalledTimes(0);
+  });
+
+  it("stores confirmation payload as native object", async () => {
+    await createConfirmation({
+      channelIdentityId: "cid-2",
+      action: "approve",
+      targetId: "approval-3",
+      payload: { approvalId: "approval-3", ok: true },
+      ttlSeconds: 600
+    });
+
+    expect(mockRedis.set).toHaveBeenCalledWith(
+      "chan:confirm:cid-2:approve:approval-3",
+      { approvalId: "approval-3", ok: true },
+      { nx: true, ex: 600 }
+    );
+    const [, payload] = mockRedis.set.mock.calls[0];
+    expect(typeof payload).toBe("object");
   });
 });

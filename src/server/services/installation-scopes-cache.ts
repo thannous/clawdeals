@@ -90,8 +90,14 @@ export async function setCachedInstallationOauthScopes(
   try {
     const redis = getRedis();
     const key = buildCacheKey(id);
-    const payload = JSON.stringify({ v: 1, oauth_scopes: scopes });
-    await redis.set(key, payload, { ex: ttlSeconds });
+    await redis.set(
+      key,
+      {
+        v: 1,
+        oauth_scopes: scopes
+      },
+      { ex: ttlSeconds }
+    );
   } catch (error) {
     console.warn("[scopes] installation scopes cache write failed; continuing without cache", error);
   }

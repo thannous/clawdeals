@@ -37,7 +37,7 @@ export async function createConfirmation({
 }: any) {
   const key = buildConfirmationKey({ channelIdentityId, action, targetId });
   const redis = getRedis();
-  const value = JSON.stringify(payload || {});
+  const value = payload && typeof payload === "object" ? payload : {};
   const result = await redis.set(key, value, { nx: true, ex: ttlSeconds });
   return { ok: Boolean(result), key };
 }

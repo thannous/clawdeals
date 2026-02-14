@@ -1,63 +1,32 @@
-function resolveFetch() {
-  if (typeof fetch !== "undefined") {
-    return fetch;
-  }
-  throw new Error("Global fetch is not available in this runtime.");
-}
+import { Redis } from "@upstash/redis";
 
-export function createUpstashRedis({ url, token, fetcher }: any = {}) {
+const redisClients = new Map<string, Redis>();
+
+export function createUpstashRedis({ url, token }: any = {}) {
   if (!url || !token) {
     throw new Error("Upstash Redis url/token missing.");
   }
-  const request = fetcher || resolveFetch();
 
-  async function command(commandName, ...args) {
-    const response = await request(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([commandName, ...args]),
-    });
+  const key = `${url}::${token}`;
+  const cached = redisClients.get(key);
+  if (cached) return cached;
 
-    const text = await response.text();
-    let payload;
-    try {
-      payload = text ? JSON.parse(text) : null;
-    } catch (error) {
-      throw new Error(`Upstash response was not valid JSON: ${text}`);
-    }
-
-    if (!response.ok) {
-      const detail = payload?.error || response.statusText;
-      throw new Error(`Upstash Redis error: ${detail}`);
-    }
-
-    if (payload?.error) {
-      throw new Error(`Upstash Redis error: ${payload.error}`);
-    }
-
-    return payload?.result;
-  }
-
-  async function evalScript(script, keys = [], args = []) {
-    const numKeys = String(keys.length);
-    return command("EVAL", script, numKeys, ...keys, ...args);
-  }
-
-  return {
-    command,
-    eval: evalScript,
-  };
+  const client = new Redis({
+    url,
+    token,
+    // Request-path rate limiting should be deterministic and quick.
+    retry: false
+  });
+  redisClients.set(key, client);
+  return client;
 }
 
-export function resolveUpstashConfig(env) {
+export function resolveUpstashConfig(env?: Record<string, string | undefined>) {
   const processEnv =
     typeof process !== "undefined" && process?.env ? process.env : undefined;
   const source = env || processEnv || {};
-  const url = source.UPSTASH_REDIS_REST_URL;
-  const token = source.UPSTASH_REDIS_REST_TOKEN;
+  const url = source.UPSTASH_REDIS_REST_URL || source.KV_REST_API_URL;
+  const token = source.UPSTASH_REDIS_REST_TOKEN || source.KV_REST_API_TOKEN;
 
   if (!url || !token) {
     return null;
