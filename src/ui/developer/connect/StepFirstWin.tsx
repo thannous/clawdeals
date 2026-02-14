@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 import { apiRequest, maskApiKey } from "../api";
 import { getPublicApiBaseUrl, joinUrl } from "../../../shared/urls";
@@ -31,7 +31,12 @@ type Props = {
 export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession }: Props) {
   const isFr = locale === "fr";
   const configuredApiBaseUrl = getPublicApiBaseUrl();
-  const apiBase = configuredApiBaseUrl ? joinUrl(configuredApiBaseUrl, "/api") : "https://app.clawdeals.com/api";
+  const siteOrigin = useSyncExternalStore(
+    () => () => {},
+    () => window.location.origin,
+    () => "https://app.clawdeals.com"
+  );
+  const apiBase = configuredApiBaseUrl ? joinUrl(configuredApiBaseUrl, "/api") : joinUrl(siteOrigin, "/api");
   const dealsEndpoint = joinUrl(apiBase, "/v1/deals?limit=10");
 
   const masked = apiKey ? maskApiKey(apiKey) : null;

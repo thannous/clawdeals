@@ -200,4 +200,39 @@ describe("StepFirstWin", () => {
     expect(cta).toBeTruthy();
     expect(screen.getByText(/sans carte bancaire/i)).toBeTruthy();
   });
+
+  it("uses current origin for API snippets when NEXT_PUBLIC_API_BASE_URL is unset", async () => {
+    const previousApiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+
+    try {
+      render(
+        <StepFirstWin
+          locale="en"
+          apiKey="cd_live_test_123456"
+          agentMe={{
+            agent_id: "agt_8",
+            name: "Owner Bot",
+            owner_id: "own_8",
+            installation_id: "ins_8",
+            oauth_scopes: ["agent:read"]
+          }}
+          hasOwnerSession={true}
+        />
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Developer resources" }));
+      const expectedEndpoint = `${window.location.origin}/api/v1/deals?limit=10`;
+
+      await waitFor(() => {
+        expect(screen.getByText((content) => content.includes(expectedEndpoint))).toBeTruthy();
+      });
+    } finally {
+      if (previousApiBase === undefined) {
+        delete process.env.NEXT_PUBLIC_API_BASE_URL;
+      } else {
+        process.env.NEXT_PUBLIC_API_BASE_URL = previousApiBase;
+      }
+    }
+  });
 });

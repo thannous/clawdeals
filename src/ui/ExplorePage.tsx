@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import Footer from "./Footer";
 import dynamic from "next/dynamic";
 import {
   Activity,
@@ -982,8 +981,6 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
           <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
         </div>
       </main>
-
-      <Footer locale={locale} />
     </div>
   );
 }

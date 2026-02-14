@@ -139,10 +139,12 @@ describe("POST /v1/agents/:id/keys actions", () => {
       rotatedAt: new Date("2026-02-14T11:22:33.000Z"),
       graceSeconds: 86400
     } as any);
-    listActiveInstallationsForOwnerAgentMock.mockResolvedValue([
-      { installation_id: "00000000-0000-4000-a000-000000000010" },
-      { installation_id: "00000000-0000-4000-a000-000000000011" }
-    ] as any);
+    listActiveInstallationsForOwnerAgentMock
+      .mockResolvedValueOnce([
+        { installation_id: "00000000-0000-4000-a000-000000000010" },
+        { installation_id: "00000000-0000-4000-a000-000000000011" }
+      ] as any)
+      .mockResolvedValueOnce([] as any);
 
     const req = baseReq("keys:rotate-all");
     req.headers["idempotency-key"] = "idem-rotate-all";
@@ -159,6 +161,40 @@ describe("POST /v1/agents/:id/keys actions", () => {
       "00000000-0000-4000-a000-000000000011"
     ]);
     expect(revokeInstallationForOwnerMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rotate-all revokes every active installation across multiple batches", async () => {
+    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
+    rotateGlobalApiKeyForAgentIfPresentMock.mockResolvedValue({
+      rotated: true,
+      apiKey: "cd_live_rotate_all.secret",
+      apiKeyId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      previousApiKeyId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      rotatedAt: new Date("2026-02-14T11:22:33.000Z"),
+      graceSeconds: 86400
+    } as any);
+
+    const batchOne = Array.from({ length: 100 }, (_, i) => ({
+      installation_id: `inst-${String(i).padStart(3, "0")}`
+    }));
+    const batchTwo = [{ installation_id: "inst-100" }];
+    listActiveInstallationsForOwnerAgentMock
+      .mockResolvedValueOnce(batchOne as any)
+      .mockResolvedValueOnce(batchTwo as any)
+      .mockResolvedValueOnce([] as any);
+
+    const req = baseReq("keys:rotate-all");
+    req.headers["idempotency-key"] = "idem-rotate-all-paginated";
+    const ctx: any = { ownerId, actor: { type: "owner" } };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.revoked_installations_count).toBe(101);
+    expect(result.body.data.revoked_installation_ids).toHaveLength(101);
+    expect(result.body.data.revoked_installation_ids[0]).toBe("inst-000");
+    expect(result.body.data.revoked_installation_ids[100]).toBe("inst-100");
+    expect(revokeInstallationForOwnerMock).toHaveBeenCalledTimes(101);
+    expect(listActiveInstallationsForOwnerAgentMock).toHaveBeenCalledTimes(3);
   });
 
   it("rotate-all succeeds without global key (rotated=false)", async () => {
@@ -202,6 +238,35 @@ describe("POST /v1/agents/:id/keys actions", () => {
     expect(result.body.data.revoked_installations_count).toBe(0);
   });
 
+  it("revoke-all revokes every active installation across multiple batches", async () => {
+    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
+    revokeGlobalApiKeysForAgentMock.mockResolvedValue({
+      revokedGlobalKeysCount: 1,
+      revokedGlobalApiKeyIds: ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"]
+    } as any);
+
+    const batchOne = Array.from({ length: 100 }, (_, i) => ({
+      installation_id: `inst-${String(i).padStart(3, "0")}`
+    }));
+    const batchTwo = [{ installation_id: "inst-100" }];
+    listActiveInstallationsForOwnerAgentMock
+      .mockResolvedValueOnce(batchOne as any)
+      .mockResolvedValueOnce(batchTwo as any)
+      .mockResolvedValueOnce([] as any);
+
+    const req = baseReq("keys:revoke-all");
+    req.headers["idempotency-key"] = "idem-revoke-all-paginated";
+    const ctx: any = { ownerId, actor: { type: "owner" } };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.revoked_global_keys_count).toBe(1);
+    expect(result.body.data.revoked_installations_count).toBe(101);
+    expect(result.body.data.revoked_installation_ids).toHaveLength(101);
+    expect(revokeInstallationForOwnerMock).toHaveBeenCalledTimes(101);
+    expect(listActiveInstallationsForOwnerAgentMock).toHaveBeenCalledTimes(3);
+  });
+
   it("requires Idempotency-Key for rotate-all and revoke-all", async () => {
     getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
     const rotateReq = baseReq("keys:rotate-all");
@@ -227,7 +292,7 @@ describe("POST /v1/agents/:id/keys actions", () => {
       rotatedAt: new Date("2026-02-14T11:22:33.000Z"),
       graceSeconds: 86400
     } as any);
-    listActiveInstallationsForOwnerAgentMock.mockResolvedValue([
+    listActiveInstallationsForOwnerAgentMock.mockResolvedValueOnce([
       { installation_id: "00000000-0000-4000-a000-000000000010" },
       { installation_id: "00000000-0000-4000-a000-000000000011" }
     ] as any);

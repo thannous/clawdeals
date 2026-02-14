@@ -27,6 +27,24 @@ async function bridgeOwnerSession(accessToken: string) {
   return body?.data || null;
 }
 
+function resolveAuthCallbackUrl(nextPath: string) {
+  const configuredAppUrl = String(process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/+$/, "");
+  const origin = configuredAppUrl || (typeof window !== "undefined" ? window.location.origin : "");
+  const fallbackPath = "/auth/callback";
+
+  if (!origin) {
+    return `${fallbackPath}?next=${encodeURIComponent(nextPath)}`;
+  }
+
+  try {
+    const callbackUrl = new URL(fallbackPath, origin);
+    callbackUrl.searchParams.set("next", nextPath);
+    return callbackUrl.toString();
+  } catch {
+    return `${origin}${fallbackPath}?next=${encodeURIComponent(nextPath)}`;
+  }
+}
+
 /* ─── Decorative left-panel components ─── */
 
 function TerminalBlock() {
@@ -133,14 +151,18 @@ export default function LoginPage() {
     try {
       const supabase = getBrowserSupabaseClient();
       try { sessionStorage.setItem("clawdeals.auth_next", redirectTarget); } catch {}
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTarget)}`;
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      const redirectTo = resolveAuthCallbackUrl(redirectTarget);
+      const { data: oauthData, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo }
+        options: { redirectTo, skipBrowserRedirect: true }
       });
       if (oauthError) {
         throw oauthError;
       }
+      if (!oauthData?.url) {
+        throw new Error("Google OAuth redirect URL is missing.");
+      }
+      window.location.assign(oauthData.url);
     } catch (err: any) {
       setSubmitState("error");
       setError(String(err?.message || "Google sign-in failed"));
@@ -172,7 +194,7 @@ export default function LoginPage() {
         return;
       }
 
-      const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTarget)}`;
+      const emailRedirectTo = resolveAuthCallbackUrl(redirectTarget);
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,

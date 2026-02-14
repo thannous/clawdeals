@@ -15,6 +15,9 @@ import {
   revokeInstallationForOwner
 } from "../../../../../server/services/agent-installations";
 
+const ACTIVE_INSTALLATIONS_BATCH_LIMIT = 100;
+const MAX_ACTIVE_INSTALLATION_BATCH_LOOPS = 1000;
+
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
   return value;
@@ -118,36 +121,51 @@ async function handleRevoke(req, ctx, agentId) {
 }
 
 async function revokeSelectedAgentInstallationsFailFast({ ownerId, agentId, now }) {
-  const rows = await listActiveInstallationsForOwnerAgent({ ownerId, agentId, limit: 100 });
   const revokedInstallationIds: string[] = [];
+  for (let i = 0; i < MAX_ACTIVE_INSTALLATION_BATCH_LOOPS; i += 1) {
+    const rows = await listActiveInstallationsForOwnerAgent({
+      ownerId,
+      agentId,
+      limit: ACTIVE_INSTALLATIONS_BATCH_LIMIT
+    });
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return revokedInstallationIds;
+    }
 
-  for (const row of rows) {
-    const installationId = row?.installation_id ? String(row.installation_id) : "";
-    if (!installationId) continue;
+    for (const row of rows) {
+      const installationId = row?.installation_id ? String(row.installation_id) : "";
+      if (!installationId) continue;
 
-    try {
-      await revokeInstallationForOwner({
-        ownerId,
-        installationId,
-        now
-      });
-      revokedInstallationIds.push(installationId);
-    } catch (error: any) {
-      const details = {
-        ...(error?.details || {}),
-        revoked_installation_ids: [...revokedInstallationIds],
-        installation_id: installationId,
-        failure_stage: "installation_revoke"
-      };
-      throw Object.assign(new Error(error?.message || "Failed to revoke installation"), {
-        status: error?.status || 500,
-        code: error?.code || "ERROR",
-        details
-      });
+      try {
+        await revokeInstallationForOwner({
+          ownerId,
+          installationId,
+          now
+        });
+        revokedInstallationIds.push(installationId);
+      } catch (error: any) {
+        const details = {
+          ...(error?.details || {}),
+          revoked_installation_ids: [...revokedInstallationIds],
+          installation_id: installationId,
+          failure_stage: "installation_revoke"
+        };
+        throw Object.assign(new Error(error?.message || "Failed to revoke installation"), {
+          status: error?.status || 500,
+          code: error?.code || "ERROR",
+          details
+        });
+      }
     }
   }
-
-  return revokedInstallationIds;
+  throw Object.assign(new Error("Failed to revoke all active installations"), {
+    status: 500,
+    code: "ERROR",
+    details: {
+      revoked_installation_ids: [...revokedInstallationIds],
+      failure_stage: "installation_revoke_loop_guard"
+    }
+  });
 }
 
 async function handleRotateAll(req, ctx, agentId) {
