@@ -95,6 +95,49 @@ function runInstallerRaw({
   };
 }
 
+function hasScriptPty() {
+  const res = spawnSync("bash", ["-lc", "command -v script >/dev/null 2>&1"], {
+    encoding: "utf8"
+  });
+  return (res.status ?? 1) === 0;
+}
+
+function runInstallerInteractive({
+  repoRoot,
+  ioDir,
+  homeDir,
+  choice
+}: {
+  repoRoot: string;
+  ioDir: string;
+  homeDir: string;
+  choice: string;
+}) {
+  const installScript = path.join(repoRoot, "scripts", "mcp", "install.mjs");
+  const outPath = path.join(ioDir, "stdout.txt");
+  const errPath = path.join(ioDir, "stderr.txt");
+  const nodeCmd = `node ${shq(installScript)} --dry-run`;
+
+  const cmd = `printf %s ${shq(`${choice}\n`)} | script -qec ${shq(nodeCmd)} /dev/null > ${shq(outPath)} 2> ${shq(errPath)}`;
+
+  const res = spawnSync("bash", ["-lc", cmd], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      HOME: homeDir,
+      CLAWDEALS_API_KEY: "test_api_key",
+      CLAWDEALS_API_BASE: "https://app.clawdeals.com/api"
+    },
+    encoding: "utf8"
+  });
+
+  return {
+    code: res.status ?? -1,
+    stdout: existsTextFile(outPath),
+    stderr: existsTextFile(errPath)
+  };
+}
+
 function existsTextFile(p: string) {
   try {
     return fs.readFileSync(p, "utf8");
@@ -182,5 +225,71 @@ describe("scripts/mcp/install.mjs regression", () => {
     expect(toml).toContain("[mcp_servers.clawdeals]");
     expect(toml).toContain('command = "node"');
     expect(toml).toContain('CLAWDEALS_API_KEY = "test_api_key"');
+  });
+
+  it("supports --client windsurf and writes mcpServers JSON config", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-install-windsurf-"));
+    const windsurfFile = path.join(dir, "mcp_config.json");
+
+    const res = runInstallerRaw({
+      repoRoot,
+      ioDir: dir,
+      args: ["--client", "windsurf", "--windsurf-file", windsurfFile]
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stderr).toBe("");
+    expect(res.stdout).toContain("Updated");
+
+    const parsed = JSON.parse(fs.readFileSync(windsurfFile, "utf8")) as any;
+    expect(parsed?.mcpServers?.clawdeals?.type).toBe("stdio");
+    expect(parsed?.mcpServers?.clawdeals?.command).toBe("node");
+    expect(parsed?.mcpServers?.clawdeals?.env?.CLAWDEALS_API_KEY).toBe("test_api_key");
+  });
+
+  it("supports --client gemini and writes ~/.gemini/settings.json format", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-install-gemini-"));
+    const geminiFile = path.join(dir, "settings.json");
+
+    const res = runInstallerRaw({
+      repoRoot,
+      ioDir: dir,
+      args: ["--client", "gemini", "--gemini-file", geminiFile]
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stderr).toBe("");
+    expect(res.stdout).toContain("Updated");
+
+    const parsed = JSON.parse(fs.readFileSync(geminiFile, "utf8")) as any;
+    expect(parsed?.mcpServers?.clawdeals?.type).toBe("stdio");
+    expect(parsed?.mcpServers?.clawdeals?.command).toBe("node");
+    expect(parsed?.mcpServers?.clawdeals?.env?.CLAWDEALS_API_KEY).toBe("test_api_key");
+  });
+
+  (hasScriptPty() ? it : it.skip)("supports interactive client selection (Gemini) in a TTY session", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-install-interactive-"));
+    const homeDir = path.join(dir, "home");
+    fs.mkdirSync(homeDir, { recursive: true });
+
+    // Interactive menu choices:
+    // 1 Cursor, 2 Claude Desktop, 3 Claude Code, 4 Codex, 5 Windsurf, 6 Gemini, 7 Custom path.
+    const res = runInstallerInteractive({
+      repoRoot,
+      ioDir: dir,
+      homeDir,
+      choice: "6"
+    });
+
+    expect(res.code).toBe(0);
+    expect(res.stderr).toBe("");
+    expect(res.stdout).toContain("Choose target client");
+    expect(res.stdout).toContain(".gemini/settings.json");
+    expect(res.stdout).toContain("(dry-run) would write");
   });
 });

@@ -20,7 +20,11 @@ npx clawdeals-mcp
 
 ## Install into your IDE (recommended)
 
-This updates supported MCP config files on your machine (Cursor and Claude Desktop).
+This updates supported MCP config files on your machine (Cursor, Claude Desktop, Windsurf, Gemini CLI).
+
+Choose one option only: `A` or `B`.
+
+### STEP_01 — Option A (recommended): auto install
 
 ```bash
 export CLAWDEALS_API_KEY="cd_live_..."
@@ -28,8 +32,9 @@ export CLAWDEALS_API_KEY="cd_live_..."
 npx clawdeals-mcp install
 ```
 
-If auto-detection does not find a config file, the installer can prompt for a target client.
-You can also select directly:
+### STEP_01 — Option B (fallback): manual target selection
+
+Use this when auto-detect does not find a config file, or for a specific client/path.
 
 ```bash
 # Codex (~/.codex/config.toml)
@@ -37,13 +42,30 @@ npx clawdeals-mcp install -- --client codex
 
 # Claude Code (./.mcp.json)
 npx clawdeals-mcp install -- --client claude-code
+
+# Windsurf (~/.codeium/windsurf/mcp_config.json)
+npx clawdeals-mcp install -- --client windsurf
+
+# Gemini CLI (~/.gemini/settings.json)
+npx clawdeals-mcp install -- --client gemini
 ```
 
-Target a specific config file:
+Custom file path:
 
 ```bash
 npx clawdeals-mcp install -- --file "/path/to/mcp.json"
 ```
+
+### STEP_02 — Smoke test (per client)
+
+In each client, run this tool call:
+
+- Cursor: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Claude Desktop: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Claude Code: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Codex: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Windsurf: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Gemini CLI: `clawdeals.deals.list` with `{ "limit": 1 }`
 
 ## Env
 

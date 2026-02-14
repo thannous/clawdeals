@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import QRCode from "react-qr-code";
 
 import { apiRequest } from "../api";
 import { setStoredApiKey } from "../storage";
+import { generateFunnyAgentName } from "./agent-name-generator";
 import type { ConnectLocale, ConnectionMethod, ConnectSessionData, PollStatus } from "./types";
 
 type RegisterResult = {
@@ -80,19 +81,63 @@ export default function StepConnect({
   const [mcpApiBase, setMcpApiBase] = useState(hostedApiBase);
   const [mcpShowInstall, setMcpShowInstall] = useState(false);
   const [mcpAdvancedOpen, setMcpAdvancedOpen] = useState(false);
+  const [mcpManualTarget, setMcpManualTarget] = useState<
+    "cursor" | "claude" | "claudeCode" | "codex" | "windsurf" | "gemini" | "generic"
+  >("cursor");
   const [mcpCopyMsg, setMcpCopyMsg] = useState("");
+  const optionChooseOneLabel = isFr
+    ? "STEP_01: choisissez une seule option: A ou B."
+    : "STEP_01: choose one option only: A or B.";
+  const optionALabel = isFr ? "Option A (recommandee): installation auto" : "Option A (recommended): auto install";
+  const optionBLabel = isFr ? "Option B (secours): config manuelle" : "Option B (fallback): manual config";
 
-  const mcpInstallSnippet = useMemo(
-    () =>
-      `export CLAWDEALS_API_KEY="${storedKey || "<YOUR_API_KEY>"}"\nexport CLAWDEALS_API_BASE="${mcpApiBase}"\n\n# Recommended\nnpx -y clawdeals-mcp install\n\n# Fallback (local clone)\nnpm run mcp:install`,
-    [storedKey, mcpApiBase]
+  useEffect(() => {
+    if (keyMode !== "generate") return;
+    const timer = setTimeout(() => {
+      setAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [keyMode]);
+
+  const mcpInstallSnippetNpx = useMemo(
+    () => `export CLAWDEALS_API_KEY="${storedKey || "<YOUR_API_KEY>"}"\nnpx -y clawdeals-mcp install`,
+    [storedKey]
   );
 
-  const mcpManualJson = useMemo(
-    () =>
-      `{\n  "servers": {\n    "clawdeals": {\n      "type": "stdio",\n      "command": "npx",\n      "args": [\"-y\", \"clawdeals-mcp\"],\n      "env": {\n        "CLAWDEALS_API_KEY": "${storedKey || "cd_live_…"}",\n        "CLAWDEALS_API_BASE": "${mcpApiBase}",\n        "CLAWDEALS_ORIGIN": "mcp",\n        "CLAWDEALS_TIMEOUT_MS": "15000"\n      }\n    }\n  }\n}`,
-    [storedKey, mcpApiBase]
-  );
+  const mcpManualConfig = useMemo(() => {
+    const env: Record<string, string> = {
+      CLAWDEALS_API_KEY: storedKey || "cd_live_..."
+    };
+
+    if (mcpApiBase !== hostedApiBase) {
+      env.CLAWDEALS_API_BASE = mcpApiBase;
+    }
+
+    if (mcpManualTarget === "codex") {
+      const envPairs = Object.entries(env).map(([key, value]) => `${key} = "${value}"`);
+      return `[mcp_servers.clawdeals]\ncommand = "npx"\nargs = ["-y", "clawdeals-mcp"]\nenv = { ${envPairs.join(", ")} }`;
+    }
+
+    const base = {
+      clawdeals: {
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "clawdeals-mcp"],
+        env
+      }
+    };
+
+    if (
+      mcpManualTarget === "claude" ||
+      mcpManualTarget === "claudeCode" ||
+      mcpManualTarget === "windsurf" ||
+      mcpManualTarget === "gemini"
+    ) {
+      return JSON.stringify({ mcpServers: base }, null, 2);
+    }
+
+    return JSON.stringify({ servers: base }, null, 2);
+  }, [storedKey, mcpApiBase, hostedApiBase, mcpManualTarget]);
 
   // --- Claim Link handlers ---
   const handleCreateClaim = useCallback(async () => {
@@ -137,7 +182,11 @@ export default function StepConnect({
     setKeyStatus("loading");
     setKeyMessage("");
     try {
-      const name = agentName.trim() || (isFr ? "Nouvel agent" : "New Agent");
+      const trimmed = agentName.trim();
+      const name = trimmed || generateFunnyAgentName();
+      if (!trimmed) {
+        setAgentName(name);
+      }
       const result = await apiRequest<RegisterResult>({
         path: "/v1/agents",
         method: "POST",
@@ -194,25 +243,25 @@ export default function StepConnect({
   }, [pastedKey, isFr, onApiKeySet, onMethodSelected]);
 
   // --- MCP handlers ---
-  const handleCopyMcpInstall = useCallback(async () => {
+  const handleCopyMcpInstall = useCallback(async (text: string) => {
     try {
-      await navigator.clipboard.writeText(mcpInstallSnippet);
+      await navigator.clipboard.writeText(text);
       setMcpCopyMsg(isFr ? "Copie." : "Copied!");
       setTimeout(() => setMcpCopyMsg(""), 2000);
     } catch {
       setMcpCopyMsg(isFr ? "Echec de copie." : "Copy failed.");
     }
-  }, [isFr, mcpInstallSnippet]);
+  }, [isFr]);
 
   const handleCopyMcpJson = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(mcpManualJson);
-      setMcpCopyMsg(isFr ? "JSON copie." : "Copied JSON!");
+      await navigator.clipboard.writeText(mcpManualConfig);
+      setMcpCopyMsg(isFr ? "Config copiee." : "Copied config!");
       setTimeout(() => setMcpCopyMsg(""), 2000);
     } catch {
       setMcpCopyMsg(isFr ? "Echec de copie." : "Copy failed.");
     }
-  }, [isFr, mcpManualJson]);
+  }, [isFr, mcpManualConfig]);
 
   const handleMcpDone = useCallback(() => {
     onMethodSelected("mcp");
@@ -513,12 +562,14 @@ export default function StepConnect({
             <div className="text-sm font-bold tracking-wide">{isFr ? "Connecter IDE" : "Connect IDE"}</div>
             <div className="text-xs font-mono text-subtle leading-relaxed">
               {isFr
-                ? "Pour Cursor, Claude Desktop, Claude Code, Codex, Windsurf et autres editeurs compatibles MCP."
-                : "For Cursor, Claude Desktop, Claude Code, Codex, Windsurf, and other MCP-compatible editors."}
+                ? "Installation auto via npx: Cursor, Claude Desktop, Windsurf et Gemini. Pour Claude Code, Codex et autres clients, utilisez la config manuelle ci-dessous."
+                : "Auto install via npx: Cursor, Claude Desktop, Windsurf, and Gemini. For Claude Code, Codex, and other clients, use the manual config below."}
             </div>
+            <div className="text-[11px] font-mono text-subtle">{optionChooseOneLabel}</div>
           </div>
 
           <div className="space-y-3">
+            <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{optionALabel}</div>
             <button
               onClick={() => setMcpShowInstall((prev) => !prev)}
               className="flex items-center gap-1.5 text-xs font-mono text-primary hover:text-text transition-colors"
@@ -540,19 +591,17 @@ export default function StepConnect({
             {mcpShowInstall && (
               <div className="space-y-3">
                 <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
-                  {mcpInstallSnippet}
+                  {mcpInstallSnippetNpx}
                 </pre>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopyMcpInstall}
-                    className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
-                  >
-                    {isFr ? "Copier l'installation" : "Copy Install"}
-                  </button>
-                  {mcpCopyMsg && (
-                    <span className="text-xs font-mono text-success">{mcpCopyMsg}</span>
-                  )}
-                </div>
+                <button
+                  onClick={() => handleCopyMcpInstall(mcpInstallSnippetNpx)}
+                  className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                >
+                  {isFr ? "Copier npx" : "Copy npx"}
+                </button>
+                {mcpCopyMsg && (
+                  <span className="text-xs font-mono text-success">{mcpCopyMsg}</span>
+                )}
               </div>
             )}
           </div>
@@ -578,7 +627,7 @@ export default function StepConnect({
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
-            {isFr ? "Options avancees" : "Advanced options"}
+            {optionBLabel}
           </button>
 
           {mcpAdvancedOpen && (
@@ -611,23 +660,61 @@ export default function StepConnect({
                 </div>
               )}
 
-              <div className="text-xs font-mono text-subtle">
-                {isFr ? "Chemin personnalise:" : "Custom path:"}{" "}
-                <span className="text-text">npm run mcp:install -- --file /path/to/mcp.json</span>
-              </div>
-
               <div className="space-y-2">
                 <div className="text-xs font-mono text-subtle uppercase">
-                  {isFr ? "JSON manuel (secours)" : "Manual JSON (fallback)"}
+                  {optionBLabel}
                 </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: "cursor" as const, label: "Cursor" },
+                    { id: "claude" as const, label: "Claude" },
+                    { id: "claudeCode" as const, label: "Claude Code" },
+                    { id: "codex" as const, label: "Codex" },
+                    { id: "windsurf" as const, label: "Windsurf" },
+                    { id: "gemini" as const, label: "Gemini CLI" },
+                    { id: "generic" as const, label: "Generic" }
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setMcpManualTarget(opt.id)}
+                      className={`px-2.5 py-1 text-xs font-bold uppercase tracking-widest border ${
+                        mcpManualTarget === opt.id
+                          ? "border-primary text-primary"
+                          : "border-border text-subtle hover:border-border-strong hover:text-text"
+                      } transition-colors`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {mcpManualTarget === "codex" && (
+                  <div className="text-xs font-mono text-subtle">
+                    {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codex/config.toml</span>
+                  </div>
+                )}
+                {mcpManualTarget === "claudeCode" && (
+                  <div className="text-xs font-mono text-subtle">
+                    {isFr ? "Fichier: " : "File: "} <span className="text-text">./.mcp.json</span>
+                  </div>
+                )}
+                {mcpManualTarget === "windsurf" && (
+                  <div className="text-xs font-mono text-subtle">
+                    {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codeium/windsurf/mcp_config.json</span>
+                  </div>
+                )}
+                {mcpManualTarget === "gemini" && (
+                  <div className="text-xs font-mono text-subtle">
+                    {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.gemini/settings.json</span>
+                  </div>
+                )}
                 <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
-                  {mcpManualJson}
+                  {mcpManualConfig}
                 </pre>
                 <button
                   onClick={handleCopyMcpJson}
                   className="border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {isFr ? "Copier JSON" : "Copy JSON"}
+                  {isFr ? "Copier config" : "Copy config"}
                 </button>
               </div>
             </div>

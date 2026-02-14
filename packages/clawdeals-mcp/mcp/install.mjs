@@ -106,6 +106,38 @@ function detectCodexConfigPath() {
   return path.join(home, ".codex", "config.toml");
 }
 
+function defaultWindsurfConfigPath() {
+  const home = os.homedir();
+  return path.join(home, ".codeium", "windsurf", "mcp_config.json");
+}
+
+function detectWindsurfConfigPath() {
+  const home = os.homedir();
+  const candidates = [defaultWindsurfConfigPath(), path.join(home, ".codeium", "mcp_config.json")];
+
+  for (const candidate of candidates) {
+    if (existsFile(candidate)) return { filePath: candidate, defaultKey: "mcpServers" };
+  }
+
+  if (existsDir(path.join(home, ".codeium", "windsurf")) || existsDir(path.join(home, ".codeium"))) {
+    return { filePath: defaultWindsurfConfigPath(), defaultKey: "mcpServers" };
+  }
+
+  return null;
+}
+
+function defaultGeminiConfigPath() {
+  const home = os.homedir();
+  return path.join(home, ".gemini", "settings.json");
+}
+
+function detectGeminiConfigPath() {
+  const filePath = defaultGeminiConfigPath();
+  if (existsFile(filePath)) return { filePath, defaultKey: "mcpServers" };
+  if (existsDir(path.dirname(filePath))) return { filePath, defaultKey: "mcpServers" };
+  return null;
+}
+
 function parseArgValue(argv, keys) {
   const idx = argv.findIndex((a) => keys.includes(a));
   if (idx < 0) return { present: false, value: null };
@@ -236,8 +268,10 @@ async function askClientTarget() {
     console.log("  2) Claude Desktop (claude_desktop_config.json)");
     console.log("  3) Claude Code (./.mcp.json)");
     console.log("  4) Codex (~/.codex/config.toml)");
-    console.log("  5) Custom JSON/JSONC file path");
-    const answer = String(await rl.question("Choice [1-5] (blank=cancel): ")).trim();
+    console.log("  5) Windsurf (~/.codeium/windsurf/mcp_config.json)");
+    console.log("  6) Gemini CLI (~/.gemini/settings.json)");
+    console.log("  7) Custom JSON/JSONC file path");
+    const answer = String(await rl.question("Choice [1-7] (blank=cancel): ")).trim();
     if (!answer) return null;
     if (answer === "1") {
       const cursor = detectCursorConfigPath();
@@ -255,6 +289,22 @@ async function askClientTarget() {
       return { kind: "codex", filePath: detectCodexConfigPath() };
     }
     if (answer === "5") {
+      const windsurf = detectWindsurfConfigPath();
+      return {
+        kind: "windsurf",
+        filePath: windsurf?.filePath || defaultWindsurfConfigPath(),
+        defaultKey: "mcpServers"
+      };
+    }
+    if (answer === "6") {
+      const gemini = detectGeminiConfigPath();
+      return {
+        kind: "gemini",
+        filePath: gemini?.filePath || defaultGeminiConfigPath(),
+        defaultKey: "mcpServers"
+      };
+    }
+    if (answer === "7") {
       const p = String(await rl.question("JSON/JSONC config file path: ")).trim();
       if (!p) return null;
       return { kind: "explicit", filePath: path.resolve(p), defaultKey: "servers" };
@@ -289,7 +339,7 @@ async function main() {
   const clientArg = parseArgValue(argv, ["--client"]);
   const client = clientArg.present ? String(clientArg.value || "").trim().toLowerCase() : "";
   if (clientArg.present && !client) {
-    fail("Missing value for --client (expected: cursor|claude-desktop|claude-code|codex)");
+    fail("Missing value for --client (expected: cursor|claude-desktop|claude-code|codex|windsurf|gemini)");
   }
   const codexFileArg = parseArgValue(argv, ["--codex-file"]);
   if (codexFileArg.present && !codexFileArg.value) {
@@ -298,6 +348,14 @@ async function main() {
   const claudeCodeFileArg = parseArgValue(argv, ["--claude-code-file"]);
   if (claudeCodeFileArg.present && !claudeCodeFileArg.value) {
     fail("Missing value for --claude-code-file (expected a path to .mcp.json)");
+  }
+  const windsurfFileArg = parseArgValue(argv, ["--windsurf-file"]);
+  if (windsurfFileArg.present && !windsurfFileArg.value) {
+    fail("Missing value for --windsurf-file (expected a path to mcp_config.json)");
+  }
+  const geminiFileArg = parseArgValue(argv, ["--gemini-file"]);
+  if (geminiFileArg.present && !geminiFileArg.value) {
+    fail("Missing value for --gemini-file (expected a path to settings.json)");
   }
 
   const apiKey = String(process.env.CLAWDEALS_API_KEY || "").trim();
@@ -341,8 +399,16 @@ async function main() {
     } else if (client === "codex") {
       const p = path.resolve(String(codexFileArg.value || detectCodexConfigPath()));
       targets.push({ kind: "codex", filePath: p });
+    } else if (client === "windsurf") {
+      const detected = detectWindsurfConfigPath();
+      const p = path.resolve(String(windsurfFileArg.value || detected?.filePath || defaultWindsurfConfigPath()));
+      targets.push({ kind: "windsurf", filePath: p, defaultKey: "mcpServers" });
+    } else if (client === "gemini") {
+      const detected = detectGeminiConfigPath();
+      const p = path.resolve(String(geminiFileArg.value || detected?.filePath || defaultGeminiConfigPath()));
+      targets.push({ kind: "gemini", filePath: p, defaultKey: "mcpServers" });
     } else {
-      fail(`Unsupported --client value: ${client} (expected: cursor|claude-desktop|claude-code|codex)`);
+      fail(`Unsupported --client value: ${client} (expected: cursor|claude-desktop|claude-code|codex|windsurf|gemini)`);
     }
   } else {
     const cursor = detectCursorConfigPath();
@@ -352,6 +418,12 @@ async function main() {
     if (claudePath && existsFile(claudePath)) {
       targets.push({ kind: "claude-desktop", filePath: claudePath, defaultKey: "mcpServers" });
     }
+
+    const windsurf = detectWindsurfConfigPath();
+    if (windsurf) targets.push({ kind: "windsurf", ...windsurf });
+
+    const gemini = detectGeminiConfigPath();
+    if (gemini) targets.push({ kind: "gemini", ...gemini });
   }
 
   if (!targets.length) {
@@ -360,8 +432,8 @@ async function main() {
       targets.push(selected);
     } else {
       console.log("mcp:install: No supported MCP config file found.");
-      console.log("mcp:install: Auto-detect supports Cursor (~/.cursor/mcp.json) and Claude Desktop (claude_desktop_config.json).");
-      console.log("mcp:install: Tip: run with --client codex|claude-code|cursor|claude-desktop");
+      console.log("mcp:install: Auto-detect supports Cursor, Claude Desktop, Windsurf, and Gemini CLI.");
+      console.log("mcp:install: Tip: run with --client codex|claude-code|cursor|claude-desktop|windsurf|gemini");
       console.log("");
       console.log("Manual config (Cursor-style):");
       console.log(

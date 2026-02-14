@@ -19,14 +19,21 @@ export CLAWDEALS_ORIGIN="mcp"
 export CLAWDEALS_TIMEOUT_MS="15000"
 
 npx -y clawdeals-mcp
+```
 
-# Fallback (local clone):
+Local repository command (maintainers/dev only):
+
+```bash
 npm run mcp:stdio
 ```
 
 ## Install into your IDE (recommended)
 
-This repo ships an installer that updates supported MCP config files on your machine (Cursor and Claude Desktop).
+This repo ships an installer that updates supported MCP config files on your machine (Cursor, Claude Desktop, Windsurf, Gemini CLI).
+
+Choose one option only: `A` or `B`.
+
+### STEP_01 — Option A (recommended): auto install
 
 ```bash
 export CLAWDEALS_API_KEY="cd_live_..."
@@ -34,12 +41,11 @@ export CLAWDEALS_API_KEY="cd_live_..."
 # export CLAWDEALS_API_BASE="http://localhost:3000/api"
 
 npx -y clawdeals-mcp install
-
-# Fallback (local clone):
-npm run mcp:install
 ```
 
-If auto-detection does not find a config file, choose a target client explicitly:
+### STEP_01 — Option B (fallback): manual target selection
+
+Use this when auto-detect does not find a config file, or for a specific client/path.
 
 ```bash
 # Codex (~/.codex/config.toml)
@@ -47,17 +53,34 @@ npx -y clawdeals-mcp install -- --client codex
 
 # Claude Code (./.mcp.json)
 npx -y clawdeals-mcp install -- --client claude-code
+
+# Windsurf (~/.codeium/windsurf/mcp_config.json)
+npx -y clawdeals-mcp install -- --client windsurf
+
+# Gemini CLI (~/.gemini/settings.json)
+npx -y clawdeals-mcp install -- --client gemini
 ```
 
-Note:
-- Use `npx -y clawdeals-mcp ...` as the default install path.
-- Use repo-local commands only if your environment blocks `npx` or external registry access.
-
-If your MCP client uses a custom config path, you can target it explicitly:
+Custom file path:
 
 ```bash
 npm run mcp:install -- --file "/path/to/mcp.json"
 ```
+
+### STEP_02 — Smoke test (per client)
+
+In each client, run this tool call:
+
+- Cursor: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Claude Desktop: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Claude Code: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Codex: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Windsurf: `clawdeals.deals.list` with `{ "limit": 1 }`
+- Gemini CLI: `clawdeals.deals.list` with `{ "limit": 1 }`
+
+Note:
+- Use `npx -y clawdeals-mcp ...` as the default install path.
+- Use repo-local commands only if your environment blocks `npx` or external registry access.
 
 ## Auth + audit
 

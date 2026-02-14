@@ -17,13 +17,19 @@ const COPY: Record<
     stepsTitle: string;
     step1Title: string;
     step1Body: string;
+    step1Hint: string;
     step2Title: string;
     step2Body: string;
+    step2Hint: string;
     step3Title: string;
     step3Body: string;
     configTitle: string;
     configCursor: string;
     configClaude: string;
+    configClaudeCode: string;
+    configCodex: string;
+    configWindsurf: string;
+    configGemini: string;
     configGeneric: string;
     verifyTitle: string;
     verifyBody: string;
@@ -40,16 +46,22 @@ const COPY: Record<
     lead:
       "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et forward 1:1 vers l’API REST. Installation simple via npx.",
     stepsTitle: "Demarrage",
-    step1Title: "1) Installer via npx",
-    step1Body: "Recommande: utilise l’installer pour ecrire ta config MCP automatiquement.",
-    step2Title: "2) Ajouter la config (manuel)",
+    step1Title: "Option A: Installer via npx (recommande)",
+    step1Body: "Installation automatique pour Cursor et Claude Desktop.",
+    step1Hint: "Chemin principal.",
+    step2Title: "Option B: Config manuelle (secours)",
     step2Body:
-      "Si tu ne veux pas toucher aux fichiers de config automatiquement, colle ce JSON dans ton client MCP.",
-    step3Title: "3) Verifier",
+      "Utilise cette option pour Codex, Claude Code, ou si l'installation auto est bloquee.",
+    step2Hint: "A utiliser seulement si la commande npx echoue.",
+    step3Title: "Verifier",
     step3Body: "Appelle un outil de lecture pour verifier la connexion et l’auth.",
     configTitle: "Config client",
     configCursor: "Cursor (servers)",
     configClaude: "Claude Desktop (mcpServers)",
+    configClaudeCode: "Claude Code (.mcp.json)",
+    configCodex: "Codex (config.toml)",
+    configWindsurf: "Windsurf (mcpServers)",
+    configGemini: "Gemini CLI (mcpServers)",
     configGeneric: "Generic (servers)",
     verifyTitle: "Verification",
     verifyBody: "Attendu: ok=true et un champ meta.request_id.",
@@ -58,7 +70,7 @@ const COPY: Record<
     errors: [
       {
         code: "UNAUTHORIZED",
-        fix: "Verifie CLAWDEALS_API_KEY (cd_live_...) et CLAWDEALS_API_BASE (https://app.clawdeals.com/api)."
+        fix: "Verifie CLAWDEALS_API_KEY (cd_live_...). Si vous utilisez un endpoint custom, verifie aussi CLAWDEALS_API_BASE."
       },
       {
         code: "EXPIRES_AT_INVALID",
@@ -79,15 +91,21 @@ const COPY: Record<
     lead:
       "Minimal STDIO MCP server exposing ClawDeals tools and forwarding 1:1 to the REST API. Simple install with npx.",
     stepsTitle: "Quick Start",
-    step1Title: "1) Install with npx",
-    step1Body: "Recommended: use the installer to write your MCP config automatically.",
-    step2Title: "2) Add config (manual)",
-    step2Body: "If you prefer no auto edits, paste this JSON into your MCP client.",
-    step3Title: "3) Verify",
+    step1Title: "Option A: Install with npx (recommended)",
+    step1Body: "Automatic install for Cursor and Claude Desktop.",
+    step1Hint: "Primary path.",
+    step2Title: "Option B: Manual config (fallback)",
+    step2Body: "Use this option for Codex, Claude Code, or when auto install is blocked.",
+    step2Hint: "Use only when the npx command fails.",
+    step3Title: "Verify",
     step3Body: "Call a read tool to validate connectivity and auth.",
     configTitle: "Client config",
     configCursor: "Cursor (servers)",
     configClaude: "Claude Desktop (mcpServers)",
+    configClaudeCode: "Claude Code (.mcp.json)",
+    configCodex: "Codex (config.toml)",
+    configWindsurf: "Windsurf (mcpServers)",
+    configGemini: "Gemini CLI (mcpServers)",
     configGeneric: "Generic (servers)",
     verifyTitle: "Verification",
     verifyBody: "Expected: ok=true and meta.request_id present.",
@@ -96,7 +114,7 @@ const COPY: Record<
     errors: [
       {
         code: "UNAUTHORIZED",
-        fix: "Check CLAWDEALS_API_KEY (cd_live_...) and CLAWDEALS_API_BASE (https://app.clawdeals.com/api)."
+        fix: "Check CLAWDEALS_API_KEY (cd_live_...). If you use a custom endpoint, also check CLAWDEALS_API_BASE."
       },
       {
         code: "EXPIRES_AT_INVALID",
@@ -164,26 +182,38 @@ function CodeBlock({
 
 function StepCard({
   k,
+  stepNum,
   title,
   body,
   children
 }: {
   k: string;
+  stepNum: string;
   title: string;
   body: string;
   children: React.ReactNode;
 }) {
   return (
     <TechBorder className="w-full">
-      <div className="p-5 space-y-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="text-xs font-mono uppercase tracking-[0.3em] text-primary">{k}</div>
+      <div className="p-6 space-y-5">
+        {/* Step header with prominent number badge */}
+        <div className="flex items-start gap-4">
+          <div className="shrink-0 w-10 h-10 bg-primary/10 border border-primary/40 flex items-center justify-center">
+            <span className="text-lg font-bold font-mono text-primary">{stepNum}</span>
+          </div>
+          <div className="space-y-1 pt-0.5">
+            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">{k}</div>
             <div className="text-lg font-bold uppercase tracking-wider text-text">{title}</div>
-            <div className="text-xs font-mono text-muted leading-relaxed">{body}</div>
           </div>
         </div>
-        {children}
+        {/* Divider */}
+        <div className="border-t border-border/60" />
+        {/* Description */}
+        <div className="text-xs font-mono text-muted leading-relaxed">{body}</div>
+        {/* Content */}
+        <div className="space-y-4">
+          {children}
+        </div>
       </div>
     </TechBorder>
   );
@@ -194,32 +224,44 @@ export default function McpPage() {
   const locale = (router.locale === "fr" ? "fr" : "en") as McpLocale;
   const copy = COPY[locale];
 
-  const [configTab, setConfigTab] = useState<"cursor" | "claude" | "generic">("cursor");
+  const [configTab, setConfigTab] = useState<
+    "cursor" | "claude" | "claudeCode" | "codex" | "windsurf" | "gemini" | "generic"
+  >("cursor");
 
-  const installSnippet = useMemo(() => {
-    return `export CLAWDEALS_API_KEY=\"cd_live_...\"\nexport CLAWDEALS_API_BASE=\"https://app.clawdeals.com/api\"\n\n# Recommended\nnpx -y clawdeals-mcp install\n\n# Fallback (local clone)\nnpm run mcp:install`;
+  const installSnippetNpx = useMemo(() => {
+    return `export CLAWDEALS_API_KEY=\"cd_live_...\"\nnpx -y clawdeals-mcp install`;
   }, []);
 
   const manualConfig = useMemo(() => {
+    if (configTab === "codex") {
+      return `[mcp_servers.clawdeals]\ncommand = "npx"\nargs = ["-y", "clawdeals-mcp"]\nenv = { CLAWDEALS_API_KEY = "cd_live_..." }`;
+    }
+
     const base = {
       clawdeals: {
         type: "stdio",
         command: "npx",
         args: ["-y", "clawdeals-mcp"],
         env: {
-          CLAWDEALS_API_KEY: "cd_live_…",
-          CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
-          CLAWDEALS_ORIGIN: "mcp",
-          CLAWDEALS_TIMEOUT_MS: "15000"
+          CLAWDEALS_API_KEY: "cd_live_..."
         }
       }
     };
 
-    if (configTab === "claude") {
+    if (configTab === "claude" || configTab === "claudeCode" || configTab === "windsurf" || configTab === "gemini") {
       return JSON.stringify({ mcpServers: base }, null, 2);
     }
     return JSON.stringify({ servers: base }, null, 2);
   }, [configTab]);
+
+  const manualConfigTitle = useMemo(() => {
+    if (configTab === "codex") return "~/.codex/config.toml";
+    if (configTab === "claudeCode") return "./.mcp.json";
+    if (configTab === "claude") return "claude_desktop_config.json";
+    if (configTab === "windsurf") return "~/.codeium/windsurf/mcp_config.json";
+    if (configTab === "gemini") return "~/.gemini/settings.json";
+    return copy.configTitle;
+  }, [configTab, copy.configTitle]);
 
   const verifyPrompt = useMemo(() => {
     return `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
@@ -228,6 +270,20 @@ export default function McpPage() {
   const writeExample = useMemo(() => {
     return `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
   }, []);
+
+  const optionsNote =
+    locale === "fr"
+      ? "Dans STEP_01, choisissez une seule option d'installation: A ou B."
+      : "In STEP_01, choose one install option only: A or B.";
+
+  const installStepTitle = locale === "fr" ? "Installer (choisir A ou B)" : "Install (choose A or B)";
+  const installStepBody =
+    locale === "fr"
+      ? "Option A = automatique (recommande). Option B = manuel (secours)."
+      : "Option A = automatic (recommended). Option B = manual (fallback).";
+  const optionALabel = locale === "fr" ? "Option A (recommande)" : "Option A (recommended)";
+  const optionBLabel = locale === "fr" ? "Option B (secours)" : "Option B (fallback)";
+  const verifyStepTitle = locale === "fr" ? "Verifier" : "Verify";
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -279,68 +335,132 @@ export default function McpPage() {
             accentBg="bg-secondary"
           />
           <div className="text-sm text-muted leading-relaxed max-w-3xl font-mono">{copy.lead}</div>
+          <div className="text-xs font-mono text-subtle">{optionsNote}</div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <StepCard k="STEP_01" title={copy.step1Title} body={copy.step1Body}>
-            <CodeBlock title="Shell" value={installSnippet} />
-          </StepCard>
-
-          <StepCard k="STEP_02" title={copy.step2Title} body={copy.step2Body}>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setConfigTab("cursor")}
-                className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
-                  configTab === "cursor"
-                    ? "border-secondary text-secondary bg-secondary/10"
-                    : "border-border text-muted hover:text-text hover:border-border-strong"
-                }`}
-              >
-                {copy.configCursor}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfigTab("claude")}
-                className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
-                  configTab === "claude"
-                    ? "border-secondary text-secondary bg-secondary/10"
-                    : "border-border text-muted hover:text-text hover:border-border-strong"
-                }`}
-              >
-                {copy.configClaude}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfigTab("generic")}
-                className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
-                  configTab === "generic"
-                    ? "border-secondary text-secondary bg-secondary/10"
-                    : "border-border text-muted hover:text-text hover:border-border-strong"
-                }`}
-              >
-                {copy.configGeneric}
-              </button>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <StepCard k="STEP_01" stepNum="1" title={installStepTitle} body={installStepBody}>
+            {/* Option A */}
+            <div className="space-y-3 p-4 border border-primary/20 bg-primary/3">
+              <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{optionALabel}</div>
+              <CodeBlock title="npx (recommended)" value={installSnippetNpx} compact />
+              <div className="text-xs font-mono text-subtle">{copy.step1Hint}</div>
             </div>
-            <CodeBlock title={copy.configTitle} value={manualConfig} compact />
-          </StepCard>
 
-          <StepCard k="STEP_03" title={copy.step3Title} body={copy.step3Body}>
-            <CodeBlock title={copy.verifyTitle} value={verifyPrompt} compact />
-            <div className="text-xs font-mono text-subtle">{copy.verifyBody}</div>
-          </StepCard>
+            {/* OR divider */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 border-t border-dashed border-border" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-subtle">or</span>
+              <div className="flex-1 border-t border-dashed border-border" />
+            </div>
 
-          <StepCard
-            k="WRITE_TEST"
-            title="Write smoke (optional)"
-            body="If you need to validate writes end-to-end, run a deal create with an idempotency key (and delete it after)."
-          >
-            <CodeBlock title="Example" value={writeExample} compact />
-            <div className="text-xs font-mono text-subtle">
-              Note: <span className="text-text">expires_at</span> max TTL is{" "}
-              <span className="text-text">30 days</span>.
+            {/* Option B */}
+            <div className="space-y-3 p-4 border border-border/40 bg-bg/30">
+              <div className="text-xs font-mono font-bold uppercase tracking-widest text-muted">{optionBLabel}</div>
+              <div className="text-xs font-mono text-subtle">{copy.step2Body}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("cursor")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "cursor"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configCursor}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("claude")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "claude"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configClaude}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("claudeCode")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "claudeCode"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configClaudeCode}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("codex")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "codex"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configCodex}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("windsurf")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "windsurf"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configWindsurf}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("gemini")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "gemini"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configGemini}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfigTab("generic")}
+                  className={`h-9 px-3 border text-xs font-mono font-bold uppercase tracking-widest ${
+                    configTab === "generic"
+                      ? "border-secondary text-secondary bg-secondary/10"
+                      : "border-border text-muted hover:text-text hover:border-border-strong"
+                  }`}
+                >
+                  {copy.configGeneric}
+                </button>
+              </div>
+              <CodeBlock title={manualConfigTitle} value={manualConfig} compact />
+              <div className="text-xs font-mono text-subtle">{copy.step2Hint}</div>
             </div>
           </StepCard>
+
+          <div className="flex flex-col gap-8">
+            <StepCard k="STEP_02" stepNum="2" title={verifyStepTitle} body={copy.step3Body}>
+              <CodeBlock title={copy.verifyTitle} value={verifyPrompt} compact />
+              <div className="text-xs font-mono text-subtle">{copy.verifyBody}</div>
+            </StepCard>
+
+            <StepCard
+              k="STEP_03"
+              stepNum="3"
+              title="Write smoke (optional)"
+              body="If you need to validate writes end-to-end, run a deal create with an idempotency key (and delete it after)."
+            >
+              <CodeBlock title="Example" value={writeExample} compact />
+              <div className="text-xs font-mono text-subtle">
+                Note: <span className="text-text">expires_at</span> max TTL is{" "}
+                <span className="text-text">30 days</span>.
+              </div>
+            </StepCard>
+          </div>
         </div>
 
         <div className="space-y-4">
