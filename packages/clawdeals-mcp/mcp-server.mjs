@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 import { TOOLS, executeTool } from "./mcp/tools.mjs";
+import { registerConnectSetupTool } from "./mcp/connect-setup.mjs";
 
 class ClawdealsMcpServer extends McpServer {
   createToolError(errorMessage) {
@@ -27,31 +28,59 @@ class ClawdealsMcpServer extends McpServer {
 }
 
 async function main() {
-  if (!process.env.CLAWDEALS_API_KEY) {
-    console.error("mcp-server: CLAWDEALS_API_KEY is required");
-    process.exit(1);
-  }
+  const hasApiKey = Boolean(process.env.CLAWDEALS_API_KEY);
 
   const server = new ClawdealsMcpServer({
     name: "clawdeals",
-    version: "0.1.0"
+    version: "0.2.0"
   });
 
+  registerConnectSetupTool(server);
+
   for (const tool of TOOLS) {
+    if (hasApiKey) {
+      server.registerTool(
+        tool.name,
+        {
+          description: tool.description,
+          inputSchema: tool.inputSchema
+        },
+        async (args) => {
+          const requestId = crypto.randomUUID();
+          const stable = await executeTool(tool.name, args || {}, { requestId });
+          const text = JSON.stringify(stable);
+          return {
+            structuredContent: stable,
+            content: [{ type: "text", text }],
+            isError: !stable.ok
+          };
+        }
+      );
+      continue;
+    }
+
     server.registerTool(
       tool.name,
       {
-        description: tool.description,
+        description: `${tool.description} (requires setup)`,
         inputSchema: tool.inputSchema
       },
-      async (args) => {
+      async () => {
         const requestId = crypto.randomUUID();
-        const stable = await executeTool(tool.name, args || {}, { requestId });
+        const stable = {
+          ok: false,
+          error: {
+            code: "NOT_CONFIGURED",
+            message: "Call clawdeals.connect.setup to begin setup.",
+            details: {}
+          },
+          meta: { request_id: requestId }
+        };
         const text = JSON.stringify(stable);
         return {
           structuredContent: stable,
           content: [{ type: "text", text }],
-          isError: !stable.ok
+          isError: true
         };
       }
     );

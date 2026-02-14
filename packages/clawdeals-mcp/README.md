@@ -2,6 +2,8 @@
 
 Minimal **MCP stdio server** exposing the Clawdeals v0 tool catalog and forwarding each tool call 1:1 to the Clawdeals REST API.
 
+The server supports **bootstrap mode**: if `CLAWDEALS_API_KEY` is missing, `clawdeals.connect.setup` remains available to run claim-link setup.
+
 If `npx clawdeals-mcp ...` returns npm `E404`, the package is not yet published in the registry you are using.
 Use the repo-local commands instead:
 
@@ -18,7 +20,31 @@ export CLAWDEALS_API_KEY="cd_live_..."
 npx clawdeals-mcp
 ```
 
-## Install into your IDE (recommended)
+Bootstrap mode (no key yet):
+
+```bash
+npx clawdeals-mcp
+```
+
+Then call `clawdeals.connect.setup` from your MCP client.
+
+## Agent-initiated setup (recommended)
+
+No manual key copy/paste:
+
+```bash
+npx clawdeals-mcp setup -- --client claude-code
+```
+
+Available `--client` values: `cursor`, `claude-desktop`, `claude-code`, `codex`, `windsurf`, `gemini`.
+
+Optional flags:
+
+- `--agent-name "My Agent"`
+- `--dry-run`
+- `--json` (JSONL events for automation)
+
+## Manual install (legacy)
 
 This updates supported MCP config files on your machine (Cursor, Claude Desktop, Windsurf, Gemini CLI).
 

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { pathToFileURL } from "node:url";
 
 import {
   buildClawdealsServerConfig,
@@ -13,14 +14,14 @@ import {
   upsertServer
 } from "./install-lib.mjs";
 
-const DEFAULT_API_BASE = "https://app.clawdeals.com/api";
+export const DEFAULT_API_BASE = "https://app.clawdeals.com/api";
 
 function fail(message) {
   console.error(`mcp:install: ${message}`);
   process.exit(1);
 }
 
-function existsFile(p) {
+export function existsFile(p) {
   try {
     const st = fs.statSync(p);
     return st.isFile();
@@ -29,7 +30,7 @@ function existsFile(p) {
   }
 }
 
-function existsDir(p) {
+export function existsDir(p) {
   try {
     const st = fs.statSync(p);
     return st.isDirectory();
@@ -38,7 +39,7 @@ function existsDir(p) {
   }
 }
 
-function mkdirp(p) {
+export function mkdirp(p) {
   fs.mkdirSync(p, { recursive: true });
 }
 
@@ -65,7 +66,7 @@ function backupIfExists(filePath) {
   return backupPath;
 }
 
-function detectCursorConfigPath() {
+export function detectCursorConfigPath() {
   const home = os.homedir();
   const cursorDir = path.join(home, ".cursor");
   if (!existsDir(cursorDir)) return null;
@@ -79,7 +80,7 @@ function detectCursorConfigPath() {
   return { filePath: json, defaultKey: "servers" };
 }
 
-function detectClaudeDesktopConfigPath() {
+export function detectClaudeDesktopConfigPath() {
   const platform = process.platform;
   const home = os.homedir();
 
@@ -97,21 +98,21 @@ function detectClaudeDesktopConfigPath() {
   return path.join(xdg, "Claude", "claude_desktop_config.json");
 }
 
-function detectClaudeCodeConfigPath() {
+export function detectClaudeCodeConfigPath() {
   return path.resolve(process.cwd(), ".mcp.json");
 }
 
-function detectCodexConfigPath() {
+export function detectCodexConfigPath() {
   const home = os.homedir();
   return path.join(home, ".codex", "config.toml");
 }
 
-function defaultWindsurfConfigPath() {
+export function defaultWindsurfConfigPath() {
   const home = os.homedir();
   return path.join(home, ".codeium", "windsurf", "mcp_config.json");
 }
 
-function detectWindsurfConfigPath() {
+export function detectWindsurfConfigPath() {
   const home = os.homedir();
   const candidates = [defaultWindsurfConfigPath(), path.join(home, ".codeium", "mcp_config.json")];
 
@@ -126,19 +127,19 @@ function detectWindsurfConfigPath() {
   return null;
 }
 
-function defaultGeminiConfigPath() {
+export function defaultGeminiConfigPath() {
   const home = os.homedir();
   return path.join(home, ".gemini", "settings.json");
 }
 
-function detectGeminiConfigPath() {
+export function detectGeminiConfigPath() {
   const filePath = defaultGeminiConfigPath();
   if (existsFile(filePath)) return { filePath, defaultKey: "mcpServers" };
   if (existsDir(path.dirname(filePath))) return { filePath, defaultKey: "mcpServers" };
   return null;
 }
 
-function parseArgValue(argv, keys) {
+export function parseArgValue(argv, keys) {
   const idx = argv.findIndex((a) => keys.includes(a));
   if (idx < 0) return { present: false, value: null };
   return { present: true, value: argv[idx + 1] || null };
@@ -208,13 +209,13 @@ function loadOrInitConfig(filePath, defaultKey) {
   return parsed;
 }
 
-function installIntoFile({ filePath, defaultKey, serverName, serverConfig, dryRun }) {
+export function installIntoFile({ filePath, defaultKey, serverName, serverConfig, dryRun, logger = console }) {
   let parsed;
   try {
     parsed = loadOrInitConfig(filePath, defaultKey);
   } catch (err) {
-    console.error(`mcp:install: Skipping (unparseable JSON/JSONC): ${filePath}`);
-    console.error(`mcp:install: ${String(err?.message || err)}`);
+    logger?.error?.(`mcp:install: Skipping (unparseable JSON/JSONC): ${filePath}`);
+    logger?.error?.(`mcp:install: ${String(err?.message || err)}`);
     return { ok: false, skipped: true, filePath, reason: "unparseable" };
   }
 
@@ -222,7 +223,7 @@ function installIntoFile({ filePath, defaultKey, serverName, serverConfig, dryRu
   const next = upsertServer({ config: parsed, keyName, serverName, serverConfig });
 
   if (dryRun) {
-    console.log(`mcp:install: (dry-run) would write ${filePath}`);
+    logger?.log?.(`mcp:install: (dry-run) would write ${filePath}`);
     return { ok: true, filePath, keyName, backupPath: null, wrote: false };
   }
 
@@ -234,20 +235,20 @@ function installIntoFile({ filePath, defaultKey, serverName, serverConfig, dryRu
   return { ok: true, filePath, keyName, backupPath, wrote: true };
 }
 
-function installIntoCodexFile({ filePath, serverName, serverConfig, dryRun }) {
+export function installIntoCodexFile({ filePath, serverName, serverConfig, dryRun, logger = console }) {
   let existing = "";
   try {
     existing = existsFile(filePath) ? readUtf8(filePath) : "";
   } catch (err) {
-    console.error(`mcp:install: Skipping (cannot read TOML): ${filePath}`);
-    console.error(`mcp:install: ${String(err?.message || err)}`);
+    logger?.error?.(`mcp:install: Skipping (cannot read TOML): ${filePath}`);
+    logger?.error?.(`mcp:install: ${String(err?.message || err)}`);
     return { ok: false, skipped: true, filePath, reason: "unreadable" };
   }
 
   const next = upsertCodexTomlServer({ existingToml: existing, serverName, serverConfig });
 
   if (dryRun) {
-    console.log(`mcp:install: (dry-run) would write ${filePath}`);
+    logger?.log?.(`mcp:install: (dry-run) would write ${filePath}`);
     return { ok: true, filePath, keyName: "mcp_servers", backupPath: null, wrote: false };
   }
 
@@ -315,6 +316,105 @@ async function askClientTarget() {
   }
 }
 
+export function resolveInstallTargets({
+  explicitFile,
+  client,
+  codexFile,
+  claudeCodeFile,
+  windsurfFile,
+  geminiFile
+}) {
+  const targets = [];
+  const normalizedClient = String(client || "").trim().toLowerCase();
+
+  if (explicitFile) {
+    targets.push({ kind: "explicit", filePath: path.resolve(explicitFile), defaultKey: "servers" });
+    return targets;
+  }
+
+  if (normalizedClient) {
+    if (normalizedClient === "cursor") {
+      const cursor = detectCursorConfigPath();
+      targets.push({
+        kind: "cursor",
+        filePath: cursor?.filePath || path.join(os.homedir(), ".cursor", "mcp.json"),
+        defaultKey: "servers"
+      });
+      return targets;
+    }
+    if (normalizedClient === "claude-desktop") {
+      const p = detectClaudeDesktopConfigPath();
+      if (!p) throw new Error("Cannot resolve Claude Desktop config path on this platform.");
+      targets.push({ kind: "claude-desktop", filePath: p, defaultKey: "mcpServers" });
+      return targets;
+    }
+    if (normalizedClient === "claude-code") {
+      const p = path.resolve(String(claudeCodeFile || detectClaudeCodeConfigPath()));
+      targets.push({ kind: "claude-code", filePath: p, defaultKey: "mcpServers" });
+      return targets;
+    }
+    if (normalizedClient === "codex") {
+      const p = path.resolve(String(codexFile || detectCodexConfigPath()));
+      targets.push({ kind: "codex", filePath: p });
+      return targets;
+    }
+    if (normalizedClient === "windsurf") {
+      const detected = detectWindsurfConfigPath();
+      const p = path.resolve(String(windsurfFile || detected?.filePath || defaultWindsurfConfigPath()));
+      targets.push({ kind: "windsurf", filePath: p, defaultKey: "mcpServers" });
+      return targets;
+    }
+    if (normalizedClient === "gemini") {
+      const detected = detectGeminiConfigPath();
+      const p = path.resolve(String(geminiFile || detected?.filePath || defaultGeminiConfigPath()));
+      targets.push({ kind: "gemini", filePath: p, defaultKey: "mcpServers" });
+      return targets;
+    }
+
+    throw new Error(
+      `Unsupported --client value: ${normalizedClient} (expected: cursor|claude-desktop|claude-code|codex|windsurf|gemini)`
+    );
+  }
+
+  const cursor = detectCursorConfigPath();
+  if (cursor) targets.push({ kind: "cursor", ...cursor });
+
+  const claudePath = detectClaudeDesktopConfigPath();
+  if (claudePath && existsFile(claudePath)) {
+    targets.push({ kind: "claude-desktop", filePath: claudePath, defaultKey: "mcpServers" });
+  }
+
+  const windsurf = detectWindsurfConfigPath();
+  if (windsurf) targets.push({ kind: "windsurf", ...windsurf });
+
+  const gemini = detectGeminiConfigPath();
+  if (gemini) targets.push({ kind: "gemini", ...gemini });
+
+  return targets;
+}
+
+export function installIntoTargets({ targets, serverName, serverConfig, dryRun, logger = console }) {
+  return targets.map((t) => {
+    if (t.kind === "codex") {
+      return installIntoCodexFile({
+        filePath: t.filePath,
+        serverName,
+        serverConfig,
+        dryRun,
+        logger
+      });
+    }
+    return installIntoFile({
+      filePath: t.filePath,
+      defaultKey: t.defaultKey,
+      serverName,
+      serverConfig,
+      dryRun,
+      logger
+    });
+  });
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
@@ -377,53 +477,18 @@ async function main() {
       })()
     : buildClawdealsNpxServerConfig({ packageName, apiKey, apiBase, origin, timeoutMs });
 
-  const targets = [];
-
-  if (explicitFile) {
-    targets.push({ kind: "explicit", filePath: path.resolve(explicitFile), defaultKey: "servers" });
-  } else if (client) {
-    if (client === "cursor") {
-      const cursor = detectCursorConfigPath();
-      targets.push({
-        kind: "cursor",
-        filePath: cursor?.filePath || path.join(os.homedir(), ".cursor", "mcp.json"),
-        defaultKey: "servers"
-      });
-    } else if (client === "claude-desktop") {
-      const p = detectClaudeDesktopConfigPath();
-      if (!p) fail("Cannot resolve Claude Desktop config path on this platform.");
-      targets.push({ kind: "claude-desktop", filePath: p, defaultKey: "mcpServers" });
-    } else if (client === "claude-code") {
-      const p = path.resolve(String(claudeCodeFileArg.value || detectClaudeCodeConfigPath()));
-      targets.push({ kind: "claude-code", filePath: p, defaultKey: "mcpServers" });
-    } else if (client === "codex") {
-      const p = path.resolve(String(codexFileArg.value || detectCodexConfigPath()));
-      targets.push({ kind: "codex", filePath: p });
-    } else if (client === "windsurf") {
-      const detected = detectWindsurfConfigPath();
-      const p = path.resolve(String(windsurfFileArg.value || detected?.filePath || defaultWindsurfConfigPath()));
-      targets.push({ kind: "windsurf", filePath: p, defaultKey: "mcpServers" });
-    } else if (client === "gemini") {
-      const detected = detectGeminiConfigPath();
-      const p = path.resolve(String(geminiFileArg.value || detected?.filePath || defaultGeminiConfigPath()));
-      targets.push({ kind: "gemini", filePath: p, defaultKey: "mcpServers" });
-    } else {
-      fail(`Unsupported --client value: ${client} (expected: cursor|claude-desktop|claude-code|codex|windsurf|gemini)`);
-    }
-  } else {
-    const cursor = detectCursorConfigPath();
-    if (cursor) targets.push({ kind: "cursor", ...cursor });
-
-    const claudePath = detectClaudeDesktopConfigPath();
-    if (claudePath && existsFile(claudePath)) {
-      targets.push({ kind: "claude-desktop", filePath: claudePath, defaultKey: "mcpServers" });
-    }
-
-    const windsurf = detectWindsurfConfigPath();
-    if (windsurf) targets.push({ kind: "windsurf", ...windsurf });
-
-    const gemini = detectGeminiConfigPath();
-    if (gemini) targets.push({ kind: "gemini", ...gemini });
+  let targets = [];
+  try {
+    targets = resolveInstallTargets({
+      explicitFile,
+      client,
+      codexFile: codexFileArg.value,
+      claudeCodeFile: claudeCodeFileArg.value,
+      windsurfFile: windsurfFileArg.value,
+      geminiFile: geminiFileArg.value
+    });
+  } catch (error) {
+    fail(String(error?.message || error));
   }
 
   if (!targets.length) {
@@ -447,23 +512,7 @@ async function main() {
     }
   }
 
-  const results = targets.map((t) => {
-    if (t.kind === "codex") {
-      return installIntoCodexFile({
-        filePath: t.filePath,
-        serverName: "clawdeals",
-        serverConfig,
-        dryRun
-      });
-    }
-    return installIntoFile({
-      filePath: t.filePath,
-      defaultKey: t.defaultKey,
-      serverName: "clawdeals",
-      serverConfig,
-      dryRun
-    });
-  });
+  const results = installIntoTargets({ targets, serverName: "clawdeals", serverConfig, dryRun });
 
   const ok = results.filter((r) => r.ok);
   const wrote = results.filter((r) => r.ok && r.wrote);
@@ -499,4 +548,15 @@ async function main() {
   }
 }
 
-main().catch((err) => fail(String(err?.stack || err?.message || err)));
+function isMainModule() {
+  if (!process.argv[1]) return false;
+  try {
+    return import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  main().catch((err) => fail(String(err?.stack || err?.message || err)));
+}
