@@ -89,6 +89,12 @@ export default function LoginPage() {
   const router = useRouter();
   const hasCheckedExistingSessionRef = useRef(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
+
+  useEffect(() => {
+    if (router.isReady && router.query.mode === "signup") {
+      setMode("signup");
+    }
+  }, [router.isReady, router.query.mode]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);

@@ -74,6 +74,7 @@ export function useWizardState() {
   const [verified, setVerifiedState] = useState(false);
   const [autoVerifying, setAutoVerifying] = useState(false);
   const [hasOwnerSession, setHasOwnerSession] = useState(false);
+  const [ownerSessionResolved, setOwnerSessionResolved] = useState(false);
 
   const mountedRef = useRef(true);
   const claimInFlightRef = useRef(false);
@@ -177,6 +178,7 @@ export function useWizardState() {
       const ownerSession = ownerProbe.hasSession;
       if (!cancelled && mountedRef.current) {
         setHasOwnerSession(ownerSession);
+        setOwnerSessionResolved(true);
       }
       const stored = getStoredApiKey();
       if (!stored) {
@@ -261,6 +263,7 @@ export function useWizardState() {
       const ownerProbe = await probeOwnerSession();
       if (cancelled || !mountedRef.current) return;
       setHasOwnerSession(ownerProbe.hasSession);
+      setOwnerSessionResolved(true);
 
       if (!ownerProbe.ownerId) return;
 
@@ -340,12 +343,19 @@ export function useWizardState() {
   const setApiKey = useCallback((key: string, newAgentId?: string) => {
     if (hasOwnerSession) {
       setStoredApiKey(key);
-    } else {
+    } else if (ownerSessionResolved) {
       clearStoredApiKey();
     }
     setApiKeyState(key);
     if (newAgentId) setAgentId(newAgentId);
-  }, [hasOwnerSession]);
+  }, [hasOwnerSession, ownerSessionResolved]);
+
+  useEffect(() => {
+    if (!ownerSessionResolved) return;
+    if (!hasOwnerSession) return;
+    if (!apiKey) return;
+    setStoredApiKey(apiKey);
+  }, [apiKey, hasOwnerSession, ownerSessionResolved]);
 
   const setVerified = useCallback((me: AgentMeResponse | null) => {
     if (me) setAgentMe(me);

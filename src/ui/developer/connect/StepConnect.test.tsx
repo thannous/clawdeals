@@ -200,20 +200,21 @@ describe("StepConnect", () => {
     it("shows limitation warning when no owner session", () => {
       renderStepConnect({ hasOwnerSession: false });
 
-      expect(screen.getByText("Limited marketplace searches until this key is linked to an account.")).toBeDefined();
+      expect(screen.getByText(/Without an account, your API key will be limited/)).toBeDefined();
+      expect(screen.getByText("Log in")).toBeDefined();
       expect(screen.getByText("Create account")).toBeDefined();
     });
 
     it("does not show limitation warning when owner session exists", () => {
       renderStepConnect({ hasOwnerSession: true });
 
-      expect(screen.queryByText("Limited marketplace searches until this key is linked to an account.")).toBeNull();
+      expect(screen.queryByText(/Without an account, your API key will be limited/)).toBeNull();
     });
 
-    it("shows 'Change key' link in configure phase", () => {
+    it("shows back button in configure phase", () => {
       renderStepConnect({ apiKey: "cd_live_existing_key_abc123" });
 
-      expect(screen.getByText("Change key")).toBeDefined();
+      expect(screen.getByText("Back")).toBeDefined();
     });
   });
 });
