@@ -85,4 +85,46 @@ describe("rateLimitMiddleware (redis client selection)", () => {
     const call: any = (consumeTokenBucket as any).mock.calls[0][0];
     expect(call.redis).toBe(envRedis);
   });
+
+  it("fails open when redis client initialization throws", async () => {
+    const initError = new Error("invalid redis url");
+    const onError = vi.fn();
+    createUpstashRedis.mockImplementation(() => {
+      throw initError;
+    });
+
+    const result = await rateLimitMiddleware(request, {
+      routeGroup: "channels.telegram.webhook",
+      channelId: "telegram:hash-user",
+      env: {
+        UPSTASH_REDIS_REST_URL: "not-a-url",
+        UPSTASH_REDIS_REST_TOKEN: "custom-token"
+      },
+      onError
+    });
+
+    expect(result).toBeNull();
+    expect(onError).toHaveBeenCalledWith(initError);
+    expect(consumeTokenBucket).not.toHaveBeenCalled();
+  });
+
+  it("throws when redis client initialization fails and failOpen is false", async () => {
+    const initError = new Error("invalid redis url");
+    createUpstashRedis.mockImplementation(() => {
+      throw initError;
+    });
+
+    await expect(
+      rateLimitMiddleware(request, {
+        routeGroup: "channels.telegram.webhook",
+        channelId: "telegram:hash-user",
+        env: {
+          UPSTASH_REDIS_REST_URL: "not-a-url",
+          UPSTASH_REDIS_REST_TOKEN: "custom-token"
+        },
+        failOpen: false
+      })
+    ).rejects.toThrow("invalid redis url");
+    expect(consumeTokenBucket).not.toHaveBeenCalled();
+  });
 });

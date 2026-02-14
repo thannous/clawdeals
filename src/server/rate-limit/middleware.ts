@@ -137,21 +137,6 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
     return null;
   }
 
-  const redis = (() => {
-    if (options.redis) return options.redis;
-
-    if (options.env) {
-      const redisConfig = resolveUpstashConfig(options.env);
-      if (!redisConfig) return null;
-      return createUpstashRedis(redisConfig);
-    }
-
-    const redisConfig = resolveUpstashConfig();
-    if (!redisConfig) return null;
-    return getRedis();
-  })();
-
-  if (!redis) return null;
   const nowMs = options.nowMs || Date.now();
   const envMultiplier = getNumberEnv("RATE_LIMIT_MULTIPLIER");
   const limitMultiplier =
@@ -164,6 +149,22 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
           : 1;
 
   try {
+    const redis = (() => {
+      if (options.redis) return options.redis;
+
+      if (options.env) {
+        const redisConfig = resolveUpstashConfig(options.env);
+        if (!redisConfig) return null;
+        return createUpstashRedis(redisConfig);
+      }
+
+      const redisConfig = resolveUpstashConfig();
+      if (!redisConfig) return null;
+      return getRedis();
+    })();
+
+    if (!redis) return null;
+
     for (const bucket of profile.buckets) {
       const rawLimit = bucket.limit;
       const effectiveLimit = Math.max(1, Math.floor(rawLimit * limitMultiplier));
