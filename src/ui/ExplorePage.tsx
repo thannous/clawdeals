@@ -598,7 +598,7 @@ const ExploreTabs = ({ activeTab, copy }) => {
           href={`/explore/${TAB_TO_SLUG[tab.id]}`}
           onMouseEnter={() => maybePreload(tab.id)}
           onFocus={() => maybePreload(tab.id)}
-          className={`px-6 py-2 text-sm font-bold tracking-wide transition-all duration-300 clip-corner ${
+          className={`px-3 lg:px-6 py-2 text-sm font-bold tracking-wide whitespace-nowrap transition-all duration-300 clip-corner ${
             activeTab === tab.id
               ? "bg-text text-bg shadow-[0_0_15px_rgba(255,255,255,0.3)]"
               : "text-subtle hover:text-text hover:bg-surface-alt"

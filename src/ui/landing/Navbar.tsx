@@ -77,7 +77,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
           </div>
         </MarketingLink>
 
-        <div className="flex justify-center min-w-0">{center}</div>
+        <div className="flex justify-center min-w-0 overflow-hidden">{center}</div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Language dropdown */}
