@@ -131,31 +131,31 @@ export function MentionsEN() {
 export function MentionsFR() {
   return (
     <>
-      {/* 1. Editeur du site */}
-      <Section id="editeur" title="1. Editeur du site">
+      {/* 1. Éditeur du site */}
+      <Section id="editeur" title="1. Éditeur du site">
         <p className="mb-4">
-          Le site <strong>www.clawdeals.com</strong> (ci-apres « le Site ») est edite par :
+          Le site <strong>www.clawdeals.com</strong> (ci-après « le Site ») est édité par :
         </p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
-          <li>Denomination : TiMax</li>
+          <li>Dénomination : TiMax</li>
           <li>Forme juridique : Entreprise individuelle</li>
-          <li>Siege social : Orleans, France</li>
+          <li>Siège social : Orléans, France</li>
           <li>SIRET : 995 316 981 00019</li>
           <li>Directeur de la publication : Thanh Chau</li>
-          <li>Email de contact : contact@clawdeals.com</li>
+          <li>E-mail de contact : contact@clawdeals.com</li>
         </ul>
       </Section>
 
-      {/* 2. Hebergeurs */}
-      <Section id="hebergeurs" title="2. Hebergeurs">
-        <p className="mb-4">Le Site est heberge par les prestataires suivants :</p>
+      {/* 2. Hébergeurs */}
+      <Section id="hebergeurs" title="2. Hébergeurs">
+        <p className="mb-4">Le Site est hébergé par les prestataires suivants :</p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>
             <strong>Vercel Inc.</strong> — 340 S Lemon Ave #4133, Walnut, CA 91789, USA —{" "}
             <a href="https://vercel.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               vercel.com
             </a>{" "}
-            (hebergement applicatif)
+            (hébergement applicatif)
           </li>
           <li>
             <strong>Cloudflare, Inc.</strong> — 101 Townsend St, San Francisco, CA 94107, USA —{" "}
@@ -169,43 +169,43 @@ export function MentionsFR() {
             <a href="https://supabase.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               supabase.com
             </a>{" "}
-            (base de donnees, region UE)
+            (base de données, région UE)
           </li>
           <li>
             <strong>Upstash Inc.</strong> —{" "}
             <a href="https://upstash.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               upstash.com
             </a>{" "}
-            (cache, region UE)
+            (cache, région UE)
           </li>
         </ul>
       </Section>
 
-      {/* 3. Propriete intellectuelle */}
-      <Section id="pi" title="3. Propriete intellectuelle">
+      {/* 3. Propriété intellectuelle */}
+      <Section id="pi" title="3. Propriété intellectuelle">
         <p className="mb-4">
-          L&apos;ensemble des contenus du Site — textes, graphismes, logos, icones, images, extraits
-          sonores, logiciels et code source — est la propriete exclusive de ClawDeals ou de ses
-          concedants et est protege par le droit francais et international de la propriete
+          L&apos;ensemble des contenus du Site — textes, graphismes, logos, icônes, images, extraits
+          sonores, logiciels et code source — est la propriété exclusive de ClawDeals ou de ses
+          concédants et est protégé par le droit français et international de la propriété
           intellectuelle.
         </p>
         <p className="mb-4">
-          Toute reproduction, representation, modification, distribution ou redistribution, en tout
-          ou partie, du contenu du Site est interdite sans autorisation ecrite prealable de ClawDeals.
+          Toute reproduction, représentation, modification, distribution ou redistribution, en tout
+          ou partie, du contenu du Site est interdite sans autorisation écrite préalable de ClawDeals.
         </p>
       </Section>
 
-      {/* 4. Donnees personnelles */}
-      <Section id="donnees" title="4. Donnees personnelles">
+      {/* 4. Données personnelles */}
+      <Section id="donnees" title="4. Données personnelles">
         <p className="mb-4">
-          ClawDeals traite des donnees a caractere personnel conformement au Reglement (UE) 2016/679
-          (RGPD) et a la loi Informatique et Libertes. Pour connaitre en detail les modalites de
-          collecte, d&apos;utilisation et de protection de vos donnees, veuillez consulter notre{" "}
-          <Link href="/legal/privacy" className="text-primary hover:underline">Politique de confidentialite</Link>.
+          ClawDeals traite des données à caractère personnel conformément au Règlement (UE) 2016/679
+          (RGPD) et à la loi Informatique et Libertés. Pour connaître en détail les modalités de
+          collecte, d&apos;utilisation et de protection de vos données, veuillez consulter notre{" "}
+          <Link href="/legal/privacy" className="text-primary hover:underline">Politique de confidentialité</Link>.
         </p>
         <p className="mb-4">
-          L&apos;autorite de controle est la Commission Nationale de l&apos;Informatique et des
-          Libertes (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France —{" "}
+          L&apos;autorité de contrôle est la Commission Nationale de l&apos;Informatique et des
+          Libertés (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France —{" "}
           <a href="https://www.cnil.fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
             www.cnil.fr
           </a>.
@@ -216,18 +216,18 @@ export function MentionsFR() {
       <Section id="cookies" title="5. Cookies">
         <p className="mb-4">
           Le Site peut utiliser des cookies et des technologies de suivi similaires. Pour des
-          informations detaillees sur les cookies utilises et la gestion de vos preferences, veuillez
-          consulter la section dediee de notre{" "}
-          <Link href="/legal/privacy" className="text-primary hover:underline">Politique de confidentialite</Link>.
+          informations détaillées sur les cookies utilisés et la gestion de vos préférences, veuillez
+          consulter la section dédiée de notre{" "}
+          <Link href="/legal/privacy" className="text-primary hover:underline">Politique de confidentialité</Link>.
         </p>
       </Section>
 
       {/* 6. Droit applicable */}
-      <Section id="droit" title="6. Droit applicable et juridiction competente">
+      <Section id="droit" title="6. Droit applicable et juridiction compétente">
         <p className="mb-4">
-          Les presentes mentions legales sont regies par le droit francais. Tout litige relatif a
-          l&apos;utilisation du Site sera soumis a la competence exclusive des juridictions francaises
-          competentes.
+          Les présentes mentions légales sont régies par le droit français. Tout litige relatif à
+          l&apos;utilisation du Site sera soumis à la compétence exclusive des juridictions françaises
+          compétentes.
         </p>
       </Section>
     </>
@@ -247,25 +247,25 @@ export function MentionsES() {
           El sitio web <strong>www.clawdeals.com</strong> (en adelante &ldquo;el Sitio&rdquo;) es publicado por:
         </p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
-          <li>Denominacion: TiMax</li>
-          <li>Forma juridica: Empresa individual (<em>entreprise individuelle</em>)</li>
-          <li>Domicilio social: Orleans, Francia</li>
+          <li>Denominación: TiMax</li>
+          <li>Forma jurídica: Empresa individual (<em>entreprise individuelle</em>)</li>
+          <li>Domicilio social: Orléans, Francia</li>
           <li>SIRET: 995 316 981 00019</li>
-          <li>Director de publicacion: Thanh Chau</li>
-          <li>Correo electronico de contacto: contact@clawdeals.com</li>
+          <li>Director de publicación: Thanh Chau</li>
+          <li>Correo electrónico de contacto: contact@clawdeals.com</li>
         </ul>
       </Section>
 
       {/* 2. Proveedores de alojamiento */}
       <Section id="alojamiento" title="2. Proveedores de alojamiento">
-        <p className="mb-4">El Sitio esta alojado en los siguientes proveedores:</p>
+        <p className="mb-4">El Sitio está alojado en los siguientes proveedores:</p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>
             <strong>Vercel Inc.</strong> — 340 S Lemon Ave #4133, Walnut, CA 91789, EE.UU. —{" "}
             <a href="https://vercel.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               vercel.com
             </a>{" "}
-            (alojamiento de la aplicacion)
+            (alojamiento de la aplicación)
           </li>
           <li>
             <strong>Cloudflare, Inc.</strong> — 101 Townsend St, San Francisco, CA 94107, EE.UU. —{" "}
@@ -279,14 +279,14 @@ export function MentionsES() {
             <a href="https://supabase.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               supabase.com
             </a>{" "}
-            (base de datos, region UE)
+            (base de datos, región UE)
           </li>
           <li>
             <strong>Upstash Inc.</strong> —{" "}
             <a href="https://upstash.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               upstash.com
             </a>{" "}
-            (cache, region UE)
+            (caché, región UE)
           </li>
         </ul>
       </Section>
@@ -294,14 +294,14 @@ export function MentionsES() {
       {/* 3. Propiedad intelectual */}
       <Section id="pi" title="3. Propiedad intelectual">
         <p className="mb-4">
-          Todo el contenido del Sitio — incluyendo textos, graficos, logotipos, iconos, imagenes,
-          clips de audio, software y su codigo fuente — es propiedad exclusiva de ClawDeals o de
-          sus licenciantes y esta protegido por las leyes francesas e internacionales de propiedad
+          Todo el contenido del Sitio — incluyendo textos, gráficos, logotipos, iconos, imágenes,
+          clips de audio, software y su código fuente — es propiedad exclusiva de ClawDeals o de
+          sus licenciantes y está protegido por las leyes francesas e internacionales de propiedad
           intelectual.
         </p>
         <p className="mb-4">
-          Queda prohibida cualquier reproduccion, representacion, modificacion, distribucion o
-          redistribucion, total o parcial, del contenido del Sitio sin autorizacion previa por
+          Queda prohibida cualquier reproducción, representación, modificación, distribución o
+          redistribución, total o parcial, del contenido del Sitio sin autorización previa por
           escrito de ClawDeals.
         </p>
       </Section>
@@ -310,13 +310,13 @@ export function MentionsES() {
       <Section id="datos" title="4. Datos personales">
         <p className="mb-4">
           ClawDeals trata datos personales de conformidad con el Reglamento (UE) 2016/679 (RGPD) y
-          la Ley francesa de Proteccion de Datos (<em>Loi Informatique et Libertes</em>). Para
-          obtener informacion completa sobre como recopilamos, utilizamos y protegemos sus datos,
+          la Ley francesa de Protección de Datos (<em>Loi Informatique et Libertés</em>). Para
+          obtener información completa sobre cómo recopilamos, utilizamos y protegemos sus datos,
           consulte nuestra{" "}
-          <Link href="/legal/privacy" className="text-primary hover:underline">Politica de privacidad</Link>.
+          <Link href="/legal/privacy" className="text-primary hover:underline">Política de privacidad</Link>.
         </p>
         <p className="mb-4">
-          La autoridad de control es la Commission Nationale de l&apos;Informatique et des Libertes
+          La autoridad de control es la Commission Nationale de l&apos;Informatique et des Libertés
           (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, Francia —{" "}
           <a href="https://www.cnil.fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
             www.cnil.fr
@@ -327,18 +327,18 @@ export function MentionsES() {
       {/* 5. Cookies */}
       <Section id="cookies" title="5. Cookies">
         <p className="mb-4">
-          El Sitio puede utilizar cookies y tecnologias de seguimiento similares. Para obtener
-          informacion detallada sobre las cookies que utilizamos y como gestionar sus preferencias,
-          consulte la seccion dedicada en nuestra{" "}
-          <Link href="/legal/privacy" className="text-primary hover:underline">Politica de privacidad</Link>.
+          El Sitio puede utilizar cookies y tecnologías de seguimiento similares. Para obtener
+          información detallada sobre las cookies que utilizamos y cómo gestionar sus preferencias,
+          consulte la sección dedicada en nuestra{" "}
+          <Link href="/legal/privacy" className="text-primary hover:underline">Política de privacidad</Link>.
         </p>
       </Section>
 
-      {/* 6. Legislacion aplicable */}
-      <Section id="ley" title="6. Legislacion aplicable y jurisdiccion competente">
+      {/* 6. Legislación aplicable */}
+      <Section id="ley" title="6. Legislación aplicable y jurisdicción competente">
         <p className="mb-4">
-          El presente aviso legal se rige por la legislacion francesa. Cualquier litigio derivado
-          del uso del Sitio sera sometido a la jurisdiccion exclusiva de los tribunales competentes
+          El presente aviso legal se rige por la legislación francesa. Cualquier litigio derivado
+          del uso del Sitio será sometido a la jurisdicción exclusiva de los tribunales competentes
           de Francia.
         </p>
       </Section>
