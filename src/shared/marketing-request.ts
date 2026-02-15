@@ -17,11 +17,15 @@ function normalizeHost(raw: string): string {
   return first.split(":")[0] || "";
 }
 
-function preferredMarketingHost(): string {
-  const configured = String(process.env.MARKETING_HOSTS || "clawdeals.com,www.clawdeals.com")
+function configuredMarketingHosts(): string[] {
+  return String(process.env.MARKETING_HOSTS || "clawdeals.com,www.clawdeals.com")
     .split(",")
     .map((h) => normalizeHost(h))
     .filter(Boolean);
+}
+
+function preferredMarketingHost(): string {
+  const configured = configuredMarketingHosts();
   if (configured.includes("clawdeals.com")) return "clawdeals.com";
   return configured[0] || "clawdeals.com";
 }
@@ -32,8 +36,17 @@ export function isEdgeMarketingProxyRequest(req: any): boolean {
 }
 
 export function effectiveRequestHost(req: any): string {
-  if (isEdgeMarketingProxyRequest(req)) return preferredMarketingHost();
-  return normalizeHost(readHeader(req, "x-forwarded-host") || readHeader(req, "host"));
+  const forwardedHost = normalizeHost(readHeader(req, "x-forwarded-host"));
+
+  if (isEdgeMarketingProxyRequest(req)) {
+    const marketingHosts = configuredMarketingHosts();
+    if (forwardedHost && marketingHosts.includes(forwardedHost)) {
+      return forwardedHost;
+    }
+    return preferredMarketingHost();
+  }
+
+  return normalizeHost(forwardedHost || readHeader(req, "host"));
 }
 
 export function effectiveRequestProto(req: any): "http" | "https" {

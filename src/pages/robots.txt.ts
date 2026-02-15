@@ -1,7 +1,9 @@
 import type { GetServerSideProps } from "next";
 import { isAppHostRequest, isWorkersDevRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
+import { appendVaryHeaders } from "../shared/response-headers";
 
 const DEFAULT_SITEMAP_PATH = "/sitemap.xml";
+const SEO_PROXY_VARY_HEADERS = ["x-edge-router-proxy", "x-forwarded-host", "x-forwarded-proto", "host"];
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const baseUrl = marketingBaseUrlFromRequest(req);
@@ -9,8 +11,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const isWorkersDev = isWorkersDevRequest(req);
   const isAppHost = isAppHostRequest(req);
 
+  appendVaryHeaders(res, SEO_PROXY_VARY_HEADERS);
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400");
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=3600, stale-while-revalidate=300");
 
   if (isWorkersDev || isAppHost) {
     res.write(`User-agent: *\nDisallow: /\n`);

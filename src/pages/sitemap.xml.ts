@@ -1,6 +1,7 @@
 import type { GetServerSideProps } from "next";
 import { SUPPORTED_LOCALES, localePrefixFor, type SupportedLocale } from "../shared/i18n";
 import { isAppHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
+import { appendVaryHeaders } from "../shared/response-headers";
 
 type BuildSitemapArgs = {
   baseUrl: string;
@@ -19,6 +20,7 @@ const ROUTES = [
   "/guides/openclaw-dealwatch",
   "/guides/mcp-marketplace-safety"
 ];
+const SEO_PROXY_VARY_HEADERS = ["x-edge-router-proxy", "x-forwarded-host", "x-forwarded-proto", "host"];
 
 function localizedUrl(baseUrl: string, locale: SupportedLocale, route: string) {
   const prefix = localePrefixFor(locale);
@@ -73,6 +75,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
       ? new Date().toISOString().split("T")[0]
       : "2025-01-01";
 
+  appendVaryHeaders(res, SEO_PROXY_VARY_HEADERS);
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400");
 
