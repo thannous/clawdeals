@@ -134,6 +134,8 @@ function resolveLocalePrefix(request: NextRequest, localePrefix: string): string
 export function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = normalizeHost(url.hostname || request.headers.get("host") || "");
+  const forwardedHost = normalizeHost(request.headers.get("x-forwarded-host") || "");
+  const edgeProxyMarker = String(request.headers.get("x-edge-router-proxy") || "").trim().toLowerCase();
 
   const appHost = normalizeHost(process.env.APP_HOST || "app.clawdeals.com");
   const marketingHosts = (process.env.MARKETING_HOSTS || "clawdeals.com,www.clawdeals.com")
@@ -163,10 +165,24 @@ export function middleware(request: NextRequest) {
     : marketingHosts.includes("www.clawdeals.com")
       ? "www.clawdeals.com"
       : marketingHosts[0];
+  const isForwardedFromMarketingHost =
+    forwardedHost === preferredMarketingHost ||
+    marketingHosts.includes(forwardedHost) ||
+    forwardedHost === "clawdeals.com" ||
+    forwardedHost === "www.clawdeals.com";
+  const isEdgeProxiedMarketingRequest =
+    isForwardedFromMarketingHost &&
+    (edgeProxyMarker === "marketing" || edgeProxyMarker === "" || edgeProxyMarker === "1");
 
   // Vercel default domains (preview/prod) should never be canonical; always bounce to custom domains.
   // This prevents indexing and keeps cookies/origins stable.
   if (!isAppHost && !isMarketingHost && hostname.endsWith(".vercel.app")) {
+    // Requests proxied from the Cloudflare marketing host must be served directly,
+    // otherwise they bounce back to clawdeals.com and create redirect loops.
+    if (isEdgeProxiedMarketingRequest && !isAppSectionRoute(rest)) {
+      return NextResponse.next();
+    }
+
     const target = new URL(url.toString());
     target.hostname = isAppSectionRoute(rest) ? appHost : (preferredMarketingHost || appHost);
     target.protocol = "https:";

@@ -121,4 +121,27 @@ describe("middleware host routing", () => {
     expect(res?.status).toBe(308);
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
   });
+
+  it("does not redirect marketing pages proxied from apex to .vercel.app", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://clawdeals-git-main-foo.vercel.app/trust-engine", {
+        host: "clawdeals-git-main-foo.vercel.app",
+        "x-forwarded-host": "clawdeals.com",
+        "x-edge-router-proxy": "marketing"
+      })
+    );
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("keeps redirect for app sections on .vercel.app even with edge proxy headers", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://clawdeals-git-main-foo.vercel.app/start", {
+        host: "clawdeals-git-main-foo.vercel.app",
+        "x-forwarded-host": "clawdeals.com",
+        "x-edge-router-proxy": "marketing"
+      })
+    );
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
+  });
 });

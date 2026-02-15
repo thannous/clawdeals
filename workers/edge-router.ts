@@ -10,6 +10,7 @@ function withForwardHeaders(request: Request, target: string): Request {
 
   const clientIp = request.headers.get("cf-connecting-ip");
   if (clientIp) headers.set("x-forwarded-for", clientIp);
+  headers.set("x-edge-router-proxy", "marketing");
 
   return new Request(upstream, { headers });
 }
