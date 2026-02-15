@@ -144,4 +144,26 @@ describe("middleware host routing", () => {
     expect(res?.status).toBe(308);
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/start");
   });
+
+  it("serves non-app routes on app host when proxied from marketing host", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://app.clawdeals.com/trust-engine", {
+        host: "app.clawdeals.com",
+        "x-forwarded-host": "clawdeals.com",
+        "x-edge-router-proxy": "marketing"
+      })
+    );
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
+
+  it("serves / on app host when proxied from marketing host", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://app.clawdeals.com/", {
+        host: "app.clawdeals.com",
+        "x-forwarded-host": "clawdeals.com",
+        "x-edge-router-proxy": "marketing"
+      })
+    );
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
 });

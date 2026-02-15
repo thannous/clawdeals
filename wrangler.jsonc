@@ -7,7 +7,7 @@
   "vars": {
     "MARKETING_HOST": "clawdeals.com",
     "APP_ORIGIN": "https://app.clawdeals.com",
-    "MARKETING_ORIGIN": "https://clawdeals.vercel.app"
+    "MARKETING_ORIGIN": "https://app.clawdeals.com"
   },
   "routes": [
     { "pattern": "clawdeals.com", "zone_name": "clawdeals.com", "custom_domain": true },

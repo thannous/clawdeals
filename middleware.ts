@@ -191,6 +191,12 @@ export function middleware(request: NextRequest) {
 
   // App host: default entry point is the app (not the marketing landing).
   if (isAppHost) {
+    // Cloudflare may proxy marketing content through the app origin when no dedicated
+    // Vercel marketing origin exists. In that case we must serve non-app routes here.
+    if (isEdgeProxiedMarketingRequest && !isAppSectionRoute(rest)) {
+      return NextResponse.next();
+    }
+
     // Default to self-serve onboarding unless configured otherwise.
     const appEntry = process.env.APP_ENTRY_PATH || "/start";
     if (isRootPath(rest)) {
