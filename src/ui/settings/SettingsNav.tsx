@@ -53,7 +53,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
     <nav
       data-testid="settings-nav"
       aria-label={t("nav.account")}
-      className="mt-4 flex flex-wrap items-center gap-2"
+      className="mt-4 flex flex-wrap items-center gap-0"
     >
       {NAV_ITEMS.map((item) => {
         const active = item.key === current;
@@ -63,10 +63,10 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={[
-              "h-9 px-3.5 text-xs font-mono font-bold uppercase border rounded-md transition-all flex items-center",
+              "h-9 px-3.5 text-xs font-mono font-medium uppercase border-b-2 -mb-px transition-all flex items-center",
               active
-                ? "border-primary/50 text-primary bg-primary/8"
-                : "border-transparent text-muted hover:text-text hover:bg-surface-alt/40"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted hover:text-text hover:border-border-strong"
             ].join(" ")}
           >
             {t(item.labelKey)}
@@ -79,7 +79,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
           data-testid="settings-logout"
           onClick={onLogout}
           disabled={logoutState === "loading"}
-          className="h-9 px-3.5 text-xs font-mono font-bold uppercase border border-error/30 text-error/80 rounded-md hover:bg-error/10 hover:text-error transition-all disabled:opacity-50 flex items-center"
+          className="h-9 px-3.5 text-xs font-mono font-medium uppercase border-b-2 -mb-px border-transparent text-error/70 hover:text-error hover:border-error/50 transition-all disabled:opacity-50 flex items-center"
         >
           {logoutState === "loading" ? t("nav.signingOut") : t("nav.logout")}
         </button>

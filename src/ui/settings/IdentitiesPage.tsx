@@ -192,7 +192,7 @@ export default function IdentitiesPage() {
 
   return (
     <div data-testid="identities-page" className="min-h-screen bg-bg">
-      <PageHeader title="LINKED IDENTITIES" containerClassName="px-6 py-4">
+      <PageHeader title="LINKED IDENTITIES" containerClassName="px-6 pt-4">
         <AppNav current="settings" />
         <SettingsNav current="identities" />
       </PageHeader>

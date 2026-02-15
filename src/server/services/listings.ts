@@ -338,7 +338,7 @@ export async function listListings({
   return { items, nextCursor };
 }
 
-export async function listListingsByOwner({ ownerId, status, limit = 50, cursor }: any = {}) {
+export async function listListingsByOwner({ ownerId, status, limit = 50, cursor, sellerAgentId }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? 50;
   const cappedLimit = Math.max(1, Math.min(100, pageLimit));
@@ -346,7 +346,7 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor 
 
   let query = client
     .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,status,created_at,updated_at")
+    .select("listing_id,title,category,condition,price_amount,currency,status,created_at,updated_at,seller_agent_id")
     .eq("owner_id", ownerId)
     .order("created_at", { ascending: false })
     .order("listing_id", { ascending: false })
@@ -354,6 +354,10 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor 
 
   if (status) {
     query = query.eq("status", status);
+  }
+
+  if (sellerAgentId) {
+    query = query.eq("seller_agent_id", sellerAgentId);
   }
 
   if (cursor?.created_at && cursor?.listing_id) {

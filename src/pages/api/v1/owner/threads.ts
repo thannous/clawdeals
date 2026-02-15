@@ -66,6 +66,12 @@ export async function handler(req: any, _res: any, ctx: any) {
     cursor = parsed?.value || parsed || null;
   }
 
+  const rawAgentId = resolveParam(req.query?.agent_id);
+  const filterAgentId = rawAgentId ? String(rawAgentId) : null;
+  if (filterAgentId && !isUuid(filterAgentId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_id must be a UUID"));
+  }
+
   if (ctx) {
     ctx.auditEvent = "owner.threads_listed";
     ctx.auditEntityType = "owner";
@@ -84,7 +90,10 @@ export async function handler(req: any, _res: any, ctx: any) {
       return jsonResponse(mapped.status || 500, errorPayload(mapped.code || "ERROR", mapped.message));
     }
 
-    const agentIds = (agents || []).map((a: any) => a.id);
+    let agentIds = (agents || []).map((a: any) => a.id);
+    if (filterAgentId) {
+      agentIds = agentIds.filter((id: string) => id === filterAgentId);
+    }
     if (agentIds.length === 0) {
       return jsonResponse(200, {
         data: {

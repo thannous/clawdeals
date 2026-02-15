@@ -1,13 +1,22 @@
 import { useTranslations } from "next-intl";
+import AgentDropdown from "../shared/AgentDropdown";
 
 const STATE_OPTIONS = ["PENDING", "APPROVED", "DENIED", "EXPIRED", "CANCELLED"];
+
+interface Agent {
+  id: string;
+  name: string | null;
+}
 
 interface Props {
   state: string;
   onStateChange: (s: string | null) => void;
+  agents: Agent[];
+  selectedAgentId: string | null;
+  onAgentChange: (id: string | null) => void;
 }
 
-export default function MyApprovalsToolbar({ state, onStateChange }: Props) {
+export default function MyApprovalsToolbar({ state, onStateChange, agents, selectedAgentId, onAgentChange }: Props) {
   const t = useTranslations("myApprovals");
 
   return (
@@ -37,6 +46,7 @@ export default function MyApprovalsToolbar({ state, onStateChange }: Props) {
             {s}
           </button>
         ))}
+        <AgentDropdown agents={agents} selectedAgentId={selectedAgentId} onAgentChange={onAgentChange} />
       </div>
     </div>
   );

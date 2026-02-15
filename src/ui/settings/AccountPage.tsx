@@ -387,7 +387,7 @@ export default function AccountPage() {
   return (
     <div data-testid="account-page" className="min-h-screen bg-bg">
       {/* ---- Header ---- */}
-      <PageHeader title="MY ACCOUNT" containerClassName="px-6 py-4">
+      <PageHeader title="MY ACCOUNT" containerClassName="px-6 pt-4">
         <AppNav current="settings" />
         <SettingsNav current="account" />
       </PageHeader>

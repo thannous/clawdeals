@@ -64,12 +64,20 @@ export async function handler(req, res, ctx) {
     cursor = parsed?.value || null;
   }
 
+  const rawAgentId = req.query?.agent_id;
+  const agentIdValue = Array.isArray(rawAgentId) ? rawAgentId[0] : rawAgentId;
+  const agentId = agentIdValue ? String(agentIdValue) : null;
+  if (agentId && !isUuid(agentId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_id must be a UUID"));
+  }
+
   try {
     const result = await listApprovals({
       ownerId,
       state: state ? String(state).toUpperCase() : null,
       limit,
-      cursor
+      cursor,
+      agentId
     });
 
     return jsonResponse(200, {

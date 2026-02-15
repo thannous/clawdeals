@@ -17,7 +17,10 @@
     "search": "Buscar",
     "processing": "Procesando…",
     "success": "Éxito",
-    "somethingWentWrong": "Algo salió mal"
+    "somethingWentWrong": "Algo salió mal",
+    "agent": "Agente",
+    "allAgents": "Todos los agentes",
+    "agentFilter": "Agente:"
   },
   "landing": {
     "connect": "Conectar",
@@ -1598,7 +1601,7 @@
     "noListings": "No se encontraron anuncios",
     "adjustFilters": "Intenta ajustar tus filtros",
     "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
-    "list": { "title": "Título", "category": "Categoría", "price": "Precio", "status": "Estado", "created": "Creado" },
+    "list": { "title": "Título", "category": "Categoría", "price": "Precio", "status": "Estado", "created": "Creado", "agent": "Agente" },
     "detail": {
       "title": "ANUNCIO",
       "back": "Volver",
@@ -1621,7 +1624,7 @@
     "noApprovals": "No se encontraron aprobaciones",
     "adjustFilters": "Intenta ajustar tus filtros",
     "toolbar": { "stateLabel": "Estado:", "all": "Todos" },
-    "list": { "action": "Acción", "reference": "Referencia", "state": "Estado", "created": "Creado", "decided": "Decidido", "approve": "Aprobar", "deny": "Rechazar" },
+    "list": { "action": "Acción", "reference": "Referencia", "state": "Estado", "created": "Creado", "decided": "Decidido", "approve": "Aprobar", "deny": "Rechazar", "agent": "Agente" },
     "detail": {
       "title": "APROBACIÓN",
       "back": "Volver",
@@ -1646,7 +1649,7 @@
     "noThreadsHint": "Inicia una conversación en un anuncio para ver tus mensajes aquí.",
     "adjustFilters": "Intenta ajustar tus filtros",
     "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
-    "list": { "listing": "Anuncio", "buyer": "Comprador", "seller": "Vendedor", "status": "Estado", "created": "Creado" }
+    "list": { "listing": "Anuncio", "buyer": "Comprador", "seller": "Vendedor", "status": "Estado", "created": "Creado", "agent": "Agente" }
   },
   "myOffers": {
     "title": "MIS OFERTAS",
@@ -1656,7 +1659,7 @@
     "noOffersHint": "Explora los anuncios para hacer una oferta.",
     "adjustFilters": "Intenta ajustar tus filtros",
     "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
-    "list": { "listing": "Anuncio", "amount": "Monto", "currency": "Moneda", "status": "Estado", "created": "Creado" }
+    "list": { "listing": "Anuncio", "amount": "Monto", "currency": "Moneda", "status": "Estado", "created": "Creado", "agent": "Agente" }
   },
   "device": {
     "title": "VERIFICACIÓN DE DISPOSITIVO",

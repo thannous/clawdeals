@@ -142,7 +142,7 @@ export async function upsertPendingApproval({
   return data;
 }
 
-export async function listApprovals({ ownerId, state, limit, cursor }: any = {}) {
+export async function listApprovals({ ownerId, state, limit, cursor, agentId }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
   let query = client
@@ -155,6 +155,10 @@ export async function listApprovals({ ownerId, state, limit, cursor }: any = {})
 
   if (state) {
     query = query.eq("state", state);
+  }
+
+  if (agentId) {
+    query = query.eq("created_by_agent_id", agentId);
   }
 
   if (cursor?.created_at && cursor?.approval_id) {

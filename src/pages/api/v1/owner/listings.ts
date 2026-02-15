@@ -68,6 +68,12 @@ export async function handler(req: any, _res: any, ctx: any) {
     cursor = parsed?.value || parsed || null;
   }
 
+  const rawAgentId = resolveParam(req.query?.agent_id);
+  const agentId = rawAgentId ? String(rawAgentId) : null;
+  if (agentId && !isUuid(agentId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_id must be a UUID"));
+  }
+
   if (ctx) {
     ctx.auditEvent = "owner.listings_listed";
     ctx.auditEntityType = "owner";
@@ -75,7 +81,7 @@ export async function handler(req: any, _res: any, ctx: any) {
   }
 
   try {
-    const result = await listListingsByOwner({ ownerId, status, limit, cursor });
+    const result = await listListingsByOwner({ ownerId, status, limit, cursor, sellerAgentId: agentId });
 
     return jsonResponse(200, {
       data: {

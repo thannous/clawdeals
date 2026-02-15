@@ -73,6 +73,12 @@ export async function handler(req: any, _res: any, ctx: any) {
     }
   }
 
+  const rawAgentId = resolveParam(req.query?.agent_id);
+  const filterAgentId = rawAgentId ? String(rawAgentId) : null;
+  if (filterAgentId && !isUuid(filterAgentId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "agent_id must be a UUID"));
+  }
+
   if (ctx) {
     ctx.auditEvent = "owner.offers_listed";
     ctx.auditEntityType = "owner";
@@ -90,7 +96,10 @@ export async function handler(req: any, _res: any, ctx: any) {
       return jsonResponse(500, errorPayload("ERROR", "Failed to fetch agents"));
     }
 
-    const agentIds = (agents || []).map((a: any) => a.id);
+    let agentIds = (agents || []).map((a: any) => a.id);
+    if (filterAgentId) {
+      agentIds = agentIds.filter((id: string) => id === filterAgentId);
+    }
     if (agentIds.length === 0) {
       return jsonResponse(200, {
         data: {

@@ -17,7 +17,10 @@
     "search": "Search",
     "processing": "Processing…",
     "success": "Success",
-    "somethingWentWrong": "Something went wrong"
+    "somethingWentWrong": "Something went wrong",
+    "agent": "Agent",
+    "allAgents": "All agents",
+    "agentFilter": "Agent:"
   },
   "landing": {
     "connect": "Connect",
@@ -1606,7 +1609,8 @@
       "category": "Category",
       "price": "Price",
       "status": "Status",
-      "created": "Created"
+      "created": "Created",
+      "agent": "Agent"
     },
     "detail": {
       "title": "LISTING",
@@ -1640,7 +1644,8 @@
       "created": "Created",
       "decided": "Decided",
       "approve": "Approve",
-      "deny": "Deny"
+      "deny": "Deny",
+      "agent": "Agent"
     },
     "detail": {
       "title": "APPROVAL",
@@ -1674,7 +1679,8 @@
       "buyer": "Buyer",
       "seller": "Seller",
       "status": "Status",
-      "created": "Created"
+      "created": "Created",
+      "agent": "Agent"
     }
   },
   "myOffers": {
@@ -1693,7 +1699,8 @@
       "amount": "Amount",
       "currency": "Currency",
       "status": "Status",
-      "created": "Created"
+      "created": "Created",
+      "agent": "Agent"
     }
   },
   "device": {

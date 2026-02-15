@@ -452,7 +452,7 @@ export default function ConnectWizard() {
   if (state.autoVerifying && !autoVerifyGuardExpired) {
     return (
       <div className="min-h-screen bg-bg text-text">
-        <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4" hideLocale>
+        <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 pt-4" hideLocale>
           {state.hasOwnerSession && <AppNav current="settings" />}
           {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
         </PageHeader>
@@ -474,7 +474,7 @@ export default function ConnectWizard() {
   return (
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
-      <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4" hideLocale>
+      <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 pt-4" hideLocale>
         {state.hasOwnerSession && <AppNav current="settings" />}
         {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
       </PageHeader>

@@ -10,6 +10,8 @@ import TruncatedId from "../console/shared/TruncatedId";
 import { formatDate } from "../console/shared/formatDate";
 import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
+import AgentDropdown from "../shared/AgentDropdown";
+import { useOwnerAgents } from "../shared/useOwnerAgents";
 
 const STATUS_OPTIONS = ["CREATED", "ACCEPTED", "DECLINED", "CANCELLED", "EXPIRED"];
 
@@ -17,14 +19,17 @@ export default function MyOffersPage() {
   const t = useTranslations("myOffers");
   const {
     items, status, setStatus,
+    agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
     loadMore, refetch,
   } = useMyOffers();
+  const { agents, agentMap } = useOwnerAgents();
 
   const columns: Column[] = [
     { key: "listing_id", label: t("list.listing") },
     { key: "amount", label: t("list.amount") },
     { key: "status", label: t("list.status") },
+    { key: "agent", label: t("list.agent") },
     { key: "created_at", label: t("list.created") },
   ];
 
@@ -36,6 +41,8 @@ export default function MyOffersPage() {
         return <span className="text-sm font-mono">{row.amount != null ? `${row.amount} ${row.currency || ""}` : "-"}</span>;
       case "status":
         return <ConsoleStatusBadge value={row.status} variant="listing" />;
+      case "agent":
+        return <span className="text-xs font-mono text-subtle">{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</span>;
       case "created_at":
         return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
       default:
@@ -73,10 +80,11 @@ export default function MyOffersPage() {
                 {s}
               </button>
             ))}
+            <AgentDropdown agents={agents} selectedAgentId={agentId} onAgentChange={setAgentId} />
           </div>
         </div>
 
-        {fetchState === "loading" && <SkeletonTable columns={4} rows={10} />}
+        {fetchState === "loading" && <SkeletonTable columns={5} rows={10} />}
         {fetchState === "error" && <ErrorState message={error || t("failedToLoad")} onRetry={refetch} />}
         {fetchState === "done" && items.length === 0 && (
           <EmptyState

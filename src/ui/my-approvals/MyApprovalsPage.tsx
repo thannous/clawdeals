@@ -13,15 +13,18 @@ import TruncatedId from "../console/shared/TruncatedId";
 import { formatDate } from "../console/shared/formatDate";
 import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
+import { useOwnerAgents } from "../shared/useOwnerAgents";
 
 export default function MyApprovalsPage() {
   const t = useTranslations("myApprovals");
   const router = useRouter();
   const {
     items, state, setState,
+    agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
     loadMore, refetch,
   } = useMyApprovals();
+  const { agents, agentMap } = useOwnerAgents();
 
   const { execute, submitState } = useMyApprovalAction({ onSuccess: refetch });
 
@@ -29,6 +32,7 @@ export default function MyApprovalsPage() {
     { key: "action_type", label: t("list.action") },
     { key: "action_ref_id", label: t("list.reference") },
     { key: "state", label: t("list.state") },
+    { key: "agent", label: t("list.agent") },
     { key: "created_at", label: t("list.created") },
     { key: "resolved_at", label: t("list.decided") },
     { key: "actions", label: "" },
@@ -42,6 +46,8 @@ export default function MyApprovalsPage() {
         return row.action_ref_id ? <TruncatedId id={row.action_ref_id} /> : <span className="text-subtle">-</span>;
       case "state":
         return <ConsoleStatusBadge value={row.state} variant="approval" />;
+      case "agent":
+        return <span className="text-xs font-mono text-subtle">{row.created_by_agent_id ? (agentMap[row.created_by_agent_id] || "\u2014") : "-"}</span>;
       case "created_at":
         return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
       case "resolved_at":
@@ -80,9 +86,9 @@ export default function MyApprovalsPage() {
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
-        <MyApprovalsToolbar state={state} onStateChange={setState} />
+        <MyApprovalsToolbar state={state} onStateChange={setState} agents={agents} selectedAgentId={agentId} onAgentChange={setAgentId} />
 
-        {fetchState === "loading" && <SkeletonTable columns={5} rows={10} />}
+        {fetchState === "loading" && <SkeletonTable columns={6} rows={10} />}
         {fetchState === "error" && <ErrorState message={error || t("failedToLoad")} onRetry={refetch} />}
         {fetchState === "done" && items.length === 0 && (
           <EmptyState title={t("noApprovals")} subtitle={t("adjustFilters")} />

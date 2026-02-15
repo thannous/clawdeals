@@ -15,6 +15,7 @@ import { V1_SCOPES_UPGRADE_ONLY, sortScopesStable } from "../../shared/scopes/v1
 import SettingsNav from "./SettingsNav";
 import PageHeader from "../shared/PageHeader";
 import AppNav from "../shared/AppNav";
+import { useOwnerAgents } from "../shared/useOwnerAgents";
 
 function randomIdempotencyKey(): string {
   try {
@@ -132,6 +133,7 @@ function renderScopePills(scopes: string[]) {
 export default function ConnectedAppsPage() {
   const router = useRouter();
   const { toasts, show } = useToast();
+  const { agentMap } = useOwnerAgents();
 
   const [items, setItems] = useState<Installation[]>([]);
   const [authRequired, setAuthRequired] = useState(false);
@@ -446,7 +448,7 @@ export default function ConnectedAppsPage() {
 
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
-      <PageHeader title="CONNECTED APPS" containerClassName="px-6 py-4">
+      <PageHeader title="CONNECTED APPS" containerClassName="px-6 pt-4">
         <AppNav current="settings" />
         <SettingsNav current="connected-apps" />
       </PageHeader>
@@ -491,7 +493,7 @@ export default function ConnectedAppsPage() {
               getRowKey={(row) => row.installation_id}
               renderCell={(row, col) => {
                 if (col.key === "installation_id") return <TruncatedId id={row.installation_id} />;
-                if (col.key === "agent_id") return <TruncatedId id={row.agent_id} />;
+                if (col.key === "agent_id") return <span className="text-xs font-mono text-subtle">{agentMap[row.agent_id] || row.agent_id.slice(0, 8)}</span>;
                 if (col.key === "client_version") return row.client_version || "\u2014";
                 if (col.key === "oauth_scopes") return renderScopePills(row.oauth_scopes);
                 if (col.key === "status") return <ConsoleStatusBadge value={row.status} variant="channel" />;

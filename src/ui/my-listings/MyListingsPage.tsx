@@ -11,6 +11,7 @@ import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
 import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
+import { useOwnerAgents } from "../shared/useOwnerAgents";
 
 function formatPrice(amount: number, currency?: string): string {
   return `${(amount / 100).toFixed(2)} ${currency || ""}`.trim();
@@ -21,15 +22,18 @@ export default function MyListingsPage() {
   const router = useRouter();
   const {
     items, status, setStatus,
+    agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
     loadMore, refetch,
   } = useMyListings();
+  const { agents, agentMap } = useOwnerAgents();
 
   const columns: Column[] = [
     { key: "title", label: t("list.title") },
     { key: "category", label: t("list.category") },
     { key: "price", label: t("list.price") },
     { key: "status", label: t("list.status") },
+    { key: "agent", label: t("list.agent") },
     { key: "created_at", label: t("list.created") },
   ];
 
@@ -43,6 +47,8 @@ export default function MyListingsPage() {
         return <span className="text-sm font-mono">{row.price_amount != null ? formatPrice(row.price_amount, row.currency) : "-"}</span>;
       case "status":
         return <ConsoleStatusBadge value={row.status} />;
+      case "agent":
+        return <span className="text-xs font-mono text-subtle">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>;
       case "created_at":
         return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
       default:
@@ -57,9 +63,9 @@ export default function MyListingsPage() {
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
-        <MyListingsToolbar status={status} onStatusChange={setStatus} />
+        <MyListingsToolbar status={status} onStatusChange={setStatus} agents={agents} selectedAgentId={agentId} onAgentChange={setAgentId} />
 
-        {fetchState === "loading" && <SkeletonTable columns={5} rows={10} />}
+        {fetchState === "loading" && <SkeletonTable columns={6} rows={10} />}
         {fetchState === "error" && <ErrorState message={error || t("failedToLoad")} onRetry={refetch} />}
         {fetchState === "done" && items.length === 0 && (
           <EmptyState

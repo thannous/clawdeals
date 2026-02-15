@@ -17,6 +17,10 @@ export function useMyApprovals() {
     if (!routerReady) return DEFAULT_STATE;
     return resolveQueryParam(router.query?.state) || DEFAULT_STATE;
   });
+  const [agentId, setAgentIdVal] = useState<string | null>(() => {
+    if (!routerReady) return null;
+    return resolveQueryParam(router.query?.agent_id) || null;
+  });
 
   const [isInitializedFromQuery, setIsInitializedFromQuery] = useState(() => routerReady);
 
@@ -31,19 +35,23 @@ export function useMyApprovals() {
   useEffect(() => {
     if (!routerReady || isInitializedFromQuery) return;
     setStateVal(resolveQueryParam(router.query?.state) || DEFAULT_STATE);
+    setAgentIdVal(resolveQueryParam(router.query?.agent_id) || null);
     setIsInitializedFromQuery(true);
   }, [routerReady, isInitializedFromQuery, router.query]);
 
   const syncUrl = useCallback(
-    (st: string) => {
+    (st: string, aid: string | null) => {
       const query: Record<string, string> = {};
       if (st && st !== DEFAULT_STATE) query.state = st;
+      if (aid) query.agent_id = aid;
       router.replace({ pathname: router.pathname, query }, undefined, { shallow: true });
     },
     [router]
   );
 
-  const fetchItems = useCallback(async (params: { state: string; cursor?: string }, append = false) => {
+  const [authRequired, setAuthRequired] = useState(false);
+
+  const fetchItems = useCallback(async (params: { state: string; agentId?: string | null; cursor?: string }, append = false) => {
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -58,14 +66,15 @@ export function useMyApprovals() {
     const searchParams = new URLSearchParams();
     searchParams.set("limit", String(PAGE_SIZE));
     if (params.state) searchParams.set("state", params.state);
+    if (params.agentId) searchParams.set("agent_id", params.agentId);
     if (params.cursor) searchParams.set("cursor", params.cursor);
 
     try {
       const resp = await fetch(`/api/v1/approvals?${searchParams}`, { signal: controller.signal });
 
       if (resp.status === 401) {
-        const next = encodeURIComponent(router.asPath || "/my/approvals");
-        void router.replace(`/auth/login?next=${next}`);
+        setAuthRequired(true);
+        setFetchState("done");
         return;
       }
 
@@ -92,15 +101,22 @@ export function useMyApprovals() {
       setFetchState("error");
       setLoadMoreState("idle");
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
-    fetchItems({ state });
+    const timer = setTimeout(() => fetchItems({ state, agentId }), 0);
     return () => {
+      clearTimeout(timer);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [routerReady, isInitializedFromQuery, state, fetchItems]);
+  }, [routerReady, isInitializedFromQuery, state, agentId, fetchItems]);
+
+  useEffect(() => {
+    if (!authRequired) return;
+    const next = encodeURIComponent(router.asPath || "/my/approvals");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [authRequired, router]);
 
   const setState = useCallback(
     (val: string | null) => {
@@ -108,24 +124,35 @@ export function useMyApprovals() {
       setStateVal(resolved);
       setItems([]);
       setNextCursor(null);
-      syncUrl(resolved);
+      syncUrl(resolved, agentId);
     },
-    [syncUrl]
+    [syncUrl, agentId]
+  );
+
+  const setAgentId = useCallback(
+    (val: string | null) => {
+      setAgentIdVal(val);
+      setItems([]);
+      setNextCursor(null);
+      syncUrl(state, val);
+    },
+    [syncUrl, state]
   );
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadMoreState === "loading") return;
-    fetchItems({ state, cursor: nextCursor }, true);
-  }, [nextCursor, loadMoreState, state, fetchItems]);
+    fetchItems({ state, agentId, cursor: nextCursor }, true);
+  }, [nextCursor, loadMoreState, state, agentId, fetchItems]);
 
   const refetch = useCallback(() => {
     if (!routerReady || !isInitializedFromQuery) return;
-    fetchItems({ state });
-  }, [routerReady, isInitializedFromQuery, state, fetchItems]);
+    fetchItems({ state, agentId });
+  }, [routerReady, isInitializedFromQuery, state, agentId, fetchItems]);
 
   return {
     items,
     state, setState,
+    agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
     loadMore, refetch,
   };

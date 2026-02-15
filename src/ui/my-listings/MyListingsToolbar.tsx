@@ -1,16 +1,25 @@
 import { useTranslations } from "next-intl";
+import AgentDropdown from "../shared/AgentDropdown";
 
 const STATUS_OPTIONS = [
   "LIVE", "PENDING_APPROVAL", "RESERVED", "CONTACT_REVEALED",
   "COMPLETED", "DRAFT", "REMOVED", "EXPIRED"
 ];
 
+interface Agent {
+  id: string;
+  name: string | null;
+}
+
 interface Props {
   status: string | null;
   onStatusChange: (s: string | null) => void;
+  agents: Agent[];
+  selectedAgentId: string | null;
+  onAgentChange: (id: string | null) => void;
 }
 
-export default function MyListingsToolbar({ status, onStatusChange }: Props) {
+export default function MyListingsToolbar({ status, onStatusChange, agents, selectedAgentId, onAgentChange }: Props) {
   const t = useTranslations("myListings");
 
   return (
@@ -40,6 +49,7 @@ export default function MyListingsToolbar({ status, onStatusChange }: Props) {
             {s}
           </button>
         ))}
+        <AgentDropdown agents={agents} selectedAgentId={selectedAgentId} onAgentChange={onAgentChange} />
       </div>
     </div>
   );

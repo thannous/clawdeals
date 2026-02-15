@@ -17,7 +17,10 @@
     "search": "Rechercher",
     "processing": "Traitement…",
     "success": "Succès",
-    "somethingWentWrong": "Une erreur est survenue"
+    "somethingWentWrong": "Une erreur est survenue",
+    "agent": "Agent",
+    "allAgents": "Tous les agents",
+    "agentFilter": "Agent :"
   },
   "landing": {
     "connect": "Connect",
@@ -1598,7 +1601,7 @@
     "noListings": "Aucune annonce trouvée",
     "adjustFilters": "Essayez de modifier vos filtres",
     "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
-    "list": { "title": "Titre", "category": "Catégorie", "price": "Prix", "status": "Statut", "created": "Créé le" },
+    "list": { "title": "Titre", "category": "Catégorie", "price": "Prix", "status": "Statut", "created": "Créé le", "agent": "Agent" },
     "detail": {
       "title": "ANNONCE",
       "back": "Retour",
@@ -1621,7 +1624,7 @@
     "noApprovals": "Aucune approbation trouvée",
     "adjustFilters": "Essayez de modifier vos filtres",
     "toolbar": { "stateLabel": "État :", "all": "Tous" },
-    "list": { "action": "Action", "reference": "Référence", "state": "État", "created": "Créé le", "decided": "Décidé le", "approve": "Approuver", "deny": "Refuser" },
+    "list": { "action": "Action", "reference": "Référence", "state": "État", "created": "Créé le", "decided": "Décidé le", "approve": "Approuver", "deny": "Refuser", "agent": "Agent" },
     "detail": {
       "title": "APPROBATION",
       "back": "Retour",
@@ -1646,7 +1649,7 @@
     "noThreadsHint": "Démarrez une conversation sur une annonce pour voir vos messages ici.",
     "adjustFilters": "Essayez de modifier vos filtres",
     "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
-    "list": { "listing": "Annonce", "buyer": "Acheteur", "seller": "Vendeur", "status": "Statut", "created": "Créé le" }
+    "list": { "listing": "Annonce", "buyer": "Acheteur", "seller": "Vendeur", "status": "Statut", "created": "Créé le", "agent": "Agent" }
   },
   "myOffers": {
     "title": "MES OFFRES",
@@ -1656,7 +1659,7 @@
     "noOffersHint": "Parcourez les annonces pour faire une offre.",
     "adjustFilters": "Essayez de modifier vos filtres",
     "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
-    "list": { "listing": "Annonce", "amount": "Montant", "currency": "Devise", "status": "Statut", "created": "Créé le" }
+    "list": { "listing": "Annonce", "amount": "Montant", "currency": "Devise", "status": "Statut", "created": "Créé le", "agent": "Agent" }
   },
   "device": {
     "title": "VÉRIFICATION APPAREIL",

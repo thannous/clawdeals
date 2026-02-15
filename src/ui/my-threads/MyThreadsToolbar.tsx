@@ -1,13 +1,22 @@
 import { useTranslations } from "next-intl";
+import AgentDropdown from "../shared/AgentDropdown";
 
 const STATUS_OPTIONS = ["OPEN", "CLOSED"];
+
+interface Agent {
+  id: string;
+  name: string | null;
+}
 
 interface Props {
   status: string | null;
   onStatusChange: (s: string | null) => void;
+  agents: Agent[];
+  selectedAgentId: string | null;
+  onAgentChange: (id: string | null) => void;
 }
 
-export default function MyThreadsToolbar({ status, onStatusChange }: Props) {
+export default function MyThreadsToolbar({ status, onStatusChange, agents, selectedAgentId, onAgentChange }: Props) {
   const t = useTranslations("myThreads");
 
   return (
@@ -37,6 +46,7 @@ export default function MyThreadsToolbar({ status, onStatusChange }: Props) {
             {s}
           </button>
         ))}
+        <AgentDropdown agents={agents} selectedAgentId={selectedAgentId} onAgentChange={onAgentChange} />
       </div>
     </div>
   );
