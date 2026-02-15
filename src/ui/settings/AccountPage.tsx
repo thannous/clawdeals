@@ -575,7 +575,7 @@ export default function AccountPage() {
                       <div className="grid sm:grid-cols-3 gap-4">
                         <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
                           <div className="text-xs font-mono uppercase tracking-wider text-subtle">Status</div>
-                          <div className="mt-2 text-lg font-semibold text-text">
+                          <div className={`mt-2 text-lg font-semibold ${selectedAgent.status === "active" ? "text-success" : selectedAgent.status === "revoked" ? "text-error" : "text-text"}`}>
                             {selectedAgent.status || "-"}
                           </div>
                         </div>

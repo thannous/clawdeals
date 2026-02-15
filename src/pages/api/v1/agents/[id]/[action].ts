@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { isUuid } from "../../../../../server/utils/validators";
 import { getAgentById } from "../../../../../server/services/agents";
+import { getSupabaseServiceClient } from "../../../../../server/db/supabase";
 import {
   revokeApiKeyForAgent,
   revokeGlobalApiKeysForAgent,
@@ -66,6 +67,11 @@ async function handleRotate(req, ctx, agentId) {
   if (idemError) return idemError;
 
   const result = await rotateApiKeyForAgent({ agentId });
+
+  await getSupabaseServiceClient()
+    .from("agents")
+    .update({ status: "active" })
+    .eq("id", agentId);
 
   ctx.auditEvent = "agent.key_rotated";
   ctx.security = {
@@ -190,6 +196,11 @@ async function handleRotateAll(req, ctx, agentId) {
       now
     });
 
+    await getSupabaseServiceClient()
+      .from("agents")
+      .update({ status: "active" })
+      .eq("id", agentId);
+
     const responseData: any = {
       agent_id: agentId,
       rotated: Boolean(rotatedGlobal.rotated),
@@ -265,6 +276,11 @@ async function handleRevokeAll(req, ctx, agentId) {
       agentId,
       now
     });
+
+    await getSupabaseServiceClient()
+      .from("agents")
+      .update({ status: "revoked" })
+      .eq("id", agentId);
 
     ctx.auditEvent = "agent.credentials_revoked";
     ctx.auditEntityType = "agent";

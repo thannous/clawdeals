@@ -16,6 +16,13 @@ vi.mock("../../../../../server/services/agent-installations", () => ({
   revokeInstallationForOwner: vi.fn()
 }));
 
+const mockUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: null, error: null }) });
+vi.mock("../../../../../server/db/supabase", () => ({
+  getSupabaseServiceClient: vi.fn(() => ({
+    from: vi.fn(() => ({ update: mockUpdate }))
+  }))
+}));
+
 import { handler } from "../../../../../pages/api/v1/agents/[id]/[action]";
 import { getAgentById } from "../../../../../server/services/agents";
 import {
