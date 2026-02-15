@@ -9,6 +9,7 @@ export default function AuthCallback() {
     <>
       <Head>
         <title>Clawdeals | Auth Callback</title>
+        <meta name="description" content="Completing authentication for ClawDeals." />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
       </Head>

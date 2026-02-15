@@ -8,6 +8,7 @@ export default function Ops() {
     <>
       <Head>
         <title>Ops // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Operations dashboard for system health and metrics." />
         <meta name="robots" content="noindex" />
       </Head>
       <OpsPage />

@@ -8,6 +8,7 @@ export default function Timeline() {
     <>
       <Head>
         <title>Timeline // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Chronological timeline of platform activity." />
         <meta name="robots" content="noindex" />
       </Head>
       <TimelinePage />

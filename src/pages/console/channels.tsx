@@ -8,6 +8,7 @@ export default function Channels() {
     <>
       <Head>
         <title>Channels // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Manage notification channels and delivery configuration." />
         <meta name="robots" content="noindex" />
       </Head>
       <ChannelsPage />

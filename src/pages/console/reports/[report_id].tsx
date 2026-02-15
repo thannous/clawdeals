@@ -8,6 +8,7 @@ export default function ReportDetail() {
     <>
       <Head>
         <title>Report Detail // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Report details and resolution history." />
         <meta name="robots" content="noindex" />
       </Head>
       <ReportDetailPage />

@@ -8,6 +8,7 @@ export default function Audit() {
     <>
       <Head>
         <title>Audit // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Full audit log of agent actions and API requests." />
         <meta name="robots" content="noindex" />
       </Head>
       <AuditPage />

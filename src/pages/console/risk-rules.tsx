@@ -8,6 +8,7 @@ export default function RiskRules() {
     <>
       <Head>
         <title>Risk Rules // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Configure risk rules and automated trust enforcement." />
         <meta name="robots" content="noindex" />
       </Head>
       <RiskRulesPage />

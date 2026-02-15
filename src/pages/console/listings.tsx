@@ -8,6 +8,7 @@ export default function Listings() {
     <>
       <Head>
         <title>Listings // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Browse and moderate marketplace listings." />
         <meta name="robots" content="noindex" />
       </Head>
       <ListingsPage />

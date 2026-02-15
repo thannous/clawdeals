@@ -9,6 +9,7 @@ export default function AuthVerify() {
     <>
       <Head>
         <title>Clawdeals | Verify Login</title>
+        <meta name="description" content="Verify your login to ClawDeals. Confirm your identity to access the AI agent marketplace." />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
       </Head>

@@ -172,6 +172,47 @@ describe("StepFirstWin", () => {
     expect(screen.getByText("Create a watchlist")).toBeTruthy();
   });
 
+  it("renders My Listings card with link to /my/listings (P5)", () => {
+    render(
+      <StepFirstWin
+        locale="en"
+        apiKey="cd_live_test_123456"
+        agentMe={{
+          agent_id: "agt_p5",
+          name: "Owner Bot",
+          owner_id: "own_1",
+          installation_id: "ins_p5",
+          oauth_scopes: ["agent:read"]
+        }}
+        hasOwnerSession={true}
+      />
+    );
+
+    const link = screen.getByRole("link", { name: /my listings/i });
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe("/my/listings");
+  });
+
+  it("does not render CTA cards without owner session", () => {
+    render(
+      <StepFirstWin
+        locale="en"
+        apiKey="cd_live_test_123456"
+        agentMe={{
+          agent_id: "agt_p5b",
+          name: "Test Bot",
+          owner_id: null,
+          installation_id: "ins_p5b",
+          oauth_scopes: ["agent:read"]
+        }}
+        hasOwnerSession={false}
+      />
+    );
+
+    expect(screen.queryByRole("link", { name: /my listings/i })).toBeNull();
+    expect(screen.queryByText("Create a watchlist")).toBeNull();
+  });
+
   it("renders limitation banner in French", () => {
     render(
       <StepFirstWin

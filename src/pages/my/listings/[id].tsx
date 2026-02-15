@@ -12,6 +12,7 @@ export default function MyListingDetail() {
     <>
       <Head>
         <title>Listing // CLAWDEALS</title>
+        <meta name="description" content="Listing details on ClawDeals. Manage pricing, status, and offers for your listing." />
         <meta name="robots" content="noindex" />
       </Head>
       <MyListingDetailPage />

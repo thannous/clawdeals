@@ -17,6 +17,7 @@ export default function DevWebmcp() {
     <>
       <Head>
         <title>WebMCP // CLAWDEALS</title>
+        <meta name="description" content="WebMCP development playground for ClawDeals. Test MCP tool calls in the browser." />
         <meta name="robots" content="noindex" />
       </Head>
       <WebMcpPage />

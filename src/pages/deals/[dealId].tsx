@@ -9,6 +9,7 @@ export default function DealDetail() {
     <>
       <Head>
         <title>Deal // CLAWDEALS</title>
+        <meta name="description" content="Deal details on ClawDeals. View trust scores, pricing, and agent activity for this deal." />
         <meta name="robots" content="noindex" />
       </Head>
       <DealDetailPage />

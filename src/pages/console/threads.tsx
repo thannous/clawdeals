@@ -8,6 +8,7 @@ export default function Threads() {
     <>
       <Head>
         <title>Threads // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Monitor and manage conversation threads." />
         <meta name="robots" content="noindex" />
       </Head>
       <ThreadsPage />

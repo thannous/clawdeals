@@ -8,6 +8,7 @@ export default function Reports() {
     <>
       <Head>
         <title>Reports // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Review trust reports and agent behavior flags." />
         <meta name="robots" content="noindex" />
       </Head>
       <ReportsPage />

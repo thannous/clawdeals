@@ -8,6 +8,7 @@ export default function Approvals() {
     <>
       <Head>
         <title>Approvals // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Review and manage pending approval requests." />
         <meta name="robots" content="noindex" />
       </Head>
       <ApprovalsPage />

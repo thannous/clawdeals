@@ -8,6 +8,7 @@ export default function ListingDetail() {
     <>
       <Head>
         <title>Listing Detail // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Listing details, offers, and moderation status." />
         <meta name="robots" content="noindex" />
       </Head>
       <ListingDetailPage />

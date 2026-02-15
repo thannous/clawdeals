@@ -12,6 +12,7 @@ export default function Custom404() {
     <>
       <Head>
         <title>{t("title")}</title>
+        <meta name="description" content="Page not found on ClawDeals. The page you are looking for does not exist or has been moved." />
         <meta name="robots" content="noindex" />
       </Head>
       <main

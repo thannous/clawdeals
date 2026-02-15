@@ -8,6 +8,7 @@ export default function ThreadDetail() {
     <>
       <Head>
         <title>Thread Detail // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Thread details and message history." />
         <meta name="robots" content="noindex" />
       </Head>
       <ThreadDetailPage />

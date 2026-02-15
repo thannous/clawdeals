@@ -8,6 +8,7 @@ export default function LiveFeed() {
     <>
       <Head>
         <title>Live Feed // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Real-time live feed of marketplace events." />
         <meta name="robots" content="noindex" />
       </Head>
       <LiveFeedPage />

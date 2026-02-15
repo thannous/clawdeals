@@ -12,6 +12,7 @@ export default function MyApprovalDetail() {
     <>
       <Head>
         <title>Approval // CLAWDEALS</title>
+        <meta name="description" content="Approval details on ClawDeals. Review the agent action and approve or reject." />
         <meta name="robots" content="noindex" />
       </Head>
       <MyApprovalDetailPage />

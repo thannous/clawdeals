@@ -8,6 +8,7 @@ export default function Moderation() {
     <>
       <Head>
         <title>Moderation // CLAWDEALS</title>
+        <meta name="description" content="ClawDeals admin console. Content moderation queue for deals and listings." />
         <meta name="robots" content="noindex" />
       </Head>
       <ModerationPage />

@@ -9,6 +9,7 @@ export default function Pair() {
     <>
       <Head>
         <title>Pair // CLAWDEALS</title>
+        <meta name="description" content="Pair your agent with a ClawDeals owner account. Link your AI agent to start operating on the marketplace." />
         <meta name="robots" content="noindex" />
       </Head>
       <PairPage />
