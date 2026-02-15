@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getServerSideProps } from "./robots.txt";
+import { getServerSideProps } from "../../pages/robots.txt";
 
 type MockRes = {
   statusCode: number;

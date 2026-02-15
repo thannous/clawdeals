@@ -373,7 +373,8 @@
       "title": "Legal",
       "link_0": "Términos de servicio",
       "link_1": "Política de privacidad",
-      "linkCount": "2"
+      "link_2": "Aviso legal",
+      "linkCount": "3"
     }
   },
   "seo": {
@@ -402,6 +403,24 @@
       "description": "Cada acción de agente registrada. Cada credencial revocable. Rate limits, idempotencia y trazado de solicitudes por defecto.",
       "ogTitle": "Audit Trail — ClawDeals",
       "ogDescription": "Cada acción registrada. Cada credencial revocable. Rate limits e idempotencia por defecto."
+    },
+    "legalTerms": {
+      "title": "Términos de servicio // CLAWDEALS",
+      "description": "Términos de servicio de ClawDeals, el marketplace agent-first. Condiciones de uso, política de uso aceptable y limitaciones de responsabilidad.",
+      "ogTitle": "Términos de servicio — ClawDeals",
+      "ogDescription": "Términos de servicio de ClawDeals, el marketplace agent-first con control humano."
+    },
+    "legalPrivacy": {
+      "title": "Política de privacidad // CLAWDEALS",
+      "description": "Política de privacidad de ClawDeals. Cómo recopilamos, utilizamos y protegemos sus datos. Cumple con RGPD, datos almacenados en Europa.",
+      "ogTitle": "Política de privacidad — ClawDeals",
+      "ogDescription": "Política de privacidad de ClawDeals. Cumple con RGPD. Datos en Europa. Sus derechos explicados."
+    },
+    "legalMentions": {
+      "title": "Aviso legal // CLAWDEALS",
+      "description": "Aviso legal de ClawDeals. Información del editor, proveedores de alojamiento y propiedad intelectual.",
+      "ogTitle": "Aviso legal — ClawDeals",
+      "ogDescription": "Aviso legal de ClawDeals. Editor, alojamiento y propiedad intelectual."
     },
     "guides": {
       "mcpSafety": {

@@ -373,7 +373,8 @@
       "title": "Légal",
       "link_0": "Conditions d'utilisation",
       "link_1": "Politique de confidentialité",
-      "linkCount": "2"
+      "link_2": "Mentions légales",
+      "linkCount": "3"
     }
   },
   "seo": {
@@ -402,6 +403,24 @@
       "description": "Chaque action d'agent logguée. Chaque credential révocable. Rate limits, idempotence et traçage de requêtes par défaut.",
       "ogTitle": "Audit Trail — ClawDeals",
       "ogDescription": "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
+    },
+    "legalTerms": {
+      "title": "Conditions d'utilisation // CLAWDEALS",
+      "description": "Conditions générales d'utilisation de ClawDeals, la marketplace agent-first. Conditions d'utilisation, politique d'usage et limitations de responsabilité.",
+      "ogTitle": "Conditions d'utilisation — ClawDeals",
+      "ogDescription": "Conditions d'utilisation de ClawDeals, la marketplace agent-first avec contrôle humain."
+    },
+    "legalPrivacy": {
+      "title": "Politique de confidentialité // CLAWDEALS",
+      "description": "Politique de confidentialité de ClawDeals. Comment nous collectons, utilisons et protégeons vos données. Conforme RGPD, données hébergées en Europe.",
+      "ogTitle": "Politique de confidentialité — ClawDeals",
+      "ogDescription": "Politique de confidentialité de ClawDeals. Conforme RGPD. Données en Europe. Vos droits expliqués."
+    },
+    "legalMentions": {
+      "title": "Mentions légales // CLAWDEALS",
+      "description": "Mentions légales de ClawDeals. Informations sur l'éditeur, les hébergeurs et la propriété intellectuelle.",
+      "ogTitle": "Mentions légales — ClawDeals",
+      "ogDescription": "Mentions légales de ClawDeals. Éditeur, hébergement et propriété intellectuelle."
     },
     "guides": {
       "mcpSafety": {

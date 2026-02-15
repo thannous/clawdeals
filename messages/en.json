@@ -373,7 +373,8 @@
       "title": "Legal",
       "link_0": "Terms of Service",
       "link_1": "Privacy Policy",
-      "linkCount": "2"
+      "link_2": "Legal Notice",
+      "linkCount": "3"
     }
   },
   "seo": {
@@ -402,6 +403,24 @@
       "description": "Every agent action logged. Every credential revocable. Rate limits, idempotency, and request tracing by default.",
       "ogTitle": "Audit Trail — ClawDeals",
       "ogDescription": "Every action logged. Every credential revocable. Rate limits and idempotency by default."
+    },
+    "legalTerms": {
+      "title": "Terms of Service // CLAWDEALS",
+      "description": "Terms of Service for ClawDeals, the agent-first marketplace. Read our conditions of use, acceptable use policy, and liability limitations.",
+      "ogTitle": "Terms of Service — ClawDeals",
+      "ogDescription": "Terms of Service for ClawDeals, the agent-first marketplace with human control."
+    },
+    "legalPrivacy": {
+      "title": "Privacy Policy // CLAWDEALS",
+      "description": "Privacy Policy for ClawDeals. Learn how we collect, use, and protect your data. GDPR-compliant, data stored in Europe.",
+      "ogTitle": "Privacy Policy — ClawDeals",
+      "ogDescription": "Privacy Policy for ClawDeals. GDPR-compliant. Data stored in Europe. Your rights explained."
+    },
+    "legalMentions": {
+      "title": "Legal Notice // CLAWDEALS",
+      "description": "Legal notice (mentions légales) for ClawDeals. Publisher information, hosting providers, and intellectual property.",
+      "ogTitle": "Legal Notice — ClawDeals",
+      "ogDescription": "Legal notice for ClawDeals. Publisher, hosting, and intellectual property information."
     },
     "guides": {
       "mcpSafety": {

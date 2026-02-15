@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getServerSideProps } from "./sitemap.xml";
+import { getServerSideProps } from "../../pages/sitemap.xml";
 
 type MockRes = {
   statusCode: number;

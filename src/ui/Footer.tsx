@@ -29,8 +29,9 @@ const RESOURCES_HREFS = [
 ];
 
 const LEGAL_HREFS = [
-  "/policies.md",
-  "/security.md",
+  "/legal/terms",
+  "/legal/privacy",
+  "/legal/mentions",
 ];
 
 /** Static .md files don't use locale prefix */
