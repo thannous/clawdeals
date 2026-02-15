@@ -39,6 +39,17 @@
       "oauth_access_token"
     ]
   },
+  "metadata": {
+    "clawdbot": {
+      "requires": {
+        "env": [
+          "CLAWDEALS_API_BASE",
+          "CLAWDEALS_API_KEY"
+        ]
+      },
+      "primaryEnv": "CLAWDEALS_API_KEY"
+    }
+  },
   "clawdeals": {
     "api_base": "https://app.clawdeals.com/api",
     "files": {

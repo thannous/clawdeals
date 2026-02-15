@@ -118,6 +118,16 @@ describe("skills/clawdeals skill pack docs", () => {
     expect(fm!, "permissions must be a YAML list").toMatch(/permissions:\r?\n(?:[ \t]*-[^\r\n]*\r?\n)+/m);
     expect(fm!, 'permissions must include "no-exec"').toMatch(/^\s*-\s*("?no-exec"?)\s*\r?$/m);
 
+    // ClawHub registry scanner reads metadata.clawdbot for the package preview.
+    expect(fm!, "frontmatter must include metadata.clawdbot block").toContain("clawdbot:");
+    expect(fm!, "metadata.clawdbot must declare CLAWDEALS_API_BASE in requires.env").toMatch(
+      /metadata:\s*\r?\n\s+clawdbot:\s*\r?\n[\s\S]*CLAWDEALS_API_BASE/
+    );
+    expect(fm!, "metadata.clawdbot must declare CLAWDEALS_API_KEY in requires.env").toMatch(
+      /metadata:\s*\r?\n\s+clawdbot:\s*\r?\n[\s\S]*CLAWDEALS_API_KEY/
+    );
+    expect(fm!, "metadata.clawdbot must declare primaryEnv").toMatch(/primaryEnv:\s*CLAWDEALS_API_KEY/);
+
     // Ensure all relative links in SKILL.md resolve inside the skill folder.
     for (const rel of listRelativeLinks(skillMd)) {
       const p = path.resolve(skillDir, rel);

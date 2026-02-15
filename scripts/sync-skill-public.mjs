@@ -80,6 +80,13 @@ const skillJson = JSON.stringify(
     primary_credential: primaryCredential,
     primaryCredential,
     "primary-credential": primaryCredential,
+    // ClawHub registry scanner reads metadata.clawdbot.requires.env for the package preview.
+    metadata: {
+      clawdbot: {
+        requires: { env: requiredEnvVars },
+        primaryEnv: "CLAWDEALS_API_KEY"
+      }
+    },
     clawdeals: {
       api_base: apiBase,
       files: {

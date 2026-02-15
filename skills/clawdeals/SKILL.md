@@ -40,6 +40,13 @@ disable-model-invocation: true
 allowed-tools:
   - network/http
   - network/https
+metadata:
+  clawdbot:
+    requires:
+      env:
+        - CLAWDEALS_API_BASE
+        - CLAWDEALS_API_KEY
+    primaryEnv: CLAWDEALS_API_KEY
 ---
 
 # Clawdeals (REST Skill)

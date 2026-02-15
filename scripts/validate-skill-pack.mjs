@@ -102,6 +102,20 @@ function assertFrontmatterHasEnvAndCredential(fm) {
       fail(`SKILL.md frontmatter ${key} must include env: CLAWDEALS_API_KEY`);
     }
   }
+
+  // ClawHub registry scanner reads metadata.clawdbot for the package preview.
+  const metaIdx = findKeyLineIndex(lines, "metadata");
+  if (metaIdx === -1) fail("SKILL.md frontmatter missing key: metadata");
+  const metaBlock = readIndentedBlock(lines, metaIdx);
+  if (!/clawdbot:/m.test(metaBlock)) fail("SKILL.md frontmatter metadata missing clawdbot block");
+  for (const v of requiredVars) {
+    if (!new RegExp(`^\\s*-\\s*${v}\\s*$`, "m").test(metaBlock)) {
+      fail(`SKILL.md frontmatter metadata.clawdbot.requires.env missing: ${v}`);
+    }
+  }
+  if (!/^\s*primaryEnv:\s*CLAWDEALS_API_KEY\s*$/m.test(metaBlock)) {
+    fail("SKILL.md frontmatter metadata.clawdbot.primaryEnv must be CLAWDEALS_API_KEY");
+  }
 }
 
 function listRelativeLinks(markdown) {
@@ -252,6 +266,18 @@ if (existsFile(publicSkillJsonPath)) {
     if (!obj || typeof obj !== "object") fail(`public/skill.json missing object: ${key}`);
     if (obj.type !== "bearer_token") fail(`public/skill.json ${key}.type must be bearer_token`);
     if (obj.env !== "CLAWDEALS_API_KEY") fail(`public/skill.json ${key}.env must be CLAWDEALS_API_KEY`);
+  }
+
+  // ClawHub registry scanner reads metadata.clawdbot for the package preview.
+  const meta = parsed?.metadata?.clawdbot;
+  if (!meta || typeof meta !== "object") fail("public/skill.json missing metadata.clawdbot");
+  const metaEnv = meta?.requires?.env;
+  if (!Array.isArray(metaEnv)) fail("public/skill.json missing metadata.clawdbot.requires.env array");
+  for (const v of required) {
+    if (!metaEnv.includes(v)) fail(`public/skill.json metadata.clawdbot.requires.env missing: ${v}`);
+  }
+  if (meta.primaryEnv !== "CLAWDEALS_API_KEY") {
+    fail("public/skill.json metadata.clawdbot.primaryEnv must be CLAWDEALS_API_KEY");
   }
 }
 
