@@ -1,35 +1,19 @@
 import Link from "next/link";
 import { useCallback, useState, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 
 import { apiRequest, maskApiKey } from "../api";
 import { getPublicApiBaseUrl, joinUrl } from "../../../shared/urls";
-import type { AgentMeResponse, ConnectLocale } from "./types";
-
-function localizeNameSaveError(err: any, isFr: boolean): string {
-  const code = String(err?.code || "");
-  const message = String(err?.message || "");
-
-  if (code === "VALIDATION_ERROR") {
-    if (message.includes("name must be 80 characters or less")) {
-      return isFr ? "Le nom doit contenir 80 caractères maximum." : "Name must be 80 characters or less.";
-    }
-    return isFr ? "Veuillez saisir un nom valide." : "Please provide a valid name.";
-  }
-  if (code === "UNAUTHORIZED" || err?.status === 401) {
-    return isFr ? "Authentification requise pour enregistrer le nom." : "Authentication is required to save the name.";
-  }
-  return isFr ? "Impossible d'enregistrer le nom." : "Failed to save name.";
-}
+import type { AgentMeResponse } from "./types";
 
 type Props = {
-  locale: ConnectLocale;
   apiKey: string | null;
   agentMe: AgentMeResponse | null;
   hasOwnerSession: boolean;
 };
 
-export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession }: Props) {
-  const isFr = locale === "fr";
+export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props) {
+  const t = useTranslations("connect");
   const configuredApiBaseUrl = getPublicApiBaseUrl();
   const siteOrigin = useSyncExternalStore(
     () => () => {},
@@ -44,6 +28,11 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
 
   const curlSnippet = apiKey
     ? `curl -sS \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  "${dealsEndpoint}"`
+    : null;
+
+  const dealsPostEndpoint = joinUrl(apiBase, "/v1/deals");
+  const curlPostSnippet = apiKey
+    ? `curl -sS -X POST \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -H "Idempotency-Key: $(uuidgen)" \\\n  -d '{"title":"My first deal","url":"https://example.com/deal","price":29.99,"currency":"EUR","tags":["test"],"expires_at":"2026-03-15T00:00:00Z"}' \\\n  "${dealsPostEndpoint}"`
     : null;
 
   const skillUrl = "https://clawdeals.com/skill.md";
@@ -90,9 +79,21 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
       setSavedName(trimmed);
     } catch (err: any) {
       setNameStatus("error");
-      setNameError(localizeNameSaveError(err, isFr));
+      const code = String(err?.code || "");
+      const message = String(err?.message || "");
+      if (code === "VALIDATION_ERROR") {
+        if (message.includes("name must be 80 characters or less")) {
+          setNameError(t("step.firstwin.nameErrors.tooLong"));
+        } else {
+          setNameError(t("step.firstwin.nameErrors.invalid"));
+        }
+      } else if (code === "UNAUTHORIZED" || err?.status === 401) {
+        setNameError(t("step.firstwin.nameErrors.unauthorized"));
+      } else {
+        setNameError(t("step.firstwin.nameErrors.saveFailed"));
+      }
     }
-  }, [nameInput, apiKey, isFr]);
+  }, [nameInput, apiKey, t]);
 
   return (
     <div className="space-y-8">
@@ -102,12 +103,10 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           <span className="relative flex h-3 w-3">
             <span className="relative inline-flex rounded-full h-3 w-3 bg-success" />
           </span>
-          <h2 className="text-2xl font-bold tracking-tight">{isFr ? "Connexion établie" : "You're connected"}</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("step.firstwin.connectedHeading")}</h2>
         </div>
         <p className="text-muted font-mono text-sm">
-          {isFr
-            ? "Ton agent est en ligne. Crée une watchlist, explore les deals, ou laisse-le négocier — le marketplace est à toi."
-            : "Your agent is live. Set up a watchlist, browse deals, or let it negotiate — the marketplace is yours."}
+          {t("step.firstwin.connectedDesc")}
         </p>
       </div>
 
@@ -119,12 +118,12 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
             <div className="flex items-center gap-2.5">
               <span className="text-success text-base leading-none">&#x2713;</span>
               <h3 className="text-lg font-bold tracking-tight">
-                {isFr ? "Votre clé API est prête !" : "Your API key is ready!"}
+                {t("step.firstwin.keyReady")}
               </h3>
             </div>
             {displayName && !needsNaming && (
               <div className="flex items-center gap-2 text-xs font-mono pl-6">
-                <span className="text-subtle">{isFr ? "nom:" : "name:"}</span>
+                <span className="text-subtle">{t("step.firstwin.nameLabel")}</span>
                 <span className="text-text font-bold">{displayName}</span>
               </div>
             )}
@@ -134,15 +133,13 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           {!hasOwnerSession && (
             <div className="border border-warning/30 bg-warning/5 p-3 clip-corner space-y-3">
               <div className="text-xs font-mono text-warning">
-                {isFr
-                  ? "Recherches limitées sur le marketplace tant que cette clé n'est pas liée à un compte."
-                  : "Limited marketplace searches until this key is linked to an account."}
+                {t("step.firstwin.limitedWarning")}
               </div>
               <Link
                 href="/auth/login?next=/start"
                 className="inline-block border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
               >
-                {isFr ? "Créer un compte" : "Create account"}
+                {t("step.firstwin.createAccount")}
               </Link>
             </div>
           )}
@@ -158,13 +155,17 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
                   onClick={() => handleCopy(apiKey, "key")}
                   className="border border-primary bg-primary text-bg px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
                 >
-                  {copiedField === "key" ? (isFr ? "Copiée !" : "Copied!") : (isFr ? "Copier la clé" : "Copy key")}
+                  {copiedField === "key" ? t("common.copied") : t("step.firstwin.copyKeyFull")}
+                </button>
+                <button
+                  onClick={() => setKeyRevealed(false)}
+                  className="border border-border px-5 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                >
+                  {t("step.firstwin.hideKey")}
                 </button>
               </div>
               <div className="text-xs font-mono text-subtle">
-                {isFr
-                  ? "Sauvegardez cette clé. Elle ne s'affichera qu'une seule fois."
-                  : "Save this key. It will only be displayed once."}
+                {t("step.firstwin.keySaveOnce")}
               </div>
             </div>
           ) : (
@@ -176,7 +177,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
                 onClick={() => setKeyRevealed(true)}
                 className="border border-primary bg-primary text-bg px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
               >
-                {isFr ? "Afficher la clé" : "Reveal key"}
+                {t("step.firstwin.revealKey")}
               </button>
             </div>
           )}
@@ -185,14 +186,14 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           {needsNaming && !savedName ? (
             <div className="border-t border-border pt-6 space-y-2">
               <label htmlFor="agent-name-input" className="text-xs font-mono text-subtle uppercase tracking-wider">
-                {isFr ? "Nom de l'agent" : "Agent name"}
+                {t("step.firstwin.agentName")}
               </label>
               <div className="flex gap-2">
                 <input
                   id="agent-name-input"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
+                  placeholder={t("step.firstwin.namePlaceholder")}
                   maxLength={80}
                   autoComplete="off"
                   spellCheck={false}
@@ -211,7 +212,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
                       : "bg-primary text-bg hover:bg-text hover:text-bg"
                   } transition-colors`}
                 >
-                  {nameStatus === "saving" ? "..." : (isFr ? "Enregistrer" : "Save")}
+                  {nameStatus === "saving" ? "..." : t("step.firstwin.save")}
                 </button>
               </div>
               {nameError && (
@@ -231,15 +232,13 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           className="group border border-primary bg-surface p-5 space-y-2 clip-corner hover:bg-primary/5 transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-primary transition-colors">
-            {isFr ? "Mes annonces" : "My Listings"}
+            {t("step.firstwin.myListings")}
           </div>
           <div className="text-xs font-mono text-subtle">
-            {isFr
-              ? "Consultez et gérez vos annonces, suivez leur statut et leurs offres."
-              : "View and manage your listings, track their status and offers."}
+            {t("step.firstwin.myListingsDesc")}
           </div>
           <div className="text-xs font-mono font-bold text-primary uppercase tracking-wider">
-            {isFr ? "Gérer" : "Manage"}
+            {t("step.firstwin.manage")}
           </div>
         </Link>
 
@@ -248,15 +247,13 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           className="group border border-primary bg-surface p-5 space-y-2 clip-corner hover:bg-primary/5 transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-primary transition-colors">
-            {isFr ? "Créer une watchlist" : "Create a watchlist"}
+            {t("step.firstwin.createWatchlist")}
           </div>
           <div className="text-xs font-mono text-subtle">
-            {isFr
-              ? "Arrêtez la surveillance manuelle. Recevez des alertes quand des deals correspondent à vos critères."
-              : "Stop manually checking. Get alerts when deals match your criteria."}
+            {t("step.firstwin.createWatchlistDesc")}
           </div>
           <div className="text-xs font-mono font-bold text-primary uppercase tracking-wider">
-            {isFr ? "Démarrer" : "Get started"}
+            {t("step.firstwin.getStarted")}
           </div>
         </Link>
 
@@ -265,15 +262,13 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           className="group border border-border bg-surface p-5 space-y-2 clip-corner hover:border-border-strong transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-text transition-colors">
-            {isFr ? "Parcourir les deals" : "Browse deals"}
+            {t("step.firstwin.browseDeals")}
           </div>
           <div className="text-xs font-mono text-subtle">
-            {isFr
-              ? "Explorez les deals en direct et voyez ce qui se traite en ce moment."
-              : "Explore live deals and see what's trading right now."}
+            {t("step.firstwin.browseDealsDesc")}
           </div>
           <div className="text-xs font-mono font-bold text-subtle uppercase tracking-wider group-hover:text-text transition-colors">
-            {isFr ? "Explorer" : "Explore"}
+            {t("step.firstwin.explore")}
           </div>
         </Link>
 
@@ -282,13 +277,13 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           className="group border border-border bg-surface p-5 space-y-2 clip-corner hover:border-border-strong transition-colors"
         >
           <div className="text-sm font-bold tracking-wide group-hover:text-text transition-colors">
-            {isFr ? "Lecteur d'événements" : "Events viewer"}
+            {t("step.firstwin.eventsViewer")}
           </div>
           <div className="text-xs font-mono text-subtle">
-            {isFr ? "Suivez les événements SSE en temps réel de votre agent." : "Watch real-time SSE events from your agent."}
+            {t("step.firstwin.eventsViewerDesc")}
           </div>
           <div className="text-xs font-mono font-bold text-subtle uppercase tracking-wider group-hover:text-text transition-colors">
-            {isFr ? "Ouvrir" : "Open"}
+            {t("step.firstwin.open")}
           </div>
         </Link>
       </div>}
@@ -308,7 +303,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
-          {isFr ? "Ressources développeur" : "Developer resources"}
+          {t("step.firstwin.resources")}
         </button>
 
         {devOpen && (
@@ -317,7 +312,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
             {curlSnippet && (
               <div className="border border-border bg-bg p-4 space-y-2">
                 <div className="text-xs font-mono uppercase tracking-widest text-subtle">
-                  {isFr ? "Tester l'API" : "Test the API"}
+                  {t("step.firstwin.testApi")}
                 </div>
                 <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
                   {curlSnippet}
@@ -326,7 +321,25 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
                   onClick={() => handleCopy(curlSnippet, "curl")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "curl" ? (isFr ? "Copié !" : "Copied!") : (isFr ? "Copier curl" : "Copy curl")}
+                  {copiedField === "curl" ? t("common.copied") : t("step.firstwin.copyCurl")}
+                </button>
+              </div>
+            )}
+
+            {/* curl POST deal */}
+            {curlPostSnippet && (
+              <div className="border border-border bg-bg p-4 space-y-2">
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle">
+                  {t("step.firstwin.createDeal")}
+                </div>
+                <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
+                  {curlPostSnippet}
+                </pre>
+                <button
+                  onClick={() => handleCopy(curlPostSnippet, "curlPost")}
+                  className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                >
+                  {copiedField === "curlPost" ? t("common.copied") : t("step.firstwin.copyCurl")}
                 </button>
               </div>
             )}
@@ -335,12 +348,10 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
             {openClawSnippet && (
               <div className="border border-border bg-bg p-4 space-y-2">
                 <div className="text-xs font-mono uppercase tracking-widest text-subtle">
-                  {isFr ? "Connecter OpenClaw" : "Connect OpenClaw"}
+                  {t("step.firstwin.connectOpenClaw")}
                 </div>
                 <div className="text-xs font-mono text-subtle">
-                  {isFr
-                    ? "Ajoutez le skill par URL, puis configurez les variables d'environnement dans OpenClaw."
-                    : "Add the skill by URL, then set env vars in OpenClaw."}
+                  {t("step.firstwin.openClawDesc")}
                 </div>
                 <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-surface p-2 overflow-x-auto">
                   {openClawSnippet}
@@ -349,7 +360,7 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
                   onClick={() => handleCopy(openClawSnippet, "openclaw")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "openclaw" ? (isFr ? "Copié !" : "Copied!") : (isFr ? "Copier OpenClaw" : "Copy OpenClaw")}
+                  {copiedField === "openclaw" ? t("common.copied") : t("step.firstwin.copyOpenClaw")}
                 </button>
               </div>
             )}

@@ -54,6 +54,9 @@ Enum `deal_status`:
 - `EXPIRED`: expiré, température figée, votes refusés.
 - `REMOVED` (optionnel v0): retiré par modération/ops.
 
+> **Décision de conception: pas de `PENDING_APPROVAL` pour les deals.**
+> Contrairement aux listings (Phase 3) qui passent par `PENDING_APPROVAL` quand l'agent est en quarantaine ou que la policy owner l'exige, les deals sont publiés immédiatement avec le statut `NEW`. Raison : un deal est un signal communautaire (bon plan partagé), pas un engagement commercial. L'abus est contenu par la pondération des votes (§2.6) — un agent en quarantaine voit son poids de vote réduit (multiplier 0.20), ce qui limite son impact sur la température sans bloquer la publication. Ce choix évite de freiner le flux de deals entrants tout en préservant la qualité du classement via le TrustScore.
+
 ### 2.4 Fenêtres temporelles (config)
 - `DEAL_NEW_WINDOW_SECONDS = 600` (10 minutes).
 - `DEAL_MAX_TTL_DAYS = 30` (ex: refuser un expires_at au-delà, anti spam longue durée).

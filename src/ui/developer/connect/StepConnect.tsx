@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import QRCode from "react-qr-code";
 import Link from "next/link";
 
 import { apiRequest, maskApiKey } from "../api";
 import { generateFunnyAgentName } from "./agent-name-generator";
-import type { ConnectLocale, ConnectionMethod, ConnectSessionData, PollStatus } from "./types";
+import type { ConnectionMethod, ConnectSessionData, PollStatus } from "./types";
 
 type RegisterResult = {
   data?: {
@@ -27,7 +28,6 @@ function isLikelyApiKey(value: string): boolean {
 }
 
 type Props = {
-  locale: ConnectLocale;
   apiKey: string | null;
   onMethodSelected: (method: ConnectionMethod) => void;
   onApiKeySet: (key: string, agentId?: string) => void;
@@ -41,7 +41,6 @@ type Props = {
 };
 
 export default function StepConnect({
-  locale,
   apiKey: storedKey,
   onMethodSelected,
   onApiKeySet,
@@ -53,7 +52,7 @@ export default function StepConnect({
   onCreateSession,
   hasOwnerSession
 }: Props) {
-  const isFr = locale === "fr";
+  const t = useTranslations("connect");
   // --- Claim Link state ---
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimCopied, setClaimCopied] = useState(false);
@@ -66,6 +65,8 @@ export default function StepConnect({
   const [pastedKey, setPastedKey] = useState("");
   const [keyStatus, setKeyStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [keyMessage, setKeyMessage] = useState("");
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
 
   // --- MCP state ---
   const [mcpManualTarget, setMcpManualTarget] = useState<
@@ -81,11 +82,6 @@ export default function StepConnect({
   const [mcpPastedKey, setMcpPastedKey] = useState("");
   const [mcpKeyStatus, setMcpKeyStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [mcpKeyMessage, setMcpKeyMessage] = useState("");
-
-  const optionChooseOneLabel = isFr
-    ? "STEP_01: choisissez une seule option: A ou B."
-    : "STEP_01: choose one option only: A or B.";
-  const optionALabel = isFr ? "Option A (recommandée): installation auto" : "Option A (recommended): auto install";
 
   useEffect(() => {
     if (keyMode !== "generate") return;
@@ -141,9 +137,9 @@ export default function StepConnect({
       onClaimSessionCreated(session);
       onMethodSelected("claim");
     } catch (err: any) {
-      setClaimError(err?.message || (isFr ? "Impossible de créer le lien de connexion." : "Failed to create claim link."));
+      setClaimError(err?.message || t("step.connect.claim.createFailed"));
     }
-  }, [isFr, onCreateSession, onClaimSessionCreated, onMethodSelected]);
+  }, [t, onCreateSession, onClaimSessionCreated, onMethodSelected]);
 
   const handleCopyClaimUrl = useCallback(async () => {
     if (!claimSession?.claim_url) return;
@@ -162,12 +158,12 @@ export default function StepConnect({
 
     const opened = window.open(claimSession.claim_url, "_blank", "noopener,noreferrer");
     if (!opened) {
-      setClaimOpenMsg(isFr ? "Popup bloquée. Utilisez Copier le lien." : "Popup blocked. Use Copy Link instead.");
+      setClaimOpenMsg(t("step.connect.claim.popupBlocked"));
       return;
     }
 
-    setClaimOpenMsg(isFr ? "Page de connexion ouverte dans un nouvel onglet." : "Claim page opened in a new tab.");
-  }, [claimSession, isFr]);
+    setClaimOpenMsg(t("step.connect.claim.pageOpened"));
+  }, [claimSession, t]);
 
   // --- API Key handlers ---
   const handleGenerate = useCallback(async () => {
@@ -189,33 +185,44 @@ export default function StepConnect({
       const agent_id = result.data?.data?.agent_id;
       if (!apiKey || !agent_id) {
         setKeyStatus("error");
-        setKeyMessage(isFr ? "Réponse serveur inattendue." : "Unexpected response from server.");
+        setKeyMessage(t("common.unexpectedResponse"));
         return;
       }
       setKeyStatus("success");
-      setKeyMessage(
-        isFr
-          ? "Clé API générée. Copiez-la maintenant: elle pourrait ne plus être affichée."
-          : "API key generated. Copy it now: it may not be shown again."
-      );
+      setKeyMessage(t("step.connect.apikey.generatedMsg"));
+      setGeneratedKey(apiKey);
       onApiKeySet(apiKey, agent_id);
-      onMethodSelected("apikey");
     } catch (error: any) {
       setKeyStatus("error");
-      setKeyMessage(error?.message || (isFr ? "Impossible de générer la clé API." : "Failed to generate API key."));
+      setKeyMessage(error?.message || t("common.generateFailed"));
     }
-  }, [agentName, isFr, onApiKeySet, onMethodSelected]);
+  }, [agentName, t, onApiKeySet]);
+
+  const handleCopyGeneratedKey = useCallback(async () => {
+    if (!generatedKey) return;
+    try {
+      await navigator.clipboard.writeText(generatedKey);
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }, [generatedKey]);
+
+  const handleContinueAfterGenerate = useCallback(() => {
+    onMethodSelected("apikey");
+  }, [onMethodSelected]);
 
   const handleValidate = useCallback(async () => {
     const key = pastedKey.trim();
     if (!key) {
       setKeyStatus("error");
-      setKeyMessage(isFr ? "Collez une clé API." : "Paste an API key.");
+      setKeyMessage(t("common.pastePrompt"));
       return;
     }
     if (!isLikelyApiKey(key)) {
       setKeyStatus("error");
-      setKeyMessage(isFr ? "Cette clé ne ressemble pas à une clé API ClawDeals." : "This does not look like a ClawDeals API key.");
+      setKeyMessage(t("common.invalidKeyFormat"));
       return;
     }
     setKeyStatus("loading");
@@ -223,35 +230,35 @@ export default function StepConnect({
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
       setKeyStatus("success");
-      setKeyMessage(isFr ? "Clé API validée." : "API key validated.");
+      setKeyMessage(t("step.connect.apikey.validated"));
       onApiKeySet(key);
       onMethodSelected("apikey");
     } catch (error: any) {
       setKeyStatus("error");
-      setKeyMessage(error?.message || (isFr ? "Clé API invalide." : "Invalid API key."));
+      setKeyMessage(error?.message || t("step.connect.apikey.invalid"));
     }
-  }, [pastedKey, isFr, onApiKeySet, onMethodSelected]);
+  }, [pastedKey, t, onApiKeySet, onMethodSelected]);
 
   // --- MCP handlers ---
   const handleCopyMcpInstall = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setMcpCopyMsg(isFr ? "Copié." : "Copied!");
+      setMcpCopyMsg(t("common.copied"));
       setTimeout(() => setMcpCopyMsg(""), 2000);
     } catch {
-      setMcpCopyMsg(isFr ? "Échec de copie." : "Copy failed.");
+      setMcpCopyMsg(t("step.connect.mcp.copyFailed"));
     }
-  }, [isFr]);
+  }, [t]);
 
   const handleCopyMcpJson = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(mcpManualConfig);
-      setMcpCopyMsg(isFr ? "Config copiée." : "Copied config!");
+      setMcpCopyMsg(t("step.connect.mcp.configCopied"));
       setTimeout(() => setMcpCopyMsg(""), 2000);
     } catch {
-      setMcpCopyMsg(isFr ? "Échec de copie." : "Copy failed.");
+      setMcpCopyMsg(t("step.connect.mcp.copyFailed"));
     }
-  }, [isFr, mcpManualConfig]);
+  }, [t, mcpManualConfig]);
 
   const handleMcpDone = useCallback(() => {
     onMethodSelected("mcp");
@@ -284,33 +291,29 @@ export default function StepConnect({
       const agent_id = result.data?.data?.agent_id;
       if (!apiKey || !agent_id) {
         setMcpKeyStatus("error");
-        setMcpKeyMessage(isFr ? "Réponse serveur inattendue." : "Unexpected response from server.");
+        setMcpKeyMessage(t("common.unexpectedResponse"));
         return;
       }
       setMcpKeyStatus("success");
-      setMcpKeyMessage(
-        isFr
-          ? "Clé API générée. Elle sera intégrée dans la config ci-dessous."
-          : "API key generated. It will be embedded in the config below."
-      );
+      setMcpKeyMessage(t("step.connect.mcp.keyGenerated"));
       onApiKeySet(apiKey, agent_id);
       setMcpSubStep("configure");
     } catch (error: any) {
       setMcpKeyStatus("error");
-      setMcpKeyMessage(error?.message || (isFr ? "Impossible de générer la clé API." : "Failed to generate API key."));
+      setMcpKeyMessage(error?.message || t("common.generateFailed"));
     }
-  }, [mcpAgentName, isFr, onApiKeySet]);
+  }, [mcpAgentName, t, onApiKeySet]);
 
   const handleMcpValidate = useCallback(async () => {
     const key = mcpPastedKey.trim();
     if (!key) {
       setMcpKeyStatus("error");
-      setMcpKeyMessage(isFr ? "Collez une clé API." : "Paste an API key.");
+      setMcpKeyMessage(t("common.pastePrompt"));
       return;
     }
     if (!isLikelyApiKey(key)) {
       setMcpKeyStatus("error");
-      setMcpKeyMessage(isFr ? "Cette clé ne ressemble pas à une clé API ClawDeals." : "This does not look like a ClawDeals API key.");
+      setMcpKeyMessage(t("common.invalidKeyFormat"));
       return;
     }
     setMcpKeyStatus("loading");
@@ -318,14 +321,14 @@ export default function StepConnect({
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
       setMcpKeyStatus("success");
-      setMcpKeyMessage(isFr ? "Clé API validée." : "API key validated.");
+      setMcpKeyMessage(t("step.connect.apikey.validated"));
       onApiKeySet(key);
       setMcpSubStep("configure");
     } catch (error: any) {
       setMcpKeyStatus("error");
-      setMcpKeyMessage(error?.message || (isFr ? "Clé API invalide." : "Invalid API key."));
+      setMcpKeyMessage(error?.message || t("step.connect.apikey.invalid"));
     }
-  }, [mcpPastedKey, isFr, onApiKeySet]);
+  }, [mcpPastedKey, t, onApiKeySet]);
 
   const isPolling = pollStatus === "polling";
   const isClaimed = pollStatus === "claimed";
@@ -342,38 +345,36 @@ export default function StepConnect({
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            {isFr ? "Retour" : "Back"}
+            {t("common.back")}
           </button>
           <h1 className="text-3xl font-bold tracking-tight">
-            {isFr ? "Configurez MCP dans votre IDE" : "Configure MCP in your IDE"}
+            {t("step.connect.mcp.configureTitle")}
           </h1>
           <p className="text-subtle font-mono text-sm max-w-lg leading-relaxed">
-            {isFr
-              ? "Votre clé API est prête. Choisissez une méthode d'installation ci-dessous."
-              : "Your API key is ready. Choose an install method below."}
+            {t("step.connect.mcp.configureSubtitle")}
           </p>
         </div>
 
         {/* Key success banner */}
         <div className="flex items-center gap-2 border border-success/30 bg-success/5 px-4 py-3 text-xs font-mono">
-          <span className="text-success">{isFr ? "Clé:" : "Key:"}</span>
+          <span className="text-success">{t("step.connect.mcp.keyLabel")}</span>
           <span className="text-text">{storedKey ? maskApiKey(storedKey) : "..."}</span>
           {storedKey && (
             <button
               onClick={() => handleCopyMcpInstall(storedKey)}
               className="ml-auto text-subtle hover:text-text transition-colors"
             >
-              {mcpCopyMsg || (isFr ? "Copier" : "Copy")}
+              {mcpCopyMsg || t("common.copy")}
             </button>
           )}
         </div>
 
-        <div className="text-[11px] font-mono text-subtle">{optionChooseOneLabel}</div>
+        <div className="text-[11px] font-mono text-subtle">{t("step.connect.mcp.chooseOneLabel")}</div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Option A: auto install */}
           <div className="space-y-4 border border-border bg-surface p-6 clip-corner">
-            <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{optionALabel}</div>
+            <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{t("step.connect.mcp.optionALabel")}</div>
             <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
               {mcpInstallSnippetNpx}
             </pre>
@@ -381,14 +382,14 @@ export default function StepConnect({
               onClick={() => handleCopyMcpInstall(mcpInstallSnippetNpx)}
               className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
             >
-              {isFr ? "Copier npx" : "Copy npx"}
+              {t("step.connect.mcp.copyNpx")}
             </button>
           </div>
 
           {/* Option B: manual config */}
           <div className="space-y-4 border border-border bg-surface p-6 clip-corner">
             <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">
-              {isFr ? "Option B: config manuelle" : "Option B: manual config"}
+              {t("step.connect.mcp.optionBLabel")}
             </div>
 
             <div className="flex flex-wrap gap-1.5">
@@ -416,22 +417,22 @@ export default function StepConnect({
             </div>
             {mcpManualTarget === "codex" && (
               <div className="text-xs font-mono text-subtle">
-                {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codex/config.toml</span>
+                {t("step.connect.mcp.fileLabel")} <span className="text-text">~/.codex/config.toml</span>
               </div>
             )}
             {mcpManualTarget === "claudeCode" && (
               <div className="text-xs font-mono text-subtle">
-                {isFr ? "Fichier: " : "File: "} <span className="text-text">./.mcp.json</span>
+                {t("step.connect.mcp.fileLabel")} <span className="text-text">./.mcp.json</span>
               </div>
             )}
             {mcpManualTarget === "windsurf" && (
               <div className="text-xs font-mono text-subtle">
-                {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.codeium/windsurf/mcp_config.json</span>
+                {t("step.connect.mcp.fileLabel")} <span className="text-text">~/.codeium/windsurf/mcp_config.json</span>
               </div>
             )}
             {mcpManualTarget === "gemini" && (
               <div className="text-xs font-mono text-subtle">
-                {isFr ? "Fichier: " : "File: "} <span className="text-text">~/.gemini/settings.json</span>
+                {t("step.connect.mcp.fileLabel")} <span className="text-text">~/.gemini/settings.json</span>
               </div>
             )}
             <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
@@ -441,7 +442,7 @@ export default function StepConnect({
               onClick={handleCopyMcpJson}
               className="border border-border px-2.5 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
             >
-              {isFr ? "Copier config" : "Copy config"}
+              {t("step.connect.mcp.copyConfig")}
             </button>
           </div>
         </div>
@@ -451,7 +452,7 @@ export default function StepConnect({
           className="w-full h-12 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:text-bg transition-colors"
           data-testid="mcp-installed"
         >
-          {isFr ? "J'ai installé" : "I've installed it"}
+          {t("step.connect.mcp.installed")}
         </button>
       </div>
     );
@@ -462,12 +463,10 @@ export default function StepConnect({
       {/* Heading */}
       <div className="space-y-3">
         <h1 className="text-3xl font-bold tracking-tight">
-          {isFr ? "Connectez votre agent" : "Connect your agent"}
+          {t("step.connect.heading")}
         </h1>
         <p className="text-sm font-mono text-subtle max-w-lg leading-relaxed">
-          {isFr
-            ? "Ton agent surveille les deals, négocie les offres et t'alerte quand ça compte. Tu gardes le contrôle — il fait le boulot."
-            : "Your agent watches deals, negotiates offers, and alerts you when it matters. You stay in control — it does the work."}
+          {t("step.connect.heroDesc")}
         </p>
       </div>
 
@@ -475,26 +474,24 @@ export default function StepConnect({
       {!hasOwnerSession && (
         <div className="space-y-3">
           <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
-            {isFr ? "Étape 1 (optionnel)" : "Step 1 (optional)"}
+            {t("step.connect.step1Label")}
           </div>
           <div className="border border-warning/30 bg-warning/5 p-4 clip-corner space-y-3">
             <div className="text-xs font-mono text-warning">
-              {isFr
-                ? "Sans compte, votre clé API sera limitée (recherches marketplace restreintes). Connectez-vous ou créez un compte pour profiter de toutes les fonctionnalités."
-                : "Without an account, your API key will be limited (restricted marketplace searches). Log in or create an account to unlock full features."}
+              {t("step.connect.accountWarning")}
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/auth/login?next=/start"
                 className="border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
               >
-                {isFr ? "Se connecter" : "Log in"}
+                {t("step.connect.logIn")}
               </Link>
               <Link
                 href="/auth/login?next=/start&mode=signup"
                 className="border border-border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
               >
-                {isFr ? "Créer un compte" : "Create account"}
+                {t("step.connect.createAccount")}
               </Link>
             </div>
           </div>
@@ -504,9 +501,16 @@ export default function StepConnect({
       {/* Step 2 label (only when anonymous) */}
       {!hasOwnerSession && (
         <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
-          {isFr ? "Étape 2 — Choisissez votre méthode" : "Step 2 — Choose your method"}
+          {t("step.connect.step2Label")}
         </div>
       )}
+      {/* Choose one method instruction */}
+      {hasOwnerSession && (
+        <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
+          {t("step.connect.chooseMethod")}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* API Key */}
         <div className="border border-border bg-surface p-6 space-y-4 clip-corner">
@@ -516,11 +520,9 @@ export default function StepConnect({
                 API
               </span>
             </div>
-            <div className="text-sm font-bold tracking-wide">{isFr ? "Clé API manuelle" : "Manual API Key"}</div>
+            <div className="text-sm font-bold tracking-wide">{t("step.connect.apikey.manualTitle")}</div>
             <div className="text-xs font-mono text-subtle leading-relaxed">
-              {isFr
-                ? "Le plus simple pour commencer. Générez une clé ou collez une existante."
-                : "The simplest way to get started. Generate a key or paste an existing one."}
+              {t("step.connect.apikey.manualDesc")}
             </div>
           </div>
 
@@ -531,7 +533,7 @@ export default function StepConnect({
                 keyMode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
               } transition-colors`}
             >
-              {isFr ? "Générer" : "Generate"}
+              {t("common.generate")}
             </button>
             <button
               onClick={() => setKeyMode("paste")}
@@ -539,45 +541,72 @@ export default function StepConnect({
                 keyMode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
               } transition-colors`}
             >
-              {isFr ? "J'ai une clé" : "I have a key"}
+              {t("common.iHaveAKey")}
             </button>
           </div>
 
           {keyMode === "generate" ? (
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-mono text-subtle uppercase" htmlFor="connect-agent-name">
-                  {isFr ? "Nom de l'agent (optionnel)" : "Agent name (optional)"}
-                </label>
-                <input
-                  id="connect-agent-name"
-                  value={agentName}
-                  onChange={(e) => setAgentName(e.target.value)}
-                  placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
-                  disabled={keyStatus === "loading"}
-                />
+            generatedKey ? (
+              <div className="space-y-3">
+                <pre className="text-xs font-mono text-text bg-bg border border-border p-3 overflow-x-auto select-all break-all">
+                  {generatedKey}
+                </pre>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopyGeneratedKey}
+                    className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                    data-testid="copy-generated-key"
+                  >
+                    {keyCopied ? t("common.copied") : t("step.firstwin.copyKeyFull")}
+                  </button>
+                  <button
+                    onClick={handleContinueAfterGenerate}
+                    className="flex-1 h-10 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:text-bg transition-colors"
+                    data-testid="continue-after-generate"
+                  >
+                    {t("common.continue")}
+                  </button>
+                </div>
+                <div className="text-xs font-mono text-subtle">
+                  {t("step.connect.apikey.keySaveWarning")}
+                </div>
               </div>
-              <button
-                onClick={handleGenerate}
-                disabled={keyStatus === "loading"}
-                className={`w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary ${
-                  keyStatus === "loading"
-                    ? "bg-surface-alt text-subtle cursor-not-allowed"
-                    : "bg-primary text-bg hover:bg-text hover:text-bg"
-                } transition-colors`}
-                data-testid="generate-key"
-              >
-                {keyStatus === "loading" ? (isFr ? "Génération..." : "Generating...") : (isFr ? "Générer" : "Generate")}
-              </button>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono text-subtle uppercase" htmlFor="connect-agent-name">
+                    {t("common.agentNameLabel")}
+                  </label>
+                  <input
+                    id="connect-agent-name"
+                    value={agentName}
+                    onChange={(e) => setAgentName(e.target.value)}
+                    placeholder={t("common.agentNamePlaceholder")}
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                    disabled={keyStatus === "loading"}
+                  />
+                </div>
+                <button
+                  onClick={handleGenerate}
+                  disabled={keyStatus === "loading"}
+                  className={`w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary ${
+                    keyStatus === "loading"
+                      ? "bg-surface-alt text-subtle cursor-not-allowed"
+                      : "bg-primary text-bg hover:bg-text hover:text-bg"
+                  } transition-colors`}
+                  data-testid="generate-key"
+                >
+                  {keyStatus === "loading" ? t("common.generating") : t("common.generate")}
+                </button>
+              </div>
+            )
           ) : (
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <label className="block text-xs font-mono text-subtle uppercase" htmlFor="connect-paste-key">
-                  {isFr ? "Clé API" : "API key"}
+                  {t("common.apiKeyLabel")}
                 </label>
                 <input
                   id="connect-paste-key"
@@ -600,7 +629,7 @@ export default function StepConnect({
                 } transition-colors`}
                 data-testid="validate-key"
               >
-                {keyStatus === "loading" ? (isFr ? "Validation..." : "Validating...") : (isFr ? "Valider" : "Validate")}
+                {keyStatus === "loading" ? t("common.validating") : t("common.validate")}
               </button>
             </div>
           )}
@@ -625,11 +654,9 @@ export default function StepConnect({
                 MCP
               </span>
             </div>
-            <div className="text-sm font-bold tracking-wide">{isFr ? "Connexion MCP" : "MCP Connection"}</div>
+            <div className="text-sm font-bold tracking-wide">{t("step.connect.mcp.connectionTitle")}</div>
             <div className="text-xs font-mono text-subtle leading-relaxed">
-              {isFr
-                ? "Obtenez une clé API pour authentifier la connexion MCP."
-                : "Get an API key to authenticate the MCP connection."}
+              {t("step.connect.mcp.connectionDesc")}
             </div>
           </div>
 
@@ -640,7 +667,7 @@ export default function StepConnect({
                     mcpKeyMode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
                   } transition-colors`}
                 >
-                  {isFr ? "Générer" : "Generate"}
+                  {t("common.generate")}
                 </button>
                 <button
                   onClick={() => setMcpKeyMode("paste")}
@@ -648,7 +675,7 @@ export default function StepConnect({
                     mcpKeyMode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
                   } transition-colors`}
                 >
-                  {isFr ? "J'ai une clé" : "I have a key"}
+                  {t("common.iHaveAKey")}
                 </button>
               </div>
 
@@ -656,13 +683,13 @@ export default function StepConnect({
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-mono text-subtle uppercase" htmlFor="mcp-agent-name">
-                      {isFr ? "Nom de l'agent (optionnel)" : "Agent name (optional)"}
+                      {t("common.agentNameLabel")}
                     </label>
                     <input
                       id="mcp-agent-name"
                       value={mcpAgentName}
                       onChange={(e) => setMcpAgentName(e.target.value)}
-                      placeholder={isFr ? "Mon bot trading" : "My Trading Bot"}
+                      placeholder={t("common.agentNamePlaceholder")}
                       autoComplete="off"
                       spellCheck={false}
                       className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
@@ -679,14 +706,14 @@ export default function StepConnect({
                     } transition-colors`}
                     data-testid="mcp-generate-key"
                   >
-                    {mcpKeyStatus === "loading" ? (isFr ? "Génération..." : "Generating...") : (isFr ? "Générer" : "Generate")}
+                    {mcpKeyStatus === "loading" ? t("common.generating") : t("common.generate")}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-mono text-subtle uppercase" htmlFor="mcp-paste-key">
-                      {isFr ? "Clé API" : "API key"}
+                      {t("common.apiKeyLabel")}
                     </label>
                     <input
                       id="mcp-paste-key"
@@ -709,7 +736,7 @@ export default function StepConnect({
                     } transition-colors`}
                     data-testid="mcp-validate-key"
                   >
-                    {mcpKeyStatus === "loading" ? (isFr ? "Validation..." : "Validating...") : (isFr ? "Valider" : "Validate")}
+                    {mcpKeyStatus === "loading" ? t("common.validating") : t("common.validate")}
                   </button>
                 </div>
               )}
@@ -732,7 +759,7 @@ export default function StepConnect({
       <div className="flex items-center gap-4">
         <div className="flex-1 h-px bg-border" />
         <span className="text-xs font-mono text-subtle uppercase tracking-widest">
-          {isFr ? "Ou connecter un agent distant" : "Or connect a remote agent"}
+          {t("step.connect.orRemote")}
         </span>
         <div className="flex-1 h-px bg-border" />
       </div>
@@ -742,23 +769,21 @@ export default function StepConnect({
         <div className="flex flex-col md:flex-row md:items-start gap-6">
           <div className="space-y-3 flex-1">
             <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary rounded">
-              {isFr ? "Équipes & multi-appareils" : "Teams & multi-device"}
+              {t("step.connect.claim.teamsBadge")}
             </span>
             <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded">
-              {isFr ? "Auto-install agent" : "Agent self-install"}
+              {t("step.connect.claim.selfInstallBadge")}
             </span>
             <div className="text-lg font-bold tracking-wide">
               Claim Link
             </div>
             <div className="text-sm font-mono text-subtle leading-relaxed">
-              {isFr
-                ? "Connectez un agent qui tourne sur une autre machine (serveur, CI, bot). Générez un lien d'approbation, partagez-le par lien ou QR — l'agent reçoit sa clé API automatiquement, sans jamais la voir en clair. Votre agent peut aussi lancer ce flow lui-même."
-                : "Connect an agent running on another machine (server, CI, bot). Generate an approval link, share it via link or QR — the agent receives its API key automatically, without ever seeing it in plain text. Your agent can also initiate this flow itself."}
+              {t("step.connect.claim.longDesc")}
             </div>
             <div className="text-xs font-mono text-muted bg-bg border border-border px-3 py-2 mt-2">
-              {isFr ? "Astuce agent:" : "Agent tip:"}{" "}
+              {t("step.connect.claim.agentTipLabel")}{" "}
               <code className="text-text">npx -y clawdeals-mcp setup</code>
-              {" "}{isFr ? "ou" : "or"}{" "}
+              {" "}{t("step.connect.claim.agentTipOr")}{" "}
               <code className="text-text">clawdeals.connect.setup</code>
             </div>
           </div>
@@ -774,8 +799,8 @@ export default function StepConnect({
               } transition-colors`}
             >
               {isCreatingSession
-                ? (isFr ? "Création..." : "Creating...")
-                : (isFr ? "Générer le lien" : "Generate Link")}
+                ? t("step.connect.claim.creating")
+                : t("step.connect.claim.generateLink")}
             </button>
           )}
         </div>
@@ -791,7 +816,7 @@ export default function StepConnect({
             <div className="flex flex-col sm:flex-row gap-4 sm:items-start">
               <div className="border border-border bg-bg p-4 space-y-2 sm:min-w-[200px]">
                 <div className="text-xs font-mono text-subtle uppercase tracking-wider">
-                  {isFr ? "Code de confirmation" : "Confirmation Code"}
+                  {t("step.connect.claim.confirmationCode")}
                 </div>
                 <div className="text-2xl font-bold tracking-widest text-text">
                   {claimSession.verification_code}
@@ -804,35 +829,33 @@ export default function StepConnect({
                     onClick={handleOpenClaimUrl}
                     className="border border-primary bg-primary text-bg px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
                   >
-                    {isFr ? "Valider maintenant" : "Approve now"}
+                    {t("step.connect.claim.approveNow")}
                   </button>
                   <button
                     onClick={handleCopyClaimUrl}
                     className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                   >
-                    {claimCopied ? (isFr ? "Copié." : "Copied!") : (isFr ? "Copier le lien" : "Copy Link")}
+                    {claimCopied ? t("common.copied") : t("step.verify.claim.copyLink")}
                   </button>
                   <button
                     onClick={() => setClaimQrOpen((prev) => !prev)}
                     className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                   >
-                    {claimQrOpen ? (isFr ? "Masquer QR" : "Hide QR") : (isFr ? "Afficher QR" : "Show QR")}
+                    {claimQrOpen ? t("step.connect.claim.hideQr") : t("step.connect.claim.showQr")}
                   </button>
                 </div>
                 <div className="text-xs font-mono text-subtle break-all">
                   {claimSession.claim_url}
                 </div>
                 <div className="text-xs font-mono text-muted">
-                  {isFr
-                    ? "Ouvrez la page de connexion sur cet appareil, ou partagez ce lien sur un autre appareil."
-                    : "Open the claim page on this device, or share this link to another device."}
+                  {t("step.connect.claim.shareDesc")}
                 </div>
                 <div className="flex flex-wrap gap-3 text-xs font-mono text-muted">
-                  <span>{isFr ? "Expire dans 10 min" : "Expires in 10 min"}</span>
+                  <span>{t("step.connect.claim.expiresIn")}</span>
                   <span className="text-border">|</span>
-                  <span>{isFr ? "Révocable à tout moment" : "Revocable anytime"}</span>
+                  <span>{t("step.connect.claim.revocable")}</span>
                   <span className="text-border">|</span>
-                  <span>{isFr ? "Aucune clé API à copier" : "No API key to copy"}</span>
+                  <span>{t("step.connect.claim.noKeyToCopy")}</span>
                 </div>
                 {claimOpenMsg && (
                   <div className="text-xs font-mono text-success" aria-live="polite">
@@ -845,7 +868,7 @@ export default function StepConnect({
             {claimQrOpen && (
               <div className="border border-border bg-bg p-4 flex flex-col items-center gap-3">
                 <div className="text-xs font-mono text-subtle uppercase tracking-wider">
-                  {isFr ? "Scanner pour valider" : "Scan to approve"}
+                  {t("step.connect.claim.scanToApprove")}
                 </div>
                 <QRCode
                   value={claimSession.claim_url}
@@ -855,7 +878,7 @@ export default function StepConnect({
                   className="text-text"
                 />
                 <div className="text-xs font-mono text-subtle text-center">
-                  {isFr ? "Scannez depuis votre téléphone, puis confirmez le code " : "Scan from your phone, then confirm code "}
+                  {t("step.connect.claim.scanConfirmCode")}
                   <span className="text-text">{claimSession.verification_code}</span>.
                 </div>
               </div>
@@ -868,7 +891,7 @@ export default function StepConnect({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
                 </span>
                 <span className="text-xs font-mono text-warning">
-                  {isFr ? "En attente de validation..." : "Waiting for approval..."}
+                  {t("step.connect.claim.waitingApproval")}
                 </span>
               </div>
             )}
@@ -879,7 +902,7 @@ export default function StepConnect({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
                 </span>
                 <span className="text-xs font-mono text-success">
-                  {isFr ? "Validé. Connexion en cours..." : "Claimed! Connecting..."}
+                  {t("step.connect.claim.claimedConnecting")}
                 </span>
               </div>
             )}

@@ -84,6 +84,8 @@ Règles:
 - Les transitions `LIVE→RESERVED→CONTACT_REVEALED→COMPLETED` sont faites par le système (accept/reveal/completion).
 - La recherche (TI-194) ne retourne que les listings `LIVE` par défaut.
 
+> **Note:** `PENDING_APPROVAL` est propre aux listings. Les deals (Phase 1) n'ont pas ce statut — voir Phase 1 §2.3 pour la justification de cette décision.
+
 ### 1.2 Visibilité / permissions v0
 - Listing `LIVE`: lisible par tout agent (read public).
 - Listing non LIVE (DRAFT/PENDING_APPROVAL/RESERVED/CONTACT_REVEALED/COMPLETED/REMOVED/EXPIRED):

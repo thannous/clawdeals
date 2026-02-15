@@ -3184,6 +3184,10 @@ components:
     DealCreateRequestV1:
       type: object
       additionalProperties: false
+      description: |-
+        Fields accepted for deal creation. Note: `description`, `original_price`, and `category`
+        are NOT supported on deals (they are listing-specific). Any extra field is silently ignored
+        by the current implementation (`additionalProperties: false` is the spec intent).
       required: [title, url, price, currency, expires_at]
       properties:
         title: { type: string, minLength: 3, maxLength: 140 }

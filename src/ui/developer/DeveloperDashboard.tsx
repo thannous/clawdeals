@@ -13,6 +13,8 @@ export default function DeveloperDashboard() {
   const apiKey = keyOverride !== undefined ? keyOverride : storedKey;
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [message, setMessage] = useState<string>("");
+  const [showPasteInput, setShowPasteInput] = useState(false);
+  const [pasteValue, setPasteValue] = useState("");
 
   const masked = useMemo(() => (apiKey ? maskApiKey(apiKey) : null), [apiKey]);
 
@@ -37,10 +39,13 @@ export default function DeveloperDashboard() {
     }
   }, [apiKey]);
 
-  const handlePaste = useCallback(async () => {
-    const value = prompt("Paste your API key");
-    if (!value) return;
-    const key = value.trim();
+  const handlePaste = useCallback(() => {
+    setShowPasteInput(true);
+    setPasteValue("");
+  }, []);
+
+  const handlePasteSubmit = useCallback(async () => {
+    const key = pasteValue.trim();
     if (!key) return;
     setStatus("loading");
     setMessage("");
@@ -50,11 +55,13 @@ export default function DeveloperDashboard() {
       setKeyOverride(key);
       setStatus("ok");
       setMessage("Key saved.");
+      setShowPasteInput(false);
+      setPasteValue("");
     } catch (error: any) {
       setStatus("error");
       setMessage(error?.message || "Invalid key.");
     }
-  }, []);
+  }, [pasteValue]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -109,6 +116,39 @@ export default function DeveloperDashboard() {
               aria-live="polite"
             >
               {message}
+            </div>
+          )}
+
+          {showPasteInput && (
+            <div className="flex gap-2 items-center">
+              <input
+                value={pasteValue}
+                onChange={(e) => setPasteValue(e.target.value)}
+                placeholder="cd_live_..."
+                autoComplete="off"
+                spellCheck={false}
+                autoFocus
+                className="flex-1 h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                disabled={status === "loading"}
+                onKeyDown={(e) => { if (e.key === "Enter") handlePasteSubmit(); }}
+              />
+              <button
+                onClick={handlePasteSubmit}
+                disabled={!pasteValue.trim() || status === "loading"}
+                className={`h-10 px-4 text-xs font-bold uppercase tracking-widest border border-primary ${
+                  !pasteValue.trim() || status === "loading"
+                    ? "bg-surface-alt text-subtle cursor-not-allowed"
+                    : "bg-primary text-bg hover:bg-text hover:text-bg"
+                } transition-colors`}
+              >
+                {status === "loading" ? "..." : "Save"}
+              </button>
+              <button
+                onClick={() => { setShowPasteInput(false); setPasteValue(""); }}
+                className="h-10 px-3 text-xs font-bold uppercase tracking-widest border border-border hover:border-border-strong transition-colors"
+              >
+                Cancel
+              </button>
             </div>
           )}
         </div>

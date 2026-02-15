@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import QRCode from "react-qr-code";
 
 import { apiRequest, maskApiKey } from "../api";
-import type { AgentMeResponse, ConnectLocale, ConnectionMethod, ConnectSessionData, ExchangeResult, PollStatus } from "./types";
+import type { AgentMeResponse, ConnectionMethod, ConnectSessionData, ExchangeResult, PollStatus } from "./types";
 
 type Props = {
-  locale: ConnectLocale;
   method: ConnectionMethod;
   apiKey: string | null;
   claimSession: ConnectSessionData | null;
@@ -18,7 +18,6 @@ type Props = {
 };
 
 export default function StepVerify({
-  locale,
   method,
   apiKey,
   claimSession,
@@ -29,7 +28,10 @@ export default function StepVerify({
   onExchangeForApiKey,
   onBack
 }: Props) {
-  const isFr = locale === "fr";
+  const t = useTranslations("connect");
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
+
   const [verifyStatus, setVerifyStatus] = useState<"idle" | "loading" | "done" | "error">(
     () => (method === "apikey" && apiKey ? "loading" : "idle")
   );
@@ -44,18 +46,13 @@ export default function StepVerify({
   // MCP verify state
   const [mcpPastedKey, setMcpPastedKey] = useState("");
 
-  const mcpVerifyPrompt = isFr
-    ? `Liste les tools, puis appelle:\nclawdeals.deals.list { "limit": 1 }`
-    : `List tools, then call:\nclawdeals.deals.list { "limit": 1 }`;
+  const mcpVerifyPrompt = t("step.verify.mcp.title") === "Verify MCP installation"
+    ? `List tools, then call:\nclawdeals.deals.list { "limit": 1 }`
+    : `Liste les tools, puis appelle:\nclawdeals.deals.list { "limit": 1 }`;
   const [mcpCopied, setMcpCopied] = useState(false);
 
   const verifyStartedRef = useRef(false);
   const exchangeStartedRef = useRef(false);
-  const localeRef = useRef(locale);
-
-  useEffect(() => {
-    localeRef.current = locale;
-  }, [locale]);
 
   // Auto-verify for API Key method
   useEffect(() => {
@@ -78,17 +75,13 @@ export default function StepVerify({
           onVerified(data);
         } else {
           setVerifyStatus("error");
-          setVerifyError(
-            localeRef.current === "fr"
-              ? "Impossible de verifier l'identite de l'agent."
-              : "Could not verify agent identity."
-          );
+          setVerifyError(tRef.current("step.verify.apikey.identityError"));
         }
       })
       .catch((err: any) => {
         if (cancelled) return;
         setVerifyStatus("error");
-        setVerifyError(err?.message || (localeRef.current === "fr" ? "La verification a echoue." : "Verification failed."));
+        setVerifyError(err?.message || tRef.current("step.verify.apikey.failed"));
       });
 
     return () => {
@@ -137,7 +130,7 @@ export default function StepVerify({
       .catch((err: any) => {
         if (cancelled) return;
         setExchangeStatus("error");
-        setExchangeError(err?.message || (localeRef.current === "fr" ? "L'echange a echoue." : "Exchange failed."));
+        setExchangeError(err?.message || tRef.current("step.verify.exchangeFailed"));
       });
 
     return () => {
@@ -150,7 +143,7 @@ export default function StepVerify({
   const handleMcpVerify = useCallback(async () => {
     const key = mcpPastedKey.trim() || apiKey;
     if (!key) {
-      setVerifyError(isFr ? "Collez votre cle API pour verifier." : "Paste your API key to verify.");
+      setVerifyError(t("step.verify.mcp.pasteToVerify"));
       setVerifyStatus("error");
       return;
     }
@@ -172,13 +165,13 @@ export default function StepVerify({
         onVerified(data);
       } else {
         setVerifyStatus("error");
-        setVerifyError(isFr ? "Impossible de verifier l'identite de l'agent." : "Could not verify agent identity.");
+        setVerifyError(t("step.verify.mcp.identityError"));
       }
     } catch (err: any) {
       setVerifyStatus("error");
-      setVerifyError(err?.message || (isFr ? "La verification a echoue." : "Verification failed."));
+      setVerifyError(err?.message || t("step.verify.mcp.failed"));
     }
-  }, [mcpPastedKey, apiKey, isFr, onApiKeySet, onVerified]);
+  }, [mcpPastedKey, apiKey, t, onApiKeySet, onVerified]);
 
   const handleCopyVerifyPrompt = useCallback(async () => {
     try {
@@ -195,12 +188,12 @@ export default function StepVerify({
 
     const opened = window.open(claimSession.claim_url, "_blank", "noopener,noreferrer");
     if (!opened) {
-      setClaimOpenMsg(isFr ? "Popup bloquee. Utilisez Copier le lien." : "Popup blocked. Use Copy Link instead.");
+      setClaimOpenMsg(t("step.verify.claim.popupBlocked"));
       return;
     }
 
-    setClaimOpenMsg(isFr ? "Page de connexion ouverte dans un nouvel onglet." : "Claim page opened in a new tab.");
-  }, [claimSession, isFr]);
+    setClaimOpenMsg(t("step.verify.claim.pageOpened"));
+  }, [claimSession, t]);
 
   const handleCopyClaimUrl = useCallback(async () => {
     if (!claimSession?.claim_url) return;
@@ -221,21 +214,21 @@ export default function StepVerify({
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h2 className="text-xl font-bold tracking-tight">
-            {method === "claim" && (isFr ? "En attente de validation" : "Waiting for approval")}
-            {method === "apikey" && (isFr ? "Verifier la connexion" : "Verify connection")}
-            {method === "mcp" && (isFr ? "Verifier l'installation MCP" : "Verify MCP installation")}
+            {method === "claim" && t("step.verify.claim.waitingTitle")}
+            {method === "apikey" && t("step.verify.apikey.title")}
+            {method === "mcp" && t("step.verify.mcp.title")}
           </h2>
           <p className="text-xs font-mono text-subtle">
-            {method === "claim" && (isFr ? "Validez cette connexion pour autoriser l'acces API." : "Approve this connection to let your agent access the API.")}
-            {method === "apikey" && (isFr ? "Verification de votre cle API..." : "Checking your API key...")}
-            {method === "mcp" && (isFr ? "Confirmez que votre serveur MCP est connecte." : "Confirm your MCP server is connected.")}
+            {method === "claim" && t("step.verify.claim.waitingSubtitle")}
+            {method === "apikey" && t("step.verify.apikey.subtitle")}
+            {method === "mcp" && t("step.verify.mcp.subtitle")}
           </p>
         </div>
         <button
           onClick={onBack}
           className="px-3 py-1.5 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
         >
-          {isFr ? "Retour" : "Back"}
+          {t("common.back")}
         </button>
       </div>
 
@@ -251,7 +244,7 @@ export default function StepVerify({
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
                 </span>
                 <span className="text-xs font-mono text-warning">
-                  {isFr ? "En attente de validation..." : "Polling for approval..."}
+                  {t("step.verify.claim.polling")}
                 </span>
               </div>
 
@@ -261,7 +254,7 @@ export default function StepVerify({
                   onClick={handleOpenClaimUrl}
                   className="w-full h-11 border border-primary bg-primary text-bg text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
                 >
-                  {isFr ? "Ouvrir la page de connexion" : "Open claim page"}
+                  {t("step.verify.claim.openClaimPage")}
                 </button>
                 {claimOpenMsg && (
                   <div className="text-xs font-mono text-success" aria-live="polite">
@@ -269,18 +262,18 @@ export default function StepVerify({
                   </div>
                 )}
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-subtle">{isFr ? "Ou partager le lien:" : "Or share the link:"}</span>
+                  <span className="text-xs font-mono text-subtle">{t("step.verify.claim.shareLink")}</span>
                   <button
                     onClick={handleCopyClaimUrl}
                     className="h-8 px-3 border border-border text-xs font-bold uppercase tracking-widest hover:border-border-strong hover:text-text transition-colors"
                   >
-                    {claimCopied ? (isFr ? "Copie." : "Copied!") : (isFr ? "Copier le lien" : "Copy link")}
+                    {claimCopied ? t("common.copied") : t("step.verify.claim.copyLink")}
                   </button>
                   <button
                     onClick={() => setClaimQrOpen((prev) => !prev)}
                     className="h-8 px-3 border border-border text-xs font-bold uppercase tracking-widest hover:border-border-strong hover:text-text transition-colors"
                   >
-                    {claimQrOpen ? (isFr ? "Masquer QR" : "Hide QR") : (isFr ? "Code QR" : "QR code")}
+                    {claimQrOpen ? t("step.verify.claim.hideQr") : t("step.verify.claim.qrCode")}
                   </button>
                 </div>
               </div>
@@ -289,12 +282,10 @@ export default function StepVerify({
               <div className="border border-border bg-bg p-4 flex items-center justify-between gap-4">
                 <div className="space-y-0.5">
                   <div className="text-xs font-mono text-subtle uppercase tracking-wider">
-                    {isFr ? "Code de confirmation" : "Confirmation code"}
+                    {t("step.verify.claim.confirmCode")}
                   </div>
                   <div className="text-xs font-mono text-muted">
-                    {isFr
-                      ? "La personne qui valide verra ce code et devra confirmer qu'il correspond."
-                      : "The approver will see this code and must confirm it matches."}
+                    {t("step.verify.claim.confirmCodeDesc")}
                   </div>
                 </div>
                 <div className="text-2xl font-bold tracking-widest text-text whitespace-nowrap">
@@ -313,7 +304,7 @@ export default function StepVerify({
                     className="text-text"
                   />
                   <div className="text-xs font-mono text-subtle text-center">
-                    {isFr ? "Scannez ce QR depuis un autre appareil, puis confirmez le code " : "Scan this QR from another device, then confirm code "}
+                    {t("step.verify.claim.scanQrDesc")}
                     <span className="font-bold text-text">{claimSession.verification_code}</span>.
                   </div>
                 </div>
@@ -328,7 +319,7 @@ export default function StepVerify({
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
               </span>
               <span className="text-sm font-mono text-success">
-                {isFr ? "Valide. Configuration des credentials..." : "Approved! Setting up credentials..."}
+                {t("step.verify.claim.approved")}
               </span>
             </div>
           )}
@@ -340,7 +331,7 @@ export default function StepVerify({
                 onClick={onBack}
                 className="mt-2 px-3 py-1.5 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                {isFr ? "Reessayer" : "Try again"}
+                {t("common.tryAgain")}
               </button>
             </div>
           )}
@@ -352,7 +343,7 @@ export default function StepVerify({
                 onClick={onBack}
                 className="mt-2 px-3 py-1.5 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                {isFr ? "Reessayer" : "Try again"}
+                {t("common.tryAgain")}
               </button>
             </div>
           )}
@@ -369,7 +360,7 @@ export default function StepVerify({
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-warning" />
               </span>
               <span className="text-xs font-mono text-warning">
-                {isFr ? "Verification de la cle API..." : "Verifying API key..."}
+                {t("step.verify.apikey.verifying")}
               </span>
             </div>
           )}
@@ -386,9 +377,7 @@ export default function StepVerify({
       {method === "mcp" && (
         <div className="border border-border bg-surface p-5 space-y-4 clip-corner">
           <div className="text-xs font-mono text-subtle">
-            {isFr
-              ? "Apres la commande d'installation, collez ce prompt dans votre IDE pour verifier:"
-              : "After running the install command, paste this prompt in your IDE to verify:"}
+            {t("step.verify.mcp.instructions")}
           </div>
 
           <pre className="text-xs font-mono whitespace-pre-wrap text-text border border-border bg-bg p-3 overflow-x-auto">
@@ -399,17 +388,15 @@ export default function StepVerify({
             onClick={handleCopyVerifyPrompt}
             className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
           >
-            {mcpCopied ? (isFr ? "Copie." : "Copied!") : (isFr ? "Copier le prompt" : "Copy Prompt")}
+            {mcpCopied ? t("common.copied") : t("step.verify.mcp.copyPrompt")}
           </button>
 
           <div className="border-t border-border pt-4 space-y-2">
             <div className="text-xs font-mono text-subtle uppercase">
-              {isFr ? "Verifier la connexion (optionnel)" : "Verify connection (optional)"}
+              {t("step.verify.mcp.verifyOptional")}
             </div>
             <div className="text-xs font-mono text-muted">
-              {isFr
-                ? "Collez votre cle API pour confirmer que la connexion fonctionne:"
-                : "Paste your API key to confirm the connection is working:"}
+              {t("step.verify.mcp.pasteKeyPrompt")}
             </div>
             <input
               value={mcpPastedKey}
@@ -425,13 +412,13 @@ export default function StepVerify({
                 disabled={verifyStatus === "loading"}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
               >
-                {verifyStatus === "loading" ? (isFr ? "Verification..." : "Verifying...") : (isFr ? "Verifier" : "Verify")}
+                {verifyStatus === "loading" ? t("step.verify.mcp.verifying") : t("step.verify.mcp.verify")}
               </button>
               <button
                 onClick={() => onVerified(null)}
                 className="px-4 py-2 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                {isFr ? "Passer la verification" : "Skip verification"}
+                {t("step.verify.mcp.skipVerify")}
               </button>
             </div>
             {verifyError && (
@@ -451,7 +438,7 @@ export default function StepVerify({
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
             </span>
             <span className="text-xs font-mono font-bold text-success uppercase">
-              {isFr ? "Connecte" : "Connected"}
+              {t("step.verify.connected")}
             </span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
@@ -483,7 +470,7 @@ export default function StepVerify({
               <span className="text-xs font-mono text-subtle">key: </span>
               <span className="text-xs font-mono text-text">{masked}</span>
               <span className="text-xs font-mono text-muted ml-2">
-                {isFr ? "Stockee localement sur cet appareil." : "Stored locally on this device."}
+                {t("step.verify.storedLocally")}
               </span>
             </div>
           )}

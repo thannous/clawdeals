@@ -5,6 +5,18 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 const apiRequestMock = vi.hoisted(() => vi.fn());
 const generateFunnyAgentNameMock = vi.hoisted(() => vi.fn());
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }: any) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  )
+}));
+
 vi.mock("react-qr-code", () => ({
   default: () => <div data-testid="qr-code" />
 }));
@@ -25,7 +37,6 @@ import StepConnect from "./StepConnect";
 
 function renderStepConnect(overrides: Record<string, unknown> = {}) {
   const props = {
-    locale: "en" as const,
     apiKey: null as string | null,
     onMethodSelected: vi.fn(),
     onApiKeySet: vi.fn(),
@@ -97,7 +108,8 @@ describe("StepConnect", () => {
       body: { name: "bot-banana-trading" }
     }));
     expect(props.onApiKeySet).toHaveBeenCalledWith("cd_live_generated_123", "agt_1");
-    expect(props.onMethodSelected).toHaveBeenCalledWith("apikey");
+    // onMethodSelected is NOT called on generate — user must copy first, then click Continue
+    expect(props.onMethodSelected).not.toHaveBeenCalled();
   });
 
   it("keeps a manually edited name when generating a key", async () => {
@@ -174,10 +186,10 @@ describe("StepConnect", () => {
       const props = renderStepConnect();
 
       // Switch to paste mode in MCP card
-      const iHaveAKeyButtons = screen.getAllByText("I have a key");
+      const iHaveAKeyButtons = screen.getAllByText("common.iHaveAKey");
       fireEvent.click(iHaveAKeyButtons[iHaveAKeyButtons.length - 1]);
 
-      const input = screen.getByLabelText("API key", { selector: "#mcp-paste-key" }) as HTMLInputElement;
+      const input = screen.getByLabelText("common.apiKeyLabel", { selector: "#mcp-paste-key" }) as HTMLInputElement;
       fireEvent.change(input, { target: { value: "cd_live_pasted_key_1234567890" } });
       fireEvent.click(screen.getByTestId("mcp-validate-key"));
 
@@ -200,21 +212,21 @@ describe("StepConnect", () => {
     it("shows limitation warning when no owner session", () => {
       renderStepConnect({ hasOwnerSession: false });
 
-      expect(screen.getByText(/Without an account, your API key will be limited/)).toBeDefined();
-      expect(screen.getByText("Log in")).toBeDefined();
-      expect(screen.getByText("Create account")).toBeDefined();
+      expect(screen.getByText("step.connect.accountWarning")).toBeDefined();
+      expect(screen.getByText("step.connect.logIn")).toBeDefined();
+      expect(screen.getByText("step.connect.createAccount")).toBeDefined();
     });
 
     it("does not show limitation warning when owner session exists", () => {
       renderStepConnect({ hasOwnerSession: true });
 
-      expect(screen.queryByText(/Without an account, your API key will be limited/)).toBeNull();
+      expect(screen.queryByText("step.connect.accountWarning")).toBeNull();
     });
 
     it("shows back button in configure phase", () => {
       renderStepConnect({ apiKey: "cd_live_existing_key_abc123" });
 
-      expect(screen.getByText("Back")).toBeDefined();
+      expect(screen.getByText("common.back")).toBeDefined();
     });
   });
 });

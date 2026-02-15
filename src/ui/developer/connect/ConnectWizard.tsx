@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Settings, Terminal } from "lucide-react";
 
 import { useTheme } from "../../../theme/theme-context";
@@ -17,7 +18,7 @@ import AppNav from "../../shared/AppNav";
 import StepConnect from "./StepConnect";
 import StepVerify from "./StepVerify";
 import StepFirstWin from "./StepFirstWin";
-import type { ConnectLocale, WizardStep } from "./types";
+import type { WizardStep } from "./types";
 
 const LOCALES = getLocaleLabels();
 
@@ -50,12 +51,6 @@ function themeShortLabel(label: string) {
 
 const STEPS: WizardStep[] = ["connect", "verify", "firstwin"];
 const AUTO_VERIFY_UI_GUARD_MS = 12000;
-
-function stepLabel(step: WizardStep, locale: ConnectLocale) {
-  if (step === "connect") return locale === "fr" ? "Connexion" : "Connect";
-  if (step === "verify") return locale === "fr" ? "Verifier" : "Verify";
-  return locale === "fr" ? "Lancement" : "Go";
-}
 
 const START_SOURCE_LABELS = {
   gig: {
@@ -90,33 +85,8 @@ function normalizeFromParam(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
-function describeStartSource(fromParam: unknown, locale: ConnectLocale): string | null {
-  const raw = normalizeFromParam(fromParam);
-  if (!raw) return null;
-
-  const match = /^explore-card-(gig|npm|data)-(\d+)$/.exec(raw);
-  if (!match) {
-    return locale === "fr"
-      ? `Flux initialise via ${raw}.`
-      : `Flow initialized from ${raw}.`;
-  }
-
-  const sourceType = match[1] as keyof typeof START_SOURCE_LABELS;
-  const sourceId = match[2];
-  const bucket = START_SOURCE_LABELS[sourceType];
-  const itemTitle = bucket.items[sourceId as keyof typeof bucket.items];
-  if (!itemTitle) {
-    return locale === "fr"
-      ? `Flux initialise depuis Explore > ${bucket.bucket}.`
-      : `Flow initialized from Explore > ${bucket.bucket}.`;
-  }
-
-  return locale === "fr"
-    ? `Flux initialise depuis Explore > ${bucket.bucket} > ${itemTitle}.`
-    : `Flow initialized from Explore > ${bucket.bucket} > ${itemTitle}.`;
-}
-
-function StepIndicator({ currentStep, locale }: { currentStep: WizardStep; locale: ConnectLocale }) {
+function StepIndicator({ currentStep }: { currentStep: WizardStep }) {
+  const t = useTranslations("connect");
   const stepIndex = STEPS.findIndex((s) => s === currentStep);
 
   return (
@@ -152,7 +122,7 @@ function StepIndicator({ currentStep, locale }: { currentStep: WizardStep; local
                 }`}
                 aria-current={isCurrent ? "step" : undefined}
               >
-                {stepLabel(step, locale)}
+                {t(`wizard.step.${step}`)}
               </span>
             </div>
           </div>
@@ -185,10 +155,10 @@ function HeaderLogo() {
   );
 }
 
-function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: React.ReactNode; locale: ConnectLocale; showLogin?: boolean }) {
+function HeaderActions({ extraActions, showLogin }: { extraActions?: React.ReactNode; showLogin?: boolean }) {
   const router = useRouter();
+  const t = useTranslations("connect");
   const { themeId, setTheme, themes } = useTheme();
-  const isFr = locale === "fr";
   const asPathNoLocale = stripLocalePrefix(router.asPath || "/");
 
   const { open: langOpen, setOpen: setLangOpen, ref: langRef } = useDropdown();
@@ -244,18 +214,18 @@ function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: Rea
         </button>
         {themeOpen && (
           <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
-            {themes.map((t) => (
+            {themes.map((th) => (
               <button
-                key={t.id}
+                key={th.id}
                 type="button"
-                onClick={() => { setTheme(t.id); setThemeOpen(false); }}
+                onClick={() => { setTheme(th.id); setThemeOpen(false); }}
                 className={`block w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
-                  t.id === themeId
+                  th.id === themeId
                     ? "text-secondary bg-secondary/10"
                     : "text-muted hover:text-text hover:bg-surface-alt"
                 }`}
               >
-                {t.label}
+                {th.label}
               </button>
             ))}
           </div>
@@ -274,7 +244,7 @@ function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: Rea
           className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
         >
           <Terminal className="w-4 h-4" />
-          {isFr ? "Login" : "Login"}
+          Login
         </Link>
       )}
 
@@ -287,14 +257,14 @@ function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: Rea
           type="button"
           onClick={() => setMobileSettingsOpen((p) => !p)}
           className="h-9 w-9 border border-primary flex items-center justify-center text-primary hover:bg-primary/10 hover:border-primary transition-colors"
-          aria-label={isFr ? "Parametres" : "Settings"}
+          aria-label={t("wizard.settings")}
         >
           <Settings className="w-4 h-4" />
         </button>
         {mobileSettingsOpen && (
           <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
             <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-border">
-              {isFr ? "Langue" : "Language"}
+              {t("wizard.language")}
             </div>
             {LOCALES.map((loc) => (
               <Link
@@ -314,18 +284,18 @@ function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: Rea
             <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
               Theme
             </div>
-            {themes.map((t) => (
+            {themes.map((th) => (
               <button
-                key={t.id}
+                key={th.id}
                 type="button"
-                onClick={() => { setTheme(t.id); setMobileSettingsOpen(false); }}
+                onClick={() => { setTheme(th.id); setMobileSettingsOpen(false); }}
                 className={`block w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
-                  t.id === themeId
+                  th.id === themeId
                     ? "text-secondary bg-secondary/10"
                     : "text-muted hover:text-text hover:bg-surface-alt"
                 }`}
               >
-                {t.label}
+                {th.label}
               </button>
             ))}
             {showLogin && (
@@ -353,9 +323,7 @@ function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: Rea
 
 export default function ConnectWizard() {
   const router = useRouter();
-  const locale: ConnectLocale = router.locale === "fr" ? "fr" : "en";
-  const isFr = locale === "fr";
-  const startSourceHint = useMemo(() => describeStartSource(router.query?.from, locale), [router.query?.from, locale]);
+  const t = useTranslations("connect");
 
   const {
     state,
@@ -383,13 +351,34 @@ export default function ConnectWizard() {
   }, [state.apiKey]);
   const [autoVerifyGuardExpired, setAutoVerifyGuardExpired] = useState(false);
 
+  // Compute start source hint using translation keys
+  const startSourceHint = useMemo(() => {
+    const raw = normalizeFromParam(router.query?.from);
+    if (!raw) return null;
+
+    const match = /^explore-card-(gig|npm|data)-(\d+)$/.exec(raw);
+    if (!match) {
+      return t("wizard.startSourceGeneric", { source: raw });
+    }
+
+    const sourceType = match[1] as keyof typeof START_SOURCE_LABELS;
+    const sourceId = match[2];
+    const bucket = START_SOURCE_LABELS[sourceType];
+    const itemTitle = bucket.items[sourceId as keyof typeof bucket.items];
+    if (!itemTitle) {
+      return t("wizard.startSourceBucket", { bucket: bucket.bucket });
+    }
+
+    return t("wizard.startSourceItem", { bucket: bucket.bucket, item: itemTitle });
+  }, [router.query?.from, t]);
+
   useEffect(() => {
     if (!state.autoVerifying) {
       return;
     }
     // Avoid synchronous setState in effects (eslint react-hooks/set-state-in-effect).
     // This resets a previous cycle where the guard expired.
-    const reset = setTimeout(() => setAutoVerifyGuardExpired(false), 0);
+    const resetTimer = setTimeout(() => setAutoVerifyGuardExpired(false), 0);
     const timer = setTimeout(() => {
       if (process.env.NODE_ENV !== "production") {
         console.warn("[start.wizard] auto_verify_ui_guard_expired", { timeout_ms: AUTO_VERIFY_UI_GUARD_MS });
@@ -397,7 +386,7 @@ export default function ConnectWizard() {
       setAutoVerifyGuardExpired(true);
     }, AUTO_VERIFY_UI_GUARD_MS);
     return () => {
-      clearTimeout(reset);
+      clearTimeout(resetTimer);
       clearTimeout(timer);
     };
   }, [state.autoVerifying]);
@@ -413,7 +402,7 @@ export default function ConnectWizard() {
       onClick={handleForget}
       className="h-9 border border-border px-3 text-xs font-mono hover:border-border-strong hover:text-text transition-colors flex items-center"
     >
-      {isFr ? "Oublier" : "Forget"}
+      {t("wizard.forget")}
     </button>
   ) : null;
 
@@ -432,7 +421,7 @@ export default function ConnectWizard() {
 
   const headerLeft = <HeaderLogo />;
   const headerActions = (
-    <HeaderActions extraActions={headerExtraActions} locale={locale} showLogin={!state.hasOwnerSession} />
+    <HeaderActions extraActions={headerExtraActions} showLogin={!state.hasOwnerSession} />
   );
 
   const handleCreateSession = useCallback(async (agentName?: string) => {
@@ -463,7 +452,7 @@ export default function ConnectWizard() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
             </span>
             <span className="text-xs font-mono text-subtle">
-              {isFr ? "Verification de la connexion existante..." : "Checking existing connection..."}
+              {t("wizard.checkingConnection")}
             </span>
           </div>
         </main>
@@ -483,12 +472,10 @@ export default function ConnectWizard() {
         {state.autoVerifying && autoVerifyGuardExpired && (
           <div className="border border-warning/30 bg-warning/5 rounded clip-corner p-3">
             <div className="text-xs font-mono text-warning-muted uppercase">
-              {isFr ? "Verification auto expiree" : "Auto-check timed out"}
+              {t("wizard.autoCheckExpired")}
             </div>
             <div className="text-xs font-mono text-muted mt-1">
-              {isFr
-                ? "Passage en mode manuel. Vous pouvez verifier a nouveau ou coller une cle API."
-                : "Continuing in manual mode. You can verify again or paste an API key."}
+              {t("wizard.autoCheckExpiredDesc")}
             </div>
           </div>
         )}
@@ -496,14 +483,14 @@ export default function ConnectWizard() {
         {startSourceHint && (
           <div className="border border-border bg-surface/70 rounded clip-corner p-3">
             <div className="text-xs font-mono text-subtle uppercase">
-              {isFr ? "Contexte de depart" : "Start context"}
+              {t("wizard.startContext")}
             </div>
             <div className="text-xs font-mono text-text mt-1">{startSourceHint}</div>
           </div>
         )}
 
         {/* Step indicator */}
-        <StepIndicator currentStep={state.step} locale={locale} />
+        <StepIndicator currentStep={state.step} />
 
         {/* Step content */}
         {state.step === "connect" && (
@@ -517,7 +504,6 @@ export default function ConnectWizard() {
             pollError={pollError}
             isCreatingSession={isCreating}
             onCreateSession={handleCreateSession}
-            locale={locale}
             hasOwnerSession={state.hasOwnerSession}
           />
         )}
@@ -533,7 +519,6 @@ export default function ConnectWizard() {
             onApiKeySet={setApiKey}
             onExchangeForApiKey={exchangeForApiKey}
             onBack={handleBack}
-            locale={locale}
           />
         )}
 
@@ -541,7 +526,6 @@ export default function ConnectWizard() {
           <StepFirstWin
             apiKey={state.apiKey}
             agentMe={state.agentMe}
-            locale={locale}
             hasOwnerSession={state.hasOwnerSession}
           />
         )}

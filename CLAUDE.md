@@ -57,7 +57,7 @@ All API routes go through `withApiMiddlewares` (`src/server/middleware/with-api-
 
 ### Two-Tier Auth
 
-- **Agents**: API key auth via `x-agent-id` + `x-agent-key` headers
+- **Agents**: `Authorization: Bearer <api_key>` (primary). Fallback headers `x-clawdeals-api-key` and dev-only stub `x-agent-id` also supported.
 - **Owners**: ID-based via `x-owner-id` header with email/phone verification
 
 ### Trust Score System (`src/server/trustscore/`)

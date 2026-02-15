@@ -12,6 +12,10 @@ vi.mock("next/link", () => ({
   )
 }));
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key
+}));
+
 vi.mock("../api", async () => {
   const actual = await vi.importActual<typeof import("../api")>("../api");
   return {
@@ -33,7 +37,6 @@ describe("StepFirstWin", () => {
   it("shows naming prompt when agent has no name", () => {
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_1",
@@ -46,15 +49,14 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.getByLabelText("Agent name")).toBeTruthy();
-    const saveButton = screen.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+    expect(screen.getByLabelText("step.firstwin.agentName")).toBeTruthy();
+    const saveButton = screen.getByRole("button", { name: "step.firstwin.save" }) as HTMLButtonElement;
     expect(saveButton.disabled).toBe(true);
   });
 
   it("shows name with saved confirmation when agent is already named", () => {
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_2",
@@ -67,7 +69,7 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.queryByLabelText("Agent name")).toBeNull();
+    expect(screen.queryByLabelText("step.firstwin.agentName")).toBeNull();
     expect(screen.getByText("Owner Bot")).toBeTruthy();
   });
 
@@ -78,7 +80,6 @@ describe("StepFirstWin", () => {
 
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_3",
@@ -91,17 +92,17 @@ describe("StepFirstWin", () => {
       />
     );
 
-    const input = screen.getByPlaceholderText("My Trading Bot");
+    const input = screen.getByPlaceholderText("step.firstwin.namePlaceholder");
     fireEvent.change(input, { target: { value: "Alpha Bot" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "step.firstwin.save" }));
 
     await waitFor(() => {
       expect(screen.getByText("Alpha Bot")).toBeTruthy();
     });
-    expect(screen.queryByLabelText("Agent name")).toBeNull();
+    expect(screen.queryByLabelText("step.firstwin.agentName")).toBeNull();
   });
 
-  it("shows localized validation message on save error", async () => {
+  it("shows error key on save validation error", async () => {
     apiRequestMock.mockRejectedValueOnce({
       code: "VALIDATION_ERROR",
       message: "name must be 80 characters or less"
@@ -109,7 +110,6 @@ describe("StepFirstWin", () => {
 
     render(
       <StepFirstWin
-        locale="fr"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_4",
@@ -122,18 +122,17 @@ describe("StepFirstWin", () => {
       />
     );
 
-    fireEvent.change(screen.getByPlaceholderText("Mon bot trading"), { target: { value: "Agent Tres Long" } });
-    fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    fireEvent.change(screen.getByPlaceholderText("step.firstwin.namePlaceholder"), { target: { value: "Agent Tres Long" } });
+    fireEvent.click(screen.getByRole("button", { name: "step.firstwin.save" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Le nom doit contenir 80 caractères maximum.")).toBeTruthy();
+      expect(screen.getByText("step.firstwin.nameErrors.tooLong")).toBeTruthy();
     });
   });
 
   it("shows limitation banner when not linked to owner", () => {
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_5",
@@ -146,8 +145,8 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.getByText("Limited marketplace searches until this key is linked to an account.")).toBeTruthy();
-    const cta = screen.getByRole("link", { name: /create account/i });
+    expect(screen.getByText("step.firstwin.limitedWarning")).toBeTruthy();
+    const cta = screen.getByRole("link", { name: "step.firstwin.createAccount" });
     expect(cta).toBeTruthy();
     expect(cta.getAttribute("href")).toBe("/auth/login?next=/start");
   });
@@ -155,7 +154,6 @@ describe("StepFirstWin", () => {
   it("hides limitation banner when linked to owner", () => {
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_6",
@@ -168,14 +166,13 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.queryByText("Limited marketplace searches until this key is linked to an account.")).toBeNull();
-    expect(screen.getByText("Create a watchlist")).toBeTruthy();
+    expect(screen.queryByText("step.firstwin.limitedWarning")).toBeNull();
+    expect(screen.getByText("step.firstwin.createWatchlist")).toBeTruthy();
   });
 
   it("renders My Listings card with link to /my/listings (P5)", () => {
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_p5",
@@ -188,7 +185,7 @@ describe("StepFirstWin", () => {
       />
     );
 
-    const link = screen.getByRole("link", { name: /my listings/i });
+    const link = screen.getByRole("link", { name: /step\.firstwin\.myListings/i });
     expect(link).toBeTruthy();
     expect(link.getAttribute("href")).toBe("/my/listings");
   });
@@ -196,7 +193,6 @@ describe("StepFirstWin", () => {
   it("does not render CTA cards without owner session", () => {
     render(
       <StepFirstWin
-        locale="en"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_p5b",
@@ -209,18 +205,22 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.queryByRole("link", { name: /my listings/i })).toBeNull();
-    expect(screen.queryByText("Create a watchlist")).toBeNull();
+    expect(screen.queryByRole("link", { name: /step\.firstwin\.myListings/i })).toBeNull();
+    expect(screen.queryByText("step.firstwin.createWatchlist")).toBeNull();
   });
 
-  it("renders limitation banner in French", () => {
+  it("shows error key on unauthorized save error", async () => {
+    apiRequestMock.mockRejectedValueOnce({
+      code: "UNAUTHORIZED",
+      status: 401
+    });
+
     render(
       <StepFirstWin
-        locale="fr"
         apiKey="cd_live_test_123456"
         agentMe={{
           agent_id: "agt_7",
-          name: "Bot FR",
+          name: null,
           owner_id: null,
           installation_id: "ins_7",
           oauth_scopes: []
@@ -229,10 +229,12 @@ describe("StepFirstWin", () => {
       />
     );
 
-    expect(screen.getByText("Recherches limitées sur le marketplace tant que cette clé n'est pas liée à un compte.")).toBeTruthy();
-    const cta = screen.getByRole("link", { name: /créer un compte/i });
-    expect(cta).toBeTruthy();
-    expect(cta.getAttribute("href")).toBe("/auth/login?next=/start");
+    fireEvent.change(screen.getByPlaceholderText("step.firstwin.namePlaceholder"), { target: { value: "Bot" } });
+    fireEvent.click(screen.getByRole("button", { name: "step.firstwin.save" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("step.firstwin.nameErrors.unauthorized")).toBeTruthy();
+    });
   });
 
   it("uses current origin for API snippets when NEXT_PUBLIC_API_BASE_URL is unset", async () => {
@@ -242,7 +244,6 @@ describe("StepFirstWin", () => {
     try {
       render(
         <StepFirstWin
-          locale="en"
           apiKey="cd_live_test_123456"
           agentMe={{
             agent_id: "agt_8",
@@ -255,7 +256,7 @@ describe("StepFirstWin", () => {
         />
       );
 
-      fireEvent.click(screen.getByRole("button", { name: "Developer resources" }));
+      fireEvent.click(screen.getByRole("button", { name: "step.firstwin.resources" }));
       const expectedEndpoint = `${window.location.origin}/api/v1/deals?limit=10`;
 
       await waitFor(() => {
