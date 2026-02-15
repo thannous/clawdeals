@@ -156,6 +156,17 @@ describe("middleware host routing", () => {
     expect(res?.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it("serves non-app routes on app host with edge marker even if forwarded-host differs", () => {
+    const res = middleware(
+      makeReqWithHeaders("https://app.clawdeals.com/policy-control", {
+        host: "app.clawdeals.com",
+        "x-forwarded-host": "app.clawdeals.com",
+        "x-edge-router-proxy": "marketing"
+      })
+    );
+    expect(res?.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("serves / on app host when proxied from marketing host", () => {
     const res = middleware(
       makeReqWithHeaders("https://app.clawdeals.com/", {

@@ -170,9 +170,8 @@ export function middleware(request: NextRequest) {
     marketingHosts.includes(forwardedHost) ||
     forwardedHost === "clawdeals.com" ||
     forwardedHost === "www.clawdeals.com";
-  const isEdgeProxiedMarketingRequest =
-    isForwardedFromMarketingHost &&
-    (edgeProxyMarker === "marketing" || edgeProxyMarker === "" || edgeProxyMarker === "1");
+  const isEdgeProxyMarked = edgeProxyMarker === "marketing" || edgeProxyMarker === "1";
+  const isEdgeProxiedMarketingRequest = isEdgeProxyMarked || (isForwardedFromMarketingHost && edgeProxyMarker === "");
 
   // Vercel default domains (preview/prod) should never be canonical; always bounce to custom domains.
   // This prevents indexing and keeps cookies/origins stable.
