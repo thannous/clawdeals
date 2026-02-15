@@ -5,23 +5,9 @@ import Landing from "../ui/Landing";
 import { loadMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
+import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import packageJson from "../../package.json";
 import type { GetServerSideProps } from "next";
-
-function baseUrlFromRequest(req: any): string {
-  const configured = process.env.SITE_URL;
-  if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
-
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
-  const proto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (!host) return "https://clawdeals.com";
-  return `${proto}://${host}`.replace(/\/$/, "");
-}
-
-function isWorkersDevRequest(req: any): boolean {
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
-  return typeof host === "string" && host.includes(".workers.dev");
-}
 
 type HomePageProps = {
   locale: string;
@@ -60,7 +46,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
   return {
     props: {
       locale: locale || "en",
-      baseUrl: baseUrlFromRequest(req),
+      baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,

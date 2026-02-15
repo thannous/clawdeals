@@ -3,21 +3,7 @@ import type { GetServerSideProps } from "next";
 
 import McpPage from "../ui/mcp/McpPage";
 import { loadMessages, DEFAULT_LOCALE } from "../shared/i18n";
-
-function baseUrlFromRequest(req: any): string {
-  const configured = process.env.SITE_URL;
-  if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
-
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
-  const proto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (!host) return "https://clawdeals.com";
-  return `${proto}://${host}`.replace(/\/$/, "");
-}
-
-function isWorkersDevRequest(req: any): boolean {
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
-  return typeof host === "string" && host.includes(".workers.dev");
-}
+import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 
 type McpProps = {
   baseUrl: string;
@@ -28,7 +14,7 @@ type McpProps = {
 export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req, locale }) => {
   return {
     props: {
-      baseUrl: baseUrlFromRequest(req),
+      baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost: isWorkersDevRequest(req),
       messages: await loadMessages(locale || DEFAULT_LOCALE)
     }

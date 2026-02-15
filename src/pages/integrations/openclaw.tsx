@@ -16,6 +16,7 @@ import {
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
 /* ---------- bilingual copy ---------- */
@@ -233,26 +234,15 @@ const SEO = {
 
 /* ---------- helpers ---------- */
 
-function baseUrlFromRequest(req: any): string {
-  const configured = process.env.SITE_URL;
-  if (configured && typeof configured === "string" && configured.startsWith("http"))
-    return configured.replace(/\/$/, "");
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
-  const proto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (!host) return "https://clawdeals.com";
-  return `${proto}://${host}`.replace(/\/$/, "");
-}
-
 type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res, locale }) => {
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
-  const isPreviewHost = typeof host === "string" && host.includes(".workers.dev");
+  const isPreviewHost = isWorkersDevRequest(req);
   res.setHeader(
     "Cache-Control",
     isPreviewHost ? "no-store" : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
   );
-  return { props: await withMessages(locale, { baseUrl: baseUrlFromRequest(req), isPreviewHost }) };
+  return { props: await withMessages(locale, { baseUrl: marketingBaseUrlFromRequest(req), isPreviewHost }) };
 };
 
 /* ---------- page ---------- */

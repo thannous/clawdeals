@@ -1,15 +1,6 @@
 import type { GetServerSideProps } from "next";
 import { SUPPORTED_LOCALES, localePrefixFor, type SupportedLocale } from "../shared/i18n";
-
-function baseUrlFromRequest(req: any): string {
-  const configured = process.env.SITE_URL;
-  if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
-
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
-  const proto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (!host) return "https://clawdeals.com";
-  return `${proto}://${host}`.replace(/\/$/, "");
-}
+import { isAppHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 
 type BuildSitemapArgs = {
   baseUrl: string;
@@ -64,8 +55,7 @@ ${urls}
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
-  const isAppHost = typeof host === "string" && host.toLowerCase().startsWith("app.");
+  const isAppHost = isAppHostRequest(req);
 
   if (isAppHost) {
     res.statusCode = 404;
@@ -75,7 +65,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     return { props: {} };
   }
 
-  const baseUrl = baseUrlFromRequest(req);
+  const baseUrl = marketingBaseUrlFromRequest(req);
   // Use build timestamp for stable lastmod; falls back to deploy time or a fixed date
   const lastmod =
     process.env.NEXT_PUBLIC_BUILD_TIME ||

@@ -4,6 +4,7 @@ import ExplorePage from "../../ui/ExplorePage";
 import packageJson from "../../../package.json";
 import { loadMessages, localePrefixFor, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
 const TAB_SLUGS = { agents: "gig", skills: "npm", data: "data" } as const;
@@ -75,21 +76,6 @@ const TAB_META: Record<TabSlug, {
   }
 };
 
-function baseUrlFromRequest(req: any): string {
-  const configured = process.env.SITE_URL;
-  if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
-
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host;
-  const proto = req?.headers?.["x-forwarded-proto"] || "https";
-  if (!host) return "https://clawdeals.com";
-  return `${proto}://${host}`.replace(/\/$/, "");
-}
-
-function isWorkersDevRequest(req: any): boolean {
-  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
-  return typeof host === "string" && host.includes(".workers.dev");
-}
-
 type ExploreTabProps = {
   locale: string;
   tab: TabSlug;
@@ -139,7 +125,7 @@ export const getServerSideProps: GetServerSideProps<ExploreTabProps> = async ({ 
       locale: locale || "en",
       tab,
       initialTab,
-      baseUrl: baseUrlFromRequest(req),
+      baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
