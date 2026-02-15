@@ -593,48 +593,64 @@ export default function AccountPage() {
                         </div>
                       </div>
 
-                      <section
-                        data-testid="account-security-actions"
-                        className="border border-warning/30 bg-warning/5 rounded-lg p-4 space-y-3"
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
+                      {selectedAgent.status === "revoked" ? (
+                        <section
+                          data-testid="account-security-actions"
+                          className="border border-error/30 bg-error/5 rounded-lg p-4 space-y-3"
+                        >
                           <div className="space-y-1">
-                            <div className="text-xs font-mono uppercase tracking-wider text-warning">
-                              Credentials Security
+                            <div className="text-xs font-mono uppercase tracking-wider text-error">
+                              Credentials Revoked
                             </div>
                             <div className="text-xs font-mono text-muted max-w-2xl leading-relaxed">
-                              Rotate updates the global legacy key and revokes connected installations (reconnect
-                              required). Revoke immediately cuts global and installation credentials.
+                              All credentials for this agent have been revoked. No API keys or installations are active.
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              data-testid="account-rotate-credentials"
-                              onClick={() => {
-                                setActionState("idle");
-                                setActionError(null);
-                                setRotateConfirmOpen(true);
-                              }}
-                              disabled={!selectedAgentId || actionState === "loading"}
-                              className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
-                            >
-                              Rotate credentials
-                            </button>
-                            <button
-                              data-testid="account-revoke-credentials"
-                              onClick={() => {
-                                setActionState("idle");
-                                setActionError(null);
-                                setRevokeConfirmOpen(true);
-                              }}
-                              disabled={!selectedAgentId || actionState === "loading"}
-                              className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
-                            >
-                              Revoke credentials
-                            </button>
+                        </section>
+                      ) : (
+                        <section
+                          data-testid="account-security-actions"
+                          className="border border-warning/30 bg-warning/5 rounded-lg p-4 space-y-3"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="text-xs font-mono uppercase tracking-wider text-warning">
+                                Credentials Security
+                              </div>
+                              <div className="text-xs font-mono text-muted max-w-2xl leading-relaxed">
+                                Rotate updates the global legacy key and revokes connected installations (reconnect
+                                required). Revoke immediately cuts global and installation credentials.
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                data-testid="account-rotate-credentials"
+                                onClick={() => {
+                                  setActionState("idle");
+                                  setActionError(null);
+                                  setRotateConfirmOpen(true);
+                                }}
+                                disabled={!selectedAgentId || actionState === "loading"}
+                                className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
+                              >
+                                Rotate credentials
+                              </button>
+                              <button
+                                data-testid="account-revoke-credentials"
+                                onClick={() => {
+                                  setActionState("idle");
+                                  setActionError(null);
+                                  setRevokeConfirmOpen(true);
+                                }}
+                                disabled={!selectedAgentId || actionState === "loading"}
+                                className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
+                              >
+                                Revoke credentials
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </section>
+                        </section>
+                      )}
 
                       {/* Activity log */}
                       <div className="border border-border bg-surface/30 rounded-lg overflow-hidden">

@@ -56,6 +56,25 @@ async function ensureAgentOwner(agentId, ownerId) {
   return { agent };
 }
 
+async function updateAgentStatusOrThrow({ agentId, status }) {
+  const { error } = await getSupabaseServiceClient()
+    .from("agents")
+    .update({ status })
+    .eq("id", agentId);
+
+  if (!error) return;
+
+  throw Object.assign(new Error("Failed to update agent status"), {
+    status: 500,
+    code: "ERROR",
+    details: {
+      failure_stage: "agent_status_update",
+      agent_id: agentId,
+      target_status: status
+    }
+  });
+}
+
 async function handleRotate(req, ctx, agentId) {
   const ownerError = requireOwner(ctx);
   if (ownerError) return ownerError;
@@ -68,10 +87,11 @@ async function handleRotate(req, ctx, agentId) {
 
   const result = await rotateApiKeyForAgent({ agentId });
 
-  await getSupabaseServiceClient()
-    .from("agents")
-    .update({ status: "active" })
-    .eq("id", agentId);
+  try {
+    await updateAgentStatusOrThrow({ agentId, status: "active" });
+  } catch (error: any) {
+    return jsonResponse(error?.status || 500, errorPayload(error?.code || "ERROR", error?.message, error?.details));
+  }
 
   ctx.auditEvent = "agent.key_rotated";
   ctx.security = {
@@ -196,10 +216,8 @@ async function handleRotateAll(req, ctx, agentId) {
       now
     });
 
-    await getSupabaseServiceClient()
-      .from("agents")
-      .update({ status: "active" })
-      .eq("id", agentId);
+    const nextAgentStatus = rotatedGlobal.rotated ? "active" : "revoked";
+    await updateAgentStatusOrThrow({ agentId, status: nextAgentStatus });
 
     const responseData: any = {
       agent_id: agentId,
@@ -277,10 +295,7 @@ async function handleRevokeAll(req, ctx, agentId) {
       now
     });
 
-    await getSupabaseServiceClient()
-      .from("agents")
-      .update({ status: "revoked" })
-      .eq("id", agentId);
+    await updateAgentStatusOrThrow({ agentId, status: "revoked" });
 
     ctx.auditEvent = "agent.credentials_revoked";
     ctx.auditEntityType = "agent";

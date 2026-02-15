@@ -16,7 +16,8 @@ vi.mock("../../../../../server/services/agent-installations", () => ({
   revokeInstallationForOwner: vi.fn()
 }));
 
-const mockUpdate = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: null, error: null }) });
+const mockEq = vi.fn().mockResolvedValue({ data: null, error: null });
+const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
 vi.mock("../../../../../server/db/supabase", () => ({
   getSupabaseServiceClient: vi.fn(() => ({
     from: vi.fn(() => ({ update: mockUpdate }))
@@ -59,6 +60,7 @@ function baseReq(action: any): any {
 describe("POST /v1/agents/:id/keys actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockEq.mockResolvedValue({ data: null, error: null });
     listActiveInstallationsForOwnerAgentMock.mockResolvedValue([]);
     revokeInstallationForOwnerMock.mockResolvedValue({
       installation_id: "00000000-0000-4000-a000-000000000010",
@@ -225,6 +227,79 @@ describe("POST /v1/agents/:id/keys actions", () => {
     expect(result.body.data.rotated).toBe(false);
     expect(result.body.data.api_key).toBeUndefined();
     expect(result.body.data.revoked_installations_count).toBe(0);
+    expect(mockUpdate).toHaveBeenCalledWith({ status: "revoked" });
+  });
+
+  it("returns 500 when rotate status sync write fails", async () => {
+    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
+    rotateApiKeyForAgentMock.mockResolvedValue({
+      apiKey: "cd_live_new.secret",
+      apiKeyId: "0a9d1f2c-51db-4d0c-9cd1-7346557f6b6e",
+      previousApiKeyId: "3f2b2bf1-2c0b-4bd8-bf60-0ea0aa9e43d0",
+      rotatedAt: new Date("2026-02-05T12:00:00.000Z"),
+      graceSeconds: 86400
+    } as any);
+    mockEq.mockResolvedValueOnce({
+      data: null,
+      error: { message: "db down" }
+    });
+    const req = baseReq("keys:rotate");
+    req.headers["idempotency-key"] = "idem-rotate-status-fail";
+    const ctx: any = { ownerId, actor: { type: "owner" } };
+
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(500);
+    expect(result.body.error.code).toBe("ERROR");
+    expect(result.body.error.details.failure_stage).toBe("agent_status_update");
+  });
+
+  it("returns 500 when rotate-all status sync write fails", async () => {
+    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
+    rotateGlobalApiKeyForAgentIfPresentMock.mockResolvedValue({
+      rotated: true,
+      apiKey: "cd_live_rotate_all.secret",
+      apiKeyId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      previousApiKeyId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      rotatedAt: new Date("2026-02-14T11:22:33.000Z"),
+      graceSeconds: 86400
+    } as any);
+    listActiveInstallationsForOwnerAgentMock.mockResolvedValue([] as any);
+    mockEq.mockResolvedValueOnce({
+      data: null,
+      error: { message: "db down" }
+    });
+    const req = baseReq("keys:rotate-all");
+    req.headers["idempotency-key"] = "idem-rotate-all-status-fail";
+    const ctx: any = { ownerId, actor: { type: "owner" } };
+
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(500);
+    expect(result.body.error.code).toBe("ERROR");
+    expect(result.body.error.details.failure_stage).toBe("agent_status_update");
+  });
+
+  it("returns 500 when revoke-all status sync write fails", async () => {
+    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
+    revokeGlobalApiKeysForAgentMock.mockResolvedValue({
+      revokedGlobalKeysCount: 0,
+      revokedGlobalApiKeyIds: []
+    } as any);
+    listActiveInstallationsForOwnerAgentMock.mockResolvedValue([] as any);
+    mockEq.mockResolvedValueOnce({
+      data: null,
+      error: { message: "db down" }
+    });
+    const req = baseReq("keys:revoke-all");
+    req.headers["idempotency-key"] = "idem-revoke-all-status-fail";
+    const ctx: any = { ownerId, actor: { type: "owner" } };
+
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(500);
+    expect(result.body.error.code).toBe("ERROR");
+    expect(result.body.error.details.failure_stage).toBe("agent_status_update");
   });
 
   it("revoke-all succeeds as no-op when nothing to revoke", async () => {
