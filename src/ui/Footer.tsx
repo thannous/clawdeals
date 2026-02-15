@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { localePrefixFor } from "../shared/seo";
 import type { SupportedLocale } from "../shared/i18n";
+import { getPublicAppUrl } from "../shared/urls";
 import MarketingLink from "./shared/MarketingLink";
 
 type FooterLink = { label: string; href: string };
@@ -34,6 +35,9 @@ const LEGAL_HREFS = [
   "/legal/mentions",
 ];
 
+/** Hrefs that live on the app subdomain, not the marketing host */
+const APP_ROUTE_HREFS = new Set(["/deals", "/developer"]);
+
 /** Static .md files don't use locale prefix */
 function isStaticFile(href: string) {
   return href.endsWith(".md");
@@ -47,7 +51,13 @@ function FooterLinkColumn({ column, localePrefix }: { column: FooterColumn; loca
         {column.links.map((link) => (
           <li key={link.href}>
             <MarketingLink
-              href={isStaticFile(link.href) ? link.href : `${localePrefix}${link.href}`}
+              href={
+                isStaticFile(link.href)
+                  ? link.href
+                  : APP_ROUTE_HREFS.has(link.href)
+                    ? `${getPublicAppUrl()}${localePrefix}${link.href}`
+                    : `${localePrefix}${link.href}`
+              }
               locale={false}
               className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
             >
