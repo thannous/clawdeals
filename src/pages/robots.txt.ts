@@ -1,5 +1,6 @@
 import type { GetServerSideProps } from "next";
 import { isAppHostRequest, isWorkersDevRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
+import { buildDenyAllRobotsTxt, buildMarketingRobotsTxt } from "../shared/robots";
 import { appendVaryHeaders } from "../shared/response-headers";
 
 const DEFAULT_SITEMAP_PATH = "/sitemap.xml";
@@ -16,29 +17,9 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=3600, stale-while-revalidate=300");
 
   if (isWorkersDev || isAppHost) {
-    res.write(`User-agent: *\nDisallow: /\n`);
+    res.write(buildDenyAllRobotsTxt());
   } else {
-    res.write(
-      [
-        "User-agent: *",
-        "Allow: /",
-        "",
-        "Allow: /api/og",
-        "Disallow: /api/",
-        "Disallow: /console/",
-        "Disallow: /developer/",
-        "Disallow: /settings/",
-        "Disallow: /auth/",
-        "Disallow: /pair",
-        "Disallow: /start",
-        "Disallow: /claim/",
-        "Disallow: /device",
-        "Disallow: /dev/",
-        "",
-        `Sitemap: ${sitemapUrl}`,
-        ""
-      ].join("\n")
-    );
+    res.write(buildMarketingRobotsTxt(sitemapUrl));
   }
   res.end();
 

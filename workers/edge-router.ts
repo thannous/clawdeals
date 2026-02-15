@@ -1,4 +1,5 @@
 import { resolveEdgeRouterDecision, type EdgeRouterEnv } from "../src/shared/edge-router";
+import { buildMarketingRobotsTxt } from "../src/shared/robots";
 
 function withForwardHeaders(request: Request, target: string): Request {
   const sourceUrl = new URL(request.url);
@@ -15,9 +16,23 @@ function withForwardHeaders(request: Request, target: string): Request {
   return new Request(upstream, { headers });
 }
 
-export default {
+const edgeRouterWorker = {
   async fetch(request: Request, env: EdgeRouterEnv): Promise<Response> {
-    const decision = resolveEdgeRouterDecision(new URL(request.url), env);
+    const url = new URL(request.url);
+    const decision = resolveEdgeRouterDecision(url, env);
+
+    // Serve marketing robots.txt at the edge to avoid upstream cache poisoning
+    // between app-host and proxied-marketing variants.
+    if (decision.type === "proxy" && url.pathname === "/robots.txt") {
+      const sitemapUrl = `${url.origin}/sitemap.xml`;
+      return new Response(buildMarketingRobotsTxt(sitemapUrl), {
+        status: 200,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=300"
+        }
+      });
+    }
 
     if (decision.type === "redirect") {
       return Response.redirect(decision.location, decision.status);
@@ -37,3 +52,5 @@ export default {
     return fetch(request);
   }
 };
+
+export default edgeRouterWorker;
