@@ -38,8 +38,12 @@
     "test:integration:dispute": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/dispute.spec.ts e2e/integration/evidence.spec.ts",
     "test:e2e:ui": "playwright test --project=ui --ui",
     "test:e2e:headed": "playwright test --project=ui --headed",
-    "preview": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "preview": "npm run preview:cloudflare",
+    "preview:cloudflare": "wrangler dev",
+    "preview:cloudflare:opennext": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "npm run deploy:cloudflare",
+    "deploy:cloudflare": "wrangler deploy",
+    "deploy:cloudflare:opennext": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "test:ci": "npm run typecheck && npm run test:i18n:contract && npm run test:i18n:messages && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public"
   },
   "dependencies": {

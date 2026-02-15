@@ -5,7 +5,8 @@ Objectif: garder la landing SEO sur Cloudflare (`clawdeals.com`) et mettre la pa
 Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 - DNS (2 hosts).
 - Variables d'environnement (marketing vs app).
-- `middleware.ts` (redirects par host + canonisation).
+- `workers/edge-router.ts` (routing/redirects au niveau Cloudflare).
+- `middleware.ts` (canonisation et garde-fous cote Vercel).
 
 ## Environment Topology (Production-Safe)
 
@@ -26,14 +27,15 @@ Branch/deployment mapping:
 
 ## Cible des domaines
 
-- Marketing (Cloudflare Workers / OpenNext): `https://clawdeals.com` (+ `https://www.clawdeals.com` qui redirige vers l'apex).
+- Marketing (Cloudflare Edge Router + upstream Vercel): `https://clawdeals.com` (+ `https://www.clawdeals.com` qui redirige vers l'apex).
 - App (Vercel): `https://app.clawdeals.com`
 
 Routage attendu:
-- `clawdeals.com/` sert la landing.
 - `www.clawdeals.com/*` redirige vers `clawdeals.com/*` (308).
-- `clawdeals.com/deals*` et `clawdeals.com/console*` redirigent vers `app.clawdeals.com` (308).
-- `app.clawdeals.com/` redirige vers `/deals` (308).
+- `clawdeals.com/deals*`, `clawdeals.com/console*`, `clawdeals.com/auth*`, `clawdeals.com/start*`, `clawdeals.com/settings*`, `clawdeals.com/developer*` redirigent vers `app.clawdeals.com` (308).
+- `clawdeals.com/api/*` est proxifie vers `app.clawdeals.com/api/*` (pas de redirect, pour conserver les flows browser same-origin).
+- Le reste de `clawdeals.com/*` est proxifie vers `MARKETING_ORIGIN`.
+- `app.clawdeals.com/` redirige vers l'entree app (`APP_ENTRY_PATH`, par defaut `/start`).
 - `*.vercel.app/*` redirige vers `clawdeals.com` ou `app` (308) pour eviter du contenu non-canonique.
 
 ## Setup Vercel (app.clawdeals.com)
@@ -80,16 +82,15 @@ Important:
 - Never set production Supabase credentials in Vercel Preview environment.
 - Preview/staging deployments must be isolated from production DB and production secrets.
 
-### Cloudflare (Marketing)
+### Cloudflare (Edge Router)
 
-- `NEXT_PUBLIC_APP_URL=https://app.clawdeals.com` (utilise pour les liens vers l'app)
-- `NEXT_PUBLIC_APP_ENTRY_PATH=/start` (CTA "Get API key" -> onboarding dev; sinon `/deals` ou `/console`)
-- `NEXT_PUBLIC_API_BASE_URL=https://app.clawdeals.com` (uniquement si tu veux que la waitlist poste vers l'API Vercel)
-- `SITE_URL=https://clawdeals.com` (utilise pour canonical/robots/sitemap)
+- `MARKETING_HOST=clawdeals.com` (host marketing canonique)
+- `APP_ORIGIN=https://app.clawdeals.com` (origin applicatif)
+- `MARKETING_ORIGIN=https://clawdeals.vercel.app` (origin upstream de la landing; ne doit jamais pointer vers `clawdeals.com`)
 
-Also document a staging marketing setup (if enabled later):
-- `NEXT_PUBLIC_API_BASE_URL=https://staging.app.clawdeals.com`
-- Keep this value in non-production-only contexts.
+Staging equivalent:
+- `APP_ORIGIN=https://staging.app.clawdeals.com`
+- `MARKETING_ORIGIN=https://<staging-marketing-origin>`
 
 ## CORS (API)
 
@@ -115,7 +116,14 @@ La landing (`clawdeals.com`) reste la source canonique (SSR + cache edge).
 3. `https://app.clawdeals.com/robots.txt` doit etre un `Disallow`.
 4. Waitlist: soumettre un email sur l'apex et verifier le POST vers l'API attendue (meme origin ou `app`).
 
+## Deploy commands
+
+- Cloudflare edge router (production): `npm run deploy:cloudflare`
+- Cloudflare edge router (local preview): `npm run preview:cloudflare`
+- Legacy OpenNext path (fallback only): `npm run deploy:cloudflare:opennext`
+
 ## Related Runbooks
 
 - Canonical environment policy: `docs/release-environments.md`
 - Manual promotion procedure: `docs/release-staging-to-prod.md`
+- Edge router deploy details: `docs/deploy-edge-router.md`

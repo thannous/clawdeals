@@ -82,7 +82,8 @@ Required approvals:
 
 1. Merge `staging` into `main`.
 2. Deploy app to production (`https://app.clawdeals.com`).
-3. Apply the same migrations to production in the same order.
+3. Deploy Cloudflare edge router (`npm run deploy:cloudflare`).
+4. Apply the same migrations to production in the same order.
 
 Production controls:
 - Keep `CONSOLE_OPS_ENABLED` behavior intentional and reviewed.
@@ -130,5 +131,6 @@ Decision ownership:
 
 - `docs/release-environments.md`
 - `docs/hosting-cloudflare-vercel.md`
+- `docs/deploy-edge-router.md`
 - `docs/ops-middleware.md`
 - `docs/ti-307-console-qa-checklist.md`

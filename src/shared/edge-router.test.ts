@@ -1,0 +1,62 @@
+import { describe, expect, it } from "vitest";
+
+import { resolveEdgeRouterDecision } from "./edge-router";
+
+describe("edge router decision", () => {
+  it("redirects www host to canonical marketing host", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://www.clawdeals.com/fr/guide?x=1"), {});
+
+    expect(decision).toEqual({
+      type: "redirect",
+      status: 308,
+      location: "https://clawdeals.com/fr/guide?x=1"
+    });
+  });
+
+  it("redirects app sections on marketing host to app origin", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://clawdeals.com/fr/deals?tab=latest"), {});
+
+    expect(decision).toEqual({
+      type: "redirect",
+      status: 308,
+      location: "https://app.clawdeals.com/fr/deals?tab=latest"
+    });
+  });
+
+  it("proxies /api requests to app origin to preserve same-origin browser flows", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://clawdeals.com/api/v1/watchlist-signups"), {});
+
+    expect(decision).toEqual({
+      type: "proxy",
+      target: "https://app.clawdeals.com/api/v1/watchlist-signups"
+    });
+  });
+
+  it("proxies marketing pages to MARKETING_ORIGIN", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://clawdeals.com/fr"), {
+      MARKETING_ORIGIN: "https://clawdeals.vercel.app"
+    });
+
+    expect(decision).toEqual({
+      type: "proxy",
+      target: "https://clawdeals.vercel.app/fr"
+    });
+  });
+
+  it("returns error when MARKETING_ORIGIN points back to routed host", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://clawdeals.com/"), {
+      MARKETING_ORIGIN: "https://clawdeals.com"
+    });
+
+    expect(decision).toEqual({
+      type: "error",
+      status: 500,
+      message: "MARKETING_ORIGIN must not point to the routed marketing host; use a direct origin host."
+    });
+  });
+
+  it("passes through unknown hosts", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://staging.app.clawdeals.com/start"), {});
+    expect(decision).toEqual({ type: "pass" });
+  });
+});
