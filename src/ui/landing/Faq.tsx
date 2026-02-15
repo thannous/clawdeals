@@ -1,7 +1,7 @@
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { SectionHeader } from "./primitives";
-import type { LandingCopy } from "./types";
 
 function FaqItem({
   question,
@@ -36,18 +36,20 @@ function FaqItem({
   );
 }
 
-type FaqProps = {
-  copy: LandingCopy;
-};
-
-export default function Faq({ copy }: FaqProps) {
+export default function Faq() {
+  const t = useTranslations("landing");
   const [openQuestion, setOpenQuestion] = useState<string | null>(null);
+  const itemCount = parseInt(t("faq.itemCount"), 10);
+  const items = Array.from({ length: itemCount }, (_, i) => ({
+    q: t(`faq.item_${i}.q`),
+    a: t(`faq.item_${i}.a`)
+  }));
 
   return (
     <div>
-      <SectionHeader title={copy.headers.faq.title} subtitle={copy.headers.faq.subtitle} />
+      <SectionHeader title={t("headers.faq.title")} subtitle={t("headers.faq.subtitle")} />
       <div className="max-w-3xl mx-auto space-y-2">
-        {copy.faq.items.map((item) => (
+        {items.map((item) => (
           <FaqItem
             key={item.q}
             question={item.q}

@@ -1,17 +1,20 @@
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Code, Package } from "lucide-react";
 import Link from "next/link";
 
-export default function NpmCallout({ copy }) {
+export default function NpmCallout() {
+  const t = useTranslations("landing");
+
   return (
     <div className="mt-24 border border-border bg-surface p-12 relative overflow-hidden group">
       <div className="relative z-10 flex flex-col md:flex-row gap-12 items-center">
         <div className="flex-1">
-          <h3 className="text-3xl font-bold uppercase text-text mb-4">{copy.mcp.title}</h3>
-          <p className="font-mono text-muted mb-6">{copy.mcp.description}</p>
+          <h3 className="text-3xl font-bold uppercase text-text mb-4">{t("mcp.title")}</h3>
+          <p className="font-mono text-muted mb-6">{t("mcp.description")}</p>
           <div className="flex flex-wrap items-center gap-3">
             <div className="inline-flex items-center gap-4 border border-secondary/30 bg-secondary/5 px-6 py-3">
-              <span className="font-mono text-secondary">{copy.mcp.snippet}</span>
+              <span className="font-mono text-secondary">{t("mcp.snippet")}</span>
               <Code className="w-4 h-4 text-secondary" />
             </div>
             <Link

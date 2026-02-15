@@ -1,6 +1,8 @@
 import Head from "next/head";
 import ThreadDetailPage from "../../../ui/console/threads/ThreadDetailPage";
 
+export { getI18nServerSideProps as getServerSideProps } from "../../../shared/i18n";
+
 export default function ThreadDetail() {
   return (
     <>

@@ -27,6 +27,14 @@ function statusLabel(status: ConnectSessionStatus | string, locale: ClaimLocale)
     if (value === "CANCELLED") return "ANNULE";
     return value || "\u2014";
   }
+  if (locale === "es") {
+    if (value === "PENDING_CLAIM") return "PENDIENTE";
+    if (value === "CLAIMED") return "VALIDADO";
+    if (value === "DELIVERED") return "ENTREGADO";
+    if (value === "EXPIRED") return "EXPIRADO";
+    if (value === "CANCELLED") return "CANCELADO";
+    return value || "\u2014";
+  }
   return value || "\u2014";
 }
 

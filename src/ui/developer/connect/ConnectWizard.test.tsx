@@ -8,6 +8,10 @@ const mocks = vi.hoisted(() => ({
   useConnectSession: vi.fn()
 }));
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
     <a href={typeof href === "string" ? href : "#"} {...props}>

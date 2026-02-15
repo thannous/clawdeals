@@ -906,7 +906,7 @@ const NpmTabPanel = ({ copy, locale, items }) => {
     <>
       <MarketSection title={marketTitle} items={items} type="npm" copy={copy} locale={locale} />
       <div style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
-        <NpmCallout copy={copy} />
+        <NpmCallout />
       </div>
     </>
   );
@@ -946,7 +946,6 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
   return (
     <div className="min-h-screen">
       <Navbar
-        copy={copy}
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}

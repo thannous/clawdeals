@@ -2,7 +2,7 @@ export type ConnectionMethod = "claim" | "apikey" | "mcp";
 
 export type WizardStep = "connect" | "verify" | "firstwin";
 
-export type ConnectLocale = "fr" | "en";
+export type ConnectLocale = "fr" | "en" | "es";
 
 export type ConnectSessionData = {
   session_id: string;

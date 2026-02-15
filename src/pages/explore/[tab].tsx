@@ -2,6 +2,8 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import ExplorePage from "../../ui/ExplorePage";
 import packageJson from "../../../package.json";
+import { loadMessages, localePrefixFor, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
 import type { GetServerSideProps } from "next";
 
 const TAB_SLUGS = { agents: "gig", skills: "npm", data: "data" } as const;
@@ -141,7 +143,8 @@ export const getServerSideProps: GetServerSideProps<ExploreTabProps> = async ({ 
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
-      ...(deploySha ? { deploySha } : {})
+      ...(deploySha ? { deploySha } : {}),
+      messages: await loadMessages(locale || "en")
     }
   };
 };
@@ -157,14 +160,15 @@ export default function ExploreTab({
   deploySha
 }: ExploreTabProps) {
   const router = useRouter();
-  const currentLocale = router.locale || locale || "en";
+  const currentLocale: SupportedLocale = resolveSupportedLocale(router.locale || locale || "en");
   const tabMeta = TAB_META[tab] || TAB_META.agents;
-  const meta = tabMeta[currentLocale] || tabMeta.en;
-  const canonicalPath = currentLocale === "fr" ? `/fr/explore/${tab}` : `/explore/${tab}`;
-  const canonicalUrl = `${baseUrl}${canonicalPath}`;
-  const enUrl = `${baseUrl}/explore/${tab}`;
-  const frUrl = `${baseUrl}/fr/explore/${tab}`;
+  const meta = currentLocale === "fr" ? tabMeta.fr : tabMeta.en;
+  const urls = buildLocaleUrls(baseUrl, `explore/${tab}`);
+  const canonicalUrl = urls[currentLocale];
+  const hrefLangs = hrefLangTags(urls);
+  const ogLocales = ogLocaleTags(currentLocale);
   const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
+  const exploreIndexUrl = `${baseUrl}${localePrefixFor(currentLocale)}/explore`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -177,9 +181,9 @@ export default function ExploreTab({
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 
-        <link rel="alternate" hrefLang="en" href={enUrl} />
-        <link rel="alternate" hrefLang="fr" href={frUrl} />
-        <link rel="alternate" hrefLang="x-default" href={enUrl} />
+        {hrefLangs.map((tag) => (
+          <link key={tag.hrefLang} rel="alternate" hrefLang={tag.hrefLang} href={tag.href} />
+        ))}
 
         <meta property="og:title" content={meta.ogTitle} />
         <meta property="og:description" content={meta.ogDescription} />
@@ -189,8 +193,10 @@ export default function ExploreTab({
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
-        <meta property="og:locale" content={currentLocale === "fr" ? "fr_FR" : "en_US"} />
-        <meta property="og:locale:alternate" content={currentLocale === "fr" ? "en_US" : "fr_FR"} />
+        <meta property="og:locale" content={ogLocales.current} />
+        {ogLocales.alternates.map((alt) => (
+          <meta key={alt} property="og:locale:alternate" content={alt} />
+        ))}
         <meta property="og:site_name" content="ClawDeals" />
 
         <meta name="twitter:card" content="summary_large_image" />
@@ -211,13 +217,13 @@ export default function ExploreTab({
                   name: meta.title,
                   description: meta.description,
                   isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: currentLocale === "fr" ? "fr-FR" : "en-US"
+                  inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-US"
                 },
                 {
                   "@type": "BreadcrumbList",
                   itemListElement: [
                     { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: "Explore", item: `${baseUrl}${currentLocale === "fr" ? "/fr" : ""}/explore` },
+                    { "@type": "ListItem", position: 2, name: "Explore", item: exploreIndexUrl },
                     { "@type": "ListItem", position: 3, name: meta.title.split(" -- ")[0], item: canonicalUrl }
                   ]
                 }

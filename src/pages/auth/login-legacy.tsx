@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import LegacyLoginPage from "../../ui/auth/LegacyLoginPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function AuthLoginLegacy() {
   return (
     <>

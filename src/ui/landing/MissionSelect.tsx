@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Activity, FileText, Globe, MessageSquare } from "lucide-react";
 import MissionPhone from "./MissionPhone";
 import { SectionHeader } from "./primitives";
-import type { LandingCopy, MissionKey } from "./types";
+import type { MissionKey } from "./types";
 
 type MissionDefinition = {
   key: MissionKey;
@@ -60,13 +61,20 @@ function MissionCard({
   );
 }
 
-type MissionSelectProps = {
-  copy: LandingCopy;
-};
-
-export default function MissionSelect({ copy }: MissionSelectProps) {
+export default function MissionSelect() {
+  const t = useTranslations("landing");
   const [active, setActive] = useState<MissionKey>("market_watch");
-  const missionCopy = copy.chat.missions[active];
+
+  const messageCount = parseInt(t(`chat.missions.${active}.messageCount`), 10);
+  const missionCopy = useMemo(() => ({
+    header: t(`chat.missions.${active}.header`),
+    online: t(`chat.missions.${active}.online`),
+    messages: Array.from({ length: messageCount }, (_, i) => ({
+      type: t(`chat.missions.${active}.message_${i}.type`) as "bot" | "user",
+      text: t(`chat.missions.${active}.message_${i}.text`)
+    }))
+  }), [active, messageCount, t]);
+
   const activeMission = useMemo(
     () => MISSIONS.find((mission) => mission.key === active) || MISSIONS[0],
     [active]
@@ -82,7 +90,7 @@ export default function MissionSelect({ copy }: MissionSelectProps) {
 
   return (
     <div>
-      <SectionHeader title={copy.headers.missionSelect.title} subtitle={copy.headers.missionSelect.subtitle} />
+      <SectionHeader title={t("headers.missionSelect.title")} subtitle={t("headers.missionSelect.subtitle")} />
 
       <div role="tablist" aria-label="Mission selection" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {MISSIONS.map((mission, idx) => (

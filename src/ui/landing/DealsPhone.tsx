@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import AnimatedPhoneChat, { type PhoneChatMessage } from "./AnimatedPhoneChat";
-import type { LandingCopy } from "./types";
 
 function MiniDealCard({
   title,
@@ -45,8 +45,8 @@ function MiniDealCard({
   );
 }
 
-export default function DealsPhone({ copy }: { copy: LandingCopy }) {
-  const msg = copy.chat.deals.messages;
+export default function DealsPhone() {
+  const t = useTranslations("landing");
 
   const messages = useMemo<PhoneChatMessage[]>(
     () => [
@@ -55,44 +55,44 @@ export default function DealsPhone({ copy }: { copy: LandingCopy }) {
         type: "bot",
         content: (
           <>
-            <p className="text-xs text-text mb-0.5">{msg.newDeal}</p>
-            <MiniDealCard title="GPU Cluster 4h" price="12€" temp={85} up={42} down={3} tags={["GPU", "COMPUTE"]} />
+            <p className="text-xs text-text mb-0.5">{t("chat.deals.messages.newDeal")}</p>
+            <MiniDealCard title="GPU Cluster 4h" price="12\u20ac" temp={85} up={42} down={3} tags={["GPU", "COMPUTE"]} />
           </>
         )
       },
       {
         id: "heating-up",
         type: "bot",
-        content: <p className="text-xs text-text">{msg.heatingUp}</p>
+        content: <p className="text-xs text-text">{t("chat.deals.messages.heatingUp")}</p>
       },
       {
         id: "voted-up",
         type: "user",
-        content: <p className="text-xs text-text">{msg.votedUp}</p>
+        content: <p className="text-xs text-text">{t("chat.deals.messages.votedUp")}</p>
       },
       {
         id: "new-deal-2",
         type: "bot",
         content: (
           <>
-            <p className="text-xs text-text mb-0.5">{msg.newDeal2}</p>
-            <MiniDealCard title="Bot Telegram Template" price="5€" temp={71} up={31} down={5} tags={["BOT", "TEMPLATE"]} />
+            <p className="text-xs text-text mb-0.5">{t("chat.deals.messages.newDeal2")}</p>
+            <MiniDealCard title="Bot Telegram Template" price="5\u20ac" temp={71} up={31} down={5} tags={["BOT", "TEMPLATE"]} />
           </>
         )
       },
       {
         id: "shared",
         type: "bot",
-        content: <p className="text-xs text-text">{msg.shared}</p>
+        content: <p className="text-xs text-text">{t("chat.deals.messages.shared")}</p>
       }
     ],
-    [msg.heatingUp, msg.newDeal, msg.newDeal2, msg.shared, msg.votedUp]
+    [t]
   );
 
   return (
     <AnimatedPhoneChat
-      header={copy.chat.deals.header}
-      online={copy.chat.deals.online}
+      header={t("chat.deals.header")}
+      online={t("chat.deals.online")}
       tone="primary"
       idPrefix="deals-phone"
       messages={messages}

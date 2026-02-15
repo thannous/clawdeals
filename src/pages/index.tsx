@@ -1,35 +1,12 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import Landing from "../ui/Landing";
-import { LANDING_COPY } from "../ui/landing/copy";
+import { loadMessages } from "../shared/i18n";
+import type { SupportedLocale } from "../shared/i18n";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
 import packageJson from "../../package.json";
 import type { GetServerSideProps } from "next";
-
-type CopyMeta = {
-  title: string;
-  description: string;
-  ogTitle: string;
-  ogDescription: string;
-};
-
-const COPY: Record<string, CopyMeta> = {
-  fr: {
-    title: "ClawDeals — Marketplace agent-first",
-    description:
-      "Marketplace agent-first avec contrôle humain. Vos agents surveillent, négocient et opèrent — vous approuvez.",
-    ogTitle: "ClawDeals — Marketplace agent-first",
-    ogDescription:
-      "Vos agents surveillent, négocient et opèrent. Vous gardez le contrôle. REST, MCP, OpenClaw."
-  },
-  en: {
-    title: "ClawDeals — Agent-first marketplace",
-    description:
-      "Agent-first marketplace with human control. Your agents monitor, negotiate, and operate — you approve.",
-    ogTitle: "ClawDeals — Agent-first marketplace",
-    ogDescription:
-      "Your agents monitor, negotiate, and operate. You keep control. REST, MCP, OpenClaw."
-  }
-};
 
 function baseUrlFromRequest(req: any): string {
   const configured = process.env.SITE_URL;
@@ -53,6 +30,7 @@ type HomePageProps = {
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
+  messages: any;
 };
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ locale, req, res }) => {
@@ -71,9 +49,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
   const deploySha = typeof deployShaRaw === "string" && deployShaRaw.length >= 7 ? deployShaRaw : undefined;
   const isPreviewHost = isWorkersDevRequest(req);
   if (res?.setHeader) {
-    // This page's rendered locale is driven by Next routing (`locale`), not `Accept-Language`.
-    // Avoid `Vary: Accept-Language` which would fragment edge caches for no benefit.
-    // Cache SSR at the edge for most traffic; avoid caching on preview hosts.
     res.setHeader(
       "Cache-Control",
       isPreviewHost
@@ -89,7 +64,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
       isPreviewHost,
       buildTimeIso: new Date().toISOString(),
       appVersion,
-      ...(deploySha ? { deploySha } : {})
+      ...(deploySha ? { deploySha } : {}),
+      messages: await loadMessages(locale || "en")
     }
   };
 };
@@ -103,44 +79,55 @@ export default function Home({
   deploySha
 }: HomePageProps) {
   const router = useRouter();
-  const currentLocale = router.locale || locale || "en";
-  const meta = COPY[currentLocale] || COPY.fr;
-  const canonicalPath = currentLocale === "fr" ? "/fr" : "/";
-  const canonicalUrl = `${baseUrl}${canonicalPath}`;
-  const enUrl = `${baseUrl}/`;
-  const frUrl = `${baseUrl}/fr`;
-  const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
+  const t = useTranslations("seo");
+  const tLanding = useTranslations("landing");
+  const currentLocale = (router.locale || locale || "en") as SupportedLocale;
+  const resolvedLocale: SupportedLocale = (currentLocale === "fr" || currentLocale === "es") ? currentLocale : "en";
+
+  const urls = buildLocaleUrls(baseUrl, "");
+  const canonicalUrl = urls[resolvedLocale];
+  const hrefLangs = hrefLangTags(urls);
+  const ogLocales = ogLocaleTags(resolvedLocale);
+  const ogImageUrl = `${baseUrl}/og/${resolvedLocale === "fr" ? "fr" : "en"}.png`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
+  const faqItemCount = parseInt(tLanding("faq.itemCount"), 10);
+  const faqItems = Array.from({ length: faqItemCount }, (_, i) => ({
+    q: tLanding(`faq.item_${i}.q`),
+    a: tLanding(`faq.item_${i}.a`)
+  }));
+
   return (
     <>
       <Head>
-        <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
+        <title>{t("home.title")}</title>
+        <meta name="description" content={t("home.description")} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 
-        <link rel="alternate" hrefLang="en" href={enUrl} />
-        <link rel="alternate" hrefLang="fr" href={frUrl} />
-        <link rel="alternate" hrefLang="x-default" href={enUrl} />
+        {hrefLangs.map((tag) => (
+          <link key={tag.hrefLang} rel="alternate" hrefLang={tag.hrefLang} href={tag.href} />
+        ))}
 
-        <meta property="og:title" content={meta.ogTitle} />
-        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:title" content={t("home.ogTitle")} />
+        <meta property="og:description" content={t("home.ogDescription")} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
-        <meta property="og:locale" content={currentLocale === "fr" ? "fr_FR" : "en_US"} />
-        <meta property="og:locale:alternate" content={currentLocale === "fr" ? "en_US" : "fr_FR"} />
+        <meta property="og:locale" content={ogLocales.current} />
+        {ogLocales.alternates.map((alt) => (
+          <meta key={alt} property="og:locale:alternate" content={alt} />
+        ))}
         <meta property="og:site_name" content="ClawDeals" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={meta.ogTitle} />
-        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:title" content={t("home.ogTitle")} />
+        <meta name="twitter:description" content={t("home.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
 
         <script
@@ -155,10 +142,7 @@ export default function Home({
                   name: "ClawDeals",
                   url: baseUrl,
                   logo: `${baseUrl}/favicon.svg`,
-                  description:
-                    currentLocale === "fr"
-                      ? "Plateforme communautaire de deals et marketplace pour agents."
-                      : "Community deal sharing and secure P2P marketplace for agents.",
+                  description: t("home.orgDescription"),
                   sameAs: [
                     "https://github.com/clawdeals"
                   ]
@@ -169,26 +153,23 @@ export default function Home({
                   url: baseUrl,
                   name: "ClawDeals",
                   publisher: { "@id": `${baseUrl}/#organization` },
-                  inLanguage: [currentLocale === "fr" ? "fr-FR" : "en-US"]
+                  inLanguage: [resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"]
                 },
                 {
                   "@type": "WebPage",
                   "@id": canonicalUrl,
                   url: canonicalUrl,
-                  name: meta.title,
-                  description: meta.description,
+                  name: t("home.title"),
+                  description: t("home.description"),
                   isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: currentLocale === "fr" ? "fr-FR" : "en-US"
+                  inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
                 },
                 {
                   "@type": "SoftwareApplication",
                   name: "ClawDeals",
                   applicationCategory: "BusinessApplication",
                   operatingSystem: "Any",
-                  description:
-                    currentLocale === "fr"
-                      ? "Marketplace agent-first avec contrôle humain. REST, MCP, OpenClaw."
-                      : "Agent-first marketplace with human control. REST, MCP, OpenClaw.",
+                  description: t("home.appDescription"),
                   url: baseUrl,
                   offers: {
                     "@type": "Offer",
@@ -200,7 +181,7 @@ export default function Home({
                   "@type": "FAQPage",
                   "@id": `${canonicalUrl}#faq`,
                   isPartOf: { "@id": canonicalUrl },
-                  mainEntity: (LANDING_COPY[currentLocale as "fr" | "en"] || LANDING_COPY.en).faq.items.map((item) => ({
+                  mainEntity: faqItems.map((item) => ({
                     "@type": "Question",
                     name: item.q,
                     acceptedAnswer: {
@@ -215,7 +196,7 @@ export default function Home({
         />
       </Head>
       <Landing
-        locale={currentLocale}
+        locale={resolvedLocale}
         buildTimeIso={buildTimeIso}
         appVersion={appVersion}
         deploySha={deploySha}

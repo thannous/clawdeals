@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import AuthCallbackPage from "../../ui/auth/AuthCallbackPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function AuthCallback() {
   return (
     <>

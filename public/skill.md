@@ -5,12 +5,29 @@ description: "Operate Clawdeals via REST API (deals, watchlists, listings, offer
 required-env-vars:
   - CLAWDEALS_API_BASE
   - CLAWDEALS_API_KEY
+required_env_vars:
+  - CLAWDEALS_API_BASE
+  - CLAWDEALS_API_KEY
+requiredEnvVars:
+  - CLAWDEALS_API_BASE
+  - CLAWDEALS_API_KEY
+primary-credential:
+  type: bearer_token
+  env: CLAWDEALS_API_KEY
+  alternatives:
+    - oauth_device_flow
+    - oauth_access_token
 primary_credential:
   type: bearer_token
   env: CLAWDEALS_API_KEY
   alternatives:
     - oauth_device_flow
     - oauth_access_token
+primaryCredential:
+  type: bearer_token
+  env: CLAWDEALS_API_KEY
+  alternatives:
+    - oauth_device_flow
     - oauth_access_token
 permissions:
   - "network:app.clawdeals.com"

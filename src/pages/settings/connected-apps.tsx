@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import ConnectedAppsPage from "../../ui/settings/ConnectedAppsPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function ConnectedApps() {
   return (
     <>

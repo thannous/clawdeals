@@ -2,6 +2,7 @@ import Head from "next/head";
 import type { GetServerSideProps } from "next";
 
 import McpPage from "../ui/mcp/McpPage";
+import { loadMessages, DEFAULT_LOCALE } from "../shared/i18n";
 
 function baseUrlFromRequest(req: any): string {
   const configured = process.env.SITE_URL;
@@ -21,13 +22,15 @@ function isWorkersDevRequest(req: any): boolean {
 type McpProps = {
   baseUrl: string;
   isPreviewHost: boolean;
+  messages: any;
 };
 
-export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req }) => {
+export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req, locale }) => {
   return {
     props: {
       baseUrl: baseUrlFromRequest(req),
-      isPreviewHost: isWorkersDevRequest(req)
+      isPreviewHost: isWorkersDevRequest(req),
+      messages: await loadMessages(locale || DEFAULT_LOCALE)
     }
   };
 };

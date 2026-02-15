@@ -1,4 +1,5 @@
 import type { GetServerSideProps } from "next";
+import { SUPPORTED_LOCALES, localePrefixFor, type SupportedLocale } from "../shared/i18n";
 
 function baseUrlFromRequest(req: any): string {
   const configured = process.env.SITE_URL;
@@ -15,37 +16,43 @@ type BuildSitemapArgs = {
   lastmod: string;
 };
 
-function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
-  const pages = [
-    { en: `${baseUrl}/`, fr: `${baseUrl}/fr` },
-    { en: `${baseUrl}/explore/agents`, fr: `${baseUrl}/fr/explore/agents` },
-    { en: `${baseUrl}/explore/skills`, fr: `${baseUrl}/fr/explore/skills` },
-    { en: `${baseUrl}/explore/data`, fr: `${baseUrl}/fr/explore/data` },
-    { en: `${baseUrl}/trust-engine`, fr: `${baseUrl}/fr/trust-engine` },
-    { en: `${baseUrl}/policy-control`, fr: `${baseUrl}/fr/policy-control` },
-    { en: `${baseUrl}/audit-trail`, fr: `${baseUrl}/fr/audit-trail` },
-    { en: `${baseUrl}/integrations/openclaw`, fr: `${baseUrl}/fr/integrations/openclaw` },
-    { en: `${baseUrl}/guides/openclaw-dealwatch`, fr: `${baseUrl}/fr/guides/openclaw-dealwatch` },
-    { en: `${baseUrl}/guides/mcp-marketplace-safety`, fr: `${baseUrl}/fr/guides/mcp-marketplace-safety` }
-  ];
+const ROUTES = [
+  "/",
+  "/explore/agents",
+  "/explore/skills",
+  "/explore/data",
+  "/trust-engine",
+  "/policy-control",
+  "/audit-trail",
+  "/integrations/openclaw",
+  "/guides/openclaw-dealwatch",
+  "/guides/mcp-marketplace-safety"
+];
 
-  const urls = pages
-    .flatMap(({ en, fr }) => [
-      `  <url>
-    <loc>${en}</loc>
+function localizedUrl(baseUrl: string, locale: SupportedLocale, route: string) {
+  const prefix = localePrefixFor(locale);
+  if (route === "/") return `${baseUrl}${prefix || "/"}`;
+  return `${baseUrl}${prefix}${route}`;
+}
+
+function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
+  const urls = ROUTES
+    .flatMap((route) => {
+      const localized = Object.fromEntries(
+        SUPPORTED_LOCALES.map((locale) => [locale, localizedUrl(baseUrl, locale, route)])
+      ) as Record<SupportedLocale, string>;
+      const alternates = [
+        ...SUPPORTED_LOCALES.map((locale) => `    <xhtml:link rel="alternate" hreflang="${locale}" href="${localized[locale]}" />`),
+        `    <xhtml:link rel="alternate" hreflang="x-default" href="${localized.en}" />`
+      ].join("\n");
+      return SUPPORTED_LOCALES.map(
+        (locale) => `  <url>
+    <loc>${localized[locale]}</loc>
     <lastmod>${lastmod}</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="${en}" />
-    <xhtml:link rel="alternate" hreflang="fr" href="${fr}" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="${en}" />
-  </url>`,
-      `  <url>
-    <loc>${fr}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <xhtml:link rel="alternate" hreflang="en" href="${en}" />
-    <xhtml:link rel="alternate" hreflang="fr" href="${fr}" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="${en}" />
+${alternates}
   </url>`
-    ])
+      );
+    })
     .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>

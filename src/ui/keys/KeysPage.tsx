@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { Copy, ExternalLink, Key } from "lucide-react";
 
 import { apiRequest, maskApiKey } from "../developer/api";
@@ -8,93 +9,8 @@ import { TechBorder } from "../landing/primitives";
 import PageHeader from "../shared/PageHeader";
 import { getPublicLandingUrl, joinUrl } from "../../shared/urls";
 
-type KeysLocale = "fr" | "en";
-
 type RegisterResult = {
   data?: { agent_id: string; api_key: string };
-};
-
-const COPY: Record<
-  KeysLocale,
-  {
-    title: string;
-    subtitle: string;
-    lead: string;
-    tabGenerate: string;
-    tabPaste: string;
-    agentNameLabel: string;
-    agentNamePlaceholder: string;
-    generateBtn: string;
-    generatingBtn: string;
-    pasteLabel: string;
-    pastePlaceholder: string;
-    validateBtn: string;
-    validatingBtn: string;
-    successGenerate: string;
-    successValidate: string;
-    errorNoKey: string;
-    errorInvalidFormat: string;
-    errorGeneric: string;
-    errorUnexpected: string;
-    yourKey: string;
-    keyWarning: string;
-    copied: string;
-    copyFailed: string;
-    continueToMcp: string;
-  }
-> = {
-  fr: {
-    title: "Cle API",
-    subtitle: "AUTHENTIFICATION",
-    lead: "Genere ou valide ta cle API avant de configurer le serveur MCP.",
-    tabGenerate: "Generer",
-    tabPaste: "J'ai une cle",
-    agentNameLabel: "Nom de l'agent (optionnel)",
-    agentNamePlaceholder: "Mon bot trading",
-    generateBtn: "Generer la cle",
-    generatingBtn: "Generation...",
-    pasteLabel: "Cle API",
-    pastePlaceholder: "cd_live_...",
-    validateBtn: "Valider",
-    validatingBtn: "Validation...",
-    successGenerate: "Cle API generee. Copie-la et retourne sur la page MCP.",
-    successValidate: "Cle API validee.",
-    errorNoKey: "Colle une cle API.",
-    errorInvalidFormat: "Cette cle ne ressemble pas a une cle API ClawDeals.",
-    errorGeneric: "Impossible de generer la cle API.",
-    errorUnexpected: "Reponse serveur inattendue.",
-    yourKey: "Ta cle API",
-    keyWarning: "Sauvegarde cette cle. Elle ne sera affichee qu'une seule fois.",
-    copied: "Copie",
-    copyFailed: "Echec de copie",
-    continueToMcp: "Continuer vers la configuration MCP"
-  },
-  en: {
-    title: "API Key",
-    subtitle: "AUTHENTICATION",
-    lead: "Generate or validate your API key before configuring the MCP server.",
-    tabGenerate: "Generate",
-    tabPaste: "I have a key",
-    agentNameLabel: "Agent name (optional)",
-    agentNamePlaceholder: "My Trading Bot",
-    generateBtn: "Generate key",
-    generatingBtn: "Generating...",
-    pasteLabel: "API key",
-    pastePlaceholder: "cd_live_...",
-    validateBtn: "Validate",
-    validatingBtn: "Validating...",
-    successGenerate: "API key generated. Copy it and head back to the MCP page.",
-    successValidate: "API key validated.",
-    errorNoKey: "Paste an API key.",
-    errorInvalidFormat: "This does not look like a ClawDeals API key.",
-    errorGeneric: "Failed to generate API key.",
-    errorUnexpected: "Unexpected response from server.",
-    yourKey: "Your API key",
-    keyWarning: "Save this key. It will only be displayed once.",
-    copied: "Copied",
-    copyFailed: "Copy failed",
-    continueToMcp: "Continue to MCP setup"
-  }
 };
 
 function isLikelyApiKey(value: string): boolean {
@@ -117,8 +33,36 @@ function safeNextUrl(next: unknown): string {
 
 export default function KeysPage() {
   const router = useRouter();
-  const locale: KeysLocale = router.locale === "fr" ? "fr" : "en";
-  const copy = COPY[locale];
+  const t = useTranslations("keys");
+  const copy = useMemo(
+    () => ({
+      title: t("title"),
+      subtitle: t("subtitle"),
+      lead: t("lead"),
+      tabGenerate: t("tabGenerate"),
+      tabPaste: t("tabPaste"),
+      agentNameLabel: t("agentNameLabel"),
+      agentNamePlaceholder: t("agentNamePlaceholder"),
+      generateBtn: t("generateBtn"),
+      generatingBtn: t("generatingBtn"),
+      pasteLabel: t("pasteLabel"),
+      pastePlaceholder: t("pastePlaceholder"),
+      validateBtn: t("validateBtn"),
+      validatingBtn: t("validatingBtn"),
+      successGenerate: t("successGenerate"),
+      successValidate: t("successValidate"),
+      errorNoKey: t("errorNoKey"),
+      errorInvalidFormat: t("errorInvalidFormat"),
+      errorGeneric: t("errorGeneric"),
+      errorUnexpected: t("errorUnexpected"),
+      yourKey: t("yourKey"),
+      keyWarning: t("keyWarning"),
+      copied: t("copied"),
+      copyFailed: t("copyFailed"),
+      continueToMcp: t("continueToMcp")
+    }),
+    [t]
+  );
 
   const [mode, setMode] = useState<"generate" | "paste">("generate");
   const [agentName, setAgentName] = useState("");

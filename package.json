@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0 --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
+    "test:i18n:contract": "node scripts/validate-i18n-page-contract.mjs",
+    "test:i18n:messages": "node scripts/validate-i18n-messages.mjs",
     "openapi:lint": "redocly lint --config .redocly.yaml docs/openapi-v1.yaml",
     "sdk:generate": "npm run sdk:generate:ts && npm run sdk:generate:py",
     "sdk:generate:ts": "node scripts/sdk/generate-typescript-sdk.mjs",
@@ -38,7 +40,7 @@
     "test:e2e:headed": "playwright test --project=ui --headed",
     "preview": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "test:ci": "npm run typecheck && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public"
+    "test:ci": "npm run typecheck && npm run test:i18n:contract && npm run test:i18n:messages && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
@@ -47,6 +49,7 @@
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.541.0",
     "next": "^16.1.6",
+    "next-intl": "^4.8.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-qr-code": "^2.0.18",

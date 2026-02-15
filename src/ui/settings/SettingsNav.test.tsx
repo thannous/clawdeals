@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   clearStoredLastEventId: vi.fn()
 }));
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key
+}));
+
 vi.mock("next/link", () => ({
   default: ({ children, href, ...props }) => (
     <a href={typeof href === "string" ? href : "#"} {...props}>
@@ -20,7 +24,8 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/router", () => ({
   useRouter: () => ({
-    replace: mocks.replace
+    replace: mocks.replace,
+    locale: "en"
   })
 }));
 

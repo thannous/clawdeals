@@ -1,14 +1,15 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import KeysPage from "../ui/keys/KeysPage";
 
+export { getI18nStaticProps as getStaticProps } from "../shared/i18n";
+
 export default function Keys() {
-  const router = useRouter();
-  const isFr = router.locale === "fr";
+  const t = useTranslations("keys");
   return (
     <>
       <Head>
-        <title>{isFr ? "Cle API // CLAWDEALS" : "API Key // CLAWDEALS"}</title>
+        <title>{t("headTitle")}</title>
         <meta name="robots" content="noindex" />
       </Head>
       <KeysPage />

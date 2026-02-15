@@ -1,152 +1,105 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import ClaimStatusBadge from "./ClaimStatusBadge";
 import { claimSession, denySession, fetchClaimSession } from "./api";
+import { extractClaimTokenFromPath, resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
+import { getLocaleLabels } from "../../shared/seo";
 import type { ClaimLocale, ClaimMode, ConnectSessionClaimView } from "./types";
 
-const SCOPE_EXPLANATIONS: Record<ClaimLocale, Record<string, string>> = {
-  en: {
-    "agent:read": "Read listings, offers, and account state for this installation.",
-    "agent:write": "Create and update listings, offers, and messages.",
-    "approvals:read": "View pending approval requests from this installation.",
-    "approvals:write": "Approve or deny sensitive actions from this installation.",
-    "installations:read": "View connected app installation status and metadata."
-  },
-  fr: {
-    "agent:read": "Lire les listings, offres et état du compte pour cette installation.",
-    "agent:write": "Créer et mettre à jour listings, offres et messages.",
-    "approvals:read": "Voir les demandes de validation en attente pour cette installation.",
-    "approvals:write": "Valider ou refuser les actions sensibles de cette installation.",
-    "installations:read": "Voir le statut et les métadonnées des intégrations connectées."
-  }
+type ClaimCopy = {
+  subtitle: string;
+  missingTokenTitle: string;
+  missingTokenBody: string;
+  loading: string;
+  loadSessionFailed: string;
+  errorTitle: string;
+  ownerSignInRequired: string;
+  ownerSignInBody: string;
+  ownerLogin: string;
+  client: string;
+  expires: string;
+  requestedPermissions: string;
+  none: string;
+  notClaimable: (status: string) => string;
+  alreadyApproved: string;
+  chooseAgent: string;
+  create: string;
+  attach: string;
+  ownerLimitReached: (limit: string) => string;
+  ownerLimitReachedAttachHint: string;
+  ownerLimitReachedWrongOwnerHint: string;
+  newAgentName: string;
+  requestedAgentDefault: string;
+  existingAgent: string;
+  existingAgentId: string;
+  agentOwnerHint: string;
+  successTitle: string;
+  signedInAs: string;
+  approving: string;
+  approveAndConnect: string;
+  refuse: string;
+  denyConfirm: string;
+  denyFailed: string;
+  selectAttachAgent: string;
+  claimFailed: string;
+  signInRequiredToApprove: string;
+  footerWarning: string;
+  in: (rel: string) => string;
+  expiredAgo: (rel: string) => string;
+  requestedAgent: string;
+  agentInitiatedHint: string;
 };
 
-const COPY: Record<
-  ClaimLocale,
-  {
-    subtitle: string;
-    missingTokenTitle: string;
-    missingTokenBody: string;
-    loading: string;
-    errorTitle: string;
-    ownerSignInRequired: string;
-    ownerSignInBody: string;
-    ownerLogin: string;
-    client: string;
-    expires: string;
-    requestedPermissions: string;
-    none: string;
-    notClaimable: (status: string) => string;
-    alreadyApproved: string;
-    chooseAgent: string;
-    create: string;
-    attach: string;
-    ownerLimitReached: (limit: string) => string;
-    newAgentName: string;
-    requestedAgentDefault: string;
-    existingAgent: string;
-    existingAgentId: string;
-    agentOwnerHint: string;
-    successTitle: string;
-    signedInAs: string;
-    approving: string;
-    approveAndConnect: string;
-    refuse: string;
-    denyConfirm: string;
-    denyFailed: string;
-    selectAttachAgent: string;
-    claimFailed: string;
-    signInRequiredToApprove: string;
-    footerWarning: string;
-    in: (rel: string) => string;
-    expiredAgo: (rel: string) => string;
-    requestedAgent: string;
-    agentInitiatedHint: string;
-  }
-> = {
-  en: {
-    subtitle: "Connect an external client to your Clawdeals owner account.",
-    missingTokenTitle: "Missing token",
-    missingTokenBody: "The claim link is incomplete.",
-    loading: "Loading...",
-    errorTitle: "Error",
-    ownerSignInRequired: "Owner sign-in required",
-    ownerSignInBody: "Sign in as owner in this tab, then approve this connection.",
-    ownerLogin: "Owner login",
-    client: "Client",
-    expires: "Expires",
-    requestedPermissions: "Requested Permissions",
-    none: "none",
-    notClaimable: (status) => `This session is not claimable (status=${status}).`,
-    alreadyApproved: "Connection already approved",
-    chooseAgent: "Choose agent",
-    create: "Create",
-    attach: "Attach",
-    ownerLimitReached: (limit) => `This owner already reached the agent limit (${limit}). Attach to an existing agent.`,
-    newAgentName: "New Agent Name",
-    requestedAgentDefault: "Defaulted from requested agent name.",
-    existingAgent: "Existing Agent",
-    existingAgentId: "Existing Agent ID",
-    agentOwnerHint: "Agent must belong to the same owner.",
-    successTitle: "Success",
-    signedInAs: "Signed in as",
-    approving: "Approving...",
-    approveAndConnect: "Approve & Connect",
-    refuse: "Refuse",
-    denyConfirm: "Refuse this connection request? This cannot be undone.",
-    denyFailed: "Deny failed",
-    selectAttachAgent: "Select an existing agent to attach.",
-    claimFailed: "Claim failed",
-    signInRequiredToApprove: "You must be signed in as owner to approve this connection.",
-    footerWarning: "If this wasn't expected, close this page. Never paste tokens into chat.",
-    in: (rel) => `in ${rel}`,
-    expiredAgo: (rel) => `expired ${rel} ago`,
-    requestedAgent: "Requested Agent",
-    agentInitiatedHint: "This connection was initiated by your agent. Verify the name matches."
-  },
-  fr: {
-    subtitle: "Connectez un client externe à votre compte owner Clawdeals.",
-    missingTokenTitle: "Token manquant",
-    missingTokenBody: "Le lien de connexion est incomplet.",
-    loading: "Chargement...",
-    errorTitle: "Erreur",
-    ownerSignInRequired: "Connexion owner requise",
-    ownerSignInBody: "Connectez-vous en owner dans cet onglet, puis validez cette connexion.",
-    ownerLogin: "Connexion owner",
-    client: "Client",
-    expires: "Expiration",
-    requestedPermissions: "Permissions demandées",
-    none: "aucune",
-    notClaimable: (status) => `Cette session ne peut pas être validée (status=${status}).`,
-    alreadyApproved: "Connexion déjà validée",
-    chooseAgent: "Choisir un agent",
-    create: "Créer",
-    attach: "Attacher",
-    ownerLimitReached: (limit) => `Ce owner a déjà atteint la limite d'agents (${limit}). Attachez un agent existant.`,
-    newAgentName: "Nom du nouvel agent",
-    requestedAgentDefault: "Nom initialisé depuis la demande.",
-    existingAgent: "Agent existant",
-    existingAgentId: "ID agent existant",
-    agentOwnerHint: "L'agent doit appartenir au même owner.",
-    successTitle: "Succès",
-    signedInAs: "Connecté en tant que",
-    approving: "Validation...",
-    approveAndConnect: "Valider et connecter",
-    refuse: "Refuser",
-    denyConfirm: "Refuser cette demande de connexion ? Cette action est irréversible.",
-    denyFailed: "Échec du refus",
-    selectAttachAgent: "Sélectionnez un agent existant à attacher.",
-    claimFailed: "Validation échouée",
-    signInRequiredToApprove: "Vous devez être connecté en owner pour valider cette connexion.",
-    footerWarning: "Si ce n'était pas attendu, fermez cette page. Ne collez jamais de token dans un chat.",
-    in: (rel) => `dans ${rel}`,
-    expiredAgo: (rel) => `expiré depuis ${rel}`,
-    requestedAgent: "Agent demandé",
-    agentInitiatedHint: "Cette connexion a été initiée par votre agent. Vérifiez que le nom correspond."
-  }
-};
+type ClaimT = (key: string, values?: Record<string, string | number>) => string;
+
+function buildCopy(t: ClaimT): ClaimCopy {
+  return {
+    subtitle: t("subtitle"),
+    missingTokenTitle: t("missingTokenTitle"),
+    missingTokenBody: t("missingTokenBody"),
+    loading: t("loading"),
+    loadSessionFailed: t("loadSessionFailed"),
+    errorTitle: t("errorTitle"),
+    ownerSignInRequired: t("ownerSignInRequired"),
+    ownerSignInBody: t("ownerSignInBody"),
+    ownerLogin: t("ownerLogin"),
+    client: t("client"),
+    expires: t("expires"),
+    requestedPermissions: t("requestedPermissions"),
+    none: t("none"),
+    notClaimable: (status) => t("notClaimable", { status }),
+    alreadyApproved: t("alreadyApproved"),
+    chooseAgent: t("chooseAgent"),
+    create: t("create"),
+    attach: t("attach"),
+    ownerLimitReached: (limit) => t("ownerLimitReached", { limit }),
+    ownerLimitReachedAttachHint: t("ownerLimitReachedAttachHint"),
+    ownerLimitReachedWrongOwnerHint: t("ownerLimitReachedWrongOwnerHint"),
+    newAgentName: t("newAgentName"),
+    requestedAgentDefault: t("requestedAgentDefault"),
+    existingAgent: t("existingAgent"),
+    existingAgentId: t("existingAgentId"),
+    agentOwnerHint: t("agentOwnerHint"),
+    successTitle: t("successTitle"),
+    signedInAs: t("signedInAs"),
+    approving: t("approving"),
+    approveAndConnect: t("approveAndConnect"),
+    refuse: t("refuse"),
+    denyConfirm: t("denyConfirm"),
+    denyFailed: t("denyFailed"),
+    selectAttachAgent: t("selectAttachAgent"),
+    claimFailed: t("claimFailed"),
+    signInRequiredToApprove: t("signInRequiredToApprove"),
+    footerWarning: t("footerWarning"),
+    in: (rel) => t("in", { rel }),
+    expiredAgo: (rel) => t("expiredAgo", { rel }),
+    requestedAgent: t("requestedAgent"),
+    agentInitiatedHint: t("agentInitiatedHint")
+  };
+}
 
 const AGENT_INITIATED_CLIENT_TYPES = new Set([
   "cursor",
@@ -158,32 +111,29 @@ const AGENT_INITIATED_CLIENT_TYPES = new Set([
   "openclaw"
 ]);
 
-function describeScope(scope: string, locale: ClaimLocale) {
-  return SCOPE_EXPLANATIONS[locale][String(scope || "").trim()] ||
-    (locale === "fr"
-      ? "Accès API supplémentaire demandé par cette installation."
-      : "Additional API access requested by this installation.");
+function describeScope(scope: string, t: ClaimT) {
+  const normalized = String(scope || "").trim();
+  if (normalized === "agent:read") return t("scope.agentRead");
+  if (normalized === "agent:write") return t("scope.agentWrite");
+  if (normalized === "approvals:read") return t("scope.approvalsRead");
+  if (normalized === "approvals:write") return t("scope.approvalsWrite");
+  if (normalized === "installations:read") return t("scope.installationsRead");
+  return t("scope.fallback");
 }
 
-function normalizeClaimError(rawError: string, options: { ownerAgentsCount: number; locale: ClaimLocale }) {
-  const message = String(rawError || COPY[options.locale].claimFailed);
+function normalizeClaimError(rawError: string, options: { ownerAgentsCount: number; copy: ClaimCopy }) {
+  const message = String(rawError || options.copy.claimFailed);
   if (/owner agent limit reached/i.test(message)) {
-    if (options.ownerAgentsCount > 0) {
-      return options.locale === "fr"
-        ? "Limite d'agents atteinte pour ce owner. Sélectionnez Attacher et choisissez un agent existant."
-        : "Agent limit reached for this owner. Select Attach and choose an existing agent.";
-    }
-    return options.locale === "fr"
-      ? "Limite d'agents atteinte pour ce owner. Connectez-vous avec le bon owner, ou attachez cette installation à un agent existant."
-      : "Agent limit reached for this owner. Sign in with the right owner, or attach this installation to an existing agent.";
+    if (options.ownerAgentsCount > 0) return options.copy.ownerLimitReachedAttachHint;
+    return options.copy.ownerLimitReachedWrongOwnerHint;
   }
   if (/owner authentication required/i.test(message) || /unauthorized/i.test(message)) {
-    return COPY[options.locale].signInRequiredToApprove;
+    return options.copy.signInRequiredToApprove;
   }
   return message;
 }
 
-function formatExpires(expiresAt: string | null, locale: ClaimLocale) {
+function formatExpires(expiresAt: string | null, copy: ClaimCopy) {
   if (!expiresAt) return { label: "\u2014", isExpired: false };
 
   const dt = new Date(expiresAt);
@@ -203,7 +153,7 @@ function formatExpires(expiresAt: string | null, locale: ClaimLocale) {
   else if (minutes > 0) rel = `${minutes}m ${seconds % 60}s`;
   else rel = `${seconds}s`;
 
-  return { label: isExpired ? COPY[locale].expiredAgo(rel) : COPY[locale].in(rel), isExpired };
+  return { label: isExpired ? copy.expiredAgo(rel) : copy.in(rel), isExpired };
 }
 
 function subscribeToNothing() {
@@ -212,26 +162,18 @@ function subscribeToNothing() {
 
 export default function ClaimPage({ claimToken }: { claimToken: string }) {
   const router = useRouter();
-  const locale: ClaimLocale = router.locale === "fr" ? "fr" : "en";
-  const copy = COPY[locale];
+  const locale = resolveSupportedLocale(router.locale) as ClaimLocale;
+  const tClaim = useTranslations("claim");
+  const copy = useMemo(() => buildCopy(tClaim), [tClaim]);
   const pathToken = useSyncExternalStore(
     subscribeToNothing,
     () => {
       if (typeof window === "undefined") return "";
-      const match = window.location.pathname.match(/^\/(?:fr\/|en\/)?claim\/([^/?#]+)/);
-      if (!match?.[1]) return "";
-      try {
-        return decodeURIComponent(match[1]);
-      } catch {
-        return match[1];
-      }
+      return extractClaimTokenFromPath(window.location.pathname || "");
     },
     () => ""
   );
-  const asPathNoLocale = useMemo(
-    () => ((router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/"),
-    [router.asPath]
-  );
+  const asPathNoLocale = useMemo(() => stripLocalePrefix(router.asPath || "/"), [router.asPath]);
   const token = useMemo(() => {
     const fromProp = String(claimToken || "").trim();
     if (fromProp) return fromProp;
@@ -271,7 +213,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     fetchClaimSession(token).then((res) => {
       if (cancelled) return;
       if (!res.ok) {
-        setError(res.error || (locale === "fr" ? "Impossible de charger la session de connexion" : "Failed to load claim session"));
+        setError(res.error || copy.loadSessionFailed);
         return;
       }
       setError(null);
@@ -287,9 +229,9 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     return () => {
       cancelled = true;
     };
-  }, [token, locale]);
+  }, [token, copy.loadSessionFailed]);
 
-  const expires = useMemo(() => formatExpires(session?.expires_at || null, locale), [session?.expires_at, locale]);
+  const expires = useMemo(() => formatExpires(session?.expires_at || null, copy), [session?.expires_at, copy]);
   const ownerAgents = useMemo(
     () => (Array.isArray(session?.owner_agents) ? session.owner_agents : []),
     [session]
@@ -368,7 +310,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
       if (/owner agent limit reached/i.test(rawError) && ownerAgents.length > 0) {
         setMode("attach_agent");
       }
-      setSubmitError(normalizeClaimError(rawError, { ownerAgentsCount: ownerAgents.length, locale }));
+      setSubmitError(normalizeClaimError(rawError, { ownerAgentsCount: ownerAgents.length, copy }));
       setSubmitState("error");
       queueMicrotask(() => feedbackRef.current?.focus());
       return;
@@ -388,7 +330,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     );
     setSubmitState("done");
     queueMicrotask(() => feedbackRef.current?.focus());
-  }, [session, submitState, mode, resolvedAttachAgentId, token, agentName, copy, ownerAgents.length, locale]);
+  }, [session, submitState, mode, resolvedAttachAgentId, token, agentName, copy, ownerAgents.length]);
 
   const onDeny = useCallback(async () => {
     if (!session) return;
@@ -438,24 +380,18 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                 <p className="text-xs font-mono text-subtle">{copy.subtitle}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Link
-                  href={localeSwitchHref}
-                  locale="fr"
-                  className={`px-2 py-1 text-[10px] font-mono font-bold uppercase border rounded ${
-                    locale === "fr" ? "border-primary text-primary bg-primary/10" : "border-border text-subtle hover:text-text"
-                  }`}
-                >
-                  FR
-                </Link>
-                <Link
-                  href={localeSwitchHref}
-                  locale="en"
-                  className={`px-2 py-1 text-[10px] font-mono font-bold uppercase border rounded ${
-                    locale === "en" ? "border-primary text-primary bg-primary/10" : "border-border text-subtle hover:text-text"
-                  }`}
-                >
-                  EN
-                </Link>
+                {getLocaleLabels().map((loc) => (
+                  <Link
+                    key={loc.code}
+                    href={localeSwitchHref}
+                    locale={loc.code}
+                    className={`px-2 py-1 text-[10px] font-mono font-bold uppercase border rounded ${
+                      locale === loc.code ? "border-primary text-primary bg-primary/10" : "border-border text-subtle hover:text-text"
+                    }`}
+                  >
+                    {loc.label}
+                  </Link>
+                ))}
                 {session?.status && (
                   <div data-testid="claim-status">
                     <ClaimStatusBadge status={session.status} locale={locale} />
@@ -540,7 +476,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                     {(session.requested_scopes || []).map((scope) => (
                       <div key={scope} className="border border-border rounded bg-surface/20 px-2 py-1 space-y-1">
                         <div className="text-xs font-mono font-bold uppercase text-subtle">{scope}</div>
-                        <div className="text-xs font-mono text-muted">{describeScope(scope, locale)}</div>
+                        <div className="text-xs font-mono text-muted">{describeScope(scope, tClaim)}</div>
                       </div>
                     ))}
                   </div>

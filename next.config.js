@@ -22,7 +22,7 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react"]
   },
   i18n: {
-    locales: ["fr", "en"],
+    locales: ["en", "fr", "es"],
     defaultLocale: "en",
     localeDetection: false
   }

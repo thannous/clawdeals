@@ -1,88 +1,37 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-
-type FooterLocale = "fr" | "en";
+import { localePrefixFor } from "../shared/seo";
+import type { SupportedLocale } from "../shared/i18n";
 
 type FooterLink = { label: string; href: string };
 
 type FooterColumn = { title: string; links: FooterLink[] };
 
-type FooterCopy = {
-  tagline: string;
-  platform: FooterColumn;
-  resources: FooterColumn;
-  legal: FooterColumn;
-};
+const PLATFORM_HREFS = [
+  "/explore/agents",
+  "/explore/skills",
+  "/explore/data",
+  "/deals",
+  "/trust-engine",
+  "/policy-control",
+  "/audit-trail",
+];
 
-const FOOTER_COPY: Record<FooterLocale, FooterCopy> = {
-  en: {
-    tagline: "Agent-first marketplace. Human control by default.",
-    platform: {
-      title: "Platform",
-      links: [
-        { label: "Explore Agents", href: "/explore/agents" },
-        { label: "Explore Skills", href: "/explore/skills" },
-        { label: "Explore Data", href: "/explore/data" },
-        { label: "Deals", href: "/deals" },
-        { label: "Trust Engine", href: "/trust-engine" },
-        { label: "Policy Control", href: "/policy-control" },
-        { label: "Audit Trail", href: "/audit-trail" },
-      ],
-    },
-    resources: {
-      title: "Resources",
-      links: [
-        { label: "Guide: OpenClaw DealWatch", href: "/guides/openclaw-dealwatch" },
-        { label: "Guide: MCP Marketplace Safety", href: "/guides/mcp-marketplace-safety" },
-        { label: "OpenClaw Integration", href: "/integrations/openclaw" },
-        { label: "MCP Protocol", href: "/mcp" },
-        { label: "Developer Hub", href: "/developer" },
-        { label: "Status Page", href: "/heartbeat.md" },
-      ],
-    },
-    legal: {
-      title: "Legal",
-      links: [
-        { label: "Terms of Service", href: "/policies.md" },
-        { label: "Privacy Policy", href: "/security.md" },
-      ],
-    },
-  },
-  fr: {
-    tagline: "Marketplace agent-first. Contrôle humain par défaut.",
-    platform: {
-      title: "Plateforme",
-      links: [
-        { label: "Explorer les agents", href: "/explore/agents" },
-        { label: "Explorer les skills", href: "/explore/skills" },
-        { label: "Explorer les données", href: "/explore/data" },
-        { label: "Deals", href: "/deals" },
-        { label: "Trust Engine", href: "/trust-engine" },
-        { label: "Policy Control", href: "/policy-control" },
-        { label: "Audit Trail", href: "/audit-trail" },
-      ],
-    },
-    resources: {
-      title: "Ressources",
-      links: [
-        { label: "Guide : OpenClaw DealWatch", href: "/guides/openclaw-dealwatch" },
-        { label: "Guide : Sécurité MCP Marketplace", href: "/guides/mcp-marketplace-safety" },
-        { label: "Intégration OpenClaw", href: "/integrations/openclaw" },
-        { label: "Protocole MCP", href: "/mcp" },
-        { label: "Espace développeur", href: "/developer" },
-        { label: "Page de statut", href: "/heartbeat.md" },
-      ],
-    },
-    legal: {
-      title: "Légal",
-      links: [
-        { label: "Conditions d'utilisation", href: "/policies.md" },
-        { label: "Politique de confidentialité", href: "/security.md" },
-      ],
-    },
-  },
-};
+const RESOURCES_HREFS = [
+  "/guides/openclaw-dealwatch",
+  "/guides/mcp-marketplace-safety",
+  "/integrations/openclaw",
+  "/mcp",
+  "/developer",
+  "/heartbeat.md",
+];
+
+const LEGAL_HREFS = [
+  "/policies.md",
+  "/security.md",
+];
 
 /** Static .md files don't use locale prefix */
 function isStaticFile(href: string) {
@@ -118,10 +67,37 @@ type FooterProps = {
 
 export default function Footer({ locale, children }: FooterProps) {
   const router = useRouter();
-  const detected = locale ?? (router.locale === "fr" || router.asPath.startsWith("/fr") ? "fr" : "en");
-  const resolvedLocale: FooterLocale = detected === "fr" ? "fr" : "en";
-  const localePrefix = resolvedLocale === "fr" ? "/fr" : "";
-  const copy = FOOTER_COPY[resolvedLocale];
+  const t = useTranslations("footer");
+  const detected = locale ?? router.locale ?? "en";
+  const resolvedLocale: SupportedLocale = (detected === "fr" || detected === "es") ? detected : "en";
+  const localePrefix = localePrefixFor(resolvedLocale);
+
+  const platformCount = parseInt(t("platform.linkCount"), 10);
+  const platform: FooterColumn = {
+    title: t("platform.title"),
+    links: Array.from({ length: platformCount }, (_, i) => ({
+      label: t(`platform.link_${i}`),
+      href: PLATFORM_HREFS[i],
+    })),
+  };
+
+  const resourcesCount = parseInt(t("resources.linkCount"), 10);
+  const resources: FooterColumn = {
+    title: t("resources.title"),
+    links: Array.from({ length: resourcesCount }, (_, i) => ({
+      label: t(`resources.link_${i}`),
+      href: RESOURCES_HREFS[i],
+    })),
+  };
+
+  const legalCount = parseInt(t("legal.linkCount"), 10);
+  const legal: FooterColumn = {
+    title: t("legal.title"),
+    links: Array.from({ length: legalCount }, (_, i) => ({
+      label: t(`legal.link_${i}`),
+      href: LEGAL_HREFS[i],
+    })),
+  };
 
   return (
     <footer className="bg-bg border-t border-border py-16">
@@ -129,18 +105,18 @@ export default function Footer({ locale, children }: FooterProps) {
         {/* Branding */}
         <div>
           <div className="text-2xl font-bold text-text mb-4 tracking-tighter">CLAWDEALS</div>
-          <p className="max-w-xs leading-relaxed">{copy.tagline}</p>
+          <p className="max-w-xs leading-relaxed">{t("tagline")}</p>
           {children}
         </div>
 
         {/* Platform */}
-        <FooterLinkColumn column={copy.platform} localePrefix={localePrefix} />
+        <FooterLinkColumn column={platform} localePrefix={localePrefix} />
 
         {/* Resources */}
-        <FooterLinkColumn column={copy.resources} localePrefix={localePrefix} />
+        <FooterLinkColumn column={resources} localePrefix={localePrefix} />
 
         {/* Legal */}
-        <FooterLinkColumn column={copy.legal} localePrefix={localePrefix} />
+        <FooterLinkColumn column={legal} localePrefix={localePrefix} />
       </div>
     </footer>
   );

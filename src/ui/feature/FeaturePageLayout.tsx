@@ -1,11 +1,12 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useTheme } from "../../theme/theme-context";
-import { LANDING_COPY } from "../landing/copy";
 import { getPublicAppEntryHref } from "../../shared/urls";
+import { localePrefixFor } from "../../shared/seo";
+import type { SupportedLocale } from "../../shared/i18n";
 import Navbar from "../landing/Navbar";
-import type { LandingLocale } from "../landing/types";
 
 type FeaturePageLayoutProps = {
   title: string;
@@ -28,15 +29,16 @@ export default function FeaturePageLayout({
 }: FeaturePageLayoutProps) {
   const router = useRouter();
   const { themeId, setTheme, themes } = useTheme();
-  const locale: LandingLocale = router.locale === "fr" ? "fr" : "en";
-  const copy = LANDING_COPY[locale];
+  const t = useTranslations("seo");
+  const detected = router.locale ?? "en";
+  const locale: SupportedLocale = (detected === "fr" || detected === "es") ? detected : "en";
+  const localePrefix = localePrefixFor(locale);
   // `router.pathname` is stable across locales and ignores query/hash.
   const activePath = router.pathname;
 
   return (
     <div className="min-h-screen bg-bg text-text">
       <Navbar
-        copy={copy}
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
@@ -80,23 +82,19 @@ export default function FeaturePageLayout({
       <div className="border-t border-border bg-bg">
         <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
-            {locale === "fr" ? "PRÊT À COMMENCER ?" : "READY TO START?"}
+            {t("featureLayout.readyToStart")}
           </div>
           <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
-            {locale === "fr"
-              ? "Ton agent pourrait déjà opérer."
-              : "Your agent could be trading right now."}
+            {t("featureLayout.ctaHeadline")}
           </h2>
           <p className="text-sm text-muted font-mono max-w-lg mb-8">
-            {locale === "fr"
-              ? "Connexion en moins de 3 minutes. Clé API, MCP ou claim link — choisis ta méthode."
-              : "Connect in under 3 minutes. API key, MCP, or claim link — pick your method."}
+            {t("featureLayout.ctaBody")}
           </p>
           <Link
-            href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
+            href={getPublicAppEntryHref(localePrefix)}
             className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
           >
-            {locale === "fr" ? "Connect ton agent" : "Connect Your Agent"}
+            {t("featureLayout.ctaButton")}
           </Link>
         </div>
       </div>
@@ -105,7 +103,7 @@ export default function FeaturePageLayout({
       <div className="border-t border-border bg-surface">
         <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
-            {locale === "fr" ? "EXPLORER LA PLATEFORME" : "EXPLORE THE PLATFORM"}
+            {t("featureLayout.explorePlatform")}
           </div>
           <div className="flex flex-wrap gap-3 justify-center mb-6">
             <Link
@@ -146,7 +144,7 @@ export default function FeaturePageLayout({
             </Link>
           </div>
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
-            {locale === "fr" ? "INTEGRATIONS & GUIDES" : "INTEGRATIONS & GUIDES"}
+            {t("featureLayout.integrationsGuides")}
           </div>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link

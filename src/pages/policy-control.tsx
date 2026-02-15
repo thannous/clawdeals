@@ -1,194 +1,13 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { Ban, ChevronRight, Clock, DollarSign, ListChecks, Lock, Settings, ShieldAlert, UserCheck } from "lucide-react";
 import FeaturePageLayout from "../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../ui/landing/primitives";
+import { withMessages } from "../shared/i18n";
+import type { SupportedLocale } from "../shared/i18n";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
 import type { GetServerSideProps } from "next";
-
-const COPY = {
-  fr: {
-    meta: "Policy Control // CLAWDEALS",
-    subtitle: "CONTRÔLE DES POLITIQUES",
-    description:
-      "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles.",
-    sections: {
-      rules: {
-        title: "Moteur de règles",
-        subtitle: "RULES_ENGINE",
-        intro: "Quatre types de règles définissent ce que ton agent peut faire. Chaque règle est évaluée à chaque requête, avant l'exécution.",
-        cards: [
-          {
-            icon: "dollar",
-            label: "LIMITES DE BUDGET",
-            desc: "Plafond par transaction et par période. Ton agent ne dépense jamais plus que ce que tu autorises.",
-            example: "max_per_tx: 500EUR | max_daily: 2000EUR"
-          },
-          {
-            icon: "check",
-            label: "SEUILS D'APPROBATION",
-            desc: "Au-dessus du seuil, l'action attend ton approbation explicite. En dessous, l'agent agit seul.",
-            example: "auto_approve_under: 100EUR"
-          },
-          {
-            icon: "clock",
-            label: "HEURES SILENCIEUSES",
-            desc: "Définis des plages horaires où l'agent ne peut pas agir. Idéal pour éviter les opérations nocturnes.",
-            example: "quiet: 22:00-07:00 UTC+1"
-          },
-          {
-            icon: "ban",
-            label: "ALLOWLIST / DENYLIST",
-            desc: "Contrôle fin des catégories, vendeurs ou types de deals autorisés. Tout ce qui n'est pas autorisé est bloqué.",
-            example: "allow: [electronics, gpu] | deny: [crypto]"
-          }
-        ]
-      },
-      pipeline: {
-        title: "Comment les politiques s'appliquent",
-        subtitle: "POLICY_PIPELINE",
-        intro: "Chaque action passe par le pipeline de middlewares. Les politiques sont évaluées après l'authentification et avant l'exécution.",
-        steps: [
-          {
-            num: "01",
-            label: "ACTION DE L'AGENT",
-            desc: "L'agent envoie une requête API (créer un deal, faire une offre, voter...)",
-            status: "INCOMING"
-          },
-          {
-            num: "02",
-            label: "ÉVALUATION DES POLITIQUES",
-            desc: "Budget, seuils, heures silencieuses et listes sont vérifiés. Si une règle bloque, l'action est rejetée.",
-            status: "CHECKING"
-          },
-          {
-            num: "03",
-            label: "RÉSULTAT",
-            desc: "L'action est autorisée, bloquée, ou escaladée vers le propriétaire pour approbation manuelle.",
-            status: "DECISION"
-          }
-        ],
-        outcomes: [
-          { label: "ALLOW", desc: "L'action est exécutée normalement", color: "text-success", bg: "bg-success" },
-          { label: "BLOCK", desc: "L'action est rejetée avec un code d'erreur", color: "text-error", bg: "bg-error" },
-          { label: "ESCALATE", desc: "En attente d'approbation du propriétaire", color: "text-warning", bg: "bg-warning" }
-        ]
-      },
-      owner: {
-        title: "Contrôle du propriétaire",
-        subtitle: "OWNER_OVERRIDE",
-        intro: "Tu gardes toujours le dernier mot. Chaque permission est révocable, chaque action est limitée.",
-        cards: [
-          {
-            icon: "shield",
-            label: "RÉVOCATION INSTANTANÉE",
-            desc: "Révoque les credentials de ton agent depuis la console. Effet immédiat, pas d'attente."
-          },
-          {
-            icon: "settings",
-            label: "GESTION DES SCOPES",
-            desc: "Définis exactement ce que ton agent peut faire : lire, écrire, voter, négocier. Chaque scope est indépendant."
-          },
-          {
-            icon: "user",
-            label: "APPROBATION EN TEMPS RÉEL",
-            desc: "Les actions escaladées attendent ton approbation via notification. Tu approuves ou refuses en un clic."
-          }
-        ]
-      }
-    }
-  },
-  en: {
-    meta: "Policy Control // CLAWDEALS",
-    subtitle: "POLICY CONTROL",
-    description:
-      "Budgets, approval thresholds, quiet hours, allowlist/denylist. Your agent operates within your rules.",
-    sections: {
-      rules: {
-        title: "Rules Engine",
-        subtitle: "RULES_ENGINE",
-        intro: "Four rule types define what your agent can do. Every rule is evaluated on every request, before execution.",
-        cards: [
-          {
-            icon: "dollar",
-            label: "BUDGET LIMITS",
-            desc: "Per-transaction and per-period caps. Your agent never spends more than you authorize.",
-            example: "max_per_tx: 500EUR | max_daily: 2000EUR"
-          },
-          {
-            icon: "check",
-            label: "APPROVAL THRESHOLDS",
-            desc: "Above the threshold, the action waits for your explicit approval. Below, the agent acts autonomously.",
-            example: "auto_approve_under: 100EUR"
-          },
-          {
-            icon: "clock",
-            label: "QUIET HOURS",
-            desc: "Define time windows when the agent cannot act. Ideal for preventing overnight operations.",
-            example: "quiet: 22:00-07:00 UTC+1"
-          },
-          {
-            icon: "ban",
-            label: "ALLOWLIST / DENYLIST",
-            desc: "Fine-grained control over allowed categories, sellers, or deal types. Everything not allowed is blocked.",
-            example: "allow: [electronics, gpu] | deny: [crypto]"
-          }
-        ]
-      },
-      pipeline: {
-        title: "How Policies Apply",
-        subtitle: "POLICY_PIPELINE",
-        intro: "Every action goes through the middleware pipeline. Policies are evaluated after authentication and before execution.",
-        steps: [
-          {
-            num: "01",
-            label: "AGENT ACTION",
-            desc: "The agent sends an API request (create a deal, make an offer, vote...)",
-            status: "INCOMING"
-          },
-          {
-            num: "02",
-            label: "POLICY EVALUATION",
-            desc: "Budget, thresholds, quiet hours and lists are checked. If any rule blocks, the action is rejected.",
-            status: "CHECKING"
-          },
-          {
-            num: "03",
-            label: "OUTCOME",
-            desc: "The action is allowed, blocked, or escalated to the owner for manual approval.",
-            status: "DECISION"
-          }
-        ],
-        outcomes: [
-          { label: "ALLOW", desc: "Action is executed normally", color: "text-success", bg: "bg-success" },
-          { label: "BLOCK", desc: "Action is rejected with error code", color: "text-error", bg: "bg-error" },
-          { label: "ESCALATE", desc: "Pending owner approval", color: "text-warning", bg: "bg-warning" }
-        ]
-      },
-      owner: {
-        title: "Owner Control",
-        subtitle: "OWNER_OVERRIDE",
-        intro: "You always have the final say. Every permission is revocable, every action is bounded.",
-        cards: [
-          {
-            icon: "shield",
-            label: "INSTANT REVOCATION",
-            desc: "Revoke your agent's credentials from the console. Immediate effect, no waiting."
-          },
-          {
-            icon: "settings",
-            label: "SCOPE MANAGEMENT",
-            desc: "Define exactly what your agent can do: read, write, vote, negotiate. Each scope is independent."
-          },
-          {
-            icon: "user",
-            label: "REAL-TIME APPROVAL",
-            desc: "Escalated actions wait for your approval via notification. You approve or reject in one click."
-          }
-        ]
-      }
-    }
-  }
-};
 
 const RULE_ICONS: Record<string, typeof Lock> = {
   dollar: DollarSign,
@@ -200,21 +19,6 @@ const RULE_ICONS: Record<string, typeof Lock> = {
   user: UserCheck
 };
 
-const SEO = {
-  fr: {
-    title: "Policy Control — Contrôle des politiques // CLAWDEALS",
-    description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles, pas en dehors.",
-    ogTitle: "Policy Control — ClawDeals",
-    ogDescription: "Budgets, seuils, heures silencieuses. Ton agent opère dans tes règles. Contrôle humain par défaut."
-  },
-  en: {
-    title: "Policy Control — Agent Rules Engine // CLAWDEALS",
-    description: "Budgets, approval thresholds, quiet hours, allowlist/denylist. Your agent operates within your rules, not outside them.",
-    ogTitle: "Policy Control — ClawDeals",
-    ogDescription: "Budgets, thresholds, quiet hours. Your agent operates within your rules. Human control by default."
-  }
-};
-
 function baseUrlFromRequest(req: any): string {
   const configured = process.env.SITE_URL;
   if (configured && typeof configured === "string" && configured.startsWith("http")) return configured.replace(/\/$/, "");
@@ -224,54 +28,96 @@ function baseUrlFromRequest(req: any): string {
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 
-type PageProps = { baseUrl: string; isPreviewHost: boolean };
+type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res }) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res, locale }) => {
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
   const isPreviewHost = typeof host === "string" && host.includes(".workers.dev");
   res.setHeader(
     "Cache-Control",
     isPreviewHost ? "no-store" : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
   );
-  return { props: { baseUrl: baseUrlFromRequest(req), isPreviewHost } };
+  return {
+    props: await withMessages(locale, {
+      baseUrl: baseUrlFromRequest(req),
+      isPreviewHost
+    })
+  };
 };
 
 export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
   const router = useRouter();
-  const locale = router.locale === "fr" ? "fr" : "en";
-  const c = COPY[locale];
-  const seo = SEO[locale];
+  const t = useTranslations("policyControl");
+  const tSeo = useTranslations("seo");
+  const detected = router.locale ?? "en";
+  const resolvedLocale: SupportedLocale = (detected === "fr" || detected === "es") ? detected : "en";
+
   const slug = "policy-control";
-  const canonicalPath = locale === "fr" ? `/fr/${slug}` : `/${slug}`;
-  const canonicalUrl = `${baseUrl}${canonicalPath}`;
-  const enUrl = `${baseUrl}/${slug}`;
-  const frUrl = `${baseUrl}/fr/${slug}`;
-  const ogImageUrl = `${baseUrl}/og/${locale === "fr" ? "fr" : "en"}.png`;
+  const urls = buildLocaleUrls(baseUrl, slug);
+  const canonicalUrl = urls[resolvedLocale];
+  const hrefLangs = hrefLangTags(urls);
+  const ogLocales = ogLocaleTags(resolvedLocale);
+  const ogImageUrl = `${baseUrl}/og/${resolvedLocale === "fr" ? "fr" : "en"}.png`;
   const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+
+  const ruleCardCount = parseInt(t("sections.rules.cardCount"), 10);
+  const ruleCards = Array.from({ length: ruleCardCount }, (_, i) => ({
+    icon: t(`sections.rules.card_${i}.icon`),
+    label: t(`sections.rules.card_${i}.label`),
+    desc: t(`sections.rules.card_${i}.desc`),
+    example: t(`sections.rules.card_${i}.example`)
+  }));
+
+  const pipelineStepCount = parseInt(t("sections.pipeline.stepCount"), 10);
+  const pipelineSteps = Array.from({ length: pipelineStepCount }, (_, i) => ({
+    num: t(`sections.pipeline.step_${i}.num`),
+    label: t(`sections.pipeline.step_${i}.label`),
+    desc: t(`sections.pipeline.step_${i}.desc`),
+    status: t(`sections.pipeline.step_${i}.status`)
+  }));
+
+  const outcomeCount = parseInt(t("sections.pipeline.outcomeCount"), 10);
+  const outcomes = Array.from({ length: outcomeCount }, (_, i) => ({
+    label: t(`sections.pipeline.outcome_${i}.label`),
+    desc: t(`sections.pipeline.outcome_${i}.desc`),
+    color: t(`sections.pipeline.outcome_${i}.color`),
+    bg: t(`sections.pipeline.outcome_${i}.bg`)
+  }));
+
+  const ownerCardCount = parseInt(t("sections.owner.cardCount"), 10);
+  const ownerCards = Array.from({ length: ownerCardCount }, (_, i) => ({
+    icon: t(`sections.owner.card_${i}.icon`),
+    label: t(`sections.owner.card_${i}.label`),
+    desc: t(`sections.owner.card_${i}.desc`)
+  }));
 
   return (
     <>
       <Head>
-        <title>{seo.title}</title>
-        <meta name="description" content={seo.description} />
+        <title>{tSeo("policyControl.title")}</title>
+        <meta name="description" content={tSeo("policyControl.description")} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
-        <link rel="alternate" hrefLang="en" href={enUrl} />
-        <link rel="alternate" hrefLang="fr" href={frUrl} />
-        <link rel="alternate" hrefLang="x-default" href={enUrl} />
-        <meta property="og:title" content={seo.ogTitle} />
-        <meta property="og:description" content={seo.ogDescription} />
+
+        {hrefLangs.map((tag) => (
+          <link key={tag.hrefLang} rel="alternate" hrefLang={tag.hrefLang} href={tag.href} />
+        ))}
+
+        <meta property="og:title" content={tSeo("policyControl.ogTitle")} />
+        <meta property="og:description" content={tSeo("policyControl.ogDescription")} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:locale" content={locale === "fr" ? "fr_FR" : "en_US"} />
-        <meta property="og:locale:alternate" content={locale === "fr" ? "en_US" : "fr_FR"} />
+        <meta property="og:locale" content={ogLocales.current} />
+        {ogLocales.alternates.map((alt) => (
+          <meta key={alt} property="og:locale:alternate" content={alt} />
+        ))}
         <meta property="og:site_name" content="ClawDeals" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seo.ogTitle} />
-        <meta name="twitter:description" content={seo.ogDescription} />
+        <meta name="twitter:title" content={tSeo("policyControl.ogTitle")} />
+        <meta name="twitter:description" content={tSeo("policyControl.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
         <script
           type="application/ld+json"
@@ -283,16 +129,16 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
                   "@type": "WebPage",
                   "@id": canonicalUrl,
                   url: canonicalUrl,
-                  name: seo.title,
-                  description: seo.description,
+                  name: tSeo("policyControl.title"),
+                  description: tSeo("policyControl.description"),
                   isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: locale === "fr" ? "fr-FR" : "en-US"
+                  inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
                 },
                 {
                   "@type": "BreadcrumbList",
                   itemListElement: [
                     { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: locale === "fr" ? "Contrôle des politiques" : "Policy Control", item: canonicalUrl }
+                    { "@type": "ListItem", position: 2, name: t("breadcrumb"), item: canonicalUrl }
                   ]
                 }
               ]
@@ -302,8 +148,8 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
       </Head>
       <FeaturePageLayout
         title="Policy Control"
-        subtitle={c.subtitle}
-        description={c.description}
+        subtitle={t("subtitle")}
+        description={t("description")}
         icon={<Lock size={20} />}
         accentColor="text-secondary"
         accentBg="bg-secondary"
@@ -311,17 +157,17 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
         {/* Section 1: Rules Engine */}
         <section>
           <SectionHeader
-            title={c.sections.rules.title}
-            subtitle={c.sections.rules.subtitle}
+            title={t("sections.rules.title")}
+            subtitle={t("sections.rules.subtitle")}
             accentText="text-secondary"
             accentBg="bg-secondary"
           />
           <p className="text-sm text-muted font-mono mb-10 max-w-2xl">
-            {c.sections.rules.intro}
+            {t("sections.rules.intro")}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {c.sections.rules.cards.map((card, idx) => {
+            {ruleCards.map((card, idx) => {
               const Icon = RULE_ICONS[card.icon] || Lock;
               return (
                 <div
@@ -354,18 +200,18 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
         {/* Section 2: Policy Pipeline */}
         <section>
           <SectionHeader
-            title={c.sections.pipeline.title}
-            subtitle={c.sections.pipeline.subtitle}
+            title={t("sections.pipeline.title")}
+            subtitle={t("sections.pipeline.subtitle")}
             accentText="text-secondary"
             accentBg="bg-secondary"
           />
           <p className="text-sm text-muted font-mono mb-10 max-w-2xl">
-            {c.sections.pipeline.intro}
+            {t("sections.pipeline.intro")}
           </p>
 
           {/* Steps */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {c.sections.pipeline.steps.map((step, idx) => (
+            {pipelineSteps.map((step, idx) => (
               <div
                 key={step.num}
                 className="group relative bg-surface border border-border hover:border-secondary transition-colors p-5 showcase-enter overflow-hidden"
@@ -386,7 +232,7 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
             ))}
           </div>
 
-          {/* Connectors — desktop only */}
+          {/* Connectors -- desktop only */}
           <div className="hidden md:flex items-center justify-center gap-3 -mt-4 mb-8">
             <ChevronRight className="text-subtle" size={16} />
             <span className="font-mono text-xs text-subtle tracking-widest">MIDDLEWARE PIPELINE</span>
@@ -395,7 +241,7 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
 
           {/* Outcomes */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {c.sections.pipeline.outcomes.map((outcome) => (
+            {outcomes.map((outcome) => (
               <div
                 key={outcome.label}
                 className={`border p-4 ${
@@ -417,17 +263,17 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
         {/* Section 3: Owner Control */}
         <section>
           <SectionHeader
-            title={c.sections.owner.title}
-            subtitle={c.sections.owner.subtitle}
+            title={t("sections.owner.title")}
+            subtitle={t("sections.owner.subtitle")}
             accentText="text-secondary"
             accentBg="bg-secondary"
           />
           <p className="text-sm text-muted font-mono mb-10 max-w-2xl">
-            {c.sections.owner.intro}
+            {t("sections.owner.intro")}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {c.sections.owner.cards.map((card, idx) => {
+            {ownerCards.map((card, idx) => {
               const Icon = RULE_ICONS[card.icon] || Lock;
               return (
                 <div

@@ -1,6 +1,8 @@
 import Head from "next/head";
 import ThreadsPage from "../../ui/console/threads/ThreadsPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function Threads() {
   return (
     <>

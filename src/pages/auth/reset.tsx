@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import ResetPasswordPage from "../../ui/auth/ResetPasswordPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function AuthReset() {
   return (
     <>

@@ -1,6 +1,8 @@
 import Head from "next/head";
 import LiveFeedPage from "../../ui/console/LiveFeedPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function LiveFeed() {
   return (
     <>

@@ -1,10 +1,12 @@
 import React, { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
-import { LANDING_COPY } from "./landing/copy";
+import { localePrefixFor } from "../shared/seo";
+import type { SupportedLocale } from "../shared/i18n";
 import Faq from "./landing/Faq";
 import HowItWorks from "./landing/HowItWorks";
 import MissionSelect from "./landing/MissionSelect";
@@ -13,7 +15,6 @@ import { SectionHeader } from "./landing/primitives";
 import ExploreDemos from "./landing/ExploreDemos";
 import PlatformPillars from "./landing/PlatformPillars";
 import Footer from "./Footer";
-import type { LandingCopy, LandingLocale } from "./landing/types";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -37,16 +38,15 @@ const TRUST_MARQUEE_KEYS = [
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function WaitlistForm({
-  copy,
   locale,
   compact = false,
   source = "hero"
 }: {
-  copy: LandingCopy;
-  locale: LandingLocale;
+  locale: string;
   compact?: boolean;
   source?: "hero" | "footer";
 }) {
+  const t = useTranslations("landing");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle");
   const [message, setMessage] = useState("");
@@ -56,10 +56,10 @@ function WaitlistForm({
   const isError = status === "error";
 
   const helperText = isSuccess
-    ? message || copy.waitlist.success
+    ? message || t("waitlist.success")
     : isError
-      ? message || copy.waitlist.error
-      : copy.waitlist.helper;
+      ? message || t("waitlist.error")
+      : t("waitlist.helper");
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -68,7 +68,7 @@ function WaitlistForm({
     const normalized = email.trim().toLowerCase();
     if (!normalized || !EMAIL_REGEX.test(normalized)) {
       setStatus("error");
-      setMessage(copy.waitlist.invalid);
+      setMessage(t("waitlist.invalid"));
       return;
     }
 
@@ -87,7 +87,7 @@ function WaitlistForm({
       if (!response.ok) {
         startTransition(() => {
           setStatus("error");
-          setMessage(payload?.error?.message || copy.waitlist.error);
+          setMessage(payload?.error?.message || t("waitlist.error"));
         });
         return;
       }
@@ -96,19 +96,19 @@ function WaitlistForm({
       if (resultStatus === "already_registered") {
         startTransition(() => {
           setStatus("success");
-          setMessage(copy.waitlist.already);
+          setMessage(t("waitlist.already"));
         });
         return;
       }
 
       startTransition(() => {
         setStatus("success");
-        setMessage(copy.waitlist.success);
+        setMessage(t("waitlist.success"));
       });
     } catch (error) {
       startTransition(() => {
         setStatus("error");
-        setMessage(copy.waitlist.error);
+        setMessage(t("waitlist.error"));
       });
       void error;
     }
@@ -130,18 +130,18 @@ function WaitlistForm({
 
   return (
     <div className={containerClasses} data-testid={`waitlist-${source}`}>
-      <div className="font-mono text-xs uppercase tracking-widest text-subtle mb-3">{copy.waitlist.title}</div>
+      <div className="font-mono text-xs uppercase tracking-widest text-subtle mb-3">{t("waitlist.title")}</div>
       <form onSubmit={handleSubmit} className={formClasses}>
         <div className="flex-1">
           <label className="sr-only" htmlFor={`waitlist-email-${source}`}>
-            {copy.waitlist.label}
+            {t("waitlist.label")}
           </label>
           <input
             id={`waitlist-email-${source}`}
             type="email"
             value={email}
             onChange={handleChange}
-            placeholder={copy.waitlist.placeholder}
+            placeholder={t("waitlist.placeholder")}
             autoComplete="email"
             disabled={actionDisabled}
             className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:outline-none focus:border-primary"
@@ -156,7 +156,7 @@ function WaitlistForm({
               : "bg-primary text-bg hover:bg-text hover:text-bg"
           }`}
         >
-          {copy.waitlist.cta}
+          {t("waitlist.cta")}
         </button>
       </form>
       <div
@@ -213,16 +213,18 @@ function HeroCtas({
 }
 
 function Hero({
-  copy,
   futureMode,
   locale
 }: {
-  copy: LandingCopy;
   futureMode: boolean;
-  locale: LandingLocale;
+  locale: string;
 }) {
-  const localePrefix = locale === "fr" ? "/fr" : "";
+  const t = useTranslations("landing");
+  const resolvedLocale: SupportedLocale = (locale === "fr" || locale === "es") ? locale : "en";
+  const localePrefix = localePrefixFor(resolvedLocale);
   const entryUrl = getPublicAppEntryHref(localePrefix);
+  const headlineCount = parseInt(t("hero.headlineCount"), 10);
+  const headlines = Array.from({ length: headlineCount }, (_, i) => t(`hero.headline_${i}`));
 
   return (
     <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
@@ -231,25 +233,23 @@ function Hero({
 
       <div className="max-w-[1440px] mx-auto relative z-10 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
-          {Array.isArray(copy.hero.headline)
-            ? copy.hero.headline.map((line, i) => (
-                <span key={i} className="block">{line}</span>
-              ))
-            : copy.hero.headline}
+          {headlines.map((line, i) => (
+            <span key={i} className="block">{line}</span>
+          ))}
         </h1>
         <p className="text-sm md:text-base text-muted font-mono mb-8 max-w-4xl">
-          {copy.hero.subheadline}
+          {t("hero.subheadline")}
         </p>
 
         {futureMode ? (
-          <ComingSoonBadge label={copy.future.badge} />
+          <ComingSoonBadge label={t("future.badge")} />
         ) : (
           <Link
             href={entryUrl}
             className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
           >
             <span className="relative z-10 flex items-center gap-2">
-              {copy.hero.cta} <ChevronRight className="w-4 h-4" />
+              {t("hero.cta")} <ChevronRight className="w-4 h-4" />
             </span>
           </Link>
         )}
@@ -267,17 +267,17 @@ const SHOWCASE_TABS: { key: ShowcaseTab; Icon: typeof Zap; colorClass: string; b
 ];
 
 function TabbedShowcase({
-  copy,
   futureMode,
   locale
 }: {
-  copy: LandingCopy;
   futureMode: boolean;
-  locale: LandingLocale;
+  locale: string;
 }) {
+  const t = useTranslations("landing");
   const [active, setActive] = useState<ShowcaseTab>("marketplace");
   const tabsRef = useRef<HTMLDivElement>(null);
-  const localePrefix = locale === "fr" ? "/fr" : "";
+  const resolvedLocale: SupportedLocale = (locale === "fr" || locale === "es") ? locale : "en";
+  const localePrefix = localePrefixFor(resolvedLocale);
   const entryUrl = getPublicAppEntryHref(localePrefix);
 
   const handleTabClick = (key: ShowcaseTab) => {
@@ -286,21 +286,29 @@ function TabbedShowcase({
   };
 
   const heroData: Record<ShowcaseTab, { subtitle: string; title: string; description: string }> = {
-    deals: copy.hero.deals,
-    marketplace: copy.hero.marketplace
+    deals: {
+      subtitle: t("hero.deals.subtitle"),
+      title: t("hero.deals.title"),
+      description: t("hero.deals.description")
+    },
+    marketplace: {
+      subtitle: t("hero.marketplace.subtitle"),
+      title: t("hero.marketplace.title"),
+      description: t("hero.marketplace.description")
+    }
   };
 
-  const showcaseMap: Record<ShowcaseTab, {
-    header: { title: string; subtitle: string };
-    showcase: { title: string; bullets: string[]; cta: string };
-    Phone: React.ComponentType<{ copy: LandingCopy }>;
-  }> = {
-    deals: { header: copy.headers.deals, showcase: copy.showcase.deals, Phone: DealsPhone },
-    marketplace: { header: copy.headers.marketplace, showcase: copy.showcase.marketplace, Phone: MarketPhone }
+  const bulletCount = parseInt(t(`showcase.${active}.bulletCount`), 10);
+  const bullets = Array.from({ length: bulletCount }, (_, i) => t(`showcase.${active}.bullet_${i}`));
+
+  const headerMap: Record<ShowcaseTab, { title: string; subtitle: string }> = {
+    deals: { title: t("headers.deals.title"), subtitle: t("headers.deals.subtitle") },
+    marketplace: { title: t("headers.marketplace.title"), subtitle: t("headers.marketplace.subtitle") }
   };
 
-  const { header, showcase, Phone } = showcaseMap[active];
-  const activeTab = SHOWCASE_TABS.find((t) => t.key === active)!;
+  const header = headerMap[active];
+  const activeTab = SHOWCASE_TABS.find((tab) => tab.key === active)!;
+  const PhoneComponent = active === "deals" ? DealsPhone : MarketPhone;
 
   return (
     <div>
@@ -329,7 +337,7 @@ function TabbedShowcase({
                 <p className={`hidden md:block text-sm text-muted font-mono max-w-md border-l-2 ${borderClass} pl-4`}>
                   {heroData[key].description}
                 </p>
-                {/* Hover hint on inactive card — desktop only */}
+                {/* Hover hint on inactive card -- desktop only */}
                 {!isActive && (
                   <span className={`hidden md:flex absolute bottom-4 right-0 font-mono text-xs ${colorClass} tracking-widest uppercase opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 items-center gap-1.5`}>
                     <ChevronDown className="w-3 h-3" />
@@ -341,7 +349,7 @@ function TabbedShowcase({
                   isActive ? `w-full ${accentBg}` : "w-0 bg-transparent"
                 }`} />
               </button>
-              {/* Chevron indicator under active card — desktop only */}
+              {/* Chevron indicator under active card -- desktop only */}
               <div className={`hidden md:flex items-center gap-2 pt-3 transition-all duration-300 ${
                 isActive ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"
               }`}>
@@ -358,9 +366,9 @@ function TabbedShowcase({
         <SectionHeader title={header.title} subtitle={header.subtitle} accentText={activeTab.colorClass} accentBg={activeTab.accentBg} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h3 className="text-2xl font-bold text-text uppercase tracking-wide mb-6">{showcase.title}</h3>
+            <h3 className="text-2xl font-bold text-text uppercase tracking-wide mb-6">{t(`showcase.${active}.title`)}</h3>
             <ul className="space-y-3 mb-8">
-              {showcase.bullets.map((bullet, index) => (
+              {bullets.map((bullet, index) => (
                 <li key={bullet} className="flex items-start gap-3">
                   <span className={`w-5 h-5 border ${activeTab.borderClass} flex items-center justify-center text-xs font-mono ${activeTab.colorClass} flex-shrink-0 mt-0.5`}>
                     {String(index + 1).padStart(2, "0")}
@@ -370,18 +378,18 @@ function TabbedShowcase({
               ))}
             </ul>
             {futureMode ? (
-              <ComingSoonBadge label={copy.future.badge} />
+              <ComingSoonBadge label={t("future.badge")} />
             ) : (
               <Link
                 href={entryUrl}
                 className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
               >
-                {showcase.cta}
+                {t(`showcase.${active}.cta`)}
               </Link>
             )}
           </div>
           <div className="flex justify-center">
-            <Phone copy={copy} />
+            <PhoneComponent />
           </div>
         </div>
       </div>
@@ -389,15 +397,16 @@ function TabbedShowcase({
   );
 }
 
-function DeveloperSection({ copy }: { copy: LandingCopy }) {
+function DeveloperSection() {
+  const t = useTranslations("landing");
   return (
     <div className="max-w-7xl mx-auto">
-      <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
+      <SectionHeader title={t("headers.developer.title")} subtitle={t("headers.developer.subtitle")} />
       <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
         <TerminalEmulator />
       </div>
       <div className="mt-12" style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
-        <NpmCallout copy={copy} />
+        <NpmCallout />
       </div>
     </div>
   );
@@ -419,14 +428,13 @@ export default function Landing({
   futureMode = false
 }: LandingProps) {
   const { themeId, setTheme, themes } = useTheme();
-  const resolvedLocale: LandingLocale = locale === "fr" ? "fr" : "en";
-  const copy = LANDING_COPY[resolvedLocale];
+  const t = useTranslations("landing");
+  const resolvedLocale: SupportedLocale = (locale === "fr" || locale === "es") ? locale : "en";
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
 
   return (
     <div className="min-h-screen overflow-x-hidden">
       <Navbar
-        copy={copy}
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
@@ -439,14 +447,14 @@ export default function Landing({
             <div className="max-w-[1440px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
                 <span className="w-2 h-2 bg-primary animate-pulse" />
-                {copy.future.bannerTitle}
+                {t("future.bannerTitle")}
               </div>
-              <div className="text-xs font-mono text-muted">{copy.future.bannerBody}</div>
+              <div className="text-xs font-mono text-muted">{t("future.bannerBody")}</div>
             </div>
           </div>
         )}
 
-        <Hero copy={copy} futureMode={futureMode} locale={resolvedLocale} />
+        <Hero futureMode={futureMode} locale={resolvedLocale} />
 
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
           <div
@@ -456,11 +464,11 @@ export default function Landing({
             {TRUST_MARQUEE_KEYS.map((segmentKey) => (
               <React.Fragment key={segmentKey}>
                 <span className="flex items-center gap-2">
-                  <ShieldCheck size={14} /> {copy.trust.verified}
+                  <ShieldCheck size={14} /> {t("trust.verified")}
                 </span>
                 <span className="opacity-30">{"///"}</span>
                 <span className="flex items-center gap-2">
-                  <Lock size={14} /> {copy.trust.escrow}
+                  <Lock size={14} /> {t("trust.escrow")}
                 </span>
                 <span className="opacity-30">{"///"}</span>
               </React.Fragment>
@@ -469,25 +477,25 @@ export default function Landing({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-24">
-          <TabbedShowcase copy={copy} futureMode={futureMode} locale={resolvedLocale} />
+          <TabbedShowcase futureMode={futureMode} locale={resolvedLocale} />
 
-          <HowItWorks copy={copy} />
+          <HowItWorks />
 
-          <MissionSelect copy={copy} />
+          <MissionSelect />
 
-          <PlatformPillars copy={copy} />
+          <PlatformPillars />
 
-          <DeveloperSection copy={copy} />
+          <DeveloperSection />
 
-          <ExploreDemos locale={resolvedLocale} />
+          <ExploreDemos />
 
-          <Faq copy={copy} />
+          <Faq />
         </div>
       </main>
 
       <Footer locale={resolvedLocale}>
         <div className="mt-4 leading-relaxed">
-          {copy.footer.serverTime}: <span suppressHydrationWarning>{buildTimeIso}</span>
+          {t("footer.serverTime")}: <span suppressHydrationWarning>{buildTimeIso}</span>
           <br />
           VERSION: <span>v{appVersion}</span>
           {deployShaShort ? (
@@ -498,7 +506,7 @@ export default function Landing({
           ) : null}
         </div>
         <div className="mt-6 max-w-md">
-          <WaitlistForm copy={copy} locale={resolvedLocale} compact source="footer" />
+          <WaitlistForm locale={resolvedLocale} compact source="footer" />
         </div>
       </Footer>
     </div>

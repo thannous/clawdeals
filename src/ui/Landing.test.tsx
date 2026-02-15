@@ -2,6 +2,15 @@ import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => {
+    // Return plausible values for keys that get parsed
+    if (key.endsWith("Count")) return "2";
+    if (key.endsWith(".type")) return "bot";
+    return key;
+  }
+}));
+
 vi.mock("next/dynamic", () => ({
   default: () => {
     return function DynamicStub() {
@@ -54,13 +63,14 @@ describe("Landing Mission Select", () => {
     );
 
     expect(screen.getByRole("tab", { name: /MARKET_WATCH/ })).toBeTruthy();
-    expect(screen.getByText("Monitoring active. 3 criteria configured.")).toBeTruthy();
+    // With mock translations, bot text is the key string
+    expect(screen.getByText("chat.missions.market_watch.message_0.text")).toBeTruthy();
 
     const adminCoreTab = screen.getByRole("tab", { name: /ADMIN_CORE/ });
     fireEvent.click(adminCoreTab);
 
     expect(screen.getByRole("tab", { name: /ADMIN_CORE/ }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByRole("tab", { name: /MARKET_WATCH/ }).getAttribute("aria-selected")).toBe("false");
-    expect(screen.getByText("Listing created: MacBook Pro M3 14\"")).toBeTruthy();
+    expect(screen.getByText("chat.missions.admin_core.message_0.text")).toBeTruthy();
   });
 });

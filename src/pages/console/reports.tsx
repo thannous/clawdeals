@@ -1,6 +1,8 @@
 import Head from "next/head";
 import ReportsPage from "../../ui/console/reports/ReportsPage";
 
+export { getI18nStaticProps as getStaticProps } from "../../shared/i18n";
+
 export default function Reports() {
   return (
     <>

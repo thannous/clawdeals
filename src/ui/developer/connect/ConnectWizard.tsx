@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { ChevronDown, Settings } from "lucide-react";
+import { ChevronDown, Settings, Terminal } from "lucide-react";
 
 import { useTheme } from "../../../theme/theme-context";
 import { getPublicLandingUrl } from "../../../shared/urls";
+import { getLocaleLabels, localePrefixFor } from "../../../shared/seo";
+import { stripLocalePrefix, type SupportedLocale } from "../../../shared/i18n";
 import ShareButton from "../../landing/ShareButton";
 import { maskApiKey } from "../api";
 import { useConnectSession } from "./useConnectSession";
@@ -16,10 +18,7 @@ import StepVerify from "./StepVerify";
 import StepFirstWin from "./StepFirstWin";
 import type { ConnectLocale, WizardStep } from "./types";
 
-const LOCALES = [
-  { code: "fr", label: "FR" },
-  { code: "en", label: "EN" }
-] as const;
+const LOCALES = getLocaleLabels();
 
 function useDropdown() {
   const [open, setOpen] = useState(false);
@@ -164,7 +163,8 @@ function StepIndicator({ currentStep, locale }: { currentStep: WizardStep; local
 
 function HeaderLogo() {
   const router = useRouter();
-  const localePrefix = router.locale === "fr" ? "/fr" : "";
+  const resolvedLocale: SupportedLocale = (router.locale === "fr" || router.locale === "es") ? router.locale : "en";
+  const localePrefix = localePrefixFor(resolvedLocale);
   const landingBase = getPublicLandingUrl();
   const href = landingBase === "/" ? `${localePrefix}/` : `${landingBase}${localePrefix}/`;
 
@@ -184,12 +184,11 @@ function HeaderLogo() {
   );
 }
 
-function HeaderActions({ extraActions, locale }: { extraActions?: React.ReactNode; locale: ConnectLocale }) {
+function HeaderActions({ extraActions, locale, showLogin }: { extraActions?: React.ReactNode; locale: ConnectLocale; showLogin?: boolean }) {
   const router = useRouter();
   const { themeId, setTheme, themes } = useTheme();
   const isFr = locale === "fr";
-  const asPathNoLocale =
-    (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
+  const asPathNoLocale = stripLocalePrefix(router.asPath || "/");
 
   const { open: langOpen, setOpen: setLangOpen, ref: langRef } = useDropdown();
   const { open: themeOpen, setOpen: setThemeOpen, ref: themeRef } = useDropdown();
@@ -267,6 +266,17 @@ function HeaderActions({ extraActions, locale }: { extraActions?: React.ReactNod
         <ShareButton locale={router.locale || "en"} />
       </div>
 
+      {/* Login button — desktop, shown when not logged in */}
+      {showLogin && (
+        <Link
+          href="/auth/login"
+          className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
+        >
+          <Terminal className="w-4 h-4" />
+          {isFr ? "Login" : "Login"}
+        </Link>
+      )}
+
       {/* Extra actions (KEY display + Forget) — desktop only */}
       {extraActions && <div className="hidden sm:flex items-center gap-2">{extraActions}</div>}
 
@@ -317,6 +327,19 @@ function HeaderActions({ extraActions, locale }: { extraActions?: React.ReactNod
                 {t.label}
               </button>
             ))}
+            {showLogin && (
+              <>
+                <div className="border-t border-border" />
+                <Link
+                  href="/auth/login"
+                  onClick={() => setMobileSettingsOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Terminal className="w-3.5 h-3.5" />
+                  Login
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -387,7 +410,7 @@ export default function ConnectWizard() {
   const forgetButton = masked ? (
     <button
       onClick={handleForget}
-      className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong hover:text-text transition-colors"
+      className="h-9 border border-border px-3 text-xs font-mono hover:border-border-strong hover:text-text transition-colors flex items-center"
     >
       {isFr ? "Oublier" : "Forget"}
     </button>
@@ -408,7 +431,7 @@ export default function ConnectWizard() {
 
   const headerLeft = <HeaderLogo />;
   const headerActions = (
-    <HeaderActions extraActions={headerExtraActions} locale={locale} />
+    <HeaderActions extraActions={headerExtraActions} locale={locale} showLogin={!state.hasOwnerSession} />
   );
 
   const handleCreateSession = useCallback(async (agentName?: string) => {
@@ -428,8 +451,8 @@ export default function ConnectWizard() {
   if (state.autoVerifying && !autoVerifyGuardExpired) {
     return (
       <div className="min-h-screen bg-bg text-text">
-        <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4">
-          {state.hasOwnerSession ? <SettingsNav current="start" locale={locale} /> : null}
+        <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4" hideLocale>
+          {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
         </PageHeader>
         <main className="w-full px-6 py-6 flex items-center justify-center">
           <div className="flex items-center gap-2">
@@ -449,8 +472,8 @@ export default function ConnectWizard() {
   return (
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
-      <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4">
-        {state.hasOwnerSession ? <SettingsNav current="start" locale={locale} /> : null}
+      <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4" hideLocale>
+        {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-6 py-6 space-y-6">

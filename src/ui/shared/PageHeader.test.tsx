@@ -1,6 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
 import PageHeader from "./PageHeader";
+
+vi.mock("next/router", () => ({
+  useRouter: () => ({ locale: "en", asPath: "/", push: vi.fn(), replace: vi.fn() })
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, ...props }: any) => <a {...props}>{children}</a>
+}));
+
+afterEach(cleanup);
 
 describe("PageHeader", () => {
   it("renders title with slash", () => {
@@ -34,5 +43,17 @@ describe("PageHeader", () => {
     );
 
     expect(screen.getByText("Subnav")).toBeTruthy();
+  });
+
+  it("renders locale dropdown by default", () => {
+    render(<PageHeader title="DEALS" />);
+
+    expect(screen.getByRole("button", { name: /EN/i })).toBeTruthy();
+  });
+
+  it("hides locale dropdown when hideLocale is set", () => {
+    render(<PageHeader title="DEALS" hideLocale />);
+
+    expect(screen.queryByRole("button", { name: /EN/i })).toBeNull();
   });
 });

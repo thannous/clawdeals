@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import AnimatedPhoneChat, { type PhoneChatMessage } from "./AnimatedPhoneChat";
-import type { LandingCopy } from "./types";
 
 const STAR_KEYS = [0, 1, 2, 3, 4] as const;
 
@@ -52,9 +52,8 @@ function StarRating() {
   );
 }
 
-export default function MarketPhone({ copy }: { copy: LandingCopy }) {
-  const msg = copy.chat.marketplace.messages;
-  const labels = copy.chat.marketplace.labels;
+export default function MarketPhone() {
+  const t = useTranslations("landing");
 
   const messages = useMemo<PhoneChatMessage[]>(
     () => [
@@ -63,12 +62,12 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         type: "bot",
         content: (
           <>
-            <p className="text-xs text-text mb-0.5">{msg.newListing}</p>
+            <p className="text-xs text-text mb-0.5">{t("chat.marketplace.messages.newListing")}</p>
             <MiniListingCard
               title={'MacBook Pro M3 14"'}
-              price="1 450€"
-              condition={labels.conditionLikeNew}
-              category={labels.categoryHardware}
+              price="1 450\u20ac"
+              condition={t("chat.marketplace.labels.conditionLikeNew")}
+              category={t("chat.marketplace.labels.categoryHardware")}
             />
           </>
         )
@@ -76,20 +75,20 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
       {
         id: "offer-received",
         type: "bot",
-        content: <p className="text-xs text-text">{msg.offerReceived}</p>
+        content: <p className="text-xs text-text">{t("chat.marketplace.messages.offerReceived")}</p>
       },
       {
         id: "counter",
         type: "user",
-        content: <p className="text-xs text-text">{msg.counter}</p>
+        content: <p className="text-xs text-text">{t("chat.marketplace.messages.counter")}</p>
       },
       {
         id: "accepted",
         type: "bot",
         content: (
           <>
-            <p className="text-xs text-text mb-0.5">{msg.accepted}</p>
-            <EscrowBadge amount="1 380€" suffix={labels.escrowHeldSuffix} />
+            <p className="text-xs text-text mb-0.5">{t("chat.marketplace.messages.accepted")}</p>
+            <EscrowBadge amount="1 380\u20ac" suffix={t("chat.marketplace.labels.escrowHeldSuffix")} />
           </>
         )
       },
@@ -98,9 +97,9 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         type: "bot",
         content: (
           <>
-            <p className="text-xs text-text">{msg.contactRevealed}</p>
+            <p className="text-xs text-text">{t("chat.marketplace.messages.contactRevealed")}</p>
             <div className="bg-bg border border-border p-2 mt-1.5 rounded text-xs font-mono text-muted">
-              te****@email.com → <span className="text-success">{labels.revealedBadge}</span>
+              te****@email.com &rarr; <span className="text-success">{t("chat.marketplace.labels.revealedBadge")}</span>
             </div>
           </>
         )
@@ -110,30 +109,19 @@ export default function MarketPhone({ copy }: { copy: LandingCopy }) {
         type: "bot",
         content: (
           <>
-            <p className="text-xs text-text">{msg.complete}</p>
+            <p className="text-xs text-text">{t("chat.marketplace.messages.complete")}</p>
             <StarRating />
           </>
         )
       }
     ],
-    [
-      labels.categoryHardware,
-      labels.conditionLikeNew,
-      labels.escrowHeldSuffix,
-      labels.revealedBadge,
-      msg.accepted,
-      msg.complete,
-      msg.contactRevealed,
-      msg.counter,
-      msg.newListing,
-      msg.offerReceived
-    ]
+    [t]
   );
 
   return (
     <AnimatedPhoneChat
-      header={copy.chat.marketplace.header}
-      online={copy.chat.marketplace.online}
+      header={t("chat.marketplace.header")}
+      online={t("chat.marketplace.online")}
       tone="secondary"
       idPrefix="market-phone"
       messages={messages}

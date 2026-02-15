@@ -4,6 +4,13 @@ import TimelinePage from "./TimelinePage";
 import { useTimeline } from "./useTimeline";
 import { useReplay } from "./useReplay";
 
+vi.mock("next/router", () => ({
+  useRouter: () => ({ locale: "en", asPath: "/", push: vi.fn(), replace: vi.fn() })
+}));
+vi.mock("next/link", () => ({
+  default: ({ children, ...props }: any) => <a {...props}>{children}</a>
+}));
+
 vi.mock("./useTimeline", () => ({
   useTimeline: vi.fn()
 }));

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { apiRequest } from "./api";
 import { getStoredApiKey } from "./storage";
 import PageHeader from "../shared/PageHeader";
@@ -12,6 +13,7 @@ function parseTags(input: string): string[] {
 }
 
 export default function WatchlistNewPage() {
+  const t = useTranslations("watchlistNew");
   const [apiKey] = useState<string | null>(() => getStoredApiKey());
   const [query, setQuery] = useState("");
   const [tags, setTags] = useState("");
@@ -32,7 +34,7 @@ export default function WatchlistNewPage() {
   const handleSubmit = useCallback(async () => {
     if (!apiKey) {
       setStatus("error");
-      setMessage("Missing API key. Go to /start.");
+      setMessage(t("missingApiKey"));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function WatchlistNewPage() {
       const n = Number(rawPrice);
       if (!Number.isFinite(n) || n <= 0) {
         setStatus("error");
-        setMessage("price_max must be a positive number.");
+        setMessage(t("priceMaxValidation"));
         return;
       }
       criteria.price_max = n;
@@ -70,17 +72,17 @@ export default function WatchlistNewPage() {
       const watchlistId = result.data?.watchlist_id || null;
       setCreatedId(watchlistId);
       setStatus("success");
-      setMessage("Watchlist created.");
+      setMessage(t("created"));
     } catch (error: any) {
       setStatus("error");
-      setMessage(error?.message || "Failed to create watchlist.");
+      setMessage(error?.message || t("createFailed"));
     }
-  }, [apiKey, query, tags, priceMax]);
+  }, [apiKey, query, tags, priceMax, t]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
       <PageHeader
-        title="WATCHLIST NEW"
+        title={t("pageTitle")}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/developer" className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong">
@@ -98,11 +100,11 @@ export default function WatchlistNewPage() {
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-10 space-y-6">
         <div className="border border-border bg-surface p-6 space-y-4">
-          <div className="text-xs font-mono uppercase tracking-widest text-subtle">Criteria</div>
+          <div className="text-xs font-mono uppercase tracking-widest text-subtle">{t("criteria")}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-subtle mb-2" htmlFor="query">
-                Query (AND tokens)
+                {t("queryLabel")}
               </label>
               <input
                 id="query"
@@ -118,7 +120,7 @@ export default function WatchlistNewPage() {
             </div>
             <div>
               <label className="block text-xs font-mono text-subtle mb-2" htmlFor="tags">
-                Tags (comma)
+                {t("tagsLabel")}
               </label>
               <input
                 id="tags"
@@ -134,7 +136,7 @@ export default function WatchlistNewPage() {
             </div>
             <div>
               <label className="block text-xs font-mono text-subtle mb-2" htmlFor="price-max">
-                Price max (EUR)
+                {t("priceMaxLabel")}
               </label>
               <input
                 id="price-max"
@@ -160,7 +162,7 @@ export default function WatchlistNewPage() {
               }`}
               data-testid="create-watchlist"
             >
-              Create
+              {t("createButton")}
             </button>
             {createdId && (
               <span className="text-xs font-mono text-subtle">
@@ -183,7 +185,7 @@ export default function WatchlistNewPage() {
 
         {!apiKey && (
           <div className="border border-border bg-bg p-5 text-xs font-mono text-subtle">
-            Missing API key. Go to <Link href="/start" className="text-primary hover:underline">/start</Link>.
+            {t("missingApiKey")} <Link href="/start" className="text-primary hover:underline">/start</Link>.
           </div>
         )}
       </main>

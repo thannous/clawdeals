@@ -1,7 +1,11 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 
 import ClaimPage from "../../ui/claim/ClaimPage";
+import { extractClaimTokenFromPath, resolveSupportedLocale } from "../../shared/i18n";
+
+export { getI18nServerSideProps as getServerSideProps } from "../../shared/i18n";
 
 function resolveQueryParam(value: unknown) {
   if (Array.isArray(value)) return value[0] || "";
@@ -9,24 +13,12 @@ function resolveQueryParam(value: unknown) {
   return "";
 }
 
-function resolvePathToken(asPath: string) {
-  const rawPath = String(asPath || "").split("?")[0] || "";
-  const match = rawPath.match(/^\/(?:fr\/|en\/)?claim\/([^/?#]+)/);
-  if (!match?.[1]) return "";
-  const value = String(match[1]).trim();
-  if (!value || (value.startsWith("[") && value.endsWith("]"))) return "";
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
-}
-
 export default function ClaimTokenPage() {
   const router = useRouter();
-  const isFr = router.locale === "fr";
+  const locale = resolveSupportedLocale(router.locale);
+  const t = useTranslations("claim");
   const queryToken = resolveQueryParam(router.query?.token).trim();
-  const pathToken = resolvePathToken(router.asPath || "");
+  const pathToken = extractClaimTokenFromPath(router.asPath || "");
   const claimToken = queryToken || pathToken;
 
   return (
@@ -34,7 +26,8 @@ export default function ClaimTokenPage() {
       <Head>
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
-        <title>{isFr ? "Clawdeals | Connexion" : "Clawdeals | Claim"}</title>
+        <title>{locale === "fr" ? "Clawdeals | Connexion" : locale === "es" ? "Clawdeals | Conexion" : "Clawdeals | Claim"}</title>
+        <meta name="description" content={t("subtitle")} />
       </Head>
       <ClaimPage key={claimToken || "empty"} claimToken={claimToken} />
     </>

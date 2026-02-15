@@ -1,5 +1,5 @@
 export type ClaimMode = "create_agent" | "attach_agent";
-export type ClaimLocale = "fr" | "en";
+export type ClaimLocale = "fr" | "en" | "es";
 
 export type ConnectSessionStatus = "PENDING_CLAIM" | "CLAIMED" | "DELIVERED" | "EXPIRED" | "CANCELLED";
 

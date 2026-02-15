@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import DevicePage from "../ui/device/DevicePage";
 
+export { getI18nStaticProps as getStaticProps } from "../shared/i18n";
+
 export default function Device() {
   return (
     <>

@@ -1,53 +1,22 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ChevronRight, Database, Package, Zap } from "lucide-react";
 import { SectionHeader, TechBorder } from "./primitives";
-import type { LandingLocale } from "./types";
 
 const ITEMS = [
-  {
-    key: "agents",
-    href: "/explore/agents",
-    Icon: Zap,
-    color: "text-primary",
-    title: { fr: "AGENTS", en: "AGENTS" },
-    description: {
-      fr: "Catalogue démo des missions et agents tactiques (preview).",
-      en: "Demo catalog of missions and tactical agents (preview)."
-    }
-  },
-  {
-    key: "skills",
-    href: "/explore/skills",
-    Icon: Package,
-    color: "text-secondary",
-    title: { fr: "SKILLS", en: "SKILLS" },
-    description: {
-      fr: "Preview des modules de skills et de leur présentation.",
-      en: "Preview of skill modules and how they will be presented."
-    }
-  },
-  {
-    key: "data",
-    href: "/explore/data",
-    Icon: Database,
-    color: "text-success",
-    title: { fr: "DATA", en: "DATA" },
-    description: {
-      fr: "Preview des assets data et du format d'intégration.",
-      en: "Preview of data assets and integration format."
-    }
-  }
+  { key: "agents", href: "/explore/agents", Icon: Zap, color: "text-primary" },
+  { key: "skills", href: "/explore/skills", Icon: Package, color: "text-secondary" },
+  { key: "data", href: "/explore/data", Icon: Database, color: "text-success" }
 ] as const;
 
-export default function ExploreDemos({ locale }: { locale: LandingLocale }) {
-  const title = locale === "fr" ? "En développement - Explore Demos" : "In Development - Explore Demos";
-  const subtitle = locale === "fr" ? "PREVIEW" : "PREVIEW";
+export default function ExploreDemos() {
+  const t = useTranslations("landing");
 
   return (
     <div>
-      <SectionHeader title={title} subtitle={subtitle} />
+      <SectionHeader title={t("exploreDemos.title")} subtitle={t("exploreDemos.subtitle")} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {ITEMS.map(({ key, href, Icon, color, title, description }) => (
+        {ITEMS.map(({ key, href, Icon, color }) => (
           <Link key={key} href={href} className="block h-full">
             <TechBorder className="h-full">
               <div className="p-6 flex flex-col h-full relative">
@@ -57,11 +26,11 @@ export default function ExploreDemos({ locale }: { locale: LandingLocale }) {
                 <div className={`w-10 h-10 border border-border-strong bg-surface-alt/50 flex items-center justify-center ${color} mb-4`}>
                   <Icon size={20} />
                 </div>
-                <h3 className="text-lg font-bold text-text uppercase mb-2">{title[locale]}</h3>
-                <p className="text-sm text-muted font-mono leading-relaxed">{description[locale]}</p>
+                <h3 className="text-lg font-bold text-text uppercase mb-2">{t(`exploreDemos.${key}.title`)}</h3>
+                <p className="text-sm text-muted font-mono leading-relaxed">{t(`exploreDemos.${key}.description`)}</p>
                 <div className="mt-auto pt-4 flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest">
                   <ChevronRight size={14} />
-                  {title[locale]}
+                  {t(`exploreDemos.${key}.title`)}
                 </div>
               </div>
             </TechBorder>

@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { resolveSupportedLocale, type SupportedLocale, withMessages } from "../../shared/i18n";
 import {
   ArrowRight,
   Bell,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
 import type { GetServerSideProps } from "next";
 
 /* ---------- bilingual copy ---------- */
@@ -323,16 +325,16 @@ function baseUrlFromRequest(req: any): string {
   return `${proto}://${host}`.replace(/\/$/, "");
 }
 
-type PageProps = { baseUrl: string; isPreviewHost: boolean };
+type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
 
-export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res }) => {
+export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res, locale }) => {
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
   const isPreviewHost = typeof host === "string" && host.includes(".workers.dev");
   res.setHeader(
     "Cache-Control",
     isPreviewHost ? "no-store" : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
   );
-  return { props: { baseUrl: baseUrlFromRequest(req), isPreviewHost } };
+  return { props: await withMessages(locale, { baseUrl: baseUrlFromRequest(req), isPreviewHost }) };
 };
 
 /* ---------- reusable code block ---------- */
@@ -376,15 +378,16 @@ function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
 
 export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps) {
   const router = useRouter();
-  const locale = router.locale === "fr" ? "fr" : "en";
-  const c = COPY[locale];
-  const seo = SEO[locale];
+  const locale: SupportedLocale = resolveSupportedLocale(router.locale);
+  const c = locale === "fr" ? COPY.fr : COPY.en;
+  const seo = locale === "fr" ? SEO.fr : SEO.en;
   const slug = "guides/openclaw-dealwatch";
-  const canonicalPath = locale === "fr" ? `/fr/${slug}` : `/${slug}`;
-  const canonicalUrl = `${baseUrl}${canonicalPath}`;
-  const enUrl = `${baseUrl}/${slug}`;
-  const frUrl = `${baseUrl}/fr/${slug}`;
-  const ogImageUrl = `${baseUrl}/og/guides-dealwatch-${locale}.png`;
+  const urls = buildLocaleUrls(baseUrl, slug);
+  const canonicalUrl = urls[locale];
+  const hrefLangs = hrefLangTags(urls);
+  const ogLocales = ogLocaleTags(locale);
+  const ogImageUrl = `${baseUrl}/og/guides-dealwatch-${locale === "fr" ? "fr" : "en"}.png`;
+  const guidesIndex = `${baseUrl}${locale === "en" ? "" : `/${locale}`}/guides`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -396,9 +399,9 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         <meta name="description" content={seo.description} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
-        <link rel="alternate" hrefLang="en" href={enUrl} />
-        <link rel="alternate" hrefLang="fr" href={frUrl} />
-        <link rel="alternate" hrefLang="x-default" href={enUrl} />
+        {hrefLangs.map((tag) => (
+          <link key={tag.hrefLang} rel="alternate" hrefLang={tag.hrefLang} href={tag.href} />
+        ))}
         <meta property="og:title" content={seo.ogTitle} />
         <meta property="og:description" content={seo.ogDescription} />
         <meta property="og:type" content="article" />
@@ -406,8 +409,10 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:locale" content={locale === "fr" ? "fr_FR" : "en_US"} />
-        <meta property="og:locale:alternate" content={locale === "fr" ? "en_US" : "fr_FR"} />
+        <meta property="og:locale" content={ogLocales.current} />
+        {ogLocales.alternates.map((alt) => (
+          <meta key={alt} property="og:locale:alternate" content={alt} />
+        ))}
         <meta property="og:site_name" content="ClawDeals" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={seo.ogTitle} />
@@ -425,7 +430,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
                   name: seo.ogTitle,
                   description: seo.description,
                   url: canonicalUrl,
-                  inLanguage: locale === "fr" ? "fr-FR" : "en-US",
+                  inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-US",
                   step: c.sections.overview.steps.map((s, i) => ({
                     "@type": "HowToStep",
                     position: i + 1,
@@ -438,7 +443,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
                   "@type": "BreadcrumbList",
                   itemListElement: [
                     { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: locale === "fr" ? "Guides" : "Guides", item: `${baseUrl}${locale === "fr" ? "/fr" : ""}/guides` },
+                    { "@type": "ListItem", position: 2, name: locale === "es" ? "Guias" : "Guides", item: guidesIndex },
                     { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
                   ]
                 }

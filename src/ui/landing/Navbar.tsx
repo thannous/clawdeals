@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { ChevronDown, Settings, Terminal } from "lucide-react";
 import { getPublicAppEntryHref } from "../../shared/urls";
+import { getLocaleLabels } from "../../shared/seo";
+import { resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
 import ShareButton from "./ShareButton";
 import type { ThemeOption } from "./types";
 
 type NavbarProps = {
-  copy: { connect: string };
   themeId: string;
   setTheme: (themeId: string) => void;
   themes: ThemeOption[];
@@ -15,10 +17,7 @@ type NavbarProps = {
   center?: React.ReactNode;
 };
 
-const LOCALES = [
-  { code: "fr", label: "FR" },
-  { code: "en", label: "EN" }
-] as const;
+const LOCALES = getLocaleLabels();
 
 function useDropdownDismiss(open: boolean, setOpen: React.Dispatch<React.SetStateAction<boolean>>, ref: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
@@ -42,12 +41,13 @@ function themeShortLabel(label: string) {
   return (label.split(" ")[0] || label).toUpperCase();
 }
 
-export default function Navbar({ copy, themeId, setTheme, themes, futureMode, center }: NavbarProps) {
+export default function Navbar({ themeId, setTheme, themes, futureMode, center }: NavbarProps) {
   const router = useRouter();
-  const localePrefix = router.locale === "fr" ? "/fr" : "";
+  const t = useTranslations("landing");
+  const locale = resolveSupportedLocale(router.locale);
+  const localePrefix = locale === "en" ? "" : `/${locale}`;
   const appEntryUrl = getPublicAppEntryHref(localePrefix);
-  const asPathNoLocale =
-    (router.asPath || "/").replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
+  const asPathNoLocale = stripLocalePrefix(router.asPath || "/");
 
   const [langOpen, setLangOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -202,7 +202,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
                       className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
                     >
                       <Terminal className="w-3.5 h-3.5" />
-                      {copy.connect}
+                      {t("connect")}
                     </Link>
                   </>
                 )}
@@ -216,7 +216,7 @@ export default function Navbar({ copy, themeId, setTheme, themes, futureMode, ce
               className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
             >
               <Terminal className="w-4 h-4" />
-              {copy.connect}
+              {t("connect")}
             </Link>
           )}
         </div>

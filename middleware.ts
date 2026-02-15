@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-type SupportedLocale = "fr" | "en";
+type SupportedLocale = "fr" | "en" | "es";
 
-const SUPPORTED_LOCALES: SupportedLocale[] = ["fr", "en"];
+const SUPPORTED_LOCALES: SupportedLocale[] = ["fr", "en", "es"];
 const DEFAULT_LOCALE: SupportedLocale = "en";
 
 function normalizeHost(hostname: string): string {
@@ -14,7 +14,7 @@ function normalizeHost(hostname: string): string {
 
 function splitLocalePrefix(pathname: string): { localePrefix: string; rest: string } {
   const path = pathname || "/";
-  const match = path.match(/^\/(fr|en)(?=\/|$)/);
+  const match = path.match(/^\/(fr|en|es)(?=\/|$)/);
   if (!match?.[1]) return { localePrefix: "", rest: path };
   const localePrefix = `/${match[1]}`;
   const rest = path.slice(localePrefix.length) || "/";
