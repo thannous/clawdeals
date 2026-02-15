@@ -27,6 +27,13 @@ describe("safeRedirectUrl", () => {
     expect(safeRedirectUrl("/auth/login")).toBe("/auth/login");
   });
 
+  it("accepts /my/* routes", () => {
+    expect(safeRedirectUrl("/my/threads")).toBe("/my/threads");
+    expect(safeRedirectUrl("/my/offers")).toBe("/my/offers");
+    expect(safeRedirectUrl("/my/listings")).toBe("/my/listings");
+    expect(safeRedirectUrl("/my/approvals")).toBe("/my/approvals");
+  });
+
   it("accepts locale-prefixed allowed routes", () => {
     expect(safeRedirectUrl("/fr/settings/connected-apps")).toBe("/fr/settings/connected-apps");
     expect(safeRedirectUrl("/en-US/claim/abc-123?step=2")).toBe("/en-US/claim/abc-123?step=2");
@@ -69,5 +76,27 @@ describe("safeRedirectUrl", () => {
 
   it("trims whitespace before validating", () => {
     expect(safeRedirectUrl("  /claim/abc  ")).toBe("/claim/abc");
+  });
+
+  // Regression: /my/* was rejected because stripLocalePrefix treated "/my"
+  // as a 2-letter locale code, turning "/my/threads" into "/threads".
+  // The fix checks the raw path before locale stripping.
+  it("does not strip /my as a locale prefix", () => {
+    expect(safeRedirectUrl("/my/threads")).toBe("/my/threads");
+    expect(safeRedirectUrl("/my/offers")).toBe("/my/offers");
+  });
+
+  // Regression: short allowed prefixes like /my/ must not be misinterpreted
+  // as locale codes even with query params or fragments.
+  it("preserves /my/* with query params and fragments", () => {
+    expect(safeRedirectUrl("/my/listings?status=active")).toBe("/my/listings?status=active");
+    expect(safeRedirectUrl("/my/threads#latest")).toBe("/my/threads#latest");
+    expect(safeRedirectUrl("/my/approvals?page=2&sort=date")).toBe("/my/approvals?page=2&sort=date");
+  });
+
+  // Ensure legitimate locale + /my/ still works
+  it("accepts locale-prefixed /my/* routes", () => {
+    expect(safeRedirectUrl("/fr/my/threads")).toBe("/fr/my/threads");
+    expect(safeRedirectUrl("/en-US/my/offers")).toBe("/en-US/my/offers");
   });
 });

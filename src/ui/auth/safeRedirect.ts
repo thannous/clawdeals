@@ -5,7 +5,8 @@ const ALLOWED_PREFIXES = [
   "/deals",
   "/console",
   "/explore",
-  "/auth/"
+  "/auth/",
+  "/my/"
 ];
 
 const DEFAULT_REDIRECT = "/settings/account";
@@ -40,10 +41,13 @@ export function safeRedirectUrl(next: unknown): string {
     return DEFAULT_REDIRECT;
   }
 
-  const normalizedPath = stripLocalePrefix(parsed.pathname);
+  const rawPath = parsed.pathname;
+  const strippedPath = stripLocalePrefix(rawPath);
 
-  // Must match an allowed prefix
-  const allowed = ALLOWED_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
+  // Must match an allowed prefix (check raw path first, then locale-stripped)
+  const allowed = ALLOWED_PREFIXES.some(
+    (prefix) => rawPath.startsWith(prefix) || strippedPath.startsWith(prefix)
+  );
   if (!allowed) return DEFAULT_REDIRECT;
 
   return `${parsed.pathname}${parsed.search}${parsed.hash}`;
