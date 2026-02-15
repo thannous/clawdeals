@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Settings, Terminal } from "lucide-react";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { getLocaleLabels } from "../../shared/seo";
 import { resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
+import MarketingLink from "../shared/MarketingLink";
 import ShareButton from "./ShareButton";
 import type { ThemeOption } from "./types";
 
@@ -64,7 +64,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
     <header className="fixed top-0 w-full z-50">
       <nav className="bg-bg backdrop-blur-md border-b border-border h-16">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-full grid grid-cols-[auto_1fr_auto] items-center gap-3 sm:gap-6">
-        <Link href={`${localePrefix}/`} className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <MarketingLink href={`${localePrefix}/`} className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-base sm:text-xl relative overflow-hidden">
             <div className="absolute inset-0 hazard-stripe opacity-20" />
             CD
@@ -75,7 +75,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
               MARKET_ACCESS_GRANTED
             </span>
           </div>
-        </Link>
+        </MarketingLink>
 
         <div className="flex justify-center min-w-0">{center}</div>
 
@@ -93,7 +93,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
             {langOpen && (
               <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[100px]">
                 {LOCALES.map((loc) => (
-                  <Link
+                  <MarketingLink
                     key={loc.code}
                     href={asPathNoLocale}
                     locale={loc.code}
@@ -105,7 +105,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                     }`}
                   >
                     {loc.label}
-                  </Link>
+                  </MarketingLink>
                 ))}
               </div>
             )}
@@ -162,7 +162,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                   Language
                 </div>
                 {LOCALES.map((loc) => (
-                  <Link
+                  <MarketingLink
                     key={loc.code}
                     href={asPathNoLocale}
                     locale={loc.code}
@@ -174,7 +174,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                     }`}
                   >
                     {loc.label}
-                  </Link>
+                  </MarketingLink>
                 ))}
                 <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
                   Theme
@@ -196,14 +196,14 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                 {!futureMode && (
                   <>
                     <div className="border-t border-border" />
-                    <Link
+                    <MarketingLink
                       href={appEntryUrl}
                       onClick={() => setMobileSettingsOpen(false)}
                       className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
                     >
                       <Terminal className="w-3.5 h-3.5" />
                       {t("connect")}
-                    </Link>
+                    </MarketingLink>
                   </>
                 )}
               </div>
@@ -211,13 +211,13 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
           </div>
 
           {!futureMode && (
-            <Link
+            <MarketingLink
               href={appEntryUrl}
               className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
             >
               <Terminal className="w-4 h-4" />
               {t("connect")}
-            </Link>
+            </MarketingLink>
           )}
         </div>
       </div>

@@ -1,11 +1,11 @@
 import React from "react";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { useTheme } from "../../theme/theme-context";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { localePrefixFor } from "../../shared/seo";
 import type { SupportedLocale } from "../../shared/i18n";
+import MarketingLink from "../shared/MarketingLink";
 import Navbar from "../landing/Navbar";
 
 type FeaturePageLayoutProps = {
@@ -90,12 +90,12 @@ export default function FeaturePageLayout({
           <p className="text-sm text-muted font-mono max-w-lg mb-8">
             {t("featureLayout.ctaBody")}
           </p>
-          <Link
+          <MarketingLink
             href={getPublicAppEntryHref(localePrefix)}
             className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
           >
             {t("featureLayout.ctaButton")}
-          </Link>
+          </MarketingLink>
         </div>
       </div>
 
@@ -106,13 +106,13 @@ export default function FeaturePageLayout({
             {t("featureLayout.explorePlatform")}
           </div>
           <div className="flex flex-wrap gap-3 justify-center mb-6">
-            <Link
+            <MarketingLink
               href="/"
               className="px-6 py-3 font-bold uppercase tracking-wider text-xs border border-border-strong text-muted hover:border-text hover:text-text transition-colors bg-bg"
             >
               Home
-            </Link>
-            <Link
+            </MarketingLink>
+            <MarketingLink
               href="/trust-engine"
               className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
                 activePath === "/trust-engine"
@@ -121,8 +121,8 @@ export default function FeaturePageLayout({
               }`}
             >
               Trust Engine
-            </Link>
-            <Link
+            </MarketingLink>
+            <MarketingLink
               href="/policy-control"
               className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
                 activePath === "/policy-control"
@@ -131,8 +131,8 @@ export default function FeaturePageLayout({
               }`}
             >
               Policy Control
-            </Link>
-            <Link
+            </MarketingLink>
+            <MarketingLink
               href="/audit-trail"
               className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
                 activePath === "/audit-trail"
@@ -141,13 +141,13 @@ export default function FeaturePageLayout({
               }`}
             >
               Audit Trail
-            </Link>
+            </MarketingLink>
           </div>
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
             {t("featureLayout.integrationsGuides")}
           </div>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Link
+            <MarketingLink
               href="/integrations/openclaw"
               className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
                 activePath === "/integrations/openclaw"
@@ -156,8 +156,8 @@ export default function FeaturePageLayout({
               }`}
             >
               OpenClaw
-            </Link>
-            <Link
+            </MarketingLink>
+            <MarketingLink
               href="/guides/openclaw-dealwatch"
               className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
                 activePath === "/guides/openclaw-dealwatch"
@@ -166,8 +166,8 @@ export default function FeaturePageLayout({
               }`}
             >
               DealWatch
-            </Link>
-            <Link
+            </MarketingLink>
+            <MarketingLink
               href="/guides/mcp-marketplace-safety"
               className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
                 activePath === "/guides/mcp-marketplace-safety"
@@ -176,7 +176,7 @@ export default function FeaturePageLayout({
               }`}
             >
               MCP Safety
-            </Link>
+            </MarketingLink>
           </div>
         </div>
       </div>

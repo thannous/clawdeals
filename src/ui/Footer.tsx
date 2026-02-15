@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { localePrefixFor } from "../shared/seo";
 import type { SupportedLocale } from "../shared/i18n";
+import MarketingLink from "./shared/MarketingLink";
 
 type FooterLink = { label: string; href: string };
 
@@ -45,13 +45,13 @@ function FooterLinkColumn({ column, localePrefix }: { column: FooterColumn; loca
       <ul className="space-y-2">
         {column.links.map((link) => (
           <li key={link.href}>
-            <Link
+            <MarketingLink
               href={isStaticFile(link.href) ? link.href : `${localePrefix}${link.href}`}
               locale={false}
               className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
             >
               {link.label}
-            </Link>
+            </MarketingLink>
           </li>
         ))}
       </ul>

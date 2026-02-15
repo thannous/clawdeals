@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ChevronRight, Database, Package, Zap } from "lucide-react";
+import MarketingLink from "../shared/MarketingLink";
 import { SectionHeader, TechBorder } from "./primitives";
 
 const ITEMS = [
@@ -17,7 +17,7 @@ export default function ExploreDemos() {
       <SectionHeader title={t("exploreDemos.title")} subtitle={t("exploreDemos.subtitle")} />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {ITEMS.map(({ key, href, Icon, color }) => (
-          <Link key={key} href={href} className="block h-full">
+          <MarketingLink key={key} href={href} className="block h-full">
             <TechBorder className="h-full">
               <div className="p-6 flex flex-col h-full relative">
                 <div className="absolute top-4 right-4 border border-border bg-bg px-2 py-1 text-xs font-mono uppercase text-subtle">
@@ -34,7 +34,7 @@ export default function ExploreDemos() {
                 </div>
               </div>
             </TechBorder>
-          </Link>
+          </MarketingLink>
         ))}
       </div>
     </div>

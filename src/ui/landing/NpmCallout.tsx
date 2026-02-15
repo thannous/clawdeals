@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Code, Package } from "lucide-react";
-import Link from "next/link";
+import MarketingLink from "../shared/MarketingLink";
 
 export default function NpmCallout() {
   const t = useTranslations("landing");
@@ -17,12 +17,12 @@ export default function NpmCallout() {
               <span className="font-mono text-secondary">{t("mcp.snippet")}</span>
               <Code className="w-4 h-4 text-secondary" />
             </div>
-            <Link
+            <MarketingLink
               href="/mcp"
               className="h-10 px-5 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest inline-flex items-center"
             >
               MCP Guide
-            </Link>
+            </MarketingLink>
           </div>
         </div>
         <div className="flex-1 flex justify-center">
