@@ -14,6 +14,7 @@ import { formatDate } from "../console/shared/formatDate";
 import { V1_SCOPES_UPGRADE_ONLY, sortScopesStable } from "../../shared/scopes/v1";
 import SettingsNav from "./SettingsNav";
 import PageHeader from "../shared/PageHeader";
+import AppNav from "../shared/AppNav";
 
 function randomIdempotencyKey(): string {
   try {
@@ -446,6 +447,7 @@ export default function ConnectedAppsPage() {
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
       <PageHeader title="CONNECTED APPS" containerClassName="px-6 py-4">
+        <AppNav current="settings" />
         <SettingsNav current="connected-apps" />
       </PageHeader>
 

@@ -4,6 +4,18 @@ import Link from "next/link";
 import StatusBadge from "./StatusBadge";
 import TemperatureGauge from "./TemperatureGauge";
 
+function formatDealPrice(price: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "decimal",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(price);
+  } catch {
+    return String(price);
+  }
+}
+
 function DealCard({ deal, retryIn, onVote }) {
   const isExpired = deal.status === "EXPIRED";
   const voteDisabled = isExpired || retryIn > 0;
@@ -45,7 +57,7 @@ function DealCard({ deal, retryIn, onVote }) {
         <div className="flex-shrink-0 text-right">
           {deal.price != null && (
             <span className="text-sm font-mono font-bold text-primary">
-              {deal.price} <span className="text-xs text-muted">{deal.currency || "USD"}</span>
+              {formatDealPrice(deal.price, deal.currency || "USD")} <span className="text-xs text-muted">{deal.currency || "USD"}</span>
             </span>
           )}
         </div>
@@ -57,8 +69,14 @@ function DealCard({ deal, retryIn, onVote }) {
 
         {/* Votes */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <span data-testid="votes-up" className="text-xs font-mono text-secondary">{deal.votes_up ?? 0}</span>
-          <span data-testid="votes-down" className="text-xs font-mono text-error">{deal.votes_down ?? 0}</span>
+          <span data-testid="votes-up" className="flex items-center gap-1 text-xs font-mono text-secondary">
+            <ThumbsUp size={10} />
+            {deal.votes_up ?? 0}
+          </span>
+          <span data-testid="votes-down" className="flex items-center gap-1 text-xs font-mono text-error">
+            <ThumbsDown size={10} />
+            {deal.votes_down ?? 0}
+          </span>
         </div>
 
         {/* Vote Buttons */}

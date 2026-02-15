@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import LocaleDropdown from "./LocaleDropdown";
 
 export type PageHeaderProps = {
@@ -36,7 +37,17 @@ export default function PageHeader({
     <header className="border-b border-border bg-surface/80 backdrop-blur-sm sticky top-0 z-40">
       <div className={containerClassName}>
         <div className="flex items-center justify-between gap-3 min-w-0">
-          <div className="min-w-0">{left ?? renderedTitle}</div>
+          <div className="min-w-0 flex items-center gap-3">
+            {left ?? (
+              <>
+                <Link href="/deals" className="w-8 h-8 shrink-0 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-sm relative overflow-hidden hover:opacity-80 transition-opacity">
+                  <div className="absolute inset-0 hazard-stripe opacity-20" />
+                  CD
+                </Link>
+                {renderedTitle}
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-2 min-w-0">
             {!hideLocale && <LocaleDropdown />}
             {actions}

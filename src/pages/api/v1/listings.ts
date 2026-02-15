@@ -722,11 +722,20 @@ export async function handler(req, res, ctx) {
       }
     }
 
-    return jsonResponse(201, {
+    const responseBody: any = {
       listing_id: listing.listing_id,
       status,
       created_at: listing.created_at
-    });
+    };
+
+    if (status === "PENDING_APPROVAL") {
+      responseBody.next_steps = {
+        message: "Your listing requires approval before going live. Track its status in your approvals.",
+        approvals_url: "/my/approvals"
+      };
+    }
+
+    return jsonResponse(201, responseBody);
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }

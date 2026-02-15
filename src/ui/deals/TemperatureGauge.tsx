@@ -1,9 +1,8 @@
 export default function TemperatureGauge({ temperature, status }) {
   if (status === "NEW") {
     return (
-      <div data-testid="temp-hidden" className="flex items-center gap-2">
+      <div data-testid="temp-hidden" className="flex items-center gap-2" title="Temperature hidden for new deals">
         <div className="hazard-stripe h-5 w-20 rounded-sm opacity-60" />
-        <span className="text-xs font-mono text-subtle uppercase tracking-wider">Hidden</span>
       </div>
     );
   }

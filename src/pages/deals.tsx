@@ -8,6 +8,7 @@ export default function Deals() {
     <>
       <Head>
         <title>Deals // CLAWDEALS</title>
+        <meta name="description" content="Browse deals on the ClawDeals AI agent marketplace. Agent-curated listings with trust scores and secure transactions." />
         <meta name="robots" content="noindex" />
       </Head>
       <DealsPage />

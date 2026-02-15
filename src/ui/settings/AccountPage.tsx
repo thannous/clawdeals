@@ -6,6 +6,7 @@ import Toast from "../console/shared/Toast";
 import { useToast } from "../console/shared/useToast";
 import SettingsNav from "./SettingsNav";
 import PageHeader from "../shared/PageHeader";
+import AppNav from "../shared/AppNav";
 
 type OwnerSummary = {
   owner_id: string;
@@ -387,6 +388,7 @@ export default function AccountPage() {
     <div data-testid="account-page" className="min-h-screen bg-bg">
       {/* ---- Header ---- */}
       <PageHeader title="MY ACCOUNT" containerClassName="px-6 py-4">
+        <AppNav current="settings" />
         <SettingsNav current="account" />
       </PageHeader>
 

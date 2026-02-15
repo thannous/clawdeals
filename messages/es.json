@@ -1581,6 +1581,83 @@
       "revokeSuccess": "App revocada"
     }
   },
+  "appNav": {
+    "nav": {
+      "deals": "Ofertas",
+      "listings": "Mis anuncios",
+      "approvals": "Mis aprobaciones",
+      "offers": "Mis ofertas",
+      "threads": "Mis mensajes",
+      "developer": "Desarrollador",
+      "settings": "Ajustes"
+    }
+  },
+  "myListings": {
+    "title": "MIS ANUNCIOS",
+    "failedToLoad": "Error al cargar los anuncios",
+    "noListings": "No se encontraron anuncios",
+    "adjustFilters": "Intenta ajustar tus filtros",
+    "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
+    "list": { "title": "Título", "category": "Categoría", "price": "Precio", "status": "Estado", "created": "Creado" },
+    "detail": {
+      "title": "ANUNCIO",
+      "back": "Volver",
+      "failedToLoad": "Error al cargar el anuncio",
+      "description": "Descripción",
+      "category": "Categoría",
+      "condition": "Estado",
+      "price": "Precio",
+      "status": "Estado",
+      "created": "Creado",
+      "updated": "Actualizado",
+      "listingId": "ID anuncio",
+      "pendingApproval": "Este anuncio está pendiente de aprobación.",
+      "viewApproval": "Ver aprobación pendiente"
+    }
+  },
+  "myApprovals": {
+    "title": "MIS APROBACIONES",
+    "failedToLoad": "Error al cargar las aprobaciones",
+    "noApprovals": "No se encontraron aprobaciones",
+    "adjustFilters": "Intenta ajustar tus filtros",
+    "toolbar": { "stateLabel": "Estado:", "all": "Todos" },
+    "list": { "action": "Acción", "reference": "Referencia", "state": "Estado", "created": "Creado", "decided": "Decidido", "approve": "Aprobar", "deny": "Rechazar" },
+    "detail": {
+      "title": "APROBACIÓN",
+      "back": "Volver",
+      "failedToLoad": "Error al cargar la aprobación",
+      "actionCompleted": "Acción completada",
+      "actionType": "Tipo de acción",
+      "reference": "Referencia",
+      "state": "Estado",
+      "created": "Creado",
+      "resolved": "Resuelto",
+      "reason": "Razón",
+      "approvalId": "ID aprobación",
+      "approve": "Aprobar",
+      "deny": "Rechazar"
+    }
+  },
+  "myThreads": {
+    "title": "MIS MENSAJES",
+    "failedToLoad": "Error al cargar los mensajes",
+    "noThreads": "No se encontraron mensajes",
+    "noThreadsYet": "Aún no hay mensajes",
+    "noThreadsHint": "Inicia una conversación en un anuncio para ver tus mensajes aquí.",
+    "adjustFilters": "Intenta ajustar tus filtros",
+    "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
+    "list": { "listing": "Anuncio", "buyer": "Comprador", "seller": "Vendedor", "status": "Estado", "created": "Creado" }
+  },
+  "myOffers": {
+    "title": "MIS OFERTAS",
+    "failedToLoad": "Error al cargar las ofertas",
+    "noOffers": "No se encontraron ofertas",
+    "noOffersYet": "Aún no hay ofertas",
+    "noOffersHint": "Explora los anuncios para hacer una oferta.",
+    "adjustFilters": "Intenta ajustar tus filtros",
+    "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
+    "list": { "listing": "Anuncio", "amount": "Monto", "currency": "Moneda", "status": "Estado", "created": "Creado" }
+  },
   "device": {
     "title": "VERIFICACIÓN DE DISPOSITIVO",
     "userCode": "Código de usuario",

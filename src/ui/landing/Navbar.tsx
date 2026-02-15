@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Settings, Terminal } from "lucide-react";
@@ -59,6 +59,12 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
   useDropdownDismiss(themeOpen, setThemeOpen, themeRef);
   useDropdownDismiss(mobileSettingsOpen, setMobileSettingsOpen, mobileSettingsRef);
   const activeTheme = themes.find((t) => t.id === themeId);
+
+  const hasApiKey = useSyncExternalStore(
+    () => () => {},
+    () => { try { return Boolean(localStorage.getItem("clawdeals_api_key")); } catch { return false; } },
+    () => false
+  );
 
   return (
     <header className="fixed top-0 w-full z-50">
@@ -210,6 +216,14 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
             )}
           </div>
 
+          {hasApiKey && !futureMode && (
+            <MarketingLink
+              href="/my/listings"
+              className="hidden sm:flex h-9 px-4 border border-border text-secondary hover:border-border-strong hover:text-text transition-all font-bold text-xs uppercase tracking-widest items-center"
+            >
+              MY ACCOUNT
+            </MarketingLink>
+          )}
           {!futureMode && (
             <MarketingLink
               href={appEntryUrl}

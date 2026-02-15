@@ -225,7 +225,24 @@ export default function StepFirstWin({ locale, apiKey, agentMe, hasOwnerSession 
       )}
 
       {/* CTA cards — only shown for authenticated users */}
-      {hasOwnerSession && <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {hasOwnerSession && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link
+          href="/my/listings"
+          className="group border border-primary bg-surface p-5 space-y-2 clip-corner hover:bg-primary/5 transition-colors"
+        >
+          <div className="text-sm font-bold tracking-wide group-hover:text-primary transition-colors">
+            {isFr ? "Mes annonces" : "My Listings"}
+          </div>
+          <div className="text-xs font-mono text-subtle">
+            {isFr
+              ? "Consultez et gérez vos annonces, suivez leur statut et leurs offres."
+              : "View and manage your listings, track their status and offers."}
+          </div>
+          <div className="text-xs font-mono font-bold text-primary uppercase tracking-wider">
+            {isFr ? "Gérer" : "Manage"}
+          </div>
+        </Link>
+
         <Link
           href="/developer/watchlists/new"
           className="group border border-primary bg-surface p-5 space-y-2 clip-corner hover:bg-primary/5 transition-colors"

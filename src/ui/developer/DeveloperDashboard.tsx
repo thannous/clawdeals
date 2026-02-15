@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
 import PageHeader from "../shared/PageHeader";
+import AppNav from "../shared/AppNav";
+
+const noopSubscribe = () => () => {};
 
 export default function DeveloperDashboard() {
-  const [apiKey, setApiKey] = useState<string | null>(() => getStoredApiKey());
+  const storedKey = useSyncExternalStore(noopSubscribe, getStoredApiKey, () => null);
+  const [keyOverride, setKeyOverride] = useState<string | null | undefined>(undefined);
+  const apiKey = keyOverride !== undefined ? keyOverride : storedKey;
   const [status, setStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [message, setMessage] = useState<string>("");
 
@@ -13,7 +18,7 @@ export default function DeveloperDashboard() {
 
   const handleForget = useCallback(() => {
     clearStoredApiKey();
-    setApiKey(null);
+    setKeyOverride(null);
     setStatus("idle");
     setMessage("");
   }, []);
@@ -42,7 +47,7 @@ export default function DeveloperDashboard() {
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
       setStoredApiKey(key);
-      setApiKey(key);
+      setKeyOverride(key);
       setStatus("ok");
       setMessage("Key saved.");
     } catch (error: any) {
@@ -60,7 +65,9 @@ export default function DeveloperDashboard() {
             {masked ? <span data-testid="dev-key">KEY: {masked}</span> : <span>NO KEY</span>}
           </span>
         }
-      />
+      >
+        <AppNav current="developer" />
+      </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-10 space-y-8">
         <div className="border border-border bg-surface p-6 space-y-4">

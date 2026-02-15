@@ -1581,6 +1581,121 @@
       "revokeSuccess": "App revoked"
     }
   },
+  "appNav": {
+    "nav": {
+      "deals": "Deals",
+      "listings": "My Listings",
+      "approvals": "My Approvals",
+      "offers": "My Offers",
+      "threads": "My Messages",
+      "developer": "Developer",
+      "settings": "Settings"
+    }
+  },
+  "myListings": {
+    "title": "MY LISTINGS",
+    "failedToLoad": "Failed to load listings",
+    "noListings": "No listings found",
+    "adjustFilters": "Try adjusting your filters",
+    "toolbar": {
+      "statusLabel": "Status:",
+      "all": "All"
+    },
+    "list": {
+      "title": "Title",
+      "category": "Category",
+      "price": "Price",
+      "status": "Status",
+      "created": "Created"
+    },
+    "detail": {
+      "title": "LISTING",
+      "back": "Back",
+      "failedToLoad": "Failed to load listing",
+      "description": "Description",
+      "category": "Category",
+      "condition": "Condition",
+      "price": "Price",
+      "status": "Status",
+      "created": "Created",
+      "updated": "Updated",
+      "listingId": "Listing ID",
+      "pendingApproval": "This listing is pending approval.",
+      "viewApproval": "View pending approval"
+    }
+  },
+  "myApprovals": {
+    "title": "MY APPROVALS",
+    "failedToLoad": "Failed to load approvals",
+    "noApprovals": "No approvals found",
+    "adjustFilters": "Try adjusting your filters",
+    "toolbar": {
+      "stateLabel": "State:",
+      "all": "All"
+    },
+    "list": {
+      "action": "Action",
+      "reference": "Reference",
+      "state": "State",
+      "created": "Created",
+      "decided": "Decided",
+      "approve": "Approve",
+      "deny": "Deny"
+    },
+    "detail": {
+      "title": "APPROVAL",
+      "back": "Back",
+      "failedToLoad": "Failed to load approval",
+      "actionCompleted": "Action completed",
+      "actionType": "Action type",
+      "reference": "Reference",
+      "state": "State",
+      "created": "Created",
+      "resolved": "Resolved",
+      "reason": "Reason",
+      "approvalId": "Approval ID",
+      "approve": "Approve",
+      "deny": "Deny"
+    }
+  },
+  "myThreads": {
+    "title": "MY MESSAGES",
+    "failedToLoad": "Failed to load threads",
+    "noThreads": "No threads found",
+    "noThreadsYet": "No messages yet",
+    "noThreadsHint": "Start a conversation on a listing to see your messages here.",
+    "adjustFilters": "Try adjusting your filters",
+    "toolbar": {
+      "statusLabel": "Status:",
+      "all": "All"
+    },
+    "list": {
+      "listing": "Listing",
+      "buyer": "Buyer",
+      "seller": "Seller",
+      "status": "Status",
+      "created": "Created"
+    }
+  },
+  "myOffers": {
+    "title": "MY OFFERS",
+    "failedToLoad": "Failed to load offers",
+    "noOffers": "No offers found",
+    "noOffersYet": "No offers yet",
+    "noOffersHint": "Browse listings to make an offer.",
+    "adjustFilters": "Try adjusting your filters",
+    "toolbar": {
+      "statusLabel": "Status:",
+      "all": "All"
+    },
+    "list": {
+      "listing": "Listing",
+      "amount": "Amount",
+      "currency": "Currency",
+      "status": "Status",
+      "created": "Created"
+    }
+  },
   "device": {
     "title": "DEVICE VERIFY",
     "userCode": "User Code",

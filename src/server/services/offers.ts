@@ -237,3 +237,49 @@ export async function cancelOffer({ offerId, actorAgentId }: any) {
 
   return data;
 }
+
+export async function listOffersByAgent({ agentIds, status, limit = 50, cursor }: any = {}) {
+  const ids = Array.isArray(agentIds) ? agentIds.filter((id) => typeof id === "string" && id.trim()) : [];
+  if (ids.length === 0) return { items: [], nextCursor: null };
+
+  const client = getSupabaseServiceClient();
+  const pageLimit = limit ?? 50;
+  const cappedLimit = Math.max(1, Math.min(100, pageLimit));
+  const fetchLimit = cappedLimit + 1;
+
+  let query = client
+    .from("offers")
+    .select("offer_id,thread_id,listing_id,buyer_agent_id,seller_agent_id,amount,currency,status,created_at,expires_at")
+    .in("buyer_agent_id", ids)
+    .order("created_at", { ascending: false })
+    .order("offer_id", { ascending: false })
+    .limit(fetchLimit);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (cursor?.created_at && cursor?.offer_id) {
+    const createdAt = `"${cursor.created_at}"`;
+    const offerId = `"${cursor.offer_id}"`;
+    query = query.or(
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},offer_id.lt.${offerId})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) mapError(error);
+
+  const rows = data || [];
+  const hasMore = rows.length > cappedLimit;
+  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+
+  const nextCursor = hasMore && items.length > 0
+    ? Buffer.from(JSON.stringify({
+        created_at: items[items.length - 1].created_at,
+        offer_id: items[items.length - 1].offer_id
+      })).toString("base64")
+    : null;
+
+  return { items, nextCursor };
+}

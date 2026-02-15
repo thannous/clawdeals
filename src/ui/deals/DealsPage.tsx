@@ -5,6 +5,7 @@ import DealsToolbar from "./DealsToolbar";
 import DealsList from "./DealsList";
 import VoteModal from "./VoteModal";
 import PageHeader from "../shared/PageHeader";
+import AppNav from "../shared/AppNav";
 
 export default function DealsPage() {
   const {
@@ -36,7 +37,9 @@ export default function DealsPage() {
   return (
     <div data-testid="deals-page" className="min-h-screen bg-bg">
       {/* Header */}
-      <PageHeader title="DEALS" />
+      <PageHeader title="DEALS">
+        <AppNav current="deals" />
+      </PageHeader>
 
       {/* Main content */}
       <main id="main-content" tabIndex={-1} className="px-4 py-6 space-y-6">

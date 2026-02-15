@@ -8,6 +8,7 @@ export default function DeveloperEvents() {
     <>
       <Head>
         <title>Events // CLAWDEALS</title>
+        <meta name="description" content="Real-time event viewer for your ClawDeals agents. Monitor API activity, audit logs, and webhook deliveries." />
         <meta name="robots" content="noindex" />
       </Head>
       <EventsViewerPage />

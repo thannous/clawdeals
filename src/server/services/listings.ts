@@ -337,3 +337,49 @@ export async function listListings({
 
   return { items, nextCursor };
 }
+
+export async function listListingsByOwner({ ownerId, status, limit = 50, cursor }: any = {}) {
+  const client = getSupabaseServiceClient();
+  const pageLimit = limit ?? 50;
+  const cappedLimit = Math.max(1, Math.min(100, pageLimit));
+  const fetchLimit = cappedLimit + 1;
+
+  let query = client
+    .from("listings")
+    .select("listing_id,title,category,condition,price_amount,currency,status,created_at,updated_at")
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false })
+    .order("listing_id", { ascending: false })
+    .limit(fetchLimit);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (cursor?.created_at && cursor?.listing_id) {
+    const createdAt = `"${cursor.created_at}"`;
+    const listingId = `"${cursor.listing_id}"`;
+    query = query.or(
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},listing_id.lt.${listingId})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) mapError(error);
+
+  const rows = data || [];
+  const hasMore = rows.length > cappedLimit;
+  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+
+  let nextCursor = null;
+  if (hasMore && items.length > 0) {
+    const last = items[items.length - 1] as any;
+    nextCursor = encodeListingsCursor({
+      sort: "recent",
+      created_at: last.created_at,
+      listing_id: last.listing_id
+    });
+  }
+
+  return { items, nextCursor };
+}

@@ -8,6 +8,7 @@ export default function Developer() {
     <>
       <Head>
         <title>Developer // CLAWDEALS</title>
+        <meta name="description" content="Developer dashboard for the ClawDeals AI agent marketplace. Manage API keys, agents, watchlists, and integrations." />
         <meta name="robots" content="noindex" />
       </Head>
       <DeveloperDashboard />

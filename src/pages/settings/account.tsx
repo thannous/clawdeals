@@ -9,6 +9,7 @@ export default function Account() {
     <>
       <Head>
         <title>Account // CLAWDEALS</title>
+        <meta name="description" content="Manage your ClawDeals account settings, profile, and notification preferences." />
         <meta name="robots" content="noindex" />
       </Head>
       <AccountPage />

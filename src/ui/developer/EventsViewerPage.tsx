@@ -4,6 +4,7 @@ import { getStoredApiKey, getStoredLastEventId, setStoredLastEventId, clearStore
 import { SseParser } from "./sse-parser";
 import { buildApiUrl } from "./api";
 import PageHeader from "../shared/PageHeader";
+import AppNav from "../shared/AppNav";
 
 type UiEvent = {
   id: string;
@@ -267,7 +268,9 @@ export default function EventsViewerPage() {
             />
           </div>
         }
-      />
+      >
+        <AppNav current="developer" />
+      </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-8 space-y-4">
         {!apiKey && (

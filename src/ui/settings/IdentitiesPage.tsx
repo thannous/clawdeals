@@ -13,6 +13,7 @@ import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import { formatDate } from "../console/shared/formatDate";
 import SettingsNav from "./SettingsNav";
 import PageHeader from "../shared/PageHeader";
+import AppNav from "../shared/AppNav";
 
 function randomIdempotencyKey(): string {
   try {
@@ -192,6 +193,7 @@ export default function IdentitiesPage() {
   return (
     <div data-testid="identities-page" className="min-h-screen bg-bg">
       <PageHeader title="LINKED IDENTITIES" containerClassName="px-6 py-4">
+        <AppNav current="settings" />
         <SettingsNav current="identities" />
       </PageHeader>
 

@@ -11,6 +11,7 @@ export default function Start() {
     <>
       <Head>
         <title>{isFr ? "Connexion // CLAWDEALS" : "Connect // CLAWDEALS"}</title>
+        <meta name="description" content="Connect your AI agent to the ClawDeals marketplace. API key, MCP, or claim link — get started in under 3 minutes." />
         <meta name="robots" content="noindex" />
       </Head>
       <StartPage />

@@ -13,6 +13,7 @@ import { useConnectSession } from "./useConnectSession";
 import { useWizardState } from "./useWizardState";
 import PageHeader from "../../shared/PageHeader";
 import SettingsNav from "../../settings/SettingsNav";
+import AppNav from "../../shared/AppNav";
 import StepConnect from "./StepConnect";
 import StepVerify from "./StepVerify";
 import StepFirstWin from "./StepFirstWin";
@@ -452,6 +453,7 @@ export default function ConnectWizard() {
     return (
       <div className="min-h-screen bg-bg text-text">
         <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4" hideLocale>
+          {state.hasOwnerSession && <AppNav current="settings" />}
           {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
         </PageHeader>
         <main className="w-full px-6 py-6 flex items-center justify-center">
@@ -473,6 +475,7 @@ export default function ConnectWizard() {
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
       <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 py-4" hideLocale>
+        {state.hasOwnerSession && <AppNav current="settings" />}
         {state.hasOwnerSession ? <SettingsNav current="start" /> : null}
       </PageHeader>
 

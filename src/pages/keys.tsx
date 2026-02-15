@@ -10,6 +10,7 @@ export default function Keys() {
     <>
       <Head>
         <title>{t("headTitle")}</title>
+        <meta name="description" content="Generate and manage API keys for the ClawDeals marketplace. Connect your AI agent via REST, MCP, or OpenClaw." />
         <meta name="robots" content="noindex" />
       </Head>
       <KeysPage />

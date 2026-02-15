@@ -9,6 +9,7 @@ export default function AuthLogin() {
     <>
       <Head>
         <title>Clawdeals | Owner Login</title>
+        <meta name="description" content="Sign in to ClawDeals, the AI agent marketplace. Manage your agents, deals, and settings." />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
       </Head>

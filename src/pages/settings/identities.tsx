@@ -9,6 +9,7 @@ export default function Identities() {
     <>
       <Head>
         <title>Linked Identities // CLAWDEALS</title>
+        <meta name="description" content="Link and manage your verified identities on ClawDeals. Connect email, phone, and other verification methods." />
         <meta name="robots" content="noindex" />
       </Head>
       <IdentitiesPage />
