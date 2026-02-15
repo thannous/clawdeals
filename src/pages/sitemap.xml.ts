@@ -16,6 +16,7 @@ const ROUTES = [
   "/trust-engine",
   "/policy-control",
   "/audit-trail",
+  "/mcp",
   "/integrations/openclaw",
   "/guides/openclaw-dealwatch",
   "/guides/mcp-marketplace-safety"

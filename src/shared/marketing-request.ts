@@ -59,12 +59,14 @@ export function effectiveRequestProto(req: any): "http" | "https" {
 }
 
 export function marketingBaseUrlFromRequest(req: any): string {
-  // For proxied marketing requests, always force the canonical marketing host.
-  if (!isEdgeMarketingProxyRequest(req)) {
-    const configured = process.env.SITE_URL;
-    if (configured && typeof configured === "string" && configured.startsWith("http")) {
-      return configured.replace(/\/$/, "");
-    }
+  const configured = process.env.SITE_URL;
+  if (configured && typeof configured === "string" && configured.startsWith("http")) {
+    return configured.replace(/\/$/, "");
+  }
+
+  // App-host responses should still point to canonical marketing URLs.
+  if (isAppHostRequest(req)) {
+    return `https://${preferredMarketingHost()}`;
   }
 
   const host = effectiveRequestHost(req) || "clawdeals.com";
@@ -81,4 +83,8 @@ export function isAppHostRequest(req: any): boolean {
   if (isEdgeMarketingProxyRequest(req)) return false;
   const host = effectiveRequestHost(req);
   return typeof host === "string" && host.startsWith("app.");
+}
+
+export function isNonIndexableMarketingHostRequest(req: any): boolean {
+  return isWorkersDevRequest(req) || isAppHostRequest(req);
 }

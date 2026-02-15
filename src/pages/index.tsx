@@ -5,7 +5,7 @@ import Landing from "../ui/Landing";
 import { loadMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
-import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
+import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import packageJson from "../../package.json";
 import type { GetServerSideProps } from "next";
 
@@ -33,7 +33,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
     process.env.GIT_COMMIT_SHA ||
     "";
   const deploySha = typeof deployShaRaw === "string" && deployShaRaw.length >= 7 ? deployShaRaw : undefined;
-  const isPreviewHost = isWorkersDevRequest(req);
+  const isPreviewHost = isNonIndexableMarketingHostRequest(req);
   if (res?.setHeader) {
     res.setHeader(
       "Cache-Control",

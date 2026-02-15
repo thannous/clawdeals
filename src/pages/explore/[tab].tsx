@@ -4,7 +4,7 @@ import ExplorePage from "../../ui/ExplorePage";
 import packageJson from "../../../package.json";
 import { loadMessages, localePrefixFor, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
-import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
+import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
 const TAB_SLUGS = { agents: "gig", skills: "npm", data: "data" } as const;
@@ -95,7 +95,7 @@ export const getServerSideProps: GetServerSideProps<ExploreTabProps> = async ({ 
 
   const tab = tabParam as TabSlug;
   const initialTab = TAB_SLUGS[tab];
-  const isPreviewHost = isWorkersDevRequest(req);
+  const isPreviewHost = isNonIndexableMarketingHostRequest(req);
 
   const appVersion =
     process.env.NEXT_PUBLIC_APP_VERSION ||

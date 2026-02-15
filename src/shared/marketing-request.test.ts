@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effectiveRequestHost } from "./marketing-request";
+import { effectiveRequestHost, isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "./marketing-request";
 
 function req(headers: Record<string, string>) {
   return { headers };
@@ -39,5 +39,33 @@ describe("effectiveRequestHost", () => {
     );
 
     expect(host).toBe("www.clawdeals.com");
+  });
+});
+
+describe("marketingBaseUrlFromRequest", () => {
+  it("forces canonical marketing base url for app-host requests", () => {
+    const baseUrl = marketingBaseUrlFromRequest(
+      req({
+        host: "app.clawdeals.com",
+        "x-forwarded-host": "app.clawdeals.com",
+        "x-forwarded-proto": "https"
+      })
+    );
+
+    expect(baseUrl).toBe("https://clawdeals.com");
+  });
+});
+
+describe("isNonIndexableMarketingHostRequest", () => {
+  it("is true on app host requests", () => {
+    const isNoindex = isNonIndexableMarketingHostRequest(
+      req({
+        host: "app.clawdeals.com",
+        "x-forwarded-host": "app.clawdeals.com",
+        "x-forwarded-proto": "https"
+      })
+    );
+
+    expect(isNoindex).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ import { SectionHeader, TechBorder } from "../ui/landing/primitives";
 import { withMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
-import { isWorkersDevRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
+import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
 const ICON_MAP: Record<string, typeof Scale> = {
@@ -19,7 +19,7 @@ const ICON_MAP: Record<string, typeof Scale> = {
 type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res, locale }) => {
-  const isPreviewHost = isWorkersDevRequest(req);
+  const isPreviewHost = isNonIndexableMarketingHostRequest(req);
   res.setHeader(
     "Cache-Control",
     isPreviewHost ? "no-store" : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
