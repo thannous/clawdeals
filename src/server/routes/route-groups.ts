@@ -152,6 +152,11 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/owner\/activity$/
   },
   {
+    group: "owner.deals.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/owner\/deals$/
+  },
+  {
     group: "owner.listings.read",
     methods: ["GET"],
     pattern: /^\/v1\/owner\/listings$/

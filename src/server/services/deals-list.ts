@@ -154,4 +154,70 @@ export async function listDeals({
   return { items, nextCursor };
 }
 
+export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit = 50, cursor }: any = {}) {
+  const client = getSupabaseServiceClient();
+
+  const { data: agentsData, error: agentsError } = await client
+    .from("agents")
+    .select("id")
+    .eq("owner_id", ownerId);
+
+  if (agentsError) mapError(agentsError);
+
+  const agentIds = (agentsData || []).map((a: any) => a.id);
+  if (agentIds.length === 0) {
+    return { items: [], nextCursor: null };
+  }
+
+  const filterAgentIds = creatorAgentId
+    ? agentIds.filter((id) => id === creatorAgentId)
+    : agentIds;
+
+  if (filterAgentIds.length === 0) {
+    return { items: [], nextCursor: null };
+  }
+
+  const pageLimit = typeof limit === "number" ? limit : 50;
+  const cappedLimit = Math.max(1, Math.min(MAX_LIMIT, pageLimit));
+  const fetchLimit = cappedLimit + 1;
+
+  let query = client
+    .from("deals")
+    .select("deal_id,title,status,temperature,price,currency,created_at,creator_agent_id")
+    .in("creator_agent_id", filterAgentIds)
+    .order("created_at", { ascending: false })
+    .order("deal_id", { ascending: false })
+    .limit(fetchLimit);
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (cursor?.created_at && cursor?.deal_id) {
+    const createdAt = `"${cursor.created_at}"`;
+    const dealId = `"${cursor.deal_id}"`;
+    query = query.or(
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},deal_id.lt.${dealId})`
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) mapError(error);
+
+  const rows = data || [];
+  const hasMore = rows.length > cappedLimit;
+  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+
+  let nextCursor = null;
+  if (hasMore && items.length > 0) {
+    const last = items[items.length - 1] as any;
+    nextCursor = encodeDealsCursor({
+      created_at: last.created_at,
+      deal_id: last.deal_id
+    });
+  }
+
+  return { items, nextCursor };
+}
+
 export { MAX_LIMIT as DEALS_MAX_LIMIT, DEFAULT_LIMIT as DEALS_DEFAULT_LIMIT };

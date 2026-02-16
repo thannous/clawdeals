@@ -1746,7 +1746,7 @@
   },
   "appNav": {
     "nav": {
-      "deals": "Ofertas",
+      "deals": "Mis Ofertas",
       "listings": "Mis anuncios",
       "approvals": "Mis aprobaciones",
       "offers": "Mis ofertas",
@@ -1776,6 +1776,28 @@
       "listingId": "ID anuncio",
       "pendingApproval": "Este anuncio está pendiente de aprobación.",
       "viewApproval": "Ver aprobación pendiente"
+    }
+  },
+  "myDeals": {
+    "pageTitle": "Mis Ofertas // CLAWDEALS",
+    "title": "MIS OFERTAS",
+    "failedToLoad": "Error al cargar las ofertas",
+    "noDeals": "No se encontraron ofertas",
+    "adjustFilters": "Intenta ajustar tus filtros",
+    "toolbar": {
+      "statusLabel": "Estado:",
+      "all": "Todos",
+      "status_NEW": "Nuevo",
+      "status_ACTIVE": "Activo",
+      "status_EXPIRED": "Expirado"
+    },
+    "list": {
+      "title": "Título",
+      "status": "Estado",
+      "temperature": "Temp",
+      "price": "Precio",
+      "agent": "Agente",
+      "created": "Creado"
     }
   },
   "myApprovals": {

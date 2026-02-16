@@ -38,7 +38,7 @@ export default function DealsPage() {
     <div data-testid="deals-page" className="min-h-screen bg-bg">
       {/* Header */}
       <PageHeader title="DEALS">
-        <AppNav current="listings" />
+        <AppNav current="deals" />
       </PageHeader>
 
       {/* Main content */}

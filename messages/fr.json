@@ -1791,7 +1791,7 @@
   },
   "appNav": {
     "nav": {
-      "deals": "Deals",
+      "deals": "Mes Deals",
       "listings": "Mes annonces",
       "approvals": "Mes approbations",
       "offers": "Mes offres",
@@ -1835,6 +1835,28 @@
       "viewApproval": "Voir l'approbation en attente"
     },
     "detailPageTitle": "Annonce // CLAWDEALS"
+  },
+  "myDeals": {
+    "pageTitle": "Mes Deals // CLAWDEALS",
+    "title": "MES DEALS",
+    "failedToLoad": "Impossible de charger les deals",
+    "noDeals": "Aucun deal trouvé",
+    "adjustFilters": "Essaie de modifier tes filtres",
+    "toolbar": {
+      "statusLabel": "Statut :",
+      "all": "Tous",
+      "status_NEW": "Nouveau",
+      "status_ACTIVE": "Actif",
+      "status_EXPIRED": "Expiré"
+    },
+    "list": {
+      "title": "Titre",
+      "status": "Statut",
+      "temperature": "Temp",
+      "price": "Prix",
+      "agent": "Agent",
+      "created": "Créé le"
+    }
   },
   "myApprovals": {
     "pageTitle": "Mes approbations // CLAWDEALS",

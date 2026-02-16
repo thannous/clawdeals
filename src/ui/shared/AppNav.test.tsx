@@ -14,12 +14,20 @@ import AppNav from "./AppNav";
 afterEach(cleanup);
 
 describe("AppNav", () => {
-  it("renders 6 nav items including offers (P4)", () => {
+  it("renders 7 nav items including deals and offers", () => {
     render(<AppNav current="listings" />);
 
     const nav = screen.getByTestId("app-nav");
     const links = nav.querySelectorAll("a");
-    expect(links.length).toBe(6);
+    expect(links.length).toBe(7);
+  });
+
+  it("renders deals link pointing to /my/deals", () => {
+    render(<AppNav current="listings" />);
+
+    const dealsLink = screen.getByText("nav.deals");
+    expect(dealsLink).toBeTruthy();
+    expect(dealsLink.getAttribute("href")).toBe("/my/deals");
   });
 
   it("renders offers link pointing to /my/offers (P4)", () => {
@@ -57,15 +65,17 @@ describe("AppNav", () => {
     }
   });
 
-  it("renders offers between approvals and threads", () => {
+  it("renders deals first, then offers between approvals and threads", () => {
     render(<AppNav current="listings" />);
 
     const links = screen.getByTestId("app-nav").querySelectorAll("a");
     const hrefs = Array.from(links).map((l) => l.getAttribute("href"));
+    const dealsIdx = hrefs.indexOf("/my/deals");
     const approvalsIdx = hrefs.indexOf("/my/approvals");
     const offersIdx = hrefs.indexOf("/my/offers");
     const threadsIdx = hrefs.indexOf("/my/threads");
 
+    expect(dealsIdx).toBe(0);
     expect(offersIdx).toBe(approvalsIdx + 1);
     expect(threadsIdx).toBe(offersIdx + 1);
   });
