@@ -433,7 +433,8 @@ export async function handler(req, res, ctx) {
             price_amount: effectivePriceAmount,
             currency: effectiveCurrency,
             geo_lat: listing.geo_lat ?? null,
-            geo_lng: listing.geo_lng ?? null
+            geo_lng: listing.geo_lng ?? null,
+            delivery_method: updated.delivery_method ?? null
           }
         });
       } catch (error) {

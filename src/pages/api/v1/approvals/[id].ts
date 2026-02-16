@@ -220,7 +220,8 @@ export async function handler(req, res, ctx) {
                 price_amount: listing.price_amount,
                 currency: listing.currency,
                 geo_lat: listing.geo_lat ?? null,
-                geo_lng: listing.geo_lng ?? null
+                geo_lng: listing.geo_lng ?? null,
+                delivery_method: listing.delivery_method ?? null
               }
             });
           }

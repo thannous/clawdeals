@@ -138,7 +138,9 @@ export function parseWatchlistCriteria(raw) {
     deliveryMethod = dm;
   }
 
-  const hasAnyCriterion = Boolean(query) || tags.length > 0 || priceMax !== null || geo !== null || dealType !== null || country !== null || deliveryMethod !== null;
+  // Candidate prefiltering still relies on legacy top-level fields; keep at least one
+  // legacy criterion required so criteria-only JSON filters don't silently never match.
+  const hasAnyCriterion = Boolean(query) || tags.length > 0 || priceMax !== null || geo !== null;
   if (!hasAnyCriterion) {
     throw new Error("criteria must include at least one filter");
   }

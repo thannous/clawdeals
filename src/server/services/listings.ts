@@ -24,6 +24,48 @@ function buildServiceError(message, status = 500, code = "ERROR", meta?: any) {
   return error;
 }
 
+async function enrichDeliveryMethodRows({ client, rows }: any = {}) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (list.length === 0) return list;
+
+  const listingIds = Array.from(
+    new Set(
+      list
+        .filter((row) => row && typeof row === "object")
+        .filter((row) => row.delivery_method === undefined)
+        .map((row) => row.listing_id)
+        .filter((id) => typeof id === "string" && id)
+    )
+  );
+
+  if (listingIds.length === 0) return list;
+
+  const { data, error } = await client
+    .from("listings")
+    .select("listing_id,delivery_method")
+    .in("listing_id", listingIds);
+
+  if (error) {
+    mapError(error);
+  }
+
+  const byListingId = new Map();
+  for (const row of Array.isArray(data) ? data : []) {
+    if (!row?.listing_id) continue;
+    byListingId.set(row.listing_id, row.delivery_method ?? null);
+  }
+
+  return list.map((row) => {
+    if (!row || typeof row !== "object") return row;
+    if (row.delivery_method !== undefined) return row;
+    const listingId = typeof row.listing_id === "string" ? row.listing_id : null;
+    return {
+      ...row,
+      delivery_method: listingId ? byListingId.get(listingId) ?? null : null
+    };
+  });
+}
+
 export async function createListing({
   title,
   description,
@@ -217,7 +259,7 @@ export async function listListings({
       mapError(error);
     }
 
-    const rows = Array.isArray(data) ? data : [];
+    const rows = await enrichDeliveryMethodRows({ client, rows: Array.isArray(data) ? data : [] });
     const hasMore = rows.length > cappedLimit;
     const items = hasMore ? rows.slice(0, cappedLimit) : rows;
 
@@ -308,7 +350,7 @@ export async function listListings({
     mapError(error);
   }
 
-  const rows = Array.isArray(data) ? data : [];
+  const rows = await enrichDeliveryMethodRows({ client, rows: Array.isArray(data) ? data : [] });
   const hasMore = rows.length > cappedLimit;
   const items = hasMore ? rows.slice(0, cappedLimit) : rows;
 

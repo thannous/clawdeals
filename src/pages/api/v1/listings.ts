@@ -726,7 +726,8 @@ export async function handler(req, res, ctx) {
             price_amount: priceAmount,
             currency,
             geo_lat: geo ? geo.lat : null,
-            geo_lng: geo ? geo.lng : null
+            geo_lng: geo ? geo.lng : null,
+            delivery_method: listing.delivery_method ?? deliveryMethod ?? null
           }
         });
       } catch (error) {
