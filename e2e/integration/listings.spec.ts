@@ -385,7 +385,7 @@ test.describe.serial("Integration: Listings (TI-193 + TI-194 + TI-268 + TI-271)"
     });
     await expectStatus(detailRes, 200);
     const detailBody = await detailRes.json();
-    expect(detailBody.delivery_method).toBe("SHIPPING");
+    expect(detailBody.data.delivery_method).toBe("SHIPPING");
 
     // PATCH delivery_method to PICKUP.
     const patchRes = await request.patch(`/api/v1/listings/${shippingBody.listing_id}`, {

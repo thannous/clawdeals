@@ -155,7 +155,7 @@ export async function updateListingBySeller({
     query = query.eq("status", expectedStatus);
   }
 
-  const { data, error } = await query.select("listing_id,status,updated_at").maybeSingle();
+  const { data, error } = await query.select("listing_id,status,delivery_method,updated_at").maybeSingle();
   if (error) {
     mapError(error);
   }

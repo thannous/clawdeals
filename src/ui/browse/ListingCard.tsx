@@ -1,10 +1,12 @@
 import { memo } from "react";
+import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 
-function formatPrice(amount: number, currency: string): string {
+function formatPrice(amount: number, currency: string, locale: string): string {
   try {
-    return new Intl.NumberFormat("en-US", {
-      style: "decimal",
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -38,6 +40,7 @@ function capitalize(s: string) {
 
 function ListingCard({ listing }: { listing: any }) {
   const t = useTranslations("browse");
+  const { locale } = useRouter();
   return (
     <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col">
       <div className="p-4 flex flex-col gap-3 flex-1">
@@ -90,8 +93,7 @@ function ListingCard({ listing }: { listing: any }) {
         {/* Price + time */}
         <div className="mt-auto pt-3 border-t border-dashed border-border flex items-center justify-between">
           <span className="text-sm font-mono font-bold text-primary">
-            {formatPrice(listing.price.amount, listing.price.currency)}{" "}
-            <span className="text-xs text-muted">{listing.price.currency}</span>
+            {formatPrice(listing.price.amount, listing.price.currency, locale || "en")}
           </span>
           <span className="text-xs font-mono text-subtle">
             {timeAgo(listing.created_at)}

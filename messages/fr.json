@@ -22,6 +22,14 @@
     "allAgents": "Tous les agents",
     "agentFilter": "Agent :"
   },
+  "nav": {
+    "marketplace": "Marketplace",
+    "deals": "Deals",
+    "language": "Langue",
+    "theme": "Thème",
+    "settings": "Paramètres",
+    "myAccount": "Mon compte"
+  },
   "landing": {
     "connect": "Connect",
     "hero": {
@@ -87,8 +95,8 @@
         "subtitle": "CHOOSE_OPERATIONAL_VERTICAL"
       },
       "secondary": {
-        "title": "How it's work",
-        "subtitle": "HOW_ITS_WORK"
+        "title": "Sous le capot",
+        "subtitle": "HOW_IT_WORKS"
       },
       "developer": {
         "title": "Accès développeur",
@@ -461,7 +469,7 @@
   "auth": {
     "login": {
       "title": "CONNEXION OWNER",
-      "subtitle": "Connectez-vous avec Google ou avec votre email et mot de passe.",
+      "subtitle": "Connecte-toi avec Google ou avec ton email et mot de passe.",
       "google": "Continuer avec Google",
       "emailLabel": "Email",
       "passwordLabel": "Mot de passe",
@@ -510,7 +518,7 @@
       "magicLinkSent": "Lien magique envoyé",
       "verifyNow": "Vérifier maintenant",
       "sending": "Envoi…",
-      "checkEmail": "Vérifiez votre email pour un lien de connexion.",
+      "checkEmail": "Vérifie ton email pour un lien de connexion.",
       "resend": "Renvoyer"
     }
   },
@@ -1344,14 +1352,14 @@
     "copy": "Copier"
   },
   "claim": {
-    "subtitle": "Connectez un client externe à votre compte owner Clawdeals.",
+    "subtitle": "Connecte un client externe à ton compte owner Clawdeals.",
     "missingTokenTitle": "Token manquant",
     "missingTokenBody": "Le lien de connexion est incomplet.",
     "loading": "Chargement…",
     "loadSessionFailed": "Impossible de charger la session de connexion",
     "errorTitle": "Erreur",
     "ownerSignInRequired": "Connexion owner requise",
-    "ownerSignInBody": "Connectez-vous en owner dans cet onglet, puis validez cette connexion.",
+    "ownerSignInBody": "Connecte-toi en owner dans cet onglet, puis valide cette connexion.",
     "ownerLogin": "Connexion owner",
     "client": "Client",
     "expires": "Expiration",
@@ -1362,9 +1370,9 @@
     "chooseAgent": "Choisir un agent",
     "create": "Créer",
     "attach": "Attacher",
-    "ownerLimitReached": "Ce owner a déjà atteint la limite d'agents ({limit}). Attachez un agent existant.",
-    "ownerLimitReachedAttachHint": "Limite d'agents atteinte pour ce owner. Sélectionnez Attacher et choisissez un agent existant.",
-    "ownerLimitReachedWrongOwnerHint": "Limite d'agents atteinte pour ce owner. Connectez-vous avec le bon owner, ou attachez cette installation à un agent existant.",
+    "ownerLimitReached": "Ce owner a déjà atteint la limite d'agents ({limit}). Attache un agent existant.",
+    "ownerLimitReachedAttachHint": "Limite d'agents atteinte pour ce owner. Sélectionne Attacher et choisis un agent existant.",
+    "ownerLimitReachedWrongOwnerHint": "Limite d'agents atteinte pour ce owner. Connecte-toi avec le bon owner, ou attache cette installation à un agent existant.",
     "newAgentName": "Nom du nouvel agent",
     "requestedAgentDefault": "Nom initialisé depuis la demande.",
     "existingAgent": "Agent existant",
@@ -1377,16 +1385,16 @@
     "refuse": "Refuser",
     "denyConfirm": "Refuser cette demande de connexion ? Cette action est irréversible.",
     "denyFailed": "Échec du refus",
-    "selectAttachAgent": "Sélectionnez un agent existant à attacher.",
+    "selectAttachAgent": "Sélectionne un agent existant à attacher.",
     "claimFailed": "Validation échouée",
-    "signInRequiredToApprove": "Vous devez être connecté en owner pour valider cette connexion.",
-    "footerWarning": "Si ce n'était pas attendu, fermez cette page. Ne collez jamais de token dans un chat.",
+    "signInRequiredToApprove": "Tu dois être connecté en owner pour valider cette connexion.",
+    "footerWarning": "Si ce n'était pas attendu, ferme cette page. Ne colle jamais de token dans un chat.",
     "in": "dans {rel}",
     "expiredAgo": "expiré depuis {rel}",
     "requestedAgent": "Agent demandé",
     "connectionApproved": "Connexion approuvée avec succès !",
     "manageAgents": "Gérer les agents",
-    "agentInitiatedHint": "Cette connexion a été initiée par votre agent. Vérifiez que le nom correspond.",
+    "agentInitiatedHint": "Cette connexion a été initiée par ton agent. Vérifie que le nom correspond.",
     "scope": {
       "agentRead": "Lire les listings, offres et état du compte pour cette installation.",
       "agentWrite": "Créer et mettre à jour listings, offres et messages.",
@@ -1451,7 +1459,7 @@
       "validating": "Validation…",
       "agentNameLabel": "Nom de l'agent (optionnel)",
       "agentNamePlaceholder": "Mon bot trading",
-      "pastePrompt": "Collez une clé API.",
+      "pastePrompt": "Colle une clé API.",
       "invalidKeyFormat": "Cette clé ne ressemble pas à une clé API ClawDeals.",
       "unexpectedResponse": "Réponse serveur inattendue.",
       "generateFailed": "Impossible de générer la clé API."
@@ -1471,7 +1479,7 @@
       "settings": "Paramètres",
       "checkingConnection": "Vérification de la connexion existante…",
       "autoCheckExpired": "Vérification auto expirée",
-      "autoCheckExpiredDesc": "Passage en mode manuel. Vous pouvez vérifier à nouveau ou coller une clé API.",
+      "autoCheckExpiredDesc": "Passage en mode manuel. Tu peux vérifier à nouveau ou coller une clé API.",
       "startContext": "Contexte de départ",
       "startSourceGeneric": "Flux initialisé via {source}.",
       "startSourceBucket": "Flux initialisé depuis Explore > {bucket}.",
@@ -1485,19 +1493,19 @@
     },
     "step": {
       "connect": {
-        "heading": "Connectez votre agent",
+        "heading": "Connecte ton agent",
         "heroDesc": "Ton agent surveille les deals, négocie les offres et t'alerte quand ça compte. Tu gardes le contrôle — il fait le boulot.",
         "step1Label": "Étape 1 (optionnel)",
-        "accountWarning": "Sans compte, votre clé API sera limitée (recherches marketplace restreintes). Connectez-vous ou créez un compte pour profiter de toutes les fonctionnalités.",
+        "accountWarning": "Sans compte, ta clé API sera limitée (recherches marketplace restreintes). Connecte-toi ou crée un compte pour profiter de toutes les fonctionnalités.",
         "logIn": "Se connecter",
         "createAccount": "Créer un compte",
-        "step2Label": "Étape 2 — Choisissez votre méthode",
-        "chooseMethod": "Choisissez une méthode de connexion",
+        "step2Label": "Étape 2 — Choisis ta méthode",
+        "chooseMethod": "Choisis une méthode de connexion",
         "orRemote": "Ou connecter un agent distant",
         "claim": {
           "teamsBadge": "Équipes & multi-appareils",
           "selfInstallBadge": "Auto-install agent",
-          "longDesc": "Connectez un agent qui tourne sur une autre machine (serveur, CI, bot). Générez un lien d'approbation, partagez-le par lien ou QR — l'agent reçoit sa clé API automatiquement, sans jamais la voir en clair. Votre agent peut aussi lancer ce flow lui-même.",
+          "longDesc": "Connecte un agent qui tourne sur une autre machine (serveur, CI, bot). Génère un lien d'approbation, partage-le par lien ou QR — l'agent reçoit sa clé API automatiquement, sans jamais la voir en clair. Ton agent peut aussi lancer ce flow lui-même.",
           "agentTipLabel": "Astuce agent:",
           "agentTipOr": "ou",
           "creating": "Création…",
@@ -1514,13 +1522,13 @@
           "popupBlocked": "Popup bloquée. Utilisez Copier le lien.",
           "pageOpened": "Page de connexion ouverte dans un nouvel onglet.",
           "scanToApprove": "Scanner pour valider",
-          "scanConfirmCode": "Scannez depuis votre téléphone, puis confirmez le code ",
+          "scanConfirmCode": "Scanne depuis ton téléphone, puis confirme le code ",
           "waitingApproval": "En attente de validation…",
           "claimedConnecting": "Validé. Connexion en cours…"
         },
         "apikey": {
           "manualTitle": "Clé API manuelle",
-          "manualDesc": "Le plus simple pour commencer. Générez une clé ou collez une existante.",
+          "manualDesc": "Le plus simple pour commencer. Génère une clé ou colle une existante.",
           "generatedMsg": "Clé API générée. Copiez-la puis continuez.",
           "keySaveWarning": "Sauvegardez cette clé. Elle ne sera plus affichée en clair.",
           "validated": "Clé API validée.",
@@ -1530,10 +1538,10 @@
           "connectionTitle": "Connexion MCP",
           "connectionDesc": "Obtenez une clé API pour authentifier la connexion MCP.",
           "keyGenerated": "Clé API générée. Elle sera intégrée dans la config ci-dessous.",
-          "configureTitle": "Configurez MCP dans votre IDE",
-          "configureSubtitle": "Votre clé API est prête. Choisissez une méthode d'installation ci-dessous.",
+          "configureTitle": "Configure MCP dans ton IDE",
+          "configureSubtitle": "Ta clé API est prête. Choisis une méthode d'installation ci-dessous.",
           "keyLabel": "Clé:",
-          "chooseOneLabel": "STEP_01: choisissez une seule option: A ou B.",
+          "chooseOneLabel": "STEP_01: choisis une seule option : A ou B.",
           "optionALabel": "Option A (recommandée): installation auto",
           "optionBLabel": "Option B: config manuelle",
           "fileLabel": "Fichier: ",
@@ -1554,7 +1562,7 @@
           "copyLink": "Copier le lien",
           "confirmCode": "Code de confirmation",
           "confirmCodeDesc": "La personne qui valide verra ce code et devra confirmer qu'il correspond.",
-          "scanQrDesc": "Scannez ce QR depuis un autre appareil, puis confirmez le code ",
+          "scanQrDesc": "Scanne ce QR depuis un autre appareil, puis confirme le code ",
           "approved": "Validé. Configuration des credentials…",
           "popupBlocked": "Popup bloquée. Utilisez Copier le lien.",
           "pageOpened": "Page de connexion ouverte dans un nouvel onglet.",
@@ -1563,22 +1571,22 @@
         },
         "apikey": {
           "title": "Vérifier la connexion",
-          "subtitle": "Vérification de votre clé API…",
+          "subtitle": "Vérification de ta clé API…",
           "verifying": "Vérification de la clé API…",
           "identityError": "Impossible de vérifier l'identité de l'agent.",
           "failed": "La vérification a échoué."
         },
         "mcp": {
           "title": "Vérifier l'installation MCP",
-          "subtitle": "Confirmez que votre serveur MCP est connecté.",
-          "instructions": "Après la commande d'installation, collez ce prompt dans votre IDE pour vérifier:",
+          "subtitle": "Confirme que ton serveur MCP est connecté.",
+          "instructions": "Après la commande d'installation, colle ce prompt dans ton IDE pour vérifier :",
           "copyPrompt": "Copier le prompt",
           "verifyOptional": "Vérifier la connexion (optionnel)",
-          "pasteKeyPrompt": "Collez votre clé API pour confirmer que la connexion fonctionne:",
+          "pasteKeyPrompt": "Colle ta clé API pour confirmer que la connexion fonctionne :",
           "verify": "Vérifier",
           "verifying": "Vérification…",
           "skipVerify": "Passer la vérification",
-          "pasteToVerify": "Collez votre clé API pour vérifier.",
+          "pasteToVerify": "Colle ta clé API pour vérifier.",
           "identityError": "Impossible de vérifier l'identité de l'agent.",
           "failed": "La vérification a échoué."
         },
@@ -1589,36 +1597,36 @@
       "firstwin": {
         "connectedHeading": "Connexion établie",
         "connectedDesc": "Ton agent est en ligne. Crée une watchlist, explore les deals, ou laisse-le négocier — le marketplace est à toi.",
-        "keyReady": "Votre clé API est prête !",
+        "keyReady": "Ta clé API est prête !",
         "nameLabel": "nom:",
         "limitedWarning": "Recherches limitées sur le marketplace tant que cette clé n'est pas liée à un compte.",
         "createAccount": "Créer un compte",
         "revealKey": "Afficher la clé",
         "hideKey": "Masquer",
         "copyKeyFull": "Copier la clé",
-        "keySaveOnce": "Sauvegardez cette clé. Elle ne s'affichera qu'une seule fois.",
+        "keySaveOnce": "Sauvegarde cette clé. Elle ne s'affichera qu'une seule fois.",
         "agentName": "Nom de l'agent",
         "namePlaceholder": "Mon bot trading",
         "nameHint": "Tu peux changer ce nom plus tard dans les paramètres.",
         "save": "Enregistrer",
         "myListings": "Mes annonces",
-        "myListingsDesc": "Consultez et gérez vos annonces, suivez leur statut et leurs offres.",
+        "myListingsDesc": "Consulte et gère tes annonces, suis leur statut et leurs offres.",
         "manage": "Gérer",
         "createWatchlist": "Créer une watchlist",
-        "createWatchlistDesc": "Arrêtez la surveillance manuelle. Recevez des alertes quand des deals correspondent à vos critères.",
+        "createWatchlistDesc": "Arrête la surveillance manuelle. Reçois des alertes quand des deals correspondent à tes critères.",
         "getStarted": "Démarrer",
         "browseDeals": "Parcourir les deals",
-        "browseDealsDesc": "Explorez les deals en direct et voyez ce qui se traite en ce moment.",
+        "browseDealsDesc": "Explore les deals en direct et vois ce qui se traite en ce moment.",
         "explore": "Explorer",
         "eventsViewer": "Lecteur d'événements",
-        "eventsViewerDesc": "Suivez les événements SSE en temps réel de votre agent.",
+        "eventsViewerDesc": "Suis les événements SSE en temps réel de ton agent.",
         "open": "Ouvrir",
         "resources": "Ressources développeur",
         "testApi": "Tester l'API",
         "copyCurl": "Copier curl",
         "createDeal": "Créer un deal",
         "connectOpenClaw": "Connecter OpenClaw",
-        "openClawDesc": "Ajoutez le skill par URL, puis configurez les variables d'environnement dans OpenClaw.",
+        "openClawDesc": "Ajoute le skill par URL, puis configure les variables d'environnement dans OpenClaw.",
         "copyOpenClaw": "Copier OpenClaw",
         "goToDashboard": "Aller au tableau de bord",
         "nameErrors": {
@@ -1650,11 +1658,11 @@
     "profile": {
       "title": "MON PROFIL",
       "completeBanner": {
-        "heading": "complétez votre profil",
-        "subtitle": "finalisez ces étapes pour renforcer la confiance avec acheteurs et vendeurs :",
-        "nameAdded": "Ajoutez votre nom d'affichage",
-        "locationAdded": "Ajoutez votre ville",
-        "emailVerified": "Vérifiez votre email"
+        "heading": "complète ton profil",
+        "subtitle": "finalise ces étapes pour renforcer la confiance avec acheteurs et vendeurs :",
+        "nameAdded": "Ajoute ton nom d'affichage",
+        "locationAdded": "Ajoute ta ville",
+        "emailVerified": "Vérifie ton email"
       },
       "verifyBanner": {
         "heading": "se vérifier",
@@ -1663,15 +1671,15 @@
       },
       "avatar": {
         "label": "avatar",
-        "choosePreset": "choisissez un avatar",
-        "customUrl": "ou collez une URL d'image",
+        "choosePreset": "choisis un avatar",
+        "customUrl": "ou colle une URL d'image",
         "urlPlaceholder": "https://example.com/avatar.png"
       },
       "fields": {
         "displayName": "nom d'affichage",
-        "displayNamePlaceholder": "votre nom public",
+        "displayNamePlaceholder": "ton nom public",
         "bio": "bio",
-        "bioPlaceholder": "parlez de vous aux acheteurs et vendeurs",
+        "bioPlaceholder": "parle de toi aux acheteurs et vendeurs",
         "city": "ville",
         "cityPlaceholder": "ex. Paris",
         "stateRegion": "état/région",
@@ -1679,7 +1687,7 @@
         "country": "pays",
         "countryPlaceholder": "Sélectionner un pays",
         "available": "disponible",
-        "availableDesc": "acceptez-vous les contacts ?",
+        "availableDesc": "acceptes-tu les contacts ?",
         "showEmail": "afficher l'email",
         "showEmailDesc": "afficher l'email sur le profil ?"
       },
@@ -1718,7 +1726,7 @@
       "actions": "Actions",
       "noIdentities": "Aucune identité liée",
       "failedToLoad": "Échec du chargement des identités",
-      "unlinkConfirm": "Délier cette identité ? Vous pourrez la relier plus tard."
+      "unlinkConfirm": "Délier cette identité ? Tu pourras la relier plus tard."
     },
     "connectedApps": {
       "title": "APPS CONNECTÉES",
@@ -1748,7 +1756,7 @@
     "title": "MES ANNONCES",
     "failedToLoad": "Impossible de charger les annonces",
     "noListings": "Aucune annonce trouvée",
-    "adjustFilters": "Essayez de modifier vos filtres",
+    "adjustFilters": "Essaie de modifier tes filtres",
     "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
     "list": { "title": "Titre", "category": "Catégorie", "price": "Prix", "status": "Statut", "created": "Créé le", "agent": "Agent" },
     "detail": {
@@ -1771,7 +1779,7 @@
     "title": "MES APPROBATIONS",
     "failedToLoad": "Impossible de charger les approbations",
     "noApprovals": "Aucune approbation trouvée",
-    "adjustFilters": "Essayez de modifier vos filtres",
+    "adjustFilters": "Essaie de modifier tes filtres",
     "toolbar": { "stateLabel": "État :", "all": "Tous" },
     "list": { "action": "Action", "reference": "Référence", "state": "État", "created": "Créé le", "decided": "Décidé le", "approve": "Approuver", "deny": "Refuser", "agent": "Agent" },
     "detail": {
@@ -1795,8 +1803,8 @@
     "failedToLoad": "Impossible de charger les messages",
     "noThreads": "Aucun message trouvé",
     "noThreadsYet": "Aucun message pour le moment",
-    "noThreadsHint": "Démarrez une conversation sur une annonce pour voir vos messages ici.",
-    "adjustFilters": "Essayez de modifier vos filtres",
+    "noThreadsHint": "Démarre une conversation sur une annonce pour voir tes messages ici.",
+    "adjustFilters": "Essaie de modifier tes filtres",
     "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
     "list": { "listing": "Annonce", "buyer": "Acheteur", "seller": "Vendeur", "status": "Statut", "created": "Créé le", "agent": "Agent" }
   },
@@ -1806,7 +1814,7 @@
     "noOffers": "Aucune offre trouvée",
     "noOffersYet": "Aucune offre pour le moment",
     "noOffersHint": "Parcourez les annonces pour faire une offre.",
-    "adjustFilters": "Essayez de modifier vos filtres",
+    "adjustFilters": "Essaie de modifier tes filtres",
     "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
     "list": { "listing": "Annonce", "amount": "Montant", "currency": "Devise", "status": "Statut", "created": "Créé le", "agent": "Agent" }
   },
@@ -2182,7 +2190,7 @@
   "browse": {
     "pageTitle": "Parcourir les annonces // CLAWDEALS",
     "title": "PARCOURIR LES ANNONCES",
-    "subtitle": "trouvez des annonces sur la marketplace ClawDeals",
+    "subtitle": "trouve des annonces sur la marketplace ClawDeals",
     "metaDescription": "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et transactions sécurisées.",
     "search": "Rechercher des annonces…",
     "sort": {
@@ -2198,7 +2206,7 @@
     "priceMin": "Min",
     "priceMax": "Max",
     "noResults": "Aucune annonce trouvée",
-    "noResultsHint": "Essayez d'ajuster vos filtres ou votre recherche",
+    "noResultsHint": "Essaie d'ajuster tes filtres ou ta recherche",
     "loadMore": "Charger plus",
     "loading": "Chargement…",
     "error": "Échec du chargement des annonces",
@@ -2215,9 +2223,9 @@
     "resetFilters": "Réinitialiser les filtres",
     "cta": {
       "label": "ÉTAPE SUIVANTE",
-      "title": "Vous avez trouvé ?",
-      "subtitle": "Connectez votre agent pour faire une offre.",
-      "button": "Connecter votre agent"
+      "title": "Tu as trouvé ?",
+      "subtitle": "Connecte ton agent pour faire une offre.",
+      "button": "Connecter ton agent"
     }
   },
   "marketplace": {
@@ -2234,6 +2242,12 @@
       "subtitle": "DEAL_FEED",
       "description": "Découvre les deals publiés par les agents. Vote, surveille et ne rate aucune opportunité.",
       "cta": "Voir les deals"
+    },
+    "country": {
+      "label": "Pays",
+      "worldwide": "Monde entier",
+      "more": "Plus…",
+      "search": "Rechercher un pays…"
     }
   }
 }

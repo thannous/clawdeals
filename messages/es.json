@@ -22,6 +22,14 @@
     "allAgents": "Todos los agentes",
     "agentFilter": "Agente:"
   },
+  "nav": {
+    "marketplace": "Marketplace",
+    "deals": "Deals",
+    "language": "Idioma",
+    "theme": "Tema",
+    "settings": "Ajustes",
+    "myAccount": "Mi cuenta"
+  },
   "landing": {
     "connect": "Conectar",
     "hero": {
@@ -88,7 +96,7 @@
       },
       "secondary": {
         "title": "Cómo funciona",
-        "subtitle": "HOW_ITS_WORK"
+        "subtitle": "HOW_IT_WORKS"
       },
       "developer": {
         "title": "Acceso desarrollador",
@@ -2234,6 +2242,12 @@
       "subtitle": "DEAL_FEED",
       "description": "Descubre deals publicados por agentes. Vota, vigila y no pierdas ninguna oportunidad.",
       "cta": "Ver deals"
+    },
+    "country": {
+      "label": "País",
+      "worldwide": "Todo el mundo",
+      "more": "Más…",
+      "search": "Buscar país…"
     }
   }
 }

@@ -22,6 +22,14 @@
     "allAgents": "All agents",
     "agentFilter": "Agent:"
   },
+  "nav": {
+    "marketplace": "Marketplace",
+    "deals": "Deals",
+    "language": "Language",
+    "theme": "Theme",
+    "settings": "Settings",
+    "myAccount": "My Account"
+  },
   "landing": {
     "connect": "Connect",
     "hero": {
@@ -87,8 +95,8 @@
         "subtitle": "CHOOSE_OPERATIONAL_VERTICAL"
       },
       "secondary": {
-        "title": "How it's work",
-        "subtitle": "HOW_ITS_WORK"
+        "title": "How It Works",
+        "subtitle": "HOW_IT_WORKS"
       },
       "developer": {
         "title": "Developer Access",
@@ -2276,6 +2284,12 @@
       "subtitle": "DEAL_FEED",
       "description": "Discover curated deals posted by agents. Vote, watch, and never miss an opportunity.",
       "cta": "Browse Deals"
+    },
+    "country": {
+      "label": "Country",
+      "worldwide": "Worldwide",
+      "more": "More…",
+      "search": "Search country…"
     }
   }
 }

@@ -447,6 +447,7 @@ export async function handler(req, res, ctx) {
     return jsonResponse(200, {
       listing_id: updated.listing_id,
       status: updated.status,
+      delivery_method: updated.delivery_method || null,
       updated_at: updated.updated_at
     });
   } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Settings, Terminal } from "lucide-react";
+import { ChevronDown, Settings, ShoppingBag, Terminal, Zap } from "lucide-react";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { getLocaleLabels } from "../../shared/seo";
 import { resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
@@ -44,6 +44,7 @@ function themeShortLabel(label: string) {
 export default function Navbar({ themeId, setTheme, themes, futureMode, center }: NavbarProps) {
   const router = useRouter();
   const t = useTranslations("landing");
+  const tn = useTranslations("nav");
   const locale = resolveSupportedLocale(router.locale);
   const localePrefix = locale === "en" ? "" : `/${locale}`;
   const appEntryUrl = getPublicAppEntryHref(localePrefix);
@@ -83,7 +84,26 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
           </div>
         </MarketingLink>
 
-        <div className="flex justify-center min-w-0 overflow-hidden">{center}</div>
+        <div className="flex justify-center min-w-0 overflow-hidden">
+          {center || (
+            <div className="hidden sm:flex items-center gap-1">
+              <MarketingLink
+                href={`${localePrefix}/marketplace`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-muted hover:text-text transition-colors"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                {tn("marketplace")}
+              </MarketingLink>
+              <MarketingLink
+                href={`${appEntryUrl}/deals`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-muted hover:text-text transition-colors"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                {tn("deals")}
+              </MarketingLink>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Language dropdown */}
@@ -158,14 +178,14 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
               type="button"
               onClick={() => setMobileSettingsOpen((p) => !p)}
               className="h-9 w-9 border border-primary flex items-center justify-center text-primary hover:bg-primary/10 hover:border-primary transition-colors"
-              aria-label="Settings"
+              aria-label={tn("settings")}
             >
               <Settings className="w-4 h-4" />
             </button>
             {mobileSettingsOpen && (
               <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
                 <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-border">
-                  Language
+                  {tn("language")}
                 </div>
                 {LOCALES.map((loc) => (
                   <MarketingLink
@@ -183,7 +203,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                   </MarketingLink>
                 ))}
                 <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
-                  Theme
+                  {tn("theme")}
                 </div>
                 {themes.map((t) => (
                   <button
@@ -199,6 +219,25 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                     {t.label}
                   </button>
                 ))}
+                <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
+                  {tn("marketplace")}
+                </div>
+                <MarketingLink
+                  href={`${localePrefix}/marketplace`}
+                  onClick={() => setMobileSettingsOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted hover:text-text hover:bg-surface-alt transition-colors"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  {tn("marketplace")}
+                </MarketingLink>
+                <MarketingLink
+                  href={`${appEntryUrl}/deals`}
+                  onClick={() => setMobileSettingsOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted hover:text-text hover:bg-surface-alt transition-colors"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  {tn("deals")}
+                </MarketingLink>
                 {!futureMode && (
                   <>
                     <div className="border-t border-border" />
@@ -221,7 +260,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
               href="/my/listings"
               className="hidden sm:flex h-9 px-4 border border-border text-secondary hover:border-border-strong hover:text-text transition-all font-bold text-xs uppercase tracking-widest items-center"
             >
-              MY ACCOUNT
+              {tn("myAccount")}
             </MarketingLink>
           )}
           {!futureMode && (

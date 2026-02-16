@@ -10,7 +10,7 @@ function resolveParam(value: unknown): string | undefined {
   return value as string | undefined;
 }
 
-function parseIntParam(raw: string | undefined, name: string): number | null {
+function parseIntParam(raw: string | undefined): number | null {
   if (raw === undefined || raw === null || raw === "") return null;
   const trimmed = String(raw).trim();
   if (!/^[+-]?\d+$/.test(trimmed)) return null;
@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const rawLimit = resolveParam(req.query?.limit);
   let limit = 24;
   if (rawLimit) {
-    const parsed = parseIntParam(rawLimit, "limit");
+    const parsed = parseIntParam(rawLimit);
     if (parsed !== null && parsed >= 1 && parsed <= 30) {
       limit = parsed;
     }
@@ -58,8 +58,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (CONDITIONS.has(normalized)) condition = normalized;
   }
 
-  const priceMin = parseIntParam(resolveParam(req.query?.price_min), "price_min");
-  const priceMax = parseIntParam(resolveParam(req.query?.price_max), "price_max");
+  const priceMin = parseIntParam(resolveParam(req.query?.price_min));
+  const priceMax = parseIntParam(resolveParam(req.query?.price_max));
 
   const rawCursor = resolveParam(req.query?.cursor);
   let cursor = null;
