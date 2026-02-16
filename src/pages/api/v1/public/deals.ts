@@ -60,6 +60,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .filter((s) => VALID_STATUSES.has(s));
     if (parsed.length > 0) statuses = parsed;
   }
+  if (sort === "temp" || sort === "trend") {
+    statuses = ["ACTIVE"];
+  }
 
   const rawCursor = resolveParam(req.query?.cursor);
   let cursor = null;

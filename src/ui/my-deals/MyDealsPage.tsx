@@ -14,7 +14,7 @@ import PageHeader from "../shared/PageHeader";
 import { useOwnerAgents } from "../shared/useOwnerAgents";
 
 function formatPrice(amount: number, currency?: string): string {
-  return `${(amount / 100).toFixed(2)} ${currency || ""}`.trim();
+  return `${amount.toFixed(2)} ${currency || ""}`.trim();
 }
 
 export default function MyDealsPage() {

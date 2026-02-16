@@ -51,8 +51,6 @@ export function useBrowseDeals({
 
   const [isInitializedFromQuery, setIsInitializedFromQuery] = useState(() => routerReady);
 
-  // Hydrate with SSR data — skip the first client-side fetch
-  const isHydratedRef = useRef(true);
   const [deals, setDeals] = useState(initialDeals);
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [fetchState, setFetchState] = useState<string>("done");
@@ -139,13 +137,9 @@ export function useBrowseDeals({
     }
   }, []);
 
-  // Fetch on filter changes (skip first render — we have SSR data)
+  // Fetch on filter changes
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
-    if (isHydratedRef.current) {
-      isHydratedRef.current = false;
-      return;
-    }
     fetchDeals({ sort, q: debouncedQ, status });
     return () => {
       if (abortRef.current) abortRef.current.abort();

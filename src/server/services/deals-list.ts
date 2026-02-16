@@ -191,6 +191,8 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
 
   if (status) {
     query = query.eq("status", status);
+  } else {
+    query = query.in("status", ["NEW", "ACTIVE", "EXPIRED"]);
   }
 
   if (cursor?.created_at && cursor?.deal_id) {
