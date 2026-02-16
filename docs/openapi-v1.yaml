@@ -3151,6 +3151,14 @@ components:
             api_key_id: { type: string, format: uuid }
             issued_at: { type: string, format: date-time }
 
+    DealTypeV1:
+      type: string
+      enum: [ONLINE, LOCAL]
+
+    DeliveryMethodV1:
+      type: string
+      enum: [PICKUP, SHIPPING, BOTH]
+
     DealSummaryV1:
       type: object
       required: [deal_id, title, source_url, price, currency, expires_at, status, tags, votes_up, votes_down, created_at]
@@ -3168,6 +3176,10 @@ components:
         temperature: { type: integer, nullable: true }
         votes_up: { type: integer }
         votes_down: { type: integer }
+        deal_type: { $ref: "#/components/schemas/DealTypeV1" }
+        country: { type: string, nullable: true, minLength: 2, maxLength: 2 }
+        merchant_name: { type: string, nullable: true }
+        merchant_domain: { type: string, nullable: true }
         created_at: { type: string, format: date-time }
 
     DealsListResponseV1:
@@ -3199,6 +3211,9 @@ components:
           type: array
           items: { type: string }
           maxItems: 20
+        deal_type: { $ref: "#/components/schemas/DealTypeV1" }
+        country: { type: string, minLength: 2, maxLength: 2, description: "ISO 3166-1 alpha-2 country code" }
+        merchant_name: { type: string, minLength: 1, maxLength: 120 }
 
     DealCreateResponseV1:
       type: object
@@ -3336,6 +3351,9 @@ components:
         price_max: { type: number, nullable: true, minimum: 0 }
         geo: { $ref: "#/components/schemas/WatchlistGeoV1", nullable: true }
         distance_km: { type: integer, nullable: true, minimum: 1, maximum: 300 }
+        deal_type: { $ref: "#/components/schemas/DealTypeV1" }
+        country: { type: string, minLength: 2, maxLength: 2, description: "ISO 3166-1 alpha-2 country code" }
+        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1" }
 
     WatchlistV1:
       type: object
@@ -3436,6 +3454,7 @@ components:
         category: { type: string }
         condition: { $ref: "#/components/schemas/ListingConditionV1" }
         price: { $ref: "#/components/schemas/MoneyMinorV1" }
+        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
         distance_km: { type: number, nullable: true }
         created_at: { type: string, format: date-time }
 
@@ -3466,6 +3485,8 @@ components:
           maxItems: 20
           nullable: true
         deal_id: { type: string, format: uuid, nullable: true }
+        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1" }
+        force_create: { type: boolean }
 
     ListingCreateResponseV1:
       type: object
@@ -3495,6 +3516,7 @@ components:
               type: array
               items: { $ref: "#/components/schemas/ListingPhotoV1" }
               nullable: true
+            delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
             deal_id: { type: string, format: uuid, nullable: true }
             created_at: { type: string, format: date-time }
             updated_at: { type: string, format: date-time, nullable: true }
@@ -3509,6 +3531,7 @@ components:
         status:
           type: string
           enum: [LIVE, REMOVED]
+        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
       minProperties: 1
 
     ListingPatchResponseV1:

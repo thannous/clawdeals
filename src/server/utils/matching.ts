@@ -183,6 +183,24 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens }: Evalua
     reason.price_ok = true;
   }
 
+  const criteriaDealType = coerceString(watchlist?.criteria?.deal_type);
+  if (criteriaDealType) {
+    const dealType = coerceString(deal.deal_type) || "ONLINE";
+    if (dealType.toUpperCase() !== criteriaDealType.toUpperCase()) {
+      return { matched: false, reason: { ...reason, deal_type_ok: false } };
+    }
+    reason.deal_type_ok = true;
+  }
+
+  const criteriaCountry = coerceString(watchlist?.criteria?.country);
+  if (criteriaCountry) {
+    const dealCountry = coerceString(deal.country);
+    if (!dealCountry || dealCountry.toUpperCase() !== criteriaCountry.toUpperCase()) {
+      return { matched: false, reason: { ...reason, country_ok: false } };
+    }
+    reason.country_ok = true;
+  }
+
   return { matched: true, reason };
 }
 
@@ -316,6 +334,22 @@ export function evaluateWatchlistMatchListing({
       return { matched: false, reason: { ...reason, geo_ok: false } };
     }
     reason.geo_ok = true;
+  }
+
+  const criteriaDeliveryMethod = coerceString(watchlist?.criteria?.delivery_method);
+  if (criteriaDeliveryMethod) {
+    const listingDm = coerceString(listing.delivery_method);
+    if (!listingDm) {
+      return { matched: false, reason: { ...reason, delivery_method_ok: false } };
+    }
+    const wanted = criteriaDeliveryMethod.toUpperCase();
+    const actual = listingDm.toUpperCase();
+    // BOTH matches any; otherwise exact match or listing=BOTH matches anything
+    const matches = wanted === "BOTH" || actual === "BOTH" || wanted === actual;
+    if (!matches) {
+      return { matched: false, reason: { ...reason, delivery_method_ok: false } };
+    }
+    reason.delivery_method_ok = true;
   }
 
   return { matched: true, reason };

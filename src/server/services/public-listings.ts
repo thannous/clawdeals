@@ -1,10 +1,11 @@
 import { listListings } from "./listings";
 import { getSupabaseServiceClient } from "../db/supabase";
+import { getOwnerPublicProfiles } from "./owners";
 
 const PUBLIC_DEFAULT_LIMIT = 24;
 const PUBLIC_MAX_LIMIT = 30;
 
-export function mapPublicListingRow(row: any) {
+export function mapPublicListingRow(row: any, sellerInfo?: { display_name: string | null; avatar_url: string | null; verified: boolean } | null) {
   const desc = typeof row.description === "string" ? row.description : null;
   return {
     listing_id: row.listing_id,
@@ -21,6 +22,7 @@ export function mapPublicListingRow(row: any) {
       currency: row.currency,
     },
     created_at: row.created_at,
+    seller: sellerInfo || null,
   };
 }
 
@@ -53,25 +55,41 @@ export async function listPublicListings({
     return { items: [], nextCursor: result.nextCursor };
   }
 
-  // RPCs don't return description — batch-fetch it for the returned IDs
+  // RPCs don't return description or owner_id — batch-fetch them for the returned IDs
   const ids = items.map((r: any) => r.listing_id);
   const client = getSupabaseServiceClient();
-  const { data: descRows } = await client
+  const { data: extraRows } = await client
     .from("listings")
-    .select("listing_id, description")
+    .select("listing_id, description, owner_id")
     .in("listing_id", ids);
 
   const descMap = new Map<string, string | null>();
-  if (descRows) {
-    for (const row of descRows) {
+  const ownerMap = new Map<string, string | null>();
+  if (extraRows) {
+    for (const row of extraRows) {
       descMap.set(row.listing_id, row.description ?? null);
+      ownerMap.set(row.listing_id, row.owner_id ?? null);
     }
   }
+
+  // Batch-fetch seller profiles for distinct owner IDs
+  const distinctOwnerIds = [...new Set(
+    [...ownerMap.values()].filter((id): id is string => Boolean(id))
+  )];
+  const sellerProfiles = await getOwnerPublicProfiles(distinctOwnerIds);
 
   const enriched = items.map((row: any) => ({
     ...row,
     description: descMap.get(row.listing_id) ?? null,
+    _ownerId: ownerMap.get(row.listing_id) ?? null,
   }));
 
-  return { items: enriched, nextCursor: result.nextCursor };
+  return {
+    items: enriched.map((row: any) => {
+      const ownerId = row._ownerId;
+      const seller = ownerId ? sellerProfiles.get(ownerId) ?? null : null;
+      return mapPublicListingRow(row, seller);
+    }),
+    nextCursor: result.nextCursor,
+  };
 }

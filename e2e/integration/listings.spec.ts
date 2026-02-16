@@ -296,4 +296,133 @@ test.describe.serial("Integration: Listings (TI-193 + TI-194 + TI-268 + TI-271)"
       .single();
     expect(forcedRow?.status).toBe("LIVE");
   });
+
+  test("create listing with delivery_method + GET returns it + PATCH updates it", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+
+    const agent = await createAgentDb(supabase, ownerId);
+    const createdAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("agents").update({ created_at: createdAt }).eq("id", agent.id);
+
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: {
+        budgets: { max_offer: 400, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: ["listing.create", "listing.update", "listing.publish"] },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(policyRes, 200);
+
+    const category = `delivery_${randomId()}`;
+
+    // Create with SHIPPING.
+    const shippingRes = await createListing(request, apiKey, {
+      title: `Delivery SHIPPING ${randomId()}`,
+      category,
+      price: { amount: 100, currency: "EUR" },
+      delivery_method: "SHIPPING",
+      publish: true
+    });
+    await expectStatus(shippingRes, 201);
+    const shippingBody = await shippingRes.json();
+    expect(shippingBody.listing_id).toBeTruthy();
+    expect(shippingBody.delivery_method).toBe("SHIPPING");
+
+    // Create with BOTH.
+    const bothRes = await createListing(request, apiKey, {
+      title: `Delivery BOTH ${randomId()}`,
+      category,
+      price: { amount: 200, currency: "EUR" },
+      delivery_method: "BOTH",
+      publish: true
+    });
+    await expectStatus(bothRes, 201);
+    const bothBody = await bothRes.json();
+    expect(bothBody.delivery_method).toBe("BOTH");
+
+    // Create without delivery_method (null).
+    const noDeliveryRes = await createListing(request, apiKey, {
+      title: `Delivery none ${randomId()}`,
+      category,
+      price: { amount: 50, currency: "EUR" },
+      publish: true
+    });
+    await expectStatus(noDeliveryRes, 201);
+    const noDeliveryBody = await noDeliveryRes.json();
+    expect(noDeliveryBody.delivery_method).toBeNull();
+
+    // DB persistence check.
+    const { data: row, error } = await supabase
+      .from("listings")
+      .select("delivery_method")
+      .eq("listing_id", shippingBody.listing_id)
+      .single();
+    expect(error).toBeNull();
+    expect(row?.delivery_method).toBe("SHIPPING");
+
+    // GET list returns delivery_method.
+    const listRes = await request.get(
+      `/api/v1/listings?category=${encodeURIComponent(category)}&sort=recent`,
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    );
+    await expectStatus(listRes, 200);
+    const listBody = await listRes.json();
+    const deliveryMethods = (listBody.data || []).map((item: any) => item.delivery_method);
+    expect(deliveryMethods).toContain("SHIPPING");
+    expect(deliveryMethods).toContain("BOTH");
+    expect(deliveryMethods).toContain(null);
+
+    // GET detail returns delivery_method.
+    const detailRes = await request.get(`/api/v1/listings/${shippingBody.listing_id}`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    await expectStatus(detailRes, 200);
+    const detailBody = await detailRes.json();
+    expect(detailBody.delivery_method).toBe("SHIPPING");
+
+    // PATCH delivery_method to PICKUP.
+    const patchRes = await request.patch(`/api/v1/listings/${shippingBody.listing_id}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { delivery_method: "PICKUP" }
+    });
+    await expectStatus(patchRes, 200);
+    const patchBody = await patchRes.json();
+    expect(patchBody.delivery_method).toBe("PICKUP");
+
+    // Verify in DB.
+    const { data: updatedRow } = await supabase
+      .from("listings")
+      .select("delivery_method")
+      .eq("listing_id", shippingBody.listing_id)
+      .single();
+    expect(updatedRow?.delivery_method).toBe("PICKUP");
+  });
+
+  test("create listing rejects invalid delivery_method", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await ensureOwnerDb(supabase, ownerId);
+
+    const agent = await createAgentDb(supabase, ownerId);
+    const createdAt = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("agents").update({ created_at: createdAt }).eq("id", agent.id);
+
+    const { apiKey } = await createActiveApiKeyDb(supabase, agent.id);
+
+    const res = await createListing(request, apiKey, {
+      title: `Invalid delivery ${randomId()}`,
+      delivery_method: "INVALID_VALUE",
+      publish: false
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+  });
 });

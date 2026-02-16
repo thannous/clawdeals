@@ -40,10 +40,11 @@ export async function createListing({
   duplicateOverride,
   ownerId,
   agentId,
-  sellerAgentId
+  sellerAgentId,
+  deliveryMethod
 }: any) {
   const client = getSupabaseServiceClient();
-  const payload = {
+  const payload: any = {
     title,
     description: description || null,
     status,
@@ -61,12 +62,13 @@ export async function createListing({
     duplicate_override: Boolean(duplicateOverride),
     photos: photos ?? null
   };
+  if (deliveryMethod !== undefined) payload.delivery_method = deliveryMethod;
 
   const insert = async (row: any) =>
     client
       .from("listings")
       .insert(row)
-      .select("listing_id,status,created_at")
+      .select("listing_id,status,delivery_method,created_at")
       .single();
 
   let { data, error } = await insert(payload);
@@ -123,7 +125,8 @@ export async function updateListingBySeller({
     "description",
     "price_amount",
     "currency",
-    "status"
+    "status",
+    "delivery_method"
   ]);
 
   if (!patch || typeof patch !== "object" || Array.isArray(patch)) {

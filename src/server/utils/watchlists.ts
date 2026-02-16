@@ -1,4 +1,5 @@
 import { normalizeTags } from "./deals";
+import { DEAL_TYPES, COUNTRY_RE, DELIVERY_METHODS } from "../config/deals";
 
 function parseStrictInteger(value) {
   // Accept either a number (must already be an integer) or a digits-only string.
@@ -101,7 +102,43 @@ export function parseWatchlistCriteria(raw) {
     throw new Error("criteria.distance_km is required when criteria.geo is provided");
   }
 
-  const hasAnyCriterion = Boolean(query) || tags.length > 0 || priceMax !== null || geo !== null;
+  let dealType = null;
+  if (raw.deal_type !== undefined && raw.deal_type !== null) {
+    if (typeof raw.deal_type !== "string") {
+      throw new Error("criteria.deal_type must be a string");
+    }
+    const dt = raw.deal_type.trim().toUpperCase();
+    if (!DEAL_TYPES.has(dt)) {
+      throw new Error("criteria.deal_type must be ONLINE or LOCAL");
+    }
+    dealType = dt;
+  }
+
+  let country = null;
+  if (raw.country !== undefined && raw.country !== null) {
+    if (typeof raw.country !== "string") {
+      throw new Error("criteria.country must be a string");
+    }
+    const c = raw.country.trim().toUpperCase();
+    if (!COUNTRY_RE.test(c)) {
+      throw new Error("criteria.country must be a 2-letter ISO code");
+    }
+    country = c;
+  }
+
+  let deliveryMethod = null;
+  if (raw.delivery_method !== undefined && raw.delivery_method !== null) {
+    if (typeof raw.delivery_method !== "string") {
+      throw new Error("criteria.delivery_method must be a string");
+    }
+    const dm = raw.delivery_method.trim().toUpperCase();
+    if (!DELIVERY_METHODS.has(dm)) {
+      throw new Error("criteria.delivery_method must be PICKUP, SHIPPING, or BOTH");
+    }
+    deliveryMethod = dm;
+  }
+
+  const hasAnyCriterion = Boolean(query) || tags.length > 0 || priceMax !== null || geo !== null || dealType !== null || country !== null || deliveryMethod !== null;
   if (!hasAnyCriterion) {
     throw new Error("criteria must include at least one filter");
   }
@@ -111,7 +148,10 @@ export function parseWatchlistCriteria(raw) {
     tags,
     price_max: priceMax,
     geo,
-    distance_km: distanceKm
+    distance_km: distanceKm,
+    deal_type: dealType,
+    country,
+    delivery_method: deliveryMethod
   };
 
   return {

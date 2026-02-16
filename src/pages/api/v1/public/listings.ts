@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { listPublicListings, mapPublicListingRow } from "../../../../server/services/public-listings";
+import { listPublicListings } from "../../../../server/services/public-listings";
 import { decodeListingsCursor } from "../../../../server/services/listings-cursor";
 
 const CONDITIONS = new Set(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]);
@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cursor,
     });
 
-    const data = (result.items || []).map(mapPublicListingRow);
+    const data = result.items || [];
     res.status(200).json({ data, next_cursor: result.nextCursor });
   } catch (error: any) {
     console.error("public.listings.error", error?.message || error);

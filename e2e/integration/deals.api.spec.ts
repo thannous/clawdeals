@@ -522,6 +522,216 @@ test.describe.serial("Integration: Deals API", () => {
     expect(frozen.temperature).toBe(42);
   });
 
+  test("create deal with deal_type, country, merchant auto-extraction", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    // Create a LOCAL deal with country and a known merchant URL.
+    const payload = {
+      title: "Local Amazon Deal",
+      url: `https://www.amazon.fr/dp/${randomId()}`,
+      price: 59.99,
+      currency: "EUR",
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      tags: ["merchant-test"],
+      deal_type: "LOCAL",
+      country: "FR"
+    };
+
+    const res = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: payload
+    });
+    await expectStatus(res, 201);
+    const body = await res.json();
+    const deal = body.deal;
+
+    // Verify response includes new fields.
+    expect(deal.deal_type).toBe("LOCAL");
+    expect(deal.country).toBe("FR");
+    expect(deal.merchant_name).toBe("Amazon");
+    expect(deal.merchant_domain).toBe("amazon.fr");
+
+    // Verify DB persistence.
+    const { data: row, error } = await supabase
+      .from("deals")
+      .select("deal_type, country, merchant_name, merchant_domain")
+      .eq("deal_id", deal.deal_id)
+      .single();
+    expect(error).toBeNull();
+    expect(row?.deal_type).toBe("LOCAL");
+    expect(row?.country).toBe("FR");
+    expect(row?.merchant_name).toBe("Amazon");
+    expect(row?.merchant_domain).toBe("amazon.fr");
+
+    // GET detail also returns the new fields.
+    const getRes = await request.get(`/api/v1/deals/${deal.deal_id}`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    await expectStatus(getRes, 200);
+    const getBody = await getRes.json();
+    expect(getBody.deal.deal_type).toBe("LOCAL");
+    expect(getBody.deal.country).toBe("FR");
+    expect(getBody.deal.merchant_name).toBe("Amazon");
+    expect(getBody.deal.merchant_domain).toBe("amazon.fr");
+  });
+
+  test("create deal defaults: deal_type=ONLINE, merchant auto-extracted, country null", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const res = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Default Fields Deal",
+        url: `https://www.fnac.com/p/${randomId()}`,
+        price: 29.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["defaults"]
+      }
+    });
+    await expectStatus(res, 201);
+    const deal = (await res.json()).deal;
+
+    expect(deal.deal_type).toBe("ONLINE");
+    expect(deal.country).toBeNull();
+    expect(deal.merchant_name).toBe("Fnac");
+    expect(deal.merchant_domain).toBe("fnac.com");
+  });
+
+  test("create deal with explicit merchant_name overrides auto-extraction", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const res = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Custom Merchant Deal",
+        url: `https://www.amazon.fr/dp/${randomId()}`,
+        price: 99.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["custom-merchant"],
+        merchant_name: "Amazon Warehouse"
+      }
+    });
+    await expectStatus(res, 201);
+    const deal = (await res.json()).deal;
+
+    // Agent-provided name takes precedence.
+    expect(deal.merchant_name).toBe("Amazon Warehouse");
+    // Domain is still auto-extracted.
+    expect(deal.merchant_domain).toBe("amazon.fr");
+  });
+
+  test("create deal rejects invalid deal_type and country", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const base = {
+      title: "Validation Deal",
+      url: `https://example.com/p/${randomId()}`,
+      price: 10,
+      currency: "EUR",
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      tags: ["validation"]
+    };
+
+    // Invalid deal_type.
+    const badType = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { ...base, deal_type: "INVALID" }
+    });
+    expect(badType.status()).toBe(400);
+    const badTypeBody = await badType.json();
+    expect(badTypeBody.error.code).toBe("VALIDATION_ERROR");
+
+    // Invalid country (3 chars).
+    const badCountry = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { ...base, country: "FRA" }
+    });
+    expect(badCountry.status()).toBe(400);
+    const badCountryBody = await badCountry.json();
+    expect(badCountryBody.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  test("PATCH deal updates deal_type, country, merchant_name", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const createRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: "Patchable Deal",
+        url: `https://example.com/p/${randomId()}`,
+        price: 49.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: ["patch"]
+      }
+    });
+    await expectStatus(createRes, 201);
+    const dealId = (await createRes.json()).deal.deal_id;
+
+    // PATCH to LOCAL + FR + custom merchant.
+    const patchRes = await request.patch(`/api/v1/deals/${dealId}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { deal_type: "LOCAL", country: "DE", merchant_name: "Saturn" }
+    });
+    await expectStatus(patchRes, 200);
+    const patched = (await patchRes.json()).deal;
+    expect(patched.deal_type).toBe("LOCAL");
+    expect(patched.country).toBe("DE");
+    expect(patched.merchant_name).toBe("Saturn");
+
+    // PATCH merchant_name to null (clear it).
+    const clearRes = await request.patch(`/api/v1/deals/${dealId}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: { merchant_name: null }
+    });
+    await expectStatus(clearRes, 200);
+    const cleared = (await clearRes.json()).deal;
+    expect(cleared.merchant_name).toBeNull();
+    expect(cleared.deal_type).toBe("LOCAL");
+  });
+
+  test("deal feed returns new fields in list response", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const { apiKey } = await setupAgent(supabase);
+
+    const runTag = `merchant_${randomId().split("-")[0]}`;
+
+    const res = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: `Feed merchant deal ${runTag}`,
+        url: `https://www.darty.com/p/${randomId()}`,
+        price: 199.99,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        tags: [runTag],
+        deal_type: "LOCAL",
+        country: "FR"
+      }
+    });
+    await expectStatus(res, 201);
+
+    const listRes = await request.get(`/api/v1/deals?sort=new&tags=${runTag}&limit=10`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    await expectStatus(listRes, 200);
+    const listBody = await listRes.json();
+    expect(listBody.items.length).toBeGreaterThanOrEqual(1);
+
+    const item = listBody.items[0];
+    expect(item.deal_type).toBe("LOCAL");
+    expect(item.country).toBe("FR");
+    expect(item.merchant_name).toBe("Darty");
+    expect(item.merchant_domain).toBe("darty.com");
+  });
+
   test("rate limit returns standard headers", async ({ request }) => {
     test.skip(skipRateLimitTests, "rate limit standard headers");
     const supabase = createSupabaseAdmin();

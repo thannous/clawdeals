@@ -71,6 +71,53 @@ describe("evaluateWatchlistMatch", () => {
     expect(result.matched).toBe(false);
     expect(result.reason.geo_missing).toBe(true);
   });
+
+  it("filters by deal_type when criteria.deal_type is set", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399, deal_type: "ONLINE" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { deal_type: "LOCAL" } };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.deal_type_ok).toBe(false);
+  });
+
+  it("matches when deal_type matches criteria", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399, deal_type: "LOCAL" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { deal_type: "LOCAL" } };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.deal_type_ok).toBe(true);
+  });
+
+  it("defaults to ONLINE when deal has no deal_type", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399 };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { deal_type: "ONLINE" } };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(true);
+  });
+
+  it("filters by country when criteria.country is set", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399, country: "DE" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { country: "FR" } };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.country_ok).toBe(false);
+  });
+
+  it("matches when country matches criteria", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399, country: "FR" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { country: "FR" } };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.country_ok).toBe(true);
+  });
+
+  it("rejects when deal has no country but criteria requires one", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", price: 399 };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { country: "FR" } };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.country_ok).toBe(false);
+  });
 });
 
 describe("buildEntityTokensFromListing", () => {
@@ -120,5 +167,45 @@ describe("evaluateWatchlistMatchListing", () => {
     const result = evaluateWatchlistMatchListing({ listing, watchlist });
     expect(result.matched).toBe(false);
     expect(result.reason.geo_missing).toBe(true);
+  });
+
+  it("filters by delivery_method when criteria is set", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, delivery_method: "PICKUP" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { delivery_method: "SHIPPING" } };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.delivery_method_ok).toBe(false);
+  });
+
+  it("matches when delivery_method matches exactly", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, delivery_method: "SHIPPING" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { delivery_method: "SHIPPING" } };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.delivery_method_ok).toBe(true);
+  });
+
+  it("listing BOTH matches any criteria delivery_method", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, delivery_method: "BOTH" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { delivery_method: "PICKUP" } };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.delivery_method_ok).toBe(true);
+  });
+
+  it("criteria BOTH matches any listing delivery_method", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, delivery_method: "SHIPPING" };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { delivery_method: "BOTH" } };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.delivery_method_ok).toBe(true);
+  });
+
+  it("rejects when listing has no delivery_method but criteria requires one", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399 };
+    const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { delivery_method: "PICKUP" } };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.delivery_method_ok).toBe(false);
   });
 });

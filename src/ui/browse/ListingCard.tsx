@@ -67,6 +67,26 @@ function ListingCard({ listing }: { listing: any }) {
           </p>
         )}
 
+        {/* Seller */}
+        {listing.seller && (
+          <div className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={listing.seller.avatar_url || "/avatars/default-1.svg"}
+              alt=""
+              className="h-4 w-4 rounded-full shrink-0"
+            />
+            <span className="text-xs font-mono text-muted truncate">
+              {listing.seller.display_name || t("seller")}
+            </span>
+            {listing.seller.verified && (
+              <svg className="h-3 w-3 text-primary shrink-0" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0a8 8 0 110 16A8 8 0 018 0zm3.41 5.59a.75.75 0 00-1.06-1.06L7 7.88 5.65 6.53a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l4-4z" />
+              </svg>
+            )}
+          </div>
+        )}
+
         {/* Price + time */}
         <div className="mt-auto pt-3 border-t border-dashed border-border flex items-center justify-between">
           <span className="text-sm font-mono font-bold text-primary">

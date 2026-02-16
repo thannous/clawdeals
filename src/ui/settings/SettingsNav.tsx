@@ -7,7 +7,7 @@ import { clearStoredOwnerAuth } from "../auth/ownerAuth";
 import { getBrowserSupabaseClient } from "../auth/supabase-client";
 import { clearStoredApiKey, clearStoredLastEventId } from "../developer/storage";
 
-type SettingsNavCurrent = "account" | "identities" | "connected-apps" | "start";
+type SettingsNavCurrent = "profile" | "account" | "identities" | "connected-apps" | "start";
 
 type NavItem = {
   key: SettingsNavCurrent;
@@ -16,6 +16,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
+  { key: "profile", href: "/settings/profile", labelKey: "nav.profile" },
   { key: "account", href: "/settings/account", labelKey: "nav.account" },
   { key: "identities", href: "/settings/identities", labelKey: "nav.identities" },
   { key: "connected-apps", href: "/settings/connected-apps", labelKey: "nav.connectedApps" },

@@ -6,7 +6,7 @@ import { getDealById } from "../../../../../server/services/deal-detail";
 import { applyDealUpdate, getDealForUpdate } from "../../../../../server/services/deal-update";
 import { getDealForRemove, removeDeal } from "../../../../../server/services/deal-remove";
 import { isUuid } from "../../../../../server/utils/validators";
-import { ALLOWED_CURRENCIES, DEAL_MAX_TTL_DAYS } from "../../../../../server/config/deals";
+import { ALLOWED_CURRENCIES, DEAL_MAX_TTL_DAYS, DEAL_TYPES, COUNTRY_RE } from "../../../../../server/config/deals";
 import { normalizeTags } from "../../../../../server/utils/deals";
 
 function resolveParam(value) {
@@ -146,6 +146,47 @@ export async function handler(req, res, ctx) {
         patch.tags = normalizedTags;
       }
 
+      if (Object.prototype.hasOwnProperty.call(body, "deal_type")) {
+        if (typeof body.deal_type !== "string") {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", "deal_type must be a string"));
+        }
+        const dt = body.deal_type.trim().toUpperCase();
+        if (!DEAL_TYPES.has(dt)) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", "deal_type must be ONLINE or LOCAL"));
+        }
+        patch.deal_type = dt;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(body, "country")) {
+        if (body.country === null) {
+          patch.country = null;
+        } else {
+          if (typeof body.country !== "string") {
+            return jsonResponse(400, errorPayload("VALIDATION_ERROR", "country must be a string"));
+          }
+          const c = body.country.trim().toUpperCase();
+          if (!COUNTRY_RE.test(c)) {
+            return jsonResponse(400, errorPayload("VALIDATION_ERROR", "country must be a 2-letter ISO code"));
+          }
+          patch.country = c;
+        }
+      }
+
+      if (Object.prototype.hasOwnProperty.call(body, "merchant_name")) {
+        if (body.merchant_name === null) {
+          patch.merchant_name = null;
+        } else {
+          if (typeof body.merchant_name !== "string") {
+            return jsonResponse(400, errorPayload("VALIDATION_ERROR", "merchant_name must be a string"));
+          }
+          const mn = body.merchant_name.trim();
+          if (mn.length < 1 || mn.length > 120) {
+            return jsonResponse(400, errorPayload("VALIDATION_ERROR", "merchant_name must be 1..120 characters"));
+          }
+          patch.merchant_name = mn;
+        }
+      }
+
       if (Object.keys(patch).length === 0) {
         return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one field is required"));
       }
@@ -173,6 +214,10 @@ export async function handler(req, res, ctx) {
         votes_up: updated.votes_up,
         votes_down: updated.votes_down,
         tags: updated.tags || [],
+        deal_type: updated.deal_type || "ONLINE",
+        country: updated.country || null,
+        merchant_name: updated.merchant_name || null,
+        merchant_domain: updated.merchant_domain || null,
         created_at: updated.created_at
       };
 
@@ -214,6 +259,10 @@ export async function handler(req, res, ctx) {
       votes_up: deal.votes_up,
       votes_down: deal.votes_down,
       tags: deal.tags || [],
+      deal_type: deal.deal_type || "ONLINE",
+      country: deal.country || null,
+      merchant_name: deal.merchant_name || null,
+      merchant_domain: deal.merchant_domain || null,
       created_at: deal.created_at
     };
 

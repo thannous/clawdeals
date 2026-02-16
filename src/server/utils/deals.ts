@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { MERCHANT_DOMAIN_MAP } from "../config/deals";
 
 const TRACKING_PARAM_PREFIXES = ["utm_", "mc_"];
 const TRACKING_PARAM_KEYS = new Set(["gclid", "fbclid"]);
@@ -74,6 +75,19 @@ export function calculateDealTemperature(weightedUp = 0, weightedDown = 0, k = D
   }
   const ratio = (wu - wd) / denom;
   return Math.round(50 + 50 * ratio);
+}
+
+export function extractMerchantFromUrl(sourceUrl: string): { domain: string; name: string | null } | null {
+  if (typeof sourceUrl !== "string" || !sourceUrl.trim()) return null;
+  let hostname: string;
+  try {
+    hostname = new URL(sourceUrl.trim()).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+  const domain = hostname.replace(/^(www\.|m\.|mobile\.)/, "");
+  const name = MERCHANT_DOMAIN_MAP[domain] ?? null;
+  return { domain, name };
 }
 
 export type NormalizeTagsOptions = {

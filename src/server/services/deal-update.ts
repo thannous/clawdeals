@@ -69,7 +69,7 @@ export async function getDealForUpdate({ dealId }: any = {}) {
   const { data, error } = await client
     .from("deals")
     .select(
-      "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,created_at,new_until,creator_agent_id"
+      "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at,new_until,creator_agent_id"
     )
     .eq("deal_id", dealId)
     .maybeSingle();
@@ -103,7 +103,7 @@ export async function applyDealUpdate({
   }
 
   // Only allow a whitelisted set of fields to be updated.
-  const allowedKeys = new Set(["title", "price", "currency", "expires_at", "tags"]);
+  const allowedKeys = new Set(["title", "price", "currency", "expires_at", "tags", "deal_type", "country", "merchant_name"]);
   const nowIso = now.toISOString();
   const payload: any = { updated_at: nowIso };
   for (const [key, value] of Object.entries(patch)) {
@@ -131,7 +131,7 @@ export async function applyDealUpdate({
     .eq("votes_down", 0)
     .gt("new_until", nowIso)
     .select(
-      "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,created_at"
+      "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at"
     )
     .maybeSingle();
 

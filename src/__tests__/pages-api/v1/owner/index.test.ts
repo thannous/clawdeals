@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 vi.mock("../../../../server/services/owners", () => ({
   getOwner: vi.fn(),
   upsertOwner: vi.fn(),
+  updateOwnerProfile: vi.fn(),
   invalidateOwnerChallenges: vi.fn()
 }));
 
@@ -79,7 +80,7 @@ describe("PATCH /v1/owner", () => {
     const req = { method: "PATCH", headers: { "x-owner-id": validUuid }, body: {} };
     const result: any = await handler(req);
     expect(result.status).toBe(400);
-    expect(result.body.error.message).toContain("email or phone");
+    expect(result.body.error.message).toContain("At least one field");
   });
 
   it("returns 400 when phone is not E.164", async () => {

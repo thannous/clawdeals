@@ -51,6 +51,8 @@ type ClaimCopy = {
   expiredAgo: (rel: string) => string;
   requestedAgent: string;
   agentInitiatedHint: string;
+  connectionApproved: string;
+  manageAgents: string;
 };
 
 type ClaimT = (key: string, values?: Record<string, string | number>) => string;
@@ -97,7 +99,9 @@ function buildCopy(t: ClaimT): ClaimCopy {
     in: (rel) => t("in", { rel }),
     expiredAgo: (rel) => t("expiredAgo", { rel }),
     requestedAgent: t("requestedAgent"),
-    agentInitiatedHint: t("agentInitiatedHint")
+    agentInitiatedHint: t("agentInitiatedHint"),
+    connectionApproved: t("connectionApproved"),
+    manageAgents: t("manageAgents")
   };
 }
 
@@ -221,9 +225,10 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
       setAgentName(String(res.data.requested_agent_name || "").trim());
       const ownerAgents = Array.isArray(res.data.owner_agents) ? res.data.owner_agents : [];
       const defaultMode = res.data.default_mode === "attach_agent" ? "attach_agent" : "create_agent";
-      const firstAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
+      const firstActive = ownerAgents.find((a: any) => a.status === "active");
+      const firstAgentId = (firstActive || ownerAgents[0])?.agent_id;
       setMode(defaultMode);
-      setAttachAgentId(firstAgentId);
+      setAttachAgentId(firstAgentId ? String(firstAgentId) : "");
     });
 
     return () => {
@@ -231,12 +236,23 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     };
   }, [token, copy.loadSessionFailed]);
 
-  const expires = useMemo(() => formatExpires(session?.expires_at || null, copy), [session?.expires_at, copy]);
+  const [expiresTick, setExpiresTick] = useState(0);
+  useEffect(() => {
+    if (!session?.expires_at) return;
+    const id = setInterval(() => setExpiresTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [session?.expires_at]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- expiresTick drives the re-render
+  const expires = useMemo(() => formatExpires(session?.expires_at || null, copy), [session?.expires_at, copy, expiresTick]);
   const ownerAgents = useMemo(
     () => (Array.isArray(session?.owner_agents) ? session.owner_agents : []),
     [session]
   );
-  const fallbackAttachAgentId = ownerAgents[0]?.agent_id ? String(ownerAgents[0].agent_id) : "";
+  const fallbackAttachAgentId = useMemo(() => {
+    const firstActive = ownerAgents.find((a) => a.status === "active");
+    const fallback = firstActive || ownerAgents[0];
+    return fallback?.agent_id ? String(fallback.agent_id) : "";
+  }, [ownerAgents]);
   const resolvedAttachAgentId = useMemo(() => {
     const selected = String(attachAgentId || "").trim();
     if (!selected) return fallbackAttachAgentId;
@@ -482,7 +498,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                   </div>
                 </div>
 
-                {session.status !== "PENDING_CLAIM" && (
+                {session.status !== "PENDING_CLAIM" && submitState !== "done" && (
                   <div className="border border-border bg-surface-alt/20 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-subtle">{copy.notClaimable(session.status)}</div>
                   </div>
@@ -534,6 +550,9 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                       {ownerContextAvailable && !allowCreateAgent && (
                         <div data-testid="claim-agent-limit-note" className="border border-border bg-surface-alt/20 rounded clip-corner p-3">
                           <div className="text-xs font-mono text-subtle">{copy.ownerLimitReached(String(session.owner_agent_limit || 1))}</div>
+                          <Link href="/settings/connected-apps" className="inline-block mt-2 text-xs font-mono font-bold uppercase text-primary hover:underline">
+                            {copy.manageAgents}
+                          </Link>
                         </div>
                       )}
 
@@ -633,10 +652,7 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
                         aria-live="polite"
                         className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 focus:outline-none"
                       >
-                        <div className="text-xs font-mono text-secondary">{copy.successTitle}</div>
-                        <div className="text-xs font-mono text-muted mt-1">
-                          status={String(result.status || session.status)} agent_id={String(result.agent_id || session.agent_id || "\u2014")}
-                        </div>
+                        <div className="text-xs font-mono text-secondary">{copy.connectionApproved}</div>
                       </div>
                     )}
 

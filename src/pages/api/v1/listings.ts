@@ -10,7 +10,7 @@ import { getPolicyOrDefault } from "../../../server/services/policies";
 import { createApproval } from "../../../server/services/approvals";
 import { publishSseEvent } from "../../../server/sse/store";
 import { decodeListingsCursor } from "../../../server/services/listings-cursor";
-import { ALLOWED_CURRENCIES } from "../../../server/config/deals";
+import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../server/config/deals";
 import { computeListingDuplicateFingerprint } from "../../../server/utils/listings-duplicates";
 import { isUuid } from "../../../server/utils/validators";
 import { matchListingToWatchlists } from "../../../server/services/watchlist-matching";
@@ -159,6 +159,7 @@ function mapListingRow(row) {
       amount: row.price_amount,
       currency: row.currency
     },
+    delivery_method: row.delivery_method || null,
     distance_km: distanceKm,
     created_at: row.created_at
   };
@@ -441,6 +442,7 @@ export async function handler(req, res, ctx) {
   const rawPublish = body.publish;
   const rawDealId = body.deal_id;
   const rawForceCreate = body.force_create;
+  const rawDeliveryMethod = body.delivery_method;
 
   let title;
   let description;
@@ -453,6 +455,7 @@ export async function handler(req, res, ctx) {
   let publish = true;
   let dealId = null;
   let forceCreate = false;
+  let deliveryMethod = null;
 
   try {
     title = stripHtmlTags(parseNonEmptyString(rawTitle, "title")).trim();
@@ -507,6 +510,17 @@ export async function handler(req, res, ctx) {
         throw new Error("force_create must be a boolean");
       }
       forceCreate = rawForceCreate;
+    }
+
+    if (rawDeliveryMethod !== undefined && rawDeliveryMethod !== null) {
+      if (typeof rawDeliveryMethod !== "string") {
+        throw new Error("delivery_method must be a string");
+      }
+      const dm = rawDeliveryMethod.trim().toUpperCase();
+      if (!DELIVERY_METHODS.has(dm)) {
+        throw new Error("delivery_method must be PICKUP, SHIPPING, or BOTH");
+      }
+      deliveryMethod = dm;
     }
   } catch (error) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
@@ -640,7 +654,8 @@ export async function handler(req, res, ctx) {
       duplicateOverride,
       ownerId,
       agentId,
-      sellerAgentId: agentId
+      sellerAgentId: agentId,
+      deliveryMethod
     });
     } catch (error) {
       if (duplicateFingerprint && error?.code === "CONFLICT" && !duplicateOverride) {
@@ -725,6 +740,7 @@ export async function handler(req, res, ctx) {
     const responseBody: any = {
       listing_id: listing.listing_id,
       status,
+      delivery_method: listing.delivery_method || null,
       created_at: listing.created_at
     };
 

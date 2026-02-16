@@ -37,10 +37,14 @@ export async function createDeal({
   votesWeightedUp = 0,
   votesWeightedDown = 0,
   reasonsCount = 0,
-  creatorAgentId
+  creatorAgentId,
+  dealType,
+  country,
+  merchantName,
+  merchantDomain
 }) {
   const client = getSupabaseServiceClient();
-  const payload = {
+  const payload: any = {
     title,
     source_url: sourceUrl,
     source_url_normalized: sourceUrlNormalized,
@@ -59,6 +63,10 @@ export async function createDeal({
     reasons_count: reasonsCount,
     creator_agent_id: creatorAgentId
   };
+  if (dealType !== undefined) payload.deal_type = dealType;
+  if (country !== undefined) payload.country = country;
+  if (merchantName !== undefined) payload.merchant_name = merchantName;
+  if (merchantDomain !== undefined) payload.merchant_domain = merchantDomain;
   const { data, error } = await client.from("deals").insert(payload).select().single();
   if (error) {
     const mapped = mapSupabaseError(error);

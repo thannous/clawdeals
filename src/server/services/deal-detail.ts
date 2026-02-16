@@ -22,7 +22,7 @@ export async function getDealById({ dealId }: any = {}) {
   const { data, error } = await client
     .from("deals")
     .select(
-      "deal_id, title, source_url, price, currency, expires_at, status, temperature, votes_up, votes_down, tags, reasons_count, created_at"
+      "deal_id, title, source_url, price, currency, expires_at, status, temperature, votes_up, votes_down, tags, reasons_count, deal_type, country, merchant_name, merchant_domain, created_at"
     )
     .eq("deal_id", dealId)
     .maybeSingle();

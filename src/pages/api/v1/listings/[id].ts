@@ -8,7 +8,7 @@ import { evaluatePolicyAction, POLICY_DECISION } from "../../../../server/policy
 import { getPolicyOrDefault } from "../../../../server/services/policies";
 import { cancelPendingListingPublishApproval, createApproval } from "../../../../server/services/approvals";
 import { publishSseEvent } from "../../../../server/sse/store";
-import { ALLOWED_CURRENCIES } from "../../../../server/config/deals";
+import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../../server/config/deals";
 import { isUuid } from "../../../../server/utils/validators";
 import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
 
@@ -58,6 +58,7 @@ function mapListingDetail(listing: any) {
     },
     geo,
     photos: listing.photos ?? null,
+    delivery_method: listing.delivery_method || null,
     deal_id: listing.deal_id ?? null,
     created_at: listing.created_at,
     updated_at: listing.updated_at ?? null
@@ -116,14 +117,16 @@ export async function handler(req, res, ctx) {
   const rawDescription = body.description;
   const rawPrice = body.price;
   const rawStatus = body.status;
+  const rawDeliveryMethod = body.delivery_method;
 
   const hasTitle = rawTitle !== undefined;
   const hasDescription = rawDescription !== undefined;
   const hasPrice = rawPrice !== undefined;
   const hasStatus = rawStatus !== undefined;
+  const hasDeliveryMethod = rawDeliveryMethod !== undefined;
 
-  if (!hasTitle && !hasDescription && !hasPrice && !hasStatus) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one of title, description, price, status is required"));
+  if (!hasTitle && !hasDescription && !hasPrice && !hasStatus && !hasDeliveryMethod) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one of title, description, price, status, delivery_method is required"));
   }
 
   const fieldsChanged: string[] = [];
@@ -133,6 +136,7 @@ export async function handler(req, res, ctx) {
   let priceAmount = undefined;
   let currency = undefined;
   let requestedStatus = null;
+  let deliveryMethod = undefined;
 
   try {
     if (hasTitle) {
@@ -200,6 +204,22 @@ export async function handler(req, res, ctx) {
       }
       fieldsChanged.push("status");
     }
+
+    if (hasDeliveryMethod) {
+      if (rawDeliveryMethod === null) {
+        deliveryMethod = null;
+      } else {
+        if (typeof rawDeliveryMethod !== "string") {
+          throw new Error("delivery_method must be a string");
+        }
+        const dm = rawDeliveryMethod.trim().toUpperCase();
+        if (!DELIVERY_METHODS.has(dm)) {
+          throw new Error("delivery_method must be PICKUP, SHIPPING, or BOTH");
+        }
+        deliveryMethod = dm;
+      }
+      fieldsChanged.push("delivery_method");
+    }
   } catch (error) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
   }
@@ -220,7 +240,7 @@ export async function handler(req, res, ctx) {
     }
 
     // Updating fields is only allowed in mutable states (even if we are also transitioning to REMOVED).
-    const wantsFieldUpdate = title !== undefined || description !== undefined || priceAmount !== undefined || currency !== undefined;
+    const wantsFieldUpdate = title !== undefined || description !== undefined || priceAmount !== undefined || currency !== undefined || deliveryMethod !== undefined;
     if (wantsFieldUpdate && !MUTABLE_STATES.has(currentStatus)) {
       return jsonResponse(409, errorPayload("LISTING_LOCKED", "Listing is locked"));
     }
@@ -322,6 +342,7 @@ export async function handler(req, res, ctx) {
     if (description !== undefined) patch.description = description;
     if (priceAmount !== undefined) patch.price_amount = priceAmount;
     if (currency !== undefined) patch.currency = currency;
+    if (deliveryMethod !== undefined) patch.delivery_method = deliveryMethod;
     if (nextStatus !== currentStatus) patch.status = nextStatus;
 
     const updated = await updateListingBySeller({

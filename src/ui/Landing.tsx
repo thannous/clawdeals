@@ -244,14 +244,24 @@ function Hero({
         {futureMode ? (
           <ComingSoonBadge label={t("future.badge")} />
         ) : (
-          <Link
-            href={entryUrl}
-            className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              {t("hero.cta")} <ChevronRight className="w-4 h-4" />
-            </span>
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href={entryUrl}
+              className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                {t("hero.cta")} <ChevronRight className="w-4 h-4" />
+              </span>
+            </Link>
+            <Link
+              href={`${localePrefix}/marketplace`}
+              className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
+            >
+              <span className="flex items-center gap-2">
+                {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
+              </span>
+            </Link>
+          </div>
         )}
 
       </div>

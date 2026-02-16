@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import BrowseListingsPage from "../ui/browse/BrowseListingsPage";
-import { listPublicListings, mapPublicListingRow } from "../server/services/public-listings";
+import { listPublicListings } from "../server/services/public-listings";
 import { loadMessages, resolveSupportedLocale, localePrefixFor, type SupportedLocale } from "../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
@@ -53,7 +53,7 @@ export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async ({ 
 
   try {
     const result = await listPublicListings({ sort: "recent", limit: 24 });
-    initialListings = (result.items || []).map(mapPublicListingRow);
+    initialListings = result.items || [];
     initialNextCursor = result.nextCursor;
   } catch (error: any) {
     console.error("browse.ssr.error", error?.message || error);

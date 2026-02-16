@@ -12,9 +12,11 @@ import {
   ALLOWED_CURRENCIES,
   DEAL_MAX_TTL_DAYS,
   DEAL_NEW_WINDOW_SECONDS,
+  DEAL_TYPES,
+  COUNTRY_RE,
   DUPLICATE_WINDOW_DAYS
 } from "../../../server/config/deals";
-import { fingerprintUrl, normalizeDealUrl, normalizeTags } from "../../../server/utils/deals";
+import { extractMerchantFromUrl, fingerprintUrl, normalizeDealUrl, normalizeTags } from "../../../server/utils/deals";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -201,6 +203,10 @@ export async function handler(req, res, ctx) {
         temperature: deal.status === "NEW" ? null : deal.temperature,
         votes_up: deal.votes_up,
         votes_down: deal.votes_down,
+        deal_type: deal.deal_type || "ONLINE",
+        country: deal.country || null,
+        merchant_name: deal.merchant_name || null,
+        merchant_domain: deal.merchant_domain || null,
         created_at: deal.created_at
       }));
 
@@ -230,7 +236,10 @@ export async function handler(req, res, ctx) {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
   }
 
-  const { title, url, price, currency, expires_at: expiresAtRaw, tags } = req.body || {};
+  const {
+    title, url, price, currency, expires_at: expiresAtRaw, tags,
+    deal_type: rawDealType, country: rawCountry, merchant_name: rawMerchantName
+  } = req.body || {};
 
   if (typeof title !== "string") {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "title is required"));
@@ -287,9 +296,48 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message || "tags are invalid"));
   }
 
+  let dealType = "ONLINE";
+  if (rawDealType !== undefined && rawDealType !== null) {
+    if (typeof rawDealType !== "string") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "deal_type must be a string"));
+    }
+    dealType = rawDealType.trim().toUpperCase();
+    if (!DEAL_TYPES.has(dealType)) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "deal_type must be ONLINE or LOCAL"));
+    }
+  }
+
+  let country = null;
+  if (rawCountry !== undefined && rawCountry !== null) {
+    if (typeof rawCountry !== "string") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "country must be a string"));
+    }
+    country = rawCountry.trim().toUpperCase();
+    if (!COUNTRY_RE.test(country)) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "country must be a 2-letter ISO code"));
+    }
+  }
+
+  let merchantName = null;
+  if (rawMerchantName !== undefined && rawMerchantName !== null) {
+    if (typeof rawMerchantName !== "string") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "merchant_name must be a string"));
+    }
+    merchantName = rawMerchantName.trim();
+    if (merchantName.length < 1 || merchantName.length > 120) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "merchant_name must be 1..120 characters"));
+    }
+  }
+
   try {
     const newUntil = new Date(now.getTime() + DEAL_NEW_WINDOW_SECONDS * 1000).toISOString();
     const fingerprint = fingerprintUrl(normalizedUrl);
+
+    const merchantInfo = extractMerchantFromUrl(sourceUrl);
+    const merchantDomain = merchantInfo?.domain ?? null;
+    if (!merchantName && merchantInfo?.name) {
+      merchantName = merchantInfo.name;
+    }
 
     const duplicate = await findRecentDealDuplicate({
       fingerprint,
@@ -339,6 +387,10 @@ export async function handler(req, res, ctx) {
         votes_up: existingDeal.votes_up,
         votes_down: existingDeal.votes_down,
         tags: existingDeal.tags || [],
+        deal_type: existingDeal.deal_type || "ONLINE",
+        country: existingDeal.country || null,
+        merchant_name: existingDeal.merchant_name || null,
+        merchant_domain: existingDeal.merchant_domain || null,
         created_at: existingDeal.created_at
       };
 
@@ -371,7 +423,11 @@ export async function handler(req, res, ctx) {
       votesWeightedUp: 0,
       votesWeightedDown: 0,
       reasonsCount: 0,
-      creatorAgentId: ctx.agentId
+      creatorAgentId: ctx.agentId,
+      dealType,
+      country,
+      merchantName,
+      merchantDomain
     });
 
     const responseDeal = {
@@ -387,6 +443,10 @@ export async function handler(req, res, ctx) {
       temperature: deal.temperature,
       votes_up: deal.votes_up,
       votes_down: deal.votes_down,
+      deal_type: deal.deal_type || "ONLINE",
+      country: deal.country || null,
+      merchant_name: deal.merchant_name || null,
+      merchant_domain: deal.merchant_domain || null,
       creator_agent_id: deal.creator_agent_id,
       created_at: deal.created_at
     };

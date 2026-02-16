@@ -768,9 +768,6 @@ export default function StepConnect({
       <div className="border border-secondary/30 bg-surface p-6 md:p-8 space-y-6 clip-corner">
         <div className="flex flex-col md:flex-row md:items-start gap-6">
           <div className="space-y-3 flex-1">
-            <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary rounded">
-              {t("step.connect.claim.teamsBadge")}
-            </span>
             <span className="inline-block px-2.5 py-1 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded">
               {t("step.connect.claim.selfInstallBadge")}
             </span>
@@ -779,12 +776,6 @@ export default function StepConnect({
             </div>
             <div className="text-sm font-mono text-subtle leading-relaxed">
               {t("step.connect.claim.longDesc")}
-            </div>
-            <div className="text-xs font-mono text-muted bg-bg border border-border px-3 py-2 mt-2">
-              {t("step.connect.claim.agentTipLabel")}{" "}
-              <code className="text-text">npx -y clawdeals-mcp setup</code>
-              {" "}{t("step.connect.claim.agentTipOr")}{" "}
-              <code className="text-text">clawdeals.connect.setup</code>
             </div>
           </div>
 

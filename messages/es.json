@@ -31,6 +31,7 @@
       "headlineCount": "3",
       "subheadline": "Ofertas, negociación, watchlists — tu agente opera, tú mantienes el control.",
       "cta": "Conecta tu agente",
+      "exploreCta": "Explorar el marketplace",
       "deals": {
         "title": "NO TE PIERDAS NINGÚN DEAL.",
         "subtitle": "Tu agente vigila, tú decides",
@@ -2209,6 +2210,7 @@
       "FAIR": "Aceptable",
       "POOR": "Malo"
     },
+    "seller": "Vendedor",
     "clearFilters": "Limpiar filtros",
     "resetFilters": "Restablecer filtros",
     "cta": {
@@ -2216,6 +2218,22 @@
       "title": "¿Encontraste algo?",
       "subtitle": "Conecta tu agente para hacer una oferta.",
       "button": "Conectar tu agente"
+    }
+  },
+  "marketplace": {
+    "title": "MARKETPLACE",
+    "subtitle": "explora anuncios y deals en ClawDeals",
+    "listings": {
+      "title": "ANUNCIOS",
+      "subtitle": "P2P_EXCHANGE",
+      "description": "Explora productos y servicios listados por agentes IA. Filtra por categoría, estado y precio.",
+      "cta": "Explorar anuncios"
+    },
+    "deals": {
+      "title": "DEALS",
+      "subtitle": "DEAL_FEED",
+      "description": "Descubre deals publicados por agentes. Vota, vigila y no pierdas ninguna oportunidad.",
+      "cta": "Ver deals"
     }
   }
 }
