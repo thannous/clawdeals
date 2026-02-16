@@ -95,6 +95,12 @@ export function useBrowseListings({
   const debouncedCategoryRef = useRef(debouncedCategory);
   const debouncedPriceMinRef = useRef(debouncedPriceMin);
   const debouncedPriceMaxRef = useRef(debouncedPriceMax);
+  const sortRef = useRef(sort);
+  const qRef = useRef(q);
+  const categoryRef = useRef(category);
+  const conditionRef = useRef(condition);
+  const priceMinRef = useRef(priceMin);
+  const priceMaxRef = useRef(priceMax);
 
   useEffect(() => {
     debouncedQRef.current = debouncedQ;
@@ -111,6 +117,15 @@ export function useBrowseListings({
   useEffect(() => {
     debouncedPriceMaxRef.current = debouncedPriceMax;
   }, [debouncedPriceMax]);
+
+  useEffect(() => {
+    sortRef.current = sort;
+    qRef.current = q;
+    categoryRef.current = category;
+    conditionRef.current = condition;
+    priceMinRef.current = priceMin;
+    priceMaxRef.current = priceMax;
+  }, [sort, q, category, condition, priceMin, priceMax]);
 
   // Sync from URL once router is ready
   useEffect(() => {
@@ -154,6 +169,7 @@ export function useBrowseListings({
       setFetchState("loading");
       setError(null);
     } else {
+      setError(null);
       setLoadMoreState("loading");
     }
 
@@ -191,8 +207,12 @@ export function useBrowseListings({
     } catch (err: any) {
       if (err.name === "AbortError") return;
       setError(err.message);
-      setFetchState("error");
-      setLoadMoreState("idle");
+      if (append) {
+        setLoadMoreState("error");
+      } else {
+        setFetchState("error");
+        setLoadMoreState("idle");
+      }
     }
   }, []);
 
@@ -201,7 +221,14 @@ export function useBrowseListings({
     if (!routerReady || !isInitializedFromQuery) return;
     if (isHydratedRef.current) {
       isHydratedRef.current = false;
-      return;
+      const hasActiveFilters =
+        sort !== DEFAULT_SORT ||
+        Boolean(debouncedQ) ||
+        Boolean(debouncedCategory) ||
+        Boolean(condition) ||
+        Boolean(debouncedPriceMin) ||
+        Boolean(debouncedPriceMax);
+      if (!hasActiveFilters) return;
     }
     fetchListings({ sort, q: debouncedQ, category: debouncedCategory, condition, priceMin: debouncedPriceMin, priceMax: debouncedPriceMax });
     return () => {
@@ -230,7 +257,14 @@ export function useBrowseListings({
           setNextCursor(null);
           setDebouncedQ(newQ);
         }
-        syncUrl(sort, newQ, category, condition, priceMin, priceMax);
+        syncUrl(
+          sortRef.current,
+          newQ,
+          categoryRef.current,
+          conditionRef.current,
+          priceMinRef.current,
+          priceMaxRef.current
+        );
       }, SEARCH_DEBOUNCE_MS);
     },
     [sort, category, condition, priceMin, priceMax, syncUrl]
@@ -246,7 +280,14 @@ export function useBrowseListings({
           setNextCursor(null);
           setDebouncedCategory(newCategory);
         }
-        syncUrl(sort, q, newCategory, condition, priceMin, priceMax);
+        syncUrl(
+          sortRef.current,
+          qRef.current,
+          newCategory,
+          conditionRef.current,
+          priceMinRef.current,
+          priceMaxRef.current
+        );
       }, SEARCH_DEBOUNCE_MS);
     },
     [sort, q, condition, priceMin, priceMax, syncUrl]
@@ -272,7 +313,14 @@ export function useBrowseListings({
           setNextCursor(null);
           setDebouncedPriceMin(val);
         }
-        syncUrl(sort, q, category, condition, val, priceMax);
+        syncUrl(
+          sortRef.current,
+          qRef.current,
+          categoryRef.current,
+          conditionRef.current,
+          val,
+          priceMaxRef.current
+        );
       }, SEARCH_DEBOUNCE_MS);
     },
     [sort, q, category, condition, priceMax, syncUrl]
@@ -288,7 +336,14 @@ export function useBrowseListings({
           setNextCursor(null);
           setDebouncedPriceMax(val);
         }
-        syncUrl(sort, q, category, condition, priceMin, val);
+        syncUrl(
+          sortRef.current,
+          qRef.current,
+          categoryRef.current,
+          conditionRef.current,
+          priceMinRef.current,
+          val
+        );
       }, SEARCH_DEBOUNCE_MS);
     },
     [sort, q, category, condition, priceMin, syncUrl]
