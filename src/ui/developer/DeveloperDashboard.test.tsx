@@ -47,8 +47,8 @@ describe("DeveloperDashboard", () => {
 
     render(<DeveloperDashboard />);
 
-    expect(screen.getByText("NO KEY")).toBeTruthy();
-    expect(screen.getByText("No key found. Go to /start to generate one.")).toBeTruthy();
+    expect(screen.getByText("noKey")).toBeTruthy();
+    expect(screen.getByText("noKeyFound")).toBeTruthy();
   });
 
   it("renders stored key from localStorage on client (P2)", () => {
@@ -59,9 +59,9 @@ describe("DeveloperDashboard", () => {
     // masked key should appear
     const keyEl = screen.getByTestId("dev-key");
     expect(keyEl).toBeTruthy();
-    expect(keyEl.textContent).toContain("KEY:");
+    expect(keyEl.textContent).toContain("keyLabel");
     // Should show loaded message
-    expect(screen.getByText("API key loaded from localStorage.")).toBeTruthy();
+    expect(screen.getByText("apiKeyLoaded")).toBeTruthy();
   });
 
   it("uses useSyncExternalStore — server snapshot returns null", () => {
@@ -72,7 +72,7 @@ describe("DeveloperDashboard", () => {
     const { container } = render(<DeveloperDashboard />);
 
     expect(container.querySelector("[data-testid='dev-key']")).toBeNull();
-    expect(screen.getByText("NO KEY")).toBeTruthy();
+    expect(screen.getByText("noKey")).toBeTruthy();
   });
 
   it("disables Forget and Test API buttons when no key", () => {
@@ -80,8 +80,8 @@ describe("DeveloperDashboard", () => {
 
     render(<DeveloperDashboard />);
 
-    const forgetBtn = screen.getByRole("button", { name: "Forget" }) as HTMLButtonElement;
-    const testBtn = screen.getByRole("button", { name: "Test API" }) as HTMLButtonElement;
+    const forgetBtn = screen.getByRole("button", { name: "forget" }) as HTMLButtonElement;
+    const testBtn = screen.getByRole("button", { name: "testApi" }) as HTMLButtonElement;
 
     expect(forgetBtn.disabled).toBe(true);
     expect(testBtn.disabled).toBe(true);
@@ -92,8 +92,8 @@ describe("DeveloperDashboard", () => {
 
     render(<DeveloperDashboard />);
 
-    const forgetBtn = screen.getByRole("button", { name: "Forget" }) as HTMLButtonElement;
-    const testBtn = screen.getByRole("button", { name: "Test API" }) as HTMLButtonElement;
+    const forgetBtn = screen.getByRole("button", { name: "forget" }) as HTMLButtonElement;
+    const testBtn = screen.getByRole("button", { name: "testApi" }) as HTMLButtonElement;
 
     expect(forgetBtn.disabled).toBe(false);
     expect(testBtn.disabled).toBe(false);

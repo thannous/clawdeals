@@ -1716,6 +1716,7 @@
       "loadError": "Failed to load profile"
     },
     "account": {
+      "pageTitle": "Account // CLAWDEALS",
       "title": "MY ACCOUNT",
       "workspace": "Workspace",
       "channels": "Channels",
@@ -1723,14 +1724,43 @@
       "status": "Status",
       "trustScore": "Trust score",
       "created": "Created",
+      "verified": "VERIFIED",
+      "unverified": "UNVERIFIED",
+      "noChannels": "No agent channels.",
+      "connectFirstApp": "Connect your first app",
+      "noClaimRequests": "No claim requests yet.",
+      "noChannelsYet": "No channels yet",
+      "noChannelsDesc": "Create your first agent from the onboarding flow, then come back here.",
+      "openStart": "Open /start",
+      "selectOrCreateAgent": "Select or create an agent channel to start.",
       "credentialsSecurity": "Credentials Security",
+      "credentialsSecurityDesc": "Rotate updates the global legacy key and revokes connected installations (reconnect required). Revoke immediately cuts global and installation credentials.",
+      "credentialsRevokedLabel": "Credentials Revoked",
+      "credentialsRevokedDesc": "All credentials for this agent have been revoked. No API keys or installations are active.",
       "rotateCredentials": "Rotate credentials",
       "revokeCredentials": "Revoke credentials",
       "agentActions": "Agent actions",
+      "eventsLabel": "events",
+      "noTrackedActions": "No tracked actions for this channel yet.",
       "rotating": "Rotating…",
       "revoking": "Revoking…",
       "rotateConfirm": "Rotate all credentials? Current keys will be invalidated.",
       "revokeConfirm": "Revoke all credentials? This cannot be undone.",
+      "rotateModalMessage": "Rotate global key and revoke all active connected installations for this agent? Clients must reconnect.",
+      "rotateModalConfirm": "Rotate + revoke apps",
+      "revokeModalMessage": "Revoke all global and installation credentials for this agent immediately?",
+      "revokeModalConfirm": "Revoke all",
+      "rotatedKeyTitle": "Global key rotated",
+      "rotatedKeyMessage": "Copy the new global API key now. It may not be shown again.",
+      "copyKey": "Copy key",
+      "close": "Close",
+      "newGlobalKey": "New global key",
+      "globalKeyCopied": "Global API key copied to clipboard",
+      "copyFailed": "Copy failed. Copy manually before closing.",
+      "unnamedRequest": "Unnamed request",
+      "loadingAccount": "Loading account data...",
+      "error": "Error",
+      "failedToLoad": "Failed to load account",
       "rotateSuccess": "Credentials rotated successfully",
       "revokeSuccess": "Credentials revoked successfully"
     },
@@ -1810,16 +1840,23 @@
       "listingId": "Listing ID",
       "pendingApproval": "This listing is pending approval.",
       "viewApproval": "View pending approval"
-    }
+    },
+    "detailPageTitle": "Listing // CLAWDEALS"
   },
   "myApprovals": {
+    "pageTitle": "My Approvals // CLAWDEALS",
     "title": "MY APPROVALS",
     "failedToLoad": "Failed to load approvals",
     "noApprovals": "No approvals found",
     "adjustFilters": "Try adjusting your filters",
     "toolbar": {
       "stateLabel": "State:",
-      "all": "All"
+      "all": "All",
+      "state_PENDING": "Pending",
+      "state_APPROVED": "Approved",
+      "state_DENIED": "Denied",
+      "state_EXPIRED": "Expired",
+      "state_CANCELLED": "Cancelled"
     },
     "list": {
       "action": "Action",
@@ -1848,6 +1885,7 @@
     }
   },
   "myThreads": {
+    "pageTitle": "My Messages // CLAWDEALS",
     "title": "MY MESSAGES",
     "failedToLoad": "Failed to load threads",
     "noThreads": "No threads found",
@@ -1856,7 +1894,9 @@
     "adjustFilters": "Try adjusting your filters",
     "toolbar": {
       "statusLabel": "Status:",
-      "all": "All"
+      "all": "All",
+      "status_OPEN": "Open",
+      "status_CLOSED": "Closed"
     },
     "list": {
       "listing": "Listing",
@@ -1868,6 +1908,7 @@
     }
   },
   "myOffers": {
+    "pageTitle": "My Offers // CLAWDEALS",
     "title": "MY OFFERS",
     "failedToLoad": "Failed to load offers",
     "noOffers": "No offers found",
@@ -1876,7 +1917,12 @@
     "adjustFilters": "Try adjusting your filters",
     "toolbar": {
       "statusLabel": "Status:",
-      "all": "All"
+      "all": "All",
+      "status_CREATED": "Created",
+      "status_ACCEPTED": "Accepted",
+      "status_DECLINED": "Declined",
+      "status_CANCELLED": "Cancelled",
+      "status_EXPIRED": "Expired"
     },
     "list": {
       "listing": "Listing",
@@ -1907,6 +1953,7 @@
     "invalidCode": "Invalid or expired code"
   },
   "developer": {
+    "pageTitle": "Developer // CLAWDEALS",
     "title": "DEVELOPER",
     "session": "Session",
     "pasteKey": "Paste key",
@@ -1916,6 +1963,22 @@
     "apiKeyPlaceholder": "cd_live_...",
     "connected": "Connected",
     "disconnected": "Disconnected",
+    "keyLabel": "KEY:",
+    "noKey": "NO KEY",
+    "apiKeyLoaded": "API key loaded from localStorage.",
+    "noKeyFound": "No key found. Go to /start to generate one.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "keySaved": "Key saved.",
+    "apiReachable": "OK: API reachable with your key.",
+    "apiTestFailed": "API test failed.",
+    "invalidKey": "Invalid key.",
+    "card01Title": "Start",
+    "card01Desc": "Generate or validate an API key.",
+    "card02Title": "Watchlist",
+    "card02Desc": "Create a filter and receive matches.",
+    "card03Title": "Events",
+    "card03Desc": "Stream SSE events using fetch + Authorization.",
     "watchlistNew": {
       "title": "WATCHLIST NEW",
       "criteria": "Criteria",

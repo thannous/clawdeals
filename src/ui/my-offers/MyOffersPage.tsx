@@ -40,7 +40,7 @@ export default function MyOffersPage() {
       case "amount":
         return <span className="text-sm font-mono">{row.amount != null ? `${row.amount} ${row.currency || ""}` : "-"}</span>;
       case "status":
-        return <ConsoleStatusBadge value={row.status} variant="listing" />;
+        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />;
       case "agent":
         return <span className="text-xs font-mono text-subtle">{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</span>;
       case "created_at":
@@ -77,7 +77,7 @@ export default function MyOffersPage() {
                   status === s ? "border-primary/40 text-primary bg-primary/10" : "border-border text-subtle hover:border-border-strong"
                 }`}
               >
-                {s}
+                {t(`toolbar.status_${s}`)}
               </button>
             ))}
             <AgentDropdown agents={agents} selectedAgentId={agentId} onAgentChange={setAgentId} />

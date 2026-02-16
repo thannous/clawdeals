@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import ConfirmModal from "../console/shared/ConfirmModal";
 import Toast from "../console/shared/Toast";
 import { useToast } from "../console/shared/useToast";
@@ -126,6 +127,7 @@ function trustScoreColor(score: number | null): string {
 }
 
 export default function AccountPage() {
+  const t = useTranslations("settings.account");
   const router = useRouter();
   const { toasts, show } = useToast();
   const [owner, setOwner] = useState<OwnerSummary | null>(null);
@@ -292,11 +294,11 @@ export default function AccountPage() {
     if (!secret) return;
     try {
       await navigator.clipboard.writeText(secret);
-      show("Global API key copied to clipboard", "success");
+      show(t("globalKeyCopied"), "success");
     } catch {
-      show("Copy failed. Copy manually before closing.", "error");
+      show(t("copyFailed"), "error");
     }
-  }, [rotatedGlobalSecret, show]);
+  }, [rotatedGlobalSecret, show, t]);
 
   const onRotateCredentials = useCallback(async () => {
     if (!selectedAgentId) return;
@@ -325,10 +327,7 @@ export default function AccountPage() {
 
       setActionState("idle");
       setRotateConfirmOpen(false);
-      show(
-        `Credentials rotated. Revoked ${Number(data.revoked_installations_count || 0)} installation(s).`,
-        "success"
-      );
+      show(t("rotateSuccess"), "success");
 
       if (data.rotated && data.api_key) {
         setRotatedGlobalSecret(data);
@@ -340,7 +339,7 @@ export default function AccountPage() {
       setActionError(message);
       show(message, "error");
     }
-  }, [selectedAgentId, actionState, show, refetchAccount]);
+  }, [selectedAgentId, actionState, show, refetchAccount, t]);
 
   const onRevokeCredentials = useCallback(async () => {
     if (!selectedAgentId) return;
@@ -369,12 +368,7 @@ export default function AccountPage() {
 
       setActionState("idle");
       setRevokeConfirmOpen(false);
-      show(
-        `Credentials revoked. Global keys: ${Number(data.revoked_global_keys_count || 0)}. Installations: ${Number(
-          data.revoked_installations_count || 0
-        )}.`,
-        "success"
-      );
+      show(t("revokeSuccess"), "success");
       refetchAccount();
     } catch (err: any) {
       const message = String(err?.message || "Revoke failed");
@@ -382,12 +376,12 @@ export default function AccountPage() {
       setActionError(message);
       show(message, "error");
     }
-  }, [selectedAgentId, actionState, show, refetchAccount]);
+  }, [selectedAgentId, actionState, show, refetchAccount, t]);
 
   return (
     <div data-testid="account-page" className="min-h-screen bg-bg">
       {/* ---- Header ---- */}
-      <PageHeader title="MY ACCOUNT" containerClassName="px-6 pt-4">
+      <PageHeader title={t("title")} containerClassName="px-6 pt-4">
         <AppNav current="settings" />
         <SettingsNav current="account" />
       </PageHeader>
@@ -398,15 +392,15 @@ export default function AccountPage() {
         {!authRequired && state === "loading" && (
           <div data-testid="account-loading" className="flex items-center gap-3 py-12">
             <div className="h-4 w-4 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
-            <span className="text-sm font-mono text-subtle">Loading account data...</span>
+            <span className="text-sm font-mono text-subtle">{t("loadingAccount")}</span>
           </div>
         )}
 
         {/* Error */}
         {!authRequired && state === "error" && (
           <div data-testid="account-error" className="border border-error/30 bg-error/5 rounded clip-corner p-4">
-            <div className="text-sm font-mono font-semibold text-error">Error</div>
-            <div className="text-sm font-mono text-muted mt-1.5">{error || "Failed to load account"}</div>
+            <div className="text-sm font-mono font-semibold text-error">{t("error")}</div>
+            <div className="text-sm font-mono text-muted mt-1.5">{error || t("failedToLoad")}</div>
           </div>
         )}
 
@@ -421,7 +415,7 @@ export default function AccountPage() {
 
                   {/* Owner card */}
                   <div data-testid="account-owner-card" className="rounded-lg border border-border bg-bg/60 p-4">
-                    <div className="text-xs font-mono uppercase tracking-widest text-subtle mb-3">Workspace</div>
+                    <div className="text-xs font-mono uppercase tracking-widest text-subtle mb-3">{t("workspace")}</div>
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/15 border border-primary/25 text-primary text-sm font-mono font-bold flex items-center justify-center shrink-0">
                         {String(owner?.email || "OW").slice(0, 2).toUpperCase()}
@@ -436,13 +430,13 @@ export default function AccountPage() {
                         {owner?.email_verified_at ? (
                           <>
                             <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
-                            <span className="text-xs font-mono text-success">VERIFIED</span>
+                            <span className="text-xs font-mono text-success">{t("verified")}</span>
                             <span className="text-xs font-mono text-subtle ml-auto">{formatDate(owner.email_verified_at)}</span>
                           </>
                         ) : (
                           <>
                             <span className="inline-block h-1.5 w-1.5 rounded-full bg-warning" />
-                            <span className="text-xs font-mono text-warning">UNVERIFIED</span>
+                            <span className="text-xs font-mono text-warning">{t("unverified")}</span>
                           </>
                         )}
                       </div>
@@ -452,16 +446,16 @@ export default function AccountPage() {
                   {/* Channels */}
                   <section data-testid="account-agents">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-mono uppercase tracking-widest text-subtle">Channels</span>
+                      <span className="text-xs font-mono uppercase tracking-widest text-subtle">{t("channels")}</span>
                       <span className="text-xs font-mono font-bold text-muted bg-bg/60 border border-border rounded-full px-2.5 py-0.5">
                         {agents.length}
                       </span>
                     </div>
                     {agents.length === 0 ? (
                       <div className="text-sm font-mono text-muted leading-relaxed">
-                        No agent channels.{" "}
+                        {t("noChannels")}{" "}
                         <Link href="/start" className="text-primary hover:underline">
-                          Connect your first app
+                          {t("connectFirstApp")}
                         </Link>
                         .
                       </div>
@@ -497,7 +491,7 @@ export default function AccountPage() {
                   {/* Requests */}
                   <section data-testid="account-claims">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-mono uppercase tracking-widest text-subtle">Requests</span>
+                      <span className="text-xs font-mono uppercase tracking-widest text-subtle">{t("requests")}</span>
                       <span className={`text-xs font-mono font-bold rounded-full px-2.5 py-0.5 ${
                         pendingClaims > 0
                           ? "text-primary bg-primary/10 border border-primary/25"
@@ -507,7 +501,7 @@ export default function AccountPage() {
                       </span>
                     </div>
                     {claims.length === 0 ? (
-                      <div className="text-sm font-mono text-muted">No claim requests yet.</div>
+                      <div className="text-sm font-mono text-muted">{t("noClaimRequests")}</div>
                     ) : (
                       <div className="space-y-1.5">
                         {claims.slice(0, 8).map((claim) => {
@@ -521,7 +515,7 @@ export default function AccountPage() {
                                   : "border-border/50 bg-bg/40"
                               }`}
                             >
-                              <div className="text-sm text-text truncate">{claim.requested_agent_name || "Unnamed request"}</div>
+                              <div className="text-sm text-text truncate">{claim.requested_agent_name || t("unnamedRequest")}</div>
                               <div className="flex items-center gap-2 mt-1">
                                 <span className={`text-xs font-mono font-bold uppercase ${isPending ? "text-primary" : "text-subtle"}`}>
                                   {String(claim.status || "unknown").toUpperCase()}
@@ -547,7 +541,7 @@ export default function AccountPage() {
                     <h2 className="text-xl font-semibold tracking-tight text-text">{selectedAgentName}</h2>
                   </div>
                   <div className="mt-1.5 text-xs font-mono text-subtle truncate pl-8">
-                    {selectedAgent ? selectedAgent.agent_id : "Select or create an agent channel to start."}
+                    {selectedAgent ? selectedAgent.agent_id : t("selectOrCreateAgent")}
                   </div>
                 </header>
 
@@ -555,15 +549,15 @@ export default function AccountPage() {
                   {/* Empty state */}
                   {agents.length === 0 && (
                     <div className="border border-border bg-surface/60 rounded-lg p-6">
-                      <div className="text-base font-semibold text-text">No channels yet</div>
+                      <div className="text-base font-semibold text-text">{t("noChannelsYet")}</div>
                       <p className="mt-2 text-sm font-mono text-muted leading-relaxed">
-                        Create your first agent from the onboarding flow, then come back here.
+                        {t("noChannelsDesc")}
                       </p>
                       <Link
                         href="/start"
                         className="inline-flex mt-4 px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
                       >
-                        Open /start
+                        {t("openStart")}
                       </Link>
                     </div>
                   )}
@@ -574,19 +568,19 @@ export default function AccountPage() {
                       {/* Stat cards */}
                       <div className="grid sm:grid-cols-3 gap-4">
                         <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
-                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Status</div>
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">{t("status")}</div>
                           <div className={`mt-2 text-lg font-semibold ${selectedAgent.status === "active" ? "text-success" : selectedAgent.status === "revoked" ? "text-error" : "text-text"}`}>
                             {selectedAgent.status || "-"}
                           </div>
                         </div>
                         <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
-                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Trust score</div>
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">{t("trustScore")}</div>
                           <div className={`mt-2 text-lg font-semibold font-mono ${trustScoreColor(selectedAgent.trust_score)}`}>
                             {typeof selectedAgent.trust_score === "number" ? String(selectedAgent.trust_score) : "-"}
                           </div>
                         </div>
                         <div className="border border-border bg-surface/50 rounded-lg p-4 group hover:border-border-strong transition-colors">
-                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Created</div>
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">{t("created")}</div>
                           <div className="mt-2 text-sm font-semibold text-text">
                             {formatDate(selectedAgent.created_at)}
                           </div>
@@ -600,10 +594,10 @@ export default function AccountPage() {
                         >
                           <div className="space-y-1">
                             <div className="text-xs font-mono uppercase tracking-wider text-error">
-                              Credentials Revoked
+                              {t("credentialsRevokedLabel")}
                             </div>
                             <div className="text-xs font-mono text-muted max-w-2xl leading-relaxed">
-                              All credentials for this agent have been revoked. No API keys or installations are active.
+                              {t("credentialsRevokedDesc")}
                             </div>
                           </div>
                         </section>
@@ -615,11 +609,10 @@ export default function AccountPage() {
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="space-y-1">
                               <div className="text-xs font-mono uppercase tracking-wider text-warning">
-                                Credentials Security
+                                {t("credentialsSecurity")}
                               </div>
                               <div className="text-xs font-mono text-muted max-w-2xl leading-relaxed">
-                                Rotate updates the global legacy key and revokes connected installations (reconnect
-                                required). Revoke immediately cuts global and installation credentials.
+                                {t("credentialsSecurityDesc")}
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -633,7 +626,7 @@ export default function AccountPage() {
                                 disabled={!selectedAgentId || actionState === "loading"}
                                 className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                               >
-                                Rotate credentials
+                                {t("rotateCredentials")}
                               </button>
                               <button
                                 data-testid="account-revoke-credentials"
@@ -645,7 +638,7 @@ export default function AccountPage() {
                                 disabled={!selectedAgentId || actionState === "loading"}
                                 className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
                               >
-                                Revoke credentials
+                                {t("revokeCredentials")}
                               </button>
                             </div>
                           </div>
@@ -655,13 +648,13 @@ export default function AccountPage() {
                       {/* Activity log */}
                       <div className="border border-border bg-surface/30 rounded-lg overflow-hidden">
                         <div className="px-5 py-4 border-b border-border/50 flex items-center justify-between">
-                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">Agent actions</div>
-                          <span className="text-xs font-mono text-subtle">{filteredActivities.length} events</span>
+                          <div className="text-xs font-mono uppercase tracking-wider text-subtle">{t("agentActions")}</div>
+                          <span className="text-xs font-mono text-subtle">{filteredActivities.length} {t("eventsLabel")}</span>
                         </div>
 
                         {filteredActivities.length === 0 ? (
                           <div className="px-5 py-8 text-center">
-                            <div className="text-sm font-mono text-subtle">No tracked actions for this channel yet.</div>
+                            <div className="text-sm font-mono text-subtle">{t("noTrackedActions")}</div>
                           </div>
                         ) : (
                           <div className="divide-y divide-border/30">
@@ -715,9 +708,9 @@ export default function AccountPage() {
 
       <ConfirmModal
         open={rotateConfirmOpen}
-        title="Rotate credentials"
-        message="Rotate global key and revoke all active connected installations for this agent? Clients must reconnect."
-        confirmLabel="Rotate + revoke apps"
+        title={t("rotateCredentials")}
+        message={t("rotateModalMessage")}
+        confirmLabel={t("rotateModalConfirm")}
         variant="default"
         loading={actionState === "loading"}
         onCancel={closeRotateConfirm}
@@ -728,9 +721,9 @@ export default function AccountPage() {
 
       <ConfirmModal
         open={revokeConfirmOpen}
-        title="Revoke credentials"
-        message="Revoke all global and installation credentials for this agent immediately?"
-        confirmLabel="Revoke all"
+        title={t("revokeCredentials")}
+        message={t("revokeModalMessage")}
+        confirmLabel={t("revokeModalConfirm")}
         variant="danger"
         loading={actionState === "loading"}
         onCancel={closeRevokeConfirm}
@@ -741,16 +734,16 @@ export default function AccountPage() {
 
       <ConfirmModal
         open={Boolean(rotatedGlobalSecret)}
-        title="Global key rotated"
-        message="Copy the new global API key now. It may not be shown again."
-        confirmLabel="Copy key"
-        cancelLabel="Close"
+        title={t("rotatedKeyTitle")}
+        message={t("rotatedKeyMessage")}
+        confirmLabel={t("copyKey")}
+        cancelLabel={t("close")}
         variant="success"
         onCancel={closeRotatedGlobalSecret}
         onConfirm={copyRotatedGlobalSecret}
       >
         <div className="space-y-2">
-          <label className="block text-xs font-mono text-subtle uppercase">New global key</label>
+          <label className="block text-xs font-mono text-subtle uppercase">{t("newGlobalKey")}</label>
           <textarea
             data-testid="account-rotated-global-key"
             value={rotatedGlobalSecret?.api_key || ""}

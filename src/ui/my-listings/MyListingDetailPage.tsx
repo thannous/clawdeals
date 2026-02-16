@@ -75,7 +75,7 @@ export default function MyListingDetailPage() {
             {/* Title + Status */}
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-lg font-bold text-text break-words">{listing.title || "—"}</h2>
-              <ConsoleStatusBadge value={listing.status} />
+              <ConsoleStatusBadge value={listing.status} label={t(`toolbar.status_${listing.status}`)} />
             </div>
 
             {/* Pending approval banner */}

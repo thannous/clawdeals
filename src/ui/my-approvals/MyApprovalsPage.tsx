@@ -45,7 +45,7 @@ export default function MyApprovalsPage() {
       case "action_ref_id":
         return row.action_ref_id ? <TruncatedId id={row.action_ref_id} /> : <span className="text-subtle">-</span>;
       case "state":
-        return <ConsoleStatusBadge value={row.state} variant="approval" />;
+        return <ConsoleStatusBadge value={row.state} label={t(`toolbar.state_${row.state}`)} variant="approval" />;
       case "agent":
         return <span className="text-xs font-mono text-subtle">{row.created_by_agent_id ? (agentMap[row.created_by_agent_id] || "\u2014") : "-"}</span>;
       case "created_at":

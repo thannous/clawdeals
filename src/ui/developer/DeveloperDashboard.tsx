@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
 import PageHeader from "../shared/PageHeader";
@@ -8,6 +9,7 @@ import AppNav from "../shared/AppNav";
 const noopSubscribe = () => () => {};
 
 export default function DeveloperDashboard() {
+  const t = useTranslations("developer");
   const storedKey = useSyncExternalStore(noopSubscribe, getStoredApiKey, () => null);
   const [keyOverride, setKeyOverride] = useState<string | null | undefined>(undefined);
   const apiKey = keyOverride !== undefined ? keyOverride : storedKey;
@@ -32,12 +34,12 @@ export default function DeveloperDashboard() {
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey });
       setStatus("ok");
-      setMessage("OK: API reachable with your key.");
+      setMessage(t("apiReachable"));
     } catch (error: any) {
       setStatus("error");
-      setMessage(error?.message || "API test failed.");
+      setMessage(error?.message || t("apiTestFailed"));
     }
-  }, [apiKey]);
+  }, [apiKey, t]);
 
   const handlePaste = useCallback(() => {
     setShowPasteInput(true);
@@ -54,22 +56,22 @@ export default function DeveloperDashboard() {
       setStoredApiKey(key);
       setKeyOverride(key);
       setStatus("ok");
-      setMessage("Key saved.");
+      setMessage(t("keySaved"));
       setShowPasteInput(false);
       setPasteValue("");
     } catch (error: any) {
       setStatus("error");
-      setMessage(error?.message || "Invalid key.");
+      setMessage(error?.message || t("invalidKey"));
     }
-  }, [pasteValue]);
+  }, [pasteValue, t]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
       <PageHeader
-        title="DEVELOPER"
+        title={t("title")}
         actions={
           <span className="text-xs font-mono text-subtle">
-            {masked ? <span data-testid="dev-key">KEY: {masked}</span> : <span>NO KEY</span>}
+            {masked ? <span data-testid="dev-key">{t("keyLabel")} {masked}</span> : <span>{t("noKey")}</span>}
           </span>
         }
       >
@@ -80,9 +82,9 @@ export default function DeveloperDashboard() {
         <div className="border border-border bg-surface p-6 space-y-4">
           <div className="flex flex-wrap gap-3 items-center justify-between">
             <div className="space-y-1">
-              <div className="text-xs font-mono uppercase tracking-widest text-subtle">Session</div>
+              <div className="text-xs font-mono uppercase tracking-widest text-subtle">{t("session")}</div>
               <div className="text-sm text-muted font-mono">
-                {apiKey ? "API key loaded from localStorage." : "No key found. Go to /start to generate one."}
+                {apiKey ? t("apiKeyLoaded") : t("noKeyFound")}
               </div>
             </div>
             <div className="flex gap-2">
@@ -90,21 +92,21 @@ export default function DeveloperDashboard() {
                 onClick={handlePaste}
                 className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
               >
-                Paste key
+                {t("pasteKey")}
               </button>
               <button
                 onClick={handleForget}
                 className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
                 disabled={!apiKey}
               >
-                Forget
+                {t("forget")}
               </button>
               <button
                 onClick={handleTest}
                 className="border border-primary px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary hover:text-bg"
                 disabled={!apiKey || status === "loading"}
               >
-                Test API
+                {status === "loading" ? t("testing") : t("testApi")}
               </button>
             </div>
           </div>
@@ -124,7 +126,7 @@ export default function DeveloperDashboard() {
               <input
                 value={pasteValue}
                 onChange={(e) => setPasteValue(e.target.value)}
-                placeholder="cd_live_..."
+                placeholder={t("apiKeyPlaceholder")}
                 autoComplete="off"
                 spellCheck={false}
                 autoFocus
@@ -141,13 +143,13 @@ export default function DeveloperDashboard() {
                     : "bg-primary text-bg hover:bg-text hover:text-bg"
                 } transition-colors`}
               >
-                {status === "loading" ? "..." : "Save"}
+                {status === "loading" ? "..." : t("save")}
               </button>
               <button
                 onClick={() => { setShowPasteInput(false); setPasteValue(""); }}
                 className="h-10 px-3 text-xs font-bold uppercase tracking-widest border border-border hover:border-border-strong transition-colors"
               >
-                Cancel
+                {t("cancel")}
               </button>
             </div>
           )}
@@ -159,8 +161,8 @@ export default function DeveloperDashboard() {
             className="border border-border bg-bg p-5 hover:border-border-strong transition-colors"
           >
             <div className="text-xs font-mono uppercase tracking-widest text-subtle">01</div>
-            <div className="mt-2 font-bold tracking-wide">Start</div>
-            <div className="mt-2 text-xs font-mono text-muted">Generate or validate an API key.</div>
+            <div className="mt-2 font-bold tracking-wide">{t("card01Title")}</div>
+            <div className="mt-2 text-xs font-mono text-muted">{t("card01Desc")}</div>
           </Link>
           <Link
             href="/developer/watchlists/new"
@@ -169,8 +171,8 @@ export default function DeveloperDashboard() {
             }`}
           >
             <div className="text-xs font-mono uppercase tracking-widest text-subtle">02</div>
-            <div className="mt-2 font-bold tracking-wide">Watchlist</div>
-            <div className="mt-2 text-xs font-mono text-muted">Create a filter and receive matches.</div>
+            <div className="mt-2 font-bold tracking-wide">{t("card02Title")}</div>
+            <div className="mt-2 text-xs font-mono text-muted">{t("card02Desc")}</div>
           </Link>
           <Link
             href="/developer/events"
@@ -179,8 +181,8 @@ export default function DeveloperDashboard() {
             }`}
           >
             <div className="text-xs font-mono uppercase tracking-widest text-subtle">03</div>
-            <div className="mt-2 font-bold tracking-wide">Events</div>
-            <div className="mt-2 text-xs font-mono text-muted">Stream SSE events using fetch + Authorization.</div>
+            <div className="mt-2 font-bold tracking-wide">{t("card03Title")}</div>
+            <div className="mt-2 text-xs font-mono text-muted">{t("card03Desc")}</div>
           </Link>
         </div>
       </main>

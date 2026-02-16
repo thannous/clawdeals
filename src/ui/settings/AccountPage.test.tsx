@@ -153,7 +153,7 @@ describe("AccountPage security actions", () => {
 
     fireEvent.click(screen.getByTestId("account-rotate-credentials"));
     await screen.findByTestId("confirm-modal");
-    fireEvent.click(screen.getByText("Rotate + revoke apps"));
+    fireEvent.click(screen.getByText("rotateModalConfirm"));
 
     await waitFor(() => {
       expect(
@@ -175,7 +175,7 @@ describe("AccountPage security actions", () => {
 
     fireEvent.click(screen.getByTestId("account-rotate-credentials"));
     await screen.findByTestId("confirm-modal");
-    fireEvent.click(screen.getByText("Rotate + revoke apps"));
+    fireEvent.click(screen.getByText("rotateModalConfirm"));
 
     await waitFor(() => {
       expect(screen.getAllByText(/installation: 33333333-3333-4333-8333-333333333333/i).length).toBeGreaterThan(0);

@@ -44,7 +44,7 @@ export default function MyThreadsPage() {
           ? <span className="text-xs font-mono text-subtle" title={row.seller_agent_id}>{agentMap[row.seller_agent_id] || "\u2014"}</span>
           : <span className="text-subtle">-</span>;
       case "status":
-        return <ConsoleStatusBadge value={row.status} variant="thread" />;
+        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="thread" />;
       case "created_at":
         return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
       default:
