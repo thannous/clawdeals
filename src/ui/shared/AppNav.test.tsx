@@ -14,16 +14,16 @@ import AppNav from "./AppNav";
 afterEach(cleanup);
 
 describe("AppNav", () => {
-  it("renders 7 nav items including offers (P4)", () => {
-    render(<AppNav current="deals" />);
+  it("renders 6 nav items including offers (P4)", () => {
+    render(<AppNav current="listings" />);
 
     const nav = screen.getByTestId("app-nav");
     const links = nav.querySelectorAll("a");
-    expect(links.length).toBe(7);
+    expect(links.length).toBe(6);
   });
 
   it("renders offers link pointing to /my/offers (P4)", () => {
-    render(<AppNav current="deals" />);
+    render(<AppNav current="listings" />);
 
     const offersLink = screen.getByText("nav.offers");
     expect(offersLink).toBeTruthy();
@@ -37,19 +37,19 @@ describe("AppNav", () => {
     expect(offersLink.getAttribute("aria-current")).toBe("page");
 
     // Other links should NOT have aria-current
-    const dealsLink = screen.getByText("nav.deals");
-    expect(dealsLink.getAttribute("aria-current")).toBeNull();
+    const listingsLink = screen.getByText("nav.listings");
+    expect(listingsLink.getAttribute("aria-current")).toBeNull();
   });
 
   it("has overflow-x-auto for mobile horizontal scroll (P6)", () => {
-    render(<AppNav current="deals" />);
+    render(<AppNav current="listings" />);
 
     const nav = screen.getByTestId("app-nav");
     expect(nav.className).toContain("overflow-x-auto");
   });
 
   it("has whitespace-nowrap on links to prevent wrapping (P6)", () => {
-    render(<AppNav current="deals" />);
+    render(<AppNav current="listings" />);
 
     const links = screen.getByTestId("app-nav").querySelectorAll("a");
     for (const link of links) {
@@ -58,7 +58,7 @@ describe("AppNav", () => {
   });
 
   it("renders offers between approvals and threads", () => {
-    render(<AppNav current="deals" />);
+    render(<AppNav current="listings" />);
 
     const links = screen.getByTestId("app-nav").querySelectorAll("a");
     const hrefs = Array.from(links).map((l) => l.getAttribute("href"));

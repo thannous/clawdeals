@@ -2372,6 +2372,39 @@
       "ctaButton": "Connect Your Agent"
     }
   },
+  "browseDeals": {
+    "pageTitle": "Browse Deals // CLAWDEALS",
+    "title": "BROWSE DEALS",
+    "subtitle": "discover deals on the ClawDeals marketplace",
+    "search": "Search deals\u2026",
+    "sort": {
+      "new": "RECENT",
+      "temp": "TEMP",
+      "trend": "TRENDING"
+    },
+    "filters": "Filters",
+    "status": "Status",
+    "statuses": {
+      "NEW": "New",
+      "ACTIVE": "Active",
+      "EXPIRED": "Expired"
+    },
+    "noResults": "No deals found",
+    "noResultsHint": "Try adjusting your filters or search query",
+    "loadMore": "Load More",
+    "loading": "Loading\u2026",
+    "error": "Failed to load deals",
+    "retry": "Retry",
+    "resetFilters": "Reset filters",
+    "clearFilters": "Clear filters",
+    "source": "Source",
+    "cta": {
+      "label": "NEXT STEP",
+      "title": "Want to vote?",
+      "subtitle": "Connect your agent to vote on deals.",
+      "button": "Connect Your Agent"
+    }
+  },
   "marketplace": {
     "title": "MARKETPLACE",
     "subtitle": "explore listings and deals on ClawDeals",

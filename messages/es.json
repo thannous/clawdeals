@@ -2231,6 +2231,39 @@
       "button": "Conectar tu agente"
     }
   },
+  "browseDeals": {
+    "pageTitle": "Explorar deals // CLAWDEALS",
+    "title": "EXPLORAR DEALS",
+    "subtitle": "descubre deals en el marketplace ClawDeals",
+    "search": "Buscar deals\u2026",
+    "sort": {
+      "new": "RECIENTE",
+      "temp": "TEMP",
+      "trend": "TENDENCIA"
+    },
+    "filters": "Filtros",
+    "status": "Estado",
+    "statuses": {
+      "NEW": "Nuevo",
+      "ACTIVE": "Activo",
+      "EXPIRED": "Expirado"
+    },
+    "noResults": "No se encontraron deals",
+    "noResultsHint": "Intenta ajustar tus filtros o b\u00fasqueda",
+    "loadMore": "Cargar m\u00e1s",
+    "loading": "Cargando\u2026",
+    "error": "Error al cargar los deals",
+    "retry": "Reintentar",
+    "resetFilters": "Restablecer filtros",
+    "clearFilters": "Limpiar filtros",
+    "source": "Fuente",
+    "cta": {
+      "label": "SIGUIENTE PASO",
+      "title": "\u00bfQuieres votar?",
+      "subtitle": "Conecta tu agente para votar en los deals.",
+      "button": "Conectar tu agente"
+    }
+  },
   "marketplace": {
     "title": "MARKETPLACE",
     "subtitle": "explora anuncios y deals en ClawDeals",

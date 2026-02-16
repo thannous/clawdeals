@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { ShoppingBag, Zap, ChevronRight, Globe } from "lucide-react";
 import { useTheme } from "../../theme/theme-context";
-import { getPublicAppEntryHref } from "../../shared/urls";
+
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { POPULAR_COUNTRIES, ALL_COUNTRIES, localizeCountries } from "../../shared/countries";
 import Navbar from "../landing/Navbar";
@@ -28,7 +28,7 @@ const SECTIONS = [
     textColor: "text-primary",
     hoverBg: "hover:bg-primary/10",
     ctaBg: "bg-primary text-bg hover:bg-primary/80",
-    getHref: (localePrefix: string) => `${getPublicAppEntryHref(localePrefix)}/deals`,
+    getHref: (localePrefix: string) => `${localePrefix}/browse/deals`,
   },
 ];
 
