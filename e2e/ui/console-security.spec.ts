@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -154,8 +154,8 @@ test.describe("Console Security — US-8", () => {
       await page.goto(`/console/listings/${LISTING_WITH_URL.listing_id}`);
       await expect(page.getByTestId("listing-detail-page")).toBeVisible();
 
-      // No email patterns
-      const pageText = await page.textContent("body");
+      // Scope to visible app content to avoid matching serialized __NEXT_DATA__ script payloads.
+      const pageText = await page.locator("#main-content").innerText();
       expect(pageText).not.toMatch(/[\w.-]+@[\w.-]+\.\w+/);
       // No phone patterns (basic check)
       expect(pageText).not.toMatch(/\+\d{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?\d{2}/);
@@ -218,9 +218,9 @@ test.describe("Console Security — US-8", () => {
       // WARNING badge visible
       await expect(page.getByText("WARNING", { exact: true })).toBeVisible();
 
-      // Yellow-bordered card exists
-      const yellowCard = page.locator(".border-yellow-400\\/40");
-      await expect(yellowCard.first()).toBeVisible();
+      // Warning card uses warning semantic tokens.
+      const warningCard = page.locator(".border-warning\\/40.bg-warning\\/5");
+      await expect(warningCard.first()).toBeVisible();
     });
   });
 

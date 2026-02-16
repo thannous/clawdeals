@@ -5,17 +5,10 @@ import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
 import WebMcpProviderGate from "../webmcp/WebMcpProviderGate";
 import Footer from "../ui/Footer";
-import enMessages from "../../messages/en.json";
-import frMessages from "../../messages/fr.json";
-import esMessages from "../../messages/es.json";
 
 /** Paths where the shared footer is hidden (landing has its own, app pages don't need one). */
 const HIDE_FOOTER_PREFIXES = ["/auth", "/console", "/settings", "/device", "/pair", "/start", "/claim", "/dev", "/keys"];
-const FALLBACK_MESSAGES_BY_LOCALE = {
-  en: enMessages,
-  fr: frMessages,
-  es: esMessages
-} as const;
+const EMPTY_MESSAGES = {};
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -23,14 +16,14 @@ export default function App({ Component, pageProps }: AppProps) {
   const showFooter =
     !isLandingPage && !HIDE_FOOTER_PREFIXES.some((p) => router.pathname.startsWith(p));
   const locale = router.locale === "fr" || router.locale === "es" ? router.locale : "en";
-  const fallbackMessages = FALLBACK_MESSAGES_BY_LOCALE[locale];
   const usingFallbackMessages = !pageProps.messages;
+  const messages = pageProps.messages || EMPTY_MESSAGES;
 
   return (
     <NextIntlClientProvider
       locale={locale}
       timeZone="Europe/Paris"
-      messages={pageProps.messages || fallbackMessages}
+      messages={messages}
       getMessageFallback={({ namespace, key }) => [namespace, key].filter(Boolean).join(".")}
       onError={(error) => {
         const code = (error as any)?.code;

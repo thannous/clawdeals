@@ -202,7 +202,7 @@ describe("POST /v1/auth/[action]", () => {
     expect(ctx.auditEvent).toBe("owner.login_magic_link_sent");
   });
 
-  it("returns provider failure when login email delivery fails", async () => {
+  it("soft-fails email delivery in non-production", async () => {
     vi.mocked(startOwnerLogin).mockResolvedValue({
       owner: { owner_id: ownerId },
       session: { session_id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-02-12T00:00:00Z" },
@@ -212,14 +212,48 @@ describe("POST /v1/auth/[action]", () => {
       Object.assign(new Error("Failed to send owner login email"), { status: 503, code: "EMAIL_SEND_FAILED" })
     );
 
+    const ctx = makeCtx();
     const result: any = await handler(
       makeReq("login:start", { email: "test@example.com" }),
       null,
-      makeCtx()
+      ctx
     );
 
-    expect(result.status).toBe(503);
-    expect(result.body.error.code).toBe("EMAIL_SEND_FAILED");
+    expect(result.status).toBe(201);
+    expect(result.body.data.owner_id).toBe(ownerId);
+    expect(result.body.data.session_id).toBe("22222222-2222-4222-8222-222222222222");
+    expect(ctx.auditEvent).toBe("owner.login_magic_link_sent");
+    expect(ctx.security.owner_login_email_provider).toBe("none");
+    expect(ctx.security.owner_login_email_skipped).toBe(true);
+    expect(ctx.security.owner_login_email_message_id).toBeNull();
+  });
+
+  it("returns provider failure in production when login email delivery fails", async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+
+    try {
+      vi.mocked(startOwnerLogin).mockResolvedValue({
+        owner: { owner_id: ownerId },
+        session: { session_id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-02-12T00:00:00Z" },
+        session_token: "cd_os_test"
+      } as any);
+      sendOwnerLoginMagicLinkEmailMock.mockRejectedValueOnce(
+        Object.assign(new Error("Failed to send owner login email"), { status: 503, code: "EMAIL_SEND_FAILED" })
+      );
+
+      const result: any = await handler(
+        makeReq("login:start", { email: "test@example.com" }),
+        null,
+        makeCtx()
+      );
+
+      expect(result.status).toBe(503);
+      expect(result.body.error.code).toBe("EMAIL_SEND_FAILED");
+    } finally {
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+    }
   });
 
   it("confirms login and sets session cookie", async () => {

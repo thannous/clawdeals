@@ -5,40 +5,56 @@ interface Agent {
   name: string | null;
 }
 
-// Module-level cache + init guard (advanced-init-once pattern)
-let didInit = false;
+// Module-level cache + in-flight deduplication (advanced-init-once pattern)
 let cachedAgents: Agent[] | null = null;
+let inflightRequest: Promise<Agent[]> | null = null;
+
+async function fetchOwnerAgentsOnce(): Promise<Agent[]> {
+  if (cachedAgents !== null) return cachedAgents;
+  if (inflightRequest) return inflightRequest;
+
+  inflightRequest = (async () => {
+    try {
+      const resp = await fetch("/api/v1/owner/agents?limit=100");
+      if (!resp.ok) {
+        cachedAgents = [];
+        return cachedAgents;
+      }
+      const body = await resp.json();
+      const list = body?.data?.agents || [];
+      cachedAgents = list.map((a: any) => ({ id: a.agent_id || a.id, name: a.name || null }));
+      return cachedAgents;
+    } catch {
+      // Silently ignore — agent dropdown will just be empty
+      cachedAgents = [];
+      return cachedAgents;
+    } finally {
+      inflightRequest = null;
+    }
+  })();
+
+  return inflightRequest;
+}
 
 export function useOwnerAgents() {
   const [agents, setAgents] = useState<Agent[]>(cachedAgents || []);
   const [loading, setLoading] = useState(cachedAgents === null);
 
   useEffect(() => {
-    if (didInit) return;
-    didInit = true;
-
+    if (cachedAgents !== null) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
+    void fetchOwnerAgentsOnce().then((result) => {
+      if (cancelled) return;
+      setAgents(result);
+      setLoading(false);
+    });
 
-    (async () => {
-      try {
-        const resp = await fetch("/api/v1/owner/agents?limit=100");
-        if (!resp.ok) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-        const body = await resp.json();
-        const list = body?.data?.agents || [];
-        const mapped = list.map((a: any) => ({ id: a.agent_id || a.id, name: a.name || null }));
-        cachedAgents = mapped;
-        if (!cancelled) setAgents(mapped);
-      } catch {
-        // silently ignore — agent dropdown will just be empty
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const agentMap = useMemo(() => {

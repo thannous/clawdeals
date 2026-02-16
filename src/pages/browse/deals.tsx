@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import BrowseDealsPage from "../../ui/browse/BrowseDealsPage";
 import { listDeals } from "../../server/services/deals-list";
-import { loadMessages, resolveSupportedLocale, localePrefixFor, type SupportedLocale } from "../../shared/i18n";
+import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 
@@ -37,6 +37,8 @@ type BrowseDealsPageProps = {
 };
 
 export const getServerSideProps: GetServerSideProps<BrowseDealsPageProps> = async ({ locale, req, res }) => {
+  const resolvedLocale = locale || "en";
+  const messagesPromise = loadMessages(resolvedLocale);
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
 
   if (res?.setHeader) {
@@ -65,12 +67,12 @@ export const getServerSideProps: GetServerSideProps<BrowseDealsPageProps> = asyn
 
   return {
     props: {
-      locale: locale || "en",
+      locale: resolvedLocale,
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
       initialDeals,
       initialNextCursor,
-      messages: await loadMessages(locale || "en"),
+      messages: await messagesPromise,
     },
   };
 };

@@ -28,8 +28,10 @@ test.describe.serial("Integration: Owner Deals API", () => {
 
     // Insert test deals directly in DB for this owner's agent
     const now = new Date();
+    const nowIso = now.toISOString();
     const futureIso = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
     const pastIso = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const expiredCreatedAtIso = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
 
     const deals = [
       {
@@ -39,6 +41,7 @@ test.describe.serial("Integration: Owner Deals API", () => {
         source_url_fingerprint: sha256Hex(randomId()),
         price: 10,
         currency: "EUR",
+        created_at: nowIso,
         expires_at: futureIso,
         tags: ["owner-deals-test"],
         status: "NEW",
@@ -52,11 +55,12 @@ test.describe.serial("Integration: Owner Deals API", () => {
         source_url_fingerprint: sha256Hex(randomId()),
         price: 20,
         currency: "EUR",
+        created_at: nowIso,
         expires_at: futureIso,
         tags: ["owner-deals-test"],
         status: "ACTIVE",
         new_until: pastIso,
-        active_at: now.toISOString(),
+        active_at: nowIso,
         creator_agent_id: agent.id
       },
       {
@@ -66,6 +70,7 @@ test.describe.serial("Integration: Owner Deals API", () => {
         source_url_fingerprint: sha256Hex(randomId()),
         price: 30,
         currency: "EUR",
+        created_at: expiredCreatedAtIso,
         expires_at: pastIso,
         tags: ["owner-deals-test"],
         status: "EXPIRED",

@@ -133,13 +133,17 @@ test.describe("Browse page", () => {
 
       // Click NEW condition pill
       await domClick(page, "condition-NEW");
-      await page.waitForTimeout(300);
-      expect(page.url()).toContain("condition=NEW");
+      await page.waitForURL((url) => {
+        const parsed = new URL(url);
+        return parsed.searchParams.get("condition") === "NEW";
+      }, { timeout: 5_000 });
 
       // Click again to deselect
       await domClick(page, "condition-NEW");
-      await page.waitForTimeout(300);
-      expect(page.url()).not.toContain("condition=NEW");
+      await page.waitForURL((url) => {
+        const parsed = new URL(url);
+        return !parsed.searchParams.has("condition");
+      }, { timeout: 5_000 });
     });
 
     test("clear filters button resets all filters", async ({ page }) => {

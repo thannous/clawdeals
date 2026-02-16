@@ -191,7 +191,12 @@ test.describe.serial("Integration: Connect Claim", () => {
     const ownerId = randomId();
     await createOwner(request, ownerId);
     await ensureOwnerEmailVerified(supabase, ownerId);
+    const ownerAgentLimitRaw = Number.parseInt(String(process.env.OWNER_AGENT_LIMIT || "1"), 10);
+    const ownerAgentLimit = Number.isFinite(ownerAgentLimitRaw) && ownerAgentLimitRaw > 0 ? ownerAgentLimitRaw : 1;
     const existingAgent = await createAgentDb(supabase, ownerId);
+    for (let i = 1; i < ownerAgentLimit; i += 1) {
+      await createAgentDb(supabase, ownerId);
+    }
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },

@@ -135,7 +135,15 @@ test.describe("Claim page", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ data: buildPendingView() })
+        body: JSON.stringify({
+          data: buildPendingView({
+            owner_context_available: true,
+            owner_agent_limit: 1,
+            owner_agents: [],
+            allow_create_agent: true,
+            default_mode: "create_agent"
+          })
+        })
       });
     });
 

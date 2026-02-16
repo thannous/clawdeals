@@ -115,11 +115,12 @@ test.describe("Browse Deals page", () => {
 
       // Click temp sort
       await domClick(page, "sort-temp");
-      await page.waitForTimeout(500);
+      await page.waitForURL((url) => {
+        const parsed = new URL(url);
+        return parsed.searchParams.get("sort") === "temp";
+      }, { timeout: 5_000 });
 
-      expect(page.url()).toContain("sort=temp");
-      const sortRequest = requests.find((url) => url.includes("sort=temp"));
-      expect(sortRequest).toBeTruthy();
+      await expect.poll(() => requests.some((url) => url.includes("sort=temp"))).toBe(true);
     });
 
     test("search input updates URL after debounce", async ({ page }) => {
@@ -139,13 +140,17 @@ test.describe("Browse Deals page", () => {
 
       // Click ACTIVE status pill
       await domClick(page, "status-ACTIVE");
-      await page.waitForTimeout(300);
-      expect(page.url()).toContain("status=ACTIVE");
+      await page.waitForURL((url) => {
+        const parsed = new URL(url);
+        return parsed.searchParams.get("status") === "ACTIVE";
+      }, { timeout: 5_000 });
 
       // Click again to deselect
       await domClick(page, "status-ACTIVE");
-      await page.waitForTimeout(300);
-      expect(page.url()).not.toContain("status=ACTIVE");
+      await page.waitForURL((url) => {
+        const parsed = new URL(url);
+        return !parsed.searchParams.has("status");
+      }, { timeout: 5_000 });
     });
 
     test("clear filters button resets status filter", async ({ page }) => {

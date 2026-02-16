@@ -195,13 +195,35 @@ export async function handler(req: any, _res: any, ctx: any) {
         now: new Date()
       });
 
-      const delivery = await sendOwnerLoginMagicLinkEmail({
-        email: result.owner?.email || email,
-        sessionId: result.session?.session_id,
-        token: result.session_token,
-        expiresAt: result.session?.expires_at || null,
-        appUrl: resolveRequestOrigin(req)
-      });
+      let delivery: any;
+      try {
+        delivery = await sendOwnerLoginMagicLinkEmail({
+          email: result.owner?.email || email,
+          sessionId: result.session?.session_id,
+          token: result.session_token,
+          expiresAt: result.session?.expires_at || null,
+          appUrl: resolveRequestOrigin(req)
+        });
+      } catch (deliveryError: any) {
+        const code = String(deliveryError?.code || "");
+        const canSoftFail =
+          process.env.NODE_ENV !== "production" &&
+          (code === "EMAIL_SEND_FAILED" || code === "EMAIL_PROVIDER_NOT_CONFIGURED" || code === "EMAIL_PROVIDER_INVALID");
+        if (!canSoftFail) {
+          throw deliveryError;
+        }
+        console.warn("[owner-login-email] non-production delivery failure; skipping send.", {
+          code,
+          status: deliveryError?.status || null
+        });
+        delivery = {
+          provider: "none",
+          delivered: false,
+          skipped: true,
+          verify_url: null,
+          message_id: null
+        };
+      }
 
       if (ctx) {
         ctx.auditEvent = "owner.login_magic_link_sent";

@@ -75,10 +75,6 @@ test.describe("Start page: agent naming", () => {
     let claimCalled = false;
     let authProbeCount = 0;
 
-    await page.addInitScript((key) => {
-      window.localStorage.setItem("clawdeals_api_key", key);
-    }, API_KEY);
-
     await page.route("**/api/v1/auth/me", async (route) => {
       authProbeCount += 1;
       const isAuthenticated = authProbeCount >= 2;
@@ -99,6 +95,14 @@ test.describe("Start page: agent naming", () => {
             owner_id: "33333333-3333-4333-8333-333333333333"
           }
         })
+      });
+    });
+
+    await page.route("**/api/v1/deals?limit=1", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: { deals: [] } })
       });
     });
 
@@ -140,7 +144,14 @@ test.describe("Start page: agent naming", () => {
 
     await page.goto("/start");
 
+    await page.getByRole("button", { name: "I have a key" }).first().click();
+    await page.locator("#connect-paste-key").fill(API_KEY);
+    await page.getByTestId("validate-key").click();
+
     await expect(page.getByRole("heading", { name: "You're connected" })).toBeVisible();
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
     await expect.poll(() => claimCalled).toBe(true);
     await expect(page.getByText("chacha")).toBeVisible();
   });
@@ -154,9 +165,26 @@ test.describe("Start page: agent naming", () => {
 
     await page.route("**/api/v1/auth/me", async (route) => {
       await route.fulfill({
-        status: 401,
+        status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Authentication required" } })
+        body: JSON.stringify({
+          data: {
+            owner_id: "33333333-3333-4333-8333-333333333333"
+          }
+        })
+      });
+    });
+
+    await page.route("**/api/v1/agents/me/claim", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: {
+            code: "AGENT_ALREADY_CLAIMED",
+            message: "already claimed"
+          }
+        })
       });
     });
 
@@ -200,15 +228,13 @@ test.describe("Start page: agent naming", () => {
     await page.goto("/start");
 
     await expect(page.getByRole("heading", { name: "You're connected" })).toBeVisible();
-    await expect(page.getByText("Name your agent")).toBeVisible();
-
     const nameInput = page.locator("#agent-name-input");
+    await expect(nameInput).toBeVisible();
     await nameInput.fill("Alpha Bot");
     await nameInput.press("Enter");
 
     await expect(page.getByText("Alpha Bot")).toBeVisible();
-    await expect(page.getByText("Saved")).toBeVisible();
-    await expect(page.getByText("Name your agent")).toHaveCount(0);
+    await expect(nameInput).toHaveCount(0);
     expect(patchPayload).toEqual({ name: "Alpha Bot" });
   });
 
@@ -221,9 +247,26 @@ test.describe("Start page: agent naming", () => {
 
     await page.route("**/api/v1/auth/me", async (route) => {
       await route.fulfill({
-        status: 401,
+        status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Authentication required" } })
+        body: JSON.stringify({
+          data: {
+            owner_id: "33333333-3333-4333-8333-333333333333"
+          }
+        })
+      });
+    });
+
+    await page.route("**/api/v1/agents/me/claim", async (route) => {
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: {
+            code: "AGENT_ALREADY_CLAIMED",
+            message: "already claimed"
+          }
+        })
       });
     });
 
@@ -267,14 +310,13 @@ test.describe("Start page: agent naming", () => {
     await page.goto("/start");
 
     await expect(page.getByRole("heading", { name: "You're connected" })).toBeVisible();
-    await expect(page.getByText("Name your agent")).toBeVisible();
-
     const nameInput = page.locator("#agent-name-input");
+    await expect(nameInput).toBeVisible();
     await nameInput.fill("Chachat");
     await page.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByText("Chachat")).toBeVisible();
-    await expect(page.getByText("Saved")).toBeVisible();
+    await expect(nameInput).toHaveCount(0);
     expect(patchPayload).toEqual({ name: "Chachat" });
   });
 
@@ -315,7 +357,6 @@ test.describe("Start page: agent naming", () => {
 
     await expect(page.getByRole("heading", { name: "You're connected" })).toBeVisible();
     await expect(page.getByText("Existing Bot")).toBeVisible();
-    await expect(page.getByText("Saved")).toBeVisible();
     await expect(page.locator("#agent-name-input")).toHaveCount(0);
   });
 });

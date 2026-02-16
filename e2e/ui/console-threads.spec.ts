@@ -254,8 +254,8 @@ test.describe("Console Threads — US-2", () => {
 
       // Warning badge visible
       await expect(page.getByText("WARNING", { exact: true })).toBeVisible();
-      // Warning message has yellow border (class check)
-      const warningCard = page.locator(".border-yellow-400\\/40").first();
+      // Warning message uses warning semantic tokens.
+      const warningCard = page.locator(".border-warning\\/40.bg-warning\\/5").first();
       await expect(warningCard).toBeVisible();
     });
 
