@@ -209,6 +209,42 @@ body {
 
 /* Readability scale for all pages except landing (`/`).
    Scoped to <main> so the shared <header> (Navbar) stays uniform. */
+/* Profile page — staggered section reveal (boot sequence) */
+@keyframes profileReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.profile-reveal {
+  opacity: 0;
+  animation: profileReveal 0.45s ease-out forwards;
+}
+
+/* Profile page — save button hover sweep */
+.profile-save-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.profile-save-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(var(--theme-primary-rgb) / 0.15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+.profile-save-sweep:hover::after {
+  transform: translateX(100%);
+}
+
+/* Profile page — avatar glow pulse */
+@keyframes avatarGlow {
+  0%, 100% { box-shadow: 0 0 12px rgb(var(--theme-primary-rgb) / 0.15); }
+  50% { box-shadow: 0 0 24px rgb(var(--theme-primary-rgb) / 0.3); }
+}
+.avatar-glow {
+  animation: avatarGlow 3s ease-in-out infinite;
+}
+
 .app-readable-ui main .text-xs {
   font-size: 0.875rem;
   line-height: 1.25rem;

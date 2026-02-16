@@ -157,6 +157,7 @@ export default function ProfilePage() {
   const locationComplete = Boolean(city.trim());
   const emailVerified = Boolean(profile?.email_verified_at);
   const allComplete = nameComplete && locationComplete && emailVerified;
+  const completionCount = [nameComplete, locationComplete, emailVerified].filter(Boolean).length;
 
   return (
     <div data-testid="profile-page" className="min-h-screen bg-bg">
@@ -165,270 +166,445 @@ export default function ProfilePage() {
         <SettingsNav current="profile" />
       </PageHeader>
 
-      <main id="main-content" tabIndex={-1} className="w-full max-w-3xl px-6 py-6">
-        {/* Loading */}
+      <main id="main-content" tabIndex={-1} className="w-full max-w-3xl px-6 py-8">
+
+        {/* ─── Loading ─── */}
         {!authRequired && state === "loading" && (
-          <div className="flex items-center gap-3 py-12">
-            <div className="h-4 w-4 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
-            <span className="text-sm font-mono text-subtle">Loading profile...</span>
+          <div className="flex flex-col items-center justify-center gap-4 py-20">
+            <div className="relative h-14 w-14">
+              <div className="absolute inset-0 rounded-full border border-primary/15" />
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+              <div className="absolute inset-2 rounded-full border border-dashed border-primary/20 animate-spin-slow" />
+            </div>
+            <span className="text-[11px] font-mono text-subtle tracking-[0.3em] uppercase">
+              Loading profile&hellip;
+            </span>
           </div>
         )}
 
-        {/* Error */}
+        {/* ─── Error ─── */}
         {!authRequired && state === "error" && (
-          <div className="border border-error/30 bg-error/5 rounded clip-corner p-4">
+          <div className="border border-error/30 bg-error/5 rounded p-8 text-center">
+            <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-error/30 bg-error/10 text-error text-lg mb-3">
+              !
+            </div>
             <div className="text-sm font-mono font-semibold text-error">{t("profile.loadError")}</div>
           </div>
         )}
 
-        {/* Loaded */}
+        {/* ─── Profile loaded ─── */}
         {!authRequired && state === "done" && profile && (
-          <div className="space-y-6">
+          <div className="space-y-0">
 
-            {/* ---- Completion banner ---- */}
-            {!allComplete && (
-              <div className="border border-primary/30 bg-primary/5 rounded clip-corner p-5">
-                <h3 className="text-sm font-bold text-primary">{t("profile.completeBanner.heading")}</h3>
-                <p className="text-xs font-mono text-muted mt-1">{t("profile.completeBanner.subtitle")}</p>
-                <ul className="mt-3 space-y-1.5">
-                  {[
-                    { done: nameComplete, label: t("profile.completeBanner.nameAdded") },
-                    { done: locationComplete, label: t("profile.completeBanner.locationAdded") },
-                    { done: emailVerified, label: t("profile.completeBanner.emailVerified") },
-                  ].map((item) => (
-                    <li key={item.label} className="flex items-center gap-2 text-xs font-mono">
-                      {item.done ? (
-                        <span className="text-success">&#10003;</span>
-                      ) : (
-                        <span className="text-muted">&#9675;</span>
-                      )}
-                      <span className={item.done ? "text-muted line-through" : "text-text"}>{item.label}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* ═══════════════════════════════════════════════
+                SECTION 1 — IDENTITY CARD
+                ═══════════════════════════════════════════════ */}
+            <section className="profile-reveal relative border border-border rounded-t-lg overflow-hidden bg-surface/50">
+              {/* Ambient grid */}
+              <div className="absolute inset-0 tech-grid opacity-30 pointer-events-none" />
+              {/* Top accent line */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/50 to-transparent" />
 
-            {/* ---- Verify CTA ---- */}
-            {!emailVerified && (
-              <div className="border border-warning/30 bg-warning/5 rounded clip-corner p-5 flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-bold text-warning">{t("profile.verifyBanner.heading")}</h3>
-                  <p className="text-xs font-mono text-muted mt-0.5">{t("profile.verifyBanner.subtitle")}</p>
+              <div className="relative p-6">
+                {/* Section header */}
+                <div className="flex items-center gap-2.5 mb-6">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary font-bold">
+                    {t("profile.avatar.label")}
+                  </span>
+                  <div className="flex-1 h-px bg-linear-to-r from-primary/25 to-transparent" />
+                  {/* Completion mini-indicator */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-end gap-[3px]">
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className={`w-[3px] rounded-[1px] transition-all duration-500 ${
+                            i < completionCount ? "bg-primary" : "bg-border/50"
+                          }`}
+                          style={{ height: `${(i + 1) * 4 + 4}px` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[9px] font-mono text-subtle tabular-nums">
+                      {completionCount}/3
+                    </span>
+                  </div>
                 </div>
-                <button
-                  onClick={() => void router.push("/settings/identities")}
-                  className="px-4 py-2 text-xs font-mono font-bold uppercase border border-warning text-warning rounded hover:bg-warning/10 transition-colors whitespace-nowrap"
-                >
-                  {t("profile.verifyBanner.cta")} &rarr;
-                </button>
-              </div>
-            )}
 
-            {/* ---- Avatar picker ---- */}
-            <section className="border border-border rounded clip-corner bg-surface/40 p-5 space-y-4">
-              <div className="text-xs font-mono uppercase tracking-widest text-subtle">{t("profile.avatar.label")}</div>
+                <div className="flex flex-col sm:flex-row gap-6">
+                  {/* ── Avatar column ── */}
+                  <div className="flex flex-col items-center gap-4 shrink-0">
+                    {/* Avatar with orbital ring */}
+                    <div className="relative">
+                      <div className="absolute -inset-2 rounded-full border border-dashed border-primary/20 animate-spin-slow" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={avatarUrl}
+                        alt="avatar"
+                        className="relative z-10 h-24 w-24 rounded-full border-2 border-primary/30 object-cover avatar-glow"
+                      />
+                      {/* Online/offline status pip */}
+                      <div
+                        className={`absolute bottom-0.5 right-0.5 z-20 h-4 w-4 rounded-full border-[2.5px] border-surface transition-colors duration-300 ${
+                          available ? "bg-success" : "bg-border"
+                        }`}
+                      />
+                    </div>
 
-              <div className="flex items-center gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={avatarUrl}
-                  alt="avatar"
-                  className="h-20 w-20 rounded-full border-2 border-border object-cover"
-                />
-                <div className="space-y-2">
-                  <div className="text-xs font-mono text-muted">{t("profile.avatar.choosePreset")}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {PRESET_AVATARS.map((url) => (
+                    {/* Preset grid */}
+                    <div className="flex gap-1.5">
+                      {PRESET_AVATARS.map((url) => (
+                        <button
+                          key={url}
+                          type="button"
+                          onClick={() => selectAvatar(url)}
+                          className={[
+                            "h-8 w-8 rounded-full border overflow-hidden transition-all duration-200",
+                            avatarUrl === url
+                              ? "border-primary ring-1 ring-primary/30 scale-110"
+                              : "border-border/50 opacity-50 hover:opacity-100 hover:border-primary/30",
+                          ].join(" ")}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Custom avatar URL */}
+                    {!showAvatarInput ? (
                       <button
-                        key={url}
                         type="button"
-                        onClick={() => selectAvatar(url)}
-                        className={[
-                          "h-10 w-10 rounded-full border-2 overflow-hidden transition-all",
-                          avatarUrl === url
-                            ? "border-primary ring-2 ring-primary/30"
-                            : "border-border hover:border-border-strong",
-                        ].join(" ")}
+                        onClick={() => setShowAvatarInput(true)}
+                        className="text-[10px] font-mono text-subtle hover:text-primary transition-colors tracking-wider uppercase group"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt="" className="h-full w-full object-cover" />
+                        {t("profile.avatar.customUrl")}{" "}
+                        <span className="inline-block transition-transform group-hover:translate-x-0.5">&rarr;</span>
                       </button>
-                    ))}
+                    ) : (
+                      <div className="flex items-center gap-1.5 w-full max-w-[280px]">
+                        <input
+                          type="url"
+                          value={customAvatarUrl}
+                          onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                          onBlur={applyCustomAvatar}
+                          onKeyDown={(e) => { if (e.key === "Enter") applyCustomAvatar(); }}
+                          placeholder={t("profile.avatar.urlPlaceholder")}
+                          className="flex-1 px-2 py-1.5 text-[10px] font-mono bg-bg/80 border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={applyCustomAvatar}
+                          className="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase border border-primary/50 text-primary rounded hover:bg-primary/10 transition-colors"
+                        >
+                          OK
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Name + Bio column ── */}
+                  <div className="flex-1 space-y-4">
+                    {/* Display name */}
+                    <div>
+                      <label className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-mono text-subtle uppercase tracking-widest">
+                          {t("profile.fields.displayName")}
+                        </span>
+                        {nameComplete && <span className="text-[8px] text-success">&#9632;</span>}
+                      </label>
+                      <input
+                        type="text"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value.slice(0, 60))}
+                        placeholder={t("profile.fields.displayNamePlaceholder")}
+                        className="w-full px-3 py-2.5 text-sm font-mono bg-bg/60 border-l-2 border-l-primary/30 border border-border rounded-r text-text placeholder:text-subtle focus:border-primary focus:border-l-primary focus:outline-none transition-colors"
+                      />
+                    </div>
+
+                    {/* Bio */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[10px] font-mono text-subtle uppercase tracking-widest">
+                          {t("profile.fields.bio")}
+                        </label>
+                        <span className="text-[10px] font-mono text-subtle tabular-nums">
+                          {bio.length}
+                          <span className="text-border">/2000</span>
+                        </span>
+                      </div>
+                      <textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value.slice(0, 2000))}
+                        placeholder={t("profile.fields.bioPlaceholder")}
+                        rows={3}
+                        className="w-full px-3 py-2.5 text-sm font-mono bg-bg/60 border-l-2 border-l-primary/30 border border-border rounded-r text-text placeholder:text-subtle focus:border-primary focus:border-l-primary focus:outline-none resize-none transition-colors"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Custom URL */}
-              <div>
-                {!showAvatarInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAvatarInput(true)}
-                    className="text-xs font-mono text-primary hover:underline"
-                  >
-                    {t("profile.avatar.customUrl")}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="url"
-                      value={customAvatarUrl}
-                      onChange={(e) => setCustomAvatarUrl(e.target.value)}
-                      onBlur={applyCustomAvatar}
-                      onKeyDown={(e) => { if (e.key === "Enter") applyCustomAvatar(); }}
-                      placeholder={t("profile.avatar.urlPlaceholder")}
-                      className="flex-1 px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={applyCustomAvatar}
-                      className="px-3 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
-                    >
-                      OK
-                    </button>
-                  </div>
-                )}
               </div>
             </section>
 
-            {/* ---- Form fields ---- */}
-            <section className="border border-border rounded clip-corner bg-surface/40 p-5 space-y-5">
+            {/* ═══════════════════════════════════════════════
+                SECTION 2 — CLEARANCE LEVEL (completion)
+                ═══════════════════════════════════════════════ */}
+            {!allComplete && (
+              <section
+                className="profile-reveal border-x border-b border-border bg-surface/25"
+                style={{ animationDelay: "0.06s" }}
+              >
+                <div className="px-6 py-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary font-bold">
+                      {t("profile.completeBanner.heading")}
+                    </span>
+                    <div className="flex-1 h-px bg-border/40" />
+                  </div>
+                  <p className="text-[11px] font-mono text-muted mb-3">{t("profile.completeBanner.subtitle")}</p>
 
-              {/* Display name */}
-              <div>
-                <label className="block text-xs font-mono text-subtle uppercase mb-1.5">{t("profile.fields.displayName")}</label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value.slice(0, 60))}
-                  placeholder={t("profile.fields.displayNamePlaceholder")}
-                  className="w-full px-3 py-2.5 text-sm font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
-                />
-              </div>
-
-              {/* Bio */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-mono text-subtle uppercase">{t("profile.fields.bio")}</label>
-                  <span className="text-xs font-mono text-subtle">{bio.length}/2000</span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { done: nameComplete, label: t("profile.completeBanner.nameAdded") },
+                      { done: locationComplete, label: t("profile.completeBanner.locationAdded") },
+                      { done: emailVerified, label: t("profile.completeBanner.emailVerified") },
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-3 py-1.5 rounded-full border transition-all duration-300 ${
+                          item.done
+                            ? "border-success/25 bg-success/5 text-success/80"
+                            : "border-border/40 bg-bg/30 text-muted"
+                        }`}
+                      >
+                        <span className="text-[10px]">{item.done ? "\u2713" : "\u25CB"}</span>
+                        <span className={item.done ? "line-through opacity-60" : ""}>
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value.slice(0, 2000))}
-                  placeholder={t("profile.fields.bioPlaceholder")}
-                  rows={4}
-                  className="w-full px-3 py-2.5 text-sm font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none resize-none"
-                />
-              </div>
+              </section>
+            )}
 
-              {/* Location */}
-              <div className="border border-border/50 rounded p-4 space-y-3">
-                <div className="text-xs font-mono text-subtle uppercase tracking-wider flex items-center gap-2">
-                  <span>&#128205;</span>
-                  <span className="font-bold">location</span>
-                  <span className="text-xs text-warning font-normal">important &mdash; helps agents find you</span>
+            {/* ═══════════════════════════════════════════════
+                SECTION 2b — VERIFY EMAIL CTA
+                ═══════════════════════════════════════════════ */}
+            {!emailVerified && (
+              <section
+                className="profile-reveal border-x border-b border-border bg-warning/3"
+                style={{ animationDelay: "0.1s" }}
+              >
+                <div className="px-6 py-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 shrink-0 rounded-full bg-warning/10 border border-warning/20 flex items-center justify-center text-warning font-bold text-sm">
+                      !
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-warning">{t("profile.verifyBanner.heading")}</h3>
+                      <p className="text-[11px] font-mono text-muted mt-0.5">{t("profile.verifyBanner.subtitle")}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => void router.push("/settings/identities")}
+                    className="px-4 py-2 text-[11px] font-mono font-bold uppercase border border-warning/30 text-warning rounded hover:bg-warning/10 hover:border-warning/60 transition-all whitespace-nowrap group"
+                  >
+                    {t("profile.verifyBanner.cta")}{" "}
+                    <span className="inline-block transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                  </button>
                 </div>
+              </section>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+                SECTION 3 — GEO COORDINATES
+                ═══════════════════════════════════════════════ */}
+            <section
+              className="profile-reveal border-x border-b border-border bg-surface/25"
+              style={{ animationDelay: "0.14s" }}
+            >
+              <div className="px-6 py-5">
+                {/* Section header */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-primary text-sm">&#128205;</span>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary font-bold">
+                    location
+                  </span>
+                  <div className="flex-1 h-px bg-linear-to-r from-primary/20 to-transparent" />
+                  <span className="text-[9px] font-mono text-warning uppercase tracking-wider">
+                    important &mdash; helps agents find you
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-mono text-subtle mb-1">{t("profile.fields.city")}</label>
+                    <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                      {t("profile.fields.city")}
+                    </label>
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value.slice(0, 100))}
                       placeholder={t("profile.fields.cityPlaceholder")}
-                      className="w-full px-3 py-2.5 text-sm font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                      className="w-full px-3 py-2.5 text-sm font-mono bg-bg/60 border-l-2 border-l-primary/30 border border-border rounded-r text-text placeholder:text-subtle focus:border-primary focus:border-l-primary focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-subtle mb-1">{t("profile.fields.stateRegion")}</label>
+                    <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                      {t("profile.fields.stateRegion")}
+                    </label>
                     <input
                       type="text"
                       value={stateRegion}
                       onChange={(e) => setStateRegion(e.target.value.slice(0, 100))}
                       placeholder={t("profile.fields.stateRegionPlaceholder")}
-                      className="w-full px-3 py-2.5 text-sm font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                      className="w-full px-3 py-2.5 text-sm font-mono bg-bg/60 border-l-2 border-l-primary/30 border border-border rounded-r text-text placeholder:text-subtle focus:border-primary focus:border-l-primary focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-subtle mb-1">{t("profile.fields.country")}</label>
+                    <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                      {t("profile.fields.country")}
+                    </label>
                     <input
                       type="text"
                       value={country}
                       onChange={(e) => setCountry(e.target.value.toUpperCase().slice(0, 2))}
                       placeholder={t("profile.fields.countryPlaceholder")}
                       maxLength={2}
-                      className="w-full px-3 py-2.5 text-sm font-mono bg-bg border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none uppercase"
+                      className="w-full px-3 py-2.5 text-sm font-mono bg-bg/60 border-l-2 border-l-primary/30 border border-border rounded-r text-text placeholder:text-subtle focus:border-primary focus:border-l-primary focus:outline-none uppercase transition-colors"
                     />
                   </div>
-                </div>
-              </div>
-
-              {/* Toggles */}
-              <div className="space-y-4">
-                {/* Available */}
-                <div className="flex items-center justify-between border border-border/50 rounded p-4">
-                  <div>
-                    <div className="text-sm font-bold text-text">{t("profile.fields.available")}</div>
-                    <div className="text-xs font-mono text-muted">{t("profile.fields.availableDesc")}</div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={available}
-                    onClick={() => setAvailable(!available)}
-                    className={[
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                      available ? "bg-success" : "bg-border",
-                    ].join(" ")}
-                  >
-                    <span
-                      className={[
-                        "inline-block h-4 w-4 transform rounded-full bg-bg transition-transform",
-                        available ? "translate-x-6" : "translate-x-1",
-                      ].join(" ")}
-                    />
-                  </button>
-                </div>
-
-                {/* Show email */}
-                <div className="flex items-center justify-between border border-border/50 rounded p-4">
-                  <div>
-                    <div className="text-sm font-bold text-text">{t("profile.fields.showEmail")}</div>
-                    <div className="text-xs font-mono text-muted">{t("profile.fields.showEmailDesc")}</div>
-                  </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={showEmail}
-                    onClick={() => setShowEmail(!showEmail)}
-                    className={[
-                      "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                      showEmail ? "bg-success" : "bg-border",
-                    ].join(" ")}
-                  >
-                    <span
-                      className={[
-                        "inline-block h-4 w-4 transform rounded-full bg-bg transition-transform",
-                        showEmail ? "translate-x-6" : "translate-x-1",
-                      ].join(" ")}
-                    />
-                  </button>
                 </div>
               </div>
             </section>
 
-            {/* ---- Save ---- */}
-            <div className="border-t border-primary pt-4">
-              <button
-                type="button"
-                onClick={onSave}
-                disabled={saveState === "saving"}
-                className="px-6 py-3 text-sm font-mono font-bold uppercase border border-primary bg-primary text-bg rounded hover:bg-text hover:border-text transition-colors disabled:opacity-50"
-              >
-                {saveState === "saving" ? t("profile.saving") : t("profile.save")}
-              </button>
-            </div>
+            {/* ═══════════════════════════════════════════════
+                SECTION 4 — SYSTEM FLAGS
+                ═══════════════════════════════════════════════ */}
+            <section
+              className="profile-reveal border-x border-b border-border bg-surface/25"
+              style={{ animationDelay: "0.18s" }}
+            >
+              <div className="px-6 py-5">
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="h-1.5 w-1.5 rounded-sm bg-secondary/50" />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-secondary/70 font-bold">
+                    system flags
+                  </span>
+                  <div className="flex-1 h-px bg-linear-to-r from-secondary/15 to-transparent" />
+                </div>
+
+                {/* Available toggle */}
+                <div className="flex items-center py-3 border-b border-border/25">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-text">{t("profile.fields.available")}</div>
+                    <div className="text-[11px] font-mono text-muted mt-0.5">{t("profile.fields.availableDesc")}</div>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0 ml-4">
+                    <span
+                      className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-300 ${
+                        available ? "text-success" : "text-subtle"
+                      }`}
+                    >
+                      {available ? "ON" : "OFF"}
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={available}
+                      onClick={() => setAvailable(!available)}
+                      className={[
+                        "relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300",
+                        available
+                          ? "bg-success/15 ring-1 ring-success/30"
+                          : "bg-border/30 ring-1 ring-border/60",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "inline-block h-4 w-4 transform rounded-full transition-all duration-300",
+                          available
+                            ? "translate-x-6 bg-success shadow-[0_0_8px_rgba(74,222,128,0.4)]"
+                            : "translate-x-1 bg-subtle",
+                        ].join(" ")}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Show email toggle */}
+                <div className="flex items-center py-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-text">{t("profile.fields.showEmail")}</div>
+                    <div className="text-[11px] font-mono text-muted mt-0.5">{t("profile.fields.showEmailDesc")}</div>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0 ml-4">
+                    <span
+                      className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-300 ${
+                        showEmail ? "text-success" : "text-subtle"
+                      }`}
+                    >
+                      {showEmail ? "ON" : "OFF"}
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={showEmail}
+                      onClick={() => setShowEmail(!showEmail)}
+                      className={[
+                        "relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300",
+                        showEmail
+                          ? "bg-success/15 ring-1 ring-success/30"
+                          : "bg-border/30 ring-1 ring-border/60",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "inline-block h-4 w-4 transform rounded-full transition-all duration-300",
+                          showEmail
+                            ? "translate-x-6 bg-success shadow-[0_0_8px_rgba(74,222,128,0.4)]"
+                            : "translate-x-1 bg-subtle",
+                        ].join(" ")}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════════
+                SECTION 5 — DEPLOY
+                ═══════════════════════════════════════════════ */}
+            <section
+              className="profile-reveal border-x border-b border-border rounded-b-lg bg-surface/15 overflow-hidden"
+              style={{ animationDelay: "0.22s" }}
+            >
+              <div className="px-6 py-5">
+                <button
+                  type="button"
+                  onClick={onSave}
+                  disabled={saveState === "saving"}
+                  className="profile-save-sweep w-full sm:w-auto px-8 py-3 text-sm font-mono font-bold uppercase tracking-widest border-2 border-primary bg-primary/10 text-primary rounded hover:bg-primary hover:text-bg transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none group"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {saveState === "saving" ? (
+                      <>
+                        <span className="h-3.5 w-3.5 rounded-full border-2 border-current/30 border-t-current animate-spin" />
+                        {t("profile.saving")}
+                      </>
+                    ) : (
+                      <>
+                        <span className="transition-transform group-hover:translate-x-0.5">&#9654;</span>
+                        {t("profile.save")}
+                      </>
+                    )}
+                  </span>
+                </button>
+              </div>
+            </section>
+
           </div>
         )}
       </main>
