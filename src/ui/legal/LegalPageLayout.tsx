@@ -27,7 +27,6 @@ export default function LegalPageLayout({
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
-        futureMode={false}
       />
 
       {/* Hero */}

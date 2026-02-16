@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => {
@@ -20,11 +20,15 @@ vi.mock("next/dynamic", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ children, href, ...props }) => (
-    <a href={typeof href === "string" ? href : "#"} {...props}>
-      {children}
-    </a>
-  )
+  default: ({ children, href, prefetch, locale, ...props }) => {
+    void prefetch;
+    void locale;
+    return (
+      <a href={typeof href === "string" ? href : "#"} {...props}>
+        {children}
+      </a>
+    );
+  }
 }));
 
 vi.mock("next/router", () => ({
@@ -47,9 +51,43 @@ vi.mock("../theme/theme-context", () => ({
 
 import Landing from "./Landing";
 
-describe("Landing Mission Select", () => {
+describe("Landing", () => {
   beforeEach(() => {
+    cleanup();
     vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it("renders current variant CTAs by default", () => {
+    const { container } = render(
+      <Landing
+        locale="en"
+        buildTimeIso="2026-02-11T12:00:00.000Z"
+        appVersion="0.0.1"
+        deploySha="abcdef1234567890"
+      />
+    );
+
+    expect(screen.queryByText("future.bannerTitle")).toBeNull();
+    expect(screen.getByTestId("navbar-connect-desktop")).toBeTruthy();
+    expect(container.querySelector('a[href="/start"]')).toBeTruthy();
+  });
+
+  it("renders future variant and hides connect CTAs", () => {
+    const { container } = render(
+      <Landing
+        locale="en"
+        buildTimeIso="2026-02-11T12:00:00.000Z"
+        appVersion="0.0.1"
+        deploySha="abcdef1234567890"
+        futureMode
+      />
+    );
+
+    expect(screen.getByText("future.bannerTitle")).toBeTruthy();
+    expect(screen.getAllByText("future.badge").length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("navbar-connect-desktop")).toBeNull();
+    expect(container.querySelector('a[href="/start"]')).toBeNull();
   });
 
   it("updates active mission context when a mission is clicked", () => {

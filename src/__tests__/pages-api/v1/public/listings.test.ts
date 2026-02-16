@@ -55,7 +55,25 @@ describe("GET /api/v1/public/listings", () => {
 
   it("returns 200 with listings data", async () => {
     listMock.mockResolvedValue({
-      items: [{ listing_id: "abc", title: "Test" }],
+      items: [
+        {
+          listing_id: "abc",
+          title: "Test",
+          description: "Description",
+          category: "HARDWARE",
+          condition: "LIKE_NEW",
+          price: {
+            amount: 12345,
+            currency: "EUR",
+          },
+          created_at: "2026-02-16T00:00:00.000Z",
+          seller: {
+            display_name: "Seller",
+            avatar_url: null,
+            verified: true,
+          },
+        },
+      ],
       nextCursor: "next-cursor-val",
     });
 

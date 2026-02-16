@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
-import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
+import { getPublicApiBaseUrl, getPublicAppEntryHref, joinUrl } from "../shared/urls";
 import { localePrefixFor } from "../shared/seo";
 import type { SupportedLocale } from "../shared/i18n";
 import Faq from "./landing/Faq";
@@ -34,8 +34,11 @@ const TRUST_MARQUEE_KEYS = [
   "segment-10"
 ] as const;
 
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function resolveLandingLocale(locale: string): SupportedLocale {
+  return (locale === "fr" || locale === "es") ? locale : "en";
+}
 
 function WaitlistForm({
   locale,
@@ -178,51 +181,8 @@ function ComingSoonBadge({ label }: { label: string }) {
   );
 }
 
-function HeroCtas({
-  primary,
-  secondary,
-  primaryHref,
-  futureMode,
-  badge
-}: {
-  primary: string;
-  secondary: string;
-  primaryHref: string;
-  futureMode: boolean;
-  badge: string;
-}) {
-  if (futureMode) {
-    return <ComingSoonBadge label={badge} />;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-3">
-      <Link
-        href={primaryHref}
-        className="px-6 py-3 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-      >
-        <span className="relative z-10 flex items-center gap-2">
-          {primary} <ChevronRight className="w-4 h-4" />
-        </span>
-      </Link>
-      <button className="border border-border-strong text-muted px-6 py-3 font-mono text-xs uppercase tracking-wider hover:border-text hover:text-text transition-colors">
-        {secondary}
-      </button>
-    </div>
-  );
-}
-
-function Hero({
-  futureMode,
-  locale
-}: {
-  futureMode: boolean;
-  locale: string;
-}) {
+function HeroFrame({ children }: { children: React.ReactNode }) {
   const t = useTranslations("landing");
-  const resolvedLocale: SupportedLocale = (locale === "fr" || locale === "es") ? locale : "en";
-  const localePrefix = localePrefixFor(resolvedLocale);
-  const entryUrl = getPublicAppEntryHref(localePrefix);
   const headlineCount = parseInt(t("hero.headlineCount"), 10);
   const headlines = Array.from({ length: headlineCount }, (_, i) => t(`hero.headline_${i}`));
 
@@ -241,56 +201,75 @@ function Hero({
           {t("hero.subheadline")}
         </p>
 
-        {futureMode ? (
-          <ComingSoonBadge label={t("future.badge")} />
-        ) : (
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href={entryUrl}
-              className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
-            >
-              <span className="relative z-10 flex items-center gap-2">
-                {t("hero.cta")} <ChevronRight className="w-4 h-4" />
-              </span>
-            </Link>
-            {process.env.NODE_ENV !== "production" && (
-              <Link
-                href={`${localePrefix}/marketplace`}
-                className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
-              >
-                <span className="flex items-center gap-2">
-                  {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
-                </span>
-              </Link>
-            )}
-          </div>
-        )}
-
+        {children}
       </div>
     </div>
   );
 }
 
+function HeroCurrent({ locale }: { locale: string }) {
+  const t = useTranslations("landing");
+  const resolvedLocale = resolveLandingLocale(locale);
+  const localePrefix = localePrefixFor(resolvedLocale);
+  const entryUrl = getPublicAppEntryHref(localePrefix);
+
+  return (
+    <HeroFrame>
+      <div className="flex flex-wrap items-center justify-center gap-4">
+        <Link
+          href={entryUrl}
+          className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+        >
+          <span className="relative z-10 flex items-center gap-2">
+            {t("hero.cta")} <ChevronRight className="w-4 h-4" />
+          </span>
+        </Link>
+        {process.env.NODE_ENV !== "production" && (
+          <Link
+            href={`${localePrefix}/marketplace`}
+            className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
+          >
+            <span className="flex items-center gap-2">
+              {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
+            </span>
+          </Link>
+        )}
+      </div>
+    </HeroFrame>
+  );
+}
+
+function HeroFuture() {
+  const t = useTranslations("landing");
+
+  return (
+    <HeroFrame>
+      <ComingSoonBadge label={t("future.badge")} />
+    </HeroFrame>
+  );
+}
+
 type ShowcaseTab = "deals" | "marketplace";
 
-const SHOWCASE_TABS: { key: ShowcaseTab; Icon: typeof Zap; colorClass: string; borderClass: string; accentBg: string }[] = [
+type ShowcaseTabMeta = {
+  key: ShowcaseTab;
+  Icon: typeof Zap;
+  colorClass: string;
+  borderClass: string;
+  accentBg: string;
+};
+
+const SHOWCASE_TABS: ShowcaseTabMeta[] = [
   { key: "marketplace", Icon: ShoppingBag, colorClass: "text-secondary", borderClass: "border-secondary", accentBg: "bg-secondary" },
   { key: "deals", Icon: Zap, colorClass: "text-primary", borderClass: "border-primary", accentBg: "bg-primary" }
 ];
 
-function TabbedShowcase({
-  futureMode,
-  locale
-}: {
-  futureMode: boolean;
-  locale: string;
-}) {
+type TabbedShowcaseActionMap = Record<ShowcaseTab, React.ReactNode>;
+
+function TabbedShowcaseFrame({ actionByTab }: { actionByTab: TabbedShowcaseActionMap }) {
   const t = useTranslations("landing");
   const [active, setActive] = useState<ShowcaseTab>("marketplace");
   const tabsRef = useRef<HTMLDivElement>(null);
-  const resolvedLocale: SupportedLocale = (locale === "fr" || locale === "es") ? locale : "en";
-  const localePrefix = localePrefixFor(resolvedLocale);
-  const entryUrl = getPublicAppEntryHref(localePrefix);
 
   const handleTabClick = (key: ShowcaseTab) => {
     setActive(key);
@@ -389,16 +368,7 @@ function TabbedShowcase({
                 </li>
               ))}
             </ul>
-            {futureMode ? (
-              <ComingSoonBadge label={t("future.badge")} />
-            ) : (
-              <Link
-                href={entryUrl}
-                className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
-              >
-                {t(`showcase.${active}.cta`)}
-              </Link>
-            )}
+            {actionByTab[active]}
           </div>
           <div className="flex justify-center">
             <PhoneComponent />
@@ -407,6 +377,45 @@ function TabbedShowcase({
       </div>
     </div>
   );
+}
+
+function TabbedShowcaseCurrent({ locale }: { locale: string }) {
+  const t = useTranslations("landing");
+  const resolvedLocale = resolveLandingLocale(locale);
+  const localePrefix = localePrefixFor(resolvedLocale);
+  const entryUrl = getPublicAppEntryHref(localePrefix);
+
+  const actionByTab: TabbedShowcaseActionMap = {
+    deals: (
+      <Link
+        href={entryUrl}
+        className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
+      >
+        {t("showcase.deals.cta")}
+      </Link>
+    ),
+    marketplace: (
+      <Link
+        href={entryUrl}
+        className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
+      >
+        {t("showcase.marketplace.cta")}
+      </Link>
+    )
+  };
+
+  return <TabbedShowcaseFrame actionByTab={actionByTab} />;
+}
+
+function TabbedShowcaseFuture() {
+  const t = useTranslations("landing");
+
+  const actionByTab: TabbedShowcaseActionMap = {
+    deals: <ComingSoonBadge label={t("future.badge")} />,
+    marketplace: <ComingSoonBadge label={t("future.badge")} />
+  };
+
+  return <TabbedShowcaseFrame actionByTab={actionByTab} />;
 }
 
 function DeveloperSection() {
@@ -432,16 +441,41 @@ type LandingProps = {
   futureMode?: boolean;
 };
 
-export default function Landing({
-  locale = "en",
-  buildTimeIso,
-  appVersion,
-  deploySha,
-  futureMode = false
-}: LandingProps) {
+type LandingMode = "current" | "future";
+
+type LandingVariantProps = {
+  locale: SupportedLocale;
+  buildTimeIso: string;
+  appVersion: string;
+  deploySha?: string;
+};
+
+type LandingShellProps = LandingVariantProps & {
+  mode: LandingMode;
+  banner?: React.ReactNode;
+  hero: React.ReactNode;
+  showcase: React.ReactNode;
+};
+
+function FutureBanner() {
+  const t = useTranslations("landing");
+
+  return (
+    <div className="bg-bg border-b border-border">
+      <div className="max-w-[1440px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
+          <span className="w-2 h-2 bg-primary animate-pulse" />
+          {t("future.bannerTitle")}
+        </div>
+        <div className="text-xs font-mono text-muted">{t("future.bannerBody")}</div>
+      </div>
+    </div>
+  );
+}
+
+function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banner, hero, showcase }: LandingShellProps) {
   const { themeId, setTheme, themes } = useTheme();
   const t = useTranslations("landing");
-  const resolvedLocale: SupportedLocale = (locale === "fr" || locale === "es") ? locale : "en";
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
 
   return (
@@ -450,23 +484,13 @@ export default function Landing({
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
-        futureMode={futureMode}
+        futureMode={mode === "future"}
       />
 
       <main id="main-content" tabIndex={-1} className="pb-32">
-        {futureMode && (
-          <div className="bg-bg border-b border-border">
-            <div className="max-w-[1440px] mx-auto px-6 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-widest text-subtle">
-                <span className="w-2 h-2 bg-primary animate-pulse" />
-                {t("future.bannerTitle")}
-              </div>
-              <div className="text-xs font-mono text-muted">{t("future.bannerBody")}</div>
-            </div>
-          </div>
-        )}
+        {banner}
 
-        <Hero futureMode={futureMode} locale={resolvedLocale} />
+        {hero}
 
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
           <div
@@ -489,7 +513,7 @@ export default function Landing({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-24">
-          <TabbedShowcase futureMode={futureMode} locale={resolvedLocale} />
+          {showcase}
 
           <HowItWorks />
 
@@ -505,7 +529,7 @@ export default function Landing({
         </div>
       </main>
 
-      <Footer locale={resolvedLocale}>
+      <Footer locale={locale}>
         <div className="mt-4 leading-relaxed">
           {t("footer.serverTime")}: <span suppressHydrationWarning>{buildTimeIso}</span>
           <br />
@@ -518,9 +542,55 @@ export default function Landing({
           ) : null}
         </div>
         <div className="mt-6 max-w-md">
-          <WaitlistForm locale={resolvedLocale} compact source="footer" />
+          <WaitlistForm locale={locale} compact source="footer" />
         </div>
       </Footer>
     </div>
   );
+}
+
+function LandingCurrentVariant(props: LandingVariantProps) {
+  return (
+    <LandingShell
+      {...props}
+      mode="current"
+      hero={<HeroCurrent locale={props.locale} />}
+      showcase={<TabbedShowcaseCurrent locale={props.locale} />}
+    />
+  );
+}
+
+function LandingFutureVariant(props: LandingVariantProps) {
+  return (
+    <LandingShell
+      {...props}
+      mode="future"
+      banner={<FutureBanner />}
+      hero={<HeroFuture />}
+      showcase={<TabbedShowcaseFuture />}
+    />
+  );
+}
+
+export default function Landing({
+  locale = "en",
+  buildTimeIso,
+  appVersion,
+  deploySha,
+  futureMode = false
+}: LandingProps) {
+  const resolvedLocale = resolveLandingLocale(locale);
+  const mode: LandingMode = futureMode ? "future" : "current";
+  const variantProps: LandingVariantProps = {
+    locale: resolvedLocale,
+    buildTimeIso,
+    appVersion,
+    ...(typeof deploySha === "string" ? { deploySha } : {})
+  };
+
+  if (mode === "future") {
+    return <LandingFutureVariant {...variantProps} />;
+  }
+
+  return <LandingCurrentVariant {...variantProps} />;
 }

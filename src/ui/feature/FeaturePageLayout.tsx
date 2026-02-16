@@ -42,7 +42,6 @@ export default function FeaturePageLayout({
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
-        futureMode={false}
       />
 
       {/* Hero */}
