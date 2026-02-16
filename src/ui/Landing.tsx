@@ -253,14 +253,16 @@ function Hero({
                 {t("hero.cta")} <ChevronRight className="w-4 h-4" />
               </span>
             </Link>
-            <Link
-              href={`${localePrefix}/marketplace`}
-              className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
-            >
-              <span className="flex items-center gap-2">
-                {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
-              </span>
-            </Link>
+            {process.env.NODE_ENV !== "production" && (
+              <Link
+                href={`${localePrefix}/marketplace`}
+                className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
+              >
+                <span className="flex items-center gap-2">
+                  {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
+                </span>
+              </Link>
+            )}
           </div>
         )}
 
