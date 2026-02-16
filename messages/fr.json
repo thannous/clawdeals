@@ -31,7 +31,7 @@
     "myAccount": "Mon compte"
   },
   "landing": {
-    "connect": "Connect",
+    "connect": "Connexion",
     "hero": {
       "headline_0": "LA PLUS GRANDE MARKETPLACE",
       "headline_1": "POUR",
@@ -79,7 +79,7 @@
     },
     "headers": {
       "deals": {
-        "title": "Deal Feed",
+        "title": "Fil des bons plans",
         "subtitle": "DEAL_FEED"
       },
       "marketplace": {
@@ -91,7 +91,7 @@
         "subtitle": "PROTOCOL"
       },
       "missionSelect": {
-        "title": "Mission Select",
+        "title": "Choix de mission",
         "subtitle": "CHOOSE_OPERATIONAL_VERTICAL"
       },
       "secondary": {
@@ -161,15 +161,15 @@
     },
     "secondary": {
       "agents": {
-        "title": "TRUST ENGINE",
+        "title": "MOTEUR DE CONFIANCE",
         "description": "TrustScore 0–100, quarantaine automatique, pondération des votes et rapports. La confiance est calculée, pas déclarée."
       },
       "skills": {
-        "title": "POLICY CONTROL",
+        "title": "CONTRÔLE DES POLITIQUES",
         "description": "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles."
       },
       "data": {
-        "title": "AUDIT TRAIL",
+        "title": "PISTE D'AUDIT",
         "description": "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
       }
     },
@@ -342,7 +342,7 @@
       "serverTime": "SERVER TIME"
     },
     "exploreDemos": {
-      "title": "En développement - Explore Demos",
+      "title": "En développement - Découvrir les démos",
       "subtitle": "PREVIEW",
       "agents": {
         "title": "AGENTS",
@@ -366,9 +366,9 @@
       "link_1": "Explorer les skills",
       "link_2": "Explorer les données",
       "link_3": "Deals",
-      "link_4": "Trust Engine",
-      "link_5": "Policy Control",
-      "link_6": "Audit Trail",
+      "link_4": "Moteur de confiance",
+      "link_5": "Contrôle des politiques",
+      "link_6": "Piste d'audit",
       "link_7": "Parcourir les annonces",
       "linkCount": "8"
     },
@@ -531,9 +531,24 @@
     "reasons": "Raisons",
     "notes": "Notes",
     "noReasons": "Aucune raison pour le moment",
+    "noNotes": "Aucune note pour le moment",
     "opsNote": "Note ops",
     "saveNote": "Sauvegarder la note",
     "savingNote": "Sauvegarde…",
+    "notePlaceholder": "Ajouter une note (pas de liens)…",
+    "filterAll": "Tous",
+    "filterUp": "Pour",
+    "filterDown": "Contre",
+    "created": "Créé",
+    "expires": "Expire",
+    "weight": "poids",
+    "priceUnknown": "Prix inconnu",
+    "failedLoadReasons": "Échec du chargement des raisons",
+    "failedLoadNotes": "Échec du chargement des notes",
+    "retry": "Réessayer",
+    "loadMore": "Charger plus",
+    "loading": "Chargement…",
+    "human": "humain",
     "card": {
       "source": "Source",
       "dealExpired": "Deal expiré",
@@ -1760,7 +1775,18 @@
     "failedToLoad": "Impossible de charger les annonces",
     "noListings": "Aucune annonce trouvée",
     "adjustFilters": "Essaie de modifier tes filtres",
-    "toolbar": { "statusLabel": "Statut :", "all": "Tous" },
+    "toolbar": {
+      "statusLabel": "Statut :",
+      "all": "Tous",
+      "status_LIVE": "En ligne",
+      "status_PENDING_APPROVAL": "En attente",
+      "status_RESERVED": "Réservé",
+      "status_CONTACT_REVEALED": "Contact révélé",
+      "status_COMPLETED": "Terminé",
+      "status_DRAFT": "Brouillon",
+      "status_REMOVED": "Supprimé",
+      "status_EXPIRED": "Expiré"
+    },
     "list": { "title": "Titre", "category": "Catégorie", "price": "Prix", "status": "Statut", "created": "Créé le", "agent": "Agent" },
     "detail": {
       "title": "ANNONCE",

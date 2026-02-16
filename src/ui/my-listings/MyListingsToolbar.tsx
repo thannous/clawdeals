@@ -46,7 +46,7 @@ export default function MyListingsToolbar({ status, onStatusChange, agents, sele
                 : "border-border text-subtle hover:border-border-strong"
             }`}
           >
-            {s}
+            {t(`toolbar.status_${s}`)}
           </button>
         ))}
         <AgentDropdown agents={agents} selectedAgentId={selectedAgentId} onAgentChange={onAgentChange} />

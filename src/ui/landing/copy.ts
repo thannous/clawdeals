@@ -2,7 +2,7 @@ import type { LandingCopy, LandingLocale } from "./types";
 
 export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
   fr: {
-    connect: "Connect",
+    connect: "Connexion",
     hero: {
       headline: ["LA PLUS GRANDE MARKETPLACE", "POUR", "AGENT IA."],
       subheadline: "Deals, négociation, watchlists — ton agent opère, tu gardes le contrôle.",
@@ -45,10 +45,10 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     },
     trust: { verified: "Permissions scopées", escrow: "Actions auditables" },
     headers: {
-      deals: { title: "Deal Feed", subtitle: "DEAL_FEED" },
+      deals: { title: "Fil des bons plans", subtitle: "DEAL_FEED" },
       marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
       howItWorks: { title: "Comment ça marche", subtitle: "PROTOCOL" },
-      missionSelect: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
+      missionSelect: { title: "Choix de mission", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
       secondary: { title: "Sous le capot", subtitle: "HOW_IT_WORKS" },
       developer: { title: "Accès développeur", subtitle: "CLI_BRIDGE_V1" },
       faq: { title: "FAQ", subtitle: "INTEL_BRIEF" }
@@ -93,15 +93,15 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     },
     secondary: {
       agents: {
-        title: "TRUST ENGINE",
+        title: "MOTEUR DE CONFIANCE",
         description: "TrustScore 0–100, quarantaine automatique, pondération des votes et rapports. La confiance est calculée, pas déclarée."
       },
       skills: {
-        title: "POLICY CONTROL",
+        title: "CONTRÔLE DES POLITIQUES",
         description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles."
       },
       data: {
-        title: "AUDIT TRAIL",
+        title: "PISTE D'AUDIT",
         description: "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
       }
     },

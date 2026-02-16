@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { AlertTriangle, ArrowLeft, Loader2, MessageSquareText, ThumbsDown, ThumbsUp } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import TemperatureGauge from "./TemperatureGauge";
@@ -9,7 +10,7 @@ import { useDealReasons } from "./useDealReasons";
 import { useDealNotes } from "./useDealNotes";
 import PageHeader from "../shared/PageHeader";
 
-const DATE_FMT = new Intl.DateTimeFormat("en-US", {
+const DATE_OPTS: Intl.DateTimeFormatOptions = {
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -18,14 +19,14 @@ const DATE_FMT = new Intl.DateTimeFormat("en-US", {
   second: "2-digit",
   hour12: false,
   timeZone: "UTC",
-});
+};
 const WEIGHT_FMT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function formatDate(value) {
+function formatDate(value, locale = "en") {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return DATE_FMT.format(date);
+  return new Intl.DateTimeFormat(locale, DATE_OPTS).format(date);
 }
 
 function formatWeight(value) {
@@ -46,6 +47,8 @@ function Skeleton() {
 }
 
 function ReasonsTab({ dealId }) {
+  const t = useTranslations("deals");
+  const { locale } = useRouter();
   const reasons = useDealReasons({ dealId });
 
   return (
@@ -61,7 +64,7 @@ function ReasonsTab({ dealId }) {
                 : "border-border text-muted hover:border-primary hover:text-primary"
             }`}
           >
-            All
+            {t("filterAll")}
           </button>
           <button
             data-testid="reasons-filter-up"
@@ -72,7 +75,7 @@ function ReasonsTab({ dealId }) {
                 : "border-border text-muted hover:border-secondary hover:text-secondary"
             }`}
           >
-            Up
+            {t("filterUp")}
           </button>
           <button
             data-testid="reasons-filter-down"
@@ -83,7 +86,7 @@ function ReasonsTab({ dealId }) {
                 : "border-border text-muted hover:border-error hover:text-error-muted"
             }`}
           >
-            Down
+            {t("filterDown")}
           </button>
         </div>
       </div>
@@ -94,14 +97,14 @@ function ReasonsTab({ dealId }) {
         <div data-testid="reasons-error" className="border border-error/40 bg-error/5 rounded clip-corner p-4">
           <div className="flex items-center gap-2 text-error-muted text-sm">
             <AlertTriangle size={18} />
-            <span>{reasons.error || "Failed to load reasons"}</span>
+            <span>{reasons.error || t("failedLoadReasons")}</span>
           </div>
         </div>
       )}
 
       {reasons.fetchState === "done" && reasons.items.length === 0 && (
         <div data-testid="reasons-empty" className="border border-border bg-surface rounded clip-corner p-6 text-center">
-          <p className="text-sm text-muted">No reasons yet</p>
+          <p className="text-sm text-muted">{t("noReasons")}</p>
         </div>
       )}
 
@@ -123,10 +126,10 @@ function ReasonsTab({ dealId }) {
                   >
                     {item.direction}
                   </span>
-                  <span className="text-xs font-mono text-subtle">{formatDate(item.created_at)}</span>
+                  <span className="text-xs font-mono text-subtle">{formatDate(item.created_at, locale)}</span>
                 </div>
                 <span className="text-xs font-mono text-muted tabular-nums">
-                  weight {formatWeight(item.weight)}
+                  {t("weight")} {formatWeight(item.weight)}
                 </span>
               </div>
               <p className="text-sm text-text whitespace-pre-wrap break-words">{item.reason}</p>
@@ -142,7 +145,7 @@ function ReasonsTab({ dealId }) {
                   className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
                   {reasons.loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
-                  {reasons.loadMoreState === "loading" ? "Loading…" : "Load More"}
+                  {reasons.loadMoreState === "loading" ? t("loading") : t("loadMore")}
                 </button>
               </div>
             )}
@@ -153,6 +156,8 @@ function ReasonsTab({ dealId }) {
 }
 
 function NotesTab({ dealId }) {
+  const t = useTranslations("deals");
+  const { locale } = useRouter();
   const notes = useDealNotes({ dealId });
   const [body, setBody] = useState("");
   const remaining = 1000 - body.length;
@@ -171,7 +176,7 @@ function NotesTab({ dealId }) {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-subtle">
             <MessageSquareText size={14} />
-            <span>Ops note</span>
+            <span>{t("opsNote")}</span>
           </div>
           <span className={`text-xs font-mono tabular-nums ${remaining < 0 ? "text-error-muted" : "text-muted"}`}>
             {remaining}
@@ -187,8 +192,8 @@ function NotesTab({ dealId }) {
             if (notes.submitError) notes.clearSubmitError();
           }}
           rows={4}
-          placeholder="Add a note (no links)…"
-          aria-label="Ops note"
+          placeholder={t("notePlaceholder")}
+          aria-label={t("opsNote")}
           name="note_body"
           autoComplete="off"
           spellCheck={false}
@@ -209,7 +214,7 @@ function NotesTab({ dealId }) {
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {notes.submitState === "submitting" && <Loader2 size={14} className="animate-spin" />}
-            {notes.submitState === "submitting" ? "Saving…" : "Save note"}
+            {notes.submitState === "submitting" ? t("savingNote") : t("saveNote")}
           </button>
         </div>
       </form>
@@ -220,14 +225,14 @@ function NotesTab({ dealId }) {
         <div data-testid="notes-error" className="border border-error/40 bg-error/5 rounded clip-corner p-4">
           <div className="flex items-center gap-2 text-error-muted text-sm">
             <AlertTriangle size={18} />
-            <span>{notes.error || "Failed to load notes"}</span>
+            <span>{notes.error || t("failedLoadNotes")}</span>
           </div>
         </div>
       )}
 
       {notes.fetchState === "done" && notes.items.length === 0 && (
         <div data-testid="notes-empty" className="border border-border bg-surface rounded clip-corner p-6 text-center">
-          <p className="text-sm text-muted">No notes yet</p>
+          <p className="text-sm text-muted">{t("noNotes")}</p>
         </div>
       )}
 
@@ -237,9 +242,9 @@ function NotesTab({ dealId }) {
             <div key={item.deal_comment_id} className="border border-border bg-surface rounded clip-corner p-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-xs font-mono text-subtle uppercase tracking-wider">
-                  human
+                  {t("human")}
                 </span>
-                <span className="text-xs font-mono text-subtle">{formatDate(item.created_at)}</span>
+                <span className="text-xs font-mono text-subtle">{formatDate(item.created_at, locale)}</span>
               </div>
               <p className="text-sm text-text whitespace-pre-wrap break-words">{item.body}</p>
             </div>
@@ -254,7 +259,7 @@ function NotesTab({ dealId }) {
                   className="px-6 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary disabled:opacity-50 transition-colors flex items-center gap-2"
                 >
                   {notes.loadMoreState === "loading" && <Loader2 size={14} className="animate-spin" />}
-                  {notes.loadMoreState === "loading" ? "Loading…" : "Load More"}
+                  {notes.loadMoreState === "loading" ? t("loading") : t("loadMore")}
                 </button>
               </div>
             )}
@@ -266,6 +271,8 @@ function NotesTab({ dealId }) {
 
 export default function DealDetailPage() {
   const router = useRouter();
+  const t = useTranslations("deals");
+  const locale = router.locale || "en";
   const dealId = useMemo(() => {
     const raw = router.query.dealId;
     return Array.isArray(raw) ? raw[0] : raw;
@@ -284,10 +291,10 @@ export default function DealDetailPage() {
               className="inline-flex items-center gap-2 text-xs font-mono text-muted hover:text-primary transition-colors"
             >
               <ArrowLeft size={14} />
-              <span>Back</span>
+              <span>{t("back")}</span>
             </Link>
             <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow truncate">
-              <span className="text-primary">/ </span>DEAL
+              <span className="text-primary">/ </span>{t("detailTitle")}
             </h1>
           </div>
         }
@@ -299,12 +306,12 @@ export default function DealDetailPage() {
         {fetchState === "error" && (
           <div data-testid="deal-detail-error" className="border border-error/40 bg-error/5 rounded clip-corner p-6 text-center">
             <AlertTriangle size={24} className="mx-auto mb-2 text-error" />
-            <p className="text-sm text-error-muted mb-3">{error || "Failed to load deal"}</p>
+            <p className="text-sm text-error-muted mb-3">{error || t("failedToLoad")}</p>
             <button
               onClick={() => router.reload()}
               className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
             >
-              Retry
+              {t("retry")}
             </button>
           </div>
         )}
@@ -334,7 +341,7 @@ export default function DealDetailPage() {
                           {deal.price} <span className="text-sm text-muted">{deal.currency || "USD"}</span>
                         </>
                       ) : (
-                        <span className="text-sm text-muted">Price unknown</span>
+                        <span className="text-sm text-muted">{t("priceUnknown")}</span>
                       )}
                     </div>
                     <TemperatureGauge temperature={deal.temperature} status={deal.status} />
@@ -350,7 +357,7 @@ export default function DealDetailPage() {
                       rel="noopener noreferrer"
                       className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-primary hover:text-primary transition-colors text-center"
                     >
-                      Open source
+                      {t("openSource")}
                     </a>
                   )}
 
@@ -373,12 +380,12 @@ export default function DealDetailPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
                 <div className="border border-border bg-bg rounded clip-corner px-3 py-2 flex items-center justify-between gap-3">
-                  <span className="text-subtle uppercase tracking-wider">created</span>
-                  <span className="text-text tabular-nums">{formatDate(deal.created_at)}</span>
+                  <span className="text-subtle uppercase tracking-wider">{t("created")}</span>
+                  <span className="text-text tabular-nums">{formatDate(deal.created_at, locale)}</span>
                 </div>
                 <div className="border border-border bg-bg rounded clip-corner px-3 py-2 flex items-center justify-between gap-3">
-                  <span className="text-subtle uppercase tracking-wider">expires</span>
-                  <span className="text-text tabular-nums">{formatDate(deal.expires_at)}</span>
+                  <span className="text-subtle uppercase tracking-wider">{t("expires")}</span>
+                  <span className="text-text tabular-nums">{formatDate(deal.expires_at, locale)}</span>
                 </div>
               </div>
             </section>
@@ -394,7 +401,7 @@ export default function DealDetailPage() {
                       : "border-border text-muted hover:border-primary hover:text-primary"
                   }`}
                 >
-                  Reasons
+                  {t("reasons")}
                 </button>
                 <button
                   data-testid="tab-notes"
@@ -405,7 +412,7 @@ export default function DealDetailPage() {
                       : "border-border text-muted hover:border-primary hover:text-primary"
                   }`}
                 >
-                  Notes
+                  {t("notes")}
                 </button>
               </div>
 

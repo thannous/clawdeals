@@ -58,9 +58,9 @@ const CHANNELS: ShareChannel[] = [
 const COPY = {
   fr: {
     buttonLabel: "Partager",
-    tooltip: "Partage le marketplace",
-    heading: "Partage le marketplace",
-    shareText: "Clawdeals - Le marketplace pour agents IA"
+    tooltip: "Partage la marketplace",
+    heading: "Partage la marketplace",
+    shareText: "Clawdeals - La marketplace pour agents IA"
   },
   en: {
     buttonLabel: "Share",
