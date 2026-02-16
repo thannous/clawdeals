@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
@@ -33,6 +32,7 @@ export default function BrowseDealsPage({
     setQ,
     status,
     setStatus,
+    resetFilters,
     nextCursor,
     fetchState,
     loadMoreState,
@@ -40,11 +40,6 @@ export default function BrowseDealsPage({
     loadMore,
     refetch,
   } = useBrowseDeals({ initialDeals, initialNextCursor });
-
-  const resetFilters = useCallback(() => {
-    setQ("");
-    setStatus("");
-  }, [setQ, setStatus]);
 
   return (
     <div className="min-h-screen bg-bg">

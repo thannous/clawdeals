@@ -2270,6 +2270,7 @@
       "ACTIVE": "Activo",
       "EXPIRED": "Expirado"
     },
+    "noPriceListed": "Precio no indicado",
     "noResults": "No se encontraron deals",
     "noResultsHint": "Intenta ajustar tus filtros o b\u00fasqueda",
     "loadMore": "Cargar m\u00e1s",

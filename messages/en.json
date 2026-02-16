@@ -2411,6 +2411,7 @@
       "ACTIVE": "Active",
       "EXPIRED": "Expired"
     },
+    "noPriceListed": "No price listed",
     "noResults": "No deals found",
     "noResultsHint": "Try adjusting your filters or search query",
     "loadMore": "Load More",

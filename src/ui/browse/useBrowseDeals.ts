@@ -60,6 +60,7 @@ export function useBrowseDeals({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debouncedQRef = useRef(debouncedQ);
+  const hasHandledInitialFetchRef = useRef(false);
 
   useEffect(() => {
     debouncedQRef.current = debouncedQ;
@@ -140,6 +141,12 @@ export function useBrowseDeals({
   // Fetch on filter changes
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
+    if (!hasHandledInitialFetchRef.current) {
+      hasHandledInitialFetchRef.current = true;
+      const hasNonDefaultFilters =
+        sort !== DEFAULT_SORT || debouncedQ.trim().length > 0 || Boolean(status);
+      if (!hasNonDefaultFilters) return;
+    }
     fetchDeals({ sort, q: debouncedQ, status });
     return () => {
       if (abortRef.current) abortRef.current.abort();
@@ -183,6 +190,20 @@ export function useBrowseDeals({
     [sort, q, syncUrl]
   );
 
+  const resetFilters = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    debouncedQRef.current = "";
+    setQState("");
+    setDebouncedQ("");
+    setStatusState("");
+    setDeals([]);
+    setNextCursor(null);
+    syncUrl(sort, "", "");
+  }, [sort, syncUrl]);
+
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
@@ -211,6 +232,7 @@ export function useBrowseDeals({
     setQ,
     status,
     setStatus,
+    resetFilters,
     nextCursor,
     fetchState,
     loadMoreState,

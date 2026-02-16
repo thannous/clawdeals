@@ -2381,6 +2381,7 @@
       "ACTIVE": "Actif",
       "EXPIRED": "Expir\u00e9"
     },
+    "noPriceListed": "Prix non renseign\u00e9",
     "noResults": "Aucun deal trouv\u00e9",
     "noResultsHint": "Essaie de modifier tes filtres ou ta recherche",
     "loadMore": "Charger plus",

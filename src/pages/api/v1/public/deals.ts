@@ -52,15 +52,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     : null;
 
   const statusRaw = resolveParam(req.query?.status);
+  const hasStatusParam = statusRaw !== undefined && statusRaw !== null && statusRaw !== "";
   let statuses: string[] | null = null;
-  if (statusRaw) {
+  if (hasStatusParam) {
+    if (typeof statusRaw !== "string") {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "status must be a string" } });
+      return;
+    }
     const parsed = statusRaw
       .split(",")
       .map((s) => s.trim().toUpperCase())
-      .filter((s) => VALID_STATUSES.has(s));
-    if (parsed.length > 0) statuses = parsed;
+      .filter(Boolean);
+    if (parsed.length === 0 || parsed.some((s) => !VALID_STATUSES.has(s))) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "status is invalid" } });
+      return;
+    }
+    statuses = Array.from(new Set(parsed));
   }
   if (sort === "temp" || sort === "trend") {
+    if (hasStatusParam && (!statuses || statuses.length !== 1 || statuses[0] !== "ACTIVE")) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "status must be ACTIVE for this sort" } });
+      return;
+    }
     statuses = ["ACTIVE"];
   }
 
