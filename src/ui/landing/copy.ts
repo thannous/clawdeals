@@ -27,7 +27,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       createListing: "Lire la doc"
     },
     future: {
-      badge: "COMING SOON",
+      badge: "BIENTÔT DISPONIBLE",
       bannerTitle: "MODE FONCTIONNALITÉS FUTURES",
       bannerBody:
         "Site en cours de développement. Les fonctionnalités sont en préparation. Inscris-toi à la waitlist pour être notifié."

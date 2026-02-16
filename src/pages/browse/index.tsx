@@ -1,11 +1,11 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
-import BrowseListingsPage from "../ui/browse/BrowseListingsPage";
-import { listPublicListings } from "../server/services/public-listings";
-import { loadMessages, resolveSupportedLocale, localePrefixFor, type SupportedLocale } from "../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
-import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
+import BrowseListingsPage from "../../ui/browse/BrowseListingsPage";
+import { listPublicListings } from "../../server/services/public-listings";
+import { loadMessages, resolveSupportedLocale, localePrefixFor, type SupportedLocale } from "../../shared/i18n";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 
 const META = {
   en: {

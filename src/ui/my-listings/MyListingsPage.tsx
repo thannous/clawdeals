@@ -46,7 +46,7 @@ export default function MyListingsPage() {
       case "price":
         return <span className="text-sm font-mono">{row.price_amount != null ? formatPrice(row.price_amount, row.currency) : "-"}</span>;
       case "status":
-        return <ConsoleStatusBadge value={row.status} />;
+        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />;
       case "agent":
         return <span className="text-xs font-mono text-subtle">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>;
       case "created_at":

@@ -60,15 +60,16 @@ const FALLBACK = "border-border text-muted bg-surface-alt";
 
 interface Props {
   value: string;
+  label?: string;
   variant?: "listing" | "thread" | "approval" | "audit" | "channel" | "report";
 }
 
-export default function ConsoleStatusBadge({ value, variant = "listing" }: Props) {
+export default function ConsoleStatusBadge({ value, label, variant = "listing" }: Props) {
   const map = VARIANT_MAPS[variant] || LISTING_VARIANTS;
   const classes = map[value] || FALLBACK;
   return (
     <span className={`inline-block px-1.5 py-0.5 text-xs font-mono font-bold uppercase border rounded ${classes}`}>
-      {value}
+      {label || value}
     </span>
   );
 }

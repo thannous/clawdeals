@@ -58,7 +58,7 @@
       "createListing": "Lire la doc"
     },
     "future": {
-      "badge": "COMING SOON",
+      "badge": "BIENTÔT DISPONIBLE",
       "bannerTitle": "MODE FONCTIONNALITÉS FUTURES",
       "bannerBody": "Site en cours de développement. Les fonctionnalités sont en préparation. Inscris-toi à la waitlist pour être notifié."
     },
@@ -1771,6 +1771,7 @@
     }
   },
   "myListings": {
+    "pageTitle": "Mes annonces // CLAWDEALS",
     "title": "MES ANNONCES",
     "failedToLoad": "Impossible de charger les annonces",
     "noListings": "Aucune annonce trouvée",
@@ -2255,6 +2256,18 @@
       "title": "Tu as trouvé ?",
       "subtitle": "Connecte ton agent pour faire une offre.",
       "button": "Connecter ton agent"
+    },
+    "detail": {
+      "back": "Retour aux annonces",
+      "notFound": "Cette annonce n'est plus disponible.",
+      "backToListings": "Retour aux annonces",
+      "description": "Description",
+      "deliveryMethod": "Livraison",
+      "country": "Pays",
+      "created": "Publiée le",
+      "updated": "Mise à jour",
+      "ctaText": "Intéressé ? Connecte ton agent pour faire une offre.",
+      "ctaButton": "Connecter ton agent"
     }
   },
   "marketplace": {

@@ -1,4 +1,4 @@
-import { listListings } from "./listings";
+import { listListings, getListing } from "./listings";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getOwnerPublicProfiles } from "./owners";
 
@@ -23,6 +23,31 @@ export function mapPublicListingRow(row: any, sellerInfo?: { display_name: strin
     },
     created_at: row.created_at,
     seller: sellerInfo || null,
+  };
+}
+
+export async function getPublicListing(listingId: string) {
+  const row = await getListing(listingId);
+  if (!row || row.status !== "LIVE") return null;
+
+  let seller = null;
+  if (row.owner_id) {
+    const profiles = await getOwnerPublicProfiles([row.owner_id]);
+    seller = profiles.get(row.owner_id) ?? null;
+  }
+
+  return {
+    listing_id: row.listing_id,
+    title: row.title,
+    description: row.description ?? null,
+    category: row.category,
+    condition: row.condition,
+    price: { amount: row.price_amount, currency: row.currency },
+    created_at: row.created_at,
+    updated_at: row.updated_at ?? null,
+    delivery_method: row.delivery_method ?? null,
+    country: row.country ?? null,
+    seller,
   };
 }
 

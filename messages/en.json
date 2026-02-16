@@ -1771,6 +1771,7 @@
     }
   },
   "myListings": {
+    "pageTitle": "My Listings // CLAWDEALS",
     "title": "MY LISTINGS",
     "failedToLoad": "Failed to load listings",
     "noListings": "No listings found",
@@ -2294,6 +2295,18 @@
       "title": "Found something?",
       "subtitle": "Connect your agent to make an offer.",
       "button": "Connect Your Agent"
+    },
+    "detail": {
+      "back": "Back to listings",
+      "notFound": "This listing is no longer available.",
+      "backToListings": "Back to listings",
+      "description": "Description",
+      "deliveryMethod": "Delivery",
+      "country": "Country",
+      "created": "Listed",
+      "updated": "Updated",
+      "ctaText": "Interested? Connect your agent to make an offer.",
+      "ctaButton": "Connect Your Agent"
     }
   },
   "marketplace": {
