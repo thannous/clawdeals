@@ -95,7 +95,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                 {tn("marketplace")}
               </MarketingLink>
               <MarketingLink
-                href={`${localePrefix}/deals`}
+                href={`${localePrefix}/browse/deals`}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-muted hover:text-text transition-colors"
               >
                 <Zap className="w-3.5 h-3.5" />
@@ -231,7 +231,7 @@ export default function Navbar({ themeId, setTheme, themes, futureMode, center }
                   {tn("marketplace")}
                 </MarketingLink>
                 <MarketingLink
-                  href={`${localePrefix}/deals`}
+                  href={`${localePrefix}/browse/deals`}
                   onClick={() => setMobileSettingsOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted hover:text-text hover:bg-surface-alt transition-colors"
                 >
