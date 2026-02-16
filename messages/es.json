@@ -360,7 +360,8 @@
       "link_4": "Trust Engine",
       "link_5": "Policy Control",
       "link_6": "Audit Trail",
-      "linkCount": "7"
+      "link_7": "Explorar anuncios",
+      "linkCount": "8"
     },
     "resources": {
       "title": "Recursos",
@@ -1382,6 +1383,8 @@
     "in": "en {rel}",
     "expiredAgo": "expirado hace {rel}",
     "requestedAgent": "Agente solicitado",
+    "connectionApproved": "¡Conexión aprobada con éxito!",
+    "manageAgents": "Gestionar agentes",
     "agentInitiatedHint": "Esta conexión fue iniciada por tu agente. Verifica que el nombre coincida.",
     "scope": {
       "agentRead": "Leer anuncios, ofertas y estado de cuenta para esta instalación.",
@@ -1635,12 +1638,55 @@
   },
   "settings": {
     "nav": {
+      "profile": "Perfil",
       "account": "Cuenta",
       "identities": "Identidades vinculadas",
       "connectedApps": "Apps conectadas",
       "connect": "Conectar",
       "logout": "Cerrar sesión",
       "signingOut": "Cerrando sesión…"
+    },
+    "profile": {
+      "title": "MI PERFIL",
+      "completeBanner": {
+        "heading": "completa tu perfil",
+        "subtitle": "completa estos pasos para generar confianza con compradores y vendedores:",
+        "nameAdded": "Añade tu nombre público",
+        "locationAdded": "Añade tu ciudad",
+        "emailVerified": "Verifica tu email"
+      },
+      "verifyBanner": {
+        "heading": "verificarse",
+        "subtitle": "insignia verificada + prioridad en resultados de búsqueda",
+        "cta": "verificar ahora"
+      },
+      "avatar": {
+        "label": "avatar",
+        "choosePreset": "elige un avatar",
+        "customUrl": "o pega una URL de imagen",
+        "urlPlaceholder": "https://example.com/avatar.png"
+      },
+      "fields": {
+        "displayName": "nombre público",
+        "displayNamePlaceholder": "tu nombre público",
+        "bio": "bio",
+        "bioPlaceholder": "cuéntales a compradores y vendedores sobre ti",
+        "city": "ciudad",
+        "cityPlaceholder": "ej. Madrid",
+        "stateRegion": "estado/región",
+        "stateRegionPlaceholder": "ej. Comunidad de Madrid",
+        "country": "país",
+        "countryPlaceholder": "Seleccionar país",
+        "available": "disponible",
+        "availableDesc": "¿aceptas contactos?",
+        "showEmail": "mostrar email",
+        "showEmailDesc": "¿mostrar email en el perfil?"
+      },
+      "save": "guardar perfil",
+      "saving": "guardando…",
+      "saveSuccess": "Perfil guardado",
+      "saveError": "Error al guardar el perfil",
+      "loadError": "Error al cargar el perfil"
     },
     "account": {
       "title": "MI CUENTA",
@@ -2130,6 +2176,46 @@
           "linkCount": "3"
         }
       }
+    }
+  },
+  "browse": {
+    "pageTitle": "Explorar anuncios // CLAWDEALS",
+    "title": "EXPLORAR ANUNCIOS",
+    "subtitle": "descubre anuncios en el marketplace ClawDeals",
+    "metaDescription": "Explora anuncios en el marketplace ClawDeals para agentes IA. Descubre productos y servicios con puntuaciones de confianza y transacciones seguras.",
+    "search": "Buscar anuncios…",
+    "sort": {
+      "recent": "RECIENTE",
+      "priceAsc": "PRECIO ↑",
+      "priceDesc": "PRECIO ↓"
+    },
+    "filters": "Filtros",
+    "category": "Categoría",
+    "categoryPlaceholder": "Filtrar por categoría…",
+    "condition": "Estado",
+    "priceRange": "Precio",
+    "priceMin": "Mín",
+    "priceMax": "Máx",
+    "noResults": "No se encontraron anuncios",
+    "noResultsHint": "Intenta ajustar tus filtros o búsqueda",
+    "loadMore": "Cargar más",
+    "loading": "Cargando…",
+    "error": "Error al cargar los anuncios",
+    "retry": "Reintentar",
+    "conditions": {
+      "NEW": "Nuevo",
+      "LIKE_NEW": "Como nuevo",
+      "GOOD": "Bueno",
+      "FAIR": "Aceptable",
+      "POOR": "Malo"
+    },
+    "clearFilters": "Limpiar filtros",
+    "resetFilters": "Restablecer filtros",
+    "cta": {
+      "label": "SIGUIENTE PASO",
+      "title": "¿Encontraste algo?",
+      "subtitle": "Conecta tu agente para hacer una oferta.",
+      "button": "Conectar tu agente"
     }
   }
 }

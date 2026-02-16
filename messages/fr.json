@@ -360,7 +360,8 @@
       "link_4": "Trust Engine",
       "link_5": "Policy Control",
       "link_6": "Audit Trail",
-      "linkCount": "7"
+      "link_7": "Parcourir les annonces",
+      "linkCount": "8"
     },
     "resources": {
       "title": "Ressources",
@@ -1382,6 +1383,8 @@
     "in": "dans {rel}",
     "expiredAgo": "expiré depuis {rel}",
     "requestedAgent": "Agent demandé",
+    "connectionApproved": "Connexion approuvée avec succès !",
+    "manageAgents": "Gérer les agents",
     "agentInitiatedHint": "Cette connexion a été initiée par votre agent. Vérifiez que le nom correspond.",
     "scope": {
       "agentRead": "Lire les listings, offres et état du compte pour cette installation.",
@@ -1635,12 +1638,55 @@
   },
   "settings": {
     "nav": {
+      "profile": "Profil",
       "account": "Compte",
       "identities": "Identités liées",
       "connectedApps": "Apps connectées",
       "connect": "Connexion",
       "logout": "Déconnexion",
       "signingOut": "Déconnexion…"
+    },
+    "profile": {
+      "title": "MON PROFIL",
+      "completeBanner": {
+        "heading": "complétez votre profil",
+        "subtitle": "finalisez ces étapes pour renforcer la confiance avec acheteurs et vendeurs :",
+        "nameAdded": "Ajoutez votre nom d'affichage",
+        "locationAdded": "Ajoutez votre ville",
+        "emailVerified": "Vérifiez votre email"
+      },
+      "verifyBanner": {
+        "heading": "se vérifier",
+        "subtitle": "badge vérifié + priorité dans les résultats de recherche",
+        "cta": "vérifier maintenant"
+      },
+      "avatar": {
+        "label": "avatar",
+        "choosePreset": "choisissez un avatar",
+        "customUrl": "ou collez une URL d'image",
+        "urlPlaceholder": "https://example.com/avatar.png"
+      },
+      "fields": {
+        "displayName": "nom d'affichage",
+        "displayNamePlaceholder": "votre nom public",
+        "bio": "bio",
+        "bioPlaceholder": "parlez de vous aux acheteurs et vendeurs",
+        "city": "ville",
+        "cityPlaceholder": "ex. Paris",
+        "stateRegion": "état/région",
+        "stateRegionPlaceholder": "ex. Île-de-France",
+        "country": "pays",
+        "countryPlaceholder": "Sélectionner un pays",
+        "available": "disponible",
+        "availableDesc": "acceptez-vous les contacts ?",
+        "showEmail": "afficher l'email",
+        "showEmailDesc": "afficher l'email sur le profil ?"
+      },
+      "save": "enregistrer le profil",
+      "saving": "enregistrement…",
+      "saveSuccess": "Profil enregistré",
+      "saveError": "Échec de l'enregistrement du profil",
+      "loadError": "Impossible de charger le profil"
     },
     "account": {
       "title": "MON COMPTE",
@@ -2130,6 +2176,46 @@
           "linkCount": "3"
         }
       }
+    }
+  },
+  "browse": {
+    "pageTitle": "Parcourir les annonces // CLAWDEALS",
+    "title": "PARCOURIR LES ANNONCES",
+    "subtitle": "trouvez des annonces sur la marketplace ClawDeals",
+    "metaDescription": "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et transactions sécurisées.",
+    "search": "Rechercher des annonces…",
+    "sort": {
+      "recent": "RÉCENT",
+      "priceAsc": "PRIX ↑",
+      "priceDesc": "PRIX ↓"
+    },
+    "filters": "Filtres",
+    "category": "Catégorie",
+    "categoryPlaceholder": "Filtrer par catégorie…",
+    "condition": "État",
+    "priceRange": "Prix",
+    "priceMin": "Min",
+    "priceMax": "Max",
+    "noResults": "Aucune annonce trouvée",
+    "noResultsHint": "Essayez d'ajuster vos filtres ou votre recherche",
+    "loadMore": "Charger plus",
+    "loading": "Chargement…",
+    "error": "Échec du chargement des annonces",
+    "retry": "Réessayer",
+    "conditions": {
+      "NEW": "Neuf",
+      "LIKE_NEW": "Comme neuf",
+      "GOOD": "Bon",
+      "FAIR": "Correct",
+      "POOR": "Mauvais"
+    },
+    "clearFilters": "Effacer les filtres",
+    "resetFilters": "Réinitialiser les filtres",
+    "cta": {
+      "label": "ÉTAPE SUIVANTE",
+      "title": "Vous avez trouvé ?",
+      "subtitle": "Connectez votre agent pour faire une offre.",
+      "button": "Connecter votre agent"
     }
   }
 }

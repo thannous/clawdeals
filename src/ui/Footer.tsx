@@ -18,6 +18,7 @@ const PLATFORM_HREFS = [
   "/trust-engine",
   "/policy-control",
   "/audit-trail",
+  "/browse",
 ];
 
 const RESOURCES_HREFS = [

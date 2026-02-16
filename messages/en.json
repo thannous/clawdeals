@@ -360,7 +360,8 @@
       "link_4": "Trust Engine",
       "link_5": "Policy Control",
       "link_6": "Audit Trail",
-      "linkCount": "7"
+      "link_7": "Browse Listings",
+      "linkCount": "8"
     },
     "resources": {
       "title": "Resources",
@@ -1382,6 +1383,8 @@
     "in": "in {rel}",
     "expiredAgo": "expired {rel} ago",
     "requestedAgent": "Requested Agent",
+    "connectionApproved": "Connection approved successfully!",
+    "manageAgents": "Manage agents",
     "agentInitiatedHint": "This connection was initiated by your agent. Verify the name matches.",
     "scope": {
       "agentRead": "Read listings, offers, and account state for this installation.",
@@ -1635,12 +1638,55 @@
   },
   "settings": {
     "nav": {
+      "profile": "Profile",
       "account": "Account",
       "identities": "Linked Identities",
       "connectedApps": "Connected Apps",
       "connect": "Connect",
       "logout": "Logout",
       "signingOut": "Signing out…"
+    },
+    "profile": {
+      "title": "MY PROFILE",
+      "completeBanner": {
+        "heading": "complete your profile",
+        "subtitle": "finish these steps to build trust with buyers and sellers:",
+        "nameAdded": "Add your display name",
+        "locationAdded": "Add your city",
+        "emailVerified": "Verify your email"
+      },
+      "verifyBanner": {
+        "heading": "get verified",
+        "subtitle": "verified badge + priority in search results",
+        "cta": "verify now"
+      },
+      "avatar": {
+        "label": "avatar",
+        "choosePreset": "choose an avatar",
+        "customUrl": "or paste an image URL",
+        "urlPlaceholder": "https://example.com/avatar.png"
+      },
+      "fields": {
+        "displayName": "display name",
+        "displayNamePlaceholder": "your public name",
+        "bio": "bio",
+        "bioPlaceholder": "tell buyers and sellers about yourself",
+        "city": "city",
+        "cityPlaceholder": "e.g. San Francisco",
+        "stateRegion": "state/region",
+        "stateRegionPlaceholder": "e.g. California",
+        "country": "country",
+        "countryPlaceholder": "Select country",
+        "available": "available",
+        "availableDesc": "accepting contacts?",
+        "showEmail": "show email",
+        "showEmailDesc": "display email on profile?"
+      },
+      "save": "save profile",
+      "saving": "saving…",
+      "saveSuccess": "Profile saved",
+      "saveError": "Failed to save profile",
+      "loadError": "Failed to load profile"
     },
     "account": {
       "title": "MY ACCOUNT",
@@ -2172,6 +2218,46 @@
           "linkCount": "3"
         }
       }
+    }
+  },
+  "browse": {
+    "pageTitle": "Browse Listings // CLAWDEALS",
+    "title": "BROWSE LISTINGS",
+    "subtitle": "discover listings on the ClawDeals marketplace",
+    "metaDescription": "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and secure transactions.",
+    "search": "Search listings…",
+    "sort": {
+      "recent": "RECENT",
+      "priceAsc": "PRICE ↑",
+      "priceDesc": "PRICE ↓"
+    },
+    "filters": "Filters",
+    "category": "Category",
+    "categoryPlaceholder": "Filter by category…",
+    "condition": "Condition",
+    "priceRange": "Price",
+    "priceMin": "Min",
+    "priceMax": "Max",
+    "noResults": "No listings found",
+    "noResultsHint": "Try adjusting your filters or search query",
+    "loadMore": "Load More",
+    "loading": "Loading…",
+    "error": "Failed to load listings",
+    "retry": "Retry",
+    "conditions": {
+      "NEW": "New",
+      "LIKE_NEW": "Like New",
+      "GOOD": "Good",
+      "FAIR": "Fair",
+      "POOR": "Poor"
+    },
+    "clearFilters": "Clear filters",
+    "resetFilters": "Reset filters",
+    "cta": {
+      "label": "NEXT STEP",
+      "title": "Found something?",
+      "subtitle": "Connect your agent to make an offer.",
+      "button": "Connect Your Agent"
     }
   }
 }
