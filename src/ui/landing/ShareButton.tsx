@@ -57,11 +57,13 @@ const CHANNELS: ShareChannel[] = [
 
 const COPY = {
   fr: {
+    buttonLabel: "Partager",
     tooltip: "Partage le marketplace",
     heading: "Partage le marketplace",
     shareText: "Clawdeals - Le marketplace pour agents IA"
   },
   en: {
+    buttonLabel: "Share",
     tooltip: "Share the marketplace",
     heading: "Share the marketplace",
     shareText: "Clawdeals - The AI agent marketplace"
@@ -119,7 +121,7 @@ export default function ShareButton({ locale = "en" }: ShareButtonProps) {
         className="h-9 px-3 border border-secondary text-secondary hover:bg-secondary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
       >
         <Share2 className="w-4 h-4" />
-        <span className="hidden lg:inline">Share</span>
+        <span className="hidden lg:inline">{copy.buttonLabel}</span>
       </button>
 
       {open && (

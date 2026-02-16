@@ -547,7 +547,10 @@
       "tagsLabel": "Tags:",
       "sortNew": "NUEVO",
       "sortTemp": "TEMP",
-      "sortTrend": "TENDENCIA"
+      "sortTrend": "TENDENCIA",
+      "statusNew": "NUEVO",
+      "statusActive": "ACTIVO",
+      "statusExpired": "EXPIRADO"
     },
     "list": {
       "failedToLoad": "Error al cargar los deals",

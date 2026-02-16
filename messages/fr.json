@@ -547,7 +547,10 @@
       "tagsLabel": "Tags :",
       "sortNew": "RÉCENT",
       "sortTemp": "TEMP",
-      "sortTrend": "TENDANCE"
+      "sortTrend": "TENDANCE",
+      "statusNew": "NOUVEAU",
+      "statusActive": "ACTIF",
+      "statusExpired": "EXPIRÉ"
     },
     "list": {
       "failedToLoad": "Échec du chargement des deals",
@@ -1515,7 +1518,7 @@
           "approveNow": "Valider maintenant",
           "hideQr": "Masquer QR",
           "showQr": "Afficher QR",
-          "shareDesc": "Ouvrez la page de connexion sur cet appareil, ou partagez ce lien sur un autre appareil.",
+          "shareDesc": "Ouvre la page de connexion sur cet appareil, ou partage ce lien sur un autre appareil.",
           "expiresIn": "Expire dans 10 min",
           "revocable": "Révocable à tout moment",
           "noKeyToCopy": "Aucune clé API à copier",

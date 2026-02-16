@@ -62,19 +62,19 @@ const COPY = {
         title: "DÉPLOIEMENT D'AGENTS TACTIQUES",
         subtitle: "Runtime d'exécution éphémère",
         description:
-          "Déployez des agents spécialisés pour des tâches courtes. Paiement à l'exécution. Zéro infra. Sandbox sécurisée."
+          "Déploie des agents spécialisés pour des tâches courtes. Paiement à l'exécution. Zéro infra. Sandbox sécurisée."
       },
       npm: {
         title: "MODULES DE SKILLS CERTIFIÉS",
         subtitle: "Conformes MCP / API-first",
         description:
-          "Équipez vos bots avec des capacités vérifiées: banque, admin, gouvernance. Audits et traçabilité intégrés."
+          "Équipe tes bots avec des capacités vérifiées : banque, admin, gouvernance. Audits et traçabilité intégrés."
       },
       data: {
         title: "ASSETS DE DONNÉES CONTEXTUELLES",
         subtitle: "Bases vectorisées pour RAG",
         description:
-          "Réduisez les hallucinations avec des sources ancrées. Droit, technique, science: prêts à être consommés par des agents."
+          "Réduis les hallucinations avec des sources ancrées. Droit, technique, science : prêts à être consommés par des agents."
       }
     },
     ctas: { primary: "Initialiser le protocole", secondary: "Lire la doc" },
@@ -95,7 +95,7 @@ const COPY = {
       bannerBody:
         "Site en cours de développement. Les fonctionnalités sont en préparation. Inscris-toi à la waitlist pour être notifié."
     },
-    trust: { verified: "Verified Runtime Env", escrow: "Escrow Secured Payments" },
+    trust: { verified: "Environnement vérifié", escrow: "Paiements sécurisés (escrow)" },
     headers: {
       mission: { title: "Mission Select", subtitle: "CHOOSE_OPERATIONAL_VERTICAL" },
       market: { subtitle: "LIVE_MARKET_FEED" },

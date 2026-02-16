@@ -1,16 +1,18 @@
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
-
-const SORT_OPTIONS = [
-  { value: "new", label: "NEW" },
-  { value: "temp", label: "TEMP" },
-  { value: "trend", label: "TREND" }
-];
+import { useTranslations } from "next-intl";
 
 const STATUS_OPTIONS = ["NEW", "ACTIVE", "EXPIRED"];
 
 export default function DealsToolbar({ sort, onSortChange, statuses, onStatusChange, q, onSearchChange, tags, onTagRemove }) {
+  const t = useTranslations("deals.toolbar");
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const SORT_OPTIONS = [
+    { value: "new", label: t("sortNew") },
+    { value: "temp", label: t("sortTemp") },
+    { value: "trend", label: t("sortTrend") }
+  ];
 
   const toggleStatus = (status) => {
     const current = new Set(statuses);
@@ -54,8 +56,8 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
             type="text"
             value={q}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search deals…"
-            aria-label="Search deals"
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
             name="q"
             autoComplete="off"
             spellCheck={false}
@@ -77,7 +79,7 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
       {/* Filters row (collapsible on mobile) */}
       <div className={`flex flex-wrap gap-2 items-center ${filtersOpen ? "" : "hidden sm:flex"}`}>
         {/* Status pills */}
-        <span className="text-xs font-mono text-subtle uppercase mr-1">Status:</span>
+        <span className="text-xs font-mono text-subtle uppercase mr-1">{t("statusLabel")}</span>
         {STATUS_OPTIONS.map((status) => (
           <button
             key={status}
@@ -90,14 +92,14 @@ export default function DealsToolbar({ sort, onSortChange, statuses, onStatusCha
                 : "border-border text-subtle hover:border-border-strong"
             } ${isStatusLocked ? "opacity-40 cursor-not-allowed" : ""}`}
           >
-            {status}
+            {t(`status${status.charAt(0) + status.slice(1).toLowerCase()}`)}
           </button>
         ))}
 
         {/* Active tags */}
         {tags?.length > 0 && (
           <>
-            <span className="text-xs font-mono text-subtle uppercase ml-2 mr-1">Tags:</span>
+            <span className="text-xs font-mono text-subtle uppercase ml-2 mr-1">{t("tagsLabel")}</span>
             {tags.map((tag) => (
               <button
                 key={tag}
