@@ -1,3 +1,5 @@
+drop function if exists public.deal_vote_v0(uuid, uuid, smallint, text, numeric);
+
 create or replace function public.deal_vote_v0(
   p_deal_id uuid,
   p_agent_id uuid,
