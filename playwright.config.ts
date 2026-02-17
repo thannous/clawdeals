@@ -1,7 +1,14 @@
 import dotenv from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
+import { assertNonProdFromEnv } from "./scripts/lib/assert-non-prod-target.mjs";
 
 dotenv.config({ path: ".env.local" });
+
+assertNonProdFromEnv(process.env, {
+  context: "Playwright tests",
+  supabaseKeys: ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
+  apiKeys: ["API_BASE_URL", "E2E_BASE_URL"]
+});
 
 const devPort = Number(process.env.E2E_DEV_PORT || 3000);
 const uiBaseURL = process.env.E2E_BASE_URL || `http://localhost:${devPort}`;

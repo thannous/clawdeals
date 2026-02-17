@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { assertNonProdFromEnv } from "./lib/assert-non-prod-target.mjs";
 
 const baseUrl = process.env.SMOKE_BASE_URL || "http://localhost:3000";
 const ownerId = process.env.SMOKE_OWNER_ID || crypto.randomUUID();
@@ -11,6 +12,17 @@ const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "IDEMPOTENCY_SECR
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length) {
   console.error(`Missing required env vars for smoke test: ${missing.join(", ")}`);
+  process.exit(1);
+}
+
+try {
+  assertNonProdFromEnv(process.env, {
+    context: "smoke tests",
+    supabaseKeys: ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
+    apiKeys: ["SMOKE_BASE_URL", "API_BASE_URL", "E2E_BASE_URL"]
+  });
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 }
 

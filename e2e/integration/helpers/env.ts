@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
+import { assertNonProdFromEnv } from "../../../scripts/lib/assert-non-prod-target.mjs";
 
 let dotenvLoaded = false;
 
@@ -28,6 +29,12 @@ export function loadDotenvOnce() {
 
 export function assertIntegrationEnv() {
   loadDotenvOnce();
+
+  assertNonProdFromEnv(process.env, {
+    context: "integration tests",
+    supabaseKeys: ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
+    apiKeys: ["API_BASE_URL", "E2E_BASE_URL"]
+  });
 
   const requiredEnv = [
     "SUPABASE_URL",
