@@ -17,31 +17,34 @@ create table if not exists public.owners (
   updated_at timestamptz not null default now()
 );
 
-with invalid_owner_map as (
-  select owner_id as legacy_owner_id, gen_random_uuid() as owner_uuid
+with agents_normalized as (
+  select
+    id as agent_id,
+    nullif(btrim(owner_id::text), '') as owner_id_text
   from public.agents
-  where owner_id is not null
-    and owner_id <> ''
-    and owner_id !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-  group by owner_id
+),
+invalid_owner_map as (
+  select owner_id_text as legacy_owner_id, gen_random_uuid() as owner_uuid
+  from agents_normalized
+  where owner_id_text is not null
+    and owner_id_text !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  group by owner_id_text
 ),
 invalid_owner_ids as (
-  select a.id as agent_id, m.owner_uuid
-  from public.agents a
-  join invalid_owner_map m on m.legacy_owner_id = a.owner_id
+  select a.agent_id, m.owner_uuid
+  from agents_normalized a
+  join invalid_owner_map m on m.legacy_owner_id = a.owner_id_text
 ),
 missing_owner_ids as (
-  select id as agent_id, gen_random_uuid() as owner_uuid
-  from public.agents
-  where owner_id is null or owner_id = ''
+  select agent_id, gen_random_uuid() as owner_uuid
+  from agents_normalized
+  where owner_id_text is null
 ),
 insert_existing as (
   insert into public.owners (owner_id, created_at, updated_at)
-  select distinct owner_id::uuid, now(), now()
-  from public.agents
-  where owner_id is not null
-    and owner_id <> ''
-    and owner_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  select distinct owner_id_text::uuid, now(), now()
+  from agents_normalized
+  where owner_id_text ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
   on conflict do nothing
 ),
 insert_invalid as (
@@ -84,7 +87,7 @@ create index if not exists owner_verification_consumed_at_idx
   on public.owner_verification_challenges (consumed_at);
 
 alter table public.agents
-  alter column owner_id type uuid using nullif(owner_id, '')::uuid;
+  alter column owner_id type uuid using nullif(btrim(owner_id::text), '')::uuid;
 
 alter table public.agents
   alter column owner_id set not null;
