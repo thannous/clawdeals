@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useReducer, useRef } from "react";
 
 export type PhoneChatMessageType = "bot" | "user";
 
@@ -138,10 +138,47 @@ function TypingIndicator({ visible, tone }: { visible: boolean; tone: ChatTone }
 }
 
 function useChatAnimation(messagePattern: string) {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const [showTyping, setShowTyping] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const [cycle, setCycle] = useState(0);
+  const [state, dispatch] = useReducer(
+    (
+      current: {
+        visibleCount: number;
+        showTyping: boolean;
+        isInView: boolean;
+        cycle: number;
+      },
+      action:
+        | { type: "setInView"; value: boolean }
+        | { type: "resetCycleStart" }
+        | { type: "setTyping"; value: boolean }
+        | { type: "reveal"; visibleCount: number; hideTyping?: boolean }
+        | { type: "advanceCycle" }
+    ) => {
+      switch (action.type) {
+        case "setInView":
+          return { ...current, isInView: action.value };
+        case "resetCycleStart":
+          return { ...current, visibleCount: 0, showTyping: false };
+        case "setTyping":
+          return { ...current, showTyping: action.value };
+        case "reveal":
+          return {
+            ...current,
+            visibleCount: action.visibleCount,
+            showTyping: action.hideTyping ? false : current.showTyping
+          };
+        case "advanceCycle":
+          return { ...current, showTyping: false, visibleCount: 0, cycle: current.cycle + 1 };
+        default:
+          return current;
+      }
+    },
+    {
+      visibleCount: 0,
+      showTyping: false,
+      isInView: false,
+      cycle: 0
+    }
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -155,16 +192,19 @@ function useChatAnimation(messagePattern: string) {
     if (!element) return;
     if (typeof IntersectionObserver === "undefined") {
       // Older browsers / test environments: fall back to running the animation immediately.
-      const t = setTimeout(() => setIsInView(true), 0);
+      const t = setTimeout(() => dispatch({ type: "setInView", value: true }), 0);
       return () => clearTimeout(t);
     }
-    const observer = new IntersectionObserver(([entry]) => setIsInView(entry.isIntersecting), { threshold: 0.3 });
+    const observer = new IntersectionObserver(
+      ([entry]) => dispatch({ type: "setInView", value: entry.isIntersecting }),
+      { threshold: 0.3 }
+    );
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
-    if (!isInView) {
+    if (!state.isInView) {
       clearTimeouts();
       return;
     }
@@ -173,8 +213,7 @@ function useChatAnimation(messagePattern: string) {
 
     timeoutsRef.current.push(
       setTimeout(() => {
-        setVisibleCount(0);
-        setShowTyping(false);
+        dispatch({ type: "resetCycleStart" });
       }, 0)
     );
 
@@ -186,38 +225,35 @@ function useChatAnimation(messagePattern: string) {
 
       if (isBot) {
         const typingDelay = delay;
-        timeoutsRef.current.push(setTimeout(() => setShowTyping(true), typingDelay));
+        timeoutsRef.current.push(setTimeout(() => dispatch({ type: "setTyping", value: true }), typingDelay));
         delay += 800;
         const revealDelay = delay;
         const visible = index + 1;
         timeoutsRef.current.push(
           setTimeout(() => {
-            setShowTyping(false);
-            setVisibleCount(visible);
+            dispatch({ type: "reveal", visibleCount: visible, hideTyping: true });
           }, revealDelay)
         );
         delay += 700;
       } else {
         const revealDelay = delay + 400;
         const visible = index + 1;
-        timeoutsRef.current.push(setTimeout(() => setVisibleCount(visible), revealDelay));
+        timeoutsRef.current.push(setTimeout(() => dispatch({ type: "reveal", visibleCount: visible }), revealDelay));
         delay += 800;
       }
     }
 
-    timeoutsRef.current.push(setTimeout(() => setShowTyping(true), delay));
+    timeoutsRef.current.push(setTimeout(() => dispatch({ type: "setTyping", value: true }), delay));
     timeoutsRef.current.push(
       setTimeout(() => {
-        setShowTyping(false);
-        setVisibleCount(0);
-        setCycle((current) => current + 1);
+        dispatch({ type: "advanceCycle" });
       }, delay + 3000)
     );
 
     return clearTimeouts;
-  }, [clearTimeouts, cycle, isInView, messagePattern]);
+  }, [clearTimeouts, state.cycle, state.isInView, messagePattern]);
 
-  return { containerRef, showTyping, visibleCount };
+  return { containerRef, showTyping: state.showTyping, visibleCount: state.visibleCount };
 }
 
 type AnimatedPhoneChatProps = {

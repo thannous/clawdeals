@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { Copy, ExternalLink, Key } from "lucide-react";
@@ -12,6 +12,38 @@ import { getPublicLandingUrl, joinUrl } from "../../shared/urls";
 type RegisterResult = {
   data?: { agent_id: string; api_key: string };
 };
+
+type KeysPageState = {
+  mode: "generate" | "paste";
+  agentName: string;
+  pastedKey: string;
+  status: "idle" | "loading" | "success" | "error";
+  message: string;
+  apiKey: string | null;
+  copyMsg: string;
+};
+
+type KeysPageAction = {
+  type: "patch";
+  patch: Partial<KeysPageState>;
+};
+
+const INITIAL_STATE: KeysPageState = {
+  mode: "generate",
+  agentName: "",
+  pastedKey: "",
+  status: "idle",
+  message: "",
+  apiKey: null,
+  copyMsg: ""
+};
+
+function keysPageReducer(state: KeysPageState, action: KeysPageAction): KeysPageState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
 
 function isLikelyApiKey(value: string): boolean {
   const v = String(value || "").trim();
@@ -64,31 +96,25 @@ export default function KeysPage() {
     [t]
   );
 
-  const [mode, setMode] = useState<"generate" | "paste">("generate");
-  const [agentName, setAgentName] = useState("");
-  const [pastedKey, setPastedKey] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [copyMsg, setCopyMsg] = useState("");
+  const [state, dispatch] = useReducer(keysPageReducer, INITIAL_STATE);
 
   const nextUrl = useMemo(() => safeNextUrl(router.query.next), [router.query.next]);
 
   useEffect(() => {
-    if (mode !== "generate") return;
+    if (state.mode !== "generate") return;
     const timer = setTimeout(() => {
-      setAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
+      if (state.agentName.trim()) return;
+      dispatch({ type: "patch", patch: { agentName: generateFunnyAgentName() } });
     }, 0);
     return () => clearTimeout(timer);
-  }, [mode]);
+  }, [state.mode, state.agentName]);
 
   const handleGenerate = useCallback(async () => {
-    setStatus("loading");
-    setMessage("");
+    dispatch({ type: "patch", patch: { status: "loading", message: "" } });
     try {
-      const trimmed = agentName.trim();
+      const trimmed = state.agentName.trim();
       const name = trimmed || generateFunnyAgentName();
-      if (!trimmed) setAgentName(name);
+      if (!trimmed) dispatch({ type: "patch", patch: { agentName: name } });
       const result = await apiRequest<RegisterResult>({
         path: "/v1/agents",
         method: "POST",
@@ -96,55 +122,71 @@ export default function KeysPage() {
       });
       const key = result.data?.data?.api_key;
       if (!key) {
-        setStatus("error");
-        setMessage(copy.errorUnexpected);
+        dispatch({ type: "patch", patch: { status: "error", message: copy.errorUnexpected } });
         return;
       }
-      setStatus("success");
-      setMessage(copy.successGenerate);
-      setApiKey(key);
+      dispatch({
+        type: "patch",
+        patch: {
+          status: "success",
+          message: copy.successGenerate,
+          apiKey: key
+        }
+      });
     } catch (error: any) {
-      setStatus("error");
-      setMessage(error?.message || copy.errorGeneric);
+      dispatch({
+        type: "patch",
+        patch: {
+          status: "error",
+          message: error?.message || copy.errorGeneric
+        }
+      });
     }
-  }, [agentName, copy]);
+  }, [state.agentName, copy]);
 
   const handleValidate = useCallback(async () => {
-    const key = pastedKey.trim();
+    const key = state.pastedKey.trim();
     if (!key) {
-      setStatus("error");
-      setMessage(copy.errorNoKey);
+      dispatch({ type: "patch", patch: { status: "error", message: copy.errorNoKey } });
       return;
     }
     if (!isLikelyApiKey(key)) {
-      setStatus("error");
-      setMessage(copy.errorInvalidFormat);
+      dispatch({ type: "patch", patch: { status: "error", message: copy.errorInvalidFormat } });
       return;
     }
-    setStatus("loading");
-    setMessage("");
+    dispatch({ type: "patch", patch: { status: "loading", message: "" } });
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
-      setStatus("success");
-      setMessage(copy.successValidate);
-      setApiKey(key);
+      dispatch({
+        type: "patch",
+        patch: {
+          status: "success",
+          message: copy.successValidate,
+          apiKey: key
+        }
+      });
     } catch (error: any) {
-      setStatus("error");
-      setMessage(error?.message || copy.errorGeneric);
+      dispatch({
+        type: "patch",
+        patch: {
+          status: "error",
+          message: error?.message || copy.errorGeneric
+        }
+      });
     }
-  }, [pastedKey, copy]);
+  }, [state.pastedKey, copy]);
 
   const handleCopyKey = useCallback(async () => {
-    if (!apiKey) return;
+    if (!state.apiKey) return;
     try {
-      await navigator.clipboard.writeText(apiKey);
-      setCopyMsg(copy.copied);
-      setTimeout(() => setCopyMsg(""), 2000);
+      await navigator.clipboard.writeText(state.apiKey);
+      dispatch({ type: "patch", patch: { copyMsg: copy.copied } });
+      setTimeout(() => dispatch({ type: "patch", patch: { copyMsg: "" } }), 2000);
     } catch {
-      setCopyMsg(copy.copyFailed);
-      setTimeout(() => setCopyMsg(""), 2000);
+      dispatch({ type: "patch", patch: { copyMsg: copy.copyFailed } });
+      setTimeout(() => dispatch({ type: "patch", patch: { copyMsg: "" } }), 2000);
     }
-  }, [apiKey, copy]);
+  }, [state.apiKey, copy]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -187,30 +229,30 @@ export default function KeysPage() {
           <p className="text-sm font-mono text-muted leading-relaxed max-w-2xl">{copy.lead}</p>
         </div>
 
-        {!apiKey && (
+        {!state.apiKey && (
           <TechBorder className="w-full">
             <div className="p-6 space-y-5">
               {/* Tab switcher */}
               <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
-                <button
-                  onClick={() => setMode("generate")}
-                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                    mode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
-                  } transition-colors`}
-                >
-                  {copy.tabGenerate}
-                </button>
-                <button
-                  onClick={() => setMode("paste")}
-                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                    mode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
-                  } transition-colors`}
-                >
-                  {copy.tabPaste}
-                </button>
-              </div>
+                  <button
+                    onClick={() => dispatch({ type: "patch", patch: { mode: "generate" } })}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+                      state.mode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
+                    } transition-colors`}
+                  >
+                    {copy.tabGenerate}
+                  </button>
+                  <button
+                    onClick={() => dispatch({ type: "patch", patch: { mode: "paste" } })}
+                    className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+                      state.mode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
+                    } transition-colors`}
+                  >
+                    {copy.tabPaste}
+                  </button>
+                </div>
 
-              {mode === "generate" ? (
+              {state.mode === "generate" ? (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-mono text-subtle uppercase" htmlFor="keys-agent-name">
@@ -218,25 +260,25 @@ export default function KeysPage() {
                     </label>
                     <input
                       id="keys-agent-name"
-                      value={agentName}
-                      onChange={(e) => setAgentName(e.target.value)}
+                      value={state.agentName}
+                      onChange={(e) => dispatch({ type: "patch", patch: { agentName: e.target.value } })}
                       placeholder={copy.agentNamePlaceholder}
                       autoComplete="off"
                       spellCheck={false}
                       className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
-                      disabled={status === "loading"}
+                      disabled={state.status === "loading"}
                     />
                   </div>
                   <button
                     onClick={handleGenerate}
-                    disabled={status === "loading"}
+                    disabled={state.status === "loading"}
                     className={`w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary ${
-                      status === "loading"
+                      state.status === "loading"
                         ? "bg-surface-alt text-subtle cursor-not-allowed"
                         : "bg-primary text-bg hover:bg-text hover:text-bg"
                     } transition-colors`}
                   >
-                    {status === "loading" ? copy.generatingBtn : copy.generateBtn}
+                    {state.status === "loading" ? copy.generatingBtn : copy.generateBtn}
                   </button>
                 </div>
               ) : (
@@ -247,44 +289,44 @@ export default function KeysPage() {
                     </label>
                     <input
                       id="keys-paste-key"
-                      value={pastedKey}
-                      onChange={(e) => setPastedKey(e.target.value)}
+                      value={state.pastedKey}
+                      onChange={(e) => dispatch({ type: "patch", patch: { pastedKey: e.target.value } })}
                       placeholder={copy.pastePlaceholder}
                       autoComplete="off"
                       spellCheck={false}
                       className="w-full h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
-                      disabled={status === "loading"}
+                      disabled={state.status === "loading"}
                     />
                   </div>
                   <button
                     onClick={handleValidate}
-                    disabled={status === "loading"}
+                    disabled={state.status === "loading"}
                     className={`w-full h-10 font-bold uppercase tracking-wider text-xs border border-primary ${
-                      status === "loading"
+                      state.status === "loading"
                         ? "bg-surface-alt text-subtle cursor-not-allowed"
                         : "bg-primary text-bg hover:bg-text hover:text-bg"
                     } transition-colors`}
                   >
-                    {status === "loading" ? copy.validatingBtn : copy.validateBtn}
+                    {state.status === "loading" ? copy.validatingBtn : copy.validateBtn}
                   </button>
                 </div>
               )}
 
-              {message && (
+              {state.message && (
                 <div
                   className={`text-xs font-mono ${
-                    status === "error" ? "text-error" : status === "success" ? "text-success" : "text-subtle"
+                    state.status === "error" ? "text-error" : state.status === "success" ? "text-success" : "text-subtle"
                   }`}
                   aria-live="polite"
                 >
-                  {message}
+                  {state.message}
                 </div>
               )}
             </div>
           </TechBorder>
         )}
 
-        {apiKey && (
+        {state.apiKey && (
           <TechBorder className="w-full">
             <div className="p-6 space-y-5">
               <div className="text-xs font-mono uppercase tracking-widest text-primary">
@@ -292,23 +334,23 @@ export default function KeysPage() {
               </div>
               <div className="flex items-center gap-3 bg-bg border border-border p-3">
                 <code className="flex-1 font-mono text-sm text-text break-all">
-                  {maskApiKey(apiKey)}
+                  {maskApiKey(state.apiKey)}
                 </code>
                 <button
                   onClick={handleCopyKey}
                   className="inline-flex items-center gap-2 border border-border px-3 py-1.5 text-xs font-mono font-bold uppercase text-text hover:border-border-strong transition-colors"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  {copyMsg || "Copy"}
+                  {state.copyMsg || "Copy"}
                 </button>
               </div>
               <div className="text-xs font-mono text-warning">
                 {copy.keyWarning}
               </div>
 
-              {message && (
+              {state.message && (
                 <div className="text-xs font-mono text-success" aria-live="polite">
-                  {message}
+                  {state.message}
                 </div>
               )}
 

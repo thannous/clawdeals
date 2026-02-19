@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { getStoredApiKey, getStoredLastEventId, setStoredLastEventId, clearStoredLastEventId } from "./storage";
 import { SseParser } from "./sse-parser";
 import { buildApiUrl } from "./api";
@@ -31,17 +31,59 @@ function buildStreamUrl({ lastEventId }: { lastEventId?: string | null }) {
   return buildApiUrl(`/v1/events/stream?${params.toString()}`);
 }
 
+type EventsViewerState = {
+  apiKey: string | null;
+  connected: boolean;
+  connectionState: "idle" | "connecting" | "connected" | "reconnecting" | "error";
+  events: UiEvent[];
+  error: string;
+  paused: boolean;
+  missedCount: number;
+  typeFilter: string;
+};
+
+type EventsViewerAction =
+  | { type: "patch"; patch: Partial<EventsViewerState> }
+  | { type: "appendEvents"; incoming: UiEvent[] }
+  | { type: "clearEvents" }
+  | { type: "incrementMissed" }
+  | { type: "resetMissed" };
+
+const INITIAL_STATE: EventsViewerState = {
+  apiKey: null,
+  connected: false,
+  connectionState: "idle",
+  events: [],
+  error: "",
+  paused: false,
+  missedCount: 0,
+  typeFilter: ""
+};
+
+function eventsViewerReducer(state: EventsViewerState, action: EventsViewerAction): EventsViewerState {
+  switch (action.type) {
+    case "patch":
+      return { ...state, ...action.patch };
+    case "appendEvents": {
+      const merged = [...state.events, ...action.incoming];
+      return {
+        ...state,
+        events: merged.length > MAX_EVENTS ? merged.slice(merged.length - MAX_EVENTS) : merged
+      };
+    }
+    case "clearEvents":
+      return { ...state, events: [] };
+    case "incrementMissed":
+      return { ...state, missedCount: state.missedCount + 1 };
+    case "resetMissed":
+      return { ...state, missedCount: 0 };
+    default:
+      return state;
+  }
+}
+
 export default function EventsViewerPage() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [connected, setConnected] = useState(false);
-  const [connectionState, setConnectionState] = useState<"idle" | "connecting" | "connected" | "reconnecting" | "error">(
-    "idle"
-  );
-  const [events, setEvents] = useState<UiEvent[]>([]);
-  const [error, setError] = useState<string>("");
-  const [paused, setPaused] = useState(false);
-  const [missedCount, setMissedCount] = useState(0);
-  const [typeFilter, setTypeFilter] = useState("");
+  const [state, dispatch] = useReducer(eventsViewerReducer, INITIAL_STATE);
 
   const abortRef = useRef<AbortController | null>(null);
   const reconnectTimerRef = useRef<any>(null);
@@ -51,24 +93,18 @@ export default function EventsViewerPage() {
   const lastEventIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setApiKey(getStoredApiKey());
+    dispatch({ type: "patch", patch: { apiKey: getStoredApiKey() } });
     lastEventIdRef.current = getStoredLastEventId();
   }, []);
 
   const filtered = useMemo(() => {
-    const q = typeFilter.trim().toLowerCase();
-    if (!q) return events;
-    return events.filter((e) => String(e.parsed?.type || e.event || "").toLowerCase().includes(q));
-  }, [events, typeFilter]);
+    const q = state.typeFilter.trim().toLowerCase();
+    if (!q) return state.events;
+    return state.events.filter((e) => String(e.parsed?.type || e.event || "").toLowerCase().includes(q));
+  }, [state.events, state.typeFilter]);
 
   const addEvents = useCallback((incoming: UiEvent[]) => {
-    setEvents((prev) => {
-      const merged = [...prev, ...incoming];
-      if (merged.length > MAX_EVENTS) {
-        return merged.slice(merged.length - MAX_EVENTS);
-      }
-      return merged;
-    });
+    dispatch({ type: "appendEvents", incoming });
   }, []);
 
   const disconnect = useCallback(() => {
@@ -78,20 +114,29 @@ export default function EventsViewerPage() {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
-    setConnected(false);
-    setConnectionState("idle");
+    dispatch({ type: "patch", patch: { connected: false, connectionState: "idle" } });
   }, []);
 
   const connect = useCallback(async () => {
-    if (!apiKey) {
-      setConnectionState("error");
-      setError("Missing API key. Go to /start.");
+    if (!state.apiKey) {
+      dispatch({
+        type: "patch",
+        patch: {
+          connectionState: "error",
+          error: "Missing API key. Go to /start."
+        }
+      });
       return;
     }
 
-    setError("");
-    setConnectionState(connected ? "reconnecting" : "connecting");
-    setConnected(true);
+    dispatch({
+      type: "patch",
+      patch: {
+        error: "",
+        connectionState: state.connected ? "reconnecting" : "connecting",
+        connected: true
+      }
+    });
 
     abortRef.current?.abort();
     const abort = new AbortController();
@@ -104,9 +149,9 @@ export default function EventsViewerPage() {
     try {
       const res = await fetch(url, {
         method: "GET",
-        signal: abort.signal,
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
+          signal: abort.signal,
+          headers: {
+          Authorization: `Bearer ${state.apiKey}`,
           Accept: "text/event-stream"
         }
       });
@@ -122,7 +167,7 @@ export default function EventsViewerPage() {
         throw new Error("Invalid stream response (missing text/event-stream).");
       }
 
-      setConnectionState("connected");
+      dispatch({ type: "patch", patch: { connectionState: "connected" } });
       reconnectDelayRef.current = INITIAL_RECONNECT_DELAY_MS;
 
       const reader = res.body?.getReader();
@@ -165,7 +210,7 @@ export default function EventsViewerPage() {
 
           if (pausedRef.current) {
             bufferRef.current.push(ev);
-            setMissedCount((c) => c + 1);
+            dispatch({ type: "incrementMissed" });
           } else {
             uiEvents.push(ev);
           }
@@ -179,8 +224,13 @@ export default function EventsViewerPage() {
       }
     } catch (e: any) {
       if (abort.signal.aborted) return;
-      setConnectionState("reconnecting");
-      setError(e?.message || "Stream error.");
+      dispatch({
+        type: "patch",
+        patch: {
+          connectionState: "reconnecting",
+          error: e?.message || "Stream error."
+        }
+      });
 
       const delay = reconnectDelayRef.current;
       reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY_MS);
@@ -188,7 +238,7 @@ export default function EventsViewerPage() {
         connect();
       }, delay);
     }
-  }, [apiKey, connected, addEvents]);
+  }, [state.apiKey, state.connected, addEvents]);
 
   useEffect(() => {
     return () => disconnect();
@@ -196,11 +246,11 @@ export default function EventsViewerPage() {
 
   const handlePauseToggle = useCallback(() => {
     pausedRef.current = !pausedRef.current;
-    setPaused(pausedRef.current);
+    dispatch({ type: "patch", patch: { paused: pausedRef.current } });
     if (!pausedRef.current && bufferRef.current.length > 0) {
       addEvents(bufferRef.current);
       bufferRef.current = [];
-      setMissedCount(0);
+      dispatch({ type: "resetMissed" });
     }
   }, [addEvents]);
 
@@ -221,31 +271,31 @@ export default function EventsViewerPage() {
             </Link>
             <button
               onClick={() => connect()}
-              disabled={!apiKey || connectionState === "connecting" || connectionState === "connected"}
+              disabled={!state.apiKey || state.connectionState === "connecting" || state.connectionState === "connected"}
               className={`border px-3 py-1 text-xs font-mono ${
-                connectionState === "connected"
+                state.connectionState === "connected"
                   ? "border-success text-success"
                   : "border-primary text-primary hover:bg-primary hover:text-bg"
               }`}
             >
-              {connectionState === "connected" ? "Connected" : "Connect"}
+              {state.connectionState === "connected" ? "Connected" : "Connect"}
             </button>
             <button
               onClick={disconnect}
               className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong"
-              disabled={!connected}
+              disabled={!state.connected}
             >
               Disconnect
             </button>
             <button
               onClick={handlePauseToggle}
               className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong"
-              disabled={!connected}
+              disabled={!state.connected}
             >
-              {paused ? `Resume (${missedCount})` : "Pause"}
+              {state.paused ? `Resume (${state.missedCount})` : "Pause"}
             </button>
             <button
-              onClick={() => setEvents([])}
+              onClick={() => dispatch({ type: "clearEvents" })}
               className="border border-border px-3 py-1 text-xs font-mono hover:border-border-strong"
             >
               Clear
@@ -257,8 +307,8 @@ export default function EventsViewerPage() {
               Reset cursor
             </button>
             <input
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              value={state.typeFilter}
+              onChange={(e) => dispatch({ type: "patch", patch: { typeFilter: e.target.value } })}
               placeholder="filter: watchlist.match"
               aria-label="Filter event type"
               name="type_filter"
@@ -273,24 +323,24 @@ export default function EventsViewerPage() {
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-8 space-y-4">
-        {!apiKey && (
+        {!state.apiKey && (
           <div className="border border-border bg-bg p-5 text-xs font-mono text-subtle">
             Missing API key. Go to <Link href="/start" className="text-primary hover:underline">/start</Link>.
           </div>
         )}
 
-        {error && (
+        {state.error && (
           <div className="border border-error/50 bg-error/5 p-4 text-xs font-mono text-error-muted">
-            {error}
+            {state.error}
           </div>
         )}
 
         <div className="border border-border bg-surface p-4 text-xs font-mono text-subtle flex flex-wrap gap-4 items-center">
           <span>
-            state: <span className="text-text">{connectionState}</span>
+            state: <span className="text-text">{state.connectionState}</span>
           </span>
           <span>
-            events: <span className="text-text">{events.length}</span>
+            events: <span className="text-text">{state.events.length}</span>
           </span>
           <span>
             cursor: <span className="text-text">{lastEventIdRef.current || "none"}</span>

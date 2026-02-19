@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useReducer, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 
 import { apiRequest, maskApiKey } from "../api";
@@ -11,6 +11,38 @@ type Props = {
   agentMe: AgentMeResponse | null;
   hasOwnerSession: boolean;
 };
+
+type FirstWinState = {
+  keyRevealed: boolean;
+  nameInput: string;
+  nameStatus: "idle" | "saving" | "saved" | "error";
+  nameError: string | null;
+  savedName: string | null;
+  devOpen: boolean;
+  copiedField: string | null;
+};
+
+type FirstWinAction = {
+  type: "patch";
+  patch: Partial<FirstWinState>;
+};
+
+const INITIAL_STATE: FirstWinState = {
+  keyRevealed: false,
+  nameInput: "",
+  nameStatus: "idle",
+  nameError: null,
+  savedName: null,
+  devOpen: false,
+  copiedField: null
+};
+
+function firstWinReducer(state: FirstWinState, action: FirstWinAction): FirstWinState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
 
 export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props) {
   const t = useTranslations("connect");
@@ -24,7 +56,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
   const dealsEndpoint = joinUrl(apiBase, "/v1/deals?limit=10");
 
   const masked = apiKey ? maskApiKey(apiKey) : null;
-  const [keyRevealed, setKeyRevealed] = useState(false);
+  const [state, dispatch] = useReducer(firstWinReducer, INITIAL_STATE);
 
   const curlSnippet = apiKey
     ? `curl -sS \\\n  -H "Authorization: Bearer ${apiKey}" \\\n  "${dealsEndpoint}"`
@@ -41,33 +73,25 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
     : null;
 
   const DEFAULT_NAMES = ["New Agent", "Nouvel agent"];
-  const [nameInput, setNameInput] = useState("");
-  const [nameStatus, setNameStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [nameError, setNameError] = useState<string | null>(null);
-  const [savedName, setSavedName] = useState<string | null>(null);
   const currentName = agentMe?.name || null;
-  const displayName = savedName || currentName;
+  const displayName = state.savedName || currentName;
   const isGenericName = displayName ? DEFAULT_NAMES.includes(displayName) : true;
   const needsNaming = !displayName || isGenericName;
 
-  const [devOpen, setDevOpen] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
-
-  const handleCopy = useCallback(async (text: string, field: string) => {
+  const handleCopy = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
+      dispatch({ type: "patch", patch: { copiedField: field } });
+      setTimeout(() => dispatch({ type: "patch", patch: { copiedField: null } }), 2000);
     } catch {
       // ignore
     }
-  }, []);
+  };
 
-  const handleSaveName = useCallback(async () => {
-    const trimmed = nameInput.trim();
+  const handleSaveName = async () => {
+    const trimmed = state.nameInput.trim();
     if (!trimmed) return;
-    setNameStatus("saving");
-    setNameError(null);
+    dispatch({ type: "patch", patch: { nameStatus: "saving", nameError: null } });
     try {
       await apiRequest({
         path: "/v1/agents/me",
@@ -75,25 +99,35 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
         apiKey: apiKey || undefined,
         body: { name: trimmed }
       });
-      setNameStatus("saved");
-      setSavedName(trimmed);
+      dispatch({
+        type: "patch",
+        patch: {
+          nameStatus: "saved",
+          savedName: trimmed
+        }
+      });
     } catch (err: any) {
-      setNameStatus("error");
+      let nextError = t("step.firstwin.nameErrors.saveFailed");
       const code = String(err?.code || "");
       const message = String(err?.message || "");
       if (code === "VALIDATION_ERROR") {
         if (message.includes("name must be 80 characters or less")) {
-          setNameError(t("step.firstwin.nameErrors.tooLong"));
+          nextError = t("step.firstwin.nameErrors.tooLong");
         } else {
-          setNameError(t("step.firstwin.nameErrors.invalid"));
+          nextError = t("step.firstwin.nameErrors.invalid");
         }
       } else if (code === "UNAUTHORIZED" || err?.status === 401) {
-        setNameError(t("step.firstwin.nameErrors.unauthorized"));
-      } else {
-        setNameError(t("step.firstwin.nameErrors.saveFailed"));
+        nextError = t("step.firstwin.nameErrors.unauthorized");
       }
+      dispatch({
+        type: "patch",
+        patch: {
+          nameStatus: "error",
+          nameError: nextError
+        }
+      });
     }
-  }, [nameInput, apiKey, t]);
+  };
 
   return (
     <div className="space-y-8">
@@ -145,22 +179,22 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
           )}
 
           {/* Key display + action button */}
-          {keyRevealed ? (
+          {state.keyRevealed ? (
             <div className="space-y-3">
               <pre className="text-sm font-mono text-text bg-bg border border-border p-4 overflow-x-auto select-all break-all">
                 {apiKey}
               </pre>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => handleCopy(apiKey, "key")}
-                  className="border border-primary bg-primary text-bg px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
-                >
-                  {copiedField === "key" ? t("common.copied") : t("step.firstwin.copyKeyFull")}
-                </button>
-                <button
-                  onClick={() => setKeyRevealed(false)}
-                  className="border border-border px-5 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
-                >
+                  <button
+                    onClick={() => handleCopy(apiKey, "key")}
+                    className="border border-primary bg-primary text-bg px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+                  >
+                    {state.copiedField === "key" ? t("common.copied") : t("step.firstwin.copyKeyFull")}
+                  </button>
+                  <button
+                    onClick={() => dispatch({ type: "patch", patch: { keyRevealed: false } })}
+                    className="border border-border px-5 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+                  >
                   {t("step.firstwin.hideKey")}
                 </button>
               </div>
@@ -174,7 +208,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
                 {masked}
               </pre>
               <button
-                onClick={() => setKeyRevealed(true)}
+                onClick={() => dispatch({ type: "patch", patch: { keyRevealed: true } })}
                 className="border border-primary bg-primary text-bg px-5 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
               >
                 {t("step.firstwin.revealKey")}
@@ -183,7 +217,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
           )}
 
           {/* Agent naming — inline, minimal */}
-          {needsNaming && !savedName ? (
+          {needsNaming && !state.savedName ? (
             <div className="border-t border-border pt-6 space-y-2">
               <label htmlFor="agent-name-input" className="text-xs font-mono text-subtle uppercase tracking-wider">
                 {t("step.firstwin.agentName")}
@@ -191,33 +225,33 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
               <div className="flex gap-2">
                 <input
                   id="agent-name-input"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
+                  value={state.nameInput}
+                  onChange={(e) => dispatch({ type: "patch", patch: { nameInput: e.target.value } })}
                   placeholder={t("step.firstwin.namePlaceholder")}
                   maxLength={80}
                   autoComplete="off"
                   spellCheck={false}
-                  aria-invalid={nameStatus === "error" ? "true" : "false"}
-                  aria-describedby={nameError ? "agent-name-error" : undefined}
+                  aria-invalid={state.nameStatus === "error" ? "true" : "false"}
+                  aria-describedby={state.nameError ? "agent-name-error" : undefined}
                   className="flex-1 h-9 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
-                  disabled={nameStatus === "saving"}
+                  disabled={state.nameStatus === "saving"}
                   onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
                 />
                 <button
                   onClick={handleSaveName}
-                  disabled={!nameInput.trim() || nameStatus === "saving"}
+                  disabled={!state.nameInput.trim() || state.nameStatus === "saving"}
                   className={`h-9 px-4 text-xs font-bold uppercase tracking-widest border border-primary ${
-                    !nameInput.trim() || nameStatus === "saving"
+                    !state.nameInput.trim() || state.nameStatus === "saving"
                       ? "bg-surface-alt text-subtle cursor-not-allowed"
                       : "bg-primary text-bg hover:bg-text hover:text-bg"
                   } transition-colors`}
                 >
-                  {nameStatus === "saving" ? "..." : t("step.firstwin.save")}
+                  {state.nameStatus === "saving" ? "..." : t("step.firstwin.save")}
                 </button>
               </div>
-              {nameError && (
+              {state.nameError && (
                 <div id="agent-name-error" className="text-xs font-mono text-error" aria-live="polite">
-                  {nameError}
+                  {state.nameError}
                 </div>
               )}
             </div>
@@ -291,11 +325,11 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
       {/* Developer resources (collapsible) */}
       <div className="space-y-2">
         <button
-          onClick={() => setDevOpen((prev) => !prev)}
+          onClick={() => dispatch({ type: "patch", patch: { devOpen: !state.devOpen } })}
           className="flex items-center gap-2 text-xs font-mono text-subtle hover:text-text transition-colors"
         >
           <svg
-            className={`w-3 h-3 transition-transform ${devOpen ? "rotate-90" : ""}`}
+            className={`w-3 h-3 transition-transform ${state.devOpen ? "rotate-90" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -306,7 +340,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
           {t("step.firstwin.resources")}
         </button>
 
-        {devOpen && (
+        {state.devOpen && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             {/* curl snippet */}
             {curlSnippet && (
@@ -321,7 +355,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
                   onClick={() => handleCopy(curlSnippet, "curl")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "curl" ? t("common.copied") : t("step.firstwin.copyCurl")}
+                  {state.copiedField === "curl" ? t("common.copied") : t("step.firstwin.copyCurl")}
                 </button>
               </div>
             )}
@@ -339,7 +373,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
                   onClick={() => handleCopy(curlPostSnippet, "curlPost")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "curlPost" ? t("common.copied") : t("step.firstwin.copyCurl")}
+                  {state.copiedField === "curlPost" ? t("common.copied") : t("step.firstwin.copyCurl")}
                 </button>
               </div>
             )}
@@ -360,7 +394,7 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
                   onClick={() => handleCopy(openClawSnippet, "openclaw")}
                   className="border border-border px-2 py-1 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
                 >
-                  {copiedField === "openclaw" ? t("common.copied") : t("step.firstwin.copyOpenClaw")}
+                  {state.copiedField === "openclaw" ? t("common.copied") : t("step.firstwin.copyOpenClaw")}
                 </button>
               </div>
             )}

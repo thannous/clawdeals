@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import { getBrowserSupabaseClient } from "./supabase-client";
 
@@ -10,13 +10,52 @@ function resolveQueryParam(value: unknown): string {
   return "";
 }
 
+type ResetPasswordState = {
+  password: string;
+  confirmPassword: string;
+  status: "checking" | "ready" | "saving" | "success" | "error";
+  error: string | null;
+  notice: string | null;
+};
+
+type ResetPasswordAction =
+  | { type: "setPassword"; value: string }
+  | { type: "setConfirmPassword"; value: string }
+  | { type: "setReady" }
+  | { type: "setSaving" }
+  | { type: "setSuccess"; notice: string }
+  | { type: "setError"; error: string };
+
+const INITIAL_STATE: ResetPasswordState = {
+  password: "",
+  confirmPassword: "",
+  status: "checking",
+  error: null,
+  notice: null
+};
+
+function resetPasswordReducer(state: ResetPasswordState, action: ResetPasswordAction): ResetPasswordState {
+  switch (action.type) {
+    case "setPassword":
+      return { ...state, password: action.value };
+    case "setConfirmPassword":
+      return { ...state, confirmPassword: action.value };
+    case "setReady":
+      return { ...state, status: "ready", error: null };
+    case "setSaving":
+      return { ...state, status: "saving", error: null, notice: null };
+    case "setSuccess":
+      return { ...state, status: "success", error: null, notice: action.notice };
+    case "setError":
+      return { ...state, status: "error", error: action.error };
+    default:
+      return state;
+  }
+}
+
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [state, setState] = useState<"checking" | "ready" | "saving" | "success" | "error">("checking");
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(resetPasswordReducer, INITIAL_STATE);
   const hasCheckedRef = useRef(false);
 
   useEffect(() => {
@@ -47,10 +86,9 @@ export default function ResetPasswordPage() {
           throw new Error("Recovery session not found. Please open the reset link from your email.");
         }
 
-        setState("ready");
+        dispatch({ type: "setReady" });
       } catch (err: any) {
-        setState("error");
-        setError(String(err?.message || "Invalid or expired reset link"));
+        dispatch({ type: "setError", error: String(err?.message || "Invalid or expired reset link") });
       }
     }
 
@@ -58,35 +96,29 @@ export default function ResetPasswordPage() {
   }, [router]);
 
   const onUpdatePassword = useCallback(async () => {
-    if (state === "saving") return;
-    if (password.length < 8) {
-      setState("error");
-      setError("Password must be at least 8 characters.");
+    if (state.status === "saving") return;
+    if (state.password.length < 8) {
+      dispatch({ type: "setError", error: "Password must be at least 8 characters." });
       return;
     }
-    if (password !== confirmPassword) {
-      setState("error");
-      setError("Passwords do not match.");
+    if (state.password !== state.confirmPassword) {
+      dispatch({ type: "setError", error: "Passwords do not match." });
       return;
     }
 
-    setState("saving");
-    setError(null);
-    setNotice(null);
+    dispatch({ type: "setSaving" });
 
     try {
       const supabase = getBrowserSupabaseClient();
-      const updated = await supabase.auth.updateUser({ password });
+      const updated = await supabase.auth.updateUser({ password: state.password });
       if (updated.error) throw updated.error;
 
       await supabase.auth.signOut().catch(() => {});
-      setState("success");
-      setNotice("Password updated. You can now sign in.");
+      dispatch({ type: "setSuccess", notice: "Password updated. You can now sign in." });
     } catch (err: any) {
-      setState("error");
-      setError(String(err?.message || "Failed to update password"));
+      dispatch({ type: "setError", error: String(err?.message || "Failed to update password") });
     }
-  }, [confirmPassword, password, state]);
+  }, [state.confirmPassword, state.password, state.status]);
 
   return (
     <div data-testid="auth-reset-page" className="min-h-screen bg-bg relative overflow-hidden">
@@ -105,9 +137,9 @@ export default function ResetPasswordPage() {
               </p>
             </div>
 
-            {state === "checking" && <div className="text-xs font-mono text-subtle">Validating reset link...</div>}
+            {state.status === "checking" && <div className="text-xs font-mono text-subtle">Validating reset link...</div>}
 
-            {(state === "ready" || state === "saving" || state === "error") && (
+            {(state.status === "ready" || state.status === "saving" || state.status === "error") && (
               <div className="space-y-3">
                 <div className="space-y-2">
                   <label className="block text-xs font-mono text-subtle uppercase" htmlFor="auth-reset-password">
@@ -121,8 +153,8 @@ export default function ResetPasswordPage() {
                     autoCorrect="off"
                     spellCheck={false}
                     data-testid="auth-reset-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={state.password}
+                    onChange={(e) => dispatch({ type: "setPassword", value: e.target.value })}
                     placeholder="••••••••"
                     autoComplete="new-password"
                     className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
@@ -144,8 +176,8 @@ export default function ResetPasswordPage() {
                     autoCorrect="off"
                     spellCheck={false}
                     data-testid="auth-reset-password-confirm"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={state.confirmPassword}
+                    onChange={(e) => dispatch({ type: "setConfirmPassword", value: e.target.value })}
                     placeholder="••••••••"
                     autoComplete="new-password"
                     className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
@@ -155,28 +187,28 @@ export default function ResetPasswordPage() {
                 <button
                   data-testid="auth-reset-submit"
                   onClick={onUpdatePassword}
-                  disabled={state === "saving"}
+                  disabled={state.status === "saving"}
                   className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                 >
-                  {state === "saving" ? "Updating..." : "Update password"}
+                  {state.status === "saving" ? "Updating..." : "Update password"}
                 </button>
               </div>
             )}
 
-            {error && (
+            {state.error && (
               <div data-testid="auth-reset-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
                 <div className="text-xs font-mono text-error">Error</div>
-                <div className="text-xs font-mono text-muted mt-1">{error}</div>
+                <div className="text-xs font-mono text-muted mt-1">{state.error}</div>
               </div>
             )}
 
-            {notice && (
+            {state.notice && (
               <div
                 data-testid="auth-reset-notice"
                 className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3"
               >
                 <div className="text-xs font-mono text-secondary">Success</div>
-                <div className="text-xs font-mono text-muted mt-1">{notice}</div>
+                <div className="text-xs font-mono text-muted mt-1">{state.notice}</div>
               </div>
             )}
 

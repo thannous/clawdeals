@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 
 import {
   clearStoredOwnerAuth,
@@ -26,39 +26,84 @@ function formatExpiresAt(expiresAt: string) {
   return EXPIRES_FORMATTER.format(d);
 }
 
-export default function LegacyLoginPage() {
-  const [email, setEmail] = useState(() => getStoredOwnerEmail() || "");
-  const [sessionId, setSessionId] = useState<string | null>(() => getStoredOwnerSessionId());
-  const [submitState, setSubmitState] = useState<"idle" | "loading" | "sent" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(() => getStoredOwnerSessionToken());
-  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+type LegacyLoginState = {
+  email: string;
+  sessionId: string | null;
+  submitState: "idle" | "loading" | "sent" | "error";
+  error: string | null;
+  token: string | null;
+  expiresAt: string | null;
+};
 
-  const canSubmit = useMemo(() => email.trim().length > 0 && submitState !== "loading", [email, submitState]);
+type LegacyLoginAction = {
+  type: "patch";
+  patch: Partial<LegacyLoginState>;
+};
+
+function initLegacyLoginState(): LegacyLoginState {
+  return {
+    email: getStoredOwnerEmail() || "",
+    sessionId: getStoredOwnerSessionId(),
+    submitState: "idle",
+    error: null,
+    token: getStoredOwnerSessionToken(),
+    expiresAt: null
+  };
+}
+
+function legacyLoginReducer(state: LegacyLoginState, action: LegacyLoginAction): LegacyLoginState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
+
+export default function LegacyLoginPage() {
+  const [state, dispatch] = useReducer(legacyLoginReducer, undefined, initLegacyLoginState);
+
+  const canSubmit = useMemo(
+    () => state.email.trim().length > 0 && state.submitState !== "loading",
+    [state.email, state.submitState]
+  );
 
   const resetAuth = useCallback(() => {
     void fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
     clearStoredOwnerAuth();
-    setSessionId(null);
-    setToken(null);
-    setExpiresAt(null);
-    setSubmitState("idle");
-    setError(null);
+    dispatch({
+      type: "patch",
+      patch: {
+        sessionId: null,
+        token: null,
+        expiresAt: null,
+        submitState: "idle",
+        error: null
+      }
+    });
   }, []);
 
   const onSend = useCallback(async () => {
-    if (!email.trim()) {
-      setError("Enter an email address.");
-      setSubmitState("error");
+    if (!state.email.trim()) {
+      dispatch({
+        type: "patch",
+        patch: {
+          error: "Enter an email address.",
+          submitState: "error"
+        }
+      });
       return;
     }
 
-    setSubmitState("loading");
-    setError(null);
-    setToken(null);
-    setExpiresAt(null);
+    dispatch({
+      type: "patch",
+      patch: {
+        submitState: "loading",
+        error: null,
+        token: null,
+        expiresAt: null
+      }
+    });
 
-    setStoredOwnerEmail(email.trim());
+    setStoredOwnerEmail(state.email.trim());
 
     try {
       const res = await fetch("/api/v1/auth/login:start", {
@@ -66,7 +111,7 @@ export default function LegacyLoginPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email: email.trim() })
+        body: JSON.stringify({ email: state.email.trim() })
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -82,19 +127,34 @@ export default function LegacyLoginPage() {
       }
 
       setStoredOwnerSessionId(nextSessionId);
-      setSessionId(nextSessionId);
+      dispatch({
+        type: "patch",
+        patch: {
+          sessionId: nextSessionId
+        }
+      });
       if (nextToken) {
         setStoredOwnerSessionToken(nextToken);
       }
 
-      setToken(nextToken);
-      setExpiresAt(nextExpires);
-      setSubmitState("sent");
+      dispatch({
+        type: "patch",
+        patch: {
+          token: nextToken,
+          expiresAt: nextExpires,
+          submitState: "sent"
+        }
+      });
     } catch (err: any) {
-      setError(String(err?.message || "Failed to send login link"));
-      setSubmitState("error");
+      dispatch({
+        type: "patch",
+        patch: {
+          error: String(err?.message || "Failed to send login link"),
+          submitState: "error"
+        }
+      });
     }
-  }, [email]);
+  }, [state.email]);
 
   return (
     <div data-testid="auth-login-page" className="min-h-screen bg-bg relative overflow-hidden">
@@ -126,50 +186,50 @@ export default function LegacyLoginPage() {
                 autoCorrect="off"
                 spellCheck={false}
                 data-testid="auth-login-email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={state.email}
+                onChange={(e) => dispatch({ type: "patch", patch: { email: e.target.value } })}
                 placeholder="you@example.com…"
                 autoComplete="email"
                 className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
               />
             </div>
 
-            {sessionId && (
+            {state.sessionId && (
               <div className="text-xs font-mono text-subtle">
                 Session ID:{" "}
                 <span className="text-text" data-testid="auth-login-session-id">
-                  {sessionId}
+                  {state.sessionId}
                 </span>
               </div>
             )}
 
-            {error && (
+            {state.error && (
               <div data-testid="auth-login-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
                 <div className="text-xs font-mono text-error">Error</div>
-                <div className="text-xs font-mono text-muted mt-1">{error}</div>
+                <div className="text-xs font-mono text-muted mt-1">{state.error}</div>
               </div>
             )}
 
-            {submitState === "sent" && (
+            {state.submitState === "sent" && (
               <div data-testid="auth-login-sent" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 space-y-2">
                 <div className="text-xs font-mono text-secondary">Magic link sent</div>
                 <div className="text-xs font-mono text-muted">
                   Check your inbox for the login link. You can also verify manually below.
                 </div>
-                {expiresAt && (
-                  <div className="text-xs font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
+                {state.expiresAt && (
+                  <div className="text-xs font-mono text-subtle">Expires: {formatExpiresAt(state.expiresAt)}</div>
                 )}
-                {token && (
+                {state.token && (
                   <div className="text-xs font-mono text-text break-all" data-testid="auth-login-token">
-                    session_token={token}
+                    session_token={state.token}
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2">
                   <Link
                     data-testid="auth-login-verify-link"
                     href={
-                      sessionId
-                        ? `/auth/verify?session_id=${encodeURIComponent(sessionId)}${token ? `&token=${encodeURIComponent(token)}` : ""}`
+                      state.sessionId
+                        ? `/auth/verify?session_id=${encodeURIComponent(state.sessionId)}${state.token ? `&token=${encodeURIComponent(state.token)}` : ""}`
                         : "/auth/verify"
                     }
                     className="px-3 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
@@ -193,7 +253,7 @@ export default function LegacyLoginPage() {
                 disabled={!canSubmit}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
               >
-                {submitState === "loading" ? "Sending…" : "Send magic link"}
+                {state.submitState === "loading" ? "Sending…" : "Send magic link"}
               </button>
               <Link
                 href="/settings/account"

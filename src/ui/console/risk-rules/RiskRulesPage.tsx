@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useReducer } from "react";
 import { RISK_FLAG_VALUES } from "../../../shared/risk-rules";
 import { useRiskRules } from "./useRiskRules";
 import { useRiskRuleMutation } from "./useRiskRuleMutation";
@@ -18,22 +18,59 @@ function formatWindow(seconds: number) {
   return `${s}s`;
 }
 
+type RiskRulesState = {
+  draftByRuleId: Record<string, any>;
+  saveMessage: string | null;
+  runDry: boolean;
+  runRuleKey: string;
+  runMaxAgents: string;
+  unflagAgentId: string;
+  unflagFlag: string;
+  unflagReason: string;
+};
+
+type RiskRulesAction =
+  | { type: "patch"; patch: Partial<RiskRulesState> }
+  | { type: "setDraftField"; ruleId: string; key: string; value: any };
+
+const INITIAL_STATE: RiskRulesState = {
+  draftByRuleId: {},
+  saveMessage: null,
+  runDry: false,
+  runRuleKey: "",
+  runMaxAgents: "1000",
+  unflagAgentId: "",
+  unflagFlag: "restricted",
+  unflagReason: ""
+};
+
+function riskRulesReducer(state: RiskRulesState, action: RiskRulesAction): RiskRulesState {
+  switch (action.type) {
+    case "patch":
+      return { ...state, ...action.patch };
+    case "setDraftField":
+      return {
+        ...state,
+        draftByRuleId: {
+          ...state.draftByRuleId,
+          [action.ruleId]: {
+            ...(state.draftByRuleId[action.ruleId] || {}),
+            [action.key]: action.value
+          }
+        }
+      };
+    default:
+      return state;
+  }
+}
+
 export default function RiskRulesPage() {
   const { items, fetchState, error, refetch } = useRiskRules();
   const mutation = useRiskRuleMutation({ onSuccess: refetch });
   const runner = useRiskRulesRun();
   const unflag = useRiskRuleUnflag({ onSuccess: refetch });
 
-  const [draftByRuleId, setDraftByRuleId] = useState<Record<string, any>>({});
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-
-  const [runDry, setRunDry] = useState(false);
-  const [runRuleKey, setRunRuleKey] = useState("");
-  const [runMaxAgents, setRunMaxAgents] = useState("1000");
-
-  const [unflagAgentId, setUnflagAgentId] = useState("");
-  const [unflagFlag, setUnflagFlag] = useState("restricted");
-  const [unflagReason, setUnflagReason] = useState("");
+  const [state, dispatch] = useReducer(riskRulesReducer, INITIAL_STATE);
 
   const sortedItems = useMemo(
     () => [...items].sort((left: any, right: any) => String(left.rule_key).localeCompare(String(right.rule_key))),
@@ -60,27 +97,21 @@ export default function RiskRulesPage() {
       const ruleId = String(item.risk_rule_id);
       next[ruleId] = {
         ...(baseDraftByRuleId[ruleId] || {}),
-        ...(draftByRuleId[ruleId] || {})
+        ...(state.draftByRuleId[ruleId] || {})
       };
     }
     return next;
-  }, [baseDraftByRuleId, draftByRuleId, sortedItems]);
+  }, [baseDraftByRuleId, state.draftByRuleId, sortedItems]);
 
   const setDraftField = (ruleId: string, key: string, value: any) => {
-    setDraftByRuleId((prev) => ({
-      ...prev,
-      [ruleId]: {
-        ...(prev[ruleId] || {}),
-        [key]: value
-      }
-    }));
+    dispatch({ type: "setDraftField", ruleId, key, value });
   };
 
   const saveRule = async (rule: any) => {
     const draft = resolvedDraftByRuleId[rule.risk_rule_id];
     if (!draft) return;
 
-    setSaveMessage(null);
+    dispatch({ type: "patch", patch: { saveMessage: null } });
     try {
       await mutation.execute(rule.risk_rule_id, {
         enabled: Boolean(draft.enabled),
@@ -89,18 +120,18 @@ export default function RiskRulesPage() {
         cooldown_seconds: Number(draft.cooldown_seconds),
         flag: String(draft.flag || "")
       });
-      setSaveMessage(`Saved ${rule.rule_key}`);
+      dispatch({ type: "patch", patch: { saveMessage: `Saved ${rule.rule_key}` } });
     } catch {
       // handled in hook error state
     }
   };
 
   const runRules = async () => {
-    const maxAgents = Number.parseInt(runMaxAgents, 10);
+    const maxAgents = Number.parseInt(state.runMaxAgents, 10);
     try {
       await runner.execute({
-        dry_run: runDry,
-        rule_key: runRuleKey.trim() || null,
+        dry_run: state.runDry,
+        rule_key: state.runRuleKey.trim() || null,
         max_agents_per_rule: Number.isFinite(maxAgents) && maxAgents > 0 ? maxAgents : null
       });
     } catch {
@@ -111,11 +142,11 @@ export default function RiskRulesPage() {
   const submitUnflag = async () => {
     try {
       await unflag.execute({
-        agent_id: unflagAgentId.trim(),
-        flag: unflagFlag,
-        reason: unflagReason.trim()
+        agent_id: state.unflagAgentId.trim(),
+        flag: state.unflagFlag,
+        reason: state.unflagReason.trim()
       });
-      setUnflagReason("");
+      dispatch({ type: "patch", patch: { unflagReason: "" } });
     } catch {
       // handled by hook
     }
@@ -130,29 +161,29 @@ export default function RiskRulesPage() {
           <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-subtle">Run Engine</h2>
           <div className="grid gap-3 md:grid-cols-4">
             <label className="flex items-center gap-2 text-xs font-mono text-text">
+                <input
+                  type="checkbox"
+                  checked={state.runDry}
+                  onChange={(event) => dispatch({ type: "patch", patch: { runDry: event.target.checked } })}
+                  className="accent-primary"
+                />
+                Dry run
+              </label>
               <input
-                type="checkbox"
-                checked={runDry}
-                onChange={(event) => setRunDry(event.target.checked)}
-                className="accent-primary"
+                type="text"
+                value={state.runRuleKey}
+                onChange={(event) => dispatch({ type: "patch", patch: { runRuleKey: event.target.value } })}
+                placeholder="rule_key (optional)"
+                className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
               />
-              Dry run
-            </label>
-            <input
-              type="text"
-              value={runRuleKey}
-              onChange={(event) => setRunRuleKey(event.target.value)}
-              placeholder="rule_key (optional)"
-              className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
-            />
-            <input
-              type="number"
-              min={1}
-              value={runMaxAgents}
-              onChange={(event) => setRunMaxAgents(event.target.value)}
-              placeholder="max agents per rule"
-              className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
-            />
+              <input
+                type="number"
+                min={1}
+                value={state.runMaxAgents}
+                onChange={(event) => dispatch({ type: "patch", patch: { runMaxAgents: event.target.value } })}
+                placeholder="max agents per rule"
+                className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
+              />
             <button
               onClick={runRules}
               disabled={runner.submitState === "loading"}
@@ -274,7 +305,7 @@ export default function RiskRulesPage() {
           )}
 
           {mutation.error && <p className="text-xs font-mono text-error-muted">{mutation.error}</p>}
-          {saveMessage && <p className="text-xs font-mono text-green-300">{saveMessage}</p>}
+          {state.saveMessage && <p className="text-xs font-mono text-green-300">{state.saveMessage}</p>}
         </section>
 
         <section className="bg-surface border border-border rounded p-4 space-y-4">
@@ -282,14 +313,14 @@ export default function RiskRulesPage() {
           <div className="grid gap-3 md:grid-cols-4">
             <input
               type="text"
-              value={unflagAgentId}
-              onChange={(event) => setUnflagAgentId(event.target.value)}
+              value={state.unflagAgentId}
+              onChange={(event) => dispatch({ type: "patch", patch: { unflagAgentId: event.target.value } })}
               placeholder="agent_id"
               className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
             />
             <select
-              value={unflagFlag}
-              onChange={(event) => setUnflagFlag(event.target.value)}
+              value={state.unflagFlag}
+              onChange={(event) => dispatch({ type: "patch", patch: { unflagFlag: event.target.value } })}
               className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
             >
               {RISK_FLAG_VALUES.map((flag) => (
@@ -300,8 +331,8 @@ export default function RiskRulesPage() {
             </select>
             <input
               type="text"
-              value={unflagReason}
-              onChange={(event) => setUnflagReason(event.target.value)}
+              value={state.unflagReason}
+              onChange={(event) => dispatch({ type: "patch", patch: { unflagReason: event.target.value } })}
               placeholder="reason"
               className="px-3 py-2 text-xs font-mono bg-bg border border-border rounded text-text"
             />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { useTranslations } from "next-intl";
 import QRCode from "react-qr-code";
 
@@ -17,6 +17,82 @@ type Props = {
   onBack: () => void;
 };
 
+type StepVerifyState = {
+  verifyStatus: "idle" | "loading" | "done" | "error";
+  verifyError: string | null;
+  agentMe: AgentMeResponse | null;
+  exchangeStatus: "idle" | "loading" | "done" | "error";
+  exchangeError: string | null;
+  claimCopied: boolean;
+  claimQrOpen: boolean;
+  claimOpenMsg: string;
+  mcpPastedKey: string;
+  mcpCopied: boolean;
+};
+
+type StepVerifyAction =
+  | { type: "verifyLoading" }
+  | { type: "verifySuccess"; agentMe: AgentMeResponse }
+  | { type: "verifyFailure"; error: string }
+  | { type: "setAgentMe"; agentMe: AgentMeResponse }
+  | { type: "exchangeDone" }
+  | { type: "exchangeFailure"; error: string }
+  | { type: "setClaimCopied"; value: boolean }
+  | { type: "toggleClaimQrOpen" }
+  | { type: "setClaimOpenMsg"; value: string }
+  | { type: "setMcpPastedKey"; value: string }
+  | { type: "setMcpCopied"; value: boolean };
+
+function initStepVerifyState({
+  method,
+  apiKey
+}: {
+  method: ConnectionMethod;
+  apiKey: string | null;
+}): StepVerifyState {
+  return {
+    verifyStatus: method === "apikey" && apiKey ? "loading" : "idle",
+    verifyError: null,
+    agentMe: null,
+    exchangeStatus: "idle",
+    exchangeError: null,
+    claimCopied: false,
+    claimQrOpen: false,
+    claimOpenMsg: "",
+    mcpPastedKey: "",
+    mcpCopied: false
+  };
+}
+
+function stepVerifyReducer(state: StepVerifyState, action: StepVerifyAction): StepVerifyState {
+  switch (action.type) {
+    case "verifyLoading":
+      return { ...state, verifyStatus: "loading", verifyError: null };
+    case "verifySuccess":
+      return { ...state, verifyStatus: "done", verifyError: null, agentMe: action.agentMe };
+    case "verifyFailure":
+      return { ...state, verifyStatus: "error", verifyError: action.error };
+    case "setAgentMe":
+      return { ...state, agentMe: action.agentMe };
+    case "exchangeDone":
+      return { ...state, exchangeStatus: "done", exchangeError: null };
+    case "exchangeFailure":
+      return { ...state, exchangeStatus: "error", exchangeError: action.error };
+    case "setClaimCopied":
+      return { ...state, claimCopied: action.value };
+    case "toggleClaimQrOpen":
+      return { ...state, claimQrOpen: !state.claimQrOpen };
+    case "setClaimOpenMsg":
+      return { ...state, claimOpenMsg: action.value };
+    case "setMcpPastedKey":
+      return { ...state, mcpPastedKey: action.value };
+    case "setMcpCopied":
+      return { ...state, mcpCopied: action.value };
+    default:
+      return state;
+  }
+}
+
 export default function StepVerify({
   method,
   apiKey,
@@ -32,24 +108,15 @@ export default function StepVerify({
   const tRef = useRef(t);
   useEffect(() => { tRef.current = t; }, [t]);
 
-  const [verifyStatus, setVerifyStatus] = useState<"idle" | "loading" | "done" | "error">(
-    () => (method === "apikey" && apiKey ? "loading" : "idle")
+  const [state, dispatch] = useReducer(
+    stepVerifyReducer,
+    { method, apiKey },
+    initStepVerifyState
   );
-  const [verifyError, setVerifyError] = useState<string | null>(null);
-  const [agentMe, setAgentMe] = useState<AgentMeResponse | null>(null);
-  const [exchangeStatus, setExchangeStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [exchangeError, setExchangeError] = useState<string | null>(null);
-  const [claimCopied, setClaimCopied] = useState(false);
-  const [claimQrOpen, setClaimQrOpen] = useState(false);
-  const [claimOpenMsg, setClaimOpenMsg] = useState("");
-
-  // MCP verify state
-  const [mcpPastedKey, setMcpPastedKey] = useState("");
 
   const mcpVerifyPrompt = t("step.verify.mcp.title") === "Verify MCP installation"
     ? `List tools, then call:\nclawdeals.deals.list { "limit": 1 }`
     : `Liste les tools, puis appelle:\nclawdeals.deals.list { "limit": 1 }`;
-  const [mcpCopied, setMcpCopied] = useState(false);
 
   const verifyStartedRef = useRef(false);
   const exchangeStartedRef = useRef(false);
@@ -70,18 +137,15 @@ export default function StepVerify({
         if (cancelled) return;
         const data = res.data?.data;
         if (data?.agent_id) {
-          setAgentMe(data);
-          setVerifyStatus("done");
+          dispatch({ type: "verifySuccess", agentMe: data });
           onVerified(data);
         } else {
-          setVerifyStatus("error");
-          setVerifyError(tRef.current("step.verify.apikey.identityError"));
+          dispatch({ type: "verifyFailure", error: tRef.current("step.verify.apikey.identityError") });
         }
       })
       .catch((err: any) => {
         if (cancelled) return;
-        setVerifyStatus("error");
-        setVerifyError(err?.message || tRef.current("step.verify.apikey.failed"));
+        dispatch({ type: "verifyFailure", error: err?.message || tRef.current("step.verify.apikey.failed") });
       });
 
     return () => {
@@ -100,7 +164,7 @@ export default function StepVerify({
     onExchangeForApiKey(claimSession)
       .then(async (result) => {
         if (cancelled) return;
-        setExchangeStatus("done");
+        dispatch({ type: "exchangeDone" });
         onApiKeySet(result.api_key, result.agent_id);
 
         let me: AgentMeResponse = {
@@ -124,13 +188,12 @@ export default function StepVerify({
           // Keep fallback identity when follow-up fetch fails.
         }
         if (cancelled) return;
-        setAgentMe(me);
+        dispatch({ type: "setAgentMe", agentMe: me });
         onVerified(me);
       })
       .catch((err: any) => {
         if (cancelled) return;
-        setExchangeStatus("error");
-        setExchangeError(err?.message || tRef.current("step.verify.exchangeFailed"));
+        dispatch({ type: "exchangeFailure", error: err?.message || tRef.current("step.verify.exchangeFailed") });
       });
 
     return () => {
@@ -141,15 +204,13 @@ export default function StepVerify({
 
   // MCP manual verify
   const handleMcpVerify = useCallback(async () => {
-    const key = mcpPastedKey.trim() || apiKey;
+    const key = state.mcpPastedKey.trim() || apiKey;
     if (!key) {
-      setVerifyError(t("step.verify.mcp.pasteToVerify"));
-      setVerifyStatus("error");
+      dispatch({ type: "verifyFailure", error: t("step.verify.mcp.pasteToVerify") });
       return;
     }
 
-    setVerifyStatus("loading");
-    setVerifyError(null);
+    dispatch({ type: "verifyLoading" });
 
     try {
       const res = await apiRequest<{ data: AgentMeResponse }>({
@@ -159,25 +220,22 @@ export default function StepVerify({
       });
       const data = res.data?.data;
       if (data?.agent_id) {
-        setAgentMe(data);
-        setVerifyStatus("done");
+        dispatch({ type: "verifySuccess", agentMe: data });
         onApiKeySet(key, data.agent_id);
         onVerified(data);
       } else {
-        setVerifyStatus("error");
-        setVerifyError(t("step.verify.mcp.identityError"));
+        dispatch({ type: "verifyFailure", error: t("step.verify.mcp.identityError") });
       }
     } catch (err: any) {
-      setVerifyStatus("error");
-      setVerifyError(err?.message || t("step.verify.mcp.failed"));
+      dispatch({ type: "verifyFailure", error: err?.message || t("step.verify.mcp.failed") });
     }
-  }, [mcpPastedKey, apiKey, t, onApiKeySet, onVerified]);
+  }, [state.mcpPastedKey, apiKey, t, onApiKeySet, onVerified]);
 
   const handleCopyVerifyPrompt = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(mcpVerifyPrompt);
-      setMcpCopied(true);
-      setTimeout(() => setMcpCopied(false), 2000);
+      dispatch({ type: "setMcpCopied", value: true });
+      setTimeout(() => dispatch({ type: "setMcpCopied", value: false }), 2000);
     } catch {
       // ignore
     }
@@ -188,20 +246,20 @@ export default function StepVerify({
 
     const opened = window.open(claimSession.claim_url, "_blank", "noopener,noreferrer");
     if (!opened) {
-      setClaimOpenMsg(t("step.verify.claim.popupBlocked"));
+      dispatch({ type: "setClaimOpenMsg", value: t("step.verify.claim.popupBlocked") });
       return;
     }
 
-    setClaimOpenMsg(t("step.verify.claim.pageOpened"));
+    dispatch({ type: "setClaimOpenMsg", value: t("step.verify.claim.pageOpened") });
   }, [claimSession, t]);
 
   const handleCopyClaimUrl = useCallback(async () => {
     if (!claimSession?.claim_url) return;
     try {
       await navigator.clipboard.writeText(claimSession.claim_url);
-      setClaimCopied(true);
-      setClaimOpenMsg("");
-      setTimeout(() => setClaimCopied(false), 2000);
+      dispatch({ type: "setClaimCopied", value: true });
+      dispatch({ type: "setClaimOpenMsg", value: "" });
+      setTimeout(() => dispatch({ type: "setClaimCopied", value: false }), 2000);
     } catch {
       // ignore
     }
@@ -256,9 +314,9 @@ export default function StepVerify({
                 >
                   {t("step.verify.claim.openClaimPage")}
                 </button>
-                {claimOpenMsg && (
+                {state.claimOpenMsg && (
                   <div className="text-xs font-mono text-success" aria-live="polite">
-                    {claimOpenMsg}
+                    {state.claimOpenMsg}
                   </div>
                 )}
                 <div className="flex items-center gap-3">
@@ -267,13 +325,13 @@ export default function StepVerify({
                     onClick={handleCopyClaimUrl}
                     className="h-8 px-3 border border-border text-xs font-bold uppercase tracking-widest hover:border-border-strong hover:text-text transition-colors"
                   >
-                    {claimCopied ? t("common.copied") : t("step.verify.claim.copyLink")}
+                    {state.claimCopied ? t("common.copied") : t("step.verify.claim.copyLink")}
                   </button>
                   <button
-                    onClick={() => setClaimQrOpen((prev) => !prev)}
+                    onClick={() => dispatch({ type: "toggleClaimQrOpen" })}
                     className="h-8 px-3 border border-border text-xs font-bold uppercase tracking-widest hover:border-border-strong hover:text-text transition-colors"
                   >
-                    {claimQrOpen ? t("step.verify.claim.hideQr") : t("step.verify.claim.qrCode")}
+                    {state.claimQrOpen ? t("step.verify.claim.hideQr") : t("step.verify.claim.qrCode")}
                   </button>
                 </div>
               </div>
@@ -294,7 +352,7 @@ export default function StepVerify({
               </div>
 
               {/* QR code panel */}
-              {claimQrOpen && (
+              {state.claimQrOpen && (
                 <div className="border border-border bg-bg p-5 flex flex-col items-center gap-3">
                   <QRCode
                     value={claimSession.claim_url}
@@ -312,7 +370,7 @@ export default function StepVerify({
             </>
           )}
 
-          {pollStatus === "claimed" && exchangeStatus === "loading" && (
+          {pollStatus === "claimed" && state.exchangeStatus === "loading" && (
             <div className="border border-success/20 bg-success/5 p-5 flex items-center justify-center gap-2 clip-corner">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
@@ -324,9 +382,9 @@ export default function StepVerify({
             </div>
           )}
 
-          {exchangeError && (
+          {state.exchangeError && (
             <div className="border border-error/30 bg-error/5 p-3 clip-corner">
-              <div className="text-xs font-mono text-error">{exchangeError}</div>
+              <div className="text-xs font-mono text-error">{state.exchangeError}</div>
               <button
                 onClick={onBack}
                 className="mt-2 px-3 py-1.5 text-xs font-mono text-subtle border border-border rounded hover:border-border-strong hover:text-text transition-colors"
@@ -353,7 +411,7 @@ export default function StepVerify({
       {/* API Key verify */}
       {method === "apikey" && (
         <div className="border border-border bg-surface p-5 space-y-4 clip-corner">
-          {verifyStatus === "loading" && (
+          {state.verifyStatus === "loading" && (
             <div className="flex items-center gap-2 py-4">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-warning opacity-75" />
@@ -365,9 +423,9 @@ export default function StepVerify({
             </div>
           )}
 
-          {verifyError && (
+          {state.verifyError && (
             <div className="border border-error/30 bg-error/5 p-3 clip-corner">
-              <div className="text-xs font-mono text-error">{verifyError}</div>
+              <div className="text-xs font-mono text-error">{state.verifyError}</div>
             </div>
           )}
         </div>
@@ -388,7 +446,7 @@ export default function StepVerify({
             onClick={handleCopyVerifyPrompt}
             className="border border-border px-3 py-1.5 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
           >
-            {mcpCopied ? t("common.copied") : t("step.verify.mcp.copyPrompt")}
+            {state.mcpCopied ? t("common.copied") : t("step.verify.mcp.copyPrompt")}
           </button>
 
           <div className="border-t border-border pt-4 space-y-2">
@@ -399,8 +457,8 @@ export default function StepVerify({
               {t("step.verify.mcp.pasteKeyPrompt")}
             </div>
             <input
-              value={mcpPastedKey}
-              onChange={(e) => setMcpPastedKey(e.target.value)}
+              value={state.mcpPastedKey}
+              onChange={(e) => dispatch({ type: "setMcpPastedKey", value: e.target.value })}
               placeholder="cd_live_..."
               autoComplete="off"
               spellCheck={false}
@@ -409,10 +467,10 @@ export default function StepVerify({
             <div className="flex items-center gap-3">
               <button
                 onClick={handleMcpVerify}
-                disabled={verifyStatus === "loading"}
+                disabled={state.verifyStatus === "loading"}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
               >
-                {verifyStatus === "loading" ? t("step.verify.mcp.verifying") : t("step.verify.mcp.verify")}
+                {state.verifyStatus === "loading" ? t("step.verify.mcp.verifying") : t("step.verify.mcp.verify")}
               </button>
               <button
                 onClick={() => onVerified(null)}
@@ -421,9 +479,9 @@ export default function StepVerify({
                 {t("step.verify.mcp.skipVerify")}
               </button>
             </div>
-            {verifyError && (
+            {state.verifyError && (
               <div className="text-xs font-mono text-error" aria-live="polite">
-                {verifyError}
+                {state.verifyError}
               </div>
             )}
           </div>
@@ -431,7 +489,7 @@ export default function StepVerify({
       )}
 
       {/* Agent info (shown when verified) */}
-      {agentMe && (
+      {state.agentMe && (
         <div className="border border-secondary/30 bg-secondary/5 p-4 space-y-2 clip-corner">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
@@ -444,24 +502,24 @@ export default function StepVerify({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
             <div>
               <span className="text-subtle">agent_id: </span>
-              <span className="text-text">{agentMe.agent_id}</span>
+              <span className="text-text">{state.agentMe.agent_id}</span>
             </div>
-            {agentMe.installation_id && (
+            {state.agentMe.installation_id && (
               <div>
                 <span className="text-subtle">installation_id: </span>
-                <span className="text-text">{agentMe.installation_id}</span>
+                <span className="text-text">{state.agentMe.installation_id}</span>
               </div>
             )}
-            {agentMe.owner_id && (
+            {state.agentMe.owner_id && (
               <div>
                 <span className="text-subtle">owner_id: </span>
-                <span className="text-text">{agentMe.owner_id}</span>
+                <span className="text-text">{state.agentMe.owner_id}</span>
               </div>
             )}
-            {agentMe.oauth_scopes?.length > 0 && (
+            {state.agentMe.oauth_scopes?.length > 0 && (
               <div className="sm:col-span-2">
                 <span className="text-subtle">scopes: </span>
-                <span className="text-text">{agentMe.oauth_scopes.join(", ")}</span>
+                <span className="text-text">{state.agentMe.oauth_scopes.join(", ")}</span>
               </div>
             )}
           </div>

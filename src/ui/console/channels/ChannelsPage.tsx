@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useReducer, useCallback } from "react";
 
 import ChannelsToolbar from "./ChannelsToolbar";
 import ChannelsList from "./ChannelsList";
@@ -19,8 +19,37 @@ import PageHeader from "../../shared/PageHeader";
 
 type PendingAction = "approve" | "deny" | "revoke";
 
+type ChannelsUiState = {
+  approveRole: string;
+  pairingCode: string;
+  confirmOpen: boolean;
+  pendingAction: PendingAction | null;
+  selectedIdentity: any | null;
+};
+
+type ChannelsUiAction = {
+  type: "patch";
+  patch: Partial<ChannelsUiState>;
+};
+
+const INITIAL_UI_STATE: ChannelsUiState = {
+  approveRole: "approver",
+  pairingCode: "",
+  confirmOpen: false,
+  pendingAction: null,
+  selectedIdentity: null
+};
+
+function channelsUiReducer(state: ChannelsUiState, action: ChannelsUiAction): ChannelsUiState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
+
 export default function ChannelsPage() {
   const { toasts, show } = useToast();
+  const [uiState, dispatch] = useReducer(channelsUiReducer, INITIAL_UI_STATE);
 
   const { start: startTelegramPairing, startState: telegramStartState, error: telegramStartError } = useTelegramPairStart();
 
@@ -34,9 +63,6 @@ export default function ChannelsPage() {
     error,
     refetch
   } = useChannelIdentities();
-
-  const [approveRole, setApproveRole] = useState("approver");
-  const [pairingCode, setPairingCode] = useState("");
 
   const {
     lookup,
@@ -54,36 +80,42 @@ export default function ChannelsPage() {
     }
   });
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [selectedIdentity, setSelectedIdentity] = useState<any | null>(null);
-
   const openConfirm = useCallback((identity: any, action: PendingAction) => {
-    setSelectedIdentity(identity);
-    setPendingAction(action);
-    setConfirmOpen(true);
+    dispatch({
+      type: "patch",
+      patch: {
+        selectedIdentity: identity,
+        pendingAction: action,
+        confirmOpen: true
+      }
+    });
   }, []);
 
   const closeConfirm = useCallback(() => {
     if (submitState === "loading") return;
-    setConfirmOpen(false);
-    setPendingAction(null);
-    setSelectedIdentity(null);
+    dispatch({
+      type: "patch",
+      patch: {
+        confirmOpen: false,
+        pendingAction: null,
+        selectedIdentity: null
+      }
+    });
   }, [submitState]);
 
   const confirmCopy = useMemo(() => {
-    if (!pendingAction || !selectedIdentity) {
+    if (!uiState.pendingAction || !uiState.selectedIdentity) {
       return { title: "Confirm", message: "Confirm action", confirmLabel: "Confirm", variant: "default" as const };
     }
-    if (pendingAction === "approve") {
+    if (uiState.pendingAction === "approve") {
       return {
         title: "Approve pairing",
-        message: `Activate this identity with role=${approveRole}?`,
+        message: `Activate this identity with role=${uiState.approveRole}?`,
         confirmLabel: "Approve",
         variant: "success" as const
       };
     }
-    if (pendingAction === "deny") {
+    if (uiState.pendingAction === "deny") {
       return {
         title: "Deny pairing",
         message: "Reject this pending pairing request?",
@@ -97,25 +129,25 @@ export default function ChannelsPage() {
       confirmLabel: "Revoke",
       variant: "danger" as const
     };
-  }, [pendingAction, selectedIdentity, approveRole]);
+  }, [uiState.pendingAction, uiState.selectedIdentity, uiState.approveRole]);
 
   const onConfirm = useCallback(async () => {
-    if (!pendingAction || !selectedIdentity) return;
-    const channelIdentityId = selectedIdentity.channel_identity_id;
+    if (!uiState.pendingAction || !uiState.selectedIdentity) return;
+    const channelIdentityId = uiState.selectedIdentity.channel_identity_id;
     await execute({
       channelIdentityId,
-      action: pendingAction,
-      role: pendingAction === "approve" ? approveRole : undefined
+      action: uiState.pendingAction,
+      role: uiState.pendingAction === "approve" ? uiState.approveRole : undefined
     });
     closeConfirm();
-  }, [pendingAction, selectedIdentity, execute, approveRole, closeConfirm]);
+  }, [uiState.pendingAction, uiState.selectedIdentity, uiState.approveRole, execute, closeConfirm]);
 
   const onLookupCode = useCallback(async () => {
-    const result: any = await lookup(pairingCode);
+    const result: any = await lookup(uiState.pairingCode);
     if (result && result.ok === false) {
       show(result.error || "Lookup failed", "error");
     }
-  }, [lookup, pairingCode, show]);
+  }, [lookup, uiState.pairingCode, show]);
 
   const onConnectTelegram = useCallback(async () => {
     const result: any = await startTelegramPairing();
@@ -146,10 +178,10 @@ export default function ChannelsPage() {
           onStateChange={setState}
           channelType={channelType}
           onChannelTypeChange={setChannelType}
-          approveRole={approveRole}
-          onApproveRoleChange={setApproveRole}
-          pairingCode={pairingCode}
-          onPairingCodeChange={setPairingCode}
+          approveRole={uiState.approveRole}
+          onApproveRoleChange={(value) => dispatch({ type: "patch", patch: { approveRole: value } })}
+          pairingCode={uiState.pairingCode}
+          onPairingCodeChange={(value) => dispatch({ type: "patch", patch: { pairingCode: value } })}
           onLookupCode={onLookupCode}
           lookupDisabled={lookupState === "loading"}
           onConnectTelegram={onConnectTelegram}
@@ -175,7 +207,7 @@ export default function ChannelsPage() {
                     onClick={() => onApprove(lookupIdentity)}
                     className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary rounded hover:bg-secondary/10 transition-colors"
                   >
-                    Approve (role={approveRole})
+                    Approve (role={uiState.approveRole})
                   </button>
                   <button
                     onClick={() => onDeny(lookupIdentity)}
@@ -219,7 +251,7 @@ export default function ChannelsPage() {
       </main>
 
       <ConfirmModal
-        open={confirmOpen}
+        open={uiState.confirmOpen}
         title={confirmCopy.title}
         message={confirmCopy.message}
         confirmLabel={confirmCopy.confirmLabel}

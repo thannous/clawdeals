@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer } from "react";
 import { useRouter } from "next/router";
 
 import DeviceStatusBadge from "./DeviceStatusBadge";
@@ -52,6 +52,40 @@ function formatExpires(expiresAt: string | null) {
   return { label: isExpired ? `expired ${rel} ago` : `in ${rel}`, isExpired };
 }
 
+type DevicePageState = {
+  userCode: string;
+  request: DeviceAuthorizationView | null;
+  error: string | null;
+  mode: DeviceMode;
+  agentName: string;
+  attachAgentId: string;
+  submitState: "idle" | "loading" | "done" | "error";
+  submitError: string | null;
+};
+
+type DevicePageAction = {
+  type: "patch";
+  patch: Partial<DevicePageState>;
+};
+
+const INITIAL_STATE: DevicePageState = {
+  userCode: "",
+  request: null,
+  error: null,
+  mode: "create_agent",
+  agentName: "",
+  attachAgentId: "",
+  submitState: "idle",
+  submitError: null
+};
+
+function devicePageReducer(state: DevicePageState, action: DevicePageAction): DevicePageState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
+
 export default function DevicePage() {
   const router = useRouter();
   const queryUserCode = useMemo(
@@ -59,40 +93,41 @@ export default function DevicePage() {
     [router.query?.user_code, router.query?.userCode]
   );
 
-  const [userCode, setUserCode] = useState("");
-  const [request, setRequest] = useState<DeviceAuthorizationView | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(devicePageReducer, INITIAL_STATE);
 
-  const [mode, setMode] = useState<DeviceMode>("create_agent");
-  const [agentName, setAgentName] = useState("");
-  const [attachAgentId, setAttachAgentId] = useState("");
-
-  const [submitState, setSubmitState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const expires = useMemo(() => formatExpires(request?.expires_at || null), [request?.expires_at]);
-  const actionable = Boolean(request && request.status === "PENDING" && !expires.isExpired);
+  const expires = useMemo(() => formatExpires(state.request?.expires_at || null), [state.request?.expires_at]);
+  const actionable = Boolean(state.request && state.request.status === "PENDING" && !expires.isExpired);
 
   const doLookup = useCallback(async (code: string) => {
     const { normalized, valid } = normalizeUserCode(code);
-    setUserCode(normalized);
-    setRequest(null);
-    setSubmitState("idle");
-    setSubmitError(null);
+    dispatch({
+      type: "patch",
+      patch: {
+        userCode: normalized,
+        request: null,
+        submitState: "idle",
+        submitError: null
+      }
+    });
 
     if (!valid) {
-      setError("Invalid code format. Expected ABCD-EFGH.");
+      dispatch({ type: "patch", patch: { error: "Invalid code format. Expected ABCD-EFGH." } });
       return;
     }
 
-    setError(null);
+    dispatch({ type: "patch", patch: { error: null } });
     const resp = await fetchDeviceRequest(normalized);
     if (!resp.ok) {
-      setError(resp.error || "Failed to load device request");
+      dispatch({ type: "patch", patch: { error: resp.error || "Failed to load device request" } });
       return;
     }
-    setRequest(resp.data);
-    setAgentName(String(resp.data.requested_agent_name || "").trim());
+    dispatch({
+      type: "patch",
+      patch: {
+        request: resp.data,
+        agentName: String(resp.data.requested_agent_name || "").trim()
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -105,72 +140,82 @@ export default function DevicePage() {
   }, [router.isReady, queryUserCode, doLookup]);
 
   const onSubmitLookup = useCallback(async () => {
-    await doLookup(userCode);
-  }, [doLookup, userCode]);
+    await doLookup(state.userCode);
+  }, [doLookup, state.userCode]);
 
   const onApprove = useCallback(async () => {
-    if (!request) return;
+    if (!state.request) return;
     if (!actionable) return;
-    if (submitState === "loading") return;
+    if (state.submitState === "loading") return;
 
-    setSubmitState("loading");
-    setSubmitError(null);
+    dispatch({ type: "patch", patch: { submitState: "loading", submitError: null } });
 
     const resp = await approveDevice({
-      userCode,
-      mode,
-      agentName: mode === "create_agent" ? agentName : undefined,
-      attachAgentId: mode === "attach_agent" ? attachAgentId : undefined
+      userCode: state.userCode,
+      mode: state.mode,
+      agentName: state.mode === "create_agent" ? state.agentName : undefined,
+      attachAgentId: state.mode === "attach_agent" ? state.attachAgentId : undefined
     });
 
     if (!resp.ok) {
-      setSubmitError(resp.error || "Approve failed");
-      setSubmitState("error");
+      dispatch({
+        type: "patch",
+        patch: {
+          submitError: resp.error || "Approve failed",
+          submitState: "error"
+        }
+      });
       return;
     }
-
-    setRequest((prev) =>
-      prev
-        ? {
-            ...prev,
-            status: resp.data?.status || "AUTHORIZED",
-            owner_id: resp.data?.owner_id || prev.owner_id,
-            agent_id: resp.data?.agent_id || prev.agent_id,
-            authorized_at: resp.data?.authorized_at || prev.authorized_at
-          }
-        : prev
-    );
-    setSubmitState("done");
-  }, [request, actionable, submitState, userCode, mode, agentName, attachAgentId]);
+    const nextRequest = {
+      ...state.request,
+      status: resp.data?.status || "AUTHORIZED",
+      owner_id: resp.data?.owner_id || state.request.owner_id,
+      agent_id: resp.data?.agent_id || state.request.agent_id,
+      authorized_at: resp.data?.authorized_at || state.request.authorized_at
+    };
+    dispatch({
+      type: "patch",
+      patch: {
+        request: nextRequest,
+        submitState: "done"
+      }
+    });
+  }, [state, actionable]);
 
   const onDeny = useCallback(async () => {
-    if (!request) return;
+    if (!state.request) return;
     if (!actionable) return;
-    if (submitState === "loading") return;
+    if (state.submitState === "loading") return;
     const confirmed = window.confirm("Deny this device request? This cannot be undone.");
     if (!confirmed) return;
 
-    setSubmitState("loading");
-    setSubmitError(null);
+    dispatch({ type: "patch", patch: { submitState: "loading", submitError: null } });
 
-    const resp = await denyDevice({ userCode });
+    const resp = await denyDevice({ userCode: state.userCode });
     if (!resp.ok) {
-      setSubmitError(resp.error || "Deny failed");
-      setSubmitState("error");
+      dispatch({
+        type: "patch",
+        patch: {
+          submitError: resp.error || "Deny failed",
+          submitState: "error"
+        }
+      });
       return;
     }
-
-    setRequest((prev) =>
-      prev
-        ? {
-            ...prev,
-            status: resp.data?.status || "DENIED",
-            denied_at: resp.data?.denied_at || prev.denied_at
-          }
-        : prev
-    );
-    setSubmitState("done");
-  }, [request, actionable, submitState, userCode]);
+    const nextRequest = {
+      ...state.request,
+      status: resp.data?.status || "DENIED",
+      denied_at: resp.data?.denied_at || state.request.denied_at
+    };
+    dispatch({
+      type: "patch",
+      patch: {
+        request: nextRequest,
+        submitState: "done"
+      }
+    });
+  }, [state, actionable]);
 
   return (
     <div data-testid="device-page" className="min-h-screen bg-bg relative overflow-hidden">
@@ -189,7 +234,7 @@ export default function DevicePage() {
                   Enter the code shown on your device to approve or deny access.
                 </p>
               </div>
-              {request?.status && <DeviceStatusBadge status={request.status} />}
+              {state.request?.status && <DeviceStatusBadge status={state.request.status} />}
             </div>
 
             <div className="space-y-2">
@@ -200,8 +245,8 @@ export default function DevicePage() {
                 <input
                   id="device-user-code"
                   data-testid="device-user-code"
-                  value={userCode}
-                  onChange={(e) => setUserCode(e.target.value)}
+                  value={state.userCode}
+                  onChange={(e) => dispatch({ type: "patch", patch: { userCode: e.target.value } })}
                   placeholder="ABCD-EFGH"
                   name="user_code"
                   autoComplete="off"
@@ -221,24 +266,24 @@ export default function DevicePage() {
               </div>
             </div>
 
-            {error && (
+            {state.error && (
               <div data-testid="device-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
                 <div className="text-xs font-mono text-error">Error</div>
-                <div className="text-xs font-mono text-muted mt-1">{error}</div>
+                <div className="text-xs font-mono text-muted mt-1">{state.error}</div>
               </div>
             )}
 
-            {request && (
+            {state.request && (
               <div data-testid="device-loaded" className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-subtle uppercase">Client</div>
-                    <div className="text-xs font-mono text-text mt-1">{request.client_id || "\u2014"}</div>
+                    <div className="text-xs font-mono text-text mt-1">{state.request.client_id || "\u2014"}</div>
                   </div>
                   <div className="border border-border bg-surface/40 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-subtle uppercase">Expires</div>
                     <div className="text-xs font-mono text-text mt-1">
-                      {request.expires_at ? new Date(request.expires_at).toISOString() : "\u2014"}
+                      {state.request.expires_at ? new Date(state.request.expires_at).toISOString() : "\u2014"}
                     </div>
                     <div className="text-xs font-mono text-muted mt-1">{expires.label}</div>
                   </div>
@@ -247,10 +292,10 @@ export default function DevicePage() {
                 <div className="border border-border bg-surface/40 rounded clip-corner p-3 space-y-2">
                   <div className="text-xs font-mono text-subtle uppercase">Requested Permissions</div>
                   <div className="flex flex-wrap gap-2">
-                    {(request.requested_scopes || []).length === 0 && (
+                    {(state.request.requested_scopes || []).length === 0 && (
                       <span className="text-xs font-mono text-muted">none</span>
                     )}
-                    {(request.requested_scopes || []).map((scope) => (
+                    {(state.request.requested_scopes || []).map((scope) => (
                       <span
                         key={scope}
                         className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border rounded text-subtle bg-surface/20"
@@ -261,10 +306,10 @@ export default function DevicePage() {
                   </div>
                 </div>
 
-                {request.status !== "PENDING" && (
+                {state.request.status !== "PENDING" && (
                   <div className="border border-border bg-surface-alt/20 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-subtle">
-                      This request is not actionable (status={request.status}).
+                      This request is not actionable (status={state.request.status}).
                     </div>
                   </div>
                 )}
@@ -274,10 +319,10 @@ export default function DevicePage() {
                     <div className="text-xs font-mono text-subtle uppercase">Choose agent</div>
                     <div className="flex items-center gap-2">
                       <button
-                        disabled={!actionable || submitState === "loading"}
-                        onClick={() => setMode("create_agent")}
+                        disabled={!actionable || state.submitState === "loading"}
+                        onClick={() => dispatch({ type: "patch", patch: { mode: "create_agent" } })}
                         className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
-                          mode === "create_agent"
+                          state.mode === "create_agent"
                             ? "border-primary/40 text-primary bg-primary/10"
                             : "border-border text-muted hover:border-border-strong hover:text-text"
                         }`}
@@ -285,10 +330,10 @@ export default function DevicePage() {
                         Create
                       </button>
                       <button
-                        disabled={!actionable || submitState === "loading"}
-                        onClick={() => setMode("attach_agent")}
+                        disabled={!actionable || state.submitState === "loading"}
+                        onClick={() => dispatch({ type: "patch", patch: { mode: "attach_agent" } })}
                         className={`px-3 py-1.5 text-xs font-mono font-bold uppercase border rounded transition-colors disabled:opacity-50 ${
-                          mode === "attach_agent"
+                          state.mode === "attach_agent"
                             ? "border-primary/40 text-primary bg-primary/10"
                             : "border-border text-muted hover:border-border-strong hover:text-text"
                         }`}
@@ -298,17 +343,17 @@ export default function DevicePage() {
                     </div>
                   </div>
 
-                  {mode === "create_agent" && (
+                  {state.mode === "create_agent" && (
                     <div>
                       <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="device-agent-name">
                         New Agent Name
                       </label>
                       <input
                         id="device-agent-name"
-                        value={agentName}
-                        onChange={(e) => setAgentName(e.target.value)}
-                        disabled={!actionable || submitState === "loading"}
-                        placeholder={request.requested_agent_name || "OpenClaw"}
+                        value={state.agentName}
+                        onChange={(e) => dispatch({ type: "patch", patch: { agentName: e.target.value } })}
+                        disabled={!actionable || state.submitState === "loading"}
+                        placeholder={state.request.requested_agent_name || "OpenClaw"}
                         name="agent_name"
                         autoComplete="off"
                         spellCheck={false}
@@ -318,16 +363,16 @@ export default function DevicePage() {
                     </div>
                   )}
 
-                  {mode === "attach_agent" && (
+                  {state.mode === "attach_agent" && (
                     <div>
                       <label className="block text-xs font-mono text-subtle uppercase mb-1" htmlFor="device-attach-agent-id">
                         Existing Agent ID
                       </label>
                       <input
                         id="device-attach-agent-id"
-                        value={attachAgentId}
-                        onChange={(e) => setAttachAgentId(e.target.value)}
-                        disabled={!actionable || submitState === "loading"}
+                        value={state.attachAgentId}
+                        onChange={(e) => dispatch({ type: "patch", patch: { attachAgentId: e.target.value } })}
+                        disabled={!actionable || state.submitState === "loading"}
                         placeholder="uuid"
                         name="attach_agent_id"
                         autoComplete="off"
@@ -341,18 +386,18 @@ export default function DevicePage() {
                   )}
                 </div>
 
-                {submitError && (
+                {state.submitError && (
                   <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-error">Error</div>
-                    <div className="text-xs font-mono text-muted mt-1">{submitError}</div>
+                    <div className="text-xs font-mono text-muted mt-1">{state.submitError}</div>
                   </div>
                 )}
 
-                {submitState === "done" && (
+                {state.submitState === "done" && (
                   <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-secondary">Success</div>
                     <div className="text-xs font-mono text-muted mt-1">
-                      status={request.status} agent_id={String(request.agent_id || "\u2014")}
+                      status={state.request.status} agent_id={String(state.request.agent_id || "\u2014")}
                     </div>
                   </div>
                 )}
@@ -360,15 +405,15 @@ export default function DevicePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     data-testid="device-approve"
-                    disabled={!actionable || submitState === "loading"}
+                    disabled={!actionable || state.submitState === "loading"}
                     onClick={onApprove}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
-                    {submitState === "loading" ? "Approving…" : "Approve"}
+                    {state.submitState === "loading" ? "Approving…" : "Approve"}
                   </button>
                   <button
                     data-testid="device-deny"
-                    disabled={!actionable || submitState === "loading"}
+                    disabled={!actionable || state.submitState === "loading"}
                     onClick={onDeny}
                     className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors disabled:opacity-50"
                   >

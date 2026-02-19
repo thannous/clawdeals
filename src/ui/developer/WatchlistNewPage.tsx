@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useReducer } from "react";
 import { useTranslations } from "next-intl";
 import { apiRequest } from "./api";
 import { getStoredApiKey } from "./storage";
@@ -12,47 +12,87 @@ function parseTags(input: string): string[] {
     .filter(Boolean);
 }
 
+type WatchlistNewState = {
+  query: string;
+  tags: string;
+  priceMax: string;
+  status: "idle" | "loading" | "success" | "error";
+  message: string;
+  createdId: string | null;
+};
+
+type WatchlistNewAction = {
+  type: "patch";
+  patch: Partial<WatchlistNewState>;
+};
+
+const INITIAL_STATE: WatchlistNewState = {
+  query: "",
+  tags: "",
+  priceMax: "",
+  status: "idle",
+  message: "",
+  createdId: null
+};
+
+function watchlistNewReducer(state: WatchlistNewState, action: WatchlistNewAction): WatchlistNewState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
+
 export default function WatchlistNewPage() {
   const t = useTranslations("watchlistNew");
-  const [apiKey] = useState<string | null>(() => getStoredApiKey());
-  const [query, setQuery] = useState("");
-  const [tags, setTags] = useState("");
-  const [priceMax, setPriceMax] = useState<string>("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
-  const [createdId, setCreatedId] = useState<string | null>(null);
+  const apiKey = useMemo(() => getStoredApiKey(), []);
+  const [state, dispatch] = useReducer(watchlistNewReducer, INITIAL_STATE);
 
   const canSubmit = useMemo(() => {
     if (!apiKey) return false;
-    if (status === "loading") return false;
-    const hasQuery = Boolean(query.trim());
-    const hasTags = parseTags(tags).length > 0;
-    const hasPrice = Boolean(String(priceMax || "").trim());
+    if (state.status === "loading") return false;
+    const hasQuery = Boolean(state.query.trim());
+    const hasTags = parseTags(state.tags).length > 0;
+    const hasPrice = Boolean(String(state.priceMax || "").trim());
     return hasQuery || hasTags || hasPrice;
-  }, [apiKey, query, tags, priceMax, status]);
+  }, [apiKey, state.query, state.tags, state.priceMax, state.status]);
 
   const handleSubmit = useCallback(async () => {
     if (!apiKey) {
-      setStatus("error");
-      setMessage(t("missingApiKey"));
+      dispatch({
+        type: "patch",
+        patch: {
+          status: "error",
+          message: t("missingApiKey")
+        }
+      });
       return;
     }
 
-    setStatus("loading");
-    setMessage("");
-    setCreatedId(null);
+    dispatch({
+      type: "patch",
+      patch: {
+        status: "loading",
+        message: "",
+        createdId: null
+      }
+    });
 
     const criteria: any = {
-      query: query.trim() || null,
-      tags: parseTags(tags)
+      query: state.query.trim() || null,
+      tags: parseTags(state.tags)
     };
 
-    const rawPrice = String(priceMax || "").trim();
+    const rawPrice = String(state.priceMax || "").trim();
     if (rawPrice) {
       const n = Number(rawPrice);
       if (!Number.isFinite(n) || n <= 0) {
-        setStatus("error");
-        setMessage(t("priceMaxValidation"));
+        dispatch({
+          type: "patch",
+          patch: {
+            status: "error",
+            message: t("priceMaxValidation")
+          }
+        });
         return;
       }
       criteria.price_max = n;
@@ -70,14 +110,24 @@ export default function WatchlistNewPage() {
         }
       });
       const watchlistId = result.data?.watchlist_id || null;
-      setCreatedId(watchlistId);
-      setStatus("success");
-      setMessage(t("created"));
+      dispatch({
+        type: "patch",
+        patch: {
+          createdId: watchlistId,
+          status: "success",
+          message: t("created")
+        }
+      });
     } catch (error: any) {
-      setStatus("error");
-      setMessage(error?.message || t("createFailed"));
+      dispatch({
+        type: "patch",
+        patch: {
+          status: "error",
+          message: error?.message || t("createFailed")
+        }
+      });
     }
-  }, [apiKey, query, tags, priceMax, t]);
+  }, [apiKey, state.query, state.tags, state.priceMax, t]);
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -108,14 +158,14 @@ export default function WatchlistNewPage() {
               </label>
               <input
                 id="query"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={state.query}
+                onChange={(e) => dispatch({ type: "patch", patch: { query: e.target.value } })}
                 placeholder="rtx 4070"
                 name="query"
                 autoComplete="off"
                 spellCheck={false}
                 className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                disabled={status === "loading"}
+                disabled={state.status === "loading"}
               />
             </div>
             <div>
@@ -124,14 +174,14 @@ export default function WatchlistNewPage() {
               </label>
               <input
                 id="tags"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
+                value={state.tags}
+                onChange={(e) => dispatch({ type: "patch", patch: { tags: e.target.value } })}
                 placeholder="gpu,nvidia"
                 name="tags"
                 autoComplete="off"
                 spellCheck={false}
                 className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                disabled={status === "loading"}
+                disabled={state.status === "loading"}
               />
             </div>
             <div>
@@ -140,15 +190,15 @@ export default function WatchlistNewPage() {
               </label>
               <input
                 id="price-max"
-                value={priceMax}
-                onChange={(e) => setPriceMax(e.target.value)}
+                value={state.priceMax}
+                onChange={(e) => dispatch({ type: "patch", patch: { priceMax: e.target.value } })}
                 placeholder="500"
                 type="number"
                 inputMode="numeric"
                 name="price_max"
                 autoComplete="off"
                 className="w-full h-11 px-4 bg-bg border border-border text-text font-mono text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                disabled={status === "loading"}
+                disabled={state.status === "loading"}
               />
             </div>
           </div>
@@ -164,21 +214,21 @@ export default function WatchlistNewPage() {
             >
               {t("createButton")}
             </button>
-            {createdId && (
+            {state.createdId && (
               <span className="text-xs font-mono text-subtle">
-                watchlist_id: <span className="text-text">{createdId}</span>
+                watchlist_id: <span className="text-text">{state.createdId}</span>
               </span>
             )}
           </div>
 
-          {message && (
+          {state.message && (
             <div
               className={`text-xs font-mono ${
-                status === "error" ? "text-error" : status === "success" ? "text-success" : "text-subtle"
+                state.status === "error" ? "text-error" : state.status === "success" ? "text-success" : "text-subtle"
               }`}
               aria-live="polite"
             >
-              {message}
+              {state.message}
             </div>
           )}
         </div>

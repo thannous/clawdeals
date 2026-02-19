@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import ConsoleTable from "../shared/ConsoleTable";
 import SkeletonTable from "../shared/SkeletonTable";
 import ErrorState from "../shared/ErrorState";
@@ -83,6 +83,32 @@ type OpsResponse = {
   };
   slo_latency_targets?: Record<string, number>;
 };
+
+type OpsDashboardState = {
+  data: OpsResponse | null;
+  fetchState: "idle" | "loading" | "done" | "error";
+  error: string | null;
+  lastUpdatedAt: string | null;
+};
+
+type OpsDashboardAction = {
+  type: "patch";
+  patch: Partial<OpsDashboardState>;
+};
+
+const INITIAL_DASHBOARD_STATE: OpsDashboardState = {
+  data: null,
+  fetchState: "idle",
+  error: null,
+  lastUpdatedAt: null
+};
+
+function opsDashboardReducer(state: OpsDashboardState, action: OpsDashboardAction): OpsDashboardState {
+  if (action.type === "patch") {
+    return { ...state, ...action.patch };
+  }
+  return state;
+}
 
 const WINDOW_OPTIONS = [
   { label: "15m", minutes: 15 },
@@ -263,11 +289,7 @@ function ApprovalsDetailPanel({ detail }: { detail: OpsResponse["approvals_detai
 
 export default function OpsPage() {
   const [windowMinutes, setWindowMinutes] = useState(60);
-
-  const [data, setData] = useState<OpsResponse | null>(null);
-  const [fetchState, setFetchState] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(opsDashboardReducer, INITIAL_DASHBOARD_STATE);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -276,8 +298,7 @@ export default function OpsPage() {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    setFetchState("loading");
-    setError(null);
+    dispatch({ type: "patch", patch: { fetchState: "loading", error: null } });
 
     try {
       const sp = new URLSearchParams();
@@ -288,13 +309,23 @@ export default function OpsPage() {
         throw new Error(body?.error?.message || `HTTP ${resp.status}`);
       }
       const json = (await resp.json()) as OpsResponse;
-      setData(json);
-      setLastUpdatedAt(new Date().toISOString());
-      setFetchState("done");
+      dispatch({
+        type: "patch",
+        patch: {
+          data: json,
+          lastUpdatedAt: new Date().toISOString(),
+          fetchState: "done"
+        }
+      });
     } catch (err: any) {
       if (err?.name === "AbortError") return;
-      setError(err?.message || String(err));
-      setFetchState("error");
+      dispatch({
+        type: "patch",
+        patch: {
+          error: err?.message || String(err),
+          fetchState: "error"
+        }
+      });
     }
   }, [windowMinutes]);
 
@@ -305,19 +336,19 @@ export default function OpsPage() {
     };
   }, [load]);
 
-  const latencyRows = data?.latency?.by_route_group || [];
-  const errorRows = data?.errors?.by_route_group || [];
-  const jobQueues = data?.queue?.job_queues || [];
-  const sloLatencyTargets = data?.slo_latency_targets || {};
+  const latencyRows = state.data?.latency?.by_route_group || [];
+  const errorRows = state.data?.errors?.by_route_group || [];
+  const jobQueues = state.data?.queue?.job_queues || [];
+  const sloLatencyTargets = state.data?.slo_latency_targets || {};
 
   const topAgentsRows = useMemo(() => {
-    const total429 = data?.rate_limit?.status_429 || 0;
-    const topAgents = data?.rate_limit?.top_agents || [];
+    const total429 = state.data?.rate_limit?.status_429 || 0;
+    const topAgents = state.data?.rate_limit?.top_agents || [];
     return topAgents.map((row) => ({
       ...row,
       share: total429 > 0 ? row.count / total429 : 0
     }));
-  }, [data?.rate_limit?.top_agents, data?.rate_limit?.status_429]);
+  }, [state.data?.rate_limit?.top_agents, state.data?.rate_limit?.status_429]);
 
   return (
     <div data-testid="ops-page" className="min-h-screen bg-bg">
@@ -339,7 +370,7 @@ export default function OpsPage() {
             </select>
             <button
               onClick={load}
-              disabled={fetchState === "loading"}
+              disabled={state.fetchState === "loading"}
               className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 disabled:opacity-50 transition-colors"
             >
               Refresh
@@ -347,9 +378,9 @@ export default function OpsPage() {
           </>
         }
       >
-        {data?.window ? (
+        {state.data?.window ? (
           <p className="text-xs font-mono text-muted mt-0.5">
-            Window: {data.window.minutes}m ({formatIsoShort(data.window.from)} &rarr; {formatIsoShort(data.window.to)})
+            Window: {state.data.window.minutes}m ({formatIsoShort(state.data.window.from)} &rarr; {formatIsoShort(state.data.window.to)})
           </p>
         ) : (
           <p className="text-xs font-mono text-muted mt-0.5">Window: {windowMinutes}m</p>
@@ -357,9 +388,9 @@ export default function OpsPage() {
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
-        {fetchState === "error" && <ErrorState message={error || "Failed to load ops dashboard"} onRetry={load} />}
+        {state.fetchState === "error" && <ErrorState message={state.error || "Failed to load ops dashboard"} onRetry={load} />}
 
-        {fetchState === "loading" && !data && (
+        {state.fetchState === "loading" && !state.data && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={`sk-${i}`} className="bg-surface border border-border rounded clip-corner p-4 animate-pulse">
@@ -371,30 +402,30 @@ export default function OpsPage() {
           </div>
         )}
 
-        {data && (
+        {state.data && (
           <>
             {/* SLO Status Panel */}
-            <SloPanel sli={data.sli} />
+            <SloPanel sli={state.data.sli} />
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <MetricCard
                 label="Requests"
-                value={String(data.http.total)}
-                subtle={data.sample.truncated ? `Sampled ${data.sample.audit_rows} (truncated @ ${data.sample.max_rows})` : `Sampled ${data.sample.audit_rows}`}
+                value={String(state.data.http.total)}
+                subtle={state.data.sample.truncated ? `Sampled ${state.data.sample.audit_rows} (truncated @ ${state.data.sample.max_rows})` : `Sampled ${state.data.sample.audit_rows}`}
               />
               <MetricCard
                 label="4xx / 5xx"
-                value={`${data.http.status_4xx} / ${data.http.status_5xx}`}
-                subtle={`2xx ${data.http.status_2xx} \u00B7 3xx ${data.http.status_3xx}`}
+                value={`${state.data.http.status_4xx} / ${state.data.http.status_5xx}`}
+                subtle={`2xx ${state.data.http.status_2xx} \u00B7 3xx ${state.data.http.status_3xx}`}
               />
               <MetricCard
                 label="429 Rate"
-                value={formatPct(data.rate_limit.rate_429)}
-                subtle={`${data.rate_limit.status_429} (unknown agent: ${data.rate_limit.unknown_agent_429})`}
+                value={formatPct(state.data.rate_limit.rate_429)}
+                subtle={`${state.data.rate_limit.status_429} (unknown agent: ${state.data.rate_limit.unknown_agent_429})`}
               />
               <MetricCard
                 label="Queue Depth"
-                value={`${data.queue.approvals_pending} + ${data.queue.jobs_pending}`}
+                value={`${state.data.queue.approvals_pending} + ${state.data.queue.jobs_pending}`}
                 subtle={`Approvals + jobs`}
               />
             </div>
@@ -402,13 +433,13 @@ export default function OpsPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-mono font-bold text-text uppercase tracking-wider">Latency Percentiles by Route Group</h2>
               <span className="text-xs font-mono text-muted">
-                {lastUpdatedAt ? `Updated ${formatIsoShort(lastUpdatedAt)}` : null}
+                {state.lastUpdatedAt ? `Updated ${formatIsoShort(state.lastUpdatedAt)}` : null}
               </span>
             </div>
 
-            {fetchState === "loading" && <SkeletonTable columns={7} rows={10} />}
+            {state.fetchState === "loading" && <SkeletonTable columns={7} rows={10} />}
 
-            {fetchState !== "loading" && (
+            {state.fetchState !== "loading" && (
               <ConsoleTable
                 columns={[
                   { key: "route_group", label: "route_group", className: "w-[360px]" },
@@ -473,11 +504,11 @@ export default function OpsPage() {
                 <div className="bg-surface border border-border rounded clip-corner p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono text-muted">Approvals (PENDING)</span>
-                    <span className="text-xs font-mono font-bold text-text">{data.queue.approvals_pending}</span>
+                    <span className="text-xs font-mono font-bold text-text">{state.data.queue.approvals_pending}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono text-muted">Jobs (total)</span>
-                    <span className="text-xs font-mono font-bold text-text">{data.queue.jobs_pending}</span>
+                    <span className="text-xs font-mono font-bold text-text">{state.data.queue.jobs_pending}</span>
                   </div>
                 </div>
 
@@ -493,7 +524,7 @@ export default function OpsPage() {
             </div>
 
             {/* Approvals Detail Panel */}
-            <ApprovalsDetailPanel detail={data.approvals_detail} />
+            <ApprovalsDetailPanel detail={state.data.approvals_detail} />
           </>
         )}
       </main>
