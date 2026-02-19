@@ -15,6 +15,7 @@ vi.mock("next-intl", () => ({
       "conditions.FAIR": "Fair",
       "conditions.POOR": "Poor",
       seller: "Seller",
+      viewListing: "View Listing",
     };
     return map[key] ?? key;
   },

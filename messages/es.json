@@ -2244,6 +2244,7 @@
       "POOR": "Malo"
     },
     "seller": "Vendedor",
+    "viewListing": "Ver anuncio",
     "clearFilters": "Limpiar filtros",
     "resetFilters": "Restablecer filtros",
     "cta": {

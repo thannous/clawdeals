@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
+import { ShieldCheck } from "lucide-react";
 import { resolveCoverImageSrc } from "../media/cover-image";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
@@ -29,19 +30,22 @@ function timeAgo(dateStr: string): string {
   return `${days}d`;
 }
 
-const CONDITION_COLORS: Record<string, string> = {
-  NEW: "text-success border-success",
-  LIKE_NEW: "text-secondary border-secondary",
-  GOOD: "text-text border-border-strong",
-  FAIR: "text-muted border-border",
-  POOR: "text-subtle border-border",
+const CONDITION_CLASSES: Record<string, string> = {
+  NEW: "text-success border-success/60 bg-success/10",
+  LIKE_NEW: "text-secondary border-secondary/60 bg-secondary/10",
+  GOOD: "text-primary border-primary/60 bg-primary/10",
+  FAIR: "text-muted border-border-strong bg-surface-alt",
+  POOR: "text-subtle border-border bg-surface-alt",
 };
 
 function capitalize(s: string) {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+  if (!s) return s;
+  // If it looks like a UUID or long ID, truncate to first meaningful segment
+  const clean = s.split("_")[0];
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }
 
-const avatarLoader = ({ src }: ImageLoaderProps) => src;
+const imageLoader = ({ src }: ImageLoaderProps) => src;
 
 function resolveAvatarSrc(value: unknown): string {
   if (typeof value !== "string") return "/avatars/default-1.svg";
@@ -57,39 +61,50 @@ function ListingCard({ listing }: { listing: any }) {
   const t = useTranslations("browse");
   const { locale } = useRouter();
   const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
+  const conditionClasses = CONDITION_CLASSES[listing.condition] || "text-muted border-border bg-surface-alt";
 
   return (
     <Link href={`/browse/${listing.listing_id}`} className="block h-full">
-      <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full">
-        {coverImageSrc && (
-          <div className="relative h-40 border-b border-border overflow-hidden">
+      <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full">
+
+        {/* Image zone — always rendered */}
+        <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt shrink-0">
+          {coverImageSrc ? (
             <Image
-              loader={avatarLoader}
+              loader={imageLoader}
               unoptimized
               fill
               src={coverImageSrc}
               alt={listing.title || ""}
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
-          </div>
-        )}
-        <div className="p-4 flex flex-col gap-3 flex-1">
+          ) : (
+            <div className="flex items-center justify-center h-full text-subtle text-3xl font-mono">?</div>
+          )}
+          {/* Time ago overlay — top-right */}
+          {listing.created_at && (
+            <span className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded">
+              {timeAgo(listing.created_at)}
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 flex flex-col gap-2.5 flex-1">
           {/* Category + condition badges */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-mono font-bold uppercase px-2 py-0.5 border border-primary/60 text-primary rounded truncate">
+            <span className="text-xs font-mono font-bold uppercase px-2 py-0.5 border border-primary/60 text-primary bg-primary/10 rounded truncate max-w-[60%]">
               {capitalize(listing.category)}
             </span>
-            <span
-              className={`text-xs font-mono font-bold uppercase px-2 py-0.5 border rounded whitespace-nowrap ${
-                CONDITION_COLORS[listing.condition] || "text-muted border-border"
-              }`}
-            >
-              {listing.condition ? t(`conditions.${listing.condition}`) : ""}
-            </span>
+            {listing.condition && (
+              <span className={`text-xs font-mono font-bold uppercase px-2 py-0.5 border rounded whitespace-nowrap ${conditionClasses}`}>
+                {t(`conditions.${listing.condition}`)}
+              </span>
+            )}
           </div>
 
           {/* Title */}
-          <h3 className="text-sm font-semibold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+          <h3 className="text-base font-semibold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors">
             {listing.title}
           </h3>
 
@@ -104,33 +119,33 @@ function ListingCard({ listing }: { listing: any }) {
           {listing.seller && (
             <div className="flex items-center gap-2">
               <Image
-                loader={avatarLoader}
+                loader={imageLoader}
                 unoptimized
                 src={resolveAvatarSrc(listing.seller.avatar_url)}
                 alt=""
-                width={16}
-                height={16}
-                className="h-4 w-4 rounded-full shrink-0"
+                width={18}
+                height={18}
+                className="h-[18px] w-[18px] rounded-full shrink-0 border border-border"
               />
               <span className="text-xs font-mono text-muted truncate">
                 {listing.seller.display_name || t("seller")}
               </span>
               {listing.seller.verified && (
-                <svg className="h-3 w-3 text-primary shrink-0" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 0a8 8 0 110 16A8 8 0 018 0zm3.41 5.59a.75.75 0 00-1.06-1.06L7 7.88 5.65 6.53a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l4-4z" />
-                </svg>
+                <ShieldCheck size={12} className="text-primary shrink-0" />
               )}
             </div>
           )}
 
-          {/* Price + time */}
-          <div className="mt-auto pt-3 border-t border-dashed border-border flex items-center justify-between">
-            <span className="text-sm font-mono font-bold text-primary">
-              {formatPrice(listing.price.amount, listing.price.currency, locale || "en")}
-            </span>
-            <span className="text-xs font-mono text-subtle">
-              {timeAgo(listing.created_at)}
-            </span>
+          {/* Footer: price + CTA */}
+          <div className="mt-auto pt-3 border-t border-dashed border-border flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-mono font-bold text-primary">
+                {formatPrice(listing.price.amount, listing.price.currency, locale || "en")}
+              </span>
+            </div>
+            <div className="flex items-center justify-center gap-2 w-full py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded group-hover:bg-primary group-hover:text-bg transition-colors">
+              {t("viewListing")}
+            </div>
           </div>
         </div>
       </article>
