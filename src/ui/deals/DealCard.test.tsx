@@ -5,6 +5,10 @@ vi.mock("next/link", () => ({
   default: ({ children, href, ...props }: any) => <a href={href} {...props}>{children}</a>
 }));
 
+vi.mock("next/router", () => ({
+  useRouter: () => ({ push: vi.fn(), locale: "en" }),
+}));
+
 import DealCard from "./DealCard";
 
 afterEach(cleanup);

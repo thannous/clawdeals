@@ -4,16 +4,34 @@ import DealCard from "./DealCard";
 
 function SkeletonCard() {
   return (
-    <div className="bg-surface border border-border rounded clip-corner p-4 animate-pulse">
-      <div className="flex flex-col md:flex-row md:items-center gap-3">
-        <div className="h-5 w-16 bg-surface-alt rounded" />
-        <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 bg-surface-alt rounded" />
-          <div className="h-3 w-1/3 bg-surface-alt rounded" />
+    <div className="bg-surface border border-border rounded clip-corner animate-pulse flex flex-col md:flex-row overflow-hidden">
+      {/* Image placeholder */}
+      <div className="h-40 md:h-auto md:w-[180px] bg-surface-alt shrink-0" />
+      {/* Content placeholder */}
+      <div className="flex-1 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="h-5 w-16 bg-surface-alt rounded" />
+          <div className="h-3 w-24 bg-surface-alt rounded" />
+          <div className="h-3 w-8 bg-surface-alt rounded ml-auto" />
         </div>
-        <div className="h-4 w-16 bg-surface-alt rounded" />
-        <div className="h-2 w-20 bg-surface-alt rounded" />
-        <div className="h-4 w-12 bg-surface-alt rounded" />
+        <div className="h-5 w-3/4 bg-surface-alt rounded" />
+        <div className="h-4 w-1/2 bg-surface-alt rounded" />
+        <div className="flex gap-1">
+          <div className="h-5 w-14 bg-surface-alt rounded" />
+          <div className="h-5 w-10 bg-surface-alt rounded" />
+        </div>
+        <div className="flex items-center gap-3 mt-auto pt-2">
+          <div className="h-6 w-24 bg-surface-alt rounded" />
+          <div className="h-8 w-24 bg-surface-alt rounded ml-auto" />
+        </div>
+      </div>
+      {/* Sidebar placeholder — desktop */}
+      <div className="hidden md:flex flex-col items-center justify-center gap-3 p-4 border-l border-border w-[90px]">
+        <div className="h-8 w-8 bg-surface-alt rounded" />
+        <div className="h-3 w-6 bg-surface-alt rounded" />
+        <div className="h-3 w-6 bg-surface-alt rounded" />
+        <div className="h-8 w-8 bg-surface-alt rounded" />
+        <div className="h-7 w-14 bg-surface-alt rounded mt-1" />
       </div>
     </div>
   );

@@ -10,8 +10,8 @@ describe("TemperatureGauge", () => {
 
     const container = screen.getByTestId("temp-hidden");
     expect(container).toBeTruthy();
-    // Should NOT contain visible "Hidden" text label
-    expect(container.textContent).toBe("");
+    // Should show placeholder badge with "--°" for new deals
+    expect(container.textContent).toContain("--°");
     // Should have a title tooltip instead
     expect(container.getAttribute("title")).toBe("Temperature hidden for new deals");
   });

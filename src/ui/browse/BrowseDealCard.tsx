@@ -2,6 +2,7 @@ import { memo } from "react";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
+import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import StatusBadge from "../deals/StatusBadge";
 import TemperatureGauge from "../deals/TemperatureGauge";
 import { resolveCoverImageSrc } from "../media/cover-image";
@@ -44,11 +45,13 @@ function BrowseDealCard({ deal }: { deal: any }) {
   const t = useTranslations("browseDeals");
   const { locale } = useRouter();
   const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
+  const merchant = deal.merchant_name || (deal.source_url ? extractHostname(deal.source_url) : null);
 
   return (
     <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full">
-      {coverImageSrc && (
-        <div className="relative h-40 border-b border-border overflow-hidden">
+      {/* Image with overlays */}
+      <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt">
+        {coverImageSrc ? (
           <Image
             loader={imageLoader}
             unoptimized
@@ -57,21 +60,36 @@ function BrowseDealCard({ deal }: { deal: any }) {
             alt={deal?.title || ""}
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
+        ) : (
+          <div className="flex items-center justify-center h-full text-subtle text-3xl font-mono">?</div>
+        )}
+        {/* Temperature overlay — bottom-left */}
+        <div className="absolute bottom-2 left-2">
+          <TemperatureGauge temperature={deal.temperature} status={deal.status} />
         </div>
-      )}
-      <div className="p-4 flex flex-col gap-3 flex-1">
-        {/* Status badge + timeAgo */}
-        <div className="flex items-center justify-between gap-2">
-          <StatusBadge status={deal.status} />
-          <span className="text-xs font-mono text-subtle">
+        {/* Time ago overlay — top-right */}
+        {deal.created_at && (
+          <span className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded">
             {timeAgo(deal.created_at)}
           </span>
-        </div>
+        )}
+      </div>
+
+      <div className="p-4 flex flex-col gap-2.5 flex-1">
+        {/* Status badge */}
+        <StatusBadge status={deal.status} />
 
         {/* Title */}
         <h3 className="text-sm font-semibold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors">
           {deal.title}
         </h3>
+
+        {/* Merchant */}
+        {merchant && (
+          <span className="text-xs font-mono text-muted truncate">
+            {merchant}
+          </span>
+        )}
 
         {/* Tags */}
         {deal.tags && deal.tags.length > 0 && (
@@ -87,26 +105,36 @@ function BrowseDealCard({ deal }: { deal: any }) {
           </div>
         )}
 
-        {/* Temperature gauge (if not NEW) */}
-        {deal.status !== "NEW" && (
-          <TemperatureGauge temperature={deal.temperature} status={deal.status} />
-        )}
+        {/* Footer: price + votes */}
+        <div className="mt-auto pt-3 border-t border-dashed border-border flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-mono font-bold text-primary">
+              {deal.price != null && deal.currency
+                ? formatPrice(deal.price, deal.currency, locale || "en")
+                : t("noPriceListed")}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-xs font-mono text-secondary">
+                <ThumbsUp size={10} />
+                {deal.votes_up ?? 0}
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs font-mono text-error">
+                <ThumbsDown size={10} />
+                {deal.votes_down ?? 0}
+              </span>
+            </div>
+          </div>
 
-        {/* Footer: price + source link */}
-        <div className="mt-auto pt-3 border-t border-dashed border-border flex items-center justify-between">
-          <span className="text-sm font-mono font-bold text-primary">
-            {deal.price != null && deal.currency
-              ? formatPrice(deal.price, deal.currency, locale || "en")
-              : t("noPriceListed")}
-          </span>
+          {/* CTA button */}
           {deal.source_url && (
             <a
               href={deal.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-mono text-subtle hover:text-primary truncate max-w-[140px] transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary hover:text-bg transition-colors"
             >
-              {extractHostname(deal.source_url)}
+              {t("viewDeal")}
+              <ExternalLink size={12} />
             </a>
           )}
         </div>
