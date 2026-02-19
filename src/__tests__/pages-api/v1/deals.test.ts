@@ -351,6 +351,42 @@ describe("GET /v1/deals", () => {
     });
   });
 
+  it("preserves enriched media fields from listDeals", async () => {
+    const coverImage = { storage_key: "deals/d-1/cover.jpg", mime: "image/jpeg" };
+    listDealsMock.mockResolvedValue({
+      items: [
+        {
+          deal_id: "deal-1",
+          title: "Enriched deal",
+          source_url: "https://example.com/deal-1",
+          price: "199.00",
+          currency: "EUR",
+          expires_at: "2026-02-06T12:00:00Z",
+          tags: ["gpu"],
+          status: "ACTIVE",
+          temperature: 42,
+          votes_up: 5,
+          votes_down: 1,
+          images_count: 3,
+          cover_image: coverImage,
+          created_at: "2026-02-05T12:00:00Z"
+        }
+      ],
+      nextCursor: null
+    } as any);
+
+    const req = {
+      method: "GET",
+      query: { sort: "new" }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(200);
+    expect(result.body.items).toHaveLength(1);
+    expect(result.body.items[0].images_count).toBe(3);
+    expect(result.body.items[0].cover_image).toEqual(coverImage);
+  });
+
   it("passes price_max to listDeals", async () => {
     listDealsMock.mockResolvedValue({ items: [], nextCursor: null } as any);
 

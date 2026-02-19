@@ -49,10 +49,22 @@ function parseDate(value) {
 }
 
 function mapDealSummary(deal: any) {
-  const media = normalizeReadMedia({
-    rawImages: deal?.images,
-    rawCoverImageIndex: deal?.cover_image_index
-  });
+  const imagesCount =
+    typeof deal?.images_count === "number" && Number.isFinite(deal.images_count) && deal.images_count >= 0
+      ? deal.images_count
+      : 0;
+  const hasRawMedia =
+    Object.prototype.hasOwnProperty.call(deal || {}, "images") ||
+    Object.prototype.hasOwnProperty.call(deal || {}, "cover_image_index");
+  const media = hasRawMedia
+    ? normalizeReadMedia({
+      rawImages: deal?.images,
+      rawCoverImageIndex: deal?.cover_image_index
+    })
+    : {
+      images_count: imagesCount,
+      cover_image: deal?.cover_image ?? null
+    };
 
   return {
     deal_id: deal.deal_id,
