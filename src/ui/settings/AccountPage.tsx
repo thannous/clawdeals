@@ -431,7 +431,7 @@ function useAccountPageView() {
                     </div>
                   </div>
 
-                  {/* Channels */}
+                  {/* Agents */}
                   <section data-testid="account-agents">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-mono uppercase tracking-widest text-subtle">{t("channels")}</span>
