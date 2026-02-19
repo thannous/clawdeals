@@ -87,7 +87,6 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
               id="vote-reason"
               data-testid="vote-reason"
               name="reason"
-              autoFocus
               autoComplete="off"
               spellCheck={false}
               value={reason}

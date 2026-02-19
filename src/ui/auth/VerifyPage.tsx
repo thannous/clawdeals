@@ -7,8 +7,8 @@ import {
   getStoredOwnerEmail,
   getStoredOwnerSessionId,
   getStoredOwnerSessionToken,
-  setStoredOwnerSessionId,
-  setStoredOwnerSessionToken,
+  setStoredOwnerSessionId as persistOwnerSessionId,
+  setStoredOwnerSessionToken as persistOwnerSessionToken,
   clearStoredOwnerSessionId,
   clearStoredOwnerSessionToken
 } from "./ownerAuth";
@@ -105,11 +105,11 @@ function useVerifyPageView() {
     if (!router.isReady) return;
     if (querySessionId) {
       setSessionId(querySessionId);
-      setStoredOwnerSessionId(querySessionId);
+      persistOwnerSessionId(querySessionId);
     }
     if (queryToken) {
       setToken(queryToken);
-      setStoredOwnerSessionToken(queryToken);
+      persistOwnerSessionToken(queryToken);
     }
 
   }, [router.isReady, querySessionId, queryToken]);
@@ -148,11 +148,11 @@ function useVerifyPageView() {
       const nextExpires = body?.data?.expires_at ? String(body.data.expires_at) : null;
 
       if (nextSessionId) {
-        setStoredOwnerSessionId(nextSessionId);
+        persistOwnerSessionId(nextSessionId);
         setSessionId(nextSessionId);
       }
       if (nextToken) {
-        setStoredOwnerSessionToken(nextToken);
+        persistOwnerSessionToken(nextToken);
         setToken(nextToken);
       }
       setExpiresAt(nextExpires || null);
