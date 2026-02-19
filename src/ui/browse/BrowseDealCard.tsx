@@ -2,7 +2,7 @@ import { memo } from "react";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ThumbsUp, ThumbsDown, ExternalLink, Tag } from "lucide-react";
+import { ThumbsUp, ThumbsDown, ExternalLink, Tag, MapPin } from "lucide-react";
 import StatusBadge from "../deals/StatusBadge";
 import TemperatureGauge from "../deals/TemperatureGauge";
 import { resolveCoverImageSrc } from "../media/cover-image";
@@ -48,6 +48,13 @@ function BrowseDealCard({ deal }: { deal: any }) {
   const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
   const merchant = deal.merchant_name || (deal.source_url ? extractHostname(deal.source_url) : null);
 
+  const votesUp = deal.votes_up ?? 0;
+  const votesDown = deal.votes_down ?? 0;
+  const net = votesUp - votesDown;
+  const netStr = net > 0 ? `+${net}` : String(net);
+  const netColorClass =
+    net > 0 ? "text-secondary" : net < 0 ? "text-error" : "text-subtle";
+
   const handleCardClick = (e) => {
     if ((e.target as HTMLElement).closest("a, button")) return;
     router.push(`/deals/${deal.deal_id}`);
@@ -58,9 +65,9 @@ function BrowseDealCard({ deal }: { deal: any }) {
       onClick={handleCardClick}
       className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full"
     >
-      {/* Image with overlays */}
-      <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt">
-        {coverImageSrc ? (
+      {/* Image zone — only rendered when image is available */}
+      {coverImageSrc && (
+        <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt shrink-0">
           <Image
             loader={imageLoader}
             unoptimized
@@ -69,24 +76,38 @@ function BrowseDealCard({ deal }: { deal: any }) {
             alt={deal?.title || ""}
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
-        ) : (
-          <div className="flex items-center justify-center h-full text-subtle/40">
-            <Tag size={40} strokeWidth={1} />
-          </div>
-        )}
-        {/* Time ago overlay — top-right */}
-        {deal.created_at && (
-          <span className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded">
-            {timeAgo(deal.created_at)}
-          </span>
-        )}
-      </div>
+          {deal.created_at && (
+            <span className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded">
+              {timeAgo(deal.created_at)}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="p-4 flex flex-col gap-2.5 flex-1">
-        {/* Status + temperature row */}
+        {/* Status row: badge + LOCAL + (timeAgo if no image) + temperature */}
         <div className="flex items-center justify-between gap-2">
-          <StatusBadge status={deal.status} />
-          <TemperatureGauge temperature={deal.temperature} status={deal.status} />
+          <div className="flex items-center gap-2 min-w-0">
+            <StatusBadge status={deal.status} />
+            {deal.deal_type === "LOCAL" && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-mono border border-secondary/50 text-secondary rounded whitespace-nowrap shrink-0">
+                <MapPin size={10} />
+                LOCAL
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {!coverImageSrc && deal.created_at && (
+              <span className="text-xs font-mono text-subtle">
+                {timeAgo(deal.created_at)}
+              </span>
+            )}
+            <TemperatureGauge
+              temperature={deal.temperature}
+              status={deal.status}
+              size="lg"
+            />
+          </div>
         </div>
 
         {/* Title */}
@@ -94,18 +115,9 @@ function BrowseDealCard({ deal }: { deal: any }) {
           {deal.title}
         </h3>
 
-        {/* Description */}
-        {deal.description && (
-          <p className="text-xs text-muted font-mono line-clamp-2 leading-relaxed">
-            {deal.description}
-          </p>
-        )}
-
         {/* Merchant */}
         {merchant && (
-          <span className="text-xs font-mono text-muted truncate">
-            {merchant}
-          </span>
+          <span className="text-xs font-mono text-muted truncate">{merchant}</span>
         )}
 
         {/* Tags */}
@@ -122,27 +134,32 @@ function BrowseDealCard({ deal }: { deal: any }) {
           </div>
         )}
 
-        {/* Footer: price + votes */}
+        {/* Footer: price + votes + CTA */}
         <div className="mt-auto pt-3 border-t border-dashed border-border flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-base font-mono font-bold text-primary">
+          <div className="flex items-center justify-between gap-2">
+            {/* Price */}
+            <span className="text-xl font-mono font-bold text-primary">
               {deal.price != null && deal.currency
                 ? formatPrice(deal.price, deal.currency, locale || "en")
                 : t("noPriceListed")}
             </span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 text-xs font-mono text-secondary">
-                <ThumbsUp size={12} />
-                {deal.votes_up ?? 0}
+
+            {/* Votes: net score + detail */}
+            <div className="flex flex-col items-end gap-0.5">
+              <span className={`font-mono font-bold text-base leading-none ${netColorClass}`}>
+                {netStr}
               </span>
-              <span className="inline-flex items-center gap-1 text-xs font-mono text-error">
-                <ThumbsDown size={12} />
-                {deal.votes_down ?? 0}
+              <span className="flex items-center gap-1.5 text-xs font-mono text-subtle">
+                <ThumbsUp size={10} />
+                {votesUp}
+                <span className="opacity-40">·</span>
+                <ThumbsDown size={10} />
+                {votesDown}
               </span>
             </div>
           </div>
 
-          {/* CTA button */}
+          {/* CTA */}
           {deal.source_url && (
             <a
               href={deal.source_url}
