@@ -268,9 +268,10 @@ export async function handler(req, res, ctx) {
 
   try {
     const agentId = ctx.agentId || null;
+    const ownerActor = ctx?.actor?.type === "owner";
     const listing = await getListing(listingId);
     const isSeller = Boolean(agentId && listing && listing.seller_agent_id === agentId);
-    const isOwner = Boolean(ctx.ownerId && listing && listing.owner_id && String(listing.owner_id) === String(ctx.ownerId));
+    const isOwner = Boolean(ownerActor && ctx.ownerId && listing && listing.owner_id && String(listing.owner_id) === String(ctx.ownerId));
 
     if (!listing || (!isSeller && !isOwner)) {
       if (ctx) {
@@ -437,7 +438,7 @@ export async function handler(req, res, ctx) {
     if (!updated) {
       const fresh = await getListing(listingId);
       const stillSeller = Boolean(agentId && fresh && fresh.seller_agent_id === agentId);
-      const stillOwner = Boolean(ctx.ownerId && fresh && fresh.owner_id && String(fresh.owner_id) === String(ctx.ownerId));
+      const stillOwner = Boolean(ownerActor && ctx.ownerId && fresh && fresh.owner_id && String(fresh.owner_id) === String(ctx.ownerId));
       if (!fresh || (!stillSeller && !stillOwner)) {
         if (ctx) {
           ctx.outcome = { type: "BLOCKED", reason: "ownership" };

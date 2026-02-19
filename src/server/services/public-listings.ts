@@ -6,6 +6,14 @@ import { normalizeReadMedia } from "../media/images";
 const PUBLIC_DEFAULT_LIMIT = 24;
 const PUBLIC_MAX_LIMIT = 30;
 
+function isMissingListingCoverImageIndexColumn(error: any) {
+  const message = error?.message || "";
+  if (typeof message !== "string") return false;
+  const referencesColumn = message.includes("cover_image_index");
+  const missingColumnHint = message.includes("does not exist") || message.toLowerCase().includes("schema cache");
+  return referencesColumn && missingColumnHint;
+}
+
 export function mapPublicListingRow(row: any, sellerInfo?: { display_name: string | null; avatar_url: string | null; verified: boolean } | null) {
   const desc = typeof row.description === "string" ? row.description : null;
   const media = normalizeReadMedia({
@@ -99,10 +107,27 @@ export async function listPublicListings({
   // RPCs don't return description or owner_id — batch-fetch them for the returned IDs
   const ids = items.map((r: any) => r.listing_id);
   const client = getSupabaseServiceClient();
-  const { data: extraRows } = await client
-    .from("listings")
-    .select("listing_id, description, owner_id, photos, cover_image_index")
-    .in("listing_id", ids);
+  const fetchExtraRows = async (selectColumns: string) =>
+    client
+      .from("listings")
+      .select(selectColumns)
+      .in("listing_id", ids);
+
+  let extraRows: any[] | null = null;
+  let data;
+  let error;
+  ({ data, error } = await fetchExtraRows("listing_id, description, owner_id, photos, cover_image_index"));
+
+  if (error && isMissingListingCoverImageIndexColumn(error)) {
+    ({ data, error } = await fetchExtraRows("listing_id, description, owner_id, photos"));
+    if (!error && Array.isArray(data)) {
+      data = data.map((row: any) => ({ ...row, cover_image_index: null }));
+    }
+  }
+
+  if (!error && Array.isArray(data)) {
+    extraRows = data;
+  }
 
   const descMap = new Map<string, string | null>();
   const ownerMap = new Map<string, string | null>();

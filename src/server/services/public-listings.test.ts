@@ -177,6 +177,56 @@ describe("listPublicListings", () => {
     expect(result.nextCursor).toBe("cursor-abc");
   });
 
+  it("retries extra fetch without cover_image_index on legacy schema", async () => {
+    const items = [
+      {
+        listing_id: "id-1",
+        title: "Item 1",
+        category: "cat",
+        condition: "NEW",
+        price_amount: 100,
+        currency: "EUR",
+        created_at: "2026-01-01T00:00:00Z"
+      }
+    ];
+    listListingsMock.mockResolvedValue({ items, nextCursor: null });
+
+    const inMock = vi.fn()
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: "column listings.cover_image_index does not exist" }
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            listing_id: "id-1",
+            description: "Desc for item 1",
+            owner_id: "owner-1",
+            photos: [{ storage_key: "listings/id-1/1.jpg", mime: "image/jpeg" }]
+          }
+        ],
+        error: null
+      });
+    const selectMock = vi.fn().mockReturnValue({ in: inMock });
+    getClientMock.mockReturnValue({
+      from: vi.fn().mockReturnValue({ select: selectMock }),
+    } as any);
+
+    getOwnerProfilesMock.mockResolvedValue(
+      new Map([
+        ["owner-1", { display_name: "Seller One", avatar_url: null, verified: true }],
+      ])
+    );
+
+    const result = await listPublicListings({ sort: "recent" });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].description).toBe("Desc for item 1");
+    expect(result.items[0].images_count).toBe(1);
+    expect(result.items[0].seller).toEqual({ display_name: "Seller One", avatar_url: null, verified: true });
+    expect(selectMock).toHaveBeenCalledWith("listing_id, description, owner_id, photos, cover_image_index");
+    expect(selectMock).toHaveBeenCalledWith("listing_id, description, owner_id, photos");
+  });
+
   it("passes includeHidden: false to listListings", async () => {
     listListingsMock.mockResolvedValue({ items: [], nextCursor: null });
 

@@ -114,11 +114,24 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
-  it("returns 403 for owner non-media patch when owner is not seller", async () => {
+  it("returns 404 for non-seller agent non-media patch (anti-enumeration)", async () => {
     getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "agent-2", owner_id: "owner-1", status: "LIVE" } as any);
 
     const req: any = { method: "PATCH", headers: { "idempotency-key": "idem-1" }, query: { id: listingId }, body: { title: "New title" } };
     const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 403 for owner non-media patch when owner is not seller", async () => {
+    getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "agent-2", owner_id: "owner-1", status: "LIVE" } as any);
+
+    const req: any = { method: "PATCH", headers: { "idempotency-key": "idem-owner-1" }, query: { id: listingId }, body: { title: "New title" } };
+    const result: any = await handler(req, null, {
+      ...baseCtx,
+      agentId: null,
+      actor: { type: "owner", id: "owner-1" }
+    });
     expect(result.status).toBe(403);
     expect(result.body.error.code).toBe("FORBIDDEN");
   });

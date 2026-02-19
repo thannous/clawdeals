@@ -20,6 +20,14 @@ function isRpcParamMismatch(error: any, paramName: string) {
   return typeof message === "string" && message.includes(paramName) && message.includes("schema cache");
 }
 
+function isMissingListingCoverImageIndexColumn(error: any) {
+  const message = error?.message || "";
+  if (typeof message !== "string") return false;
+  const referencesColumn = message.includes("cover_image_index");
+  const missingColumnHint = message.includes("does not exist") || message.toLowerCase().includes("schema cache");
+  return referencesColumn && missingColumnHint;
+}
+
 function buildServiceError(message, status = 500, code = "ERROR", meta?: any) {
   const error: any = new Error(message);
   error.status = status;
@@ -93,21 +101,31 @@ async function enrichListingMediaRows({ client, rows }: any = {}) {
     }));
   }
 
-  const { data, error } = await client
-    .from("listings")
-    .select("listing_id,photos,cover_image_index")
-    .in("listing_id", listingIds);
+  const selectWithCover = "listing_id,photos,cover_image_index";
+  const selectWithoutCover = "listing_id,photos";
+  const fetchRows = async (selectColumns: string) =>
+    client
+      .from("listings")
+      .select(selectColumns)
+      .in("listing_id", listingIds);
 
-  if (error) {
-    mapError(error);
+  let data;
+  let error;
+  ({ data, error } = await fetchRows(selectWithCover));
+
+  if (error && isMissingListingCoverImageIndexColumn(error)) {
+    ({ data, error } = await fetchRows(selectWithoutCover));
   }
+
+  if (error) mapError(error);
 
   const byListingId = new Map();
   for (const row of Array.isArray(data) ? data : []) {
     if (!row?.listing_id) continue;
     byListingId.set(row.listing_id, normalizeReadMedia({
       rawImages: row.photos,
-      rawCoverImageIndex: row.cover_image_index
+      rawCoverImageIndex:
+        Object.prototype.hasOwnProperty.call(row || {}, "cover_image_index") ? row.cover_image_index : null
     }));
   }
 
@@ -181,15 +199,14 @@ export async function createListing({
     error &&
     (message.includes("duplicate_fingerprint") || message.includes("duplicate_override")) &&
     (message.includes("does not exist") || message.toLowerCase().includes("schema cache"));
-  const missingCoverImageIndexCol =
-    error &&
-    message.includes("cover_image_index") &&
-    (message.includes("does not exist") || message.toLowerCase().includes("schema cache"));
+  const missingCoverImageIndexCol = Boolean(error && isMissingListingCoverImageIndexColumn(error));
 
   if (missingDuplicateCols || missingCoverImageIndexCol) {
     const fallbackPayload: any = { ...payload };
-    delete fallbackPayload.duplicate_fingerprint;
-    delete fallbackPayload.duplicate_override;
+    if (missingDuplicateCols) {
+      delete fallbackPayload.duplicate_fingerprint;
+      delete fallbackPayload.duplicate_override;
+    }
     if (missingCoverImageIndexCol) {
       delete fallbackPayload.cover_image_index;
     }
@@ -256,19 +273,36 @@ export async function updateListingBySeller({
   }
 
   const client = getSupabaseServiceClient();
-  let query: any = client
-    .from("listings")
-    .update(payload)
-    .eq("listing_id", listingId)
-    .eq("seller_agent_id", sellerAgentId);
+  const selectWithCover = "listing_id,status,delivery_method,photos,cover_image_index,updated_at";
+  const selectWithoutCover = "listing_id,status,delivery_method,photos,updated_at";
+  const runUpdate = async ({ selectColumns, writePayload }: { selectColumns: string; writePayload: any }) => {
+    let query: any = client
+      .from("listings")
+      .update(writePayload)
+      .eq("listing_id", listingId)
+      .eq("seller_agent_id", sellerAgentId);
 
-  if (expectedStatus) {
-    query = query.eq("status", expectedStatus);
+    if (expectedStatus) {
+      query = query.eq("status", expectedStatus);
+    }
+
+    return query.select(selectColumns).maybeSingle();
+  };
+
+  let data;
+  let error;
+  ({ data, error } = await runUpdate({ selectColumns: selectWithCover, writePayload: payload }));
+
+  if (error && isMissingListingCoverImageIndexColumn(error)) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.cover_image_index;
+    ({ data, error } = await runUpdate({ selectColumns: selectWithoutCover, writePayload: fallbackPayload }));
   }
 
-  const { data, error } = await query.select("listing_id,status,delivery_method,photos,cover_image_index,updated_at").maybeSingle();
-  if (error) {
-    mapError(error);
+  if (error) mapError(error);
+
+  if (data && !Object.prototype.hasOwnProperty.call(data, "cover_image_index")) {
+    return { ...data, cover_image_index: null };
   }
   return data || null;
 }
@@ -460,31 +494,47 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor,
   const cappedLimit = Math.max(1, Math.min(100, pageLimit));
   const fetchLimit = cappedLimit + 1;
 
-  let query = client
-    .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id")
-    .eq("owner_id", ownerId)
-    .order("created_at", { ascending: false })
-    .order("listing_id", { ascending: false })
-    .limit(fetchLimit);
+  const selectWithCover =
+    "listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id";
+  const selectWithoutCover =
+    "listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,created_at,updated_at,seller_agent_id";
 
-  if (status) {
-    query = query.eq("status", status);
+  const runOwnerQuery = async (selectColumns: string) => {
+    let query = client
+      .from("listings")
+      .select(selectColumns)
+      .eq("owner_id", ownerId)
+      .order("created_at", { ascending: false })
+      .order("listing_id", { ascending: false })
+      .limit(fetchLimit);
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    if (sellerAgentId) {
+      query = query.eq("seller_agent_id", sellerAgentId);
+    }
+
+    if (cursor?.created_at && cursor?.listing_id) {
+      const createdAt = formatFilterValue(cursor.created_at);
+      const listingId = formatFilterValue(cursor.listing_id);
+      query = query.or(
+        `created_at.lt.${createdAt},and(created_at.eq.${createdAt},listing_id.lt.${listingId})`
+      );
+    }
+
+    return query;
+  };
+
+  let data;
+  let error;
+  ({ data, error } = await runOwnerQuery(selectWithCover));
+
+  if (error && isMissingListingCoverImageIndexColumn(error)) {
+    ({ data, error } = await runOwnerQuery(selectWithoutCover));
   }
 
-  if (sellerAgentId) {
-    query = query.eq("seller_agent_id", sellerAgentId);
-  }
-
-  if (cursor?.created_at && cursor?.listing_id) {
-    const createdAt = formatFilterValue(cursor.created_at);
-    const listingId = formatFilterValue(cursor.listing_id);
-    query = query.or(
-      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},listing_id.lt.${listingId})`
-    );
-  }
-
-  const { data, error } = await query;
   if (error) mapError(error);
 
   const rows = data || [];
