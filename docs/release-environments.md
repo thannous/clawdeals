@@ -156,3 +156,42 @@ Prevention:
    - Runbook documents stop, verify, recover.
 5. Consistency:
    - No test command targets production DB host in documentation.
+
+## 10) E2E Blockers And How To Avoid Them
+
+Primary blockers seen in local and CI Playwright runs:
+- Missing Playwright browser binaries (Chromium/Firefox/WebKit).
+- Ambiguous UI selectors in strict mode (same accessible name on multiple elements).
+
+### 10.1 Browser Installation Guardrail
+
+Symptoms:
+- `browserType.launch: Executable doesn't exist`
+- Path usually under `~/.cache/ms-playwright/...`
+
+Prevention:
+1. After `npm ci` or Playwright version updates, run:
+   - `npx playwright install`
+2. In CI, run `npx playwright install --with-deps` in the setup stage.
+3. Verify installation quickly before full suite:
+   - `npx playwright test e2e/ui/auth-login.spec.ts --project=ui --workers=1`
+
+### 10.2 Selector Stability Guardrail (Strict Mode)
+
+Symptoms:
+- `strict mode violation`
+- A locator like `getByRole("button", { name: "..." })` resolves to both toolbar buttons and table rows.
+
+Prevention:
+1. Scope all clickable filter controls to a stable container test id.
+   - Example: `page.getByTestId("approvals-toolbar").getByRole("button", { name: "APPROVED" })`
+2. Do not rely on global `getByRole` when the same text can appear in row content.
+3. Keep `data-testid` on functional containers used by tests (`approvals-toolbar`, `approvals-page`, etc.).
+4. When adding new UI labels, re-run related UI specs to catch selector collisions early.
+
+### 10.3 Fast Triage Workflow
+
+1. Re-run failing spec in isolation:
+   - `npx playwright test e2e/ui/<spec>.ts --project=ui --workers=1`
+2. If failure is setup-related, fix environment first (`playwright install`) before debugging app logic.
+3. If failure is strict-mode-related, tighten selector scope before changing business behavior.

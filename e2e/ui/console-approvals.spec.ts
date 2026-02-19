@@ -155,7 +155,7 @@ test.describe("Console Approvals — US-3/US-4", () => {
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
       const filteredReq = waitForApiGet(page, "/api/console/approvals", { action_type: "listing_publish" });
-      await page.getByRole("button", { name: "listing_publish" }).click();
+      await page.getByTestId("approvals-toolbar").getByRole("button", { name: "listing_publish" }).click();
       await filteredReq;
     });
 
@@ -166,7 +166,7 @@ test.describe("Console Approvals — US-3/US-4", () => {
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
       const filteredReq = waitForApiGet(page, "/api/console/approvals", { action_type: "offer_over_budget" });
-      await page.getByRole("button", { name: "offer_over_budget" }).click();
+      await page.getByTestId("approvals-toolbar").getByRole("button", { name: "offer_over_budget" }).click();
       await filteredReq;
     });
 
@@ -177,7 +177,7 @@ test.describe("Console Approvals — US-3/US-4", () => {
       await expect(page.getByTestId("approvals-page")).toBeVisible();
 
       const filteredReq = waitForApiGet(page, "/api/console/approvals", { state: "APPROVED" });
-      await page.getByRole("button", { name: "APPROVED" }).click();
+      await page.getByTestId("approvals-toolbar").getByRole("button", { name: "APPROVED" }).click();
       await filteredReq;
     });
 
