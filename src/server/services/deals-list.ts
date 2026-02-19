@@ -16,6 +16,14 @@ function isRpcParamMismatch(error: any, paramName: string) {
   return typeof message === "string" && message.includes(paramName) && message.includes("schema cache");
 }
 
+function isMissingDealMediaColumns(error: any) {
+  const message = error?.message || "";
+  if (typeof message !== "string") return false;
+  const referencesMediaColumns = message.includes("images") || message.includes("cover_image_index");
+  const missingColumnHint = message.includes("does not exist") || message.toLowerCase().includes("schema cache");
+  return referencesMediaColumns && missingColumnHint;
+}
+
 async function enrichDealMediaRows({ client, rows }: any = {}) {
   const list = Array.isArray(rows) ? rows : [];
   if (list.length === 0) return list;
@@ -37,10 +45,19 @@ async function enrichDealMediaRows({ client, rows }: any = {}) {
     }));
   }
 
-  const { data, error } = await client
+  let { data, error } = await client
     .from("deals")
     .select("deal_id,images,cover_image_index")
     .in("deal_id", dealIds);
+
+  // Backward compatibility: tolerate DBs where media columns are not yet migrated.
+  if (error && isMissingDealMediaColumns(error)) {
+    return list.map((row) => ({
+      ...(row || {}),
+      images_count: 0,
+      cover_image: null
+    }));
+  }
 
   if (error) mapError(error);
 
@@ -232,29 +249,39 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
   const cappedLimit = Math.max(1, Math.min(MAX_LIMIT, pageLimit));
   const fetchLimit = cappedLimit + 1;
 
-  let query = client
-    .from("deals")
-    .select("deal_id,title,status,temperature,price,currency,images,cover_image_index,created_at,creator_agent_id")
-    .in("creator_agent_id", filterAgentIds)
-    .order("created_at", { ascending: false })
-    .order("deal_id", { ascending: false })
-    .limit(fetchLimit);
+  const buildOwnerDealsQuery = (selectColumns: string) => {
+    let query = client
+      .from("deals")
+      .select(selectColumns)
+      .in("creator_agent_id", filterAgentIds)
+      .order("created_at", { ascending: false })
+      .order("deal_id", { ascending: false })
+      .limit(fetchLimit);
 
-  if (status) {
-    query = query.eq("status", status);
-  } else {
-    query = query.in("status", ["NEW", "ACTIVE", "EXPIRED"]);
+    if (status) {
+      query = query.eq("status", status);
+    } else {
+      query = query.in("status", ["NEW", "ACTIVE", "EXPIRED"]);
+    }
+
+    if (cursor?.created_at && cursor?.deal_id) {
+      const createdAt = `"${cursor.created_at}"`;
+      const dealId = `"${cursor.deal_id}"`;
+      query = query.or(
+        `created_at.lt.${createdAt},and(created_at.eq.${createdAt},deal_id.lt.${dealId})`
+      );
+    }
+
+    return query;
+  };
+
+  const selectWithMedia = "deal_id,title,status,temperature,price,currency,images,cover_image_index,created_at,creator_agent_id";
+  const selectWithoutMedia = "deal_id,title,status,temperature,price,currency,created_at,creator_agent_id";
+
+  let { data, error } = await buildOwnerDealsQuery(selectWithMedia);
+  if (error && isMissingDealMediaColumns(error)) {
+    ({ data, error } = await buildOwnerDealsQuery(selectWithoutMedia));
   }
-
-  if (cursor?.created_at && cursor?.deal_id) {
-    const createdAt = `"${cursor.created_at}"`;
-    const dealId = `"${cursor.deal_id}"`;
-    query = query.or(
-      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},deal_id.lt.${dealId})`
-    );
-  }
-
-  const { data, error } = await query;
   if (error) mapError(error);
 
   const rows = data || [];

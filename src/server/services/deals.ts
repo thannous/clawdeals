@@ -20,6 +20,14 @@ function mapVoteError(error) {
   return { status: mapped.status, code: mapped.code, message: mapped.message };
 }
 
+function isMissingDealMediaColumns(error: any) {
+  const message = error?.message || "";
+  if (typeof message !== "string") return false;
+  const referencesMediaColumns = message.includes("images") || message.includes("cover_image_index");
+  const missingColumnHint = message.includes("does not exist") || message.toLowerCase().includes("schema cache");
+  return referencesMediaColumns && missingColumnHint;
+}
+
 export async function createDeal({
   title,
   sourceUrl,
@@ -46,6 +54,9 @@ export async function createDeal({
   merchantDomain
 }) {
   const client = getSupabaseServiceClient();
+  const hasRequestedMedia =
+    (Array.isArray(images) && images.length > 0) ||
+    (coverImageIndex !== null && coverImageIndex !== undefined);
   const payload: any = {
     title,
     source_url: sourceUrl,
@@ -71,7 +82,27 @@ export async function createDeal({
   if (country !== undefined) payload.country = country;
   if (merchantName !== undefined) payload.merchant_name = merchantName;
   if (merchantDomain !== undefined) payload.merchant_domain = merchantDomain;
-  const { data, error } = await client.from("deals").insert(payload).select().single();
+
+  let { data, error } = await client.from("deals").insert(payload).select().single();
+
+  // Backward compatibility: tolerate DBs where media columns are not yet migrated.
+  if (error && isMissingDealMediaColumns(error)) {
+    if (hasRequestedMedia) {
+      throw Object.assign(new Error("Deal media fields are unavailable until database migration is applied"), {
+        status: 503,
+        code: "FEATURE_UNAVAILABLE"
+      });
+    }
+
+    const fallbackPayload: any = { ...payload };
+    delete fallbackPayload.images;
+    delete fallbackPayload.cover_image_index;
+    ({ data, error } = await client.from("deals").insert(fallbackPayload).select().single());
+    if (!error && data) {
+      data = { ...data, images: null, cover_image_index: null };
+    }
+  }
+
   if (error) {
     const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });

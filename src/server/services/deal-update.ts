@@ -16,6 +16,14 @@ function mapError(error) {
   throw buildServiceError(mapped.message, mapped.status, mapped.code);
 }
 
+function isMissingDealMediaColumns(error: any) {
+  const message = error?.message || "";
+  if (typeof message !== "string") return false;
+  const referencesMediaColumns = message.includes("images") || message.includes("cover_image_index");
+  const missingColumnHint = message.includes("does not exist") || message.toLowerCase().includes("schema cache");
+  return referencesMediaColumns && missingColumnHint;
+}
+
 const DEAL_EDITABLE_STATUSES = new Set(["NEW"]);
 
 function assertDealEditable({ existing, agentId, now }: any = {}) {
@@ -66,13 +74,28 @@ export async function getDealForUpdate({ dealId }: any = {}) {
   }
 
   const client = getSupabaseServiceClient();
-  const { data, error } = await client
+  const selectWithMedia =
+    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at,new_until,creator_agent_id";
+  const selectWithoutMedia =
+    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at,new_until,creator_agent_id";
+
+  let { data, error } = await client
     .from("deals")
-    .select(
-      "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at,new_until,creator_agent_id"
-    )
+    .select(selectWithMedia)
     .eq("deal_id", dealId)
     .maybeSingle();
+
+  // Backward compatibility: tolerate DBs where media columns are not yet migrated.
+  if (error && isMissingDealMediaColumns(error)) {
+    ({ data, error } = await client
+      .from("deals")
+      .select(selectWithoutMedia)
+      .eq("deal_id", dealId)
+      .maybeSingle());
+    if (!error && data) {
+      data = { ...data, images: null, cover_image_index: null };
+    }
+  }
 
   if (error) {
     mapError(error);
@@ -120,20 +143,45 @@ export async function applyDealUpdate({
   assertDealEditable({ existing, agentId, now });
 
   const client = getSupabaseServiceClient();
-  const { data, error } = await client
-    .from("deals")
-    .update(payload)
-    .eq("deal_id", dealId)
-    .eq("creator_agent_id", agentId)
-    .eq("status", "NEW")
-    // Enforce "not editable after votes / activation window" atomically at write time.
-    .eq("votes_up", 0)
-    .eq("votes_down", 0)
-    .gt("new_until", nowIso)
-    .select(
-      "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at"
-    )
-    .maybeSingle();
+  const selectWithMedia =
+    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at";
+  const selectWithoutMedia =
+    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at";
+
+  const runUpdate = async (selectColumns: string, writePayload: any) =>
+    client
+      .from("deals")
+      .update(writePayload)
+      .eq("deal_id", dealId)
+      .eq("creator_agent_id", agentId)
+      .eq("status", "NEW")
+      // Enforce "not editable after votes / activation window" atomically at write time.
+      .eq("votes_up", 0)
+      .eq("votes_down", 0)
+      .gt("new_until", nowIso)
+      .select(selectColumns)
+      .maybeSingle();
+
+  let { data, error } = await runUpdate(selectWithMedia, payload);
+
+  // Backward compatibility: tolerate DBs where media columns are not yet migrated.
+  if (error && isMissingDealMediaColumns(error)) {
+    const requestedMediaUpdate =
+      Object.prototype.hasOwnProperty.call(payload, "images") ||
+      Object.prototype.hasOwnProperty.call(payload, "cover_image_index");
+    if (requestedMediaUpdate) {
+      throw buildServiceError(
+        "Deal media fields are unavailable until database migration is applied",
+        503,
+        "FEATURE_UNAVAILABLE"
+      );
+    }
+
+    ({ data, error } = await runUpdate(selectWithoutMedia, payload));
+    if (!error && data) {
+      data = { ...data, images: null, cover_image_index: null };
+    }
+  }
 
   if (error) {
     mapError(error);
