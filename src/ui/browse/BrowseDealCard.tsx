@@ -43,12 +43,21 @@ const imageLoader = ({ src }: ImageLoaderProps) => src;
 
 function BrowseDealCard({ deal }: { deal: any }) {
   const t = useTranslations("browseDeals");
-  const { locale } = useRouter();
+  const router = useRouter();
+  const { locale } = router;
   const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
   const merchant = deal.merchant_name || (deal.source_url ? extractHostname(deal.source_url) : null);
 
+  const handleCardClick = (e) => {
+    if ((e.target as HTMLElement).closest("a, button")) return;
+    router.push(`/deals/${deal.deal_id}`);
+  };
+
   return (
-    <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full">
+    <article
+      onClick={handleCardClick}
+      className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full"
+    >
       {/* Image with overlays */}
       <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt">
         {coverImageSrc ? (
