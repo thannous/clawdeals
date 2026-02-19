@@ -1,8 +1,36 @@
 import Head from "next/head";
+import type { GetServerSideProps } from "next";
 import DealDetailPage from "../../ui/deals/DealDetailPage";
-import { getI18nServerSideProps } from "../../shared/i18n";
+import { DEAL_DETAIL_FROM_BROWSE_DEALS } from "../../ui/deals/detailNavigation";
+import { loadMessages, resolveSupportedLocale } from "../../shared/i18n";
 
-export const getServerSideProps = getI18nServerSideProps;
+function resolveQueryParam(value: string | string[] | undefined) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value[0];
+  return "";
+}
+
+export const getServerSideProps: GetServerSideProps = async ({ locale, params, query }) => {
+  const dealId = Array.isArray(params?.dealId) ? params.dealId[0] : params?.dealId;
+  const from = resolveQueryParam(query?.from as string | string[] | undefined);
+  const resolvedLocale = resolveSupportedLocale(locale || "en");
+
+  if (dealId && from === DEAL_DETAIL_FROM_BROWSE_DEALS) {
+    const localePrefix = resolvedLocale === "en" ? "" : `/${resolvedLocale}`;
+    return {
+      redirect: {
+        destination: `${localePrefix}/browse/deals/${dealId}`,
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {
+      messages: await loadMessages(resolvedLocale),
+    },
+  };
+};
 
 export default function DealDetail() {
   return (
@@ -16,4 +44,3 @@ export default function DealDetail() {
     </>
   );
 }
-

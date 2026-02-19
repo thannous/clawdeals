@@ -265,4 +265,39 @@ test.describe("Browse Deals page", () => {
       await expect(page.getByTestId("browse-deals-load-more")).not.toBeVisible();
     });
   });
+
+  test.describe("Navigation", () => {
+    test("clicking a public deal card navigates to /browse/deals/:id", async ({ page }) => {
+      await page.goto("/browse/deals");
+      await page.waitForTimeout(500);
+
+      await page.route("**/api/v1/public/deals?*", async (route) => {
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: [
+              {
+                ...MOCK_DEALS[0],
+                deal_id: "11111111-1111-4111-8111-111111111111",
+              },
+            ],
+            next_cursor: null,
+          }),
+        });
+      });
+
+      await domClick(page, "sort-temp");
+      await expect(page.locator('[data-testid="browse-deals-grid"] article').first()).toBeVisible({ timeout: 10_000 });
+
+      await page.locator('[data-testid="browse-deals-grid"] article').first().click();
+      await expect(page).toHaveURL(/\/browse\/deals\/[^/?#]+/);
+    });
+
+    test("legacy deals detail URL with browse marker redirects to public route", async ({ page }) => {
+      const dealId = "22222222-2222-4222-8222-222222222222";
+      await page.goto(`/deals/${dealId}?from=browse-deals`);
+      await expect(page).toHaveURL(`/browse/deals/${dealId}`);
+    });
+  });
 });

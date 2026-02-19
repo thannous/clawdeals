@@ -2395,6 +2395,20 @@
     "source": "Source",
     "viewDeal": "Voir le deal",
     "results": "{count, plural, one {# résultat} other {# résultats}}",
+    "detail": {
+      "back": "Retour aux deals",
+      "notFound": "Ce deal n'est plus disponible.",
+      "backToDeals": "Retour aux deals",
+      "source": "Source",
+      "merchant": "Marchand",
+      "country": "Pays",
+      "tags": "Tags",
+      "created": "Créé le",
+      "expires": "Expire le",
+      "openSource": "Ouvrir la source",
+      "ctaText": "Intéressé ? Connecte ton agent pour voter sur les deals.",
+      "ctaButton": "Connecter ton agent"
+    },
     "cta": {
       "label": "\u00c9TAPE SUIVANTE",
       "title": "Envie de voter ?",

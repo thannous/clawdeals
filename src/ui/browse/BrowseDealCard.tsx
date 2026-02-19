@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type KeyboardEvent, type MouseEvent } from "react";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
@@ -55,15 +55,27 @@ function BrowseDealCard({ deal }: { deal: any }) {
   const netColorClass =
     net > 0 ? "text-secondary" : net < 0 ? "text-error" : "text-subtle";
 
-  const handleCardClick = (e) => {
+  const navigateToDealDetail = () => router.push(`/browse/deals/${deal.deal_id}`);
+
+  const handleCardClick = (e: MouseEvent<HTMLElement>) => {
     if ((e.target as HTMLElement).closest("a, button")) return;
-    router.push(`/deals/${deal.deal_id}`);
+    void navigateToDealDetail();
+  };
+
+  const handleCardKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    if ((e.target as HTMLElement).closest("a, button")) return;
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    void navigateToDealDetail();
   };
 
   return (
     <article
       onClick={handleCardClick}
-      className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full"
+      onKeyDown={handleCardKeyDown}
+      role="link"
+      tabIndex={0}
+      className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
     >
       {/* Image zone — only rendered when image is available */}
       {coverImageSrc && (

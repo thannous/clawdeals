@@ -8,7 +8,7 @@ function readMessages(locale: "en" | "fr" | "es") {
 }
 
 describe("browseDeals i18n", () => {
-  it("defines noPriceListed in en/fr/es", () => {
+  it("defines noPriceListed and detail keys in en/fr/es", () => {
     const locales: Array<"en" | "fr" | "es"> = ["en", "fr", "es"];
 
     for (const locale of locales) {
@@ -16,6 +16,12 @@ describe("browseDeals i18n", () => {
       const value = messages?.browseDeals?.noPriceListed;
       expect(typeof value).toBe("string");
       expect(value.trim().length).toBeGreaterThan(0);
+
+      const detail = messages?.browseDeals?.detail;
+      expect(typeof detail?.back).toBe("string");
+      expect(typeof detail?.ctaButton).toBe("string");
+      expect(detail.back.trim().length).toBeGreaterThan(0);
+      expect(detail.ctaButton.trim().length).toBeGreaterThan(0);
     }
   });
 });

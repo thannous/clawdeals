@@ -8,6 +8,7 @@ import TemperatureGauge from "./TemperatureGauge";
 import { useDealDetail } from "./useDealDetail";
 import { useDealReasons } from "./useDealReasons";
 import { useDealNotes } from "./useDealNotes";
+import { resolveDealBackHref } from "./detailNavigation";
 import PageHeader from "../shared/PageHeader";
 
 const DATE_OPTS: Intl.DateTimeFormatOptions = {
@@ -277,6 +278,7 @@ export default function DealDetailPage() {
     const raw = router.query.dealId;
     return Array.isArray(raw) ? raw[0] : raw;
   }, [router.query.dealId]);
+  const backHref = useMemo(() => resolveDealBackHref(router.query.from), [router.query.from]);
 
   const { deal, fetchState, error } = useDealDetail({ dealId });
   const [tab, setTab] = useState("reasons"); // reasons | notes
@@ -287,7 +289,7 @@ export default function DealDetailPage() {
         left={
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href="/deals"
+              href={backHref}
               className="inline-flex items-center gap-2 text-xs font-mono text-muted hover:text-primary transition-colors"
             >
               <ArrowLeft size={14} />

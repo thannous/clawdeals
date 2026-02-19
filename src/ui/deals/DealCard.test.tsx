@@ -72,6 +72,14 @@ describe("DealCard", () => {
 
       expect(screen.getByAltText("Test Deal")).toBeTruthy();
     });
+
+    it("renders the title as a real detail link", () => {
+      render(<DealCard deal={makeDeal()} retryIn={0} onVote={vi.fn()} />);
+
+      const detailLink = screen.getByTestId("deal-detail-link");
+      expect(detailLink.tagName).toBe("A");
+      expect(detailLink.getAttribute("href")).toBe("/deals/deal-1");
+    });
   });
 
   describe("P7 — Vote counts have icons", () => {

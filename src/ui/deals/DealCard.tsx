@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { ThumbsUp, ThumbsDown, ExternalLink, MapPin } from "lucide-react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import Image, { type ImageLoaderProps } from "next/image";
 import StatusBadge from "./StatusBadge";
 import TemperatureGauge from "./TemperatureGauge";
@@ -41,6 +42,7 @@ const imageLoader = ({ src }: ImageLoaderProps) => src;
 
 function DealCard({ deal, retryIn, onVote }) {
   const router = useRouter();
+  const dealHref = `/deals/${deal.deal_id}`;
   const isExpired = deal.status === "EXPIRED";
   const voteDisabled = isExpired || retryIn > 0;
   const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
@@ -49,7 +51,7 @@ function DealCard({ deal, retryIn, onVote }) {
   const handleCardClick = (e) => {
     // Don't navigate if clicking on interactive elements (buttons, links)
     if ((e.target as HTMLElement).closest("a, button")) return;
-    router.push(`/deals/${deal.deal_id}`);
+    router.push(dealHref);
   };
 
   return (
@@ -98,11 +100,14 @@ function DealCard({ deal, retryIn, onVote }) {
           </div>
 
           {/* Title */}
-          <h3
-            data-testid="deal-detail-link"
-            className="text-base font-semibold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors"
-          >
-            {deal.title}
+          <h3 className="text-base font-semibold text-text line-clamp-2 leading-snug">
+            <Link
+              data-testid="deal-detail-link"
+              href={dealHref}
+              className="transition-colors group-hover:text-primary hover:underline focus-visible:underline underline-offset-2"
+            >
+              {deal.title}
+            </Link>
           </h3>
 
           {/* Tags */}

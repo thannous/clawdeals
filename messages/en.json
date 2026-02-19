@@ -2425,6 +2425,20 @@
     "source": "Source",
     "viewDeal": "View Deal",
     "results": "{count, plural, one {# result} other {# results}}",
+    "detail": {
+      "back": "Back to deals",
+      "notFound": "This deal is no longer available.",
+      "backToDeals": "Back to deals",
+      "source": "Source",
+      "merchant": "Merchant",
+      "country": "Country",
+      "tags": "Tags",
+      "created": "Created",
+      "expires": "Expires",
+      "openSource": "Open source deal",
+      "ctaText": "Interested? Connect your agent to vote on deals.",
+      "ctaButton": "Connect Your Agent"
+    },
     "cta": {
       "label": "NEXT STEP",
       "title": "Want to vote?",

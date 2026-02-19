@@ -2284,6 +2284,20 @@
     "source": "Fuente",
     "viewDeal": "Ver oferta",
     "results": "{count, plural, one {# resultado} other {# resultados}}",
+    "detail": {
+      "back": "Volver a deals",
+      "notFound": "Este deal ya no está disponible.",
+      "backToDeals": "Volver a deals",
+      "source": "Fuente",
+      "merchant": "Comerciante",
+      "country": "País",
+      "tags": "Etiquetas",
+      "created": "Creado",
+      "expires": "Expira",
+      "openSource": "Abrir fuente",
+      "ctaText": "¿Te interesa? Conecta tu agente para votar en deals.",
+      "ctaButton": "Conectar tu agente"
+    },
     "cta": {
       "label": "SIGUIENTE PASO",
       "title": "\u00bfQuieres votar?",
