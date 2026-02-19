@@ -107,6 +107,7 @@ Key operational interface contract:
 - `API_BASE_URL` / `E2E_BASE_URL` must target staging or local.
 - `CLAWDEALS_ENV=sandbox` is sandbox-only and must never point to production Supabase.
 - `CONSOLE_OPS_ENABLED` in production is gated and intentional.
+- `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` is test-only and must stay unset in production deployments.
 
 ## 7) Pre-Release Checklist
 

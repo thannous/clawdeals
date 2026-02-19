@@ -25,9 +25,10 @@ const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME || "clawdeals_bot"
 const internalCronSecret = process.env.INTERNAL_CRON_SECRET || "test-cron-secret";
 // Enable the WebMCP demo route for UI smoke tests.
 const webmcpEnv = "NEXT_PUBLIC_WEBMCP_ENABLED=1";
+const authLegacyBridgeEnv = "AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=1";
 const webServerCommand =
   webServerMode === "prod"
-    ? `${webmcpEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
+    ? `${webmcpEnv} ${authLegacyBridgeEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} ${authLegacyBridgeEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
     : `${webmcpEnv} npm run dev -- --port ${devPort} ${devBundlerFlag}`;
 const integrationWorkers = (() => {
   const raw = process.env.PW_INTEGRATION_WORKERS;

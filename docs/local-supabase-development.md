@@ -44,6 +44,16 @@ Run integration suite:
 npm run test:integration
 ```
 
+Run smoke script:
+
+```bash
+npm run test:smoke
+```
+
+Notes:
+- `npm run test:smoke` auto-loads `.env.local` before validation.
+- `npm run test:integration` keeps `PW_WEB_SERVER_MODE=prod` but enables a test-only local bridge for legacy `x-owner-id`/`x-agent-id` headers in the Playwright web server process.
+
 Quick preflight:
 
 ```bash

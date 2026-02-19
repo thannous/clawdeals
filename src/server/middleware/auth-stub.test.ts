@@ -34,18 +34,30 @@ import { getOwner } from "../services/owners";
 describe("applyAuthStub", () => {
   const mutableEnv = process.env as Record<string, string | undefined>;
   const originalNodeEnv = mutableEnv.NODE_ENV;
+  const originalAuthAllowLegacyIdentityHeaders = mutableEnv.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mutableEnv.NODE_ENV = originalNodeEnv || "test";
+    if (originalAuthAllowLegacyIdentityHeaders === undefined) {
+      delete mutableEnv.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS;
+    } else {
+      mutableEnv.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS = originalAuthAllowLegacyIdentityHeaders;
+    }
   });
 
   afterEach(() => {
     if (originalNodeEnv === undefined) {
       delete mutableEnv.NODE_ENV;
+    } else {
+      mutableEnv.NODE_ENV = originalNodeEnv;
+    }
+
+    if (originalAuthAllowLegacyIdentityHeaders === undefined) {
+      delete mutableEnv.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS;
       return;
     }
-    mutableEnv.NODE_ENV = originalNodeEnv;
+    mutableEnv.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS = originalAuthAllowLegacyIdentityHeaders;
   });
 
   it("rejects invalid Authorization header", async () => {
@@ -309,6 +321,24 @@ describe("applyAuthStub", () => {
     expect(ctx.ownerId).toBeNull();
     expect(ctx.agentId).toBeNull();
     expect(ctx.actor).toEqual({ type: "anonymous", id: null });
+  });
+
+  it("accepts raw identity headers in production when legacy identity bridge is explicitly enabled", async () => {
+    mutableEnv.NODE_ENV = "production";
+    mutableEnv.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS = "1";
+    const req: any = {
+      headers: {
+        "x-owner-id": "owner-from-header",
+        "x-agent-id": "agent-from-header"
+      }
+    };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toBeNull();
+    expect(ctx.ownerId).toBe("owner-from-header");
+    expect(ctx.agentId).toBe("agent-from-header");
+    expect(ctx.actor).toEqual({ type: "agent", id: "agent-from-header" });
   });
 
   it("accepts trusted identity injected by server middleware", async () => {

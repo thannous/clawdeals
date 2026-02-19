@@ -37,6 +37,16 @@ function isProductionNodeEnv() {
   return String(process.env.NODE_ENV || "").toLowerCase() === "production";
 }
 
+function isEnabledFlag(value: any) {
+  if (!value) return false;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes";
+}
+
+function allowLegacyIdentityHeadersInProduction() {
+  return isEnabledFlag(process.env.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS);
+}
+
 function readLegacyHeaderIdentity(req: any) {
   const agentIdRaw = safeHeader(req, "x-agent-id");
   const ownerIdRaw = safeHeader(req, "x-owner-id");
@@ -52,8 +62,9 @@ function readEffectiveIdentity(req: any) {
   if (trustedIdentity) return trustedIdentity;
 
   // Keep a compatibility bridge for local/dev tooling that still uses x-owner-id/x-agent-id.
-  // Production traffic must never trust caller-supplied identity headers.
-  if (!isProductionNodeEnv()) {
+  // Production traffic must never trust caller-supplied identity headers unless an explicit
+  // test-only escape hatch is enabled in a controlled local test harness.
+  if (!isProductionNodeEnv() || allowLegacyIdentityHeadersInProduction()) {
     return readLegacyHeaderIdentity(req);
   }
   return null;
