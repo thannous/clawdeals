@@ -103,6 +103,11 @@ function BrowseDealCardGrid({
 
   return (
     <>
+      {deals.length > 0 && (
+        <p className="text-xs font-mono text-subtle mb-3">
+          {t("results", { count: deals.length })}
+        </p>
+      )}
       <div data-testid="browse-deals-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {deals.map((deal) => (
           <BrowseDealCard key={deal.deal_id} deal={deal} />

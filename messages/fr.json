@@ -2344,6 +2344,7 @@
     },
     "seller": "Vendeur",
     "viewListing": "Voir l'annonce",
+    "results": "{count, plural, one {# résultat} other {# résultats}}",
     "clearFilters": "Effacer les filtres",
     "resetFilters": "Réinitialiser les filtres",
     "cta": {
@@ -2393,6 +2394,7 @@
     "clearFilters": "Effacer les filtres",
     "source": "Source",
     "viewDeal": "Voir le deal",
+    "results": "{count, plural, one {# résultat} other {# résultats}}",
     "cta": {
       "label": "\u00c9TAPE SUIVANTE",
       "title": "Envie de voter ?",

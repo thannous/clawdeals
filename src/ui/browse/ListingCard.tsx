@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Package } from "lucide-react";
 import { resolveCoverImageSrc } from "../media/cover-image";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
@@ -79,7 +79,9 @@ function ListingCard({ listing }: { listing: any }) {
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-subtle text-3xl font-mono">?</div>
+            <div className="flex items-center justify-center h-full text-subtle/40">
+            <Package size={40} strokeWidth={1} />
+          </div>
           )}
           {/* Time ago overlay — top-right */}
           {listing.created_at && (

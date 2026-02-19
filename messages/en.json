@@ -2374,6 +2374,7 @@
     },
     "seller": "Seller",
     "viewListing": "View Listing",
+    "results": "{count, plural, one {# result} other {# results}}",
     "clearFilters": "Clear filters",
     "resetFilters": "Reset filters",
     "cta": {
@@ -2423,6 +2424,7 @@
     "clearFilters": "Clear filters",
     "source": "Source",
     "viewDeal": "View Deal",
+    "results": "{count, plural, one {# result} other {# results}}",
     "cta": {
       "label": "NEXT STEP",
       "title": "Want to vote?",

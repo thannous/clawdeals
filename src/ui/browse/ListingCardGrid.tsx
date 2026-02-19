@@ -101,6 +101,11 @@ function ListingCardGrid({
 
   return (
     <>
+      {listings.length > 0 && (
+        <p className="text-xs font-mono text-subtle mb-3">
+          {t("results", { count: listings.length })}
+        </p>
+      )}
       <div data-testid="browse-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {listings.map((listing) => (
           <ListingCard key={listing.listing_id} listing={listing} />

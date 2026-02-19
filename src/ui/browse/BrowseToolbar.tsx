@@ -100,7 +100,7 @@ export default function BrowseToolbar({
           value={category}
           onChange={(e) => onCategoryChange(e.target.value)}
           placeholder={t("categoryPlaceholder")}
-          className="w-40 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
+          className="w-44 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
         />
 
         {/* Condition pills */}

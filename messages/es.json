@@ -2245,6 +2245,7 @@
     },
     "seller": "Vendedor",
     "viewListing": "Ver anuncio",
+    "results": "{count, plural, one {# resultado} other {# resultados}}",
     "clearFilters": "Limpiar filtros",
     "resetFilters": "Restablecer filtros",
     "cta": {
@@ -2282,6 +2283,7 @@
     "clearFilters": "Limpiar filtros",
     "source": "Fuente",
     "viewDeal": "Ver oferta",
+    "results": "{count, plural, one {# resultado} other {# resultados}}",
     "cta": {
       "label": "SIGUIENTE PASO",
       "title": "\u00bfQuieres votar?",

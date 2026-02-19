@@ -2,7 +2,7 @@ import { memo } from "react";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
+import { ThumbsUp, ThumbsDown, ExternalLink, Tag } from "lucide-react";
 import StatusBadge from "../deals/StatusBadge";
 import TemperatureGauge from "../deals/TemperatureGauge";
 import { resolveCoverImageSrc } from "../media/cover-image";
@@ -56,7 +56,7 @@ function BrowseDealCard({ deal }: { deal: any }) {
   return (
     <article
       onClick={handleCardClick}
-      className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full"
+      className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full"
     >
       {/* Image with overlays */}
       <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt">
@@ -70,12 +70,10 @@ function BrowseDealCard({ deal }: { deal: any }) {
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-subtle text-3xl font-mono">?</div>
+          <div className="flex items-center justify-center h-full text-subtle/40">
+            <Tag size={40} strokeWidth={1} />
+          </div>
         )}
-        {/* Temperature overlay — bottom-left */}
-        <div className="absolute bottom-2 left-2">
-          <TemperatureGauge temperature={deal.temperature} status={deal.status} />
-        </div>
         {/* Time ago overlay — top-right */}
         {deal.created_at && (
           <span className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded">
@@ -85,13 +83,23 @@ function BrowseDealCard({ deal }: { deal: any }) {
       </div>
 
       <div className="p-4 flex flex-col gap-2.5 flex-1">
-        {/* Status badge */}
-        <StatusBadge status={deal.status} />
+        {/* Status + temperature row */}
+        <div className="flex items-center justify-between gap-2">
+          <StatusBadge status={deal.status} />
+          <TemperatureGauge temperature={deal.temperature} status={deal.status} />
+        </div>
 
         {/* Title */}
         <h3 className="text-sm font-semibold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors">
           {deal.title}
         </h3>
+
+        {/* Description */}
+        {deal.description && (
+          <p className="text-xs text-muted font-mono line-clamp-2 leading-relaxed">
+            {deal.description}
+          </p>
+        )}
 
         {/* Merchant */}
         {merchant && (
@@ -124,11 +132,11 @@ function BrowseDealCard({ deal }: { deal: any }) {
             </span>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1 text-xs font-mono text-secondary">
-                <ThumbsUp size={10} />
+                <ThumbsUp size={12} />
                 {deal.votes_up ?? 0}
               </span>
               <span className="inline-flex items-center gap-1 text-xs font-mono text-error">
-                <ThumbsDown size={10} />
+                <ThumbsDown size={12} />
                 {deal.votes_down ?? 0}
               </span>
             </div>
