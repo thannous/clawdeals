@@ -89,7 +89,10 @@ export function WebMcpConfirmProvider({ children }: { children: React.ReactNode 
       timestamps.push(now);
       recentRequestsRef.current = timestamps;
       if (timestamps.length > 10) {
-        setCooldownUntilMs(now + windowMs);
+        setCooldownUntilMs((prev) => {
+          const next = now + windowMs;
+          return prev && prev > next ? prev : next;
+        });
         return { kind: "deny", code: "USER_DENIED", reason: "cooldown" };
       }
 
@@ -134,4 +137,3 @@ export function WebMcpConfirmProvider({ children }: { children: React.ReactNode 
 
   return <ConfirmContext.Provider value={value}>{children}</ConfirmContext.Provider>;
 }
-

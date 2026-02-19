@@ -6,10 +6,13 @@ Goal:
 - Keep production for live traffic only.
 - Ensure all integration/smoke/E2E validation runs outside production.
 
+Local workflow reference:
+- `docs/local-supabase-development.md`
+
 ## 1) Environment Topology
 
 Environment model:
-- `dev`: local app workflow using shared staging Supabase credentials
+- `dev`: local app workflow using local Supabase (`supabase start`)
 - `staging`: remote validation environment for QA, smoke, integration, and pre-release checks
 - `production`: live environment only
 
@@ -25,6 +28,7 @@ Deployment model:
 
 Hard rule:
 - Remote tests run on staging only, never production.
+- Local tests run on local Supabase only, never production.
 
 ## 2) Credential Segregation Policy
 
@@ -37,7 +41,8 @@ Recommended naming in secret manager:
 - `SUPABASE_SERVICE_ROLE_KEY_PROD`
 
 Rules:
-- Test and QA examples in docs must use staging credentials only.
+- Local test/dev examples in docs must use local Supabase by default.
+- Remote QA examples in docs must use staging credentials only.
 - Production credentials must not be copied into local test commands, preview envs, or QA scripts.
 - Keep production secrets accessible only to release owners/on-call operators.
 
@@ -90,14 +95,15 @@ See detailed runbook:
 ## 6) Test Target Policy
 
 Allowed automated targets:
-- Local app + staging Supabase (dev workflows)
+- Local app + local Supabase (default dev and integration workflow)
+- Local app + staging Supabase (fallback only when local is unavailable)
 - Staging app + staging Supabase (release validation)
 
 Disallowed:
 - Production Supabase in test/QA/smoke/E2E flows.
 
 Key operational interface contract:
-- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in non-prod tests must resolve to staging.
+- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in non-prod tests must resolve to local or staging, never production.
 - `API_BASE_URL` / `E2E_BASE_URL` must target staging or local.
 - `CLAWDEALS_ENV=sandbox` is sandbox-only and must never point to production Supabase.
 - `CONSOLE_OPS_ENABLED` in production is gated and intentional.
@@ -140,9 +146,9 @@ Prevention:
 ## 9) Doc Validation Scenarios
 
 1. New developer onboarding:
-   - Can run local app with staging DB credentials only.
+   - Can run local app with local Supabase (`supabase start`) without production credentials.
 2. Integration test execution:
-   - Commands point to staging endpoints and staging Supabase.
+   - Local integration commands point to local endpoints and local Supabase.
 3. Pre-release process:
    - Requires staging migration + staging tests before prod.
 4. Accidental prod target:

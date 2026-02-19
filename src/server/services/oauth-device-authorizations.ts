@@ -353,8 +353,6 @@ export async function incrementOauthUserCodeLookupFailure({
   };
 }
 
-export const incrementOauthUserCodeLookupFailures = incrementOauthUserCodeLookupFailure;
-
 export async function resetOauthUserCodeLookupFailures({
   userCode
 }: any): Promise<OauthDeviceAuthorizationRow | null> {

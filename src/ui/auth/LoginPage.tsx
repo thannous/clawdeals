@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
@@ -69,6 +69,11 @@ function resolveRedirectTarget(isReady: boolean, queryNext: unknown): string {
   return "/settings/account";
 }
 
+function resolveRequestedAuthMode(isReady: boolean, queryMode: unknown): "login" | "signup" {
+  if (!isReady) return "login";
+  return queryMode === "signup" ? "signup" : "login";
+}
+
 /* ─── Decorative left-panel components ─── */
 
 function TerminalBlock() {
@@ -110,15 +115,18 @@ function StatusBadge({ label, value }: { label: string; value: string }) {
 /* ─── Main page ─── */
 
 export default function LoginPage() {
+  return useLoginPageView();
+}
+
+function useLoginPageView() {
   const router = useRouter();
   const hasCheckedExistingSessionRef = useRef(false);
-  const [mode, setMode] = useState<"login" | "signup">("login");
-
-  useEffect(() => {
-    if (router.isReady && router.query.mode === "signup") {
-      setMode("signup");
-    }
-  }, [router.isReady, router.query.mode]);
+  const [modeOverride, setModeOverride] = useState<"login" | "signup" | null>(null);
+  const requestedMode = resolveRequestedAuthMode(router.isReady, router.query.mode);
+  const mode = modeOverride || requestedMode;
+  const selectMode = useCallback((nextMode: "login" | "signup") => {
+    setModeOverride(nextMode);
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -127,15 +135,11 @@ export default function LoginPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [forgotState, setForgotState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
-  const redirectTarget = useMemo(
-    () => resolveRedirectTarget(router.isReady, router.query.next),
-    [router.isReady, router.query.next]
-  );
-
-  const canSubmit = useMemo(
-    () => Boolean(email.trim() && password.trim() && submitState !== "loading"),
-    [email, password, submitState]
-  );
+  const redirectTarget = resolveRedirectTarget(router.isReady, router.query.next);
+  const canSubmit = Boolean(email.trim() && password.trim() && submitState !== "loading");
+  const hardRedirect = useCallback((target: string) => {
+    window.location.assign(target);
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -154,14 +158,14 @@ export default function LoginPage() {
           await bridgeOwnerSession(accessToken);
           await waitForOwnerSessionReady();
           if (!cancelled) {
-            void router.replace(redirectTarget);
+            hardRedirect(redirectTarget);
           }
           return;
         }
 
         const hasOwnerSession = await waitForOwnerSessionReady({ attempts: 1 });
         if (hasOwnerSession && !cancelled) {
-          void router.replace(redirectTarget);
+          hardRedirect(redirectTarget);
         }
       } catch {
         // Ignore recoverability errors and keep login form available.
@@ -172,7 +176,7 @@ export default function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, redirectTarget]);
+  }, [router, redirectTarget, hardRedirect]);
 
   const onGoogle = useCallback(async () => {
     setSubmitState("loading");
@@ -386,7 +390,7 @@ export default function LoginPage() {
               <div className="space-y-5">
                 <div className="flex gap-2 bg-bg/50 p-1 w-fit border border-border rounded">
                   <button
-                    onClick={() => setMode("login")}
+                    onClick={() => selectMode("login")}
                     className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-colors ${
                       mode === "login" ? "bg-text text-bg" : "text-subtle hover:text-text"
                     }`}
@@ -394,7 +398,7 @@ export default function LoginPage() {
                     Login
                   </button>
                   <button
-                    onClick={() => setMode("signup")}
+                    onClick={() => selectMode("signup")}
                     className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-colors ${
                       mode === "signup" ? "bg-text text-bg" : "text-subtle hover:text-text"
                     }`}

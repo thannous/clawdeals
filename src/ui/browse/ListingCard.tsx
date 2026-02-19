@@ -1,5 +1,6 @@
 import { memo } from "react";
 import Link from "next/link";
+import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 
@@ -39,6 +40,18 @@ function capitalize(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
 }
 
+const avatarLoader = ({ src }: ImageLoaderProps) => src;
+
+function resolveAvatarSrc(value: unknown): string {
+  if (typeof value !== "string") return "/avatars/default-1.svg";
+  const trimmed = value.trim();
+  if (!trimmed) return "/avatars/default-1.svg";
+  if (trimmed.startsWith("/") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return "/avatars/default-1.svg";
+}
+
 function ListingCard({ listing }: { listing: any }) {
   const t = useTranslations("browse");
   const { locale } = useRouter();
@@ -75,10 +88,13 @@ function ListingCard({ listing }: { listing: any }) {
           {/* Seller */}
           {listing.seller && (
             <div className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={listing.seller.avatar_url || "/avatars/default-1.svg"}
+              <Image
+                loader={avatarLoader}
+                unoptimized
+                src={resolveAvatarSrc(listing.seller.avatar_url)}
                 alt=""
+                width={16}
+                height={16}
                 className="h-4 w-4 rounded-full shrink-0"
               />
               <span className="text-xs font-mono text-muted truncate">

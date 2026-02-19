@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Copy, ExternalLink, Key, Terminal } from "lucide-react";
 
 import { SectionHeader, TechBorder } from "../landing/primitives";
@@ -255,17 +255,19 @@ function StepCard({
 }
 
 export default function McpPage() {
+  return useMcpPageView();
+}
+
+function useMcpPageView() {
   const router = useRouter();
   const locale = (router.locale === "fr" ? "fr" : "en") as McpLocale;
   const copy = COPY[locale];
 
   const [configTab, setConfigTab] = useState<ConfigTab>("cursor");
 
-  const installSnippetNpx = useMemo(() => {
-    return `export CLAWDEALS_API_KEY=\"cd_live_...\"\nnpx -y clawdeals-mcp install`;
-  }, []);
+  const installSnippetNpx = `export CLAWDEALS_API_KEY=\"cd_live_...\"\nnpx -y clawdeals-mcp install`;
 
-  const manualConfig = useMemo(() => {
+  const manualConfig = (() => {
     if (configTab === "codex") {
       return `[mcp_servers.clawdeals]\ncommand = "npx"\nargs = ["-y", "clawdeals-mcp"]\nenv = { CLAWDEALS_API_KEY = "cd_live_..." }`;
     }
@@ -283,26 +285,20 @@ export default function McpPage() {
 
     const rootKey = usesMcpServersKey(configTab) ? "mcpServers" : "servers";
     return JSON.stringify({ [rootKey]: base }, null, 2);
-  }, [configTab]);
+  })();
 
-  const manualConfigTitle = useMemo(() => {
-    if (configTab === "codex") return "~/.codex/config.toml";
-    if (configTab === "claudeCode") return "./.mcp.json";
-    if (configTab === "claude") return "claude_desktop_config.json";
-    if (configTab === "windsurf") return "~/.codeium/windsurf/mcp_config.json";
-    if (configTab === "gemini") return "~/.gemini/settings.json";
-    return copy.configTitle;
-  }, [configTab, copy.configTitle]);
+  let manualConfigTitle = copy.configTitle;
+  if (configTab === "codex") manualConfigTitle = "~/.codex/config.toml";
+  else if (configTab === "claudeCode") manualConfigTitle = "./.mcp.json";
+  else if (configTab === "claude") manualConfigTitle = "claude_desktop_config.json";
+  else if (configTab === "windsurf") manualConfigTitle = "~/.codeium/windsurf/mcp_config.json";
+  else if (configTab === "gemini") manualConfigTitle = "~/.gemini/settings.json";
 
-  const verifyPrompt = useMemo(() => {
-    return `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
-  }, []);
+  const verifyPrompt = `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
 
-  const writeExample = useMemo(() => {
-    return `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
-  }, []);
+  const writeExample = `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
 
-  const bootstrapConfig = useMemo(() => {
+  const bootstrapConfig = (() => {
     if (configTab === "codex") {
       return `[mcp_servers.clawdeals]\ncommand = "npx"\nargs = ["-y", "clawdeals-mcp"]`;
     }
@@ -316,15 +312,13 @@ export default function McpPage() {
     };
     const rootKey = usesMcpServersKey(configTab) ? "mcpServers" : "servers";
     return JSON.stringify({ [rootKey]: base }, null, 2);
-  }, [configTab]);
+  })();
 
-  const keysUrl = useMemo(() => {
-    const appBase = getPublicAppUrl();
-    const landingBase = getPublicLandingUrl();
-    const localePrefix = locale === "fr" ? "/fr" : "";
-    const mcpBackUrl = landingBase ? joinUrl(landingBase, "/mcp") : "/mcp";
-    return `${appBase}${localePrefix}/keys?next=${encodeURIComponent(mcpBackUrl)}`;
-  }, [locale]);
+  const appBase = getPublicAppUrl();
+  const landingBase = getPublicLandingUrl();
+  const localePrefix = locale === "fr" ? "/fr" : "";
+  const mcpBackUrl = landingBase ? joinUrl(landingBase, "/mcp") : "/mcp";
+  const keysUrl = `${appBase}${localePrefix}/keys?next=${encodeURIComponent(mcpBackUrl)}`;
 
   const optionsNote =
     locale === "fr"

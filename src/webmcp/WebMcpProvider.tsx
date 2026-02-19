@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 
 import { registerTools, isWebMCPSupported } from "./adapter";
 import { isWebMcpEnabled, shouldRegisterOnRoute } from "./config";
@@ -23,6 +23,40 @@ type WebMcpContextValue = {
 
 const WebMcpContext = createContext<WebMcpContextValue | null>(null);
 
+type RegistrationState = {
+  registered: boolean;
+  registeredToolNames: string[];
+  lastRegisterError: string | null;
+};
+
+type RegistrationAction =
+  | { type: "register/success"; registeredCount: number; errorCount: number; toolNames: string[] }
+  | { type: "register/failure"; message: string };
+
+const INITIAL_REGISTRATION_STATE: RegistrationState = {
+  registered: false,
+  registeredToolNames: [],
+  lastRegisterError: null
+};
+
+function registrationReducer(state: RegistrationState, action: RegistrationAction): RegistrationState {
+  switch (action.type) {
+    case "register/success":
+      return {
+        registered: action.registeredCount > 0,
+        registeredToolNames: action.toolNames,
+        lastRegisterError: action.errorCount > 0 ? `${action.errorCount} tool(s) failed to register` : null
+      };
+    case "register/failure":
+      return {
+        ...state,
+        lastRegisterError: action.message
+      };
+    default:
+      return state;
+  }
+}
+
 export function useWebMcp() {
   const ctx = useContext(WebMcpContext);
   if (!ctx) throw new Error("useWebMcp must be used within WebMcpProvider");
@@ -36,9 +70,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
   const enabled = isWebMcpEnabled();
   const supported = typeof window !== "undefined" ? isWebMCPSupported() : false;
 
-  const [registered, setRegistered] = useState(false);
-  const [registeredToolNames, setRegisteredToolNames] = useState<string[]>([]);
-  const [lastRegisterError, setLastRegisterError] = useState<string | null>(null);
+  const [registration, dispatchRegistration] = useReducer(registrationReducer, INITIAL_REGISTRATION_STATE);
 
   const didRegisterRef = useRef(false);
 
@@ -97,21 +129,19 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
 
     function applySuccess(result: { registered: number; errors: number }) {
       didRegisterRef.current = true;
-      // Avoid synchronous setState within an effect body (react-hooks/set-state-in-effect).
-      Promise.resolve().then(() => {
-        if (!alive) return;
-        setRegistered(result.registered > 0);
-        // WebMCP registration might partially fail depending on API shape; keep the full list for visibility.
-        setRegisteredToolNames(registerable.map((t) => t.name));
-        setLastRegisterError(result.errors > 0 ? `${result.errors} tool(s) failed to register` : null);
+      if (!alive) return;
+      dispatchRegistration({
+        type: "register/success",
+        registeredCount: result.registered,
+        errorCount: result.errors,
+        // Registration might partially fail depending on API shape; keep the full attempted list for visibility.
+        toolNames: registerable.map((tool) => tool.name)
       });
     }
 
     function applyFailure(error: any) {
-      Promise.resolve().then(() => {
-        if (!alive) return;
-        setLastRegisterError(error?.message || "Tool registration failed");
-      });
+      if (!alive) return;
+      dispatchRegistration({ type: "register/failure", message: error?.message || "Tool registration failed" });
     }
 
     try {
@@ -130,12 +160,12 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     () => ({
       enabled,
       supported,
-      registered,
-      registeredToolNames,
-      lastRegisterError,
+      registered: registration.registered,
+      registeredToolNames: registration.registeredToolNames,
+      lastRegisterError: registration.lastRegisterError,
       executeTool
     }),
-    [enabled, supported, registered, registeredToolNames, lastRegisterError, executeTool]
+    [enabled, supported, registration, executeTool]
   );
 
   return (

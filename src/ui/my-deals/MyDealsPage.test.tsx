@@ -38,20 +38,28 @@ vi.mock("../deals/TemperatureGauge", () => ({
   default: () => <span>temperature</span>,
 }));
 
-vi.mock("../console/shared/ConsoleTable", () => ({
-  default: ({ columns, rows, renderCell }: any) => (
+function MockConsoleTableCell({ col, row, renderCell }: any) {
+  return <td key={col.key}>{renderCell ? renderCell(row, col) : row[col.key]}</td>;
+}
+
+function MockConsoleTable({ columns, rows, renderCell }: any) {
+  return (
     <table data-testid="console-table">
       <tbody>
         {rows.map((row: any) => (
           <tr key={row.deal_id}>
             {columns.map((col: any) => (
-              <td key={col.key}>{renderCell(row, col)}</td>
+              <MockConsoleTableCell key={col.key} col={col} row={row} renderCell={renderCell} />
             ))}
           </tr>
         ))}
       </tbody>
     </table>
-  ),
+  );
+}
+
+vi.mock("../console/shared/ConsoleTable", () => ({
+  default: MockConsoleTable,
 }));
 
 vi.mock("../console/shared/Pagination", () => ({

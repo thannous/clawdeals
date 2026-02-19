@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import { resolveSupportedLocale, type SupportedLocale, withMessages } from "../../shared/i18n";
 import Link from "next/link";
@@ -289,43 +290,40 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
         <meta name="twitter:title" content={seo.ogTitle} />
         <meta name="twitter:description" content={seo.ogDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "WebPage",
-                  "@id": canonicalUrl,
-                  url: canonicalUrl,
-                  name: seo.title,
-                  description: seo.description,
-                  isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-US"
-                },
-                {
-                  "@type": "SoftwareApplication",
-                  name: "ClawDeals Skill",
-                  applicationCategory: "DeveloperApplication",
-                  operatingSystem: "Any",
-                  description: seo.ogDescription,
-                  url: canonicalUrl,
-                  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
-                },
-                {
-                  "@type": "BreadcrumbList",
-                  itemListElement: [
-                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: locale === "fr" ? "Intégrations" : locale === "es" ? "Integraciones" : "Integrations", item: integrationsIndex },
-                    { "@type": "ListItem", position: 3, name: "OpenClaw", item: canonicalUrl }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="openclaw-integration-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebPage",
+              "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: seo.title,
+              description: seo.description,
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-US"
+            },
+            {
+              "@type": "SoftwareApplication",
+              name: "ClawDeals Skill",
+              applicationCategory: "DeveloperApplication",
+              operatingSystem: "Any",
+              description: seo.ogDescription,
+              url: canonicalUrl,
+              offers: { "@type": "Offer", price: "0", priceCurrency: "USD" }
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 2, name: locale === "fr" ? "Intégrations" : locale === "es" ? "Integraciones" : "Integrations", item: integrationsIndex },
+                { "@type": "ListItem", position: 3, name: "OpenClaw", item: canonicalUrl }
+              ]
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
 
       <FeaturePageLayout
         title="OpenClaw"

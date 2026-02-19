@@ -33,6 +33,32 @@ function readTrustedIdentity(req: any) {
   return { agentId, ownerId };
 }
 
+function isProductionNodeEnv() {
+  return String(process.env.NODE_ENV || "").toLowerCase() === "production";
+}
+
+function readLegacyHeaderIdentity(req: any) {
+  const agentIdRaw = safeHeader(req, "x-agent-id");
+  const ownerIdRaw = safeHeader(req, "x-owner-id");
+
+  const agentId = typeof agentIdRaw === "string" && agentIdRaw ? agentIdRaw : null;
+  const ownerId = typeof ownerIdRaw === "string" && ownerIdRaw ? ownerIdRaw : null;
+  if (!agentId && !ownerId) return null;
+  return { agentId, ownerId };
+}
+
+function readEffectiveIdentity(req: any) {
+  const trustedIdentity = readTrustedIdentity(req);
+  if (trustedIdentity) return trustedIdentity;
+
+  // Keep a compatibility bridge for local/dev tooling that still uses x-owner-id/x-agent-id.
+  // Production traffic must never trust caller-supplied identity headers.
+  if (!isProductionNodeEnv()) {
+    return readLegacyHeaderIdentity(req);
+  }
+  return null;
+}
+
 function parseBearerToken(value) {
   if (!value || typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -242,7 +268,7 @@ export async function applyAuthStub(req, ctx) {
     }
   }
 
-  const trustedIdentity = readTrustedIdentity(req);
+  const trustedIdentity = readEffectiveIdentity(req);
   ctx.agentId = trustedIdentity?.agentId || null;
   ctx.ownerId = trustedIdentity?.ownerId || null;
   if (ctx.agentId) {

@@ -164,7 +164,19 @@ function subscribeToNothing() {
   return () => {};
 }
 
-export default function ClaimPage({ claimToken }: { claimToken: string }) {
+async function fetchOwnerEmail(signal: AbortSignal): Promise<string | null> {
+  const response = await fetch("/api/v1/auth/me", { credentials: "include", signal });
+  if (!response.ok) return null;
+  const body = await response.json().catch(() => ({}));
+  const email = body?.data?.email || body?.email || null;
+  return email ? String(email) : null;
+}
+
+export default function ClaimPage(props: { claimToken: string }) {
+  return useClaimPageView(props);
+}
+
+function useClaimPageView({ claimToken }: { claimToken: string }) {
   const router = useRouter();
   const locale = resolveSupportedLocale(router.locale) as ClaimLocale;
   const tClaim = useTranslations("claim");
@@ -177,16 +189,10 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
     },
     () => ""
   );
-  const asPathNoLocale = useMemo(() => stripLocalePrefix(router.asPath || "/"), [router.asPath]);
-  const token = useMemo(() => {
-    const fromProp = String(claimToken || "").trim();
-    if (fromProp) return fromProp;
-    return String(pathToken || "").trim();
-  }, [claimToken, pathToken]);
-  const localeSwitchHref = useMemo(
-    () => (token ? `/claim/${encodeURIComponent(token)}` : asPathNoLocale),
-    [token, asPathNoLocale]
-  );
+  const asPathNoLocale = stripLocalePrefix(router.asPath || "/");
+  const fromPropToken = String(claimToken || "").trim();
+  const token = fromPropToken || String(pathToken || "").trim();
+  const localeSwitchHref = token ? `/claim/${encodeURIComponent(token)}` : asPathNoLocale;
 
   const [session, setSession] = useState<ConnectSessionClaimView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -210,6 +216,18 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         ? "done"
         : "loading";
 
+  const applyLoadedSession = useCallback((data: ConnectSessionClaimView) => {
+    setError(null);
+    setSession(data);
+    setAgentName(String(data.requested_agent_name || "").trim());
+    const ownerAgents = Array.isArray(data.owner_agents) ? data.owner_agents : [];
+    const defaultMode = data.default_mode === "attach_agent" ? "attach_agent" : "create_agent";
+    const firstActive = ownerAgents.find((a: any) => a.status === "active");
+    const firstAgentId = (firstActive || ownerAgents[0])?.agent_id;
+    setMode(defaultMode);
+    setAttachAgentId(firstAgentId ? String(firstAgentId) : "");
+  }, []);
+
   useEffect(() => {
     if (!token) return;
 
@@ -220,21 +238,13 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
         setError(res.error || copy.loadSessionFailed);
         return;
       }
-      setError(null);
-      setSession(res.data);
-      setAgentName(String(res.data.requested_agent_name || "").trim());
-      const ownerAgents = Array.isArray(res.data.owner_agents) ? res.data.owner_agents : [];
-      const defaultMode = res.data.default_mode === "attach_agent" ? "attach_agent" : "create_agent";
-      const firstActive = ownerAgents.find((a: any) => a.status === "active");
-      const firstAgentId = (firstActive || ownerAgents[0])?.agent_id;
-      setMode(defaultMode);
-      setAttachAgentId(firstAgentId ? String(firstAgentId) : "");
+      applyLoadedSession(res.data);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [token, copy.loadSessionFailed]);
+  }, [token, copy.loadSessionFailed, applyLoadedSession]);
 
   const [expiresTick, setExpiresTick] = useState(0);
   useEffect(() => {
@@ -244,47 +254,39 @@ export default function ClaimPage({ claimToken }: { claimToken: string }) {
   }, [session?.expires_at]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- expiresTick drives the re-render
   const expires = useMemo(() => formatExpires(session?.expires_at || null, copy), [session?.expires_at, copy, expiresTick]);
-  const ownerAgents = useMemo(
-    () => (Array.isArray(session?.owner_agents) ? session.owner_agents : []),
-    [session]
-  );
-  const fallbackAttachAgentId = useMemo(() => {
+  const ownerAgents = Array.isArray(session?.owner_agents) ? session.owner_agents : [];
+  const fallbackAttachAgentId = (() => {
     const firstActive = ownerAgents.find((a) => a.status === "active");
     const fallback = firstActive || ownerAgents[0];
     return fallback?.agent_id ? String(fallback.agent_id) : "";
-  }, [ownerAgents]);
-  const resolvedAttachAgentId = useMemo(() => {
+  })();
+  const resolvedAttachAgentId = (() => {
     const selected = String(attachAgentId || "").trim();
     if (!selected) return fallbackAttachAgentId;
     const stillAvailable = ownerAgents.some((agent) => String(agent?.agent_id) === selected);
     return stillAvailable ? selected : fallbackAttachAgentId;
-  }, [attachAgentId, fallbackAttachAgentId, ownerAgents]);
+  })();
   const ownerContextAvailable = Boolean(session?.owner_context_available);
 
   useEffect(() => {
     if (!ownerContextAvailable) return;
-    let cancelled = false;
-    fetch("/api/v1/auth/me", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((body) => {
-        if (cancelled) return;
-        const email = body?.data?.email || body?.email || null;
-        if (email) setOwnerEmail(String(email));
+    const controller = new AbortController();
+    fetchOwnerEmail(controller.signal)
+      .then((email) => {
+        if (!email || controller.signal.aborted) return;
+        setOwnerEmail(email);
       })
       .catch(() => {});
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [ownerContextAvailable]);
   const allowCreateAgent = session?.allow_create_agent !== false;
   const showCreateMode = !ownerContextAvailable || allowCreateAgent;
   const isPendingClaim = session?.status === "PENDING_CLAIM";
   const isClaimFinalized = session?.status === "CLAIMED" || session?.status === "DELIVERED";
-  const isAgentInitiatedClaim = useMemo(() => {
-    const normalizedClientType = String(session?.client_type || "").trim().toLowerCase();
-    if (!normalizedClientType) return false;
-    return AGENT_INITIATED_CLIENT_TYPES.has(normalizedClientType);
-  }, [session?.client_type]);
+  const normalizedClientType = String(session?.client_type || "").trim().toLowerCase();
+  const isAgentInitiatedClaim = Boolean(normalizedClientType && AGENT_INITIATED_CLIENT_TYPES.has(normalizedClientType));
 
   const actionable = Boolean(session && session.status === "PENDING_CLAIM" && !expires.isExpired && ownerContextAvailable);
   const canSubmitClaim = actionable && (mode !== "attach_agent" || Boolean(resolvedAttachAgentId));

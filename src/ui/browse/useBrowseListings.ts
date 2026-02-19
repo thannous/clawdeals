@@ -267,7 +267,7 @@ export function useBrowseListings({
         );
       }, SEARCH_DEBOUNCE_MS);
     },
-    [sort, category, condition, priceMin, priceMax, syncUrl]
+    [syncUrl]
   );
 
   const setCategory = useCallback(
@@ -290,7 +290,7 @@ export function useBrowseListings({
         );
       }, SEARCH_DEBOUNCE_MS);
     },
-    [sort, q, condition, priceMin, priceMax, syncUrl]
+    [syncUrl]
   );
 
   const setCondition = useCallback(
@@ -323,7 +323,7 @@ export function useBrowseListings({
         );
       }, SEARCH_DEBOUNCE_MS);
     },
-    [sort, q, category, condition, priceMax, syncUrl]
+    [syncUrl]
   );
 
   const setPriceMax = useCallback(
@@ -346,7 +346,7 @@ export function useBrowseListings({
         );
       }, SEARCH_DEBOUNCE_MS);
     },
-    [sort, q, category, condition, priceMin, syncUrl]
+    [syncUrl]
   );
 
   // Cleanup debounce on unmount

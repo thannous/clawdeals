@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../services/api-keys", () => ({
   authenticateApiKey: vi.fn()
@@ -32,8 +32,20 @@ import { getOwnerSessionByTokenHash, markOwnerSessionRevoked, touchOwnerSession 
 import { getOwner } from "../services/owners";
 
 describe("applyAuthStub", () => {
+  const mutableEnv = process.env as Record<string, string | undefined>;
+  const originalNodeEnv = mutableEnv.NODE_ENV;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mutableEnv.NODE_ENV = originalNodeEnv || "test";
+  });
+
+  afterEach(() => {
+    if (originalNodeEnv === undefined) {
+      delete mutableEnv.NODE_ENV;
+      return;
+    }
+    mutableEnv.NODE_ENV = originalNodeEnv;
   });
 
   it("rejects invalid Authorization header", async () => {
@@ -266,7 +278,24 @@ describe("applyAuthStub", () => {
     expect(ctx.ownerId).toBeUndefined();
   });
 
-  it("does not trust raw identity headers without server-injected trusted identity", async () => {
+  it("accepts raw identity headers in non-production for backward-compatible stubs", async () => {
+    const req: any = {
+      headers: {
+        "x-owner-id": "owner-from-header",
+        "x-agent-id": "agent-from-header"
+      }
+    };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toBeNull();
+    expect(ctx.ownerId).toBe("owner-from-header");
+    expect(ctx.agentId).toBe("agent-from-header");
+    expect(ctx.actor).toEqual({ type: "agent", id: "agent-from-header" });
+  });
+
+  it("does not trust raw identity headers in production without server-injected trusted identity", async () => {
+    mutableEnv.NODE_ENV = "production";
     const req: any = {
       headers: {
         "x-owner-id": "owner-from-header",

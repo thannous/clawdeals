@@ -9,6 +9,10 @@ import AppNav from "../shared/AppNav";
 const noopSubscribe = () => () => {};
 
 export default function DeveloperDashboard() {
+  return useDeveloperDashboardView();
+}
+
+function useDeveloperDashboardView() {
   const t = useTranslations("developer");
   const storedKey = useSyncExternalStore(noopSubscribe, getStoredApiKey, () => null);
   const [keyOverride, setKeyOverride] = useState<string | null | undefined>(undefined);
@@ -129,7 +133,6 @@ export default function DeveloperDashboard() {
                 placeholder={t("apiKeyPlaceholder")}
                 autoComplete="off"
                 spellCheck={false}
-                autoFocus
                 className="flex-1 h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
                 disabled={status === "loading"}
                 onKeyDown={(e) => { if (e.key === "Enter") handlePasteSubmit(); }}

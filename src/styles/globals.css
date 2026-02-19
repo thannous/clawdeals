@@ -1,4 +1,4 @@
-/* Fonts loaded via <link> in _document.tsx for non-blocking rendering */
+/* Fonts loaded via next/font in _app.tsx to self-host and avoid render-blocking requests. */
 
 @config "../../tailwind.config.js";
 @import "tailwindcss";
@@ -44,8 +44,8 @@
   --theme-success-muted: #6ee7b7;
   --theme-warning: #facc15;
   --theme-warning-muted: #fde68a;
-  --theme-font-sans: "Chakra Petch", sans-serif;
-  --theme-font-mono: "JetBrains Mono", monospace;
+  --theme-font-sans: var(--font-chakra-petch, "Chakra Petch"), sans-serif;
+  --theme-font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), monospace;
 }
 
 [data-theme="ember"] {
@@ -66,8 +66,8 @@
   --theme-success-muted: #bef264;
   --theme-warning: #fbbf24;
   --theme-warning-muted: #fcd34d;
-  --theme-font-sans: "Chakra Petch", sans-serif;
-  --theme-font-mono: "JetBrains Mono", monospace;
+  --theme-font-sans: var(--font-chakra-petch, "Chakra Petch"), sans-serif;
+  --theme-font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), monospace;
 }
 
 body {

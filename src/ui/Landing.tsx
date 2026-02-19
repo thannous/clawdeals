@@ -36,6 +36,15 @@ const TRUST_MARQUEE_KEYS = [
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function toStableStringEntries(values: readonly string[]) {
+  const seen = new Map<string, number>();
+  return values.map((value) => {
+    const nextCount = (seen.get(value) || 0) + 1;
+    seen.set(value, nextCount);
+    return { key: `${value}-${nextCount}`, value };
+  });
+}
+
 function resolveLandingLocale(locale: string): SupportedLocale {
   return (locale === "fr" || locale === "es") ? locale : "en";
 }
@@ -185,6 +194,7 @@ function HeroFrame({ children }: { children: React.ReactNode }) {
   const t = useTranslations("landing");
   const headlineCount = parseInt(t("hero.headlineCount"), 10);
   const headlines = Array.from({ length: headlineCount }, (_, i) => t(`hero.headline_${i}`));
+  const keyedHeadlines = toStableStringEntries(headlines);
 
   return (
     <div className="relative pt-32 pb-16 px-6 border-b border-border bg-surface overflow-hidden" data-testid="hero-section">
@@ -193,8 +203,8 @@ function HeroFrame({ children }: { children: React.ReactNode }) {
 
       <div className="max-w-[1440px] mx-auto relative z-10 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
-          {headlines.map((line, i) => (
-            <span key={i} className="block">{line}</span>
+          {keyedHeadlines.map((line) => (
+            <span key={line.key} className="block">{line.value}</span>
           ))}
         </h1>
         <p className="text-sm md:text-base text-muted font-mono mb-8 max-w-4xl">

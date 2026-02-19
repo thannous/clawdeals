@@ -28,17 +28,18 @@ export default function TruncatedId({ id, chars = 8, stopPropagation = true }: P
 
   const truncated = canCopy && id.length > chars ? id.slice(0, chars) : canCopy ? id : "\u2014";
 
+  if (!canCopy) {
+    return <span className="text-subtle">{truncated}</span>;
+  }
+
   return (
-    <span
-      title={canCopy ? id : undefined}
+    <button
+      type="button"
+      title={id}
       onClick={handleClick}
-      className={
-        canCopy
-          ? "cursor-copy text-muted hover:text-text transition-colors"
-          : "text-subtle"
-      }
+      className="cursor-copy text-muted hover:text-text transition-colors bg-transparent border-0 p-0 font-inherit text-left"
     >
-      {canCopy && copied ? "Copied!" : truncated}
-    </span>
+      {copied ? "Copied!" : truncated}
+    </button>
   );
 }

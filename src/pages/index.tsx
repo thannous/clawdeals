@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import Landing from "../ui/Landing";
@@ -116,71 +117,68 @@ export default function Home({
         <meta name="twitter:description" content={t("home.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
 
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "Organization",
-                  "@id": `${baseUrl}/#organization`,
-                  name: "ClawDeals",
-                  url: baseUrl,
-                  logo: `${baseUrl}/favicon.svg`,
-                  description: t("home.orgDescription"),
-                  sameAs: [
-                    "https://github.com/clawdeals"
-                  ]
-                },
-                {
-                  "@type": "WebSite",
-                  "@id": `${baseUrl}/#website`,
-                  url: baseUrl,
-                  name: "ClawDeals",
-                  publisher: { "@id": `${baseUrl}/#organization` },
-                  inLanguage: [resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"]
-                },
-                {
-                  "@type": "WebPage",
-                  "@id": canonicalUrl,
-                  url: canonicalUrl,
-                  name: t("home.title"),
-                  description: t("home.description"),
-                  isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
-                },
-                {
-                  "@type": "SoftwareApplication",
-                  name: "ClawDeals",
-                  applicationCategory: "BusinessApplication",
-                  operatingSystem: "Any",
-                  description: t("home.appDescription"),
-                  url: baseUrl,
-                  offers: {
-                    "@type": "Offer",
-                    price: "0",
-                    priceCurrency: "USD"
-                  }
-                },
-                {
-                  "@type": "FAQPage",
-                  "@id": `${canonicalUrl}#faq`,
-                  isPartOf: { "@id": canonicalUrl },
-                  mainEntity: faqItems.map((item) => ({
-                    "@type": "Question",
-                    name: item.q,
-                    acceptedAnswer: {
-                      "@type": "Answer",
-                      text: item.a
-                    }
-                  }))
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="home-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              "@id": `${baseUrl}/#organization`,
+              name: "ClawDeals",
+              url: baseUrl,
+              logo: `${baseUrl}/favicon.svg`,
+              description: t("home.orgDescription"),
+              sameAs: [
+                "https://github.com/clawdeals"
+              ]
+            },
+            {
+              "@type": "WebSite",
+              "@id": `${baseUrl}/#website`,
+              url: baseUrl,
+              name: "ClawDeals",
+              publisher: { "@id": `${baseUrl}/#organization` },
+              inLanguage: [resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"]
+            },
+            {
+              "@type": "WebPage",
+              "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: t("home.title"),
+              description: t("home.description"),
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
+            },
+            {
+              "@type": "SoftwareApplication",
+              name: "ClawDeals",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Any",
+              description: t("home.appDescription"),
+              url: baseUrl,
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "USD"
+              }
+            },
+            {
+              "@type": "FAQPage",
+              "@id": `${canonicalUrl}#faq`,
+              isPartOf: { "@id": canonicalUrl },
+              mainEntity: faqItems.map((item) => ({
+                "@type": "Question",
+                name: item.q,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: item.a
+                }
+              }))
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
       <Landing
         locale={resolvedLocale}
         buildTimeIso={buildTimeIso}

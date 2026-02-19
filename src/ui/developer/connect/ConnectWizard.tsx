@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
@@ -50,7 +50,6 @@ function themeShortLabel(label: string) {
 }
 
 const STEPS: WizardStep[] = ["connect", "verify", "firstwin"];
-const AUTO_VERIFY_UI_GUARD_MS = 12000;
 
 const START_SOURCE_LABELS = {
   gig: {
@@ -345,14 +344,10 @@ export default function ConnectWizard() {
     isCreating
   } = useConnectSession();
 
-  const masked = useMemo(() => {
-    if (!state.apiKey) return null;
-    return maskApiKey(state.apiKey);
-  }, [state.apiKey]);
-  const [autoVerifyGuardExpired, setAutoVerifyGuardExpired] = useState(false);
+  const masked = state.apiKey ? maskApiKey(state.apiKey) : null;
 
   // Compute start source hint using translation keys
-  const startSourceHint = useMemo(() => {
+  const startSourceHint = (() => {
     const raw = normalizeFromParam(router.query?.from);
     if (!raw) return null;
 
@@ -370,26 +365,7 @@ export default function ConnectWizard() {
     }
 
     return t("wizard.startSourceItem", { bucket: bucket.bucket, item: itemTitle });
-  }, [router.query?.from, t]);
-
-  useEffect(() => {
-    if (!state.autoVerifying) {
-      return;
-    }
-    // Avoid synchronous setState in effects (eslint react-hooks/set-state-in-effect).
-    // This resets a previous cycle where the guard expired.
-    const resetTimer = setTimeout(() => setAutoVerifyGuardExpired(false), 0);
-    const timer = setTimeout(() => {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[start.wizard] auto_verify_ui_guard_expired", { timeout_ms: AUTO_VERIFY_UI_GUARD_MS });
-      }
-      setAutoVerifyGuardExpired(true);
-    }, AUTO_VERIFY_UI_GUARD_MS);
-    return () => {
-      clearTimeout(resetTimer);
-      clearTimeout(timer);
-    };
-  }, [state.autoVerifying]);
+  })();
 
   const handleForget = useCallback(() => {
     stopPolling();
@@ -438,7 +414,7 @@ export default function ConnectWizard() {
   }, [stopPolling, resetSession, reset]);
 
   // Loading state while auto-verifying
-  if (state.autoVerifying && !autoVerifyGuardExpired) {
+  if (state.autoVerifying) {
     return (
       <div className="min-h-screen bg-bg text-text">
         <PageHeader left={headerLeft} actions={headerActions} containerClassName="px-6 pt-4" hideLocale>
@@ -469,17 +445,6 @@ export default function ConnectWizard() {
       </PageHeader>
 
       <main id="main-content" tabIndex={-1} className="w-full px-6 py-6 space-y-6">
-        {state.autoVerifying && autoVerifyGuardExpired && (
-          <div className="border border-warning/30 bg-warning/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-warning-muted uppercase">
-              {t("wizard.autoCheckExpired")}
-            </div>
-            <div className="text-xs font-mono text-muted mt-1">
-              {t("wizard.autoCheckExpiredDesc")}
-            </div>
-          </div>
-        )}
-
         {startSourceHint && (
           <div className="border border-border bg-surface/70 rounded clip-corner p-3">
             <div className="text-xs font-mono text-subtle uppercase">

@@ -141,6 +141,22 @@ If writes resumed during cleanup window:
 2. If non-zero targets are found, run execute section again.
 3. Re-run post-checks until stable.
 
+## Step 6: Post-Cleanup Environment Hardening
+Immediately after cleanup, enforce local-first dev/test defaults:
+
+1. Ensure local Supabase is the default dev target:
+```bash
+supabase start
+supabase status --output env
+```
+2. Ensure local `.env.local` uses local values:
+- `SUPABASE_URL=http://127.0.0.1:54321`
+- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
+- local anon/service-role keys from `supabase status --output env`
+3. Verify guardrail behavior:
+- with prod target env, `npm run test:integration` fails early
+- with local target env, `npm run test:integration -- --list` starts normally
+
 ## Rollback / Recovery (PITR)
 If critical data loss is detected:
 1. Stop all writes immediately.
@@ -152,3 +168,4 @@ If critical data loss is detected:
 ## Notes
 - Guardrail is fail-closed for integration/smoke/Playwright tooling.
 - This runbook does not change public API behavior.
+- This runbook assumes local Supabase is now the default target for local development and integration tests.

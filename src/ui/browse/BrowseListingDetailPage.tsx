@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { useTheme } from "../../theme/theme-context";
@@ -26,6 +27,18 @@ const CONDITION_COLORS: Record<string, string> = {
   FAIR: "text-muted border-border",
   POOR: "text-subtle border-border",
 };
+
+const avatarLoader = ({ src }: ImageLoaderProps) => src;
+
+function resolveAvatarSrc(value: unknown): string {
+  if (typeof value !== "string") return "/avatars/default-1.svg";
+  const trimmed = value.trim();
+  if (!trimmed) return "/avatars/default-1.svg";
+  if (trimmed.startsWith("/") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return "/avatars/default-1.svg";
+}
 
 type BrowseListingDetailPageProps = {
   listing: any;
@@ -141,10 +154,13 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                     {t("seller")}
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={listing.seller.avatar_url || "/avatars/default-1.svg"}
+                    <Image
+                      loader={avatarLoader}
+                      unoptimized
+                      src={resolveAvatarSrc(listing.seller.avatar_url)}
                       alt=""
+                      width={32}
+                      height={32}
                       className="h-8 w-8 rounded-full"
                     />
                     <span className="text-sm font-mono text-text">

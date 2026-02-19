@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import ExplorePage from "../../ui/ExplorePage";
 import packageJson from "../../../package.json";
@@ -190,34 +191,31 @@ export default function ExploreTab({
         <meta name="twitter:description" content={meta.ogDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
 
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": tabMeta.jsonLdType,
-                  "@id": canonicalUrl,
-                  url: canonicalUrl,
-                  name: meta.title,
-                  description: meta.description,
-                  isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-US"
-                },
-                {
-                  "@type": "BreadcrumbList",
-                  itemListElement: [
-                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: "Explore", item: exploreIndexUrl },
-                    { "@type": "ListItem", position: 3, name: meta.title.split(" -- ")[0], item: canonicalUrl }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="explore-tab-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": tabMeta.jsonLdType,
+              "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: meta.title,
+              description: meta.description,
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-US"
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 2, name: "Explore", item: exploreIndexUrl },
+                { "@type": "ListItem", position: 3, name: meta.title.split(" -- ")[0], item: canonicalUrl }
+              ]
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
       <ExplorePage
         locale={currentLocale}
         initialTab={initialTab}

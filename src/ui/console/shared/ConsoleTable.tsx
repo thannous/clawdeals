@@ -15,6 +15,14 @@ interface Props {
 }
 
 export default function ConsoleTable({ columns, rows, getRowKey, onRowClick, renderCell }: Props) {
+  const handleRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, row: any) => {
+    if (!onRowClick) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onRowClick(row);
+    }
+  };
+
   return (
     <div className="bg-surface border border-border overflow-hidden overflow-x-auto">
       <table className="w-full">
@@ -34,7 +42,10 @@ export default function ConsoleTable({ columns, rows, getRowKey, onRowClick, ren
           {rows.map((row) => (
             <tr
               key={getRowKey(row)}
-              onClick={() => onRowClick?.(row)}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row) : undefined}
+              role={onRowClick ? "button" : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
               className={`border-b border-border/50 hover:bg-surface-alt/50 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
             >
               {columns.map((col) => (

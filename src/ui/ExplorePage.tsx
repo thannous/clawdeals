@@ -47,6 +47,15 @@ const TRUST_MARQUEE_KEYS = [
   "segment-10"
 ] as const;
 
+function toStableStringEntries(values: readonly string[]) {
+  const seen = new Map<string, number>();
+  return values.map((value) => {
+    const nextCount = (seen.get(value) || 0) + 1;
+    seen.set(value, nextCount);
+    return { key: `${value}-${nextCount}`, value };
+  });
+}
+
 
 const COPY = {
   fr: {
@@ -625,9 +634,9 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
           <span className="font-mono text-xs text-muted tracking-widest uppercase">{hero.subtitle}</span>
         </div>
         <h1 className="text-5xl md:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
-          {hero.title.split(" ").map((word, idx) => (
-            <span key={`${hero.title}-${word}-${idx}`} className="block">
-              {word}
+          {toStableStringEntries(hero.title.split(" ")).map((word) => (
+            <span key={`${hero.title}-${word.key}`} className="block">
+              {word.value}
             </span>
           ))}
         </h1>

@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import SkeletonTable from "../console/shared/SkeletonTable";
 import EmptyState from "../console/shared/EmptyState";
@@ -99,6 +99,252 @@ type Installation = {
   last_seen_at: string | null;
 };
 
+const INSTALLATION_COLUMNS: Column[] = [
+  { key: "installation_id", label: "Installation" },
+  { key: "agent_id", label: "Agent" },
+  { key: "client_type", label: "Client" },
+  { key: "client_version", label: "Version" },
+  { key: "oauth_scopes", label: "Scopes" },
+  { key: "status", label: "Status" },
+  { key: "created_at", label: "Created" },
+  { key: "last_seen_at", label: "Last Seen" },
+  { key: "actions", label: "" },
+];
+
+type RequestState = "idle" | "loading" | "error";
+
+type InteractionState = {
+  selected: Installation | null;
+  confirmOpen: boolean;
+  reason: string;
+  submitState: RequestState;
+  submitError: string | null;
+  upgradeOpen: boolean;
+  upgradeSelectedScopes: string[];
+  upgradeState: RequestState;
+  upgradeError: string | null;
+  rotateOpen: boolean;
+  rotateGraceSeconds: string;
+  rotateState: RequestState;
+  rotateError: string | null;
+  rotatedCredential: RotateCredentialResponse | null;
+};
+
+type InteractionAction =
+  | { type: "revoke/open"; installation: Installation }
+  | { type: "revoke/close" }
+  | { type: "revoke/reason"; reason: string }
+  | { type: "revoke/state"; state: RequestState }
+  | { type: "revoke/error"; error: string | null }
+  | { type: "upgrade/open"; installation: Installation }
+  | { type: "upgrade/close" }
+  | { type: "upgrade/toggle-scope"; scope: string; checked: boolean }
+  | { type: "upgrade/state"; state: RequestState }
+  | { type: "upgrade/error"; error: string | null }
+  | { type: "rotate/open"; installation: Installation }
+  | { type: "rotate/close" }
+  | { type: "rotate/grace-seconds"; value: string }
+  | { type: "rotate/state"; state: RequestState }
+  | { type: "rotate/error"; error: string | null }
+  | { type: "rotate/set-credential"; credential: RotateCredentialResponse }
+  | { type: "rotate/clear-credential" };
+
+const INITIAL_INTERACTION_STATE: InteractionState = {
+  selected: null,
+  confirmOpen: false,
+  reason: "",
+  submitState: "idle",
+  submitError: null,
+  upgradeOpen: false,
+  upgradeSelectedScopes: [],
+  upgradeState: "idle",
+  upgradeError: null,
+  rotateOpen: false,
+  rotateGraceSeconds: "",
+  rotateState: "idle",
+  rotateError: null,
+  rotatedCredential: null,
+};
+
+function interactionReducer(state: InteractionState, action: InteractionAction): InteractionState {
+  switch (action.type) {
+    case "revoke/open":
+      return {
+        ...state,
+        selected: action.installation,
+        confirmOpen: true,
+        reason: "",
+        submitState: "idle",
+        submitError: null,
+      };
+    case "revoke/close":
+      return {
+        ...state,
+        selected: null,
+        confirmOpen: false,
+        submitState: "idle",
+        submitError: null,
+      };
+    case "revoke/reason":
+      return { ...state, reason: action.reason };
+    case "revoke/state":
+      return { ...state, submitState: action.state };
+    case "revoke/error":
+      return { ...state, submitError: action.error };
+    case "upgrade/open":
+      return {
+        ...state,
+        selected: action.installation,
+        upgradeOpen: true,
+        upgradeSelectedScopes: [],
+        upgradeState: "idle",
+        upgradeError: null,
+      };
+    case "upgrade/close":
+      return {
+        ...state,
+        upgradeOpen: false,
+        upgradeSelectedScopes: [],
+        upgradeState: "idle",
+        upgradeError: null,
+      };
+    case "upgrade/toggle-scope": {
+      const next = new Set(state.upgradeSelectedScopes);
+      if (action.checked) next.add(action.scope);
+      else next.delete(action.scope);
+      return { ...state, upgradeSelectedScopes: Array.from(next) };
+    }
+    case "upgrade/state":
+      return { ...state, upgradeState: action.state };
+    case "upgrade/error":
+      return { ...state, upgradeError: action.error };
+    case "rotate/open":
+      return {
+        ...state,
+        selected: action.installation,
+        rotateOpen: true,
+        rotateGraceSeconds: "",
+        rotateState: "idle",
+        rotateError: null,
+      };
+    case "rotate/close":
+      return {
+        ...state,
+        rotateOpen: false,
+        rotateGraceSeconds: "",
+        rotateState: "idle",
+        rotateError: null,
+      };
+    case "rotate/grace-seconds":
+      return { ...state, rotateGraceSeconds: action.value };
+    case "rotate/state":
+      return { ...state, rotateState: action.state };
+    case "rotate/error":
+      return { ...state, rotateError: action.error };
+    case "rotate/set-credential":
+      return { ...state, rotatedCredential: action.credential };
+    case "rotate/clear-credential":
+      return { ...state, rotatedCredential: null };
+    default:
+      return state;
+  }
+}
+
+type InstallationActionsProps = {
+  row: Installation;
+  onUpgrade: (installation: Installation) => void;
+  onRotate: (installation: Installation) => void;
+  onRevoke: (installation: Installation) => void;
+};
+
+function InstallationActions({ row, onUpgrade, onRotate, onRevoke }: InstallationActionsProps) {
+  if (row.status !== "ACTIVE") {
+    return <span className="text-xs font-mono text-subtle">\u2014</span>;
+  }
+  return (
+    <div className="flex items-center justify-end gap-2">
+      <button
+        data-testid={`connected-apps-upgrade-${row.installation_id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onUpgrade(row);
+        }}
+        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+      >
+        Upgrade
+      </button>
+      <button
+        data-testid={`connected-apps-rotate-${row.installation_id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRotate(row);
+        }}
+        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors"
+      >
+        Rotate
+      </button>
+      <button
+        data-testid={`connected-apps-revoke-${row.installation_id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRevoke(row);
+        }}
+        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors"
+      >
+        Revoke
+      </button>
+    </div>
+  );
+}
+
+function UpgradeScopeOptions({
+  grantedScopes,
+  selectedScopes,
+  onToggle,
+}: {
+  grantedScopes: string[];
+  selectedScopes: string[];
+  onToggle: (scope: string, checked: boolean) => void;
+}) {
+  const grantedScopeSet = new Set(sortScopesStable(Array.isArray(grantedScopes) ? grantedScopes : []));
+  return (
+    <div className="grid gap-2">
+      {V1_SCOPES_UPGRADE_ONLY.map((scope) => {
+        const granted = grantedScopeSet.has(scope);
+        const checked = selectedScopes.includes(scope);
+        return (
+          <label
+            key={scope}
+            className={`flex items-center justify-between gap-3 px-3 py-2 rounded border ${
+              granted ? "border-border bg-surface/50 opacity-60" : "border-border bg-surface"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                disabled={granted}
+                checked={granted ? true : checked}
+                onChange={(e) => {
+                  onToggle(scope, e.target.checked);
+                }}
+              />
+              <span className="text-xs font-mono text-text">{scope}</span>
+            </div>
+            {granted ? (
+              <span className="text-xs font-mono text-subtle uppercase">Granted</span>
+            ) : (
+              <span className="text-xs font-mono text-subtle uppercase">Upgrade</span>
+            )}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 function renderScopePills(scopes: string[]) {
   const items = Array.isArray(scopes) ? scopes : [];
   if (items.length === 0) {
@@ -131,16 +377,41 @@ function renderScopePills(scopes: string[]) {
 }
 
 export default function ConnectedAppsPage() {
+  return useConnectedAppsPageView();
+}
+
+function useConnectedAppsPageView() {
   const router = useRouter();
   const { toasts, show } = useToast();
   const { agentMap } = useOwnerAgents();
+  const [interaction, dispatch] = useReducer(interactionReducer, INITIAL_INTERACTION_STATE);
 
   const [items, setItems] = useState<Installation[]>([]);
-  const [authRequired, setAuthRequired] = useState(false);
   const [fetchState, setFetchState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
+  const {
+    selected,
+    confirmOpen,
+    reason,
+    submitState,
+    submitError,
+    upgradeOpen,
+    upgradeSelectedScopes,
+    upgradeState,
+    upgradeError,
+    rotateOpen,
+    rotateGraceSeconds,
+    rotateState,
+    rotateError,
+    rotatedCredential,
+  } = interaction;
+
   const abortRef = useRef<AbortController | null>(null);
+  const redirectToLogin = useCallback(() => {
+    const next = encodeURIComponent(router.asPath || "/settings/connected-apps");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [router]);
 
   const fetchInstallations = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort();
@@ -149,7 +420,6 @@ export default function ConnectedAppsPage() {
 
     setFetchState("loading");
     setError(null);
-    setAuthRequired(false);
 
     try {
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -162,9 +432,7 @@ export default function ConnectedAppsPage() {
         }
 
         if (resp.status === 401) {
-          setItems([]);
-          setAuthRequired(true);
-          setFetchState("done");
+          redirectToLogin();
           return;
         }
 
@@ -178,11 +446,10 @@ export default function ConnectedAppsPage() {
       }
     } catch (err: any) {
       if (err?.name === "AbortError") return;
-      setAuthRequired(false);
       setError(String(err?.message || "Failed to load installations"));
       setFetchState("error");
     }
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
     void fetchInstallations();
@@ -191,102 +458,39 @@ export default function ConnectedAppsPage() {
     };
   }, [fetchInstallations]);
 
-  useEffect(() => {
-    if (!authRequired) return;
-    const next = encodeURIComponent(router.asPath || "/settings/connected-apps");
-    void router.replace(`/auth/login?next=${next}`);
-  }, [authRequired, router]);
-
   const refetch = useCallback(() => {
     void fetchInstallations();
   }, [fetchInstallations]);
 
-  const redirectToLogin = useCallback(() => {
-    setAuthRequired(true);
-  }, []);
-
-  const columns: Column[] = useMemo(
-    () => [
-      { key: "installation_id", label: "Installation" },
-      { key: "agent_id", label: "Agent" },
-      { key: "client_type", label: "Client" },
-      { key: "client_version", label: "Version" },
-      { key: "oauth_scopes", label: "Scopes" },
-      { key: "status", label: "Status" },
-      { key: "created_at", label: "Created" },
-      { key: "last_seen_at", label: "Last Seen" },
-      { key: "actions", label: "" },
-    ],
-    []
-  );
-
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [selected, setSelected] = useState<Installation | null>(null);
-  const [reason, setReason] = useState("");
-  const [submitState, setSubmitState] = useState<"idle" | "loading" | "error">("idle");
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const [upgradeSelectedScopes, setUpgradeSelectedScopes] = useState<string[]>([]);
-  const [upgradeState, setUpgradeState] = useState<"idle" | "loading" | "error">("idle");
-  const [upgradeError, setUpgradeError] = useState<string | null>(null);
-
-  const [rotateOpen, setRotateOpen] = useState(false);
-  const [rotateGraceSeconds, setRotateGraceSeconds] = useState("");
-  const [rotateState, setRotateState] = useState<"idle" | "loading" | "error">("idle");
-  const [rotateError, setRotateError] = useState<string | null>(null);
-  const [rotatedCredential, setRotatedCredential] = useState<RotateCredentialResponse | null>(null);
-
   const openRevokeConfirm = useCallback((installation: Installation) => {
-    setSelected(installation);
-    setReason("");
-    setSubmitState("idle");
-    setSubmitError(null);
-    setConfirmOpen(true);
+    dispatch({ type: "revoke/open", installation });
   }, []);
 
   const closeConfirm = useCallback(() => {
     if (submitState === "loading") return;
-    setConfirmOpen(false);
-    setSelected(null);
-    setSubmitState("idle");
-    setSubmitError(null);
+    dispatch({ type: "revoke/close" });
   }, [submitState]);
 
   const openUpgrade = useCallback((installation: Installation) => {
-    setSelected(installation);
-    setUpgradeSelectedScopes([]);
-    setUpgradeState("idle");
-    setUpgradeError(null);
-    setUpgradeOpen(true);
+    dispatch({ type: "upgrade/open", installation });
   }, []);
 
   const openRotate = useCallback((installation: Installation) => {
-    setSelected(installation);
-    setRotateGraceSeconds("");
-    setRotateState("idle");
-    setRotateError(null);
-    setRotateOpen(true);
+    dispatch({ type: "rotate/open", installation });
   }, []);
 
   const closeUpgrade = useCallback(() => {
     if (upgradeState === "loading") return;
-    setUpgradeOpen(false);
-    setUpgradeSelectedScopes([]);
-    setUpgradeState("idle");
-    setUpgradeError(null);
+    dispatch({ type: "upgrade/close" });
   }, [upgradeState]);
 
   const closeRotate = useCallback(() => {
     if (rotateState === "loading") return;
-    setRotateOpen(false);
-    setRotateGraceSeconds("");
-    setRotateState("idle");
-    setRotateError(null);
+    dispatch({ type: "rotate/close" });
   }, [rotateState]);
 
   const closeRotatedCredential = useCallback(() => {
-    setRotatedCredential(null);
+    dispatch({ type: "rotate/clear-credential" });
   }, []);
 
   const copyRotatedCredential = useCallback(async () => {
@@ -304,8 +508,8 @@ export default function ConnectedAppsPage() {
     if (!selected) return;
     if (submitState === "loading") return;
 
-    setSubmitState("loading");
-    setSubmitError(null);
+    dispatch({ type: "revoke/state", state: "loading" });
+    dispatch({ type: "revoke/error", error: null });
 
     try {
       const idempotencyKey = randomIdempotencyKey();
@@ -319,7 +523,7 @@ export default function ConnectedAppsPage() {
       });
       const body = await resp.json().catch(() => ({}));
       if (resp.status === 401) {
-        setSubmitState("idle");
+        dispatch({ type: "revoke/state", state: "idle" });
         redirectToLogin();
         return;
       }
@@ -332,8 +536,8 @@ export default function ConnectedAppsPage() {
       refetch();
     } catch (err: any) {
       const message = String(err?.message || "Revoke failed");
-      setSubmitError(message);
-      setSubmitState("error");
+      dispatch({ type: "revoke/error", error: message });
+      dispatch({ type: "revoke/state", state: "error" });
       show(message, "error");
     }
   }, [selected, submitState, reason, closeConfirm, refetch, show, redirectToLogin]);
@@ -342,8 +546,8 @@ export default function ConnectedAppsPage() {
     if (!selected) return;
     if (upgradeState === "loading") return;
 
-    setUpgradeState("loading");
-    setUpgradeError(null);
+    dispatch({ type: "upgrade/state", state: "loading" });
+    dispatch({ type: "upgrade/error", error: null });
 
     try {
       const idempotencyKey = randomIdempotencyKey();
@@ -360,7 +564,7 @@ export default function ConnectedAppsPage() {
       );
       const body = await resp.json().catch(() => ({}));
       if (resp.status === 401) {
-        setUpgradeState("idle");
+        dispatch({ type: "upgrade/state", state: "idle" });
         redirectToLogin();
         return;
       }
@@ -381,8 +585,8 @@ export default function ConnectedAppsPage() {
       refetch();
     } catch (err: any) {
       const message = String(err?.message || "Scope upgrade request failed");
-      setUpgradeError(message);
-      setUpgradeState("error");
+      dispatch({ type: "upgrade/error", error: message });
+      dispatch({ type: "upgrade/state", state: "error" });
       show(message, "error");
     }
   }, [selected, upgradeState, upgradeSelectedScopes, closeUpgrade, refetch, show, redirectToLogin]);
@@ -396,15 +600,15 @@ export default function ConnectedAppsPage() {
     if (trimmedGraceSeconds) {
       if (!/^\d+$/.test(trimmedGraceSeconds)) {
         const validationMessage = "Grace seconds must be a non-negative integer";
-        setRotateState("error");
-        setRotateError(validationMessage);
+        dispatch({ type: "rotate/state", state: "error" });
+        dispatch({ type: "rotate/error", error: validationMessage });
         return;
       }
       graceSeconds = Number.parseInt(trimmedGraceSeconds, 10);
     }
 
-    setRotateState("loading");
-    setRotateError(null);
+    dispatch({ type: "rotate/state", state: "loading" });
+    dispatch({ type: "rotate/error", error: null });
 
     try {
       const idempotencyKey = randomIdempotencyKey();
@@ -418,7 +622,7 @@ export default function ConnectedAppsPage() {
       });
       const body = await resp.json().catch(() => ({}));
       if (resp.status === 401) {
-        setRotateState("idle");
+        dispatch({ type: "rotate/state", state: "idle" });
         redirectToLogin();
         return;
       }
@@ -431,17 +635,20 @@ export default function ConnectedAppsPage() {
         throw new Error("Rotate succeeded but no credential was returned");
       }
 
-      setRotatedCredential({
-        ...parsed,
-        installationId: parsed.installationId || selected.installation_id,
+      dispatch({
+        type: "rotate/set-credential",
+        credential: {
+          ...parsed,
+          installationId: parsed.installationId || selected.installation_id,
+        },
       });
       show("Credential rotated. Copy it now.", "success");
       closeRotate();
       refetch();
     } catch (err: any) {
       const message = String(err?.message || "Rotate failed");
-      setRotateError(message);
-      setRotateState("error");
+      dispatch({ type: "rotate/error", error: message });
+      dispatch({ type: "rotate/state", state: "error" });
       show(message, "error");
     }
   }, [selected, rotateState, rotateGraceSeconds, show, closeRotate, refetch, redirectToLogin]);
@@ -467,28 +674,28 @@ export default function ConnectedAppsPage() {
           </button>
         </div>
 
-        {!authRequired && fetchState === "loading" && (
+        {fetchState === "loading" && (
           <div data-testid="connected-apps-loading">
             <SkeletonTable columns={9} rows={8} />
           </div>
         )}
 
-        {!authRequired && fetchState === "error" && (
+        {fetchState === "error" && (
           <div data-testid="connected-apps-error">
             <ErrorState message={error || "Failed to load connected apps"} onRetry={refetch} />
           </div>
         )}
 
-        {!authRequired && fetchState === "done" && items.length === 0 && (
+        {fetchState === "done" && items.length === 0 && (
           <div data-testid="connected-apps-empty">
             <EmptyState title="No connected apps found" subtitle="Installations will appear here after you connect a client." />
           </div>
         )}
 
-        {!authRequired && fetchState === "done" && items.length > 0 && (
+        {fetchState === "done" && items.length > 0 && (
           <div data-testid="connected-apps-table">
             <ConsoleTable
-              columns={columns}
+              columns={INSTALLATION_COLUMNS}
               rows={items}
               getRowKey={(row) => row.installation_id}
               renderCell={(row, col) => {
@@ -500,46 +707,7 @@ export default function ConnectedAppsPage() {
                 if (col.key === "created_at") return formatDate(row.created_at);
                 if (col.key === "last_seen_at") return formatDate(row.last_seen_at);
                 if (col.key === "actions") {
-                  if (row.status !== "ACTIVE") {
-                    return <span className="text-xs font-mono text-subtle">\u2014</span>;
-                  }
-                  return (
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        data-testid={`connected-apps-upgrade-${row.installation_id}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openUpgrade(row);
-                        }}
-                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
-                      >
-                        Upgrade
-                      </button>
-                      <button
-                        data-testid={`connected-apps-rotate-${row.installation_id}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openRotate(row);
-                        }}
-                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-primary/40 text-primary rounded hover:bg-primary/10 transition-colors"
-                      >
-                        Rotate
-                      </button>
-                      <button
-                        data-testid={`connected-apps-revoke-${row.installation_id}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openRevokeConfirm(row);
-                        }}
-                        className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors"
-                      >
-                        Revoke
-                      </button>
-                    </div>
-                  );
+                  return <InstallationActions row={row} onUpgrade={openUpgrade} onRotate={openRotate} onRevoke={openRevokeConfirm} />;
                 }
                 return row[col.key as keyof Installation] as any;
               }}
@@ -559,15 +727,21 @@ export default function ConnectedAppsPage() {
         onConfirm={onRotateCredential}
       >
         <div className="space-y-2">
-          <label className="block text-xs font-mono text-subtle uppercase">Grace seconds (optional)</label>
+          <label
+            htmlFor="connected-apps-rotate-grace-seconds"
+            className="block text-xs font-mono text-subtle uppercase"
+          >
+            Grace seconds (optional)
+          </label>
           <input
+            id="connected-apps-rotate-grace-seconds"
             data-testid="connected-apps-rotate-grace-seconds"
             type="number"
             inputMode="numeric"
             min={0}
             step={1}
             value={rotateGraceSeconds}
-            onChange={(e) => setRotateGraceSeconds(e.target.value)}
+            onChange={(e) => dispatch({ type: "rotate/grace-seconds", value: e.target.value })}
             placeholder="e.g. 300"
             className="w-full h-10 px-3 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
           />
@@ -587,11 +761,14 @@ export default function ConnectedAppsPage() {
         onConfirm={onConfirm}
       >
         <div className="space-y-2">
-          <label className="block text-xs font-mono text-subtle uppercase">Reason (optional)</label>
+          <label htmlFor="connected-apps-revoke-reason" className="block text-xs font-mono text-subtle uppercase">
+            Reason (optional)
+          </label>
           <textarea
+            id="connected-apps-revoke-reason"
             data-testid="connected-apps-revoke-reason"
             value={reason}
-            onChange={(e) => setReason(e.target.value)}
+            onChange={(e) => dispatch({ type: "revoke/reason", reason: e.target.value })}
             placeholder="e.g. suspected abuse"
             className="w-full min-h-[72px] px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:outline-none focus:border-primary transition-colors"
           />
@@ -615,45 +792,11 @@ export default function ConnectedAppsPage() {
             <span className="text-muted">{selected?.oauth_scopes?.length ? selected.oauth_scopes.length : 0}</span>
           </div>
 
-          <div className="grid gap-2">
-            {V1_SCOPES_UPGRADE_ONLY.map((scope) => {
-              const granted = Array.isArray(selected?.oauth_scopes)
-                ? new Set(sortScopesStable(selected?.oauth_scopes || [])).has(scope)
-                : false;
-              const checked = upgradeSelectedScopes.includes(scope);
-              return (
-                <label
-                  key={scope}
-                  className={`flex items-center justify-between gap-3 px-3 py-2 rounded border ${
-                    granted ? "border-border bg-surface/50 opacity-60" : "border-border bg-surface"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      disabled={granted}
-                      checked={granted ? true : checked}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setUpgradeSelectedScopes((prev) => {
-                          const set = new Set(prev);
-                          if (next) set.add(scope);
-                          else set.delete(scope);
-                          return Array.from(set);
-                        });
-                      }}
-                    />
-                    <span className="text-xs font-mono text-text">{scope}</span>
-                  </div>
-                  {granted ? (
-                    <span className="text-xs font-mono text-subtle uppercase">Granted</span>
-                  ) : (
-                    <span className="text-xs font-mono text-subtle uppercase">Upgrade</span>
-                  )}
-                </label>
-              );
-            })}
-          </div>
+          <UpgradeScopeOptions
+            grantedScopes={selected?.oauth_scopes || []}
+            selectedScopes={upgradeSelectedScopes}
+            onToggle={(scope, checked) => dispatch({ type: "upgrade/toggle-scope", scope, checked })}
+          />
 
           {upgradeError && <div className="text-xs font-mono text-error">{upgradeError}</div>}
         </div>
@@ -670,8 +813,11 @@ export default function ConnectedAppsPage() {
         onConfirm={copyRotatedCredential}
       >
         <div className="space-y-3">
-          <label className="block text-xs font-mono text-subtle uppercase">New credential</label>
+          <label htmlFor="connected-apps-rotate-credential" className="block text-xs font-mono text-subtle uppercase">
+            New credential
+          </label>
           <textarea
+            id="connected-apps-rotate-credential"
             data-testid="connected-apps-rotate-credential"
             value={rotatedCredential?.credential || ""}
             readOnly

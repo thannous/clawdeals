@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   clearStoredOwnerAuth,
@@ -36,13 +36,17 @@ function formatExpiresAt(expiresAt: string) {
 }
 
 export default function VerifyPage() {
+  return useVerifyPageView();
+}
+
+function useVerifyPageView() {
   const router = useRouter();
-  const queryToken = useMemo(() => resolveQueryParam(router.query?.token).trim(), [router.query?.token]);
-  const querySessionId = useMemo(() => {
+  const queryToken = resolveQueryParam(router.query?.token).trim();
+  const querySessionId = (() => {
     const raw = resolveQueryParam(router.query?.session_id).trim();
     if (raw) return raw;
     return resolveQueryParam(router.query?.sessionId).trim();
-  }, [router.query?.session_id, router.query?.sessionId]);
+  })();
 
   const [email] = useState<string | null>(() => getStoredOwnerEmail());
   const [sessionId, setSessionId] = useState<string>(() => getStoredOwnerSessionId() || "");
@@ -50,8 +54,6 @@ export default function VerifyPage() {
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
-
-  const autoSubmitRef = useRef(false);
 
   const confirm = useCallback(
     async ({ sessionId: rawSessionId, token: rawToken }: { sessionId: string; token: string }) => {
@@ -110,16 +112,9 @@ export default function VerifyPage() {
       setStoredOwnerSessionToken(queryToken);
     }
 
-    if (querySessionId && queryToken && !autoSubmitRef.current) {
-      autoSubmitRef.current = true;
-      void confirm({ sessionId: querySessionId, token: queryToken });
-    }
-  }, [router.isReady, querySessionId, queryToken, confirm]);
+  }, [router.isReady, querySessionId, queryToken]);
 
-  const canSubmit = useMemo(
-    () => Boolean(sessionId.trim() && token.trim() && submitState !== "loading"),
-    [sessionId, token, submitState]
-  );
+  const canSubmit = Boolean(sessionId.trim() && token.trim() && submitState !== "loading");
 
   const onVerify = useCallback(async () => {
     await confirm({ sessionId, token });

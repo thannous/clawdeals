@@ -55,11 +55,14 @@ export default function MyApprovalsPage() {
       case "actions":
         if (row.state !== "PENDING") return null;
         return (
-          <span className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <span className="flex items-center gap-1.5">
             <button
               type="button"
               disabled={submitState === "loading"}
-              onClick={() => execute(row.approval_id, "approve")}
+              onClick={(e) => {
+                e.stopPropagation();
+                execute(row.approval_id, "approve");
+              }}
               className="px-2 py-1 text-[11px] font-mono font-bold uppercase border border-success/50 text-success hover:bg-success/10 transition-colors disabled:opacity-50"
             >
               {t("list.approve")}
@@ -67,7 +70,10 @@ export default function MyApprovalsPage() {
             <button
               type="button"
               disabled={submitState === "loading"}
-              onClick={() => execute(row.approval_id, "deny")}
+              onClick={(e) => {
+                e.stopPropagation();
+                execute(row.approval_id, "deny");
+              }}
               className="px-2 py-1 text-[11px] font-mono font-bold uppercase border border-error/50 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
             >
               {t("list.deny")}

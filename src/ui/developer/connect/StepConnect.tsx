@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import QRCode from "react-qr-code";
 import Link from "next/link";
@@ -40,7 +40,61 @@ type Props = {
   hasOwnerSession: boolean;
 };
 
-export default function StepConnect({
+type KeyMode = "generate" | "paste";
+type AsyncStatus = "idle" | "loading" | "success" | "error";
+
+function KeyModeToggle({
+  mode,
+  onModeChange,
+  generateLabel,
+  pasteLabel
+}: {
+  mode: KeyMode;
+  onModeChange: (mode: KeyMode) => void;
+  generateLabel: string;
+  pasteLabel: string;
+}) {
+  return (
+    <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
+      <button
+        onClick={() => onModeChange("generate")}
+        className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+          mode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
+        } transition-colors`}
+      >
+        {generateLabel}
+      </button>
+      <button
+        onClick={() => onModeChange("paste")}
+        className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
+          mode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
+        } transition-colors`}
+      >
+        {pasteLabel}
+      </button>
+    </div>
+  );
+}
+
+function StatusMessage({ message, status }: { message: string; status: AsyncStatus }) {
+  if (!message) return null;
+  return (
+    <div
+      className={`text-xs font-mono ${
+        status === "error" ? "text-error" : status === "success" ? "text-success" : "text-subtle"
+      }`}
+      aria-live="polite"
+    >
+      {message}
+    </div>
+  );
+}
+
+export default function StepConnect(props: Props) {
+  return useStepConnectView(props);
+}
+
+function useStepConnectView({
   apiKey: storedKey,
   onMethodSelected,
   onApiKeySet,
@@ -61,7 +115,7 @@ export default function StepConnect({
 
   // --- API Key state ---
   const [keyMode, setKeyMode] = useState<"generate" | "paste">("generate");
-  const [agentName, setAgentName] = useState("");
+  const [agentName, setAgentName] = useState(() => generateFunnyAgentName());
   const [pastedKey, setPastedKey] = useState("");
   const [keyStatus, setKeyStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [keyMessage, setKeyMessage] = useState("");
@@ -78,23 +132,12 @@ export default function StepConnect({
   const [mcpSubStepOverride, setMcpSubStep] = useState<"key" | "configure" | null>(null);
   const mcpSubStep: "key" | "configure" = mcpSubStepOverride ?? (storedKey ? "configure" : "key");
   const [mcpKeyMode, setMcpKeyMode] = useState<"generate" | "paste">("generate");
-  const [mcpAgentName, setMcpAgentName] = useState("");
+  const [mcpAgentName, setMcpAgentName] = useState(() => generateFunnyAgentName());
   const [mcpPastedKey, setMcpPastedKey] = useState("");
   const [mcpKeyStatus, setMcpKeyStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [mcpKeyMessage, setMcpKeyMessage] = useState("");
 
-  useEffect(() => {
-    if (keyMode !== "generate") return;
-    const timer = setTimeout(() => {
-      setAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [keyMode]);
-
-  const mcpInstallSnippetNpx = useMemo(
-    () => `export CLAWDEALS_API_KEY="${storedKey || "<YOUR_API_KEY>"}"\nnpx -y clawdeals-mcp install`,
-    [storedKey]
-  );
+  const mcpInstallSnippetNpx = `export CLAWDEALS_API_KEY="${storedKey || "<YOUR_API_KEY>"}"\nnpx -y clawdeals-mcp install`;
 
   const mcpManualConfig = useMemo(() => {
     const env: Record<string, string> = {
@@ -126,6 +169,20 @@ export default function StepConnect({
 
     return JSON.stringify({ servers: base }, null, 2);
   }, [storedKey, mcpManualTarget]);
+
+  const handleKeyModeChange = useCallback((nextMode: KeyMode) => {
+    setKeyMode(nextMode);
+    if (nextMode === "generate") {
+      setAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
+    }
+  }, []);
+
+  const handleMcpKeyModeChange = useCallback((nextMode: KeyMode) => {
+    setMcpKeyMode(nextMode);
+    if (nextMode === "generate") {
+      setMcpAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
+    }
+  }, []);
 
   // --- Claim Link handlers ---
   const handleCreateClaim = useCallback(async () => {
@@ -263,15 +320,6 @@ export default function StepConnect({
   const handleMcpDone = useCallback(() => {
     onMethodSelected("mcp");
   }, [onMethodSelected]);
-
-  // --- MCP sub-step: auto-generate agent name ---
-  useEffect(() => {
-    if (mcpKeyMode !== "generate") return;
-    const timer = setTimeout(() => {
-      setMcpAgentName((prev) => (prev.trim() ? prev : generateFunnyAgentName()));
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [mcpKeyMode]);
 
   // --- MCP key handlers ---
   const handleMcpGenerate = useCallback(async () => {
@@ -526,24 +574,12 @@ export default function StepConnect({
             </div>
           </div>
 
-          <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
-            <button
-              onClick={() => setKeyMode("generate")}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                keyMode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
-              } transition-colors`}
-            >
-              {t("common.generate")}
-            </button>
-            <button
-              onClick={() => setKeyMode("paste")}
-              className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                keyMode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
-              } transition-colors`}
-            >
-              {t("common.iHaveAKey")}
-            </button>
-          </div>
+          <KeyModeToggle
+            mode={keyMode}
+            onModeChange={handleKeyModeChange}
+            generateLabel={t("common.generate")}
+            pasteLabel={t("common.iHaveAKey")}
+          />
 
           {keyMode === "generate" ? (
             generatedKey ? (
@@ -634,16 +670,7 @@ export default function StepConnect({
             </div>
           )}
 
-          {keyMessage && (
-            <div
-              className={`text-xs font-mono ${
-                keyStatus === "error" ? "text-error" : keyStatus === "success" ? "text-success" : "text-subtle"
-              }`}
-              aria-live="polite"
-            >
-              {keyMessage}
-            </div>
-          )}
+          <StatusMessage message={keyMessage} status={keyStatus} />
         </div>
 
         {/* MCP */}
@@ -660,24 +687,12 @@ export default function StepConnect({
             </div>
           </div>
 
-          <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
-                <button
-                  onClick={() => setMcpKeyMode("generate")}
-                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                    mcpKeyMode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
-                  } transition-colors`}
-                >
-                  {t("common.generate")}
-                </button>
-                <button
-                  onClick={() => setMcpKeyMode("paste")}
-                  className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                    mcpKeyMode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
-                  } transition-colors`}
-                >
-                  {t("common.iHaveAKey")}
-                </button>
-              </div>
+          <KeyModeToggle
+            mode={mcpKeyMode}
+            onModeChange={handleMcpKeyModeChange}
+            generateLabel={t("common.generate")}
+            pasteLabel={t("common.iHaveAKey")}
+          />
 
               {mcpKeyMode === "generate" ? (
                 <div className="space-y-3">
@@ -741,16 +756,7 @@ export default function StepConnect({
                 </div>
               )}
 
-              {mcpKeyMessage && (
-                <div
-                  className={`text-xs font-mono ${
-                    mcpKeyStatus === "error" ? "text-error" : mcpKeyStatus === "success" ? "text-success" : "text-subtle"
-                  }`}
-                  aria-live="polite"
-                >
-                  {mcpKeyMessage}
-                </div>
-              )}
+              <StatusMessage message={mcpKeyMessage} status={mcpKeyStatus} />
 
         </div>
       </div>

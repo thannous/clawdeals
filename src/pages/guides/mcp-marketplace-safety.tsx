@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import {
@@ -110,6 +111,21 @@ const RATE_LIMIT_GROUPS = [
   { route: "auth.register_ip", limit: "3 req/min", scope: "ip" }
 ];
 
+function toStableCodeLines(lines: readonly string[]) {
+  const seen = new Map<string, number>();
+  let lineNumber = 0;
+  return lines.map((line) => {
+    lineNumber += 1;
+    const nextCount = (seen.get(line) || 0) + 1;
+    seen.set(line, nextCount);
+    return {
+      key: `${line}-${nextCount}`,
+      line,
+      lineNumber
+    };
+  });
+}
+
 /* ---------- helpers ---------- */
 
 type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
@@ -131,6 +147,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, r
 /* ---------- reusable code block ---------- */
 
 function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
+  const keyedLines = toStableCodeLines(lines);
+
   return (
     <div className="bg-bg border border-border overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-surface-alt">
@@ -140,10 +158,10 @@ function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
         <span className="font-mono text-xs text-subtle ml-2">{filename}</span>
       </div>
       <pre className="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
-        {lines.map((line, idx) => (
-          <div key={idx}>
+        {keyedLines.map(({ key, line, lineNumber }) => (
+          <div key={key}>
             <span className="text-subtle select-none mr-4">
-              {String(idx + 1).padStart(2, " ")}
+              {String(lineNumber).padStart(2, " ")}
             </span>
             <span
               className={
@@ -169,7 +187,11 @@ function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
 
 /* ---------- page ---------- */
 
-export default function McpMarketplaceSafety({ baseUrl, isPreviewHost }: PageProps) {
+export default function McpMarketplaceSafety(props: PageProps) {
+  return useMcpMarketplaceSafetyPage(props);
+}
+
+function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
   const router = useRouter();
   const t = useTranslations("guides");
   const tSeo = useTranslations("seo");
@@ -244,37 +266,34 @@ export default function McpMarketplaceSafety({ baseUrl, isPreviewHost }: PagePro
         <meta name="twitter:title" content={tSeo("guides.mcpSafety.ogTitle")} />
         <meta name="twitter:description" content={tSeo("guides.mcpSafety.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "TechArticle",
-                  "@id": canonicalUrl,
-                  url: canonicalUrl,
-                  name: tSeo("guides.mcpSafety.title"),
-                  headline: tSeo("guides.mcpSafety.ogTitle"),
-                  description: tSeo("guides.mcpSafety.description"),
-                  proficiencyLevel: "Beginner",
-                  inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US",
-                  isPartOf: { "@id": `${baseUrl}/#website` },
-                  publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
-                },
-                {
-                  "@type": "BreadcrumbList",
-                  itemListElement: [
-                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: "Guides", item: `${baseUrl}/guides` },
-                    { "@type": "ListItem", position: 3, name: t("mcpSafety.pageTitle"), item: canonicalUrl }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="guide-mcp-marketplace-safety-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "TechArticle",
+              "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: tSeo("guides.mcpSafety.title"),
+              headline: tSeo("guides.mcpSafety.ogTitle"),
+              description: tSeo("guides.mcpSafety.description"),
+              proficiencyLevel: "Beginner",
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US",
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 2, name: "Guides", item: `${baseUrl}/guides` },
+                { "@type": "ListItem", position: 3, name: t("mcpSafety.pageTitle"), item: canonicalUrl }
+              ]
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
 
       <FeaturePageLayout
         title={t("mcpSafety.pageTitle")}

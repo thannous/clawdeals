@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { Database, Fingerprint, Key, RotateCcw, Search, ShieldOff, Timer } from "lucide-react";
@@ -106,33 +107,30 @@ export default function AuditTrail({ baseUrl, isPreviewHost }: PageProps) {
         <meta name="twitter:title" content={tSeo("auditTrail.ogTitle")} />
         <meta name="twitter:description" content={tSeo("auditTrail.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "WebPage",
-                  "@id": canonicalUrl,
-                  url: canonicalUrl,
-                  name: tSeo("auditTrail.title"),
-                  description: tSeo("auditTrail.description"),
-                  isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
-                },
-                {
-                  "@type": "BreadcrumbList",
-                  itemListElement: [
-                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: t("breadcrumb"), item: canonicalUrl }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="audit-trail-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebPage",
+              "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: tSeo("auditTrail.title"),
+              description: tSeo("auditTrail.description"),
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 2, name: t("breadcrumb"), item: canonicalUrl }
+              ]
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
       <FeaturePageLayout
         title="Audit Trail"
         subtitle={t("subtitle")}
@@ -167,7 +165,7 @@ export default function AuditTrail({ baseUrl, isPreviewHost }: PageProps) {
                 const isBlocked = evt.status === "blocked";
                 return (
                   <div
-                    key={idx}
+                    key={`${evt.ts}-${evt.agent}-${evt.event}`}
                     className="font-mono text-xs flex flex-wrap gap-x-3 showcase-enter"
                     style={{ animationDelay: `${idx * 60}ms` }}
                   >

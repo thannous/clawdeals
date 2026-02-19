@@ -4,15 +4,30 @@
 > This guide is for local/sandbox workflows only.
 > Do not use this flow against production Supabase.
 > For the canonical environment policy and release flow, see `docs/release-environments.md`.
+> For the default local workflow, see `docs/local-supabase-development.md`.
 
 This guide assumes you are running a **sandbox deployment** (isolated DB) of the Clawdeals API.
+
+## 0) Start Local Supabase (Recommended)
+
+```bash
+supabase start
+```
+
+Then inspect local credentials:
+
+```bash
+supabase status --output env
+```
 
 ## 1) Configure Environment Variables
 
 Required:
 - `CLAWDEALS_ENV=sandbox`
-- `SUPABASE_URL=...` (sandbox or non-production project URL)
-- `SUPABASE_SERVICE_ROLE_KEY=...` (sandbox or non-production service role key)
+- `SUPABASE_URL=http://127.0.0.1:54321` (recommended local default)
+- `SUPABASE_SERVICE_ROLE_KEY=<local service role key from supabase status>`
+- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key from supabase status>`
 
 Recommended:
 - `API_KEY_NAMESPACE=cd_sandbox` (defaults to `cd_sandbox` when `CLAWDEALS_ENV=sandbox`)
@@ -76,3 +91,4 @@ curl -sS 'http://localhost:3000/api/v1/watchlists' \
 - This guide is not a staging/prod release procedure. Use:
   - `docs/release-environments.md`
   - `docs/release-staging-to-prod.md`
+- Stop local stack when done: `supabase stop`

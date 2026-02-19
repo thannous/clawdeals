@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import ConsoleTable, { type Column } from "../console/shared/ConsoleTable";
 import SkeletonTable from "../console/shared/SkeletonTable";
@@ -45,7 +45,22 @@ type ChannelIdentity = {
   last_seen_at: string | null;
 };
 
+const IDENTITY_COLUMNS: Column[] = [
+  { key: "identity_id", label: "Identity" },
+  { key: "channel_type", label: "Channel" },
+  { key: "display_name", label: "Display" },
+  { key: "role", label: "Role" },
+  { key: "state", label: "Status" },
+  { key: "approved_at", label: "Paired" },
+  { key: "last_seen_at", label: "Last Seen" },
+  { key: "actions", label: "" }
+];
+
 export default function IdentitiesPage() {
+  return useIdentitiesPageView();
+}
+
+function useIdentitiesPageView() {
   const router = useRouter();
   const { toasts, show } = useToast();
 
@@ -53,10 +68,13 @@ export default function IdentitiesPage() {
     null
   );
   const [channels, setChannels] = useState<ChannelIdentity[]>([]);
-  const [authRequired, setAuthRequired] = useState(false);
   const [fetchState, setFetchState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const redirectToLogin = useCallback(() => {
+    const next = encodeURIComponent(router.asPath || "/settings/identities");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [router]);
 
   const fetchIdentities = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort();
@@ -65,7 +83,6 @@ export default function IdentitiesPage() {
     abortRef.current = controller;
     setFetchState("loading");
     setError(null);
-    setAuthRequired(false);
 
     try {
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -78,10 +95,7 @@ export default function IdentitiesPage() {
           continue;
         }
         if (resp.status === 401) {
-          setOwner(null);
-          setChannels([]);
-          setAuthRequired(true);
-          setFetchState("done");
+          redirectToLogin();
           return;
         }
         if (!resp.ok) {
@@ -98,11 +112,10 @@ export default function IdentitiesPage() {
       }
     } catch (err: any) {
       if (err?.name === "AbortError") return;
-      setAuthRequired(false);
       setError(String(err?.message || "Failed to load identities"));
       setFetchState("error");
     }
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
     void fetchIdentities();
@@ -111,29 +124,9 @@ export default function IdentitiesPage() {
     };
   }, [fetchIdentities]);
 
-  useEffect(() => {
-    if (!authRequired) return;
-    const next = encodeURIComponent(router.asPath || "/settings/identities");
-    void router.replace(`/auth/login?next=${next}`);
-  }, [authRequired, router]);
-
   const refetch = useCallback(() => {
     void fetchIdentities();
   }, [fetchIdentities]);
-
-  const columns: Column[] = useMemo(
-    () => [
-      { key: "identity_id", label: "Identity" },
-      { key: "channel_type", label: "Channel" },
-      { key: "display_name", label: "Display" },
-      { key: "role", label: "Role" },
-      { key: "state", label: "Status" },
-      { key: "approved_at", label: "Paired" },
-      { key: "last_seen_at", label: "Last Seen" },
-      { key: "actions", label: "" }
-    ],
-    []
-  );
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selected, setSelected] = useState<ChannelIdentity | null>(null);
@@ -210,19 +203,19 @@ export default function IdentitiesPage() {
           </button>
         </div>
 
-        {!authRequired && fetchState === "loading" && (
+        {fetchState === "loading" && (
           <div data-testid="identities-loading">
             <SkeletonTable columns={8} rows={8} />
           </div>
         )}
 
-        {!authRequired && fetchState === "error" && (
+        {fetchState === "error" && (
           <div data-testid="identities-error">
             <ErrorState message={error || "Failed to load identities"} onRetry={refetch} />
           </div>
         )}
 
-        {!authRequired && fetchState === "done" && (
+        {fetchState === "done" && (
           <div data-testid="identities-email" className="border border-border bg-surface rounded clip-corner p-4 space-y-2">
             <div className="text-xs font-mono text-subtle">Email</div>
             <div className="flex items-center justify-between gap-3">
@@ -236,16 +229,16 @@ export default function IdentitiesPage() {
           </div>
         )}
 
-        {!authRequired && fetchState === "done" && channels.length === 0 && (
+        {fetchState === "done" && channels.length === 0 && (
           <div data-testid="identities-empty">
             <EmptyState title="No channel identities linked" subtitle="Pair Telegram to enable chat commands." />
           </div>
         )}
 
-        {!authRequired && fetchState === "done" && channels.length > 0 && (
+        {fetchState === "done" && channels.length > 0 && (
           <div data-testid="identities-table">
             <ConsoleTable
-              columns={columns}
+              columns={IDENTITY_COLUMNS}
               rows={channels}
               getRowKey={(row) => row.identity_id}
               renderCell={(row, col) => {

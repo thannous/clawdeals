@@ -127,6 +127,10 @@ function trustScoreColor(score: number | null): string {
 }
 
 export default function AccountPage() {
+  return useAccountPageView();
+}
+
+function useAccountPageView() {
   const t = useTranslations("settings.account");
   const router = useRouter();
   const { toasts, show } = useToast();
@@ -135,7 +139,6 @@ export default function AccountPage() {
   const [claims, setClaims] = useState<OwnerClaim[]>([]);
   const [activities, setActivities] = useState<OwnerAgentActivity[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
-  const [authRequired, setAuthRequired] = useState(false);
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [rotateConfirmOpen, setRotateConfirmOpen] = useState(false);
@@ -145,6 +148,11 @@ export default function AccountPage() {
   const [rotatedGlobalSecret, setRotatedGlobalSecret] = useState<RotateAllResponseData | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const redirectToLogin = useCallback(() => {
+    const next = encodeURIComponent(router.asPath || "/settings/account");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [router]);
+
   const fetchAccount = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -152,7 +160,6 @@ export default function AccountPage() {
 
     setState("loading");
     setError(null);
-    setAuthRequired(false);
 
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -182,12 +189,7 @@ export default function AccountPage() {
         }
 
         if (hasUnauthorized) {
-          setOwner(null);
-          setAgents([]);
-          setClaims([]);
-          setActivities([]);
-          setAuthRequired(true);
-          setState("done");
+          redirectToLogin();
           return;
         }
 
@@ -211,10 +213,9 @@ export default function AccountPage() {
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       setState("error");
-      setAuthRequired(false);
       setError(String(err?.message || "Failed to load account"));
     }
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
     void fetchAccount();
@@ -222,12 +223,6 @@ export default function AccountPage() {
       if (abortRef.current) abortRef.current.abort();
     };
   }, [fetchAccount]);
-
-  useEffect(() => {
-    if (!authRequired) return;
-    const next = encodeURIComponent(router.asPath || "/settings/account");
-    void router.replace(`/auth/login?next=${next}`);
-  }, [authRequired, router]);
 
   useEffect(() => {
     if (agents.length === 0) {
@@ -240,16 +235,12 @@ export default function AccountPage() {
     }
   }, [agents, selectedAgentId]);
 
-  const selectedAgent = useMemo(
-    () => agents.find((agent) => String(agent.agent_id) === selectedAgentId) || null,
-    [agents, selectedAgentId]
-  );
-
-  const selectedAgentName = useMemo(() => {
-    if (!selectedAgent) return "onboarding";
+  const selectedAgent = agents.find((agent) => String(agent.agent_id) === selectedAgentId) || null;
+  let selectedAgentName = "onboarding";
+  if (selectedAgent) {
     const index = Math.max(0, agents.findIndex((agent) => String(agent.agent_id) === String(selectedAgent.agent_id)));
-    return formatAgentName(selectedAgent, index);
-  }, [agents, selectedAgent]);
+    selectedAgentName = formatAgentName(selectedAgent, index);
+  }
 
   const filteredActivities = useMemo(() => {
     const rows = selectedAgentId
@@ -262,10 +253,7 @@ export default function AccountPage() {
     });
   }, [activities, selectedAgentId]);
 
-  const pendingClaims = useMemo(
-    () => claims.filter((claim) => String(claim.status || "").toUpperCase() === "PENDING").length,
-    [claims]
-  );
+  const pendingClaims = claims.filter((claim) => String(claim.status || "").toUpperCase() === "PENDING").length;
 
   const refetchAccount = useCallback(() => {
     void fetchAccount();
@@ -389,7 +377,7 @@ export default function AccountPage() {
       {/* ---- Main ---- */}
       <main id="main-content" tabIndex={-1} className="w-full px-6 py-6">
         {/* Loading */}
-        {!authRequired && state === "loading" && (
+        {state === "loading" && (
           <div data-testid="account-loading" className="flex items-center gap-3 py-12">
             <div className="h-4 w-4 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
             <span className="text-sm font-mono text-subtle">{t("loadingAccount")}</span>
@@ -397,7 +385,7 @@ export default function AccountPage() {
         )}
 
         {/* Error */}
-        {!authRequired && state === "error" && (
+        {state === "error" && (
           <div data-testid="account-error" className="border border-error/30 bg-error/5 rounded clip-corner p-4">
             <div className="text-sm font-mono font-semibold text-error">{t("error")}</div>
             <div className="text-sm font-mono text-muted mt-1.5">{error || t("failedToLoad")}</div>
@@ -405,7 +393,7 @@ export default function AccountPage() {
         )}
 
         {/* Loaded */}
-        {!authRequired && state === "done" && (
+        {state === "done" && (
           <div className="border border-border rounded-lg overflow-hidden bg-surface/40 min-h-[75vh]">
             <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] min-h-[75vh]">
 

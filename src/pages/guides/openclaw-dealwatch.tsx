@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import { resolveSupportedLocale, type SupportedLocale, withMessages } from "../../shared/i18n";
 import {
@@ -293,6 +294,21 @@ const STEP_ICONS: Record<string, typeof Search> = {
   cart: ShoppingCart
 };
 
+function toStableCodeLines(lines: readonly string[]) {
+  const seen = new Map<string, number>();
+  let lineNumber = 0;
+  return lines.map((line) => {
+    lineNumber += 1;
+    const nextCount = (seen.get(line) || 0) + 1;
+    seen.set(line, nextCount);
+    return {
+      key: `${line}-${nextCount}`,
+      line,
+      lineNumber
+    };
+  });
+}
+
 /* ---------- SEO ---------- */
 
 const SEO = {
@@ -330,6 +346,8 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, r
 /* ---------- reusable code block ---------- */
 
 function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
+  const keyedLines = toStableCodeLines(lines);
+
   return (
     <div className="bg-bg border border-border overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-surface-alt">
@@ -339,10 +357,10 @@ function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
         <span className="font-mono text-xs text-subtle ml-2">{filename}</span>
       </div>
       <pre className="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
-        {lines.map((line, idx) => (
-          <div key={idx}>
+        {keyedLines.map(({ key, line, lineNumber }) => (
+          <div key={key}>
             <span className="text-subtle select-none mr-4">
-              {String(idx + 1).padStart(2, " ")}
+              {String(lineNumber).padStart(2, " ")}
             </span>
             <span
               className={
@@ -408,40 +426,37 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         <meta name="twitter:title" content={seo.ogTitle} />
         <meta name="twitter:description" content={seo.ogDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "HowTo",
-                  "@id": canonicalUrl,
-                  name: seo.ogTitle,
-                  description: seo.description,
-                  url: canonicalUrl,
-                  inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-US",
-                  step: c.sections.overview.steps.map((s, i) => ({
-                    "@type": "HowToStep",
-                    position: i + 1,
-                    name: s.label,
-                    text: s.desc
-                  })),
-                  isPartOf: { "@id": `${baseUrl}/#website` }
-                },
-                {
-                  "@type": "BreadcrumbList",
-                  itemListElement: [
-                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: locale === "es" ? "Guias" : "Guides", item: guidesIndex },
-                    { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="guide-openclaw-dealwatch-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "HowTo",
+              "@id": canonicalUrl,
+              name: seo.ogTitle,
+              description: seo.description,
+              url: canonicalUrl,
+              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-US",
+              step: c.sections.overview.steps.map((s, i) => ({
+                "@type": "HowToStep",
+                position: i + 1,
+                name: s.label,
+                text: s.desc
+              })),
+              isPartOf: { "@id": `${baseUrl}/#website` }
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 2, name: locale === "es" ? "Guias" : "Guides", item: guidesIndex },
+                { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
+              ]
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
 
       <FeaturePageLayout
         title="DealWatch"
@@ -491,8 +506,8 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
 
           {/* Arrow flow between steps (desktop only) */}
           <div className="hidden md:flex items-center justify-center gap-2 mt-4 text-subtle">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex items-center gap-2">
+            {["flow-1", "flow-2", "flow-3"].map((flowKey) => (
+              <div key={flowKey} className="flex items-center gap-2">
                 <div className="w-16 h-px bg-border" />
                 <ArrowRight size={12} />
                 <div className="w-16 h-px bg-border" />
@@ -595,9 +610,9 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
               <span className="font-mono text-xs text-subtle ml-2">audit_log</span>
             </div>
             <div className="divide-y divide-border">
-              {c.sections.sequence.timeline.map((row, idx) => (
+              {c.sections.sequence.timeline.map((row) => (
                 <div
-                  key={idx}
+                  key={`${row.time}-${row.event}`}
                   className="grid grid-cols-[80px_1fr_auto] md:grid-cols-[80px_180px_1fr_60px] gap-3 px-4 py-3 font-mono text-xs items-center"
                 >
                   <span className="text-subtle tabular-nums">{row.time}</span>

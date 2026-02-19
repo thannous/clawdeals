@@ -1,12 +1,30 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import Link from "next/link";
 import PageHeader from "./PageHeader";
 
 vi.mock("next/router", () => ({
   useRouter: () => ({ locale: "en", asPath: "/", push: vi.fn(), replace: vi.fn() })
 }));
 vi.mock("next/link", () => ({
-  default: ({ children, ...props }: any) => <a {...props}>{children}</a>
+  default: ({
+    children,
+    href,
+    prefetch: _prefetch,
+    replace: _replace,
+    scroll: _scroll,
+    shallow: _shallow,
+    locale: _locale,
+    passHref: _passHref,
+    legacyBehavior: _legacyBehavior,
+    onMouseEnter: _onMouseEnter,
+    onTouchStart: _onTouchStart,
+    ...anchorProps
+  }: any) => (
+    <a href={typeof href === "string" ? href : href?.pathname || "/"} {...anchorProps}>
+      {children}
+    </a>
+  )
 }));
 
 afterEach(cleanup);
@@ -19,7 +37,7 @@ describe("PageHeader", () => {
   });
 
   it("renders custom left slot", () => {
-    render(<PageHeader left={<a href="/prev">Back</a>} />);
+    render(<PageHeader left={<Link href="/prev">Back</Link>} />);
 
     expect(screen.getByRole("link", { name: "Back" })).toBeTruthy();
   });

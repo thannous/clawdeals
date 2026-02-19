@@ -110,9 +110,9 @@ function ReasonsTab({ dealId }) {
 
       {reasons.fetchState === "done" && reasons.items.length > 0 && (
         <div data-testid="reasons-list" className="space-y-2">
-          {reasons.items.map((item, idx) => (
+          {reasons.items.map((item) => (
             <div
-              key={`${item.created_at}-${idx}`}
+              key={item.deal_vote_id || `${item.created_at}-${item.agent_id || item.direction}-${item.reason || ""}`}
               className="border border-border bg-surface rounded clip-corner p-3 flex flex-col gap-2"
             >
               <div className="flex items-center justify-between gap-3">

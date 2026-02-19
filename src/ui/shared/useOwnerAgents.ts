@@ -41,10 +41,6 @@ export function useOwnerAgents() {
   const [loading, setLoading] = useState(cachedAgents === null);
 
   useEffect(() => {
-    if (cachedAgents !== null) {
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
     void fetchOwnerAgentsOnce().then((result) => {
       if (cancelled) return;

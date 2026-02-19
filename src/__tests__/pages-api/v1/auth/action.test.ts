@@ -50,6 +50,7 @@ const ownerId = "11111111-1111-4111-8111-111111111111";
 const supabaseUserId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ownerLinkId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const verifiedAt = "2026-02-12T00:00:00Z";
+const mutableEnv = process.env as Record<string, string | undefined>;
 
 function makeReq(action: string, body: any = {}, headers: any = {}) {
   return {
@@ -229,8 +230,8 @@ describe("POST /v1/auth/[action]", () => {
   });
 
   it("returns provider failure in production when login email delivery fails", async () => {
-    const previousNodeEnv = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    const previousNodeEnv = mutableEnv.NODE_ENV;
+    mutableEnv.NODE_ENV = "production";
 
     try {
       vi.mocked(startOwnerLogin).mockResolvedValue({
@@ -251,8 +252,8 @@ describe("POST /v1/auth/[action]", () => {
       expect(result.status).toBe(503);
       expect(result.body.error.code).toBe("EMAIL_SEND_FAILED");
     } finally {
-      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = previousNodeEnv;
+      if (previousNodeEnv === undefined) delete mutableEnv.NODE_ENV;
+      else mutableEnv.NODE_ENV = previousNodeEnv;
     }
   });
 

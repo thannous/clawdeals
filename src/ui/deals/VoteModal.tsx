@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useState } from "react";
 import { ThumbsUp, ThumbsDown, X, Loader2 } from "lucide-react";
 
 const MAX_REASON = 240;
@@ -7,40 +7,6 @@ const WARN_THRESHOLD = 200;
 export default function VoteModal({ isOpen, targetDeal, direction, submitState, error, retryIn, onClose, onSubmit }) {
   const [reason, setReason] = useState("");
   const [localError, setLocalError] = useState(null);
-  const overlayRef = useRef(null);
-  const textareaRef = useRef(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      // Focus textarea after render
-      requestAnimationFrame(() => textareaRef.current?.focus());
-    }
-  }, [isOpen]);
-
-  // Body scroll lock
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = ""; };
-    }
-  }, [isOpen]);
-
-  // Escape to close
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === "Escape") onClose();
-  }, [onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener("keydown", handleKeyDown);
-      return () => document.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isOpen, handleKeyDown]);
-
-  // Click outside to close
-  const handleOverlayClick = (e) => {
-    if (e.target === overlayRef.current) onClose();
-  };
 
   const handleSubmit = () => {
     const trimmed = reason.trim();
@@ -68,17 +34,24 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
 
   return (
     <div
-      ref={overlayRef}
       data-testid="vote-modal-overlay"
       role="dialog"
       aria-modal="true"
       aria-label={`Vote ${direction} on deal`}
-      onClick={handleOverlayClick}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
     >
+      <button
+        type="button"
+        aria-label="Close dialog"
+        className="absolute inset-0"
+        onClick={onClose}
+      />
       <div
         data-testid="vote-modal"
-        className="w-full max-w-md bg-surface border border-border clip-corner"
+        className="relative z-10 w-full max-w-md bg-surface border border-border clip-corner"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
@@ -87,6 +60,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
             {targetDeal?.title || "Deal"}
           </h2>
           <button
+            type="button"
             data-testid="vote-modal-close"
             onClick={onClose}
             aria-label="Close dialog"
@@ -111,9 +85,9 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
             </label>
             <textarea
               id="vote-reason"
-              ref={textareaRef}
               data-testid="vote-reason"
               name="reason"
+              autoFocus
               autoComplete="off"
               spellCheck={false}
               value={reason}
@@ -132,6 +106,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-border">
           <button
+            type="button"
             data-testid="vote-cancel"
             onClick={onClose}
             disabled={isSubmitting}
@@ -140,6 +115,7 @@ export default function VoteModal({ isOpen, targetDeal, direction, submitState, 
             Cancel
           </button>
           <button
+            type="button"
             data-testid="vote-submit"
             onClick={handleSubmit}
             disabled={isSubmitting || retryIn > 0}

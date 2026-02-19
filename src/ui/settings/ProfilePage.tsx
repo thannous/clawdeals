@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import Toast from "../console/shared/Toast";
@@ -23,6 +24,10 @@ type OwnerProfile = {
 };
 
 export default function ProfilePage() {
+  return useProfilePageView();
+}
+
+function useProfilePageView() {
   const router = useRouter();
   const t = useTranslations("settings");
   const { toasts, show } = useToast();
@@ -30,7 +35,6 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [saveState, setSaveState] = useState<"idle" | "saving">("idle");
-  const [authRequired, setAuthRequired] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // Form state
@@ -45,6 +49,11 @@ export default function ProfilePage() {
   const [showEmail, setShowEmail] = useState(false);
   const [available, setAvailable] = useState(true);
 
+  const redirectToLogin = useCallback(() => {
+    const next = encodeURIComponent(router.asPath || "/settings/profile");
+    void router.replace(`/auth/login?next=${next}`);
+  }, [router]);
+
   const fetchProfile = useCallback(async () => {
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -54,8 +63,7 @@ export default function ProfilePage() {
     try {
       const meResp = await fetch("/api/v1/auth/me", { signal: controller.signal });
       if (meResp.status === 401) {
-        setAuthRequired(true);
-        setState("done");
+        redirectToLogin();
         return;
       }
       const meBody = await meResp.json().catch(() => ({}));
@@ -93,18 +101,12 @@ export default function ProfilePage() {
       if (err?.name === "AbortError") return;
       setState("error");
     }
-  }, []);
+  }, [redirectToLogin]);
 
   useEffect(() => {
     void fetchProfile();
     return () => { if (abortRef.current) abortRef.current.abort(); };
   }, [fetchProfile]);
-
-  useEffect(() => {
-    if (!authRequired) return;
-    const next = encodeURIComponent(router.asPath || "/settings/profile");
-    void router.replace(`/auth/login?next=${next}`);
-  }, [authRequired, router]);
 
   const onSave = useCallback(async () => {
     if (!profile?.owner_id || saveState === "saving") return;
@@ -169,7 +171,7 @@ export default function ProfilePage() {
       <main id="main-content" tabIndex={-1} className="w-full max-w-3xl px-6 py-8">
 
         {/* ─── Loading ─── */}
-        {!authRequired && state === "loading" && (
+        {state === "loading" && (
           <div className="flex flex-col items-center justify-center gap-4 py-20">
             <div className="relative h-14 w-14">
               <div className="absolute inset-0 rounded-full border border-primary/15" />
@@ -183,7 +185,7 @@ export default function ProfilePage() {
         )}
 
         {/* ─── Error ─── */}
-        {!authRequired && state === "error" && (
+        {state === "error" && (
           <div className="border border-error/30 bg-error/5 rounded p-8 text-center">
             <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-error/30 bg-error/10 text-error text-lg mb-3">
               !
@@ -193,7 +195,7 @@ export default function ProfilePage() {
         )}
 
         {/* ─── Profile loaded ─── */}
-        {!authRequired && state === "done" && profile && (
+        {state === "done" && profile && (
           <div className="space-y-0">
 
             {/* ═══════════════════════════════════════════════
@@ -218,7 +220,7 @@ export default function ProfilePage() {
                     <div className="flex items-end gap-[3px]">
                       {[0, 1, 2].map((i) => (
                         <div
-                          key={i}
+                          key={`completion-bar-${i + 1}`}
                           className={`w-[3px] rounded-[1px] transition-all duration-500 ${
                             i < completionCount ? "bg-primary" : "bg-border/50"
                           }`}
@@ -236,12 +238,14 @@ export default function ProfilePage() {
                   {/* ── Avatar column ── */}
                   <div className="flex flex-col items-center gap-4 shrink-0">
                     {/* Avatar with orbital ring */}
-                    <div className="relative">
+                    <div className="relative h-24 w-24">
                       <div className="absolute -inset-2 rounded-full border border-dashed border-primary/20 animate-spin-slow" />
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={avatarUrl}
                         alt="avatar"
+                        width={96}
+                        height={96}
+                        unoptimized
                         className="relative z-10 h-24 w-24 rounded-full border-2 border-primary/30 object-cover avatar-glow"
                       />
                       {/* Online/offline status pip */}
@@ -266,8 +270,7 @@ export default function ProfilePage() {
                               : "border-border/50 opacity-50 hover:opacity-100 hover:border-primary/30",
                           ].join(" ")}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={url} alt="" className="h-full w-full object-cover" />
+                          <Image src={url} alt="" width={32} height={32} className="h-full w-full object-cover" />
                         </button>
                       ))}
                     </div>

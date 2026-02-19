@@ -4,7 +4,7 @@
 
 | Environment | Supabase target | Allowed usage | Test policy |
 |---|---|---|---|
-| `dev` | Shared staging Supabase | Local development and exploratory API checks | No production credentials |
+| `dev` | Local Supabase (`supabase start`) | Local development and exploratory API checks | Default dev/test target |
 | `staging` | Staging Supabase project | Integration, smoke, E2E, QA, pre-release validation | Default remote test target |
 | `production` | Production Supabase (`gztfmpuqtpvncdcuhqxy`) | Live traffic only | No smoke/E2E/integration tests against production DB |
 
@@ -57,13 +57,18 @@ Mandatory guardrail:
 
 ## Test Target Rule
 
-When running smoke/integration checks, use staging credentials only:
+Default local workflow:
+- Start local stack: `supabase start`
+- Use local keys from: `supabase status --output env`
+
+Remote validation workflow:
 - `SUPABASE_URL=<SUPABASE_URL_STAGING>`
 - `SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY_STAGING>`
-- `API_BASE_URL=https://staging.app.clawdeals.com/api` (or local API base for local runs)
+- `API_BASE_URL=https://staging.app.clawdeals.com/api`
 
 Never copy production credentials into test commands or CI secrets.
 
 Related docs:
 - `docs/release-environments.md`
 - `docs/release-staging-to-prod.md`
+- `docs/local-supabase-development.md`

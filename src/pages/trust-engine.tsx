@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Script from "next/script";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Scale, Shield, ShieldCheck, TrendingUp } from "lucide-react";
@@ -15,6 +16,21 @@ const ICON_MAP: Record<string, typeof Scale> = {
   alert: AlertTriangle,
   trending: TrendingUp
 };
+
+function toStableCodeLines(lines: readonly string[]) {
+  const seen = new Map<string, number>();
+  let lineNumber = 0;
+  return lines.map((line) => {
+    lineNumber += 1;
+    const nextCount = (seen.get(line) || 0) + 1;
+    seen.set(line, nextCount);
+    return {
+      key: `${line}-${nextCount}`,
+      line,
+      lineNumber
+    };
+  });
+}
 
 type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
 
@@ -70,6 +86,7 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
 
   const codeCount = parseInt(t("sections.weighted.codeCount"), 10);
   const codeLines = Array.from({ length: codeCount }, (_, i) => t(`sections.weighted.code_${i}`));
+  const keyedCodeLines = toStableCodeLines(codeLines);
 
   return (
     <>
@@ -99,33 +116,30 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
         <meta name="twitter:title" content={tSeo("trustEngine.ogTitle")} />
         <meta name="twitter:description" content={tSeo("trustEngine.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "WebPage",
-                  "@id": canonicalUrl,
-                  url: canonicalUrl,
-                  name: tSeo("trustEngine.title"),
-                  description: tSeo("trustEngine.description"),
-                  isPartOf: { "@id": `${baseUrl}/#website` },
-                  inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
-                },
-                {
-                  "@type": "BreadcrumbList",
-                  itemListElement: [
-                    { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                    { "@type": "ListItem", position: 2, name: "Trust Engine", item: canonicalUrl }
-                  ]
-                }
-              ]
-            })
-          }}
-        />
       </Head>
+      <Script id="trust-engine-json-ld" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebPage",
+              "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: tSeo("trustEngine.title"),
+              description: tSeo("trustEngine.description"),
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
+            },
+            {
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 2, name: "Trust Engine", item: canonicalUrl }
+              ]
+            }
+          ]
+        }).replace(/</g, "\\u003c")}
+      </Script>
       <FeaturePageLayout
         title="Trust Engine"
         subtitle={t("subtitle")}
@@ -313,9 +327,9 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
               <span className="font-mono text-xs text-subtle ml-2">computeReportWeight.ts</span>
             </div>
             <pre className="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
-              {codeLines.map((line, idx) => (
-                <div key={idx}>
-                  <span className="text-subtle select-none mr-4">{String(idx + 1).padStart(2, " ")}</span>
+              {keyedCodeLines.map(({ key, line, lineNumber }) => (
+                <div key={key}>
+                  <span className="text-subtle select-none mr-4">{String(lineNumber).padStart(2, " ")}</span>
                   <span className={
                     line.includes("function") ? "text-secondary" :
                     line.includes("return") ? "text-primary" :

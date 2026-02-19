@@ -11,15 +11,15 @@ interface Props {
 
 export default function ReplayPanel({ replay, replayState, replayError, onClear }: Props) {
   const [expanded, setExpanded] = useState(true);
-  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
   if (replayState === "idle") return null;
 
-  const toggleStep = (idx: number) => {
+  const toggleStep = (stepKey: string) => {
     setExpandedSteps((prev) => {
       const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
+      if (next.has(stepKey)) next.delete(stepKey);
+      else next.add(stepKey);
       return next;
     });
   };
@@ -69,10 +69,13 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
                 Steps ({replay.steps.length})
               </p>
               <ol className="space-y-2">
-                {replay.steps.map((step: any, idx: number) => (
-                  <li key={idx} className="border border-border/50 rounded p-2">
+                {replay.steps.map((step: any) => {
+                  const stepKey = step.audit_id || `${step.ts}-${step.action || ""}`;
+                  return (
+                    <li key={stepKey} className="border border-border/50 rounded p-2">
                     <button
-                      onClick={() => toggleStep(idx)}
+                      type="button"
+                      onClick={() => toggleStep(stepKey)}
                       className="w-full flex items-center justify-between text-left"
                     >
                       <div className="flex items-center gap-2">
@@ -85,16 +88,17 @@ export default function ReplayPanel({ replay, replayState, replayError, onClear 
                         <ConsoleStatusBadge value={step.outcome || "UNKNOWN"} variant="audit" />
                       </div>
                       <span className="text-xs font-mono text-subtle">
-                        {expandedSteps.has(idx) ? "\u25B2" : "\u25BC"}
+                        {expandedSteps.has(stepKey) ? "\u25B2" : "\u25BC"}
                       </span>
                     </button>
-                    {expandedSteps.has(idx) && step.delta && (
+                    {expandedSteps.has(stepKey) && step.delta && (
                       <pre className="mt-2 text-xs font-mono text-text bg-bg/60 border border-border rounded p-2 overflow-x-auto max-h-40 overflow-y-auto">
                         {JSON.stringify(step.delta, null, 2)}
                       </pre>
                     )}
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           )}

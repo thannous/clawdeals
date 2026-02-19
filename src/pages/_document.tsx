@@ -25,17 +25,6 @@ export default class MyDocument extends Document {
           <link rel="icon" href="/favicon-192.png" type="image/png" sizes="192x192" />
           <link rel="apple-touch-icon" href="/favicon-192.png" sizes="192x192" />
           <link rel="manifest" href="/site.webmanifest" />
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          <link
-            rel="stylesheet"
-            href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
-          />
-          <script
-            src="https://analytics.ahrefs.com/analytics.js"
-            data-key="pf6Dyniaa0v66aaf2+ZtSw"
-            async
-          />
           <Script id="prepaint-theme" strategy="beforeInteractive">
             {PREPAINT_THEME_SCRIPT}
           </Script>
@@ -48,6 +37,12 @@ export default class MyDocument extends Document {
             Skip to content
           </a>
           <Main />
+          <Script
+            id="ahrefs-analytics"
+            src="https://analytics.ahrefs.com/analytics.js"
+            data-key="pf6Dyniaa0v66aaf2+ZtSw"
+            strategy="afterInteractive"
+          />
           <NextScript />
         </body>
       </Html>

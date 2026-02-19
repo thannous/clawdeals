@@ -125,7 +125,12 @@ function ConfirmModal({
         aria-labelledby="webmcp-confirm-title"
         data-testid="webmcp-confirm-modal"
       >
-        <div className="absolute inset-0 modal-overlay" onClick={handleDeny} />
+        <button
+          type="button"
+          aria-label="Close confirmation dialog"
+          className="absolute inset-0 modal-overlay border-0 p-0"
+          onClick={handleDeny}
+        />
 
         <div className="relative bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4">
           <div className="flex items-start justify-between gap-4">
@@ -144,6 +149,7 @@ function ConfirmModal({
               </div>
             </div>
             <button
+              type="button"
               onClick={handleDeny}
               className="border border-border px-3 py-1 text-xs font-mono font-bold uppercase text-muted hover:border-border-strong hover:text-text"
             >
@@ -157,6 +163,7 @@ function ConfirmModal({
               <pre className="text-xs font-mono text-text whitespace-pre-wrap break-words">{canonicalArgs}</pre>
             ) : (
               <textarea
+                aria-label="Edit tool parameters JSON"
                 value={edited}
                 onChange={(e) => setEdited(e.target.value)}
                 className="w-full min-h-[160px] text-xs font-mono bg-bg border border-border rounded p-2 text-text focus:outline-none focus:border-primary"
@@ -174,18 +181,21 @@ function ConfirmModal({
             <div className="text-xs font-mono text-subtle">Recent actions: {history.length}</div>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setMode((m) => (m === "preview" ? "edit" : "preview"))}
                 className="border border-border px-4 py-2 text-xs font-mono font-bold uppercase text-muted hover:border-border-strong hover:text-text"
               >
                 {mode === "preview" ? "Edit" : "Preview"}
               </button>
               <button
+                type="button"
                 onClick={handleDeny}
                 className="border border-border px-4 py-2 text-xs font-mono font-bold uppercase text-muted hover:border-border-strong hover:text-text"
               >
                 Deny
               </button>
               <button
+                type="button"
                 onClick={handleApprove}
                 className="border border-primary px-4 py-2 text-xs font-mono font-bold uppercase text-primary hover:bg-primary hover:text-bg"
               >
