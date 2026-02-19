@@ -4,6 +4,11 @@ import { encodeListingsCursor } from "./listings-cursor";
 
 const DEFAULT_LIMIT = 50;
 
+function formatFilterValue(value: any) {
+  if (typeof value !== "string") return String(value);
+  return `"${value.replace(/"/g, "\\\"")}"`;
+}
+
 function mapError(error) {
   const mapped = mapSupabaseError(error);
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
@@ -406,8 +411,8 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor,
   }
 
   if (cursor?.created_at && cursor?.listing_id) {
-    const createdAt = `"${cursor.created_at}"`;
-    const listingId = `"${cursor.listing_id}"`;
+    const createdAt = formatFilterValue(cursor.created_at);
+    const listingId = formatFilterValue(cursor.listing_id);
     query = query.or(
       `created_at.lt.${createdAt},and(created_at.eq.${createdAt},listing_id.lt.${listingId})`
     );

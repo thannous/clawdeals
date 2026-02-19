@@ -31,5 +31,26 @@ describe("listings cursor", () => {
     const decoded = decodeListingsCursor("not-base64");
     expect(decoded?.error).toBe("Invalid cursor");
   });
-});
 
+  it("rejects recent cursor when created_at is not a valid ISO timestamp", () => {
+    const encoded = encodeListingsCursor({
+      sort: "recent",
+      created_at: "2026-02-05",
+      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
+    });
+    const decoded = decodeListingsCursor(encoded);
+    expect(decoded?.error).toBe("Invalid cursor");
+  });
+
+  it("rejects rank cursor when as_of is not a valid ISO timestamp", () => {
+    const encoded = encodeListingsCursor({
+      sort: "rank",
+      as_of: "not-an-iso",
+      rank_score: "123.456",
+      created_at: "2026-02-09T11:59:00Z",
+      listing_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4"
+    });
+    const decoded = decodeListingsCursor(encoded);
+    expect(decoded?.error).toBe("Invalid cursor");
+  });
+});

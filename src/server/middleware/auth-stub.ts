@@ -19,6 +19,20 @@ function safeHeader(req, name) {
   return value;
 }
 
+function readTrustedIdentity(req: any) {
+  const identity = req?.__clawdealsTrustedIdentity;
+  if (!identity || typeof identity !== "object") return null;
+
+  const agentIdRaw = (identity as any).agentId;
+  const ownerIdRaw = (identity as any).ownerId;
+
+  const agentId = typeof agentIdRaw === "string" && agentIdRaw ? agentIdRaw : null;
+  const ownerId = typeof ownerIdRaw === "string" && ownerIdRaw ? ownerIdRaw : null;
+
+  if (!agentId && !ownerId) return null;
+  return { agentId, ownerId };
+}
+
 function parseBearerToken(value) {
   if (!value || typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -228,14 +242,13 @@ export async function applyAuthStub(req, ctx) {
     }
   }
 
-  const agentId = safeHeader(req, "x-agent-id");
-  const ownerId = safeHeader(req, "x-owner-id");
-  ctx.agentId = agentId || null;
-  ctx.ownerId = ownerId || null;
-  if (agentId) {
-    ctx.actor = { type: "agent", id: agentId };
-  } else if (ownerId) {
-    ctx.actor = { type: "owner", id: ownerId };
+  const trustedIdentity = readTrustedIdentity(req);
+  ctx.agentId = trustedIdentity?.agentId || null;
+  ctx.ownerId = trustedIdentity?.ownerId || null;
+  if (ctx.agentId) {
+    ctx.actor = { type: "agent", id: ctx.agentId };
+  } else if (ctx.ownerId) {
+    ctx.actor = { type: "owner", id: ctx.ownerId };
   } else {
     ctx.actor = { type: "anonymous", id: null };
   }

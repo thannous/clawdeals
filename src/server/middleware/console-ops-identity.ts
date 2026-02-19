@@ -1,15 +1,5 @@
 const DEFAULT_CONSOLE_OPS_OWNER_ID = "00000000-0000-4000-a000-000000000000";
 
-function readHeader(headers, name) {
-  if (!headers) return null;
-  const direct = headers[name];
-  if (Array.isArray(direct)) return direct[0] || null;
-  if (direct) return direct;
-  const lower = headers[String(name).toLowerCase()];
-  if (Array.isArray(lower)) return lower[0] || null;
-  return lower || null;
-}
-
 function setHeader(headers, name, value) {
   if (!headers) return;
   headers[String(name).toLowerCase()] = value;
@@ -55,10 +45,13 @@ export function injectConsoleOpsOwner(apiHandler: any, options: any = {}) {
       req.headers = {};
     }
 
-    const existing = readHeader(req.headers, "x-owner-id");
-    if (!existing) {
-      setHeader(req.headers, "x-owner-id", ownerId);
-    }
+    // Always override user-provided identity headers for console operations.
+    setHeader(req.headers, "x-owner-id", ownerId);
+
+    // Mark identity as server-injected so auth middleware never trusts raw client headers.
+    (req as any).__clawdealsTrustedIdentity = {
+      ownerId
+    };
 
     return apiHandler(req, res);
   };

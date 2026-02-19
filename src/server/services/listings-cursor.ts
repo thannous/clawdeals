@@ -1,6 +1,15 @@
 import { isUuid } from "../utils/validators";
 
 const SORTS = new Set(["recent", "price_asc", "price_desc", "distance", "rank"]);
+const ISO_TIMESTAMP_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+function isIsoTimestamp(value: string) {
+  if (typeof value !== "string") return false;
+  if (!ISO_TIMESTAMP_RE.test(value)) return false;
+  const ms = new Date(value).getTime();
+  return Number.isFinite(ms);
+}
 
 function base64UrlEncode(value: string) {
   return Buffer.from(value, "utf8")
@@ -61,7 +70,7 @@ export function decodeListingsCursor(raw: any) {
   }
 
   if (sort === "recent") {
-    if (typeof (parsed as any).created_at !== "string") return { error: "Invalid cursor" };
+    if (!isIsoTimestamp((parsed as any).created_at)) return { error: "Invalid cursor" };
     if (!isUuid((parsed as any).listing_id)) return { error: "Invalid cursor" };
     return {
       value: {
@@ -73,10 +82,10 @@ export function decodeListingsCursor(raw: any) {
   }
 
   if (sort === "rank") {
-    if (typeof (parsed as any).as_of !== "string") return { error: "Invalid cursor" };
+    if (!isIsoTimestamp((parsed as any).as_of)) return { error: "Invalid cursor" };
     const rankScore = (parsed as any).rank_score;
     if (typeof rankScore !== "number" && typeof rankScore !== "string") return { error: "Invalid cursor" };
-    if (typeof (parsed as any).created_at !== "string") return { error: "Invalid cursor" };
+    if (!isIsoTimestamp((parsed as any).created_at)) return { error: "Invalid cursor" };
     if (!isUuid((parsed as any).listing_id)) return { error: "Invalid cursor" };
     return {
       value: {

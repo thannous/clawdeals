@@ -265,4 +265,34 @@ describe("applyAuthStub", () => {
     });
     expect(ctx.ownerId).toBeUndefined();
   });
+
+  it("does not trust raw identity headers without server-injected trusted identity", async () => {
+    const req: any = {
+      headers: {
+        "x-owner-id": "owner-from-header",
+        "x-agent-id": "agent-from-header"
+      }
+    };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toBeNull();
+    expect(ctx.ownerId).toBeNull();
+    expect(ctx.agentId).toBeNull();
+    expect(ctx.actor).toEqual({ type: "anonymous", id: null });
+  });
+
+  it("accepts trusted identity injected by server middleware", async () => {
+    const req: any = {
+      headers: {},
+      __clawdealsTrustedIdentity: { ownerId: "owner-trusted" }
+    };
+    const ctx: any = {};
+    await applyAuthStub(req, ctx);
+
+    expect(ctx.authError).toBeNull();
+    expect(ctx.ownerId).toBe("owner-trusted");
+    expect(ctx.agentId).toBeNull();
+    expect(ctx.actor).toEqual({ type: "owner", id: "owner-trusted" });
+  });
 });
