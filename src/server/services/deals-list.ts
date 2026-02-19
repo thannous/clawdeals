@@ -1,6 +1,7 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { encodeDealsCursor } from "./deals-cursor";
+import { normalizeReadMedia } from "../media/images";
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
@@ -13,6 +14,55 @@ function mapError(error) {
 function isRpcParamMismatch(error: any, paramName: string) {
   const message = error?.message || "";
   return typeof message === "string" && message.includes(paramName) && message.includes("schema cache");
+}
+
+async function enrichDealMediaRows({ client, rows }: any = {}) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (list.length === 0) return list;
+
+  const dealIds = Array.from(
+    new Set(
+      list
+        .filter((row) => row && typeof row === "object")
+        .map((row) => row.deal_id)
+        .filter((id) => typeof id === "string" && id)
+    )
+  );
+
+  if (dealIds.length === 0) {
+    return list.map((row) => ({
+      ...(row || {}),
+      images_count: 0,
+      cover_image: null
+    }));
+  }
+
+  const { data, error } = await client
+    .from("deals")
+    .select("deal_id,images,cover_image_index")
+    .in("deal_id", dealIds);
+
+  if (error) mapError(error);
+
+  const byDealId = new Map();
+  for (const row of Array.isArray(data) ? data : []) {
+    if (!row?.deal_id) continue;
+    byDealId.set(row.deal_id, normalizeReadMedia({
+      rawImages: row.images,
+      rawCoverImageIndex: row.cover_image_index
+    }));
+  }
+
+  return list.map((row) => {
+    if (!row || typeof row !== "object") return row;
+    const dealId = typeof row.deal_id === "string" ? row.deal_id : null;
+    const media = dealId ? byDealId.get(dealId) : null;
+    return {
+      ...row,
+      images_count: media?.images_count ?? 0,
+      cover_image: media?.cover_image ?? null
+    };
+  });
 }
 
 export async function listDeals({
@@ -117,7 +167,8 @@ export async function listDeals({
     mapError(error);
   }
 
-  const rows = Array.isArray(data) ? data : [];
+  const rowsWithMedia = await enrichDealMediaRows({ client, rows: Array.isArray(data) ? data : [] });
+  const rows = Array.isArray(rowsWithMedia) ? rowsWithMedia : [];
   const hasMore = rows.length > cappedLimit;
   const items = hasMore ? rows.slice(0, cappedLimit) : rows;
 
@@ -183,7 +234,7 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
 
   let query = client
     .from("deals")
-    .select("deal_id,title,status,temperature,price,currency,created_at,creator_agent_id")
+    .select("deal_id,title,status,temperature,price,currency,images,cover_image_index,created_at,creator_agent_id")
     .in("creator_agent_id", filterAgentIds)
     .order("created_at", { ascending: false })
     .order("deal_id", { ascending: false })
@@ -208,7 +259,19 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
 
   const rows = data || [];
   const hasMore = rows.length > cappedLimit;
-  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+  const rawItems = hasMore ? rows.slice(0, cappedLimit) : rows;
+  const items = rawItems.map((row: any) => {
+    const media = normalizeReadMedia({
+      rawImages: row?.images,
+      rawCoverImageIndex: row?.cover_image_index
+    });
+    const { images, cover_image_index, ...rest } = row || {};
+    return {
+      ...rest,
+      images_count: media.images_count,
+      cover_image: media.cover_image
+    };
+  });
 
   let nextCursor = null;
   if (hasMore && items.length > 0) {

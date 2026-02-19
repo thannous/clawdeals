@@ -82,7 +82,9 @@ vi.mock("../../../../server/config/listing-media", () => ({
 vi.mock("../../../../server/services/listing-drafts", () => ({
   ensureActiveListingDraftForChannel: vi.fn(),
   appendDraftListingPhoto: vi.fn(),
-  setDraftListingGeo: vi.fn()
+  setDraftListingGeo: vi.fn(),
+  removeDraftListingPhotoAt: vi.fn(),
+  setDraftListingCoverImage: vi.fn()
 }));
 
 vi.mock("../../../../server/services/listing-media-storage", () => ({
@@ -114,7 +116,9 @@ import { createConfirmation, consumeConfirmation } from "../../../../server/chan
 import {
   ensureActiveListingDraftForChannel,
   appendDraftListingPhoto,
-  setDraftListingGeo
+  setDraftListingGeo,
+  removeDraftListingPhotoAt,
+  setDraftListingCoverImage
 } from "../../../../server/services/listing-drafts";
 import { deleteListingPhoto, uploadListingPhoto } from "../../../../server/services/listing-media-storage";
 import { getTelegramFileInfo, downloadTelegramFileBytes, sniffImageMime } from "../../../../server/channels/telegram/media";
@@ -363,6 +367,70 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     expect(safeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
       action: expect.objectContaining({ event: "location.received" })
     }));
+  });
+
+  it("supports removing a draft photo via text command", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "owner",
+      state: "ACTIVE"
+    } as any);
+
+    vi.mocked(ensureActiveListingDraftForChannel).mockResolvedValue({
+      listingId: "l-1",
+      listing: {
+        listing_id: "l-1",
+        title: "Untitled",
+        photos: [{ storage_key: "k1", mime: "image/jpeg" }, { storage_key: "k2", mime: "image/jpeg" }],
+        cover_image_index: 0
+      }
+    } as any);
+
+    vi.mocked(removeDraftListingPhotoAt).mockResolvedValue({
+      listing: { listing_id: "l-1", title: "Untitled", photos: [{ storage_key: "k1", mime: "image/jpeg" }] },
+      photosCount: 1,
+      coverImageIndex: 0
+    } as any);
+
+    const result: any = await handler(makeReq("photo remove 2"), null, makeCtx());
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.text).toMatch(/Photos: 1\/8/);
+    expect(result.body.text).toMatch(/Cover: #1/);
+    expect(removeDraftListingPhotoAt).toHaveBeenCalledWith(expect.objectContaining({ index: 1 }));
+  });
+
+  it("supports setting draft cover via text command", async () => {
+    vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
+      channel_identity_id: "cid-1",
+      owner_id: "owner-1",
+      role: "owner",
+      state: "ACTIVE"
+    } as any);
+
+    vi.mocked(ensureActiveListingDraftForChannel).mockResolvedValue({
+      listingId: "l-1",
+      listing: {
+        listing_id: "l-1",
+        title: "Untitled",
+        photos: [{ storage_key: "k1", mime: "image/jpeg" }, { storage_key: "k2", mime: "image/jpeg" }],
+        cover_image_index: 0
+      }
+    } as any);
+
+    vi.mocked(setDraftListingCoverImage).mockResolvedValue({
+      listing: { listing_id: "l-1", title: "Untitled", photos: [{ storage_key: "k1", mime: "image/jpeg" }, { storage_key: "k2", mime: "image/jpeg" }] },
+      photosCount: 2,
+      coverImageIndex: 1
+    } as any);
+
+    const result: any = await handler(makeReq("cover 2"), null, makeCtx());
+    expect(result.status).toBe(200);
+    expect(result.body.method).toBe("sendMessage");
+    expect(result.body.text).toMatch(/Photos: 2\/8/);
+    expect(result.body.text).toMatch(/Cover: #2/);
+    expect(setDraftListingCoverImage).toHaveBeenCalledWith(expect.objectContaining({ coverImageIndex: 1 }));
   });
 
   it("photo update rejects when TELEGRAM_BOT_TOKEN is missing (media.rejected)", async () => {

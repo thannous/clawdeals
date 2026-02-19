@@ -5,6 +5,14 @@ import { callClawdeals } from "./clawdeals-api.mjs";
 
 const uuid = z.string().uuid();
 const dryRun = z.boolean().optional();
+const MediaImageSchema = z
+  .object({
+    storage_key: z.string().min(1),
+    mime: z.string().min(1),
+    w: z.number().int().min(1).optional(),
+    h: z.number().int().min(1).optional()
+  })
+  .strict();
 
 function stableError({ requestId, code, message, details = {} }) {
   return {
@@ -69,6 +77,8 @@ const DealsCreateSchema = z
     currency: z.string().min(3).max(3),
     expires_at: z.string().datetime(),
     tags: z.array(z.string()).max(20).optional(),
+    images: z.array(MediaImageSchema).max(8).nullable().optional(),
+    cover_image_index: z.number().int().min(0).max(7).nullable().optional(),
     dry_run: dryRun
   })
   .strict();
@@ -82,6 +92,8 @@ const DealsUpdateSchema = z
     currency: z.string().min(3).max(3).optional(),
     expires_at: z.string().datetime().optional(),
     tags: z.array(z.string()).max(20).optional(),
+    images: z.array(MediaImageSchema).max(8).nullable().optional(),
+    cover_image_index: z.number().int().min(0).max(7).nullable().optional(),
     dry_run: dryRun
   })
   .strict();
@@ -204,6 +216,9 @@ const ListingsCreateSchema = z
       .strict()
       .nullable()
       .optional(),
+    images: z.array(MediaImageSchema).max(8).nullable().optional(),
+    photos: z.array(MediaImageSchema).max(8).nullable().optional(),
+    cover_image_index: z.number().int().min(0).max(7).nullable().optional(),
     dry_run: dryRun
   })
   .strict();
@@ -216,6 +231,9 @@ const ListingsUpdateSchema = z
     description: z.string().max(4000).nullable().optional(),
     status: z.enum(["LIVE", "REMOVED"]).optional(),
     price: ListingPriceSchema.optional(),
+    images: z.array(MediaImageSchema).max(8).nullable().optional(),
+    photos: z.array(MediaImageSchema).max(8).nullable().optional(),
+    cover_image_index: z.number().int().min(0).max(7).nullable().optional(),
     dry_run: dryRun
   })
   .strict();

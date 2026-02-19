@@ -14,6 +14,11 @@ import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../server/config/dea
 import { computeListingDuplicateFingerprint } from "../../../server/utils/listings-duplicates";
 import { isUuid } from "../../../server/utils/validators";
 import { matchListingToWatchlists } from "../../../server/services/watchlist-matching";
+import {
+  parseCoverImageIndex,
+  parseListingsImagesInput,
+  resolveCoverImageIndexForWrite
+} from "../../../server/media/images";
 
 const CONDITIONS = new Set(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]);
 
@@ -100,49 +105,6 @@ function parseGeo(value) {
   return { lat, lng };
 }
 
-function parsePhotos(value) {
-  if (value === undefined || value === null) return null;
-  if (!Array.isArray(value)) {
-    throw new Error("photos must be an array");
-  }
-  const normalized = [];
-  for (let idx = 0; idx < value.length; idx += 1) {
-    const entry = value[idx];
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new Error(`photos[${idx}] must be an object`);
-    }
-    const storageKey = (entry as any).storage_key;
-    const mime = (entry as any).mime;
-    if (typeof storageKey !== "string" || !storageKey.trim()) {
-      throw new Error(`photos[${idx}].storage_key is required`);
-    }
-    if (typeof mime !== "string" || !mime.trim()) {
-      throw new Error(`photos[${idx}].mime is required`);
-    }
-
-    const w = (entry as any).w;
-    const h = (entry as any).h;
-    if (w !== undefined && w !== null) {
-      if (typeof w !== "number" || !Number.isFinite(w) || !Number.isSafeInteger(w) || w < 1) {
-        throw new Error(`photos[${idx}].w must be a positive integer`);
-      }
-    }
-    if (h !== undefined && h !== null) {
-      if (typeof h !== "number" || !Number.isFinite(h) || !Number.isSafeInteger(h) || h < 1) {
-        throw new Error(`photos[${idx}].h must be a positive integer`);
-      }
-    }
-
-    normalized.push({
-      storage_key: storageKey.trim(),
-      mime: mime.trim(),
-      ...(w != null ? { w } : {}),
-      ...(h != null ? { h } : {})
-    });
-  }
-  return normalized;
-}
-
 function mapListingRow(row) {
   const distanceM = typeof row?.distance_m === "number" && Number.isFinite(row.distance_m) ? row.distance_m : null;
   const distanceKm =
@@ -160,6 +122,8 @@ function mapListingRow(row) {
       currency: row.currency
     },
     delivery_method: row.delivery_method || null,
+    images_count: typeof row?.images_count === "number" ? row.images_count : 0,
+    cover_image: row?.cover_image ?? null,
     distance_km: distanceKm,
     created_at: row.created_at
   };
@@ -192,7 +156,9 @@ export async function handler(req, res, ctx) {
       const rawCategory = body.category;
       const rawPrice = body.price;
       const rawGeo = body.geo;
+      const rawImages = body.images;
       const rawPhotos = body.photos;
+      const rawCoverImageIndex = body.cover_image_index;
       const rawPublish = body.publish;
 
       // Ensure request-level audit never stores plaintext title/description.
@@ -205,7 +171,9 @@ export async function handler(req, res, ctx) {
         publish: typeof rawPublish === "boolean" ? rawPublish : true,
         price_amount: rawPrice && typeof rawPrice === "object" ? (rawPrice as any).amount ?? null : null,
         currency: rawPrice && typeof rawPrice === "object" ? (rawPrice as any).currency ?? null : null,
-        photos_count: Array.isArray(rawPhotos) ? rawPhotos.length : null,
+        images_count: Array.isArray(rawImages) ? rawImages.length : Array.isArray(rawPhotos) ? rawPhotos.length : null,
+        has_cover_image_index: Object.prototype.hasOwnProperty.call(body, "cover_image_index"),
+        cover_image_index: rawCoverImageIndex ?? null,
         has_geo: rawGeo != null
       };
     }
@@ -438,7 +406,10 @@ export async function handler(req, res, ctx) {
   const rawCondition = body.condition;
   const rawPrice = body.price;
   const rawGeo = body.geo;
+  const rawImages = body.images;
   const rawPhotos = body.photos;
+  const hasCoverImageIndex = Object.prototype.hasOwnProperty.call(body, "cover_image_index");
+  const rawCoverImageIndex = body.cover_image_index;
   const rawPublish = body.publish;
   const rawDealId = body.deal_id;
   const rawForceCreate = body.force_create;
@@ -451,7 +422,8 @@ export async function handler(req, res, ctx) {
   let priceAmount;
   let currency;
   let geo;
-  let photos;
+  let images;
+  let coverImageIndex = null;
   let publish = true;
   let dealId = null;
   let forceCreate = false;
@@ -489,7 +461,21 @@ export async function handler(req, res, ctx) {
     }
 
     geo = parseGeo(rawGeo);
-    photos = parsePhotos(rawPhotos);
+
+    const parsedImagesInput = parseListingsImagesInput({
+      images: rawImages,
+      photos: rawPhotos
+    });
+    images = parsedImagesInput.hasImages || parsedImagesInput.hasPhotos
+      ? parsedImagesInput.images
+      : null;
+
+    const parsedCoverImageIndex = parseCoverImageIndex(rawCoverImageIndex);
+    coverImageIndex = resolveCoverImageIndexForWrite({
+      images,
+      coverImageIndex: parsedCoverImageIndex,
+      hasExplicitCoverField: hasCoverImageIndex
+    });
 
     if (rawPublish !== undefined && rawPublish !== null) {
       if (typeof rawPublish !== "boolean") {
@@ -648,7 +634,8 @@ export async function handler(req, res, ctx) {
       currency,
       geoLat: geo ? geo.lat : null,
       geoLng: geo ? geo.lng : null,
-      photos,
+      photos: images,
+      coverImageIndex,
       dealId,
       duplicateFingerprint,
       duplicateOverride,

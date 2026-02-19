@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { isUuid } from "../../../../../server/utils/validators";
 import { getListing } from "../../../../../server/services/listings";
+import { normalizeReadMedia } from "../../../../../server/media/images";
 
 function resolveParam(value: any) {
   if (Array.isArray(value)) return value[0] || null;
@@ -51,7 +52,21 @@ export async function handler(req: any, _res: any, ctx: any) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
     }
 
-    return jsonResponse(200, { data: listing }, { "Cache-Control": "no-store" });
+    const media = normalizeReadMedia({
+      rawImages: listing?.photos,
+      rawCoverImageIndex: listing?.cover_image_index
+    });
+
+    return jsonResponse(200, {
+      data: {
+        ...listing,
+        images: media.images,
+        photos: media.images,
+        cover_image_index: media.cover_image_index,
+        images_count: media.images_count,
+        cover_image: media.cover_image
+      }
+    }, { "Cache-Control": "no-store" });
   } catch (error: any) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }

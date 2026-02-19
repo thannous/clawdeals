@@ -1,8 +1,10 @@
 import { memo } from "react";
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import Image, { type ImageLoaderProps } from "next/image";
 import StatusBadge from "./StatusBadge";
 import TemperatureGauge from "./TemperatureGauge";
+import { resolveCoverImageSrc } from "../media/cover-image";
 
 function formatDealPrice(price: number, currency: string): string {
   try {
@@ -16,9 +18,12 @@ function formatDealPrice(price: number, currency: string): string {
   }
 }
 
+const imageLoader = ({ src }: ImageLoaderProps) => src;
+
 function DealCard({ deal, retryIn, onVote }) {
   const isExpired = deal.status === "EXPIRED";
   const voteDisabled = isExpired || retryIn > 0;
+  const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
 
   return (
     <article
@@ -26,6 +31,19 @@ function DealCard({ deal, retryIn, onVote }) {
       className="group bg-surface border border-border rounded clip-corner p-4 hover:border-border-strong transition-colors"
     >
       <div className="flex flex-col md:flex-row md:items-center gap-3">
+        {coverImageSrc && (
+          <div className="relative h-14 w-20 border border-border rounded overflow-hidden shrink-0">
+            <Image
+              loader={imageLoader}
+              unoptimized
+              fill
+              src={coverImageSrc}
+              alt={deal?.title || ""}
+              className="object-cover"
+            />
+          </div>
+        )}
+
         {/* Status */}
         <div className="flex-shrink-0">
           <StatusBadge status={deal.status} />

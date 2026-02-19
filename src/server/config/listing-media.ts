@@ -7,7 +7,7 @@ function clamp(value: number, min: number, max: number) {
 export function getMaxPhotosPerListing() {
   const raw = getNumberEnv("MAX_PHOTOS_PER_LISTING", { defaultValue: 8 });
   const value = typeof raw === "number" && Number.isFinite(raw) ? Math.floor(raw) : 8;
-  return clamp(value, 1, 20);
+  return clamp(value, 1, 8);
 }
 
 export function getMaxPhotoBytes() {
@@ -21,4 +21,3 @@ export function getListingPhotosBucket() {
   const normalized = typeof raw === "string" ? raw.trim() : "";
   return normalized || "listing-photos";
 }
-

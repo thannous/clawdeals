@@ -4,6 +4,14 @@ import { callClawdealsWebmcp } from "../http";
 import type { ToolDef } from "./defs";
 
 const uuid = z.string().uuid();
+const mediaImageSchema = z
+  .object({
+    storage_key: z.string().min(1),
+    mime: z.string().min(1),
+    w: z.number().int().min(1).optional(),
+    h: z.number().int().min(1).optional()
+  })
+  .strict();
 
 export const writeTools: ToolDef[] = [
   {
@@ -30,7 +38,38 @@ export const writeTools: ToolDef[] = [
             lat: { type: "number", minimum: -90, maximum: 90 },
             lng: { type: "number", minimum: -180, maximum: 180 }
           }
-        }
+        },
+        images: {
+          type: "array",
+          maxItems: 8,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["storage_key", "mime"],
+            properties: {
+              storage_key: { type: "string", minLength: 1 },
+              mime: { type: "string", minLength: 1 },
+              w: { type: "integer", minimum: 1 },
+              h: { type: "integer", minimum: 1 }
+            }
+          }
+        },
+        photos: {
+          type: "array",
+          maxItems: 8,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["storage_key", "mime"],
+            properties: {
+              storage_key: { type: "string", minLength: 1 },
+              mime: { type: "string", minLength: 1 },
+              w: { type: "integer", minimum: 1 },
+              h: { type: "integer", minimum: 1 }
+            }
+          }
+        },
+        cover_image_index: { type: "integer", minimum: 0, maximum: 7, nullable: true }
       }
     },
     zodSchema: z
@@ -47,24 +86,36 @@ export const writeTools: ToolDef[] = [
             lng: z.number().min(-180).max(180)
           })
           .strict()
-          .optional()
+          .optional(),
+        images: z.array(mediaImageSchema).max(8).optional(),
+        photos: z.array(mediaImageSchema).max(8).optional(),
+        cover_image_index: z.number().int().min(0).max(7).nullable().optional()
       })
       .strict(),
     outputHint: 'Creates a DRAFT listing only. Output: { listing_id, status:"DRAFT", created_at }.',
     execute: async (args: any, ctx) => {
+      if (args.images && args.photos && JSON.stringify(args.images) !== JSON.stringify(args.photos)) {
+        throw new Error("images and photos must match when both are provided");
+      }
+
       const currency = (args.currency ? String(args.currency) : "EUR").trim().toUpperCase();
+      const body: any = {
+        title: args.title,
+        description: args.description ?? null,
+        category: args.category,
+        condition: args.condition,
+        price: { amount: args.price_amount_minor, currency },
+        geo: args.geo ?? null,
+        publish: false
+      };
+      if (args.images !== undefined) body.images = args.images;
+      if (args.photos !== undefined) body.photos = args.photos;
+      if (args.cover_image_index !== undefined) body.cover_image_index = args.cover_image_index;
+
       return callClawdealsWebmcp({
         method: "POST",
         path: "/v1/listings",
-        body: {
-          title: args.title,
-          description: args.description ?? null,
-          category: args.category,
-          condition: args.condition,
-          price: { amount: args.price_amount_minor, currency },
-          geo: args.geo ?? null,
-          publish: false
-        },
+        body,
         requestId: ctx.requestId,
         idempotencyKey: ctx.idempotencyKey
       });
@@ -105,4 +156,3 @@ export const writeTools: ToolDef[] = [
     }
   }
 ];
-

@@ -8,6 +8,12 @@ import { getDealForRemove, removeDeal } from "../../../../../server/services/dea
 import { isUuid } from "../../../../../server/utils/validators";
 import { ALLOWED_CURRENCIES, DEAL_MAX_TTL_DAYS, DEAL_TYPES, COUNTRY_RE } from "../../../../../server/config/deals";
 import { normalizeTags } from "../../../../../server/utils/deals";
+import {
+  normalizeReadMedia,
+  parseCoverImageIndex,
+  parseImagesStrict,
+  resolveCoverImageIndexForWrite
+} from "../../../../../server/media/images";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -35,6 +41,41 @@ function parseDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+function mapDealResponse(deal: any, { includeImages = false }: { includeImages?: boolean } = {}) {
+  const media = normalizeReadMedia({
+    rawImages: deal?.images,
+    rawCoverImageIndex: deal?.cover_image_index
+  });
+
+  const response: any = {
+    deal_id: deal.deal_id,
+    title: deal.title,
+    source_url: deal.source_url,
+    price: toNumber(deal.price),
+    currency: deal.currency,
+    expires_at: deal.expires_at,
+    status: deal.status,
+    temperature: deal.status === "NEW" ? null : deal.temperature,
+    votes_up: deal.votes_up,
+    votes_down: deal.votes_down,
+    tags: deal.tags || [],
+    deal_type: deal.deal_type || "ONLINE",
+    country: deal.country || null,
+    merchant_name: deal.merchant_name || null,
+    merchant_domain: deal.merchant_domain || null,
+    images_count: media.images_count,
+    cover_image: media.cover_image,
+    created_at: deal.created_at
+  };
+
+  if (includeImages) {
+    response.images = media.images;
+    response.cover_image_index = media.cover_image_index;
+  }
+
+  return response;
 }
 
 export async function handler(req, res, ctx) {
@@ -81,6 +122,10 @@ export async function handler(req, res, ctx) {
 
       const body = req.body || {};
       const patch: any = {};
+      const hasImages = Object.prototype.hasOwnProperty.call(body, "images");
+      const hasCoverImageIndex = Object.prototype.hasOwnProperty.call(body, "cover_image_index");
+      let parsedImages = undefined;
+      let parsedCoverImageIndex = null;
 
       if (Object.prototype.hasOwnProperty.call(body, "title")) {
         if (typeof body.title !== "string") {
@@ -187,6 +232,48 @@ export async function handler(req, res, ctx) {
         }
       }
 
+      if (hasImages) {
+        try {
+          parsedImages = parseImagesStrict(body.images, "images");
+        } catch (error) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message || "images are invalid"));
+        }
+      }
+
+      if (hasCoverImageIndex) {
+        try {
+          parsedCoverImageIndex = parseCoverImageIndex(body.cover_image_index);
+        } catch (error) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message || "cover_image_index is invalid"));
+        }
+      }
+
+      if (hasImages || hasCoverImageIndex) {
+        const existingMedia = normalizeReadMedia({
+          rawImages: existing?.images,
+          rawCoverImageIndex: existing?.cover_image_index
+        });
+        const candidateImages = hasImages ? parsedImages : existingMedia.images;
+        const candidateCoverImageIndex =
+          hasCoverImageIndex
+            ? parsedCoverImageIndex
+            : hasImages
+              ? null
+              : existingMedia.cover_image_index;
+        let resolvedCoverImageIndex = null;
+        try {
+          resolvedCoverImageIndex = resolveCoverImageIndexForWrite({
+            images: candidateImages,
+            coverImageIndex: candidateCoverImageIndex,
+            hasExplicitCoverField: hasCoverImageIndex
+          });
+        } catch (error) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message || "cover_image_index is invalid"));
+        }
+        patch.images = candidateImages;
+        patch.cover_image_index = resolvedCoverImageIndex;
+      }
+
       if (Object.keys(patch).length === 0) {
         return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one field is required"));
       }
@@ -202,24 +289,7 @@ export async function handler(req, res, ctx) {
         ctx.auditEvent = "deal.updated";
       }
 
-      const responseDeal = {
-        deal_id: updated.deal_id,
-        title: updated.title,
-        source_url: updated.source_url,
-        price: toNumber(updated.price),
-        currency: updated.currency,
-        expires_at: updated.expires_at,
-        status: updated.status,
-        temperature: updated.status === "NEW" ? null : updated.temperature,
-        votes_up: updated.votes_up,
-        votes_down: updated.votes_down,
-        tags: updated.tags || [],
-        deal_type: updated.deal_type || "ONLINE",
-        country: updated.country || null,
-        merchant_name: updated.merchant_name || null,
-        merchant_domain: updated.merchant_domain || null,
-        created_at: updated.created_at
-      };
+      const responseDeal = mapDealResponse(updated, { includeImages: true });
 
       return jsonResponse(200, { deal: responseDeal });
     }
@@ -247,24 +317,7 @@ export async function handler(req, res, ctx) {
 
     const deal = await getDealById({ dealId });
 
-    const responseDeal = {
-      deal_id: deal.deal_id,
-      title: deal.title,
-      source_url: deal.source_url,
-      price: toNumber(deal.price),
-      currency: deal.currency,
-      expires_at: deal.expires_at,
-      status: deal.status,
-      temperature: deal.status === "NEW" ? null : deal.temperature,
-      votes_up: deal.votes_up,
-      votes_down: deal.votes_down,
-      tags: deal.tags || [],
-      deal_type: deal.deal_type || "ONLINE",
-      country: deal.country || null,
-      merchant_name: deal.merchant_name || null,
-      merchant_domain: deal.merchant_domain || null,
-      created_at: deal.created_at
-    };
+    const responseDeal = mapDealResponse(deal, { includeImages: true });
 
     return jsonResponse(200, { deal: responseDeal });
   } catch (error) {

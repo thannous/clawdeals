@@ -1,6 +1,7 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { encodeListingsCursor } from "./listings-cursor";
+import { normalizeReadMedia } from "../media/images";
 
 const DEFAULT_LIMIT = 50;
 
@@ -71,6 +72,57 @@ async function enrichDeliveryMethodRows({ client, rows }: any = {}) {
   });
 }
 
+async function enrichListingMediaRows({ client, rows }: any = {}) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (list.length === 0) return list;
+
+  const listingIds = Array.from(
+    new Set(
+      list
+        .filter((row) => row && typeof row === "object")
+        .map((row) => row.listing_id)
+        .filter((id) => typeof id === "string" && id)
+    )
+  );
+
+  if (listingIds.length === 0) {
+    return list.map((row) => ({
+      ...(row || {}),
+      images_count: 0,
+      cover_image: null
+    }));
+  }
+
+  const { data, error } = await client
+    .from("listings")
+    .select("listing_id,photos,cover_image_index")
+    .in("listing_id", listingIds);
+
+  if (error) {
+    mapError(error);
+  }
+
+  const byListingId = new Map();
+  for (const row of Array.isArray(data) ? data : []) {
+    if (!row?.listing_id) continue;
+    byListingId.set(row.listing_id, normalizeReadMedia({
+      rawImages: row.photos,
+      rawCoverImageIndex: row.cover_image_index
+    }));
+  }
+
+  return list.map((row) => {
+    if (!row || typeof row !== "object") return row;
+    const listingId = typeof row.listing_id === "string" ? row.listing_id : null;
+    const media = listingId ? byListingId.get(listingId) : null;
+    return {
+      ...row,
+      images_count: media?.images_count ?? 0,
+      cover_image: media?.cover_image ?? null
+    };
+  });
+}
+
 export async function createListing({
   title,
   description,
@@ -82,6 +134,7 @@ export async function createListing({
   geoLat,
   geoLng,
   photos,
+  coverImageIndex,
   dealId,
   duplicateFingerprint,
   duplicateOverride,
@@ -107,7 +160,8 @@ export async function createListing({
     geo_lng: geoLng ?? null,
     duplicate_fingerprint: duplicateFingerprint ?? null,
     duplicate_override: Boolean(duplicateOverride),
-    photos: photos ?? null
+    photos: photos ?? null,
+    cover_image_index: coverImageIndex ?? null
   };
   if (deliveryMethod !== undefined) payload.delivery_method = deliveryMethod;
 
@@ -127,10 +181,18 @@ export async function createListing({
     error &&
     (message.includes("duplicate_fingerprint") || message.includes("duplicate_override")) &&
     (message.includes("does not exist") || message.toLowerCase().includes("schema cache"));
-  if (missingDuplicateCols) {
+  const missingCoverImageIndexCol =
+    error &&
+    message.includes("cover_image_index") &&
+    (message.includes("does not exist") || message.toLowerCase().includes("schema cache"));
+
+  if (missingDuplicateCols || missingCoverImageIndexCol) {
     const fallbackPayload: any = { ...payload };
     delete fallbackPayload.duplicate_fingerprint;
     delete fallbackPayload.duplicate_override;
+    if (missingCoverImageIndexCol) {
+      delete fallbackPayload.cover_image_index;
+    }
     ({ data, error } = await insert(fallbackPayload));
   }
 
@@ -173,7 +235,9 @@ export async function updateListingBySeller({
     "price_amount",
     "currency",
     "status",
-    "delivery_method"
+    "delivery_method",
+    "photos",
+    "cover_image_index"
   ]);
 
   if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
@@ -202,7 +266,7 @@ export async function updateListingBySeller({
     query = query.eq("status", expectedStatus);
   }
 
-  const { data, error } = await query.select("listing_id,status,delivery_method,updated_at").maybeSingle();
+  const { data, error } = await query.select("listing_id,status,delivery_method,photos,cover_image_index,updated_at").maybeSingle();
   if (error) {
     mapError(error);
   }
@@ -264,7 +328,8 @@ export async function listListings({
       mapError(error);
     }
 
-    const rows = await enrichDeliveryMethodRows({ client, rows: Array.isArray(data) ? data : [] });
+    const rowsWithDelivery = await enrichDeliveryMethodRows({ client, rows: Array.isArray(data) ? data : [] });
+    const rows = await enrichListingMediaRows({ client, rows: rowsWithDelivery });
     const hasMore = rows.length > cappedLimit;
     const items = hasMore ? rows.slice(0, cappedLimit) : rows;
 
@@ -355,7 +420,8 @@ export async function listListings({
     mapError(error);
   }
 
-  const rows = await enrichDeliveryMethodRows({ client, rows: Array.isArray(data) ? data : [] });
+  const rowsWithDelivery = await enrichDeliveryMethodRows({ client, rows: Array.isArray(data) ? data : [] });
+  const rows = await enrichListingMediaRows({ client, rows: rowsWithDelivery });
   const hasMore = rows.length > cappedLimit;
   const items = hasMore ? rows.slice(0, cappedLimit) : rows;
 
@@ -396,7 +462,7 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor,
 
   let query = client
     .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,status,created_at,updated_at,seller_agent_id")
+    .select("listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id")
     .eq("owner_id", ownerId)
     .order("created_at", { ascending: false })
     .order("listing_id", { ascending: false })
@@ -423,7 +489,19 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor,
 
   const rows = data || [];
   const hasMore = rows.length > cappedLimit;
-  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+  const rawItems = hasMore ? rows.slice(0, cappedLimit) : rows;
+  const items = rawItems.map((row: any) => {
+    const media = normalizeReadMedia({
+      rawImages: row?.photos,
+      rawCoverImageIndex: row?.cover_image_index
+    });
+    const { photos, cover_image_index, ...rest } = row || {};
+    return {
+      ...rest,
+      images_count: media.images_count,
+      cover_image: media.cover_image
+    };
+  });
 
   let nextCursor = null;
   if (hasMore && items.length > 0) {

@@ -122,6 +122,8 @@ export async function handler(req, res, ctx) {
       temperature: deal.status === "NEW" ? null : deal.temperature,
       votes_up: deal.votes_up,
       votes_down: deal.votes_down,
+      images_count: typeof deal.images_count === "number" ? deal.images_count : 0,
+      cover_image: deal.cover_image ?? null,
       created_at: deal.created_at
     }));
 

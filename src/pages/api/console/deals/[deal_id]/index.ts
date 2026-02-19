@@ -5,6 +5,7 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getDealById } from "../../../../../server/services/deal-detail";
 import { isUuid } from "../../../../../server/utils/validators";
+import { normalizeReadMedia } from "../../../../../server/media/images";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -41,6 +42,10 @@ export async function handler(req, res, ctx) {
 
   try {
     const deal = await getDealById({ dealId });
+    const media = normalizeReadMedia({
+      rawImages: deal?.images,
+      rawCoverImageIndex: deal?.cover_image_index
+    });
 
     const responseDeal = {
       deal_id: deal.deal_id,
@@ -54,6 +59,10 @@ export async function handler(req, res, ctx) {
       votes_up: deal.votes_up,
       votes_down: deal.votes_down,
       tags: deal.tags || [],
+      images: media.images,
+      cover_image_index: media.cover_image_index,
+      images_count: media.images_count,
+      cover_image: media.cover_image,
       created_at: deal.created_at
     };
 
@@ -64,4 +73,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default injectConsoleOpsOwner(withApiMiddlewares(handler, { routeGroup: "deals.read" }));
-

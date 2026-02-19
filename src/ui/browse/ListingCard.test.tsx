@@ -60,6 +60,17 @@ describe("ListingCard", () => {
     expect(screen.queryByText("A short description of the item")).toBeNull();
   });
 
+  it("renders cover image when provided", () => {
+    render(
+      <ListingCard
+        listing={makeListing({
+          cover_image: { storage_key: "https://cdn.example.com/listings/test.jpg", mime: "image/jpeg" }
+        })}
+      />
+    );
+    expect(screen.getByAltText("Test Listing Title")).toBeDefined();
+  });
+
   it("capitalizes category", () => {
     render(<ListingCard listing={makeListing({ category: "books" })} />);
     expect(screen.getByText("Books")).toBeDefined();

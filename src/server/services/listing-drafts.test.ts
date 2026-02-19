@@ -15,7 +15,13 @@ vi.mock("../config/listing-media", () => ({
 
 import { getSupabaseServiceClient } from "../db/supabase";
 import { createListing, getListing } from "./listings";
-import { ensureActiveListingDraftForChannel, appendDraftListingPhoto, setDraftListingGeo } from "./listing-drafts";
+import {
+  ensureActiveListingDraftForChannel,
+  appendDraftListingPhoto,
+  setDraftListingGeo,
+  removeDraftListingPhotoAt,
+  setDraftListingCoverImage
+} from "./listing-drafts";
 
 function makeClient() {
   const chain: any = {
@@ -188,5 +194,41 @@ describe("listing-drafts", () => {
         lng: 0
       })
     ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+  });
+
+  it("removeDraftListingPhotoAt rejects invalid index", async () => {
+    vi.mocked(getListing).mockResolvedValue({
+      listing_id: "l-1",
+      status: "DRAFT",
+      owner_id: "owner-1",
+      seller_agent_id: "agent-1",
+      photos: [{ storage_key: "a", mime: "image/jpeg" }]
+    } as any);
+
+    await expect(
+      removeDraftListingPhotoAt({
+        listingId: "l-1",
+        sellerAgentId: "agent-1",
+        index: 2
+      })
+    ).rejects.toMatchObject({ code: "INVALID_PHOTO_INDEX" });
+  });
+
+  it("setDraftListingCoverImage rejects when index is out of bounds", async () => {
+    vi.mocked(getListing).mockResolvedValue({
+      listing_id: "l-1",
+      status: "DRAFT",
+      owner_id: "owner-1",
+      seller_agent_id: "agent-1",
+      photos: [{ storage_key: "a", mime: "image/jpeg" }]
+    } as any);
+
+    await expect(
+      setDraftListingCoverImage({
+        listingId: "l-1",
+        sellerAgentId: "agent-1",
+        coverImageIndex: 3
+      })
+    ).rejects.toMatchObject({ code: "INVALID_PHOTO_INDEX" });
   });
 });

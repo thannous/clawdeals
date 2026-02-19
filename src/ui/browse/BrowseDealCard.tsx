@@ -1,8 +1,10 @@
 import { memo } from "react";
+import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import StatusBadge from "../deals/StatusBadge";
 import TemperatureGauge from "../deals/TemperatureGauge";
+import { resolveCoverImageSrc } from "../media/cover-image";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -36,12 +38,27 @@ function extractHostname(url: string): string {
   }
 }
 
+const imageLoader = ({ src }: ImageLoaderProps) => src;
+
 function BrowseDealCard({ deal }: { deal: any }) {
   const t = useTranslations("browseDeals");
   const { locale } = useRouter();
+  const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
 
   return (
     <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full">
+      {coverImageSrc && (
+        <div className="relative h-40 border-b border-border overflow-hidden">
+          <Image
+            loader={imageLoader}
+            unoptimized
+            fill
+            src={coverImageSrc}
+            alt={deal?.title || ""}
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          />
+        </div>
+      )}
       <div className="p-4 flex flex-col gap-3 flex-1">
         {/* Status badge + timeAgo */}
         <div className="flex items-center justify-between gap-2">

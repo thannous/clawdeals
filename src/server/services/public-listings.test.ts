@@ -41,6 +41,8 @@ describe("mapPublicListingRow", () => {
       category: "electronics",
       condition: "NEW",
       price: { amount: 1999, currency: "EUR" },
+      images_count: 0,
+      cover_image: null,
       created_at: "2026-01-01T00:00:00Z",
       seller: null,
     });

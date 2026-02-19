@@ -17,6 +17,12 @@ import {
   DUPLICATE_WINDOW_DAYS
 } from "../../../server/config/deals";
 import { extractMerchantFromUrl, fingerprintUrl, normalizeDealUrl, normalizeTags } from "../../../server/utils/deals";
+import {
+  normalizeReadMedia,
+  parseCoverImageIndex,
+  parseImagesStrict,
+  resolveCoverImageIndexForWrite
+} from "../../../server/media/images";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -40,6 +46,47 @@ function parseDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+function mapDealSummary(deal: any) {
+  const media = normalizeReadMedia({
+    rawImages: deal?.images,
+    rawCoverImageIndex: deal?.cover_image_index
+  });
+
+  return {
+    deal_id: deal.deal_id,
+    title: deal.title,
+    source_url: deal.source_url,
+    price: toNumber(deal.price),
+    currency: deal.currency,
+    expires_at: deal.expires_at,
+    tags: deal.tags || [],
+    status: deal.status,
+    temperature: deal.status === "NEW" ? null : deal.temperature,
+    votes_up: deal.votes_up,
+    votes_down: deal.votes_down,
+    deal_type: deal.deal_type || "ONLINE",
+    country: deal.country || null,
+    merchant_name: deal.merchant_name || null,
+    merchant_domain: deal.merchant_domain || null,
+    images_count: media.images_count,
+    cover_image: media.cover_image,
+    created_at: deal.created_at
+  };
+}
+
+function mapDealDetail(deal: any) {
+  const media = normalizeReadMedia({
+    rawImages: deal?.images,
+    rawCoverImageIndex: deal?.cover_image_index
+  });
+
+  return {
+    ...mapDealSummary(deal),
+    images: media.images,
+    cover_image_index: media.cover_image_index
+  };
 }
 
 export async function handler(req, res, ctx) {
@@ -191,24 +238,7 @@ export async function handler(req, res, ctx) {
         includeHidden: false
       });
 
-      const items = (result.items || []).map((deal) => ({
-        deal_id: deal.deal_id,
-        title: deal.title,
-        source_url: deal.source_url,
-        price: toNumber(deal.price),
-        currency: deal.currency,
-        expires_at: deal.expires_at,
-        tags: deal.tags || [],
-        status: deal.status,
-        temperature: deal.status === "NEW" ? null : deal.temperature,
-        votes_up: deal.votes_up,
-        votes_down: deal.votes_down,
-        deal_type: deal.deal_type || "ONLINE",
-        country: deal.country || null,
-        merchant_name: deal.merchant_name || null,
-        merchant_domain: deal.merchant_domain || null,
-        created_at: deal.created_at
-      }));
+      const items = (result.items || []).map((deal) => mapDealSummary(deal));
 
       return jsonResponse(200, {
         items,
@@ -238,8 +268,11 @@ export async function handler(req, res, ctx) {
 
   const {
     title, url, price, currency, expires_at: expiresAtRaw, tags,
-    deal_type: rawDealType, country: rawCountry, merchant_name: rawMerchantName
+    deal_type: rawDealType, country: rawCountry, merchant_name: rawMerchantName,
+    images: rawImages,
+    cover_image_index: rawCoverImageIndex
   } = req.body || {};
+  const hasCoverImageIndex = Object.prototype.hasOwnProperty.call(req.body || {}, "cover_image_index");
 
   if (typeof title !== "string") {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "title is required"));
@@ -329,6 +362,22 @@ export async function handler(req, res, ctx) {
     }
   }
 
+  let images = null;
+  let coverImageIndex = null;
+  try {
+    if (rawImages !== undefined) {
+      images = parseImagesStrict(rawImages, "images");
+    }
+    const parsedCoverImageIndex = parseCoverImageIndex(rawCoverImageIndex);
+    coverImageIndex = resolveCoverImageIndexForWrite({
+      images,
+      coverImageIndex: parsedCoverImageIndex,
+      hasExplicitCoverField: hasCoverImageIndex
+    });
+  } catch (error) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message || "images are invalid"));
+  }
+
   try {
     const newUntil = new Date(now.getTime() + DEAL_NEW_WINDOW_SECONDS * 1000).toISOString();
     const fingerprint = fingerprintUrl(normalizedUrl);
@@ -375,24 +424,7 @@ export async function handler(req, res, ctx) {
         });
       }
 
-      const responseDeal = {
-        deal_id: existingDeal.deal_id,
-        title: existingDeal.title,
-        source_url: existingDeal.source_url,
-        price: toNumber(existingDeal.price),
-        currency: existingDeal.currency,
-        expires_at: existingDeal.expires_at,
-        status: existingDeal.status,
-        temperature: existingDeal.status === "NEW" ? null : existingDeal.temperature,
-        votes_up: existingDeal.votes_up,
-        votes_down: existingDeal.votes_down,
-        tags: existingDeal.tags || [],
-        deal_type: existingDeal.deal_type || "ONLINE",
-        country: existingDeal.country || null,
-        merchant_name: existingDeal.merchant_name || null,
-        merchant_domain: existingDeal.merchant_domain || null,
-        created_at: existingDeal.created_at
-      };
+      const responseDeal = mapDealDetail(existingDeal);
 
       return jsonResponse(200, {
         deal: responseDeal,
@@ -424,6 +456,8 @@ export async function handler(req, res, ctx) {
       votesWeightedDown: 0,
       reasonsCount: 0,
       creatorAgentId: ctx.agentId,
+      images,
+      coverImageIndex,
       dealType,
       country,
       merchantName,
@@ -431,24 +465,9 @@ export async function handler(req, res, ctx) {
     });
 
     const responseDeal = {
-      deal_id: deal.deal_id,
-      title: deal.title,
-      source_url: deal.source_url,
-      price: toNumber(deal.price),
-      currency: deal.currency,
-      expires_at: deal.expires_at,
-      tags: deal.tags || [],
-      status: deal.status,
+      ...mapDealDetail(deal),
       new_until: deal.new_until,
-      temperature: deal.temperature,
-      votes_up: deal.votes_up,
-      votes_down: deal.votes_down,
-      deal_type: deal.deal_type || "ONLINE",
-      country: deal.country || null,
-      merchant_name: deal.merchant_name || null,
-      merchant_domain: deal.merchant_domain || null,
-      creator_agent_id: deal.creator_agent_id,
-      created_at: deal.created_at
+      creator_agent_id: deal.creator_agent_id
     };
 
     try {

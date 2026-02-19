@@ -11,6 +11,12 @@ import { publishSseEvent } from "../../../../server/sse/store";
 import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../../server/config/deals";
 import { isUuid } from "../../../../server/utils/validators";
 import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
+import {
+  normalizeReadMedia,
+  parseCoverImageIndex,
+  parseListingsImagesInput,
+  resolveCoverImageIndexForWrite
+} from "../../../../server/media/images";
 
 const LOCKED_STATES = new Set([
   "RESERVED",
@@ -39,6 +45,10 @@ function stripHtmlTags(value) {
 }
 
 function mapListingDetail(listing: any) {
+  const media = normalizeReadMedia({
+    rawImages: listing?.photos,
+    rawCoverImageIndex: listing?.cover_image_index
+  });
   const geo =
     typeof listing?.geo_lat === "number" && Number.isFinite(listing.geo_lat) &&
     typeof listing?.geo_lng === "number" && Number.isFinite(listing.geo_lng)
@@ -57,7 +67,11 @@ function mapListingDetail(listing: any) {
       currency: listing.currency
     },
     geo,
-    photos: listing.photos ?? null,
+    images: media.images,
+    photos: media.images,
+    cover_image_index: media.cover_image_index,
+    cover_image: media.cover_image,
+    images_count: media.images_count,
     delivery_method: listing.delivery_method || null,
     deal_id: listing.deal_id ?? null,
     created_at: listing.created_at,
@@ -74,8 +88,12 @@ export async function handler(req, res, ctx) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  if (!ctx?.agentId) {
-    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
+  if (req.method === "GET") {
+    if (!ctx?.agentId) {
+      return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
+    }
+  } else if (!ctx?.agentId && !ctx?.ownerId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Authentication required"));
   }
 
   const rawId = resolveParam(req.query?.id);
@@ -118,15 +136,23 @@ export async function handler(req, res, ctx) {
   const rawPrice = body.price;
   const rawStatus = body.status;
   const rawDeliveryMethod = body.delivery_method;
+  const rawImages = body.images;
+  const rawPhotos = body.photos;
+  const hasCoverImageIndex = Object.prototype.hasOwnProperty.call(body, "cover_image_index");
+  const rawCoverImageIndex = body.cover_image_index;
 
   const hasTitle = rawTitle !== undefined;
   const hasDescription = rawDescription !== undefined;
   const hasPrice = rawPrice !== undefined;
   const hasStatus = rawStatus !== undefined;
   const hasDeliveryMethod = rawDeliveryMethod !== undefined;
+  const hasImages = rawImages !== undefined;
+  const hasPhotos = rawPhotos !== undefined;
+  const hasMediaPatch = hasImages || hasPhotos || hasCoverImageIndex;
+  const hasNonMediaPatch = hasTitle || hasDescription || hasPrice || hasStatus || hasDeliveryMethod;
 
-  if (!hasTitle && !hasDescription && !hasPrice && !hasStatus && !hasDeliveryMethod) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one of title, description, price, status, delivery_method is required"));
+  if (!hasNonMediaPatch && !hasMediaPatch) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one mutable field is required"));
   }
 
   const fieldsChanged: string[] = [];
@@ -137,6 +163,8 @@ export async function handler(req, res, ctx) {
   let currency = undefined;
   let requestedStatus = null;
   let deliveryMethod = undefined;
+  let parsedImages = undefined;
+  let parsedCoverImageIndex = null;
 
   try {
     if (hasTitle) {
@@ -220,18 +248,42 @@ export async function handler(req, res, ctx) {
       }
       fieldsChanged.push("delivery_method");
     }
+
+    if (hasImages || hasPhotos) {
+      const parsedMedia = parseListingsImagesInput({
+        images: rawImages,
+        photos: rawPhotos
+      });
+      parsedImages = parsedMedia.images;
+      fieldsChanged.push("images");
+    }
+
+    if (hasCoverImageIndex) {
+      parsedCoverImageIndex = parseCoverImageIndex(rawCoverImageIndex);
+      fieldsChanged.push("cover_image_index");
+    }
   } catch (error) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
   }
 
   try {
-    const agentId = ctx.agentId;
+    const agentId = ctx.agentId || null;
     const listing = await getListing(listingId);
-    if (!listing || listing.seller_agent_id !== agentId) {
+    const isSeller = Boolean(agentId && listing && listing.seller_agent_id === agentId);
+    const isOwner = Boolean(ctx.ownerId && listing && listing.owner_id && String(listing.owner_id) === String(ctx.ownerId));
+
+    if (!listing || (!isSeller && !isOwner)) {
       if (ctx) {
         ctx.outcome = { type: "BLOCKED", reason: "ownership" };
       }
       return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
+    }
+
+    if (hasNonMediaPatch && !isSeller) {
+      if (ctx) {
+        ctx.outcome = { type: "BLOCKED", reason: "authz" };
+      }
+      return jsonResponse(403, errorPayload("FORBIDDEN", "Only the seller agent can update non-media fields"));
     }
 
     const currentStatus = listing.status;
@@ -249,6 +301,33 @@ export async function handler(req, res, ctx) {
 
     let nextStatus = currentStatus;
     let approvalId = null;
+    let nextPhotos = undefined;
+    let nextCoverImageIndex = undefined;
+
+    if (hasMediaPatch) {
+      const existingMedia = normalizeReadMedia({
+        rawImages: listing.photos,
+        rawCoverImageIndex: listing.cover_image_index
+      });
+      const candidateImages = hasImages || hasPhotos ? parsedImages : existingMedia.images;
+      const candidateCoverImageIndex =
+        hasCoverImageIndex
+          ? parsedCoverImageIndex
+          : hasImages || hasPhotos
+            ? null
+            : existingMedia.cover_image_index;
+
+      try {
+        nextCoverImageIndex = resolveCoverImageIndexForWrite({
+          images: candidateImages,
+          coverImageIndex: candidateCoverImageIndex,
+          hasExplicitCoverField: hasCoverImageIndex
+        });
+      } catch (error) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message || "cover_image_index is invalid"));
+      }
+      nextPhotos = candidateImages;
+    }
 
     if (requestedStatus) {
       if (requestedStatus === "REMOVED") {
@@ -320,10 +399,10 @@ export async function handler(req, res, ctx) {
           const approval = await createApproval({
             ownerId,
             actionType: "listing_publish",
-            actionRef: { listing_id: listingId, seller_agent_id: agentId },
+            actionRef: { listing_id: listingId, seller_agent_id: listing.seller_agent_id },
             actionRefId: listingId,
             actionPayload: { listing_id: listingId },
-            createdByAgentId: agentId
+            createdByAgentId: listing.seller_agent_id
           });
           approvalId = approval.approval_id;
           if (ctx) {
@@ -343,11 +422,13 @@ export async function handler(req, res, ctx) {
     if (priceAmount !== undefined) patch.price_amount = priceAmount;
     if (currency !== undefined) patch.currency = currency;
     if (deliveryMethod !== undefined) patch.delivery_method = deliveryMethod;
+    if (nextPhotos !== undefined) patch.photos = nextPhotos;
+    if (nextCoverImageIndex !== undefined) patch.cover_image_index = nextCoverImageIndex;
     if (nextStatus !== currentStatus) patch.status = nextStatus;
 
     const updated = await updateListingBySeller({
       listingId,
-      sellerAgentId: agentId,
+      sellerAgentId: listing.seller_agent_id,
       expectedStatus: currentStatus,
       patch,
       now
@@ -355,7 +436,9 @@ export async function handler(req, res, ctx) {
 
     if (!updated) {
       const fresh = await getListing(listingId);
-      if (!fresh || fresh.seller_agent_id !== agentId) {
+      const stillSeller = Boolean(agentId && fresh && fresh.seller_agent_id === agentId);
+      const stillOwner = Boolean(ctx.ownerId && fresh && fresh.owner_id && String(fresh.owner_id) === String(ctx.ownerId));
+      if (!fresh || (!stillSeller && !stillOwner)) {
         if (ctx) {
           ctx.outcome = { type: "BLOCKED", reason: "ownership" };
         }
@@ -383,6 +466,8 @@ export async function handler(req, res, ctx) {
         description_len: safeDescriptionLen,
         price_amount: safePriceAmount,
         currency: safeCurrency,
+        images_count: Array.isArray(nextPhotos) ? nextPhotos.length : null,
+        cover_image_index: nextCoverImageIndex ?? null,
         requested_status: requestedStatus,
         resolved_status: updated.status
       };
@@ -391,9 +476,9 @@ export async function handler(req, res, ctx) {
     try {
       await publishSseEvent({
         audienceType: "agent",
-        audienceId: agentId,
+        audienceId: listing.seller_agent_id,
         type: "listing.updated",
-        actor: { type: "agent", id: agentId },
+        actor: { type: "agent", id: listing.seller_agent_id },
         entity: { type: "listing", id: listingId },
         payload: {
           fields_changed: fieldsChanged,
@@ -449,6 +534,9 @@ export async function handler(req, res, ctx) {
       listing_id: updated.listing_id,
       status: updated.status,
       delivery_method: updated.delivery_method || null,
+      images: nextPhotos !== undefined ? nextPhotos : undefined,
+      photos: nextPhotos !== undefined ? nextPhotos : undefined,
+      cover_image_index: nextCoverImageIndex !== undefined ? nextCoverImageIndex : undefined,
       updated_at: updated.updated_at
     });
   } catch (error) {

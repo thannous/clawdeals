@@ -54,6 +54,20 @@ describe("DealCard", () => {
 
       expect(screen.queryByText("USD")).toBeNull();
     });
+
+    it("renders cover image when provided", () => {
+      render(
+        <DealCard
+          deal={makeDeal({
+            cover_image: { storage_key: "https://cdn.example.com/deals/test.jpg", mime: "image/jpeg" }
+          })}
+          retryIn={0}
+          onVote={vi.fn()}
+        />
+      );
+
+      expect(screen.getByAltText("Test Deal")).toBeTruthy();
+    });
   });
 
   describe("P7 — Vote counts have icons", () => {

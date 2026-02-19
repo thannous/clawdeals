@@ -38,6 +38,8 @@ export async function createDeal({
   votesWeightedDown = 0,
   reasonsCount = 0,
   creatorAgentId,
+  images,
+  coverImageIndex,
   dealType,
   country,
   merchantName,
@@ -61,7 +63,9 @@ export async function createDeal({
     votes_weighted_up: votesWeightedUp,
     votes_weighted_down: votesWeightedDown,
     reasons_count: reasonsCount,
-    creator_agent_id: creatorAgentId
+    creator_agent_id: creatorAgentId,
+    images: images ?? null,
+    cover_image_index: coverImageIndex ?? null
   };
   if (dealType !== undefined) payload.deal_type = dealType;
   if (country !== undefined) payload.country = country;

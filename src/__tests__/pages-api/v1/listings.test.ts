@@ -118,6 +118,56 @@ describe("/v1/listings", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("POST accepts canonical images and defaults cover_image_index to 0", async () => {
+    resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
+    createListingMock.mockResolvedValue({
+      listing_id: "l-img-1",
+      status: "DRAFT",
+      created_at: "2026-02-06T12:00:00Z"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: {
+        ...validBody,
+        publish: false,
+        images: [
+          { storage_key: "listings/l-img-1/1.jpg", mime: "image/jpeg" },
+          { storage_key: "listings/l-img-1/2.jpg", mime: "image/jpeg" }
+        ]
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(201);
+    expect(createListingMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        photos: [
+          { storage_key: "listings/l-img-1/1.jpg", mime: "image/jpeg" },
+          { storage_key: "listings/l-img-1/2.jpg", mime: "image/jpeg" }
+        ],
+        coverImageIndex: 0
+      })
+    );
+  });
+
+  it("POST rejects conflict when images and photos differ", async () => {
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: {
+        ...validBody,
+        images: [{ storage_key: "listings/l1/a.jpg", mime: "image/jpeg" }],
+        photos: [{ storage_key: "listings/l1/b.jpg", mime: "image/jpeg" }]
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
   it("POST publish=false creates DRAFT without approval", async () => {
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
     getPolicyOrDefaultMock.mockResolvedValue({ policy_json: { auto_approve: { actions: [] } } } as any);

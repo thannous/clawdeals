@@ -22,7 +22,9 @@ import { getListingPhotosBucket, getMaxPhotoBytes, getMaxPhotosPerListing } from
 import {
   ensureActiveListingDraftForChannel,
   appendDraftListingPhoto,
-  setDraftListingGeo
+  setDraftListingGeo,
+  removeDraftListingPhotoAt,
+  setDraftListingCoverImage
 } from "../../../../../../server/services/listing-drafts";
 import { deleteListingPhoto, uploadListingPhoto } from "../../../../../../server/services/listing-media-storage";
 import {
@@ -342,6 +344,47 @@ function selectBestTelegramPhotoSize(sizes: any[]) {
   return best;
 }
 
+function parseDraftMediaCommand(text: string): { kind: "remove" | "cover"; indexOneBased: number } | null {
+  const raw = typeof text === "string" ? text.trim() : "";
+  if (!raw) return null;
+
+  const removeMatch = raw.match(/^\/?(?:photo|photos?)\s+(?:remove|rm|delete|del|suppr|supprime)\s+(\d{1,2})$/i);
+  if (removeMatch) {
+    const indexOneBased = Number.parseInt(removeMatch[1], 10);
+    if (Number.isFinite(indexOneBased)) {
+      return { kind: "remove", indexOneBased };
+    }
+  }
+
+  const coverMatch = raw.match(/^\/?(?:photo|photos?)\s+(?:cover|couverture)\s+(\d{1,2})$/i) || raw.match(/^\/?cover\s+(\d{1,2})$/i);
+  if (coverMatch) {
+    const indexOneBased = Number.parseInt(coverMatch[1], 10);
+    if (Number.isFinite(indexOneBased)) {
+      return { kind: "cover", indexOneBased };
+    }
+  }
+
+  return null;
+}
+
+function normalizeCoverImageIndex(photosCount: number, coverImageIndex: unknown): number | null {
+  if (!Number.isFinite(photosCount) || photosCount <= 0) return null;
+  if (
+    typeof coverImageIndex === "number" &&
+    Number.isSafeInteger(coverImageIndex) &&
+    coverImageIndex >= 0 &&
+    coverImageIndex < photosCount
+  ) {
+    return coverImageIndex;
+  }
+  return 0;
+}
+
+function formatCoverLabel(coverImageIndex: number | null) {
+  if (coverImageIndex == null) return "-";
+  return `#${coverImageIndex + 1}`;
+}
+
 export async function handler(req, res, ctx) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -503,6 +546,7 @@ export async function handler(req, res, ctx) {
   const location = !callback && (message as any)?.location ? (message as any).location : null;
   const isPhotoUpdate = Boolean(photoSizes && Array.isArray(photoSizes) && photoSizes.length > 0);
   const isLocationUpdate = Boolean(location && typeof location === "object");
+  const draftMediaCommand = !callback && !isPhotoUpdate && !isLocationUpdate ? parseDraftMediaCommand(rawText) : null;
   let command: any = null;
 
   const hashes = createChannelFingerprints({
@@ -580,7 +624,7 @@ export async function handler(req, res, ctx) {
   });
   if (webhookRl) return webhookRl;
 
-  if (isPhotoUpdate || isLocationUpdate) {
+  if (isPhotoUpdate || isLocationUpdate || draftMediaCommand) {
     const now = new Date();
 
     let identity: any = null;
@@ -667,6 +711,7 @@ export async function handler(req, res, ctx) {
     let listingTitle = typeof draft?.listing?.title === "string" ? draft.listing.title : "";
     if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
     let photosCount = Array.isArray(draft?.listing?.photos) ? draft.listing.photos.length : 0;
+    let coverImageIndex = normalizeCoverImageIndex(photosCount, draft?.listing?.cover_image_index);
 
     if (isLocationUpdate) {
       const lat = typeof (location as any)?.latitude === "number" ? (location as any).latitude : NaN;
@@ -683,6 +728,7 @@ export async function handler(req, res, ctx) {
         listingTitle = typeof updated?.listing?.title === "string" ? updated.listing.title : listingTitle;
         if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
         photosCount = typeof updated?.photosCount === "number" ? updated.photosCount : photosCount;
+        coverImageIndex = normalizeCoverImageIndex(photosCount, updated?.coverImageIndex);
 
         await safeAuditLog(
           buildAuditEventFromCtx(ctx, "location.received", { listing_id: listingId, geo_set: true }, "SUCCESS")
@@ -705,7 +751,98 @@ export async function handler(req, res, ctx) {
           "Draft updated.",
           `Title: ${listingTitle}`,
           `Photos: ${photosCount}/${maxPhotos}`,
+          `Cover: ${formatCoverLabel(coverImageIndex)}`,
           "Location: set",
+          "Status: DRAFT"
+        ].join("\n"),
+        disableWebPagePreview: true
+      });
+      return jsonResponse(200, responseBody);
+    }
+
+    if (draftMediaCommand) {
+      const mediaUpdateRl = await applyOwnerRateLimit({
+        req,
+        ctx,
+        group: "channels.telegram.media_upload",
+        ownerId: identity.owner_id,
+        callbackQueryId: null,
+        chatId
+      });
+      if (mediaUpdateRl) {
+        await safeAuditLog(buildAuditEventFromCtx(ctx, "media.rejected", { listing_id: listingId, reason: "rate_limit" }, "BLOCKED"));
+        return mediaUpdateRl;
+      }
+
+      try {
+        if (draftMediaCommand.kind === "remove") {
+          const index = draftMediaCommand.indexOneBased - 1;
+          const updated = await removeDraftListingPhotoAt({
+            listingId,
+            sellerAgentId,
+            index,
+            now
+          });
+          listingTitle = typeof updated?.listing?.title === "string" ? updated.listing.title : listingTitle;
+          if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
+          photosCount = typeof updated?.photosCount === "number" ? updated.photosCount : photosCount;
+          coverImageIndex = normalizeCoverImageIndex(photosCount, updated?.coverImageIndex);
+
+          await safeAuditLog(
+            buildAuditEventFromCtx(
+              ctx,
+              "media.updated",
+              { listing_id: listingId, action: "remove", index: draftMediaCommand.indexOneBased, photos_count: photosCount },
+              "SUCCESS"
+            )
+          );
+        } else {
+          const index = draftMediaCommand.indexOneBased - 1;
+          const updated = await setDraftListingCoverImage({
+            listingId,
+            sellerAgentId,
+            coverImageIndex: index,
+            now
+          });
+          listingTitle = typeof updated?.listing?.title === "string" ? updated.listing.title : listingTitle;
+          if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
+          photosCount = typeof updated?.photosCount === "number" ? updated.photosCount : photosCount;
+          coverImageIndex = normalizeCoverImageIndex(photosCount, updated?.coverImageIndex);
+
+          await safeAuditLog(
+            buildAuditEventFromCtx(
+              ctx,
+              "media.updated",
+              { listing_id: listingId, action: "cover", index: draftMediaCommand.indexOneBased, photos_count: photosCount },
+              "SUCCESS"
+            )
+          );
+        }
+      } catch (error: any) {
+        await safeAuditLog(
+          buildAuditEventFromCtx(
+            ctx,
+            "media.rejected",
+            { listing_id: listingId, reason: String(error?.code || "error"), action: draftMediaCommand.kind },
+            "FAILURE"
+          )
+        );
+
+        const responseBody = buildTelegramSendMessage({
+          chatId,
+          text: `Error: ${error?.message || "Media update failed"}`,
+          disableWebPagePreview: true
+        });
+        return jsonResponse(200, responseBody);
+      }
+
+      const responseBody = buildTelegramSendMessage({
+        chatId,
+        text: [
+          "Draft updated.",
+          `Title: ${listingTitle}`,
+          `Photos: ${photosCount}/${maxPhotos}`,
+          `Cover: ${formatCoverLabel(coverImageIndex)}`,
           "Status: DRAFT"
         ].join("\n"),
         disableWebPagePreview: true
@@ -814,6 +951,7 @@ export async function handler(req, res, ctx) {
       listingTitle = typeof appended?.listing?.title === "string" ? appended.listing.title : listingTitle;
       if (!listingTitle || listingTitle === "Untitled") listingTitle = "(title unknown)";
       photosCount = typeof appended?.photosCount === "number" ? appended.photosCount : photosCount + 1;
+      coverImageIndex = normalizeCoverImageIndex(photosCount, appended?.coverImageIndex);
 
       await safeAuditLog(
         buildAuditEventFromCtx(
@@ -857,6 +995,7 @@ export async function handler(req, res, ctx) {
         "Draft updated.",
         `Title: ${listingTitle}`,
         `Photos: ${photosCount}/${maxPhotos}`,
+        `Cover: ${formatCoverLabel(coverImageIndex)}`,
         "Status: DRAFT"
       ].join("\n"),
       disableWebPagePreview: true

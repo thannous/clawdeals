@@ -80,9 +80,14 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
     expect(result.body.error.code).toBe("METHOD_NOT_ALLOWED");
   });
 
-  it("returns 401 when agent authentication is missing", async () => {
+  it("returns 401 when authentication is missing", async () => {
     const req: any = { method: "PATCH", headers: { "idempotency-key": "idem-1" }, query: { id: listingId }, body: { title: "x" } };
-    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
+    const result: any = await handler(req, null, {
+      ...baseCtx,
+      ownerId: null,
+      agentId: null,
+      actor: { type: "anonymous", id: null }
+    });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
   });
@@ -109,13 +114,105 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
-  it("returns 404 for non-seller (anti-enumeration)", async () => {
+  it("returns 403 for owner non-media patch when owner is not seller", async () => {
     getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "agent-2", owner_id: "owner-1", status: "LIVE" } as any);
 
     const req: any = { method: "PATCH", headers: { "idempotency-key": "idem-1" }, query: { id: listingId }, body: { title: "New title" } };
     const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("FORBIDDEN");
+  });
+
+  it("allows media patch by owner even when owner is not seller", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      seller_agent_id: "agent-2",
+      owner_id: "owner-1",
+      status: "LIVE",
+      photos: [{ storage_key: "k1", mime: "image/jpeg" }],
+      cover_image_index: 0
+    } as any);
+    updateListingBySellerMock.mockResolvedValue({
+      listing_id: listingId,
+      status: "LIVE",
+      photos: [{ storage_key: "k2", mime: "image/jpeg" }],
+      cover_image_index: 0,
+      updated_at: "2026-02-06T12:00:00Z"
+    } as any);
+
+    const req: any = {
+      method: "PATCH",
+      headers: { "idempotency-key": "idem-owner-media" },
+      query: { id: listingId },
+      body: { images: [{ storage_key: "k2", mime: "image/jpeg" }] }
+    };
+    const result: any = await handler(req, null, {
+      ...baseCtx,
+      agentId: null,
+      actor: { type: "owner", id: "owner-1" }
+    });
+
+    expect(result.status).toBe(200);
+    expect(updateListingBySellerMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sellerAgentId: "agent-2",
+        patch: expect.objectContaining({
+          photos: [{ storage_key: "k2", mime: "image/jpeg" }],
+          cover_image_index: 0
+        })
+      })
+    );
+  });
+
+  it("returns 404 for media patch by third-party (anti-enumeration)", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      seller_agent_id: "agent-2",
+      owner_id: "owner-1",
+      status: "LIVE",
+      photos: [{ storage_key: "k1", mime: "image/jpeg" }],
+      cover_image_index: 0
+    } as any);
+
+    const req: any = {
+      method: "PATCH",
+      headers: { "idempotency-key": "idem-third-party-media" },
+      query: { id: listingId },
+      body: { images: [{ storage_key: "k2", mime: "image/jpeg" }] }
+    };
+    const result: any = await handler(req, null, {
+      ...baseCtx,
+      ownerId: "owner-9",
+      agentId: "agent-x",
+      actor: { type: "agent", id: "agent-x" }
+    });
+
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("validates conflict when images and photos differ", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      seller_agent_id: "agent-1",
+      owner_id: "owner-1",
+      status: "LIVE",
+      photos: [],
+      cover_image_index: null
+    } as any);
+
+    const req: any = {
+      method: "PATCH",
+      headers: { "idempotency-key": "idem-conflict-media" },
+      query: { id: listingId },
+      body: {
+        images: [{ storage_key: "img-a", mime: "image/jpeg" }],
+        photos: [{ storage_key: "img-b", mime: "image/jpeg" }]
+      }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("returns 409 LISTING_LOCKED for system-controlled states", async () => {

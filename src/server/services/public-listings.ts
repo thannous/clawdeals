@@ -1,12 +1,17 @@
 import { listListings, getListing } from "./listings";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getOwnerPublicProfiles } from "./owners";
+import { normalizeReadMedia } from "../media/images";
 
 const PUBLIC_DEFAULT_LIMIT = 24;
 const PUBLIC_MAX_LIMIT = 30;
 
 export function mapPublicListingRow(row: any, sellerInfo?: { display_name: string | null; avatar_url: string | null; verified: boolean } | null) {
   const desc = typeof row.description === "string" ? row.description : null;
+  const media = normalizeReadMedia({
+    rawImages: row?.photos,
+    rawCoverImageIndex: row?.cover_image_index
+  });
   return {
     listing_id: row.listing_id,
     title: row.title,
@@ -21,6 +26,8 @@ export function mapPublicListingRow(row: any, sellerInfo?: { display_name: strin
       amount: row.price_amount,
       currency: row.currency,
     },
+    images_count: typeof row?.images_count === "number" ? row.images_count : media.images_count,
+    cover_image: row?.cover_image ?? media.cover_image,
     created_at: row.created_at,
     seller: sellerInfo || null,
   };
@@ -29,6 +36,10 @@ export function mapPublicListingRow(row: any, sellerInfo?: { display_name: strin
 export async function getPublicListing(listingId: string) {
   const row = await getListing(listingId);
   if (!row || row.status !== "LIVE") return null;
+  const media = normalizeReadMedia({
+    rawImages: row?.photos,
+    rawCoverImageIndex: row?.cover_image_index
+  });
 
   let seller = null;
   if (row.owner_id) {
@@ -43,6 +54,11 @@ export async function getPublicListing(listingId: string) {
     category: row.category,
     condition: row.condition,
     price: { amount: row.price_amount, currency: row.currency },
+    images: media.images,
+    photos: media.images,
+    cover_image_index: media.cover_image_index,
+    images_count: media.images_count,
+    cover_image: media.cover_image,
     created_at: row.created_at,
     updated_at: row.updated_at ?? null,
     delivery_method: row.delivery_method ?? null,
@@ -85,15 +101,20 @@ export async function listPublicListings({
   const client = getSupabaseServiceClient();
   const { data: extraRows } = await client
     .from("listings")
-    .select("listing_id, description, owner_id")
+    .select("listing_id, description, owner_id, photos, cover_image_index")
     .in("listing_id", ids);
 
   const descMap = new Map<string, string | null>();
   const ownerMap = new Map<string, string | null>();
+  const mediaMap = new Map<string, { photos: any; cover_image_index: any }>();
   if (extraRows) {
     for (const row of extraRows) {
       descMap.set(row.listing_id, row.description ?? null);
       ownerMap.set(row.listing_id, row.owner_id ?? null);
+      mediaMap.set(row.listing_id, {
+        photos: row.photos ?? null,
+        cover_image_index: row.cover_image_index ?? null
+      });
     }
   }
 
@@ -106,6 +127,8 @@ export async function listPublicListings({
   const enriched = items.map((row: any) => ({
     ...row,
     description: descMap.get(row.listing_id) ?? null,
+    photos: mediaMap.get(row.listing_id)?.photos ?? row.photos ?? null,
+    cover_image_index: mediaMap.get(row.listing_id)?.cover_image_index ?? row.cover_image_index ?? null,
     _ownerId: ownerMap.get(row.listing_id) ?? null,
   }));
 

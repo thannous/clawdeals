@@ -107,6 +107,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const data = items.map((deal: any) => ({
       ...deal,
       temperature: deal.status === "NEW" ? null : deal.temperature,
+      images_count: typeof deal?.images_count === "number" ? deal.images_count : 0,
+      cover_image: deal?.cover_image ?? null,
     }));
 
     res.status(200).json({ data, next_cursor: result.nextCursor });

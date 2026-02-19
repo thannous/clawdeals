@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
+import { resolveCoverImageSrc } from "../media/cover-image";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -55,9 +56,23 @@ function resolveAvatarSrc(value: unknown): string {
 function ListingCard({ listing }: { listing: any }) {
   const t = useTranslations("browse");
   const { locale } = useRouter();
+  const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
+
   return (
     <Link href={`/browse/${listing.listing_id}`} className="block h-full">
       <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-border-strong transition-colors flex flex-col h-full">
+        {coverImageSrc && (
+          <div className="relative h-40 border-b border-border overflow-hidden">
+            <Image
+              loader={avatarLoader}
+              unoptimized
+              fill
+              src={coverImageSrc}
+              alt={listing.title || ""}
+              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            />
+          </div>
+        )}
         <div className="p-4 flex flex-col gap-3 flex-1">
           {/* Category + condition badges */}
           <div className="flex items-center justify-between gap-2">

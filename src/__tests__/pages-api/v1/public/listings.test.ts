@@ -66,6 +66,8 @@ describe("GET /api/v1/public/listings", () => {
             amount: 12345,
             currency: "EUR",
           },
+          images_count: 0,
+          cover_image: null,
           created_at: "2026-02-16T00:00:00.000Z",
           seller: {
             display_name: "Seller",

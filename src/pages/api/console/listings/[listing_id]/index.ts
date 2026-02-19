@@ -6,6 +6,7 @@ import { errorPayload } from "../../../../../server/http/errors";
 import { getListing } from "../../../../../server/services/listings";
 import { isUuid } from "../../../../../server/utils/validators";
 import { redactEmailsAndPhones } from "../../../../../server/utils/free-text-redaction";
+import { normalizeReadMedia } from "../../../../../server/media/images";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -39,6 +40,10 @@ export async function handler(req, res, ctx) {
     if (!listing) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
     }
+    const media = normalizeReadMedia({
+      rawImages: listing?.photos,
+      rawCoverImageIndex: listing?.cover_image_index
+    });
 
     const titleResult =
       typeof listing.title === "string"
@@ -52,6 +57,11 @@ export async function handler(req, res, ctx) {
     return jsonResponse(200, {
       listing: {
         ...listing,
+        images: media.images,
+        photos: media.images,
+        cover_image_index: media.cover_image_index,
+        images_count: media.images_count,
+        cover_image: media.cover_image,
         title: titleResult.text,
         description: descriptionResult.text,
         title_redacted: titleResult.redacted,

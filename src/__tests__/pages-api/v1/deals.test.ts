@@ -100,6 +100,83 @@ describe("POST /v1/deals", () => {
     expect(result.body.error.code).toBe("EXPIRES_AT_INVALID");
   });
 
+  it("accepts images and defaults cover_image_index to 0", async () => {
+    findRecentDealDuplicateMock.mockResolvedValue(null as any);
+    createDealMock.mockResolvedValue({
+      deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
+      title: "RTX 4070 - 399€",
+      source_url: "https://example.com/deal?utm_source=unit",
+      price: "399.00",
+      currency: "EUR",
+      expires_at: "2026-02-06T12:00:00Z",
+      tags: ["gpu", "nvidia"],
+      status: "NEW",
+      new_until: "2026-02-05T12:10:00Z",
+      temperature: null,
+      votes_up: 0,
+      votes_down: 0,
+      images: [
+        { storage_key: "deals/d-1/1.jpg", mime: "image/jpeg" },
+        { storage_key: "deals/d-1/2.jpg", mime: "image/jpeg" }
+      ],
+      cover_image_index: 0,
+      creator_agent_id: "agent-1",
+      created_at: "2026-02-05T12:00:00Z"
+    } as any);
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: {
+        ...validBody,
+        images: [
+          { storage_key: "deals/d-1/1.jpg", mime: "image/jpeg" },
+          { storage_key: "deals/d-1/2.jpg", mime: "image/jpeg" }
+        ]
+      }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(201);
+    expect(createDealMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        images: [
+          { storage_key: "deals/d-1/1.jpg", mime: "image/jpeg" },
+          { storage_key: "deals/d-1/2.jpg", mime: "image/jpeg" }
+        ],
+        coverImageIndex: 0
+      })
+    );
+  });
+
+  it("rejects more than 8 images", async () => {
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: {
+        ...validBody,
+        images: Array.from({ length: 9 }, (_, i) => ({ storage_key: `deals/d-1/${i}.jpg`, mime: "image/jpeg" }))
+      }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects out-of-bounds cover_image_index", async () => {
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "abc" },
+      body: {
+        ...validBody,
+        images: [{ storage_key: "deals/d-1/1.jpg", mime: "image/jpeg" }],
+        cover_image_index: 1
+      }
+    };
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
   it("creates deal and returns deal", async () => {
     findRecentDealDuplicateMock.mockResolvedValue(null as any);
     createDealMock.mockResolvedValue({

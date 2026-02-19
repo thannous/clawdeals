@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "../../theme/theme-context";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { getPublicAppEntryHref } from "../../shared/urls";
+import { resolveCoverImageSrc } from "../media/cover-image";
 import Navbar from "../landing/Navbar";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
@@ -50,6 +51,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
   const locale = resolveSupportedLocale(router.locale);
   const localePrefix = locale === "en" ? "" : `/${locale}`;
   const { themeId, setTheme, themes } = useTheme();
+  const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
 
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     day: "2-digit",
@@ -108,6 +110,19 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
               <div className="text-xl font-mono font-bold text-primary">
                 {formatPrice(listing.price.amount, listing.price.currency, locale)}
               </div>
+
+              {coverImageSrc && (
+                <div className="relative w-full aspect-[16/10] border border-border overflow-hidden bg-surface">
+                  <Image
+                    loader={avatarLoader}
+                    unoptimized
+                    fill
+                    src={coverImageSrc}
+                    alt={listing.title || ""}
+                    className="object-cover"
+                  />
+                </div>
+              )}
 
               {/* Description */}
               {listing.description && (
