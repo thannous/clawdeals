@@ -9,17 +9,12 @@ import MarketingLink from "../shared/MarketingLink";
 import ShareButton from "./ShareButton";
 import type { ThemeOption } from "./types";
 
-type NavbarProps = {
+export type NavbarProps = {
   themeId: string;
   setTheme: (themeId: string) => void;
   themes: ThemeOption[];
-  futureMode?: boolean;
   center?: React.ReactNode;
 };
-
-type NavbarMode = "current" | "future";
-
-type NavbarBaseProps = Omit<NavbarProps, "futureMode">;
 
 type NavbarDesktopActionsProps = {
   appEntryUrl: string;
@@ -109,7 +104,7 @@ function NavbarFutureMobileActions() {
   return null;
 }
 
-type NavbarFrameProps = NavbarBaseProps & {
+type NavbarFrameProps = NavbarProps & {
   DesktopActions: React.ComponentType<NavbarDesktopActionsProps>;
   MobileActions: React.ComponentType<NavbarMobileActionsProps>;
 };
@@ -350,7 +345,7 @@ function NavbarFrame({
   );
 }
 
-function NavbarCurrentVariant(props: NavbarBaseProps) {
+export function NavbarCurrent(props: NavbarProps) {
   return (
     <NavbarFrame
       {...props}
@@ -360,7 +355,7 @@ function NavbarCurrentVariant(props: NavbarBaseProps) {
   );
 }
 
-function NavbarFutureVariant(props: NavbarBaseProps) {
+export function NavbarFuture(props: NavbarProps) {
   return (
     <NavbarFrame
       {...props}
@@ -368,14 +363,4 @@ function NavbarFutureVariant(props: NavbarBaseProps) {
       MobileActions={NavbarFutureMobileActions}
     />
   );
-}
-
-export default function Navbar({ futureMode = false, ...props }: NavbarProps) {
-  const mode: NavbarMode = futureMode ? "future" : "current";
-
-  if (mode === "future") {
-    return <NavbarFutureVariant {...props} />;
-  }
-
-  return <NavbarCurrentVariant {...props} />;
 }

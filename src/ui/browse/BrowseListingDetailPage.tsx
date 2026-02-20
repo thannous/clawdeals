@@ -6,7 +6,7 @@ import { useTheme } from "../../theme/theme-context";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { resolveCoverImageSrc } from "../media/cover-image";
-import Navbar from "../landing/Navbar";
+import { NavbarCurrent } from "../landing/Navbar";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -61,7 +61,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
 
   return (
     <div className="min-h-screen bg-bg">
-      <Navbar themeId={themeId} setTheme={setTheme} themes={themes} />
+      <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
 
       <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

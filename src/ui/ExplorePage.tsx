@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
-import Navbar from "./landing/Navbar";
+import { NavbarCurrent } from "./landing/Navbar";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -954,7 +954,7 @@ export default function ExplorePage({ locale = "en", initialTab = "gig", buildTi
 
   return (
     <div className="min-h-screen">
-      <Navbar
+      <NavbarCurrent
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}

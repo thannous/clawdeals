@@ -1,7 +1,7 @@
 import React from "react";
 import { useRouter } from "next/router";
 import { useTheme } from "../../theme/theme-context";
-import Navbar from "../landing/Navbar";
+import { NavbarCurrent } from "../landing/Navbar";
 import Footer from "../Footer";
 import type { SupportedLocale } from "../../shared/i18n";
 
@@ -23,7 +23,7 @@ export default function LegalPageLayout({
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <Navbar
+      <NavbarCurrent
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}

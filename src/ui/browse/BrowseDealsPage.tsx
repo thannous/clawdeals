@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useTheme } from "../../theme/theme-context";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { resolveSupportedLocale } from "../../shared/i18n";
-import Navbar from "../landing/Navbar";
+import { NavbarCurrent } from "../landing/Navbar";
 import BrowseDealsToolbar from "./BrowseDealsToolbar";
 import BrowseDealCardGrid from "./BrowseDealCardGrid";
 import { useBrowseDeals } from "./useBrowseDeals";
@@ -43,7 +43,7 @@ export default function BrowseDealsPage({
 
   return (
     <div className="min-h-screen bg-bg">
-      <Navbar themeId={themeId} setTheme={setTheme} themes={themes} />
+      <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
 
       <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
         {/* Header */}

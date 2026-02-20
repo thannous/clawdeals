@@ -7,7 +7,7 @@ import { useTheme } from "../../theme/theme-context";
 
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { POPULAR_COUNTRIES, ALL_COUNTRIES, localizeCountries } from "../../shared/countries";
-import Navbar from "../landing/Navbar";
+import { NavbarCurrent } from "../landing/Navbar";
 
 const STORAGE_KEY = "clawdeals:country";
 
@@ -94,7 +94,7 @@ export default function MarketplaceHub() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <Navbar themeId={themeId} setTheme={setTheme} themes={themes} />
+      <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
 
       <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
         {/* Header */}

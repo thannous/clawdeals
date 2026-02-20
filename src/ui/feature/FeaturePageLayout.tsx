@@ -6,7 +6,7 @@ import { getPublicAppEntryHref } from "../../shared/urls";
 import { localePrefixFor } from "../../shared/seo";
 import type { SupportedLocale } from "../../shared/i18n";
 import MarketingLink from "../shared/MarketingLink";
-import Navbar from "../landing/Navbar";
+import { NavbarCurrent } from "../landing/Navbar";
 
 type FeaturePageLayoutProps = {
   title: string;
@@ -38,7 +38,7 @@ export default function FeaturePageLayout({
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <Navbar
+      <NavbarCurrent
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}

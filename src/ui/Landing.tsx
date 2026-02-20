@@ -10,7 +10,7 @@ import type { SupportedLocale } from "../shared/i18n";
 import Faq from "./landing/Faq";
 import HowItWorks from "./landing/HowItWorks";
 import MissionSelect from "./landing/MissionSelect";
-import Navbar from "./landing/Navbar";
+import { NavbarCurrent, NavbarFuture } from "./landing/Navbar";
 import { SectionHeader } from "./landing/primitives";
 import ExploreDemos from "./landing/ExploreDemos";
 import PlatformPillars from "./landing/PlatformPillars";
@@ -487,14 +487,14 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
   const { themeId, setTheme, themes } = useTheme();
   const t = useTranslations("landing");
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
+  const NavbarVariant = mode === "future" ? NavbarFuture : NavbarCurrent;
 
   return (
     <div className="min-h-screen overflow-x-hidden">
-      <Navbar
+      <NavbarVariant
         themeId={themeId}
         setTheme={setTheme}
         themes={themes}
-        futureMode={mode === "future"}
       />
 
       <main id="main-content" tabIndex={-1} className="pb-32">

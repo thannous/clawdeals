@@ -28,7 +28,7 @@ vi.mock("next/router", () => ({
   })
 }));
 
-import Navbar from "./Navbar";
+import { NavbarCurrent, NavbarFuture } from "./Navbar";
 
 describe("Navbar variants", () => {
   const baseProps = {
@@ -43,10 +43,10 @@ describe("Navbar variants", () => {
     localStorage.clear();
   });
 
-  it("renders current actions by default", () => {
+  it("renders current actions in current variant", () => {
     localStorage.setItem("clawdeals_api_key", "cd_live_test_123");
 
-    render(<Navbar {...baseProps} />);
+    render(<NavbarCurrent {...baseProps} />);
 
     expect(screen.getByTestId("navbar-connect-desktop")).toBeTruthy();
     expect(screen.getByTestId("navbar-my-account")).toBeTruthy();
@@ -59,7 +59,7 @@ describe("Navbar variants", () => {
   it("hides current-only actions in future variant", () => {
     localStorage.setItem("clawdeals_api_key", "cd_live_test_123");
 
-    render(<Navbar {...baseProps} futureMode />);
+    render(<NavbarFuture {...baseProps} />);
 
     expect(screen.queryByTestId("navbar-connect-desktop")).toBeNull();
     expect(screen.queryByTestId("navbar-my-account")).toBeNull();
