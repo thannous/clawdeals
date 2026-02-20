@@ -2,6 +2,19 @@ const STATE_OPTIONS = ["PENDING", "ACTIVE", "REVOKED"];
 const CHANNEL_TYPE_OPTIONS = ["", "telegram", "discord", "whatsapp"];
 const ROLE_OPTIONS = ["viewer", "approver", "owner"];
 
+type LookupActionState = "idle" | "loading";
+type TelegramConnectActionState = "idle" | "loading" | "disabled";
+
+type LookupAction = {
+  onLookup: () => void;
+  state: LookupActionState;
+};
+
+type TelegramConnectAction = {
+  onConnect: () => void;
+  state: TelegramConnectActionState;
+};
+
 interface Props {
   state: string;
   onStateChange: (s: string) => void;
@@ -11,11 +24,8 @@ interface Props {
   onApproveRoleChange: (v: string) => void;
   pairingCode: string;
   onPairingCodeChange: (v: string) => void;
-  onLookupCode: () => void;
-  lookupDisabled?: boolean;
-  onConnectTelegram?: () => void;
-  connectTelegramDisabled?: boolean;
-  connectTelegramLoading?: boolean;
+  lookupAction: LookupAction;
+  telegramConnectAction?: TelegramConnectAction;
 }
 
 export default function ChannelsToolbar({
@@ -27,11 +37,8 @@ export default function ChannelsToolbar({
   onApproveRoleChange,
   pairingCode,
   onPairingCodeChange,
-  onLookupCode,
-  lookupDisabled = false,
-  onConnectTelegram,
-  connectTelegramDisabled = false,
-  connectTelegramLoading = false,
+  lookupAction,
+  telegramConnectAction
 }: Props) {
   return (
     <div data-testid="channels-toolbar" className="space-y-4">
@@ -54,14 +61,14 @@ export default function ChannelsToolbar({
           ))}
         </div>
 
-        {onConnectTelegram && (
+        {telegramConnectAction && (
           <button
             data-testid="channels-connect-telegram"
-            disabled={connectTelegramDisabled || connectTelegramLoading}
-            onClick={onConnectTelegram}
+            disabled={telegramConnectAction.state === "disabled" || telegramConnectAction.state === "loading"}
+            onClick={telegramConnectAction.onConnect}
             className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
           >
-            {connectTelegramLoading ? "Starting…" : "Connect Telegram"}
+            {telegramConnectAction.state === "loading" ? "Starting…" : "Connect Telegram"}
           </button>
         )}
       </div>
@@ -129,8 +136,8 @@ export default function ChannelsToolbar({
               className="flex-1 px-3 py-1.5 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
             />
             <button
-              disabled={lookupDisabled}
-              onClick={onLookupCode}
+              disabled={lookupAction.state === "loading"}
+              onClick={lookupAction.onLookup}
               className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-border rounded text-muted hover:border-border-strong hover:text-text transition-colors disabled:opacity-50"
             >
               Find

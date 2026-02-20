@@ -182,10 +182,14 @@ export default function ChannelsPage() {
           onApproveRoleChange={(value) => dispatch({ type: "patch", patch: { approveRole: value } })}
           pairingCode={uiState.pairingCode}
           onPairingCodeChange={(value) => dispatch({ type: "patch", patch: { pairingCode: value } })}
-          onLookupCode={onLookupCode}
-          lookupDisabled={lookupState === "loading"}
-          onConnectTelegram={onConnectTelegram}
-          connectTelegramLoading={telegramStartState === "loading"}
+          lookupAction={{
+            onLookup: onLookupCode,
+            state: lookupState === "loading" ? "loading" : "idle"
+          }}
+          telegramConnectAction={{
+            onConnect: onConnectTelegram,
+            state: telegramStartState === "loading" ? "loading" : "idle"
+          }}
         />
 
         {lookupIdentity && (
