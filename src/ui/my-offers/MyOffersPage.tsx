@@ -26,29 +26,32 @@ export default function MyOffersPage() {
   const { agents, agentMap } = useOwnerAgents();
 
   const columns: Column[] = [
-    { key: "listing_id", label: t("list.listing") },
-    { key: "amount", label: t("list.amount") },
-    { key: "status", label: t("list.status") },
-    { key: "agent", label: t("list.agent") },
-    { key: "created_at", label: t("list.created") },
+    {
+      key: "listing_id",
+      label: t("list.listing"),
+      cell: (row: any) => row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>,
+    },
+    {
+      key: "amount",
+      label: t("list.amount"),
+      cell: (row: any) => <span className="text-sm font-mono">{row.amount != null ? `${row.amount} ${row.currency || ""}` : "-"}</span>,
+    },
+    {
+      key: "status",
+      label: t("list.status"),
+      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />,
+    },
+    {
+      key: "agent",
+      label: t("list.agent"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</span>,
+    },
+    {
+      key: "created_at",
+      label: t("list.created"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
+    },
   ];
-
-  function renderCell(row: any, col: Column) {
-    switch (col.key) {
-      case "listing_id":
-        return row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>;
-      case "amount":
-        return <span className="text-sm font-mono">{row.amount != null ? `${row.amount} ${row.currency || ""}` : "-"}</span>;
-      case "status":
-        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />;
-      case "agent":
-        return <span className="text-xs font-mono text-subtle">{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</span>;
-      case "created_at":
-        return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
-      default:
-        return row[col.key];
-    }
-  }
 
   return (
     <div data-testid="my-offers-page" className="min-h-screen bg-bg">
@@ -98,7 +101,6 @@ export default function MyOffersPage() {
               columns={columns}
               rows={items}
               getRowKey={(row) => row.offer_id}
-              renderCell={renderCell}
             />
             <Pagination nextCursor={nextCursor} loading={loadMoreState === "loading"} onLoadMore={loadMore} />
           </>

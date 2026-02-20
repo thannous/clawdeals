@@ -1,21 +1,21 @@
 import React from "react";
 
-export interface Column {
+export interface Column<Row = any> {
   key: string;
   label: string;
   className?: string;
+  cell?: (row: Row) => React.ReactNode;
 }
 
-interface Props {
-  columns: Column[];
-  rows: any[];
-  getRowKey: (row: any) => string;
-  onRowClick?: (row: any) => void;
-  renderCell?: (row: any, col: Column) => React.ReactNode;
+interface Props<Row = any> {
+  columns: Column<Row>[];
+  rows: Row[];
+  getRowKey: (row: Row) => string;
+  onRowClick?: (row: Row) => void;
 }
 
-export default function ConsoleTable({ columns, rows, getRowKey, onRowClick, renderCell }: Props) {
-  const handleRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, row: any) => {
+export default function ConsoleTable<Row = any>({ columns, rows, getRowKey, onRowClick }: Props<Row>) {
+  const handleRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, row: Row) => {
     if (!onRowClick) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
@@ -53,7 +53,7 @@ export default function ConsoleTable({ columns, rows, getRowKey, onRowClick, ren
                   key={col.key}
                   className={`text-xs font-mono text-text px-3 py-2.5 whitespace-nowrap ${col.className || ""}`}
                 >
-                  {renderCell ? renderCell(row, col) : row[col.key]}
+                  {col.cell ? col.cell(row) : (row as any)[col.key]}
                 </td>
               ))}
             </tr>

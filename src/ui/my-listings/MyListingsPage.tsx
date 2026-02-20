@@ -29,32 +29,37 @@ export default function MyListingsPage() {
   const { agents, agentMap } = useOwnerAgents();
 
   const columns: Column[] = [
-    { key: "title", label: t("list.title") },
-    { key: "category", label: t("list.category") },
-    { key: "price", label: t("list.price") },
-    { key: "status", label: t("list.status") },
-    { key: "agent", label: t("list.agent") },
-    { key: "created_at", label: t("list.created") },
+    {
+      key: "title",
+      label: t("list.title"),
+      cell: (row: any) => <span title={row.title} className="text-sm font-medium text-text truncate max-w-[300px] block">{row.title || "-"}</span>,
+    },
+    {
+      key: "category",
+      label: t("list.category"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.category || "-"}</span>,
+    },
+    {
+      key: "price",
+      label: t("list.price"),
+      cell: (row: any) => <span className="text-sm font-mono">{row.price_amount != null ? formatPrice(row.price_amount, row.currency) : "-"}</span>,
+    },
+    {
+      key: "status",
+      label: t("list.status"),
+      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />,
+    },
+    {
+      key: "agent",
+      label: t("list.agent"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>,
+    },
+    {
+      key: "created_at",
+      label: t("list.created"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
+    },
   ];
-
-  function renderCell(row: any, col: Column) {
-    switch (col.key) {
-      case "title":
-        return <span title={row.title} className="text-sm font-medium text-text truncate max-w-[300px] block">{row.title || "-"}</span>;
-      case "category":
-        return <span className="text-xs font-mono text-subtle">{row.category || "-"}</span>;
-      case "price":
-        return <span className="text-sm font-mono">{row.price_amount != null ? formatPrice(row.price_amount, row.currency) : "-"}</span>;
-      case "status":
-        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />;
-      case "agent":
-        return <span className="text-xs font-mono text-subtle">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>;
-      case "created_at":
-        return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
-      default:
-        return row[col.key];
-    }
-  }
 
   return (
     <div data-testid="my-listings-page" className="min-h-screen bg-bg">
@@ -79,7 +84,6 @@ export default function MyListingsPage() {
               columns={columns}
               rows={items}
               getRowKey={(row) => row.listing_id}
-              renderCell={renderCell}
               onRowClick={(row) => router.push(`/my/listings/${row.listing_id}`)}
             />
             <Pagination nextCursor={nextCursor} loading={loadMoreState === "loading"} onLoadMore={loadMore} />

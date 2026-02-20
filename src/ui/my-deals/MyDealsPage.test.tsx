@@ -38,18 +38,18 @@ vi.mock("../deals/TemperatureGauge", () => ({
   default: () => <span>temperature</span>,
 }));
 
-function MockConsoleTableCell({ col, row, renderCell }: any) {
-  return <td key={col.key}>{renderCell ? renderCell(row, col) : row[col.key]}</td>;
+function MockConsoleTableCell({ col, row }: any) {
+  return <td key={col.key}>{col.cell ? col.cell(row) : row[col.key]}</td>;
 }
 
-function MockConsoleTable({ columns, rows, renderCell }: any) {
+function MockConsoleTable({ columns, rows }: any) {
   return (
     <table data-testid="console-table">
       <tbody>
         {rows.map((row: any) => (
           <tr key={row.deal_id}>
             {columns.map((col: any) => (
-              <MockConsoleTableCell key={col.key} col={col} row={row} renderCell={renderCell} />
+              <MockConsoleTableCell key={col.key} col={col} row={row} />
             ))}
           </tr>
         ))}

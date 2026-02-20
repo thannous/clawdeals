@@ -445,26 +445,25 @@ export default function OpsPage() {
                   { key: "route_group", label: "route_group", className: "w-[360px]" },
                   { key: "request_count", label: "req" },
                   { key: "latency_samples", label: "n" },
-                  { key: "p50_ms", label: "p50" },
-                  { key: "p90_ms", label: "p90" },
-                  { key: "p95_ms", label: "p95" },
-                  { key: "p99_ms", label: "p99" }
+                  { key: "p50_ms", label: "p50", cell: (row: any) => formatMs(row.p50_ms) },
+                  { key: "p90_ms", label: "p90", cell: (row: any) => formatMs(row.p90_ms) },
+                  {
+                    key: "p95_ms",
+                    label: "p95",
+                    cell: (row: any) => {
+                      const text = formatMs(row.p95_ms);
+                      // Color-code p95 cells that exceed the SLO latency target.
+                      const routeTarget = getP95SloTargetForRoute(row.route_group, sloLatencyTargets);
+                      if (routeTarget !== null && typeof row.p95_ms === "number" && row.p95_ms > routeTarget) {
+                        return <span className="text-error font-bold">{text}</span>;
+                      }
+                      return text;
+                    }
+                  },
+                  { key: "p99_ms", label: "p99", cell: (row: any) => formatMs(row.p99_ms) }
                 ]}
                 rows={latencyRows}
                 getRowKey={(row: any) => row.route_group}
-                renderCell={(row: any, col: any) => {
-                  if (col.key === "p50_ms" || col.key === "p90_ms" || col.key === "p95_ms" || col.key === "p99_ms") {
-                    const val = row[col.key];
-                    const text = formatMs(val);
-                    // Color-code p95 cells that exceed the SLO latency target.
-                    const routeTarget = getP95SloTargetForRoute(row.route_group, sloLatencyTargets);
-                    if (col.key === "p95_ms" && routeTarget !== null && typeof val === "number" && val > routeTarget) {
-                      return <span className="text-error font-bold">{text}</span>;
-                    }
-                    return text;
-                  }
-                  return row[col.key];
-                }}
               />
             )}
 
@@ -488,14 +487,10 @@ export default function OpsPage() {
                   columns={[
                     { key: "agent_id", label: "agent_id", className: "w-[360px]" },
                     { key: "count", label: "429" },
-                    { key: "share", label: "share" }
+                    { key: "share", label: "share", cell: (row: any) => formatPct(row.share) }
                   ]}
                   rows={topAgentsRows}
                   getRowKey={(row: any) => row.agent_id}
-                  renderCell={(row: any, col: any) => {
-                    if (col.key === "share") return formatPct(row.share);
-                    return row[col.key];
-                  }}
                 />
               </div>
 

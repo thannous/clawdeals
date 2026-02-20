@@ -183,6 +183,54 @@ function useIdentitiesPageView() {
     }
   }, [selected, submitState, show, closeConfirm, fetchIdentities]);
 
+  const identityColumns: Column[] = IDENTITY_COLUMNS.map((col) => {
+    if (col.key === "identity_id") {
+      return { ...col, cell: (row: ChannelIdentity) => <TruncatedId id={row.identity_id} /> };
+    }
+    if (col.key === "channel_type") {
+      return { ...col, cell: (row: ChannelIdentity) => String(row.channel_type || "").toUpperCase() || "\u2014" };
+    }
+    if (col.key === "display_name") {
+      return { ...col, cell: (row: ChannelIdentity) => row.display_name || "\u2014" };
+    }
+    if (col.key === "role") {
+      return { ...col, cell: (row: ChannelIdentity) => row.role || "\u2014" };
+    }
+    if (col.key === "state") {
+      return { ...col, cell: (row: ChannelIdentity) => <ConsoleStatusBadge value={row.state} variant="channel" /> };
+    }
+    if (col.key === "approved_at") {
+      return { ...col, cell: (row: ChannelIdentity) => formatDate(row.approved_at) };
+    }
+    if (col.key === "last_seen_at") {
+      return { ...col, cell: (row: ChannelIdentity) => formatDate(row.last_seen_at) };
+    }
+    if (col.key === "actions") {
+      return {
+        ...col,
+        cell: (row: ChannelIdentity) => {
+          if (row.state === "REVOKED") {
+            return <span className="text-xs font-mono text-subtle">\u2014</span>;
+          }
+          return (
+            <button
+              data-testid={`identities-unlink-${row.identity_id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openConfirm(row);
+              }}
+              className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors"
+            >
+              Unlink
+            </button>
+          );
+        },
+      };
+    }
+    return col;
+  });
+
   return (
     <div data-testid="identities-page" className="min-h-screen bg-bg">
       <PageHeader title="LINKED IDENTITIES" containerClassName="px-6 pt-4">
@@ -238,37 +286,9 @@ function useIdentitiesPageView() {
         {fetchState === "done" && channels.length > 0 && (
           <div data-testid="identities-table">
             <ConsoleTable
-              columns={IDENTITY_COLUMNS}
+              columns={identityColumns}
               rows={channels}
               getRowKey={(row) => row.identity_id}
-              renderCell={(row, col) => {
-                if (col.key === "identity_id") return <TruncatedId id={row.identity_id} />;
-                if (col.key === "channel_type") return String(row.channel_type || "").toUpperCase() || "\u2014";
-                if (col.key === "display_name") return row.display_name || "\u2014";
-                if (col.key === "role") return row.role || "\u2014";
-                if (col.key === "state") return <ConsoleStatusBadge value={row.state} variant="channel" />;
-                if (col.key === "approved_at") return formatDate(row.approved_at);
-                if (col.key === "last_seen_at") return formatDate(row.last_seen_at);
-                if (col.key === "actions") {
-                  if (row.state === "REVOKED") {
-                    return <span className="text-xs font-mono text-subtle">\u2014</span>;
-                  }
-                  return (
-                    <button
-                      data-testid={`identities-unlink-${row.identity_id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openConfirm(row);
-                      }}
-                      className="px-3 py-1.5 text-xs font-mono font-bold uppercase border border-error/40 text-error rounded hover:bg-error/10 transition-colors"
-                    >
-                      Unlink
-                    </button>
-                  );
-                }
-                return row[col.key as keyof ChannelIdentity] as any;
-              }}
             />
           </div>
         )}

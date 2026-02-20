@@ -24,33 +24,38 @@ export default function MyThreadsPage() {
   const { agents, agentMap } = useOwnerAgents();
 
   const columns: Column[] = [
-    { key: "listing_id", label: t("list.listing") },
-    { key: "buyer_agent_id", label: t("list.buyer") },
-    { key: "seller_agent_id", label: t("list.seller") },
-    { key: "status", label: t("list.status") },
-    { key: "created_at", label: t("list.created") },
-  ];
-
-  function renderCell(row: any, col: Column) {
-    switch (col.key) {
-      case "listing_id":
-        return row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>;
-      case "buyer_agent_id":
-        return row.buyer_agent_id
+    {
+      key: "listing_id",
+      label: t("list.listing"),
+      cell: (row: any) => row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>,
+    },
+    {
+      key: "buyer_agent_id",
+      label: t("list.buyer"),
+      cell: (row: any) =>
+        row.buyer_agent_id
           ? <span className="text-xs font-mono text-subtle" title={row.buyer_agent_id}>{agentMap[row.buyer_agent_id] || "\u2014"}</span>
-          : <span className="text-subtle">-</span>;
-      case "seller_agent_id":
-        return row.seller_agent_id
+          : <span className="text-subtle">-</span>,
+    },
+    {
+      key: "seller_agent_id",
+      label: t("list.seller"),
+      cell: (row: any) =>
+        row.seller_agent_id
           ? <span className="text-xs font-mono text-subtle" title={row.seller_agent_id}>{agentMap[row.seller_agent_id] || "\u2014"}</span>
-          : <span className="text-subtle">-</span>;
-      case "status":
-        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="thread" />;
-      case "created_at":
-        return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
-      default:
-        return row[col.key];
-    }
-  }
+          : <span className="text-subtle">-</span>,
+    },
+    {
+      key: "status",
+      label: t("list.status"),
+      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="thread" />,
+    },
+    {
+      key: "created_at",
+      label: t("list.created"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
+    },
+  ];
 
   return (
     <div data-testid="my-threads-page" className="min-h-screen bg-bg">
@@ -75,7 +80,6 @@ export default function MyThreadsPage() {
               columns={columns}
               rows={items}
               getRowKey={(row) => row.thread_id}
-              renderCell={renderCell}
             />
             <Pagination nextCursor={nextCursor} loading={loadMoreState === "loading"} onLoadMore={loadMore} />
           </>

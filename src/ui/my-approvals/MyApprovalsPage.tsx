@@ -29,30 +29,40 @@ export default function MyApprovalsPage() {
   const { execute, submitState } = useMyApprovalAction({ onSuccess: refetch });
 
   const columns: Column[] = [
-    { key: "action_type", label: t("list.action") },
-    { key: "action_ref_id", label: t("list.reference") },
-    { key: "state", label: t("list.state") },
-    { key: "agent", label: t("list.agent") },
-    { key: "created_at", label: t("list.created") },
-    { key: "resolved_at", label: t("list.decided") },
-    { key: "actions", label: "" },
-  ];
-
-  function renderCell(row: any, col: Column) {
-    switch (col.key) {
-      case "action_type":
-        return <span className="text-sm font-mono">{row.action_type || "-"}</span>;
-      case "action_ref_id":
-        return row.action_ref_id ? <TruncatedId id={row.action_ref_id} /> : <span className="text-subtle">-</span>;
-      case "state":
-        return <ConsoleStatusBadge value={row.state} label={t(`toolbar.state_${row.state}`)} variant="approval" />;
-      case "agent":
-        return <span className="text-xs font-mono text-subtle">{row.created_by_agent_id ? (agentMap[row.created_by_agent_id] || "\u2014") : "-"}</span>;
-      case "created_at":
-        return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
-      case "resolved_at":
-        return <span className="text-xs font-mono text-subtle">{row.resolved_at ? formatDate(row.resolved_at) : "-"}</span>;
-      case "actions":
+    {
+      key: "action_type",
+      label: t("list.action"),
+      cell: (row: any) => <span className="text-sm font-mono">{row.action_type || "-"}</span>,
+    },
+    {
+      key: "action_ref_id",
+      label: t("list.reference"),
+      cell: (row: any) => row.action_ref_id ? <TruncatedId id={row.action_ref_id} /> : <span className="text-subtle">-</span>,
+    },
+    {
+      key: "state",
+      label: t("list.state"),
+      cell: (row: any) => <ConsoleStatusBadge value={row.state} label={t(`toolbar.state_${row.state}`)} variant="approval" />,
+    },
+    {
+      key: "agent",
+      label: t("list.agent"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.created_by_agent_id ? (agentMap[row.created_by_agent_id] || "\u2014") : "-"}</span>,
+    },
+    {
+      key: "created_at",
+      label: t("list.created"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
+    },
+    {
+      key: "resolved_at",
+      label: t("list.decided"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.resolved_at ? formatDate(row.resolved_at) : "-"}</span>,
+    },
+    {
+      key: "actions",
+      label: "",
+      cell: (row: any) => {
         if (row.state !== "PENDING") return null;
         return (
           <span className="flex items-center gap-1.5">
@@ -80,10 +90,9 @@ export default function MyApprovalsPage() {
             </button>
           </span>
         );
-      default:
-        return row[col.key];
-    }
-  }
+      },
+    },
+  ];
 
   return (
     <div data-testid="my-approvals-page" className="min-h-screen bg-bg">
@@ -105,7 +114,6 @@ export default function MyApprovalsPage() {
               columns={columns}
               rows={items}
               getRowKey={(row) => row.approval_id}
-              renderCell={renderCell}
               onRowClick={(row) => router.push(`/my/approvals/${row.approval_id}`)}
             />
             <Pagination nextCursor={nextCursor} loading={loadMoreState === "loading"} onLoadMore={loadMore} />

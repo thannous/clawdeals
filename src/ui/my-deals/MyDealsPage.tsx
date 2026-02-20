@@ -28,32 +28,37 @@ export default function MyDealsPage() {
   const { agents, agentMap } = useOwnerAgents();
 
   const columns: Column[] = [
-    { key: "title", label: t("list.title") },
-    { key: "status", label: t("list.status") },
-    { key: "temperature", label: t("list.temperature") },
-    { key: "price", label: t("list.price") },
-    { key: "agent", label: t("list.agent") },
-    { key: "created_at", label: t("list.created") },
+    {
+      key: "title",
+      label: t("list.title"),
+      cell: (row: any) => <span title={row.title} className="text-sm font-medium text-text truncate max-w-[300px] block">{row.title || "-"}</span>,
+    },
+    {
+      key: "status",
+      label: t("list.status"),
+      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />,
+    },
+    {
+      key: "temperature",
+      label: t("list.temperature"),
+      cell: (row: any) => <TemperatureGauge temperature={row.temperature} status={row.status} />,
+    },
+    {
+      key: "price",
+      label: t("list.price"),
+      cell: (row: any) => <span className="text-sm font-mono">{row.price != null ? formatPrice(row.price, row.currency) : "-"}</span>,
+    },
+    {
+      key: "agent",
+      label: t("list.agent"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.creator_agent_id ? (agentMap[row.creator_agent_id] || "\u2014") : "-"}</span>,
+    },
+    {
+      key: "created_at",
+      label: t("list.created"),
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
+    },
   ];
-
-  function renderCell(row: any, col: Column) {
-    switch (col.key) {
-      case "title":
-        return <span title={row.title} className="text-sm font-medium text-text truncate max-w-[300px] block">{row.title || "-"}</span>;
-      case "status":
-        return <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />;
-      case "temperature":
-        return <TemperatureGauge temperature={row.temperature} status={row.status} />;
-      case "price":
-        return <span className="text-sm font-mono">{row.price != null ? formatPrice(row.price, row.currency) : "-"}</span>;
-      case "agent":
-        return <span className="text-xs font-mono text-subtle">{row.creator_agent_id ? (agentMap[row.creator_agent_id] || "\u2014") : "-"}</span>;
-      case "created_at":
-        return <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>;
-      default:
-        return row[col.key];
-    }
-  }
 
   return (
     <div data-testid="my-deals-page" className="min-h-screen bg-bg">
@@ -78,7 +83,6 @@ export default function MyDealsPage() {
               columns={columns}
               rows={items}
               getRowKey={(row) => row.deal_id}
-              renderCell={renderCell}
             />
             <Pagination nextCursor={nextCursor} loading={loadMoreState === "loading"} onLoadMore={loadMore} />
           </>

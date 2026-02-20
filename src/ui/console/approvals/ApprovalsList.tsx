@@ -4,18 +4,6 @@ import ConsoleStatusBadge from "../shared/ConsoleStatusBadge";
 import TruncatedId from "../shared/TruncatedId";
 import { formatDate } from "../shared/formatDate";
 
-const COLUMNS: Column[] = [
-  { key: "select", label: "" },
-  { key: "approval_id", label: "ID" },
-  { key: "action_type", label: "Action" },
-  { key: "state", label: "State" },
-  { key: "age", label: "Age" },
-  { key: "created_by_agent_id", label: "Agent" },
-  { key: "owner_id", label: "Owner" },
-  { key: "created_at", label: "Created" },
-  { key: "resolved_at", label: "Resolved" },
-];
-
 function formatAge(createdAt: string | null | undefined): { text: string; stale: boolean } {
   if (!createdAt) return { text: "\u2014", stale: false };
   const diffMs = Date.now() - new Date(createdAt).getTime();
@@ -43,9 +31,11 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
     router.push(`/console/approvals/${row.approval_id}`);
   };
 
-  const renderCell = (row: any, col: Column) => {
-    switch (col.key) {
-      case "select":
+  const columns: Column[] = [
+    {
+      key: "select",
+      label: "",
+      cell: (row: any) => {
         if (row.state !== "PENDING" || !onToggle) return null;
         return (
           <input
@@ -59,17 +49,23 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
             className="accent-primary"
           />
         );
-      case "approval_id":
-        return <TruncatedId id={row.approval_id} />;
-      case "action_type":
-        return (
-          <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
-            {row.action_type || "\u2014"}
-          </span>
-        );
-      case "state":
-        return <ConsoleStatusBadge value={row.state} variant="approval" />;
-      case "age": {
+      },
+    },
+    { key: "approval_id", label: "ID", cell: (row: any) => <TruncatedId id={row.approval_id} /> },
+    {
+      key: "action_type",
+      label: "Action",
+      cell: (row: any) => (
+        <span className="text-xs font-mono font-bold uppercase px-1.5 py-0.5 rounded border border-border text-muted">
+          {row.action_type || "\u2014"}
+        </span>
+      ),
+    },
+    { key: "state", label: "State", cell: (row: any) => <ConsoleStatusBadge value={row.state} variant="approval" /> },
+    {
+      key: "age",
+      label: "Age",
+      cell: (row: any) => {
         const { text, stale } = formatAge(row.created_at);
         return (
           <span className={`text-xs tabular-nums ${stale ? "text-error font-bold" : "text-subtle"}`}>
@@ -77,27 +73,28 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
             {stale && <span className="ml-1 text-xs border border-error/40 bg-error/10 px-1 rounded">SLA</span>}
           </span>
         );
-      }
-      case "created_by_agent_id":
-        return <TruncatedId id={row.created_by_agent_id} />;
-      case "owner_id":
-        return <TruncatedId id={row.owner_id} />;
-      case "created_at":
-        return <span className="text-subtle tabular-nums">{formatDate(row.created_at)}</span>;
-      case "resolved_at":
-        return <span className="text-subtle tabular-nums">{formatDate(row.resolved_at)}</span>;
-      default:
-        return row[col.key] ?? "\u2014";
-    }
-  };
+      },
+    },
+    { key: "created_by_agent_id", label: "Agent", cell: (row: any) => <TruncatedId id={row.created_by_agent_id} /> },
+    { key: "owner_id", label: "Owner", cell: (row: any) => <TruncatedId id={row.owner_id} /> },
+    {
+      key: "created_at",
+      label: "Created",
+      cell: (row: any) => <span className="text-subtle tabular-nums">{formatDate(row.created_at)}</span>,
+    },
+    {
+      key: "resolved_at",
+      label: "Resolved",
+      cell: (row: any) => <span className="text-subtle tabular-nums">{formatDate(row.resolved_at)}</span>,
+    },
+  ];
 
   return (
     <ConsoleTable
-      columns={COLUMNS}
+      columns={columns}
       rows={items}
       getRowKey={(row) => row.approval_id}
       onRowClick={handleRowClick}
-      renderCell={renderCell}
     />
   );
 }

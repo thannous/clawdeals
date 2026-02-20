@@ -653,6 +653,44 @@ function useConnectedAppsPageView() {
     }
   }, [selected, rotateState, rotateGraceSeconds, show, closeRotate, refetch, redirectToLogin]);
 
+  const installationColumns: Column[] = INSTALLATION_COLUMNS.map((col) => {
+    if (col.key === "installation_id") {
+      return { ...col, cell: (row: Installation) => <TruncatedId id={row.installation_id} /> };
+    }
+    if (col.key === "agent_id") {
+      return {
+        ...col,
+        cell: (row: Installation) => (
+          <span className="text-xs font-mono text-subtle">{agentMap[row.agent_id] || row.agent_id.slice(0, 8)}</span>
+        ),
+      };
+    }
+    if (col.key === "client_version") {
+      return { ...col, cell: (row: Installation) => row.client_version || "\u2014" };
+    }
+    if (col.key === "oauth_scopes") {
+      return { ...col, cell: (row: Installation) => renderScopePills(row.oauth_scopes) };
+    }
+    if (col.key === "status") {
+      return { ...col, cell: (row: Installation) => <ConsoleStatusBadge value={row.status} variant="channel" /> };
+    }
+    if (col.key === "created_at") {
+      return { ...col, cell: (row: Installation) => formatDate(row.created_at) };
+    }
+    if (col.key === "last_seen_at") {
+      return { ...col, cell: (row: Installation) => formatDate(row.last_seen_at) };
+    }
+    if (col.key === "actions") {
+      return {
+        ...col,
+        cell: (row: Installation) => (
+          <InstallationActions row={row} onUpgrade={openUpgrade} onRotate={openRotate} onRevoke={openRevokeConfirm} />
+        ),
+      };
+    }
+    return col;
+  });
+
   return (
     <div data-testid="connected-apps-page" className="min-h-screen bg-bg">
       <PageHeader title="CONNECTED APPS" containerClassName="px-6 pt-4">
@@ -695,22 +733,9 @@ function useConnectedAppsPageView() {
         {fetchState === "done" && items.length > 0 && (
           <div data-testid="connected-apps-table">
             <ConsoleTable
-              columns={INSTALLATION_COLUMNS}
+              columns={installationColumns}
               rows={items}
               getRowKey={(row) => row.installation_id}
-              renderCell={(row, col) => {
-                if (col.key === "installation_id") return <TruncatedId id={row.installation_id} />;
-                if (col.key === "agent_id") return <span className="text-xs font-mono text-subtle">{agentMap[row.agent_id] || row.agent_id.slice(0, 8)}</span>;
-                if (col.key === "client_version") return row.client_version || "\u2014";
-                if (col.key === "oauth_scopes") return renderScopePills(row.oauth_scopes);
-                if (col.key === "status") return <ConsoleStatusBadge value={row.status} variant="channel" />;
-                if (col.key === "created_at") return formatDate(row.created_at);
-                if (col.key === "last_seen_at") return formatDate(row.last_seen_at);
-                if (col.key === "actions") {
-                  return <InstallationActions row={row} onUpgrade={openUpgrade} onRotate={openRotate} onRevoke={openRevokeConfirm} />;
-                }
-                return row[col.key as keyof Installation] as any;
-              }}
             />
           </div>
         )}
