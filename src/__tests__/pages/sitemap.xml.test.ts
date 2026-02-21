@@ -49,6 +49,11 @@ describe("sitemap.xml", () => {
     await getServerSideProps({ req, res } as any);
 
     expect(res.body).toContain("<loc>https://clawdeals.com/</loc>");
+    expect(res.body).toContain("<loc>https://clawdeals.com/browse</loc>");
+    expect(res.body).toContain("<loc>https://clawdeals.com/browse/deals</loc>");
+    expect(res.body).toContain("<loc>https://clawdeals.com/marketplace</loc>");
+    expect(res.body).toContain("<loc>https://clawdeals.com/fr/browse</loc>");
+    expect(res.body).toContain("<loc>https://clawdeals.com/es/marketplace</loc>");
     expect(res.getHeader("vary")).toContain("x-edge-router-proxy");
     expect(res.getHeader("vary")).toContain("x-forwarded-host");
   });

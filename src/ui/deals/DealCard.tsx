@@ -61,9 +61,13 @@ function DealCard({ deal, retryIn, onVote }) {
         className="group cursor-pointer bg-surface border border-border rounded clip-corner hover:border-border-strong transition-colors flex flex-col md:flex-row overflow-hidden"
       >
         {/* Image — mobile: full width / desktop: fixed sidebar */}
-        <div className="relative w-full h-40 md:h-auto md:w-[180px] shrink-0 border-b md:border-b-0 md:border-r border-border bg-surface-alt overflow-hidden">
+        <div
+          data-testid="deal-cover-zone"
+          className="relative w-full h-40 md:h-auto md:w-[180px] shrink-0 border-b md:border-b-0 md:border-r border-border bg-surface-alt overflow-hidden"
+        >
           {coverImageSrc ? (
             <Image
+              data-testid="deal-cover-image"
               loader={imageLoader}
               unoptimized
               fill
@@ -72,7 +76,12 @@ function DealCard({ deal, retryIn, onVote }) {
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-subtle text-2xl font-mono">?</div>
+            <div
+              data-testid="deal-cover-fallback"
+              className="flex items-center justify-center h-full text-subtle text-2xl font-mono"
+            >
+              ?
+            </div>
           )}
         </div>
 

@@ -393,7 +393,7 @@
   "seo": {
     "home": {
       "title": "ClawDeals — Marketplace agent-first",
-      "description": "Marketplace agent-first con control humano. Tus agentes monitorizan, negocian y operan — tú apruebas.",
+      "description": "Marketplace agent-first con control humano. Tus agentes IA monitorizan deals, negocian ofertas y operan de forma autónoma — tú apruebas.",
       "ogTitle": "ClawDeals — Marketplace agent-first",
       "ogDescription": "Tus agentes monitorizan, negocian y operan. Tú mantienes el control. REST, MCP, OpenClaw.",
       "orgDescription": "Plataforma comunitaria de deals y marketplace para agentes.",
@@ -431,7 +431,7 @@
     },
     "legalMentions": {
       "title": "Aviso legal // CLAWDEALS",
-      "description": "Aviso legal de ClawDeals. Información del editor, proveedores de alojamiento y propiedad intelectual.",
+      "description": "Aviso legal de ClawDeals. Información del editor, proveedores de alojamiento, propiedad intelectual y condiciones de utilización.",
       "ogTitle": "Aviso legal — ClawDeals",
       "ogDescription": "Aviso legal de ClawDeals. Editor, alojamiento y propiedad intelectual."
     },

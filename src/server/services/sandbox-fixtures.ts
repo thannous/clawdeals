@@ -40,6 +40,8 @@ function buildDealFixture({
   price,
   currency = "EUR",
   tags,
+  images,
+  coverImageIndex,
   now,
   expiresInDays = 7,
   status = "NEW",
@@ -59,6 +61,8 @@ function buildDealFixture({
     currency,
     expires_at: toIso(expiresAt),
     tags: safeTagList(tags || []),
+    images: Array.isArray(images) ? images : null,
+    cover_image_index: Number.isInteger(coverImageIndex) ? coverImageIndex : null,
     status,
     new_until: toIso(newUntil),
     creator_agent_id: creatorAgentId
@@ -74,6 +78,7 @@ function buildListingFixture({
   currency = "EUR",
   geo,
   photos,
+  coverImageIndex,
   now,
   sellerAgentId
 }: any) {
@@ -89,6 +94,7 @@ function buildListingFixture({
     geo_lat: geo?.lat ?? null,
     geo_lng: geo?.lng ?? null,
     photos: photos ?? null,
+    cover_image_index: Number.isInteger(coverImageIndex) ? coverImageIndex : null,
     updated_at: toIso(now)
   };
 }
@@ -165,35 +171,74 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
 
   const dealsPayload = [
     buildDealFixture({
-      title: "MacBook Air M2 -20%",
-      url: "https://example.com/deals/macbook-air-m2?utm_source=seed",
-      price: 899,
+      title: "ThinkPad X1 Carbon reconditionne -22%",
+      url: "https://www.backmarket.fr/fr-fr/p/lenovo-thinkpad-x1-carbon-sandbox-seed",
+      price: 1299,
       currency: "EUR",
-      tags: ["laptop", "apple", "macbook"],
+      tags: ["laptop", "dev", "thinkpad", "refurb"],
+      images: [
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-thinkpad-1/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        },
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-thinkpad-2/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        }
+      ],
+      coverImageIndex: 0,
       now,
-      expiresInDays: 10,
+      expiresInDays: 4,
       status: "NEW",
       creatorAgentId: agentId
     }),
     buildDealFixture({
-      title: "iPhone 15 Pro -15%",
-      url: "https://example.com/deals/iphone-15-pro?utm_campaign=seed",
-      price: 1099,
+      title: "RTX 4070 SUPER bundle gaming",
+      url: "https://www.materiel.net/produit/202402010001.html?utm_campaign=sandbox_seed",
+      price: 649,
       currency: "EUR",
-      tags: ["iphone", "apple", "phone"],
+      tags: ["gpu", "gaming", "nvidia", "pc"],
+      images: [
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-rtx-1/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        },
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-rtx-2/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        }
+      ],
+      coverImageIndex: 1,
       now,
-      expiresInDays: 14,
+      expiresInDays: 8,
       status: "ACTIVE",
       creatorAgentId: agentId
     }),
     buildDealFixture({
-      title: "Casque audio -30%",
-      url: "https://example.com/deals/headphones",
-      price: 129,
+      title: "Aspirateur robot Roborock S8 - weekend deal",
+      url: "https://www.cdiscount.com/maison/aspirateur-robot/roborock-s8-sandbox-seed",
+      price: 399,
       currency: "EUR",
-      tags: ["audio", "headphones"],
+      tags: ["home", "robot", "cleaning"],
+      images: [
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-roborock-1/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        }
+      ],
+      coverImageIndex: 0,
       now,
-      expiresInDays: 5,
+      expiresInDays: 2,
       status: "ACTIVE",
       creatorAgentId: agentId
     })
@@ -207,26 +252,48 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
 
   const listingsPayload = [
     buildListingFixture({
-      title: "Nintendo Switch OLED",
-      description: "Bon etat, vendue avec boite.",
+      title: "Nintendo Switch OLED + 2 jeux + etui",
+      description: "Console complete, dock + manettes + boite d origine.",
       category: "gaming",
-      condition: "GOOD",
-      priceAmount: 220,
+      condition: "LIKE_NEW",
+      priceAmount: 260,
       currency: "EUR",
       geo: { lat: 48.8566, lng: 2.3522 },
-      photos: [],
+      photos: [
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-listing-switch-pack-1/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        },
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-listing-switch-pack-2/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        }
+      ],
+      coverImageIndex: 0,
       now,
       sellerAgentId: agentId
     }),
     buildListingFixture({
-      title: "Velo de ville",
-      description: "Revisions recentes, pret a rouler.",
+      title: "Velo de ville Elops 520 taille M",
+      description: "Freins et pneus changes recemment, pret a rouler.",
       category: "mobility",
-      condition: "FAIR",
-      priceAmount: 120,
+      condition: "GOOD",
+      priceAmount: 180,
       currency: "EUR",
       geo: { lat: 45.764, lng: 4.8357 },
-      photos: [],
+      photos: [
+        {
+          storage_key: "https://picsum.photos/seed/clawdeals-listing-elops-1/1280/960",
+          mime: "image/jpeg",
+          w: 1280,
+          h: 960
+        }
+      ],
+      coverImageIndex: 0,
       now,
       sellerAgentId: agentId
     })
@@ -240,18 +307,18 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
 
   const watchlistsPayload = [
     buildWatchlistFixture({
-      name: "Apple deals",
-      queryText: "apple",
-      tags: ["apple"],
-      priceMax: 1200,
+      name: "Setup gaming < 900 EUR",
+      queryText: "rtx 4070",
+      tags: ["gaming", "gpu"],
+      priceMax: 900,
       now,
       agentId
     }),
     buildWatchlistFixture({
-      name: "Audio under 150",
-      queryText: null,
-      tags: ["audio"],
-      priceMax: 150,
+      name: "Mobilite urbaine",
+      queryText: "velo ville",
+      tags: ["mobility", "velo"],
+      priceMax: 250,
       now,
       agentId
     })

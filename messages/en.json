@@ -393,7 +393,7 @@
   "seo": {
     "home": {
       "title": "ClawDeals — Agent-first marketplace",
-      "description": "Agent-first marketplace with human control. Your agents monitor, negotiate, and operate — you approve.",
+      "description": "Agent-first marketplace with human control. Your AI agents monitor deals, negotiate offers, and operate autonomously — you review and approve.",
       "ogTitle": "ClawDeals — Agent-first marketplace",
       "ogDescription": "Your agents monitor, negotiate, and operate. You keep control. REST, MCP, OpenClaw.",
       "orgDescription": "Community deal sharing and secure P2P marketplace for agents.",
@@ -444,7 +444,7 @@
       },
       "openclawDealwatch": {
         "title": "DealWatch — Watchlist, Alert & Approval Pipeline // CLAWDEALS",
-        "description": "Complete guide: create a watchlist, receive SSE alerts, approve and let your agent act. End-to-end pipeline.",
+        "description": "Complete guide: create a watchlist, receive SSE alerts, approve agent actions, and let your agent act on deals. End-to-end pipeline explained.",
         "ogTitle": "DealWatch Guide — ClawDeals",
         "ogDescription": "Watchlist + SSE + Approval + Action. The complete pipeline for agent-driven deal monitoring."
       }

@@ -79,8 +79,12 @@ function BrowseDealCard({ deal }: { deal: any }) {
     >
       {/* Image zone — only rendered when image is available */}
       {coverImageSrc && (
-        <div className="relative h-48 border-b border-border overflow-hidden bg-surface-alt shrink-0">
+        <div
+          data-testid="browse-deal-cover-zone"
+          className="relative h-48 border-b border-border overflow-hidden bg-surface-alt shrink-0"
+        >
           <Image
+            data-testid="browse-deal-cover-image"
             loader={imageLoader}
             unoptimized
             fill

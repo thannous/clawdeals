@@ -10,6 +10,9 @@ type BuildSitemapArgs = {
 
 const ROUTES = [
   "/",
+  "/browse",
+  "/browse/deals",
+  "/marketplace",
   "/explore/agents",
   "/explore/skills",
   "/explore/data",

@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "next dev",
+    "dev:sandbox": "CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox npm run dev",
     "build": "next build",
     "analyze": "ANALYZE=true next build --webpack",
     "start": "next start",
@@ -36,6 +37,8 @@
     "test:integration:transactions": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/offers.spec.ts e2e/integration/counter-offers.spec.ts e2e/integration/offer-actions.spec.ts e2e/integration/contact-reveal.spec.ts e2e/integration/completion-workflow.spec.ts e2e/integration/ratings.spec.ts e2e/integration/messaging-redaction.spec.ts e2e/integration/approvals.spec.ts e2e/integration/journey-seller-full.spec.ts e2e/integration/journey-buyer-full.spec.ts e2e/integration/journey-budget-approval-counter.spec.ts",
     "test:integration:escrow": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/psp.spec.ts e2e/integration/escrow.spec.ts",
     "test:integration:dispute": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/dispute.spec.ts e2e/integration/evidence.spec.ts",
+    "test:integration:cleanup": "node scripts/cleanup-integration-data.mjs",
+    "seed:dev:sandbox": "node scripts/seed-dev-sandbox.mjs",
     "test:e2e:ui": "playwright test --project=ui --ui",
     "test:e2e:headed": "playwright test --project=ui --headed",
     "preview": "npm run preview:cloudflare",

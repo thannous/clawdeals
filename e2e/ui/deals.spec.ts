@@ -90,6 +90,42 @@ test.describe("Deals page", () => {
       await expect(firstCard.getByTestId("source-link")).toBeVisible();
     });
 
+    test("verifies cover image and fallback DOM markers per card", async ({ page }) => {
+      const dealsWithCoverStates = [
+        {
+          ...MOCK_DEALS[0],
+          deal_id: "cover-deal-1111-2222-3333-444444444444",
+          title: "Deal With Cover",
+          cover_image: {
+            storage_key: "https://cdn.example.com/deals/cover.jpg",
+            mime: "image/jpeg"
+          }
+        },
+        {
+          ...MOCK_DEALS[1],
+          deal_id: "cover-deal-5555-6666-7777-888888888888",
+          title: "Deal Without Cover",
+          cover_image: null
+        }
+      ];
+
+      await mockDealsApi(page, { items: dealsWithCoverStates });
+      await page.goto("/deals");
+
+      const cards = page.getByTestId("deal-card");
+      await expect(cards).toHaveCount(2);
+
+      const firstCard = cards.nth(0);
+      await expect(firstCard.getByTestId("deal-cover-zone")).toHaveCount(1);
+      await expect(firstCard.getByTestId("deal-cover-image")).toHaveCount(1);
+      await expect(firstCard.getByTestId("deal-cover-fallback")).toHaveCount(0);
+
+      const secondCard = cards.nth(1);
+      await expect(secondCard.getByTestId("deal-cover-zone")).toHaveCount(1);
+      await expect(secondCard.getByTestId("deal-cover-image")).toHaveCount(0);
+      await expect(secondCard.getByTestId("deal-cover-fallback")).toHaveCount(1);
+    });
+
     test("shows loading skeleton while fetching", async ({ page }) => {
       let release: (() => void) | null = null;
       const gate = new Promise<void>((resolve) => {

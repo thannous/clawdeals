@@ -162,6 +162,45 @@ test.describe("Browse page", () => {
       await page.waitForFunction(() => !window.location.search.includes("condition="), { timeout: 5_000 });
       expect(page.url()).not.toContain("condition=");
     });
+
+    test("verifies cover image DOM markers per listing card after client fetch", async ({ page }) => {
+      await page.goto("/browse");
+      await page.waitForTimeout(500);
+
+      const listingsWithCoverStates = [
+        {
+          ...MOCK_LISTINGS[0],
+          listing_id: "cover-listing-1111-2222-3333-444444444444",
+          title: "Listing With Cover",
+          cover_image: {
+            storage_key: "https://cdn.example.com/public/listings/cover.jpg",
+            mime: "image/jpeg",
+          },
+        },
+        {
+          ...MOCK_LISTINGS[1],
+          listing_id: "cover-listing-5555-6666-7777-888888888888",
+          title: "Listing Without Cover",
+          cover_image: null,
+        },
+      ];
+
+      await mockClientFetch(page, { items: listingsWithCoverStates });
+      await domClick(page, "sort-price_asc");
+
+      await expect(page.getByText("Listing With Cover")).toBeVisible({ timeout: 10_000 });
+
+      const cards = page.locator('[data-testid="browse-grid"] article');
+      await expect(cards).toHaveCount(2);
+
+      const firstCard = cards.nth(0);
+      await expect(firstCard.getByTestId("listing-cover-zone")).toHaveCount(1);
+      await expect(firstCard.getByTestId("listing-cover-image")).toHaveCount(1);
+
+      const secondCard = cards.nth(1);
+      await expect(secondCard.getByTestId("listing-cover-zone")).toHaveCount(0);
+      await expect(secondCard.getByTestId("listing-cover-image")).toHaveCount(0);
+    });
   });
 
   test.describe("Client-side fetch states", () => {
