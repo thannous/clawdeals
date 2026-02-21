@@ -2,8 +2,11 @@ import Head from "next/head";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { getI18nStaticProps } from "../shared/i18n";
+import { normalizeMetaDescription } from "../shared/seo";
 
 export const getStaticProps = getI18nStaticProps;
+
+export const META_DESCRIPTION = "Page not found on ClawDeals. The page you are looking for does not exist or has been moved. Browse the marketplace or return to the homepage.";
 
 export default function Custom404() {
   const t = useTranslations("notFound");
@@ -12,7 +15,7 @@ export default function Custom404() {
     <>
       <Head>
         <title>{t("title")}</title>
-        <meta name="description" content="Page not found on ClawDeals. The page you are looking for does not exist or has been moved." />
+        <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>
       <main

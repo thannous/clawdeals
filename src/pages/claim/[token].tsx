@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import ClaimPage from "../../ui/claim/ClaimPage";
 import { extractClaimTokenFromPath, resolveSupportedLocale } from "../../shared/i18n";
+import { normalizeMetaDescription } from "../../shared/seo";
 
 export { getI18nServerSideProps as getServerSideProps } from "../../shared/i18n";
 
@@ -27,7 +28,7 @@ export default function ClaimTokenPage() {
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
         <title>{locale === "fr" ? "Clawdeals | Connexion" : locale === "es" ? "Clawdeals | Conexion" : "Clawdeals | Claim"}</title>
-        <meta name="description" content={t("subtitle")} />
+        <meta name="description" content={normalizeMetaDescription(t("subtitle"))} />
       </Head>
       <ClaimPage key={claimToken || "empty"} claimToken={claimToken} />
     </>

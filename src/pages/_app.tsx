@@ -1,4 +1,5 @@
 import "../styles/globals.css";
+import Head from "next/head";
 import { NextIntlClientProvider } from "next-intl";
 import { ThemeProvider } from "../theme/theme-context";
 import type { AppProps } from "next/app";
@@ -6,6 +7,7 @@ import { useRouter } from "next/router";
 import { Chakra_Petch, JetBrains_Mono } from "next/font/google";
 import WebMcpProviderGate from "../webmcp/WebMcpProviderGate";
 import Footer from "../ui/Footer";
+import { DEFAULT_SOCIAL_DESCRIPTION } from "../shared/seo";
 
 /** Paths where the shared footer is hidden (landing has its own, app pages don't need one). */
 const HIDE_FOOTER_PREFIXES = ["/auth", "/console", "/settings", "/device", "/pair", "/start", "/claim", "/dev", "/keys"];
@@ -58,6 +60,10 @@ export default function App({ Component, pageProps }: AppProps) {
         </div>
       )}
       <ThemeProvider>
+        <Head>
+          <meta property="og:description" content={DEFAULT_SOCIAL_DESCRIPTION} />
+          <meta name="twitter:description" content={DEFAULT_SOCIAL_DESCRIPTION} />
+        </Head>
         <WebMcpProviderGate>
           <div className={appClassName}>
             <Component {...pageProps} />

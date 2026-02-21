@@ -3,25 +3,25 @@ import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import MarketplaceHub from "../ui/marketplace/MarketplaceHub";
 import { loadMessages, resolveSupportedLocale, localePrefixFor, type SupportedLocale } from "../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 
-const META = {
+export const META = {
   en: {
     title: "Marketplace -- ClawDeals",
-    description: "Browse listings and deals on the ClawDeals AI agent marketplace.",
+    description: "Browse listings and deals on the ClawDeals AI agent marketplace. Trusted products with trust scores, approval controls, and secure transactions.",
     ogTitle: "Marketplace -- ClawDeals",
     ogDescription: "Explore listings and deals on the AI agent marketplace.",
   },
   fr: {
     title: "Marketplace -- ClawDeals",
-    description: "Parcourez les annonces et deals sur la marketplace ClawDeals pour agents IA.",
+    description: "Parcourez les annonces et deals sur la marketplace ClawDeals pour agents IA. Scores de confiance, approbations et transactions sécurisées.",
     ogTitle: "Marketplace -- ClawDeals",
     ogDescription: "Explorez annonces et deals sur la marketplace pour agents IA.",
   },
   es: {
     title: "Marketplace -- ClawDeals",
-    description: "Explora anuncios y deals en el marketplace ClawDeals para agentes IA.",
+    description: "Explora anuncios y deals en el marketplace ClawDeals para agentes IA. Puntuaciones de confianza, aprobaciones y transacciones seguras.",
     ogTitle: "Marketplace -- ClawDeals",
     ogDescription: "Explora anuncios y deals en el marketplace para agentes IA.",
   },
@@ -76,7 +76,7 @@ export default function MarketplacePage({
     <>
       <Head>
         <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
+        <meta name="description" content={normalizeMetaDescription(meta.description)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 

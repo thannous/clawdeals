@@ -5,10 +5,10 @@ import type { GetServerSideProps } from "next";
 import BrowseListingsPage from "../../ui/browse/BrowseListingsPage";
 import { listPublicListings } from "../../server/services/public-listings";
 import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 
-const META = {
+export const META = {
   en: {
     title: "Browse Listings -- ClawDeals Marketplace",
     description: "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and secure transactions.",
@@ -97,7 +97,7 @@ export default function BrowsePage({
     <>
       <Head>
         <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
+        <meta name="description" content={normalizeMetaDescription(meta.description)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 

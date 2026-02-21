@@ -3,6 +3,7 @@ import type { GetServerSideProps } from "next";
 import DealDetailPage from "../../ui/deals/DealDetailPage";
 import { DEAL_DETAIL_FROM_BROWSE_DEALS } from "../../ui/deals/detailNavigation";
 import { loadMessages, resolveSupportedLocale } from "../../shared/i18n";
+import { normalizeMetaDescription } from "../../shared/seo";
 
 function resolveQueryParam(value: string | string[] | undefined) {
   if (typeof value === "string") return value;
@@ -32,12 +33,14 @@ export const getServerSideProps: GetServerSideProps = async ({ locale, params, q
   };
 };
 
+export const META_DESCRIPTION = "Deal details on ClawDeals. View trust scores, pricing, agent activity, and transaction history. Explore marketplace deals with full transparency.";
+
 export default function DealDetail() {
   return (
     <>
       <Head>
         <title>Deal // CLAWDEALS</title>
-        <meta name="description" content="Deal details on ClawDeals. View trust scores, pricing, and agent activity for this deal." />
+        <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>
       <DealDetailPage />

@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import ExplorePage from "../../ui/ExplorePage";
 import packageJson from "../../../package.json";
 import { loadMessages, localePrefixFor, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
@@ -13,7 +13,7 @@ type TabSlug = keyof typeof TAB_SLUGS;
 
 const VALID_TABS = new Set<string>(Object.keys(TAB_SLUGS));
 
-const TAB_META: Record<TabSlug, {
+export const TAB_META: Record<TabSlug, {
   fr: { title: string; description: string; ogTitle: string; ogDescription: string };
   en: { title: string; description: string; ogTitle: string; ogDescription: string };
   jsonLdType: string;
@@ -22,7 +22,7 @@ const TAB_META: Record<TabSlug, {
     fr: {
       title: "Agents tactiques -- déploiement & location -- ClawDeals",
       description:
-        "Louez des agents spécialisés pour des tâches courtes. Paiement à l'exécution. Sandbox sécurisée. Zéro infra.",
+        "Louez des agents IA spécialisés pour des tâches courtes sur ClawDeals. Paiement à l'exécution, sandbox sécurisée, déploiement sans infrastructure.",
       ogTitle: "Agents tactiques -- déploiement & location -- ClawDeals",
       ogDescription:
         "Agents spécialisés, paiement à l'exécution, sandbox sécurisée. Déploiement sans infra."
@@ -30,7 +30,7 @@ const TAB_META: Record<TabSlug, {
     en: {
       title: "Tactical Agents -- Deployment & Rental -- ClawDeals",
       description:
-        "Rent specialized agents for short tasks. Pay per execution. Secure sandbox. Zero infra.",
+        "Rent specialized AI agents for short tasks on ClawDeals. Pay per execution, run in a secure sandbox, and deploy with zero infrastructure.",
       ogTitle: "Tactical Agents -- Deployment & Rental -- ClawDeals",
       ogDescription:
         "Specialized agents, pay per execution, secure sandbox. Deploy without infra."
@@ -41,7 +41,7 @@ const TAB_META: Record<TabSlug, {
     fr: {
       title: "Modules de skills certifiés -- MCP & API -- ClawDeals",
       description:
-        "Équipez vos bots avec des capacités vérifiées : banque, ops, admin. Audits et traçabilité intégrés.",
+        "Équipez vos bots avec des modules de compétences vérifiés sur ClawDeals. Banque, ops, admin avec audits intégrés et traçabilité complète.",
       ogTitle: "Modules de skills certifiés -- MCP & API -- ClawDeals",
       ogDescription:
         "Capacités vérifiées pour vos bots. Banque, ops, admin. Audits et traçabilité."
@@ -49,7 +49,7 @@ const TAB_META: Record<TabSlug, {
     en: {
       title: "Certified Skill Modules -- MCP & API -- ClawDeals",
       description:
-        "Equip your bots with verified capabilities: banking, ops, admin. Audits and traceability built in.",
+        "Equip your bots with verified skill modules on ClawDeals. Banking, operations, and admin capabilities with built-in audits and full traceability.",
       ogTitle: "Certified Skill Modules -- MCP & API -- ClawDeals",
       ogDescription:
         "Verified capabilities for your bots. Banking, ops, admin. Audits and traceability."
@@ -60,7 +60,7 @@ const TAB_META: Record<TabSlug, {
     fr: {
       title: "Assets data contextuels -- RAG & vecteurs -- ClawDeals",
       description:
-        "Réduisez les hallucinations avec des sources ancrées. Droit, technique, science : prêts pour vos agents.",
+        "Réduisez les hallucinations avec des sources de données ancrées sur ClawDeals. Droit, technique, science — datasets prêts pour vos agents IA.",
       ogTitle: "Assets data contextuels -- RAG & vecteurs -- ClawDeals",
       ogDescription:
         "Sources ancrées pour RAG. Droit, technique, science. Prêts pour vos agents."
@@ -68,7 +68,7 @@ const TAB_META: Record<TabSlug, {
     en: {
       title: "Contextual Data Assets -- RAG & Vectors -- ClawDeals",
       description:
-        "Reduce hallucinations with grounded sources. Legal, technical, scientific datasets ready for agents.",
+        "Reduce hallucinations with grounded data sources on ClawDeals. Legal, technical, and scientific datasets curated and ready for your AI agents.",
       ogTitle: "Contextual Data Assets -- RAG & Vectors -- ClawDeals",
       ogDescription:
         "Grounded sources for RAG. Legal, technical, scientific datasets ready for agents."
@@ -164,7 +164,7 @@ export default function ExploreTab({
     <>
       <Head>
         <title>{meta.title}</title>
-        <meta name="description" content={meta.description} />
+        <meta name="description" content={normalizeMetaDescription(meta.description)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 

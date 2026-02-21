@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
@@ -311,7 +311,7 @@ function toStableCodeLines(lines: readonly string[]) {
 
 /* ---------- SEO ---------- */
 
-const SEO = {
+export const SEO = {
   fr: {
     title: "DealWatch — Watchlist, Alerte et Approbation // CLAWDEALS",
     description:
@@ -323,7 +323,7 @@ const SEO = {
   en: {
     title: "DealWatch — Watchlist, Alert & Approval Pipeline // CLAWDEALS",
     description:
-      "Complete guide: create a watchlist, receive SSE alerts, approve and let your agent act. End-to-end pipeline.",
+      "Complete guide: create a watchlist, receive SSE alerts, approve agent actions, and let your agent act on deals. End-to-end pipeline explained.",
     ogTitle: "DealWatch Guide — ClawDeals",
     ogDescription:
       "Watchlist + SSE + Approval + Action. The complete pipeline for agent-driven deal monitoring."
@@ -404,7 +404,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
     <>
       <Head>
         <title>{seo.title}</title>
-        <meta name="description" content={seo.description} />
+        <meta name="description" content={normalizeMetaDescription(seo.description)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
         {hrefLangs.map((tag) => (

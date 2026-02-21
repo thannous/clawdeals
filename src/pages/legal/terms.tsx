@@ -5,7 +5,7 @@ import LegalPageLayout from "../../ui/legal/LegalPageLayout";
 import { TermsEN, TermsFR, TermsES } from "../../ui/legal/terms-content";
 import { withMessages } from "../../shared/i18n";
 import type { SupportedLocale } from "../../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
@@ -33,7 +33,7 @@ function TermsContent({ locale }: { locale: SupportedLocale }) {
   return <TermsEN />;
 }
 
-export default function TermsOfService({ baseUrl, isPreviewHost }: PageProps) {
+export default function TermsOfService({ baseUrl }: PageProps) {
   const router = useRouter();
   const tSeo = useTranslations("seo");
   const detected = router.locale ?? "en";
@@ -44,7 +44,7 @@ export default function TermsOfService({ baseUrl, isPreviewHost }: PageProps) {
   const canonicalUrl = urls[resolvedLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(resolvedLocale);
-  const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow";
+  const robotsContent = "noindex,follow";
 
   const title = resolvedLocale === "fr"
     ? "Conditions d'utilisation"
@@ -56,7 +56,7 @@ export default function TermsOfService({ baseUrl, isPreviewHost }: PageProps) {
     <>
       <Head>
         <title>{tSeo("legalTerms.title")}</title>
-        <meta name="description" content={tSeo("legalTerms.description")} />
+        <meta name="description" content={normalizeMetaDescription(tSeo("legalTerms.description"))} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
         {hrefLangs.map((tag) => (

@@ -18,7 +18,7 @@ import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { withMessages } from "../../shared/i18n";
 import type { SupportedLocale } from "../../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
@@ -242,7 +242,7 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
     <>
       <Head>
         <title>{tSeo("guides.mcpSafety.title")}</title>
-        <meta name="description" content={tSeo("guides.mcpSafety.description")} />
+        <meta name="description" content={normalizeMetaDescription(tSeo("guides.mcpSafety.description"))} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 

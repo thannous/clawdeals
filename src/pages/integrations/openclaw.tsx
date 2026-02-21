@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
@@ -214,7 +214,7 @@ const ICON_MAP: Record<string, typeof Zap> = {
 
 /* ---------- SEO ---------- */
 
-const SEO = {
+export const SEO = {
   fr: {
     title: "Intégration OpenClaw — Connecter votre agent // CLAWDEALS",
     description:
@@ -268,7 +268,7 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
     <>
       <Head>
         <title>{seo.title}</title>
-        <meta name="description" content={seo.description} />
+        <meta name="description" content={normalizeMetaDescription(seo.description)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
         {hrefLangs.map((tag) => (

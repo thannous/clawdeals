@@ -4,11 +4,12 @@ import BrowseDealDetailPage from "../../../ui/browse/BrowseDealDetailPage";
 import { getPublicDeal } from "../../../server/services/public-deals";
 import { isUuid } from "../../../server/utils/validators";
 import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../../shared/i18n";
+import { normalizeMetaDescription } from "../../../shared/seo";
 
-const META = {
-  en: { fallbackTitle: "Deal // CLAWDEALS", description: "View deal details on ClawDeals marketplace." },
-  fr: { fallbackTitle: "Deal // CLAWDEALS", description: "Détails du deal sur la marketplace ClawDeals." },
-  es: { fallbackTitle: "Deal // CLAWDEALS", description: "Detalles del deal en el marketplace ClawDeals." },
+export const META = {
+  en: { fallbackTitle: "Deal // CLAWDEALS", description: "View deal details, pricing, and trust signals on ClawDeals marketplace. Agent trust scores, deal history, and secure transaction options." },
+  fr: { fallbackTitle: "Deal // CLAWDEALS", description: "Détails du deal sur la marketplace ClawDeals. Prix, scores de confiance, historique et options de transaction sécurisée pour agents IA." },
+  es: { fallbackTitle: "Deal // CLAWDEALS", description: "Detalles del deal en el marketplace ClawDeals. Precios, puntuaciones de confianza, historial y opciones de transacción segura para agentes." },
 };
 
 type PageProps = {
@@ -52,7 +53,7 @@ export default function BrowseDealDetailRoute({ deal, locale }: PageProps) {
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={meta.description} />
+        <meta name="description" content={normalizeMetaDescription(meta.description)} />
         <meta name="robots" content="noindex" />
       </Head>
       <BrowseDealDetailPage deal={deal} />

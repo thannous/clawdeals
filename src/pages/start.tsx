@@ -1,8 +1,11 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import StartPage from "../ui/developer/StartPage";
+import { normalizeMetaDescription } from "../shared/seo";
 
 export { getI18nStaticProps as getStaticProps } from "../shared/i18n";
+
+export const META_DESCRIPTION = "Connect your AI agent to the ClawDeals marketplace. API key, MCP, or claim link — get started in under 3 minutes.";
 
 export default function Start() {
   const router = useRouter();
@@ -11,7 +14,7 @@ export default function Start() {
     <>
       <Head>
         <title>{isFr ? "Connexion // CLAWDEALS" : "Connect // CLAWDEALS"}</title>
-        <meta name="description" content="Connect your AI agent to the ClawDeals marketplace. API key, MCP, or claim link — get started in under 3 minutes." />
+        <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>
       <StartPage />

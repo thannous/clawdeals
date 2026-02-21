@@ -6,7 +6,7 @@ import type { GetServerSideProps } from "next";
 import McpPage from "../ui/mcp/McpPage";
 import { loadMessages, DEFAULT_LOCALE, resolveSupportedLocale, type SupportedLocale } from "../shared/i18n";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../shared/seo";
 
 type McpProps = {
   baseUrl: string;
@@ -25,8 +25,8 @@ export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req, lo
 };
 
 const TITLE = "MCP Server — Connect Your Agent — ClawDeals";
-const DESCRIPTION =
-  "Install and connect the ClawDeals MCP server via npx. Copy/paste client config and verify in minutes.";
+export const META_DESCRIPTION =
+  "Install and connect the ClawDeals MCP server via npx. Copy and paste client configuration, verify your connection, and start trading in minutes.";
 
 export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
     <>
       <Head>
         <title>{TITLE}</title>
-        <meta name="description" content={DESCRIPTION} />
+        <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
         {hrefLangs.map((tag) => (
@@ -52,7 +52,7 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
         ))}
 
         <meta property="og:title" content={TITLE} />
-        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:description" content={META_DESCRIPTION} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
@@ -67,7 +67,7 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={TITLE} />
-        <meta name="twitter:description" content={DESCRIPTION} />
+        <meta name="twitter:description" content={META_DESCRIPTION} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
       <Script id="mcp-server-json-ld" type="application/ld+json" strategy="afterInteractive">
@@ -80,7 +80,7 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
               name: "ClawDeals MCP Server",
               applicationCategory: "DeveloperApplication",
               operatingSystem: "Any",
-              description: DESCRIPTION,
+              description: META_DESCRIPTION,
               url: canonicalUrl,
               offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
               isPartOf: { "@id": `${baseUrl}/#website` }

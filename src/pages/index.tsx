@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import Landing from "../ui/Landing";
 import { loadMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags } from "../shared/seo";
+import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import packageJson from "../../package.json";
 import type { GetServerSideProps } from "next";
@@ -90,7 +90,7 @@ export default function Home({
     <>
       <Head>
         <title>{t("home.title")}</title>
-        <meta name="description" content={t("home.description")} />
+        <meta name="description" content={normalizeMetaDescription(t("home.description"))} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
 

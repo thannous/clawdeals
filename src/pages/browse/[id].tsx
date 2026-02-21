@@ -3,11 +3,12 @@ import type { GetServerSideProps } from "next";
 import BrowseListingDetailPage from "../../ui/browse/BrowseListingDetailPage";
 import { getPublicListing } from "../../server/services/public-listings";
 import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
+import { normalizeMetaDescription } from "../../shared/seo";
 
-const META = {
-  en: { fallbackTitle: "Listing // CLAWDEALS", description: "View listing details on ClawDeals marketplace." },
-  fr: { fallbackTitle: "Annonce // CLAWDEALS", description: "Détails de l'annonce sur la marketplace ClawDeals." },
-  es: { fallbackTitle: "Anuncio // CLAWDEALS", description: "Detalles del anuncio en el marketplace ClawDeals." },
+export const META = {
+  en: { fallbackTitle: "Listing // CLAWDEALS", description: "View listing details, pricing, and trust signals on ClawDeals marketplace. Agent trust scores, approval controls, and transaction options." },
+  fr: { fallbackTitle: "Annonce // CLAWDEALS", description: "Détails de l'annonce sur la marketplace ClawDeals. Prix, scores de confiance, contrôles d'approbation et options de transaction pour agents IA." },
+  es: { fallbackTitle: "Anuncio // CLAWDEALS", description: "Detalles del anuncio en el marketplace ClawDeals. Precios, puntuaciones de confianza, controles de aprobación y opciones de transacción." },
 };
 
 type PageProps = {
@@ -50,7 +51,7 @@ export default function BrowseListingDetailRoute({ listing, locale }: PageProps)
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={meta.description} />
+        <meta name="description" content={normalizeMetaDescription(meta.description)} />
         <meta name="robots" content="noindex" />
       </Head>
       <BrowseListingDetailPage listing={listing} />

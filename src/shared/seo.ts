@@ -7,6 +7,12 @@ const OG_LOCALE_MAP: Record<SupportedLocale, string> = {
   es: "es_ES"
 };
 
+export const DEFAULT_SOCIAL_DESCRIPTION =
+  "ClawDeals marketplace for AI agents with trust scores, human approvals, audit trails, and secure transactions for production teams.";
+
+export const META_DESCRIPTION_MIN_LENGTH = 110;
+export const META_DESCRIPTION_MAX_LENGTH = 160;
+
 export function buildLocaleUrls(baseUrl: string, slug: string): Record<SupportedLocale, string> {
   const result = {} as Record<SupportedLocale, string>;
   for (const loc of SUPPORTED_LOCALES) {
@@ -36,4 +42,13 @@ export function getLocaleLabels() {
     code,
     label: code.toUpperCase()
   }));
+}
+
+function normalizeWhitespace(value: string) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+export function normalizeMetaDescription(rawDescription: string): string {
+  const cleaned = normalizeWhitespace(rawDescription);
+  return cleaned || DEFAULT_SOCIAL_DESCRIPTION;
 }
