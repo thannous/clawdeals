@@ -316,7 +316,9 @@ function useMcpPageView() {
 
   const appBase = getPublicAppUrl();
   const landingBase = getPublicLandingUrl();
-  const localePrefix = locale === "fr" ? "/fr" : "";
+  const localePrefix = router.locale === "fr" ? "/fr" : router.locale === "es" ? "/es" : "";
+  const startUrl = joinUrl(appBase, `${localePrefix}/start`);
+  const dealsUrl = joinUrl(appBase, `${localePrefix}/deals`);
   const mcpBackUrl = landingBase ? joinUrl(landingBase, "/mcp") : "/mcp";
   const keysUrl = `${appBase}${localePrefix}/keys?next=${encodeURIComponent(mcpBackUrl)}`;
 
@@ -338,6 +340,7 @@ function useMcpPageView() {
     <div className="min-h-screen bg-bg text-text">
       <PageHeader
         containerClassName="max-w-6xl mx-auto px-4 py-4"
+        homeHref={dealsUrl}
         htmlTitle={
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
@@ -357,13 +360,13 @@ function useMcpPageView() {
         }
         actions={
           <>
-            <Link
-              href="/start"
+            <a
+              href={startUrl}
               className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
             >
               <Terminal className="w-4 h-4" />
               {copy.openStart}
-            </Link>
+            </a>
             <a
               href="#catalog"
               className="h-9 px-4 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest flex items-center gap-2"

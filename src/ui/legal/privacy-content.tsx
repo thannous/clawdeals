@@ -323,7 +323,7 @@ export function PrivacyEN() {
             <strong>CNIL</strong> — Commission Nationale de l&apos;Informatique et des
             Libert&eacute;s<br />
             3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France<br />
-            <a href="https://www.cnil.fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
+            <a href="https://www.cnil.fr/fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
           </li>
         </ul>
       </Section>
@@ -755,7 +755,7 @@ export function PrivacyFR() {
             <strong>CNIL</strong> — Commission Nationale de l&apos;Informatique et des
             Libert&eacute;s<br />
             3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France<br />
-            <a href="https://www.cnil.fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
+            <a href="https://www.cnil.fr/fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
           </li>
         </ul>
       </Section>
@@ -1189,7 +1189,7 @@ export function PrivacyES() {
             <strong>CNIL</strong> — Commission Nationale de l&apos;Informatique et des
             Libert&eacute;s<br />
             3 Place de Fontenoy, TSA 80715, 75334 Par&iacute;s Cedex 07, Francia<br />
-            <a href="https://www.cnil.fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
+            <a href="https://www.cnil.fr/fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
           </li>
         </ul>
       </Section>

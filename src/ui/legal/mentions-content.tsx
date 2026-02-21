@@ -51,7 +51,7 @@ export function MentionsEN() {
           </li>
           <li>
             <strong>Cloudflare, Inc.</strong> — 101 Townsend St, San Francisco, CA 94107, USA —{" "}
-            <a href="https://cloudflare.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.cloudflare.com/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               cloudflare.com
             </a>{" "}
             (marketing site &amp; CDN)
@@ -97,7 +97,7 @@ export function MentionsEN() {
         <p className="mb-4">
           The supervisory authority is the Commission Nationale de l&apos;Informatique et des
           Libertes (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France —{" "}
-          <a href="https://www.cnil.fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.cnil.fr/fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
             www.cnil.fr
           </a>.
         </p>
@@ -159,7 +159,7 @@ export function MentionsFR() {
           </li>
           <li>
             <strong>Cloudflare, Inc.</strong> — 101 Townsend St, San Francisco, CA 94107, USA —{" "}
-            <a href="https://cloudflare.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.cloudflare.com/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               cloudflare.com
             </a>{" "}
             (site marketing &amp; CDN)
@@ -206,7 +206,7 @@ export function MentionsFR() {
         <p className="mb-4">
           L&apos;autorité de contrôle est la Commission Nationale de l&apos;Informatique et des
           Libertés (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France —{" "}
-          <a href="https://www.cnil.fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.cnil.fr/fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
             www.cnil.fr
           </a>.
         </p>
@@ -269,7 +269,7 @@ export function MentionsES() {
           </li>
           <li>
             <strong>Cloudflare, Inc.</strong> — 101 Townsend St, San Francisco, CA 94107, EE.UU. —{" "}
-            <a href="https://cloudflare.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.cloudflare.com/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               cloudflare.com
             </a>{" "}
             (sitio de marketing y CDN)
@@ -318,7 +318,7 @@ export function MentionsES() {
         <p className="mb-4">
           La autoridad de control es la Commission Nationale de l&apos;Informatique et des Libertés
           (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, Francia —{" "}
-          <a href="https://www.cnil.fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.cnil.fr/fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
             www.cnil.fr
           </a>.
         </p>

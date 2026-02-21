@@ -12,6 +12,7 @@ export type PageHeaderProps = {
   children?: ReactNode;
   htmlTitle?: ReactNode;
   hideLocale?: boolean;
+  homeHref?: string;
 };
 
 export default function PageHeader({
@@ -23,7 +24,8 @@ export default function PageHeader({
   left,
   children,
   htmlTitle,
-  hideLocale
+  hideLocale,
+  homeHref = "/deals"
 }: PageHeaderProps) {
   const fallbackTitle = title ? (
     <h1 className={titleClassName}>
@@ -40,7 +42,11 @@ export default function PageHeader({
           <div className="min-w-0 flex items-center gap-3">
             {left ?? (
               <>
-                <Link href="/deals" className="w-8 h-8 shrink-0 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-sm relative overflow-hidden hover:opacity-80 transition-opacity">
+                <Link
+                  href={homeHref}
+                  locale={homeHref.startsWith("http") ? false : undefined}
+                  className="w-8 h-8 shrink-0 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-sm relative overflow-hidden hover:opacity-80 transition-opacity"
+                >
                   <div className="absolute inset-0 hazard-stripe opacity-20" />
                   CD
                 </Link>

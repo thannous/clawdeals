@@ -27,7 +27,7 @@ export function TermsEN() {
       <p className="mb-4">
         These Terms of Service (&quot;Terms&quot;) govern your access to and use of the ClawDeals
         platform available at{" "}
-        <a href="https://www.clawdeals.com" className="underline">www.clawdeals.com</a>{" "}
+        <a href="https://clawdeals.com" className="underline">www.clawdeals.com</a>{" "}
         (&quot;Platform&quot;), operated by TiMax (&quot;ClawDeals&quot;, &quot;we&quot;,
         &quot;us&quot;, or &quot;our&quot;), a sole proprietorship (<em>entreprise individuelle</em>) registered under French law, with its
         registered office in Orleans, France (SIRET: 995 316 981 00019).
@@ -256,7 +256,7 @@ export function TermsEN() {
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>Email: contact@clawdeals.com</li>
           <li>Address: Orleans, France</li>
-          <li>Website: <a href="https://www.clawdeals.com" className="underline">www.clawdeals.com</a></li>
+          <li>Website: <a href="https://clawdeals.com" className="underline">www.clawdeals.com</a></li>
         </ul>
       </Section>
     </>
@@ -278,7 +278,7 @@ export function TermsFR() {
         Les présentes Conditions Générales d&apos;Utilisation (&laquo;&nbsp;CGU&nbsp;&raquo;)
         régissent l&apos;accès et l&apos;utilisation de la plateforme ClawDeals accessible à
         l&apos;adresse{" "}
-        <a href="https://www.clawdeals.com" className="underline">www.clawdeals.com</a>{" "}
+        <a href="https://clawdeals.com" className="underline">www.clawdeals.com</a>{" "}
         (&laquo;&nbsp;Plateforme&nbsp;&raquo;), éditée par TiMax
         (&laquo;&nbsp;ClawDeals&nbsp;&raquo;, &laquo;&nbsp;nous&nbsp;&raquo;,
         &laquo;&nbsp;notre&nbsp;&raquo;), entreprise individuelle immatriculée en France, dont le siège
@@ -522,7 +522,7 @@ export function TermsFR() {
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>E-mail : contact@clawdeals.com</li>
           <li>Adresse : Orléans, France</li>
-          <li>Site web : <a href="https://www.clawdeals.com" className="underline">www.clawdeals.com</a></li>
+          <li>Site web : <a href="https://clawdeals.com" className="underline">www.clawdeals.com</a></li>
         </ul>
       </Section>
     </>
@@ -543,7 +543,7 @@ export function TermsES() {
       <p className="mb-4">
         Estos Términos de Servicio (&laquo;Términos&raquo;) regulan el acceso y uso de la
         plataforma ClawDeals disponible en{" "}
-        <a href="https://www.clawdeals.com" className="underline">www.clawdeals.com</a>{" "}
+        <a href="https://clawdeals.com" className="underline">www.clawdeals.com</a>{" "}
         (&laquo;Plataforma&raquo;), operada por TiMax (&laquo;ClawDeals&raquo;,
         &laquo;nosotros&raquo;, &laquo;nuestro&raquo;), empresa individual (<em>entreprise individuelle</em>) registrada conforme al
         derecho francés, con domicilio social en Orleans, Francia (SIRET: 995 316 981 00019).
@@ -782,7 +782,7 @@ export function TermsES() {
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>Correo electrónico: contact@clawdeals.com</li>
           <li>Dirección: Orleans, Francia</li>
-          <li>Sitio web: <a href="https://www.clawdeals.com" className="underline">www.clawdeals.com</a></li>
+          <li>Sitio web: <a href="https://clawdeals.com" className="underline">www.clawdeals.com</a></li>
         </ul>
       </Section>
     </>
