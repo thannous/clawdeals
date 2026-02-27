@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import LegalPageLayout from "../../ui/legal/LegalPageLayout";
-import { TermsEN, TermsFR, TermsES } from "../../ui/legal/terms-content";
+import { buildLocalizedLegalContent } from "../../ui/legal/buildLocalizedLegalContent";
 import { withMessages } from "../../shared/i18n";
 import type { SupportedLocale } from "../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
@@ -10,6 +10,7 @@ import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from 
 import type { GetServerSideProps } from "next";
 
 type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
+const LEGAL_I18N_NAMESPACES = ["seo", "landing", "nav", "footer"] as const;
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res, locale }) => {
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
@@ -21,17 +22,17 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, r
     props: await withMessages(locale, {
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost
-    })
+    }, { namespaces: LEGAL_I18N_NAMESPACES })
   };
 };
 
 const LAST_UPDATED = "2026-02-15";
 
-function TermsContent({ locale }: { locale: SupportedLocale }) {
-  if (locale === "fr") return <TermsFR />;
-  if (locale === "es") return <TermsES />;
-  return <TermsEN />;
-}
+const TermsContent = buildLocalizedLegalContent({
+  en: () => import("../../ui/legal/terms-content.en").then((module) => ({ default: module.TermsEN })),
+  fr: () => import("../../ui/legal/terms-content.fr").then((module) => ({ default: module.TermsFR })),
+  es: () => import("../../ui/legal/terms-content.es").then((module) => ({ default: module.TermsES }))
+});
 
 export default function TermsOfService({ baseUrl }: PageProps) {
   const router = useRouter();

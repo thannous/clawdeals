@@ -4,12 +4,15 @@ import { useRouter } from "next/router";
 import ExplorePage from "../../ui/ExplorePage";
 import packageJson from "../../../package.json";
 import { loadMessages, localePrefixFor, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
+import { loadExploreCopy } from "../../ui/explore/copy/loadExploreCopy";
+import type { ExploreCopy } from "../../ui/explore/copy/types";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
 const TAB_SLUGS = { agents: "gig", skills: "npm", data: "data" } as const;
 type TabSlug = keyof typeof TAB_SLUGS;
+const EXPLORE_I18N_NAMESPACES = ["landing", "nav", "footer"] as const;
 
 const VALID_TABS = new Set<string>(Object.keys(TAB_SLUGS));
 
@@ -83,6 +86,7 @@ type ExploreTabProps = {
   initialTab: string;
   baseUrl: string;
   isPreviewHost: boolean;
+  copy: ExploreCopy;
   buildTimeIso: string;
   appVersion: string;
   deploySha?: string;
@@ -121,17 +125,24 @@ export const getServerSideProps: GetServerSideProps<ExploreTabProps> = async ({ 
     );
   }
 
+  const resolvedLocale = locale || "en";
+  const [messages, copy] = await Promise.all([
+    loadMessages(resolvedLocale, { namespaces: EXPLORE_I18N_NAMESPACES }),
+    loadExploreCopy(resolvedLocale)
+  ]);
+
   return {
     props: {
-      locale: locale || "en",
+      locale: resolvedLocale,
       tab,
       initialTab,
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
+      copy,
       buildTimeIso: new Date().toISOString(),
       appVersion,
       ...(deploySha ? { deploySha } : {}),
-      messages: await loadMessages(locale || "en")
+      messages
     }
   };
 };
@@ -142,6 +153,7 @@ export default function ExploreTab({
   initialTab,
   baseUrl,
   isPreviewHost,
+  copy,
   buildTimeIso,
   appVersion,
   deploySha
@@ -219,6 +231,7 @@ export default function ExploreTab({
       <ExplorePage
         locale={currentLocale}
         initialTab={initialTab}
+        copy={copy}
         buildTimeIso={buildTimeIso}
         appVersion={appVersion}
         deploySha={deploySha}

@@ -19,6 +19,7 @@ type HomePageProps = {
   deploySha?: string;
   messages: any;
 };
+const HOME_I18N_NAMESPACES = ["seo", "landing", "nav", "footer"] as const;
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ locale, req, res }) => {
   const appVersion =
@@ -52,7 +53,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async ({ lo
       buildTimeIso: new Date().toISOString(),
       appVersion,
       ...(deploySha ? { deploySha } : {}),
-      messages: await loadMessages(locale || "en")
+      messages: await loadMessages(locale || "en", { namespaces: HOME_I18N_NAMESPACES })
     }
   };
 };

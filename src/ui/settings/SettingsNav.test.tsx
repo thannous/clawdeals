@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
+  getBrowserSupabaseClient: vi.fn(),
   signOut: vi.fn(),
   clearStoredOwnerAuth: vi.fn(),
   clearStoredApiKey: vi.fn(),
@@ -34,11 +35,7 @@ vi.mock("../auth/ownerAuth", () => ({
 }));
 
 vi.mock("../auth/supabase-client", () => ({
-  getBrowserSupabaseClient: () => ({
-    auth: {
-      signOut: mocks.signOut
-    }
-  })
+  getBrowserSupabaseClient: mocks.getBrowserSupabaseClient
 }));
 
 vi.mock("../developer/storage", () => ({
@@ -52,11 +49,17 @@ describe("SettingsNav logout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true }) as any;
+    mocks.getBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        signOut: mocks.signOut
+      }
+    });
     mocks.signOut.mockResolvedValue({ error: null });
   });
 
   it("logs out via API, clears Supabase session, and redirects to login", async () => {
     render(<SettingsNav current="account" />);
+    expect(mocks.getBrowserSupabaseClient).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId("settings-logout"));
 
@@ -64,6 +67,7 @@ describe("SettingsNav logout", () => {
     await new Promise((r) => setTimeout(r, 0));
 
     expect(globalThis.fetch).toHaveBeenCalledWith("/api/v1/auth/logout", { method: "POST", credentials: "include" });
+    expect(mocks.getBrowserSupabaseClient).toHaveBeenCalledTimes(1);
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
     expect(mocks.clearStoredApiKey).toHaveBeenCalledTimes(1);
     expect(mocks.clearStoredLastEventId).toHaveBeenCalledTimes(1);

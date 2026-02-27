@@ -3,6 +3,11 @@ import type { GetStaticPropsContext, GetServerSidePropsContext } from "next";
 export const SUPPORTED_LOCALES = ["en", "fr", "es"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: SupportedLocale = "en";
+export type Messages = Record<string, any>;
+export type MessageNamespace = string;
+export type MessageLoadOptions = {
+  namespaces?: readonly MessageNamespace[];
+};
 const LOCALE_PREFIX_RE = /^\/(en|fr|es)(?=\/|$)/;
 const CLAIM_PATH_RE = /^\/(?:(en|fr|es)\/)?claim\/([^/?#]+)/;
 
@@ -65,19 +70,50 @@ export function extractClaimTokenFromPath(pathname: string): string {
  * Load all messages for the given locale.
  * Used by getServerSideProps and getStaticProps on every page.
  */
-export async function loadMessages(locale: string) {
+function normalizeNamespaces(namespaces?: readonly MessageNamespace[]): MessageNamespace[] {
+  if (!Array.isArray(namespaces) || namespaces.length === 0) return [];
+  return Array.from(new Set(namespaces.map((namespace) => String(namespace || "").trim()).filter(Boolean)));
+}
+
+function pickMessageNamespaces(messages: Messages, namespaces?: readonly MessageNamespace[]): Messages {
+  const requested = normalizeNamespaces(namespaces);
+  if (requested.length === 0) return messages;
+  const scoped: Messages = {};
+
+  for (const namespace of requested) {
+    if (Object.prototype.hasOwnProperty.call(messages, namespace)) {
+      scoped[namespace] = messages[namespace];
+    }
+  }
+
+  return scoped;
+}
+
+export async function loadMessages(locale: string, options?: MessageLoadOptions) {
   const resolved = resolveSupportedLocale(locale);
-  return (await import(`../../messages/${resolved}.json`)).default;
+  const allMessages = (await import(`../../messages/${resolved}.json`)).default as Messages;
+  return pickMessageNamespaces(allMessages, options?.namespaces);
+}
+
+/**
+ * Load only selected message namespaces for the given locale.
+ * Useful for routes that don't need the entire i18n payload.
+ */
+export async function loadMessagesForNamespaces(
+  locale: string,
+  namespaces: readonly MessageNamespace[]
+) {
+  return loadMessages(locale, { namespaces });
 }
 
 /**
  * Minimal getStaticProps that only loads messages.
  * Add to every CSR-only page that has no getStaticProps/getServerSideProps.
  */
-export async function getI18nStaticProps(ctx: GetStaticPropsContext) {
+export async function getI18nStaticProps(ctx: GetStaticPropsContext, options?: MessageLoadOptions) {
   return {
     props: {
-      messages: await loadMessages(ctx.locale || DEFAULT_LOCALE)
+      messages: await loadMessages(ctx.locale || DEFAULT_LOCALE, options)
     }
   };
 }
@@ -86,10 +122,10 @@ export async function getI18nStaticProps(ctx: GetStaticPropsContext) {
  * Minimal getServerSideProps that only loads messages.
  * Use for dynamic routes ([param]) that cannot use getStaticProps.
  */
-export async function getI18nServerSideProps(ctx: GetServerSidePropsContext) {
+export async function getI18nServerSideProps(ctx: GetServerSidePropsContext, options?: MessageLoadOptions) {
   return {
     props: {
-      messages: await loadMessages(ctx.locale || DEFAULT_LOCALE)
+      messages: await loadMessages(ctx.locale || DEFAULT_LOCALE, options)
     }
   };
 }
@@ -99,10 +135,11 @@ export async function getI18nServerSideProps(ctx: GetServerSidePropsContext) {
  */
 export async function withMessages<T extends Record<string, any>>(
   locale: string | undefined,
-  existingProps: T
+  existingProps: T,
+  options?: MessageLoadOptions
 ): Promise<T & { messages: any }> {
   return {
     ...existingProps,
-    messages: await loadMessages(locale || DEFAULT_LOCALE)
+    messages: await loadMessages(locale || DEFAULT_LOCALE, options)
   };
 }

@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { clearStoredOwnerAuth } from "../auth/ownerAuth";
-import { getBrowserSupabaseClient } from "../auth/supabase-client";
 import { clearStoredApiKey, clearStoredLastEventId } from "../developer/storage";
 
 type SettingsNavCurrent = "profile" | "account" | "identities" | "connected-apps" | "start";
@@ -38,6 +37,7 @@ export default function SettingsNav({ current }: { current: SettingsNavCurrent }
     }
     try {
       // Ensure we don't immediately re-bridge an existing Supabase session on /auth/login.
+      const { getBrowserSupabaseClient } = await import("../auth/supabase-client");
       const supabase = getBrowserSupabaseClient();
       await supabase.auth.signOut({ scope: "local" });
     } catch {

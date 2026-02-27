@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import LegalPageLayout from "../../ui/legal/LegalPageLayout";
-import { MentionsEN, MentionsFR, MentionsES } from "../../ui/legal/mentions-content";
+import { buildLocalizedLegalContent } from "../../ui/legal/buildLocalizedLegalContent";
 import { withMessages } from "../../shared/i18n";
 import type { SupportedLocale } from "../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
@@ -10,6 +10,7 @@ import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from 
 import type { GetServerSideProps } from "next";
 
 type PageProps = { baseUrl: string; isPreviewHost: boolean; messages: any };
+const LEGAL_I18N_NAMESPACES = ["seo", "landing", "nav", "footer"] as const;
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, res, locale }) => {
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
@@ -21,17 +22,17 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, r
     props: await withMessages(locale, {
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost
-    })
+    }, { namespaces: LEGAL_I18N_NAMESPACES })
   };
 };
 
 const LAST_UPDATED = "2026-02-15";
 
-function MentionsContent({ locale }: { locale: SupportedLocale }) {
-  if (locale === "fr") return <MentionsFR />;
-  if (locale === "es") return <MentionsES />;
-  return <MentionsEN />;
-}
+const MentionsContent = buildLocalizedLegalContent({
+  en: () => import("../../ui/legal/mentions-content.en").then((module) => ({ default: module.MentionsEN })),
+  fr: () => import("../../ui/legal/mentions-content.fr").then((module) => ({ default: module.MentionsFR })),
+  es: () => import("../../ui/legal/mentions-content.es").then((module) => ({ default: module.MentionsES }))
+});
 
 export default function LegalNotice({ baseUrl }: PageProps) {
   const router = useRouter();

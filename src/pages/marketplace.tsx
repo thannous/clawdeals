@@ -32,6 +32,7 @@ type MarketplacePageProps = {
   baseUrl: string;
   isPreviewHost: boolean;
 };
+const MARKETPLACE_I18N_NAMESPACES = ["marketplace", "landing", "nav", "footer"] as const;
 
 export const getServerSideProps: GetServerSideProps<MarketplacePageProps> = async ({ locale, req, res }) => {
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
@@ -50,7 +51,7 @@ export const getServerSideProps: GetServerSideProps<MarketplacePageProps> = asyn
       locale: locale || "en",
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
-      messages: await loadMessages(locale || "en"),
+      messages: await loadMessages(locale || "en", { namespaces: MARKETPLACE_I18N_NAMESPACES }),
     },
   };
 };

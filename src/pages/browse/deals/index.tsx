@@ -36,10 +36,11 @@ type BrowseDealsPageProps = {
   initialDeals: any[];
   initialNextCursor: string | null;
 };
+const BROWSE_DEALS_I18N_NAMESPACES = ["browseDeals", "landing", "nav", "footer"] as const;
 
 export const getServerSideProps: GetServerSideProps<BrowseDealsPageProps> = async ({ locale, req, res }) => {
   const resolvedLocale = locale || "en";
-  const messagesPromise = loadMessages(resolvedLocale);
+  const messagesPromise = loadMessages(resolvedLocale, { namespaces: BROWSE_DEALS_I18N_NAMESPACES });
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
 
   if (res?.setHeader) {

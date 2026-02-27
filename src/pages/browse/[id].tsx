@@ -15,6 +15,7 @@ type PageProps = {
   listing: any;
   locale: string;
 };
+const BROWSE_LISTING_DETAIL_I18N_NAMESPACES = ["browse", "landing", "nav", "footer"] as const;
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ params, locale, res }) => {
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -37,7 +38,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ params
     props: {
       listing,
       locale: locale || "en",
-      messages: await loadMessages(locale || "en"),
+      messages: await loadMessages(locale || "en", { namespaces: BROWSE_LISTING_DETAIL_I18N_NAMESPACES }),
     },
   };
 };
