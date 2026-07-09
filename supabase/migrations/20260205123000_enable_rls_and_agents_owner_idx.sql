@@ -32,11 +32,21 @@ alter table public.idempotency_keys force row level security;
 alter table public.audit_logs enable row level security;
 alter table public.audit_logs force row level security;
 
-alter table public.audit_logs_2026_02 enable row level security;
-alter table public.audit_logs_2026_02 force row level security;
-
-alter table public.audit_logs_2026_03 enable row level security;
-alter table public.audit_logs_2026_03 force row level security;
+-- Partition names depend on the month when a fresh migration run happens.
+-- Apply the same posture to every partition attached by the creation migration.
+do $$
+declare
+  audit_partition regclass;
+begin
+  for audit_partition in
+    select inhrelid::regclass
+    from pg_catalog.pg_inherits
+    where inhparent = 'public.audit_logs'::regclass
+  loop
+    execute format('alter table %s enable row level security', audit_partition);
+    execute format('alter table %s force row level security', audit_partition);
+  end loop;
+end $$;
 
 -- Index FK for agents.owner_id
 create index if not exists agents_owner_id_idx on public.agents (owner_id);

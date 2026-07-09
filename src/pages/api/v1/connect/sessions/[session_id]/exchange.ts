@@ -38,6 +38,29 @@ function normalizeOptionalString(value: any, maxLen: number) {
   return trimmed.length > maxLen ? trimmed.slice(0, maxLen) : trimmed;
 }
 
+function protectionUnavailableResponse(protection: "rate_limit" | "idempotency") {
+  const isIdempotency = protection === "idempotency";
+  return jsonResponse(
+    503,
+    errorPayload(
+      isIdempotency ? "IDEMPOTENCY_UNAVAILABLE" : "RATE_LIMIT_UNAVAILABLE",
+      isIdempotency ? "Idempotency protection unavailable" : "Rate limit protection unavailable",
+      { protection }
+    ),
+    { "Retry-After": "1" }
+  );
+}
+
+function markProtectionUnavailable(ctx: any, protection: "rate_limit" | "idempotency", routeGroup: string) {
+  if (!ctx) return;
+  ctx.outcome = { type: "BLOCKED", reason: `${protection}_unavailable` };
+  ctx.security = {
+    ...(ctx.security || {}),
+    fail_closed_protection: protection,
+    route_group: routeGroup
+  };
+}
+
 export async function handler(req: any, _res: any, ctx: any) {
   if (req.method !== "POST") {
     return methodNotAllowed(["POST"]);
@@ -49,23 +72,30 @@ export async function handler(req: any, _res: any, ctx: any) {
 
   // This endpoint is internet-facing; apply an IP-scoped limiter first so callers can't bypass
   // protections by varying untrusted poll tokens / hashes.
-  const ipRateLimitResult = await rateLimitMiddleware(req, {
-    routeGroup: "connect.sessions.exchange_ip",
-    env: process.env,
-    onRateLimited: (meta: any) => {
-      if (!ctx) return;
-      ctx.rateLimit = {
-        group: meta.group,
-        scope: meta.scope,
-        identity: meta.identity,
-        limit: meta.limit,
-        windowSeconds: meta.windowSeconds,
-        retryAfterSeconds: meta.retryAfterSeconds,
-        remaining: meta.remaining,
-        resetSeconds: meta.resetSeconds
-      };
-    }
-  });
+  let ipRateLimitResult: any = null;
+  try {
+    ipRateLimitResult = await rateLimitMiddleware(req, {
+      routeGroup: "connect.sessions.exchange_ip",
+      env: process.env,
+      failOpen: false,
+      onRateLimited: (meta: any) => {
+        if (!ctx) return;
+        ctx.rateLimit = {
+          group: meta.group,
+          scope: meta.scope,
+          identity: meta.identity,
+          limit: meta.limit,
+          windowSeconds: meta.windowSeconds,
+          retryAfterSeconds: meta.retryAfterSeconds,
+          remaining: meta.remaining,
+          resetSeconds: meta.resetSeconds
+        };
+      }
+    });
+  } catch {
+    markProtectionUnavailable(ctx, "rate_limit", "connect.sessions.exchange_ip");
+    return protectionUnavailableResponse("rate_limit");
+  }
 
   if (ipRateLimitResult && ipRateLimitResult.status === 429) {
     if (ctx) {
@@ -112,25 +142,32 @@ export async function handler(req: any, _res: any, ctx: any) {
     };
   }
 
-  const rateLimitResult = await rateLimitMiddleware(req, {
-    routeGroup: "connect.sessions.exchange",
-    agentId: pollTokenHash,
-    useIpFallback: false,
-    env: process.env,
-    onRateLimited: (meta: any) => {
-      if (!ctx) return;
-      ctx.rateLimit = {
-        group: meta.group,
-        scope: meta.scope,
-        identity: meta.identity,
-        limit: meta.limit,
-        windowSeconds: meta.windowSeconds,
-        retryAfterSeconds: meta.retryAfterSeconds,
-        remaining: meta.remaining,
-        resetSeconds: meta.resetSeconds
-      };
-    }
-  });
+  let rateLimitResult: any = null;
+  try {
+    rateLimitResult = await rateLimitMiddleware(req, {
+      routeGroup: "connect.sessions.exchange",
+      agentId: pollTokenHash,
+      useIpFallback: false,
+      env: process.env,
+      failOpen: false,
+      onRateLimited: (meta: any) => {
+        if (!ctx) return;
+        ctx.rateLimit = {
+          group: meta.group,
+          scope: meta.scope,
+          identity: meta.identity,
+          limit: meta.limit,
+          windowSeconds: meta.windowSeconds,
+          retryAfterSeconds: meta.retryAfterSeconds,
+          remaining: meta.remaining,
+          resetSeconds: meta.resetSeconds
+        };
+      }
+    });
+  } catch {
+    markProtectionUnavailable(ctx, "rate_limit", "connect.sessions.exchange");
+    return protectionUnavailableResponse("rate_limit");
+  }
 
   if (rateLimitResult && rateLimitResult.status === 429) {
     if (ctx) {
@@ -172,12 +209,19 @@ export async function handler(req: any, _res: any, ctx: any) {
       ctx.actor = { type: "agent", id: pollTokenHash };
     }
 
-    const idemResult = await beginIdempotency(req, ctx, {
-      enabled: true,
-      useIpFallback: false,
-      ttlSeconds: 10 * 60,
-      strictReplayTtl: true
-    });
+    let idemResult: any;
+    try {
+      idemResult = await beginIdempotency(req, ctx, {
+        enabled: true,
+        useIpFallback: false,
+        ttlSeconds: 10 * 60,
+        strictReplayTtl: true,
+        failOpen: false
+      });
+    } catch {
+      markProtectionUnavailable(ctx, "idempotency", "connect.sessions.exchange");
+      return protectionUnavailableResponse("idempotency");
+    }
 
     if (idemResult.action === "error") {
       if (ctx) {

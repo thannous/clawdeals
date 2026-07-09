@@ -487,5 +487,6 @@ export async function handler(req: any, _res: any, ctx: any) {
 }
 
 export default withApiMiddlewares(handler, {
-  enableIdempotency: true
+  enableIdempotency: true,
+  idempotencyUseIpFallback: true
 });

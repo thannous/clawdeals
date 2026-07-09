@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { consoleTest as test, expect } from "./helpers/fixtures";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { expectStatus } from "./helpers/http";
@@ -89,4 +89,3 @@ test.describe.serial("Integration: Ops Dashboard", () => {
     expect(Array.isArray(body.slo_latency_targets)).toBe(false);
   });
 });
-

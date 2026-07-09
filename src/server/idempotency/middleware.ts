@@ -131,6 +131,16 @@ function buildInProgressResponse() {
   );
 }
 
+function buildUnavailableResponse(message = "Idempotency protection unavailable") {
+  return buildErrorResponse(
+    "IDEMPOTENCY_UNAVAILABLE",
+    message,
+    { protection: "idempotency" },
+    503,
+    { "Retry-After": "1" }
+  );
+}
+
 function isRecordExpired(record: any) {
   if (!record?.expires_at) return false;
   const expiresAtMs = Date.parse(String(record.expires_at));
@@ -296,6 +306,12 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
       actorId = ctx.ip;
     }
     if (!actorId || !actorType) {
+      if (!(options.failOpen ?? true)) {
+        return {
+          action: "error",
+          response: buildUnavailableResponse("Idempotency actor unavailable")
+        };
+      }
       return { action: "skip" };
     }
 

@@ -99,22 +99,28 @@ to anon, authenticated
 using (false)
 with check (false);
 
--- Audit log partitions are separate tables for the linter; keep them explicit.
-drop policy if exists deny_all_anon_authenticated on public.audit_logs_2026_02;
-create policy deny_all_anon_authenticated
-on public.audit_logs_2026_02
-for all
-to anon, authenticated
-using (false)
-with check (false);
-
-drop policy if exists deny_all_anon_authenticated on public.audit_logs_2026_03;
-create policy deny_all_anon_authenticated
-on public.audit_logs_2026_03
-for all
-to anon, authenticated
-using (false)
-with check (false);
+-- Audit log partitions are separate tables for the linter. Their names depend
+-- on the month when a fresh migration run happens, so cover every attached
+-- partition instead of assuming the original February/March 2026 names.
+do $$
+declare
+  audit_partition regclass;
+begin
+  for audit_partition in
+    select inhrelid::regclass
+    from pg_catalog.pg_inherits
+    where inhparent = 'public.audit_logs'::regclass
+  loop
+    execute format(
+      'drop policy if exists deny_all_anon_authenticated on %s',
+      audit_partition
+    );
+    execute format(
+      'create policy deny_all_anon_authenticated on %s for all to anon, authenticated using (false) with check (false)',
+      audit_partition
+    );
+  end loop;
+end $$;
 
 -- Listings / threads / messages (Phase 3, but tables exist; keep locked down)
 drop policy if exists deny_all_anon_authenticated on public.listings;
@@ -176,4 +182,3 @@ alter function public.deal_vote_v0(uuid, uuid, smallint, text, numeric)
 
 -- Supabase performance lint: identical indexes exist; keep one.
 drop index if exists public.deals_source_url_fingerprint_idx;
-

@@ -3,6 +3,10 @@
     {
       "path": "/api/internal/cron/trustscore-recalc",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/internal/cron/watchlist-match-queue",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

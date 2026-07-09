@@ -129,6 +129,68 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
     expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "rate_limit" });
   });
 
+  it("returns 503 when the IP rate limit protection is unavailable", async () => {
+    rateLimitMiddlewareMock.mockRejectedValueOnce(new Error("redis down"));
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("RATE_LIMIT_UNAVAILABLE");
+    expect(result.headers["Retry-After"]).toBe("1");
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "rate_limit_unavailable" });
+    expect(getConnectSessionForPollMock).not.toHaveBeenCalled();
+    expect(exchangeMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when the poll-token rate limit protection is unavailable", async () => {
+    rateLimitMiddlewareMock.mockResolvedValueOnce(null as any).mockRejectedValueOnce(new Error("redis down"));
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("RATE_LIMIT_UNAVAILABLE");
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "rate_limit_unavailable" });
+    expect(getConnectSessionForPollMock).not.toHaveBeenCalled();
+    expect(exchangeMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when idempotency protection is unavailable", async () => {
+    beginIdempotencyMock.mockRejectedValueOnce(new Error("idempotency store down"));
+
+    const req = {
+      method: "POST",
+      headers: { "idempotency-key": "idem", authorization: "Bearer cd_poll_test" },
+      query: { session_id: "11111111-1111-4111-8111-111111111111" },
+      body: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    };
+
+    const ctx: any = { ...baseCtx };
+    const result: any = await handler(req, null, ctx);
+
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("IDEMPOTENCY_UNAVAILABLE");
+    expect(result.headers["Retry-After"]).toBe("1");
+    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "idempotency_unavailable" });
+    expect(exchangeMock).not.toHaveBeenCalled();
+    expect(finalizeIdempotencyMock).not.toHaveBeenCalled();
+  });
+
   it("replays idempotent response", async () => {
     beginIdempotencyMock.mockResolvedValue({
       action: "replay",
@@ -360,10 +422,26 @@ describe("POST /v1/connect/sessions/:session_id/exchange", () => {
     const result: any = await handler(req, null, ctx);
 
     expect(hashConnectSessionPollToken).toHaveBeenCalledWith("cd_poll_test");
+    expect(rateLimitMiddlewareMock).toHaveBeenNthCalledWith(
+      1,
+      expect.anything(),
+      expect.objectContaining({
+        routeGroup: "connect.sessions.exchange_ip",
+        failOpen: false
+      })
+    );
+    expect(rateLimitMiddlewareMock).toHaveBeenNthCalledWith(
+      2,
+      expect.anything(),
+      expect.objectContaining({
+        routeGroup: "connect.sessions.exchange",
+        failOpen: false
+      })
+    );
     expect(beginIdempotencyMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
-      expect.objectContaining({ strictReplayTtl: true })
+      expect.objectContaining({ strictReplayTtl: true, failOpen: false })
     );
     expect(exchangeConnectSessionForInstallationApiKey).toHaveBeenCalledWith(
       expect.objectContaining({

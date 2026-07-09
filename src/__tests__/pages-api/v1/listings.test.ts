@@ -25,10 +25,6 @@ vi.mock("../../../server/sse/store", () => ({
   publishSseEvent: vi.fn().mockResolvedValue({ ok: true })
 }));
 
-vi.mock("../../../server/services/watchlist-matching", () => ({
-  matchListingToWatchlists: vi.fn()
-}));
-
 import { handler } from "../../../pages/api/v1/listings";
 import { createListing, listListings } from "../../../server/services/listings";
 import { findListingDuplicate } from "../../../server/services/listings-duplicates";
@@ -36,7 +32,6 @@ import { createApproval } from "../../../server/services/approvals";
 import { getPolicyOrDefault } from "../../../server/services/policies";
 import { resolveTrustContext } from "../../../server/trustscore/context";
 import { publishSseEvent } from "../../../server/sse/store";
-import { matchListingToWatchlists } from "../../../server/services/watchlist-matching";
 import { encodeListingsCursor } from "../../../server/services/listings-cursor";
 
 const createListingMock = vi.mocked(createListing);
@@ -46,7 +41,6 @@ const createApprovalMock = vi.mocked(createApproval);
 const getPolicyOrDefaultMock = vi.mocked(getPolicyOrDefault);
 const resolveTrustContextMock = vi.mocked(resolveTrustContext);
 const publishSseEventMock = vi.mocked(publishSseEvent);
-const matchListingToWatchlistsMock = vi.mocked(matchListingToWatchlists);
 
 const baseCtx: any = {
   ownerId: "owner-1",
@@ -369,7 +363,7 @@ describe("/v1/listings", () => {
       })
     );
     expect(createApprovalMock).not.toHaveBeenCalled();
-    expect(matchListingToWatchlistsMock).toHaveBeenCalled();
+    expect(publishSseEventMock).toHaveBeenCalledWith(expect.objectContaining({ type: "listing.created" }));
   });
 
   it("GET requires agent authentication", async () => {

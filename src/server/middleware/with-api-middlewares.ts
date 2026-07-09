@@ -29,6 +29,80 @@ function isWriteMethod(method) {
   return !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
 }
 
+const FAIL_CLOSED_PROTECTION_ROUTE_GROUPS = new Set([
+  "auth.session.start",
+  "auth.session.confirm",
+  "auth.session.end",
+  "approvals.approve",
+  "approvals.deny",
+  "approvals.write",
+  "console.approvals.write",
+  "channels.pairing_confirm",
+  "channels.pairings.write",
+  "console.moderation.write",
+  "console.reports.write",
+  "console.risk_rules.write",
+  "connect.claims.read",
+  "evidence.write",
+  "ops.psp.write",
+  "owner.identities.delete",
+  "owner.identities.write",
+  "policies.write",
+  "psp.webhooks",
+  "ratings.create",
+  "reports.create",
+  "sellers.psp.write"
+]);
+
+const FAIL_CLOSED_PROTECTION_ROUTE_GROUP_PREFIXES = [
+  "agents.keys.",
+  "agent.keys.",
+  "connect.sessions.",
+  "contact_reveal.",
+  "disputes.",
+  "escrows.",
+  "installations.",
+  "offers.",
+  "owner.verify_",
+  "transactions."
+];
+
+function shouldFailClosedProtections(routeGroup: any): boolean {
+  if (!routeGroup || typeof routeGroup !== "string") return false;
+  return (
+    FAIL_CLOSED_PROTECTION_ROUTE_GROUPS.has(routeGroup) ||
+    FAIL_CLOSED_PROTECTION_ROUTE_GROUP_PREFIXES.some((prefix) => routeGroup.startsWith(prefix))
+  );
+}
+
+function buildProtectionUnavailableResponse(protection: "rate_limit" | "idempotency") {
+  const isIdempotency = protection === "idempotency";
+  return jsonResponse(
+    503,
+    errorPayload(
+      isIdempotency ? "IDEMPOTENCY_UNAVAILABLE" : "RATE_LIMIT_UNAVAILABLE",
+      isIdempotency ? "Idempotency protection unavailable" : "Rate limit protection unavailable",
+      { protection }
+    ),
+    { "Retry-After": "1" }
+  );
+}
+
+function blockUnavailableProtection(res: any, ctx: any, protection: "rate_limit" | "idempotency") {
+  const response = buildProtectionUnavailableResponse(protection);
+  ctx.outcome = { type: "BLOCKED", reason: `${protection}_unavailable` };
+  ctx.security = {
+    ...(ctx.security || {}),
+    fail_closed_protection: protection,
+    route_group: ctx.routeGroup || null
+  };
+  if (!res.writableEnded) {
+    sendJson(res, response.status, response.body, response.headers);
+  }
+  ctx.response = response;
+  return response;
+}
+
 function getHeaderValue(headers: any, name: string): string | null {
   if (!headers) return null;
   const key = String(name || "").toLowerCase();
@@ -357,6 +431,7 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
   return async function apiHandler(req, res) {
     const ctx: any = createRequestContext(req);
     ctx.routeGroup = resolved.routeGroup || matchRouteGroupFromRequest(req) || null;
+    const failClosedProtections = shouldFailClosedProtections(ctx.routeGroup);
     applyCanonicalBody(req, ctx);
     await applyAuthStub(req, ctx);
 
@@ -424,33 +499,46 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
           }
         }
 
-        const rateLimitResult = await rateLimitMiddleware(req, {
-          routeGroup: resolved.routeGroup,
-          agentId: ctx.agentId,
-          ownerId: ctx.ownerId,
-          channelId: ctx.channelId,
-          ip: ctx.ip,
-          env: process.env,
-          onRateLimited: (meta) => {
-            ctx.rateLimit = {
-              group: meta.group,
-              scope: meta.scope,
-              identity: meta.identity,
-              limit: meta.limit,
-              windowSeconds: meta.windowSeconds,
-              retryAfterSeconds: meta.retryAfterSeconds,
-              remaining: meta.remaining,
-              resetSeconds: meta.resetSeconds
-            };
+        let rateLimitResult: any = null;
+        try {
+          rateLimitResult = await rateLimitMiddleware(req, {
+            routeGroup: ctx.routeGroup || resolved.routeGroup,
+            agentId: ctx.agentId,
+            ownerId: ctx.ownerId,
+            channelId: ctx.channelId,
+            ip: ctx.ip,
+            env: process.env,
+            failOpen: !failClosedProtections,
+            onRateLimited: (meta) => {
+              ctx.rateLimit = {
+                group: meta.group,
+                scope: meta.scope,
+                identity: meta.identity,
+                limit: meta.limit,
+                windowSeconds: meta.windowSeconds,
+                retryAfterSeconds: meta.retryAfterSeconds,
+                remaining: meta.remaining,
+                resetSeconds: meta.resetSeconds
+              };
+            }
+          });
+        } catch (error) {
+          if (failClosedProtections) {
+            blockUnavailableProtection(res, ctx, "rate_limit");
+            return;
           }
-        });
+          throw error;
+        }
 
-        if (rateLimitResult && rateLimitResult.status === 429) {
-          ctx.outcome = { type: "BLOCKED", reason: "rate_limit" };
+        if (rateLimitResult && rateLimitResult.status >= 400) {
+          ctx.outcome = {
+            type: "BLOCKED",
+            reason: rateLimitResult.status === 429 ? "rate_limit" : "rate_limit_unavailable"
+          };
           if (rateLimitResult.meta) {
             const meta: any = rateLimitResult.meta;
             ctx.rateLimit = {
-              group: meta.group || resolved.routeGroup || null,
+              group: meta.group || ctx.routeGroup || resolved.routeGroup || null,
               scope: meta.scope,
               identity: meta.identity,
               limit: meta.limit,
@@ -466,7 +554,7 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
         if (rateLimitResult?.meta) {
           const meta: any = rateLimitResult.meta;
           ctx.rateLimit = {
-            group: meta.group || resolved.routeGroup || null,
+            group: meta.group || ctx.routeGroup || resolved.routeGroup || null,
             scope: meta.scope,
             identity: meta.identity
           };
@@ -477,11 +565,21 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
       }
 
       if (resolved.enableIdempotency && isWriteMethod(ctx.method)) {
-        const idemResult = await beginIdempotency(req, ctx, {
-          enabled: true,
-          useIpFallback: resolved.idempotencyUseIpFallback === true,
-          ip: ctx.ip
-        });
+        let idemResult: any;
+        try {
+          idemResult = await beginIdempotency(req, ctx, {
+            enabled: true,
+            useIpFallback: resolved.idempotencyUseIpFallback === true,
+            ip: ctx.ip,
+            failOpen: !failClosedProtections
+          });
+        } catch (error) {
+          if (failClosedProtections) {
+            blockUnavailableProtection(res, ctx, "idempotency");
+            return;
+          }
+          throw error;
+        }
         if (idemResult.action === "error") {
           ctx.outcome = { type: "BLOCKED", reason: "idempotency" };
           sendJson(res, idemResult.response.status, idemResult.response.body, idemResult.response.headers);

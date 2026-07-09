@@ -9,6 +9,7 @@ import {
   getWatchlistForAgent,
   updateWatchlistForAgent
 } from "../../../../server/services/watchlists";
+import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -143,6 +144,18 @@ export async function handler(req, res, ctx) {
       });
       if (!updated) {
         return jsonResponse(404, errorPayload("NOT_FOUND", "Watchlist not found"));
+      }
+      const shouldBackfill = updated.active !== false && (rawCriteria !== undefined || rawActive === true);
+      if (shouldBackfill) {
+        try {
+          await enqueueWatchlistBackfill({ watchlistId: updated.watchlist_id });
+        } catch (error) {
+          // Best-effort: watchlist update should not fail if the async backfill queue is unavailable.
+          console.info("watchlist.backfill_enqueue_failed", {
+            watchlist_id: updated.watchlist_id,
+            error: error?.message || String(error)
+          });
+        }
       }
       return jsonResponse(200, mapWatchlistRow(updated));
     } catch (error) {

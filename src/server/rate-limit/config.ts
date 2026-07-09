@@ -405,6 +405,18 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 500, windowSeconds: HOUR }],
   },
+  "console.ops.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "console.risk_rules.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "console.risk_rules.write": {
+    scope: "owner",
+    buckets: [{ limit: 200, windowSeconds: HOUR }],
+  },
   "owner.verify_email_start": {
     scope: "owner",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
@@ -426,6 +438,30 @@ export const RATE_LIMIT_PROFILES = {
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
   "owner.activity.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.agents.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.claims.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.deals.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.listings.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.offers.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.threads.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },

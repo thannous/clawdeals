@@ -1,6 +1,7 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { buildEntityTokensFromDeal, evaluateWatchlistMatch, buildEntityTokensFromListing, evaluateWatchlistMatchListing } from "../utils/matching";
+import { WATCHLIST_BACKFILL_MAX_MATCHES } from "../config/watchlists";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
   const error: any = new Error(message);
@@ -181,8 +182,11 @@ export async function runWatchlistBackfillQueue({
       });
     }
 
-    if (matchRows.length > 0) {
-      insertedCount += await upsertMatches({ client: supabase, rows: matchRows });
+    for (let offset = 0; offset < matchRows.length; offset += WATCHLIST_BACKFILL_MAX_MATCHES) {
+      insertedCount += await upsertMatches({
+        client: supabase,
+        rows: matchRows.slice(offset, offset + WATCHLIST_BACKFILL_MAX_MATCHES)
+      });
     }
 
     const { error: delError } = await supabase
@@ -199,6 +203,11 @@ export async function runWatchlistBackfillQueue({
     }
   }
 
-  return { ok: true, processed_count: processedCount, inserted_count: insertedCount, deals_count: deals.length, listings_count: listings.length };
+  return {
+    ok: true,
+    processed_count: processedCount,
+    inserted_count: insertedCount,
+    deals_count: deals.length,
+    listings_count: listings.length
+  };
 }
-

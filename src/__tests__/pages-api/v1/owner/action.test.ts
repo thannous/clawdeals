@@ -58,7 +58,11 @@ function makeReq(action, body = {}, headers = {}) {
 }
 
 function makeCtx(): any {
-  return {};
+  return {
+    authError: null,
+    ownerId: validUuid,
+    actor: { type: "owner", id: validUuid }
+  };
 }
 
 describe("verify-email:start", () => {
@@ -66,11 +70,22 @@ describe("verify-email:start", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 400 without x-owner-id", async () => {
-    const req = { method: "POST", headers: {}, query: { action: "verify-email:start" }, body: {} };
-    const result: any = await handler(req, null, makeCtx());
+  it("rejects legacy x-owner-id without authenticated owner context", async () => {
+    const req = { method: "POST", headers: { "x-owner-id": validUuid }, query: { action: "verify-email:start" }, body: {} };
+    const result: any = await handler(req, null, {});
+    expect(result.status).toBe(401);
+    expect(result.body.error.code).toBe("UNAUTHORIZED");
+    expect(getOwner).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when authenticated owner_id is not a UUID", async () => {
+    const result: any = await handler(makeReq("verify-email:start"), null, {
+      authError: null,
+      ownerId: "not-a-uuid",
+      actor: { type: "owner", id: "not-a-uuid" }
+    });
     expect(result.status).toBe(400);
-    expect(result.body.error.message).toContain("x-owner-id");
+    expect(result.body.error.message).toContain("UUID");
   });
 
   it("returns 404 when owner not found", async () => {
@@ -112,6 +127,34 @@ describe("verify-email:start", () => {
     } as any);
     const result: any = await handler(makeReq("verify-email:start"), null, makeCtx());
     expect(result.body.data.token).toBe("test-token-123");
+  });
+
+  it("does not echo token in production even when env flag is enabled", async () => {
+    const mutableEnv = process.env as any;
+    const previousNodeEnv = mutableEnv.NODE_ENV;
+    const previousEcho = mutableEnv.OWNER_VERIFICATION_ECHO_TOKEN;
+    mutableEnv.NODE_ENV = "production";
+    mutableEnv.OWNER_VERIFICATION_ECHO_TOKEN = "true";
+
+    try {
+      getOwnerMock.mockResolvedValue({ owner_id: validUuid, email: "test@example.com" } as any);
+      getLatestActiveChallengeMock.mockResolvedValue(null);
+      createChallengeMock.mockResolvedValue({
+        challenge_id: challengeId,
+        expires_at: "2026-02-05T13:00:00Z"
+      } as any);
+
+      const result: any = await handler(makeReq("verify-email:start"), null, makeCtx());
+      expect(result.status).toBe(201);
+      expect(result.body.data.token).toBeUndefined();
+    } finally {
+      mutableEnv.NODE_ENV = previousNodeEnv;
+      if (previousEcho === undefined) {
+        delete mutableEnv.OWNER_VERIFICATION_ECHO_TOKEN;
+      } else {
+        mutableEnv.OWNER_VERIFICATION_ECHO_TOKEN = previousEcho;
+      }
+    }
   });
 
   it("returns 429 lockout when challenge locked", async () => {

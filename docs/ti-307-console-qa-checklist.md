@@ -53,15 +53,16 @@ npm run test:e2e:headed
 
 ## Environment Notes (Console Ops Safety)
 
-Console endpoints inject an owner identity server-side. In production builds, console ops endpoints are intentionally disabled unless:
+Console endpoints use a server-validated owner identity. In production builds, console ops endpoints are intentionally disabled unless:
 - `CONSOLE_OPS_ENABLED=1` is set
+- `CONSOLE_OPS_OWNER_ID=<uuid>` identifies the allowlisted ops owner
+- the caller has a valid active session cookie for that owner
 
 Expected behavior:
 - prod build + missing `CONSOLE_OPS_ENABLED`: `/api/console/*` should return 404 `NOT_FOUND` (not a 401)
-- with `CONSOLE_OPS_ENABLED=1`: console pages should function normally
-
-Optional:
-- set a stable ops owner id with `CONSOLE_OPS_OWNER_ID=<uuid>` (otherwise a default UUID is used)
+- with the flag, allowlist, and matching owner session: console pages should function normally
+- with the flag but no allowlist: `/api/console/*` should return `403 FORBIDDEN`
+- with the flag and allowlist but no valid owner session: `/api/console/*` should return `401 UNAUTHORIZED`
 
 ## Test Data (Recommended: Deterministic Sandbox)
 

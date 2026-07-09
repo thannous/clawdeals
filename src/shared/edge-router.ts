@@ -12,7 +12,20 @@ export type EdgeRouterDecision =
   | { type: "error"; status: 500; message: string };
 
 const LOCALE_PREFIX_RE = /^\/(en|fr|es)(?=\/|$)/;
-const APP_ROUTE_PREFIXES = ["/deals", "/console", "/start", "/settings", "/auth", "/developer", "/dev", "/claim", "/device", "/pair"];
+const APP_ROUTE_PREFIXES = [
+  "/deals",
+  "/console",
+  "/start",
+  "/settings",
+  "/auth",
+  "/developer",
+  "/dev",
+  "/claim",
+  "/device",
+  "/my",
+  "/pair",
+  "/keys"
+];
 
 function normalizeHost(hostname: string): string {
   if (!hostname) return "";

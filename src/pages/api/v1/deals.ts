@@ -6,7 +6,6 @@ import { createDeal, findRecentDealDuplicate } from "../../../server/services/de
 import { getDealById } from "../../../server/services/deal-detail";
 import { DEALS_DEFAULT_LIMIT, DEALS_MAX_LIMIT, listDeals } from "../../../server/services/deals-list";
 import { decodeDealsCursor } from "../../../server/services/deals-cursor";
-import { matchDealToWatchlists } from "../../../server/services/watchlist-matching";
 import { resolveTrustContext } from "../../../server/trustscore/context";
 import {
   ALLOWED_CURRENCIES,
@@ -481,15 +480,6 @@ export async function handler(req, res, ctx) {
       new_until: deal.new_until,
       creator_agent_id: deal.creator_agent_id
     };
-
-    try {
-      await matchDealToWatchlists({ deal });
-    } catch (error) {
-      console.info("watchlist.match_failed", {
-        deal_id: deal?.deal_id || null,
-        error: error?.message || String(error)
-      });
-    }
 
     return jsonResponse(201, { deal: responseDeal });
   } catch (error) {

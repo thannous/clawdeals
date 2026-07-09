@@ -23,6 +23,27 @@ describe("edge router decision", () => {
     });
   });
 
+  it.each([
+    ["https://clawdeals.com/my/deals?status=active", "https://app.clawdeals.com/my/deals?status=active"],
+    ["https://clawdeals.com/fr/my/offers", "https://app.clawdeals.com/fr/my/offers"],
+    ["https://clawdeals.com/pair?token=cd_pair_123", "https://app.clawdeals.com/pair?token=cd_pair_123"],
+    ["https://clawdeals.com/keys", "https://app.clawdeals.com/keys"]
+  ])("redirects app-only route %s on marketing host to app origin", (source, location) => {
+    const decision = resolveEdgeRouterDecision(new URL(source), {});
+
+    expect(decision).toEqual({
+      type: "redirect",
+      status: 308,
+      location
+    });
+  });
+
+  it("passes app host app routes through to the app origin", () => {
+    const decision = resolveEdgeRouterDecision(new URL("https://app.clawdeals.com/my/deals"), {});
+
+    expect(decision).toEqual({ type: "pass" });
+  });
+
   it("proxies /api requests to app origin to preserve same-origin browser flows", () => {
     const decision = resolveEdgeRouterDecision(new URL("https://clawdeals.com/api/v1/watchlist-signups"), {});
 

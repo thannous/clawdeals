@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { hybridTest as test, expect } from "./helpers/fixtures";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId, randomIp, sleep } from "./helpers/ids";

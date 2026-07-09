@@ -47,10 +47,11 @@ export async function handler(req, res, ctx) {
   const entityType = resolveParam(req.query?.entity_type) || null;
   const entityId = resolveParam(req.query?.entity_id) || null;
   const outcome = resolveParam(req.query?.outcome) || null;
+  const requestId = resolveParam(req.query?.request_id) || null;
 
   try {
     const csv = await exportAuditLogsCsv({
-      from, to, actorType, actorId, actionName, entityType, entityId, outcome
+      from, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId
     });
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -59,7 +60,7 @@ export async function handler(req, res, ctx) {
     res.end(csv);
     return null;
   } catch (error) {
-    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
+    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 }
 

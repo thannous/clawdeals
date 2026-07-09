@@ -235,7 +235,8 @@ export async function runObservabilityAlerts({
   const spikeMultiplier429 = envNumber(env, "ALERTING_429_SPIKE_MULTIPLIER", 3);
 
   const trustscoreQueueThreshold = clampInt(envNumber(env, "ALERTING_TRUSTSCORE_QUEUE_DEPTH_THRESHOLD", 1000), 0, 1000000);
-  const watchlistQueueThreshold = clampInt(envNumber(env, "ALERTING_WATCHLIST_BACKFILL_QUEUE_DEPTH_THRESHOLD", 500), 0, 1000000);
+  const watchlistBackfillQueueThreshold = clampInt(envNumber(env, "ALERTING_WATCHLIST_BACKFILL_QUEUE_DEPTH_THRESHOLD", 500), 0, 1000000);
+  const watchlistMatchQueueThreshold = clampInt(envNumber(env, "ALERTING_WATCHLIST_MATCH_QUEUE_DEPTH_THRESHOLD", 500), 0, 1000000);
   const approvalsPendingThreshold = clampInt(envNumber(env, "ALERTING_APPROVALS_PENDING_DEPTH_THRESHOLD", 200), 0, 1000000);
 
   const nowIso = toIso(now);
@@ -378,15 +379,25 @@ export async function runObservabilityAlerts({
     });
   }
 
-  const [trustscoreQueueDepth, watchlistQueueDepth, trustscoreOldest, watchlistOldest] = await Promise.all([
+  const [
+    trustscoreQueueDepth,
+    watchlistBackfillQueueDepth,
+    watchlistMatchQueueDepth,
+    trustscoreOldest,
+    watchlistBackfillOldest,
+    watchlistMatchOldest
+  ] = await Promise.all([
     countTableRows({ client, table: "trustscore_recalc_queue", column: "agent_id" }),
     countTableRows({ client, table: "watchlist_backfill_queue", column: "watchlist_id" }),
+    countTableRows({ client, table: "watchlist_match_queue", column: "entity_id" }),
     fetchOldestUpdatedAt({ client, table: "trustscore_recalc_queue" }),
-    fetchOldestUpdatedAt({ client, table: "watchlist_backfill_queue" })
+    fetchOldestUpdatedAt({ client, table: "watchlist_backfill_queue" }),
+    fetchOldestUpdatedAt({ client, table: "watchlist_match_queue" })
   ]);
 
   const trustscoreOldestAgeSeconds = computeAgeSeconds(now, trustscoreOldest);
-  const watchlistOldestAgeSeconds = computeAgeSeconds(now, watchlistOldest);
+  const watchlistBackfillOldestAgeSeconds = computeAgeSeconds(now, watchlistBackfillOldest);
+  const watchlistMatchOldestAgeSeconds = computeAgeSeconds(now, watchlistMatchOldest);
 
   const { count: approvalsPendingDepthRaw, error: approvalsPendingError } = await client
     .from("approvals")
@@ -427,16 +438,30 @@ export async function runObservabilityAlerts({
     });
   }
 
-  if (watchlistQueueDepth > watchlistQueueThreshold) {
+  if (watchlistBackfillQueueDepth > watchlistBackfillQueueThreshold) {
     alerts.push({
       name: "queue.depth.watchlist_backfill",
       severity: "warning",
       message: "watchlist_backfill_queue depth is above threshold.",
       meta: {
-        depth: watchlistQueueDepth,
-        threshold: watchlistQueueThreshold,
-        oldest_updated_at: watchlistOldest,
-        oldest_age_s: watchlistOldestAgeSeconds
+        depth: watchlistBackfillQueueDepth,
+        threshold: watchlistBackfillQueueThreshold,
+        oldest_updated_at: watchlistBackfillOldest,
+        oldest_age_s: watchlistBackfillOldestAgeSeconds
+      }
+    });
+  }
+
+  if (watchlistMatchQueueDepth > watchlistMatchQueueThreshold) {
+    alerts.push({
+      name: "queue.depth.watchlist_match",
+      severity: "warning",
+      message: "watchlist_match_queue depth is above threshold.",
+      meta: {
+        depth: watchlistMatchQueueDepth,
+        threshold: watchlistMatchQueueThreshold,
+        oldest_updated_at: watchlistMatchOldest,
+        oldest_age_s: watchlistMatchOldestAgeSeconds
       }
     });
   }
@@ -530,11 +555,18 @@ export async function runObservabilityAlerts({
         triggered: trustscoreQueueDepth > trustscoreQueueThreshold
       },
       watchlist_backfill_queue: {
-        depth: watchlistQueueDepth,
-        threshold: watchlistQueueThreshold,
-        oldest_updated_at: watchlistOldest,
-        oldest_age_s: watchlistOldestAgeSeconds,
-        triggered: watchlistQueueDepth > watchlistQueueThreshold
+        depth: watchlistBackfillQueueDepth,
+        threshold: watchlistBackfillQueueThreshold,
+        oldest_updated_at: watchlistBackfillOldest,
+        oldest_age_s: watchlistBackfillOldestAgeSeconds,
+        triggered: watchlistBackfillQueueDepth > watchlistBackfillQueueThreshold
+      },
+      watchlist_match_queue: {
+        depth: watchlistMatchQueueDepth,
+        threshold: watchlistMatchQueueThreshold,
+        oldest_updated_at: watchlistMatchOldest,
+        oldest_age_s: watchlistMatchOldestAgeSeconds,
+        triggered: watchlistMatchQueueDepth > watchlistMatchQueueThreshold
       }
     },
     alerts

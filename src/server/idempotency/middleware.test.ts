@@ -286,6 +286,16 @@ describe("beginIdempotency", () => {
     expect(result.action).toBe("skip");
   });
 
+  it("returns unavailable when no actor id is available and failOpen is false", async () => {
+    const ctx = makeCtx({ actor: { type: null, id: null }, agentId: null });
+    const result = await beginIdempotency(makeReq(), ctx, { enabled: true, failOpen: false });
+    const errorResult = expectBeginIdempotencyAction(result, "error");
+    expect(errorResult.response.status).toBe(503);
+    expect(errorResult.response.headers["Retry-After"]).toBe("1");
+    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_UNAVAILABLE");
+    expect(insertIdempotencyRecord).not.toHaveBeenCalled();
+  });
+
   it("returns IN_PROGRESS in DB-only mode when expired record claim is lost", async () => {
     redisAvailable = false;
     (getIdempotencyRecord as any)

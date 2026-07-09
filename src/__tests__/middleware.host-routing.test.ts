@@ -74,6 +74,18 @@ describe("middleware host routing", () => {
     expect(res?.headers.get("location")).toBe("https://app.clawdeals.com/settings/connected-apps");
   });
 
+  it.each([
+    ["/my/deals?status=active", "https://app.clawdeals.com/my/deals?status=active"],
+    ["/fr/my/offers", "https://app.clawdeals.com/fr/my/offers"],
+    ["/pair?token=cd_pair_123", "https://app.clawdeals.com/pair?token=cd_pair_123"],
+    ["/keys", "https://app.clawdeals.com/keys"]
+  ])("bounces marketing %s to app host", (path, location) => {
+    const res = middleware(makeReq(`https://www.clawdeals.com${path}`, "www.clawdeals.com"));
+
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("location")).toBe(location);
+  });
+
   it("keeps marketing / as-is", () => {
     const res = middleware(makeReq("https://clawdeals.com/", "clawdeals.com"));
     expect(res?.headers.get("x-middleware-next")).toBe("1");
@@ -115,6 +127,15 @@ describe("middleware host routing", () => {
     );
     expect(res?.headers.get("x-middleware-next")).toBe("1");
   });
+
+  it.each(["/my/deals", "/fr/my/threads", "/pair?token=cd_pair_123", "/keys"])(
+    "does not redirect app host %s",
+    (path) => {
+      const res = middleware(makeReq(`https://app.clawdeals.com${path}`, "app.clawdeals.com"));
+
+      expect(res?.headers.get("x-middleware-next")).toBe("1");
+    }
+  );
 
   it("bounces .vercel.app to custom domain", () => {
     const res = middleware(makeReq("https://clawdeals-git-main-foo.vercel.app/start", "clawdeals-git-main-foo.vercel.app"));

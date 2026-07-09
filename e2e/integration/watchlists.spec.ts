@@ -9,6 +9,21 @@ import { openSse, waitForSseFrame } from "./helpers/sse";
 
 assertIntegrationEnv();
 
+async function runWatchlistMatchQueueCron(request: any) {
+  const secret = process.env.INTERNAL_CRON_SECRET;
+  expect(secret).toBeTruthy();
+
+  // Other integration suites also enqueue entities; drain a full worker batch so
+  // this test is not coupled to the pre-existing local queue depth.
+  const cronRes = await request.post("/api/internal/cron/watchlist-match-queue?limit=200", {
+    headers: { "x-cron-secret": secret as string }
+  });
+  await expectStatus(cronRes, 200);
+  const cronBody = await cronRes.json();
+  expect(cronBody.ok).toBe(true);
+  return cronBody;
+}
+
 test.describe.serial("Integration: Watchlists", () => {
   test.setTimeout(60000);
 
@@ -163,6 +178,8 @@ test.describe.serial("Integration: Watchlists", () => {
       const dealId = dealBody.deal?.deal_id;
       expect(dealId).toBeTruthy();
 
+      await runWatchlistMatchQueueCron(request);
+
       const { data: matchRows, error: matchError } = await supabase
         .from("watchlist_matches")
         .select("watchlist_match_id,watchlist_id,entity_type,entity_id,matched_at")
@@ -263,6 +280,8 @@ test.describe.serial("Integration: Watchlists", () => {
       const listingId = listingBody.listing_id;
       expect(listingId).toBeTruthy();
       expect(listingBody.status).toBe("LIVE");
+
+      await runWatchlistMatchQueueCron(request);
 
       const { data: matchRows, error: matchError } = await supabase
         .from("watchlist_matches")

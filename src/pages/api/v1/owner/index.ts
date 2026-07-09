@@ -8,11 +8,6 @@ import { isE164, normalizeEmail, normalizePhoneE164 } from "../../../../server/u
 
 const PROFILE_FIELDS = ["display_name", "bio", "avatar_url", "city", "state_region", "country", "show_email", "available"] as const;
 
-function getOwnerId(req) {
-  const headerValue = req.headers["x-owner-id"];
-  return Array.isArray(headerValue) ? headerValue[0] : headerValue;
-}
-
 function ownerSummary(owner) {
   return {
     owner_id: owner.owner_id,
@@ -29,18 +24,34 @@ function ownerSummary(owner) {
   };
 }
 
-export async function handler(req) {
+function requireOwnerAuthentication(ctx) {
+  if (ctx?.authError) {
+    return jsonResponse(
+      ctx.authError.status || 401,
+      errorPayload(ctx.authError.code || "UNAUTHORIZED", ctx.authError.message || "Owner authentication required")
+    );
+  }
+
+  if (ctx?.actor?.type !== "owner" || !ctx?.ownerId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+  }
+
+  if (!isUuid(ctx.ownerId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "owner_id must be a UUID"));
+  }
+
+  return null;
+}
+
+export async function handler(req, _res, ctx) {
   if (req.method !== "GET" && req.method !== "PATCH") {
     return methodNotAllowed(["GET", "PATCH"]);
   }
 
-  const ownerId = getOwnerId(req);
-  if (!ownerId) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id is required"));
-  }
-  if (!isUuid(ownerId)) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
-  }
+  const authResponse = requireOwnerAuthentication(ctx);
+  if (authResponse) return authResponse;
+
+  const ownerId = ctx.ownerId;
 
   if (req.method === "GET") {
     try {

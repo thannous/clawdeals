@@ -69,6 +69,13 @@ function buildRateLimitKey({ scope, identifier, group, bucketId }) {
   return `${RATE_LIMIT_KEY_PREFIX}:${safeScope}:${safeId}:${safeGroup}:${safeBucket}`;
 }
 
+function buildUnavailableError(message) {
+  const error: any = new Error(message);
+  error.status = 503;
+  error.code = "RATE_LIMIT_UNAVAILABLE";
+  return error;
+}
+
 function buildRateLimitResponse({
   group,
   scope,
@@ -117,6 +124,9 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
 
   const profile = getProfileForGroup(group, options.rateLimits);
   if (!profile || !Array.isArray(profile.buckets) || profile.buckets.length === 0) {
+    if (!(options.failOpen ?? true)) {
+      throw buildUnavailableError(`Rate limit profile unavailable for ${group}`);
+    }
     return null;
   }
 
@@ -134,6 +144,9 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
   });
 
   if (!identity) {
+    if (!(options.failOpen ?? true)) {
+      throw buildUnavailableError(`Rate limit identity unavailable for ${group}`);
+    }
     return null;
   }
 
@@ -163,7 +176,12 @@ export async function rateLimitMiddleware(request: any, options: any = {}) {
       return getRedis();
     })();
 
-    if (!redis) return null;
+    if (!redis) {
+      if (!(options.failOpen ?? true)) {
+        throw buildUnavailableError(`Rate limit store unavailable for ${group}`);
+      }
+      return null;
+    }
 
     for (const bucket of profile.buckets) {
       const rawLimit = bucket.limit;

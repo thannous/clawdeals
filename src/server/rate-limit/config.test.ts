@@ -1,5 +1,48 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { ROUTE_GROUP_MATCHERS } from "../routes/route-groups";
 import { formatLimitLabel, getProfileForGroup, normalizeKeyPart } from "./config";
+
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
+const ROUTE_GROUP_LITERAL_RE = /\brouteGroup\s*:\s*["']([^"']+)["']/g;
+
+const ROUTE_GROUP_PROFILE_ALLOWLIST = new Set<string>([
+  // Add entries only when a literal routeGroup intentionally has no rate-limit profile.
+]);
+
+function collectSourceFiles(dir: string): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === "__tests__") continue;
+      files.push(...collectSourceFiles(path));
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    if (!SOURCE_EXTENSIONS.has(extname(entry.name))) continue;
+    if (/\.test\.tsx?$/.test(entry.name)) continue;
+    files.push(path);
+  }
+
+  return files;
+}
+
+function collectLiteralRouteGroups() {
+  const groups = new Set<string>();
+  for (const file of collectSourceFiles(join(REPO_ROOT, "src"))) {
+    const source = readFileSync(file, "utf8");
+    for (const match of source.matchAll(ROUTE_GROUP_LITERAL_RE)) {
+      groups.add(match[1]);
+    }
+  }
+  return groups;
+}
 
 describe("formatLimitLabel", () => {
   it("formats seconds and minutes", () => {
@@ -13,6 +56,19 @@ describe("getProfileForGroup", () => {
     expect(profile).not.toBeNull();
     expect(profile.buckets).toBeDefined();
     expect(profile.buckets.length).toBeGreaterThan(0);
+  });
+
+  it("has profiles for every explicit route group", () => {
+    const explicitGroups = new Set([
+      ...collectLiteralRouteGroups(),
+      ...ROUTE_GROUP_MATCHERS.map((matcher) => matcher.group)
+    ]);
+    const missingProfiles = [...explicitGroups]
+      .filter((group) => !ROUTE_GROUP_PROFILE_ALLOWLIST.has(group))
+      .filter((group) => !getProfileForGroup(group))
+      .sort();
+
+    expect(missingProfiles).toEqual([]);
   });
 
   it("returns offers.actions profile (TI-201)", () => {

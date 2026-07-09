@@ -103,6 +103,25 @@ describe("GET /api/console/audit/export", () => {
     expect(result.body.error.code).toBe("DB_ERROR");
   });
 
+  it("propagates export size errors (413)", async () => {
+    vi.mocked(exportAuditLogsCsv).mockRejectedValue(
+      Object.assign(new Error("Audit export exceeds the maximum row limit"), {
+        status: 413,
+        code: "EXPORT_TOO_LARGE",
+        details: { max_rows: 10_000 }
+      })
+    );
+
+    const req = { method: "GET", query: { from: FROM, to: TO } };
+    const mockRes = createMockRes();
+    const result: any = await handler(req, mockRes, { ...baseCtx });
+
+    expect(result.status).toBe(413);
+    expect(result.body.error.code).toBe("EXPORT_TOO_LARGE");
+    expect(result.body.error.details).toEqual({ max_rows: 10_000 });
+    expect(mockRes.end).not.toHaveBeenCalled();
+  });
+
   it("passes filters to service", async () => {
     vi.mocked(exportAuditLogsCsv).mockResolvedValue("header\n");
 
@@ -113,7 +132,8 @@ describe("GET /api/console/audit/export", () => {
         to: TO,
         actor_type: "agent",
         action_name: "deal.created",
-        outcome: "success"
+        outcome: "success",
+        request_id: "req-123"
       }
     };
     const mockRes = createMockRes();
@@ -124,7 +144,8 @@ describe("GET /api/console/audit/export", () => {
       to: TO,
       actorType: "agent",
       actionName: "deal.created",
-      outcome: "success"
+      outcome: "success",
+      requestId: "req-123"
     }));
   });
 });

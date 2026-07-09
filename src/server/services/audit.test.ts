@@ -8,7 +8,7 @@ vi.mock("./audit-cursor", () => ({
   encodeAuditCursor: vi.fn()
 }));
 
-import { listAuditLogs, exportAuditLogsCsv } from "./audit";
+import { listAuditLogs, exportAuditLogsCsv, MAX_EXPORT_ROWS } from "./audit";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { encodeAuditCursor } from "./audit-cursor";
 
@@ -23,6 +23,25 @@ function createMockClient(rows: any[] = [], error: any = null) {
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     then: vi.fn((resolve) => resolve({ data: rows, error }))
+  };
+  return chain;
+}
+
+function createPagedMockClient(pages: Array<{ data: any[]; error?: any }>) {
+  const queue = [...pages];
+  const chain: any = {
+    from: vi.fn().mockReturnThis(),
+    select: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
+    lt: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    then: vi.fn((resolve) => {
+      const next = queue.shift() || { data: [], error: null };
+      return resolve({ data: next.data, error: next.error || null });
+    })
   };
   return chain;
 }
@@ -138,6 +157,19 @@ describe("listAuditLogs", () => {
     expect(mockClient.eq).toHaveBeenCalledWith("outcome", "success");
   });
 
+  it("applies request_id filter to the query", async () => {
+    const mockClient = createMockClient([]);
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(mockClient as any);
+
+    await listAuditLogs({
+      from: FROM,
+      to: TO,
+      requestId: "req-123"
+    });
+
+    expect(mockClient.eq).toHaveBeenCalledWith("request_id", "req-123");
+  });
+
   it("applies cursor to the query", async () => {
     const mockClient = createMockClient([]);
     vi.mocked(getSupabaseServiceClient).mockReturnValue(mockClient as any);
@@ -195,6 +227,48 @@ describe("exportAuditLogsCsv", () => {
     expect(lines).toHaveLength(2);
     expect(lines[1]).toContain(row.id);
     expect(lines[1]).toContain("deal.created");
+  });
+
+  it("exports multiple batches using cursor pagination", async () => {
+    const firstPage = Array.from({ length: 501 }, (_, i) =>
+      makeSampleRow({
+        id: `row-${String(i).padStart(3, "0")}`,
+        occurred_at: `2026-02-07T12:${String(i % 60).padStart(2, "0")}:00Z`
+      })
+    );
+    const secondPage = [makeSampleRow({ id: "row-final", occurred_at: "2026-02-07T11:00:00Z" })];
+    const mockClient = createPagedMockClient([{ data: firstPage }, { data: secondPage }]);
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(mockClient as any);
+
+    const csv = await exportAuditLogsCsv({ from: FROM, to: TO });
+
+    const lines = csv.split("\n");
+    expect(lines).toHaveLength(502);
+    expect(lines[1]).toContain("row-000");
+    expect(lines[501]).toContain("row-final");
+    expect(mockClient.or).toHaveBeenCalled();
+  });
+
+  it("throws EXPORT_TOO_LARGE when export exceeds max rows", async () => {
+    const firstPage = Array.from({ length: 501 }, (_, i) => makeSampleRow({ id: `first-${i}` }));
+    const pages = Array.from({ length: Math.ceil(MAX_EXPORT_ROWS / 500) + 1 }, () => ({ data: firstPage }));
+    const mockClient = createPagedMockClient(pages);
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(mockClient as any);
+
+    await expect(exportAuditLogsCsv({ from: FROM, to: TO })).rejects.toMatchObject({
+      status: 413,
+      code: "EXPORT_TOO_LARGE",
+      details: { max_rows: MAX_EXPORT_ROWS }
+    });
+  });
+
+  it("applies request_id filter to export query", async () => {
+    const mockClient = createMockClient([]);
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(mockClient as any);
+
+    await exportAuditLogsCsv({ from: FROM, to: TO, requestId: "req-123" });
+
+    expect(mockClient.eq).toHaveBeenCalledWith("request_id", "req-123");
   });
 
   it("returns only header when no rows", async () => {

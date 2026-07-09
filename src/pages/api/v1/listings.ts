@@ -13,7 +13,6 @@ import { decodeListingsCursor } from "../../../server/services/listings-cursor";
 import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../server/config/deals";
 import { computeListingDuplicateFingerprint } from "../../../server/utils/listings-duplicates";
 import { isUuid } from "../../../server/utils/validators";
-import { matchListingToWatchlists } from "../../../server/services/watchlist-matching";
 import {
   parseCoverImageIndex,
   parseListingsImagesInput,
@@ -700,29 +699,6 @@ export async function handler(req, res, ctx) {
     } catch (error) {
       // Best-effort: listing creation should not fail due to SSE infra.
       console.info("sse.publish_failed", { type: "listing.created", error: error?.message || String(error) });
-    }
-
-    if (status === "LIVE") {
-      try {
-        await matchListingToWatchlists({
-          listing: {
-            listing_id: listing.listing_id,
-            title,
-            category,
-            condition,
-            price_amount: priceAmount,
-            currency,
-            geo_lat: geo ? geo.lat : null,
-            geo_lng: geo ? geo.lng : null,
-            delivery_method: listing.delivery_method ?? deliveryMethod ?? null
-          }
-        });
-      } catch (error) {
-        console.info("watchlist.match_listing_failed", {
-          listing_id: listing.listing_id,
-          error: error?.message || String(error)
-        });
-      }
     }
 
     const responseBody: any = {

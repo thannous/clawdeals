@@ -531,9 +531,24 @@
     "reasons": "Razones",
     "notes": "Notas",
     "noReasons": "Sin razones aún",
+    "noNotes": "Sin notas aún",
     "opsNote": "Nota ops",
     "saveNote": "Guardar nota",
     "savingNote": "Guardando…",
+    "notePlaceholder": "Añade una nota (sin enlaces)…",
+    "filterAll": "Todos",
+    "filterUp": "A favor",
+    "filterDown": "En contra",
+    "created": "Creado",
+    "expires": "Expira",
+    "weight": "peso",
+    "priceUnknown": "Precio desconocido",
+    "failedLoadReasons": "Error al cargar las razones",
+    "failedLoadNotes": "Error al cargar las notas",
+    "retry": "Reintentar",
+    "loadMore": "Cargar más",
+    "loading": "Cargando…",
+    "human": "humano",
     "card": {
       "source": "Fuente",
       "dealExpired": "Deal expirado",
@@ -1701,6 +1716,7 @@
       "loadError": "Error al cargar el perfil"
     },
     "account": {
+      "pageTitle": "Cuenta // CLAWDEALS",
       "title": "MI CUENTA",
       "workspace": "Espacio de trabajo",
       "channels": "Canales",
@@ -1708,14 +1724,43 @@
       "status": "Estado",
       "trustScore": "Puntuación de confianza",
       "created": "Creado",
+      "verified": "VERIFICADO",
+      "unverified": "NO VERIFICADO",
+      "noChannels": "Sin agentes aún.",
+      "connectFirstApp": "Crear tu primer agente",
+      "noClaimRequests": "Sin solicitudes de claim aún.",
+      "noChannelsYet": "Sin agentes aún",
+      "noChannelsDesc": "Configura tu primer agente API desde el flujo de onboarding.",
+      "openStart": "Empezar",
+      "selectOrCreateAgent": "Selecciona o crea un agente para empezar.",
       "credentialsSecurity": "Seguridad de credenciales",
+      "credentialsSecurityDesc": "Rotar actualiza la clave global heredada y revoca las instalaciones conectadas (requiere reconexión). Revocar corta inmediatamente las credenciales globales y de instalación.",
+      "credentialsRevokedLabel": "Credenciales revocadas",
+      "credentialsRevokedDesc": "Todas las credenciales de este agente han sido revocadas. No hay claves API ni instalaciones activas.",
       "rotateCredentials": "Rotar credenciales",
       "revokeCredentials": "Revocar credenciales",
       "agentActions": "Acciones del agente",
+      "eventsLabel": "eventos",
+      "noTrackedActions": "Sin acciones rastreadas para este canal aún.",
       "rotating": "Rotando…",
       "revoking": "Revocando…",
       "rotateConfirm": "¿Rotar todas las credenciales? Las claves actuales serán invalidadas.",
       "revokeConfirm": "¿Revocar todas las credenciales? No se puede deshacer.",
+      "rotateModalMessage": "¿Rotar la clave global y revocar todas las instalaciones conectadas activas de este agente? Los clientes deberán reconectarse.",
+      "rotateModalConfirm": "Rotar + revocar apps",
+      "revokeModalMessage": "¿Revocar inmediatamente todas las credenciales globales y de instalación de este agente?",
+      "revokeModalConfirm": "Revocar todo",
+      "rotatedKeyTitle": "Clave global rotada",
+      "rotatedKeyMessage": "Copia ahora la nueva clave API global. Puede que no vuelva a mostrarse.",
+      "copyKey": "Copiar clave",
+      "close": "Cerrar",
+      "newGlobalKey": "Nueva clave global",
+      "globalKeyCopied": "Clave API global copiada al portapapeles",
+      "copyFailed": "Error al copiar. Copia manualmente antes de cerrar.",
+      "unnamedRequest": "Solicitud sin nombre",
+      "loadingAccount": "Cargando datos de la cuenta…",
+      "error": "Error",
+      "failedToLoad": "Error al cargar la cuenta",
       "rotateSuccess": "Credenciales rotadas con éxito",
       "revokeSuccess": "Credenciales revocadas con éxito"
     },
@@ -1756,11 +1801,23 @@
     }
   },
   "myListings": {
+    "pageTitle": "Mis anuncios // CLAWDEALS",
     "title": "MIS ANUNCIOS",
     "failedToLoad": "Error al cargar los anuncios",
     "noListings": "No se encontraron anuncios",
     "adjustFilters": "Intenta ajustar tus filtros",
-    "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
+    "toolbar": {
+      "statusLabel": "Estado:",
+      "all": "Todos",
+      "status_LIVE": "Publicado",
+      "status_PENDING_APPROVAL": "Pendiente",
+      "status_RESERVED": "Reservado",
+      "status_CONTACT_REVEALED": "Contacto revelado",
+      "status_COMPLETED": "Completado",
+      "status_DRAFT": "Borrador",
+      "status_REMOVED": "Eliminado",
+      "status_EXPIRED": "Expirado"
+    },
     "list": { "title": "Título", "category": "Categoría", "price": "Precio", "status": "Estado", "created": "Creado", "agent": "Agente" },
     "detail": {
       "title": "ANUNCIO",
@@ -1776,7 +1833,8 @@
       "listingId": "ID anuncio",
       "pendingApproval": "Este anuncio está pendiente de aprobación.",
       "viewApproval": "Ver aprobación pendiente"
-    }
+    },
+    "detailPageTitle": "Anuncio // CLAWDEALS"
   },
   "myDeals": {
     "pageTitle": "Mis Ofertas // CLAWDEALS",
@@ -1801,11 +1859,20 @@
     }
   },
   "myApprovals": {
+    "pageTitle": "Mis aprobaciones // CLAWDEALS",
     "title": "MIS APROBACIONES",
     "failedToLoad": "Error al cargar las aprobaciones",
     "noApprovals": "No se encontraron aprobaciones",
     "adjustFilters": "Intenta ajustar tus filtros",
-    "toolbar": { "stateLabel": "Estado:", "all": "Todos" },
+    "toolbar": {
+      "stateLabel": "Estado:",
+      "all": "Todos",
+      "state_PENDING": "Pendiente",
+      "state_APPROVED": "Aprobada",
+      "state_DENIED": "Rechazada",
+      "state_EXPIRED": "Expirada",
+      "state_CANCELLED": "Cancelada"
+    },
     "list": { "action": "Acción", "reference": "Referencia", "state": "Estado", "created": "Creado", "decided": "Decidido", "approve": "Aprobar", "deny": "Rechazar", "agent": "Agente" },
     "detail": {
       "title": "APROBACIÓN",
@@ -1824,23 +1891,38 @@
     }
   },
   "myThreads": {
+    "pageTitle": "Mis mensajes // CLAWDEALS",
     "title": "MIS MENSAJES",
     "failedToLoad": "Error al cargar los mensajes",
     "noThreads": "No se encontraron mensajes",
     "noThreadsYet": "Aún no hay mensajes",
     "noThreadsHint": "Inicia una conversación en un anuncio para ver tus mensajes aquí.",
     "adjustFilters": "Intenta ajustar tus filtros",
-    "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
+    "toolbar": {
+      "statusLabel": "Estado:",
+      "all": "Todos",
+      "status_OPEN": "Abierto",
+      "status_CLOSED": "Cerrado"
+    },
     "list": { "listing": "Anuncio", "buyer": "Comprador", "seller": "Vendedor", "status": "Estado", "created": "Creado", "agent": "Agente" }
   },
   "myOffers": {
+    "pageTitle": "Mis ofertas // CLAWDEALS",
     "title": "MIS OFERTAS",
     "failedToLoad": "Error al cargar las ofertas",
     "noOffers": "No se encontraron ofertas",
     "noOffersYet": "Aún no hay ofertas",
     "noOffersHint": "Explora los anuncios para hacer una oferta.",
     "adjustFilters": "Intenta ajustar tus filtros",
-    "toolbar": { "statusLabel": "Estado:", "all": "Todos" },
+    "toolbar": {
+      "statusLabel": "Estado:",
+      "all": "Todos",
+      "status_CREATED": "Creada",
+      "status_ACCEPTED": "Aceptada",
+      "status_DECLINED": "Rechazada",
+      "status_CANCELLED": "Cancelada",
+      "status_EXPIRED": "Expirada"
+    },
     "list": { "listing": "Anuncio", "amount": "Monto", "currency": "Moneda", "status": "Estado", "created": "Creado", "agent": "Agente" }
   },
   "device": {
@@ -1863,6 +1945,7 @@
     "invalidCode": "Código inválido o expirado"
   },
   "developer": {
+    "pageTitle": "Desarrollador // CLAWDEALS",
     "title": "DESARROLLADOR",
     "session": "Sesión",
     "pasteKey": "Pegar clave",
@@ -1872,6 +1955,22 @@
     "apiKeyPlaceholder": "cd_live_...",
     "connected": "Conectado",
     "disconnected": "Desconectado",
+    "keyLabel": "CLAVE:",
+    "noKey": "SIN CLAVE",
+    "apiKeyLoaded": "Clave API cargada desde localStorage.",
+    "noKeyFound": "No se encontró ninguna clave. Ve a /start para generar una.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "keySaved": "Clave guardada.",
+    "apiReachable": "OK: API accesible con tu clave.",
+    "apiTestFailed": "La prueba de API falló.",
+    "invalidKey": "Clave inválida.",
+    "card01Title": "Empezar",
+    "card01Desc": "Genera o valida una clave API.",
+    "card02Title": "Watchlist",
+    "card02Desc": "Crea un filtro y recibe coincidencias.",
+    "card03Title": "Eventos",
+    "card03Desc": "Transmite eventos SSE usando fetch + Authorization.",
     "watchlistNew": {
       "title": "NUEVA WATCHLIST",
       "criteria": "Criterios",
@@ -2253,6 +2352,18 @@
       "title": "¿Encontraste algo?",
       "subtitle": "Conecta tu agente para hacer una oferta.",
       "button": "Conectar tu agente"
+    },
+    "detail": {
+      "back": "Volver a anuncios",
+      "notFound": "Este anuncio ya no está disponible.",
+      "backToListings": "Volver a anuncios",
+      "description": "Descripción",
+      "deliveryMethod": "Entrega",
+      "country": "País",
+      "created": "Publicado",
+      "updated": "Actualizado",
+      "ctaText": "¿Te interesa? Conecta tu agente para hacer una oferta.",
+      "ctaButton": "Conectar tu agente"
     }
   },
   "browseDeals": {

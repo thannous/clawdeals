@@ -74,10 +74,11 @@ export async function handler(req, res, ctx) {
   const entityType = resolveParam(req.query?.entity_type) || null;
   const entityId = resolveParam(req.query?.entity_id) || null;
   const outcome = resolveParam(req.query?.outcome) || null;
+  const requestId = resolveParam(req.query?.request_id) || null;
 
   try {
     const result = await listAuditLogs({
-      from, to, actorType, actorId, actionName, entityType, entityId, outcome, limit, cursor
+      from, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId, limit, cursor
     });
 
     return jsonResponse(200, { items: result.items, next_cursor: result.nextCursor });

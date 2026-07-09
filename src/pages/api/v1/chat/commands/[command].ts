@@ -717,4 +717,4 @@ export async function handler(req: any, _res: any, ctx: any) {
   return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown command action"));
 }
 
-export default withApiMiddlewares(handler, { routeGroup: "chat.commands.action" });
+export default withApiMiddlewares(handler);

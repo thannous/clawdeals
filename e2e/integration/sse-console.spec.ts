@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/fixtures";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { sleep } from "./helpers/ids";
@@ -9,10 +9,11 @@ assertIntegrationEnv();
 test.describe.serial("Integration: Console Live Feed (SSE)", () => {
   test.setTimeout(60000);
 
-  test("console SSE connect + heartbeat", async () => {
+  test("console SSE connect + heartbeat", async ({ consoleCookieHeader }) => {
     const { res, controller } = await openSse("/api/console/events/stream?heartbeat=1", {
       headers: {
-        Accept: "text/event-stream"
+        Accept: "text/event-stream",
+        Cookie: consoleCookieHeader
       }
     });
 
@@ -31,13 +32,14 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
     }
   });
 
-  test("console SSE receives published ops events", async () => {
+  test("console SSE receives published ops events", async ({ consoleCookieHeader }) => {
     const redis = createRedis();
     const opsKey = "sse:stream:ops:v1";
 
     const { res, controller } = await openSse("/api/console/events/stream?heartbeat=1", {
       headers: {
-        Accept: "text/event-stream"
+        Accept: "text/event-stream",
+        Cookie: consoleCookieHeader
       }
     });
 
@@ -81,13 +83,14 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
     }
   });
 
-  test("console SSE types filter", async () => {
+  test("console SSE types filter", async ({ consoleCookieHeader }) => {
     const redis = createRedis();
     const opsKey = "sse:stream:ops:v1";
 
     const { res, controller } = await openSse("/api/console/events/stream?heartbeat=1&types=deal.created", {
       headers: {
-        Accept: "text/event-stream"
+        Accept: "text/event-stream",
+        Cookie: consoleCookieHeader
       }
     });
 
@@ -136,7 +139,7 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
     }
   });
 
-  test("console SSE replay via Last-Event-ID", async () => {
+  test("console SSE replay via Last-Event-ID", async ({ consoleCookieHeader }) => {
     const redis = createRedis();
     const opsKey = "sse:stream:ops:v1";
 
@@ -157,6 +160,7 @@ test.describe.serial("Integration: Console Live Feed (SSE)", () => {
     const { res, controller } = await openSse("/api/console/events/stream?replay=true&heartbeat=1&types=deal.created", {
       headers: {
         Accept: "text/event-stream",
+        Cookie: consoleCookieHeader,
         "Last-Event-ID": id1
       }
     });

@@ -1,13 +1,5 @@
 import { runTrustScoreRecalculation } from "../../../../server/trustscore/recalculate";
-
-function isAuthorized(req) {
-  const secret = process.env.INTERNAL_CRON_SECRET;
-  if (!secret) return false;
-  const header = req.headers["x-cron-secret"];
-  const headerValue = Array.isArray(header) ? header[0] : header;
-  if (headerValue && headerValue === secret) return true;
-  return false;
-}
+import { isInternalCronAuthorized } from "../../../../server/internal-cron-auth";
 
 function parseOptionalInt(value) {
   if (!value) return null;
@@ -24,7 +16,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (!isAuthorized(req)) {
+  if (!isInternalCronAuthorized(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

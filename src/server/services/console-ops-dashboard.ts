@@ -219,7 +219,8 @@ export async function getConsoleOpsDashboard({
     { rows: auditRows, truncated, maxRows },
     approvalsPending,
     trustscoreJobs,
-    watchlistJobs,
+    watchlistBackfillJobs,
+    watchlistMatchJobs,
     oldestPendingApproval,
     resolvedApprovals,
     burnAuditWindow
@@ -233,6 +234,7 @@ export async function getConsoleOpsDashboard({
     }),
     countRows({ client: supabase, table: "trustscore_recalc_queue", select: "agent_id" }),
     countRows({ client: supabase, table: "watchlist_backfill_queue", select: "watchlist_id" }),
+    countRows({ client: supabase, table: "watchlist_match_queue", select: "entity_id" }),
     fetchOldestPendingApproval({ client: supabase }),
     fetchResolvedApprovals({ client: supabase, fromIso, toIso }),
     requiresExtendedBurnLookback
@@ -351,7 +353,7 @@ export async function getConsoleOpsDashboard({
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  const jobsPending = trustscoreJobs + watchlistJobs;
+  const jobsPending = trustscoreJobs + watchlistBackfillJobs + watchlistMatchJobs;
 
   // --- SLI: success rate by event ---
   const sliByEvent = new Map<string, { total: number; success: number }>();
@@ -463,7 +465,8 @@ export async function getConsoleOpsDashboard({
       jobs_pending: jobsPending,
       job_queues: [
         { name: "trustscore_recalc_queue", depth: trustscoreJobs },
-        { name: "watchlist_backfill_queue", depth: watchlistJobs }
+        { name: "watchlist_backfill_queue", depth: watchlistBackfillJobs },
+        { name: "watchlist_match_queue", depth: watchlistMatchJobs }
       ]
     },
     sli: {

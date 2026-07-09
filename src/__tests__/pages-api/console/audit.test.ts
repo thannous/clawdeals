@@ -108,7 +108,8 @@ describe("GET /api/console/audit", () => {
         action_name: "deal.created",
         entity_type: "deal",
         entity_id: "deal-1",
-        outcome: "success"
+        outcome: "success",
+        request_id: "req-filter-123"
       }
     };
     const result: any = await handler(req, null, { ...baseCtx });
@@ -122,7 +123,8 @@ describe("GET /api/console/audit", () => {
       actionName: "deal.created",
       entityType: "deal",
       entityId: "deal-1",
-      outcome: "success"
+      outcome: "success",
+      requestId: "req-filter-123"
     }));
   });
 

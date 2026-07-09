@@ -26,9 +26,12 @@ const internalCronSecret = process.env.INTERNAL_CRON_SECRET || "test-cron-secret
 // Enable the WebMCP demo route for UI smoke tests.
 const webmcpEnv = "NEXT_PUBLIC_WEBMCP_ENABLED=1";
 const authLegacyBridgeEnv = "AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=1";
+const consoleOpsOwnerEnv = "CONSOLE_OPS_OWNER_ID=00000000-0000-4000-a000-000000000000";
+const ownerLoginEmailPort = Number(process.env.E2E_OWNER_LOGIN_EMAIL_PORT || 4399);
+const ownerLoginEmailEnv = `OWNER_LOGIN_EMAIL_PROVIDER=resend OWNER_LOGIN_EMAIL_FROM=e2e@clawdeals.local RESEND_API_KEY=e2e-resend-key OWNER_LOGIN_RESEND_API_URL=http://127.0.0.1:${ownerLoginEmailPort}/emails`;
 const webServerCommand =
   webServerMode === "prod"
-    ? `${webmcpEnv} ${authLegacyBridgeEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} ${authLegacyBridgeEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
+    ? `${webmcpEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
     : `${webmcpEnv} npm run dev -- --port ${devPort} ${devBundlerFlag}`;
 const integrationWorkers = (() => {
   const raw = process.env.PW_INTEGRATION_WORKERS;
@@ -48,13 +51,23 @@ export default defineConfig({
   },
   webServer: useExistingServer
     ? undefined
-    : {
-        command: webServerCommand,
-        url: uiBaseURL,
-        // Prod build+start in CI/WSL can exceed 3 minutes; keep startup timeout conservative.
-        timeout: 420 * 1000,
-        reuseExistingServer: true
-      },
+    : [
+        ...(webServerMode === "prod"
+          ? [{
+              command: `E2E_OWNER_LOGIN_EMAIL_PORT=${ownerLoginEmailPort} node scripts/mock-owner-login-email.mjs`,
+              url: `http://127.0.0.1:${ownerLoginEmailPort}/health`,
+              timeout: 30 * 1000,
+              reuseExistingServer: true
+            }]
+          : []),
+        {
+          command: webServerCommand,
+          url: uiBaseURL,
+          // Prod build+start in CI/WSL can exceed 3 minutes; keep startup timeout conservative.
+          timeout: 420 * 1000,
+          reuseExistingServer: true
+        }
+      ],
   projects: [
     {
       name: "ui",

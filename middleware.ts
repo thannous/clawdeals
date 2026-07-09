@@ -34,6 +34,12 @@ function isAppRoute(restPath: string): boolean {
     restPath === "/dev/webmcp" ||
     restPath === "/deals" ||
     restPath.startsWith("/deals/") ||
+    restPath === "/my" ||
+    restPath.startsWith("/my/") ||
+    restPath === "/pair" ||
+    restPath.startsWith("/pair/") ||
+    restPath === "/keys" ||
+    restPath.startsWith("/keys/") ||
     restPath === "/claim" ||
     restPath.startsWith("/claim/") ||
     restPath === "/device" ||
@@ -58,6 +64,12 @@ function isAppSectionRoute(restPath: string): boolean {
     restPath === "/dev/webmcp" ||
     restPath === "/deals" ||
     restPath.startsWith("/deals/") ||
+    restPath === "/my" ||
+    restPath.startsWith("/my/") ||
+    restPath === "/pair" ||
+    restPath.startsWith("/pair/") ||
+    restPath === "/keys" ||
+    restPath.startsWith("/keys/") ||
     restPath === "/claim" ||
     restPath.startsWith("/claim/") ||
     restPath === "/device" ||
@@ -223,6 +235,12 @@ export function middleware(request: NextRequest) {
     const shouldBounceToApp =
       rest.startsWith("/console") ||
       rest.startsWith("/deals") ||
+      rest === "/my" ||
+      rest.startsWith("/my/") ||
+      rest === "/pair" ||
+      rest.startsWith("/pair/") ||
+      rest === "/keys" ||
+      rest.startsWith("/keys/") ||
       rest.startsWith("/start") ||
       rest.startsWith("/settings") ||
       rest.startsWith("/auth") ||

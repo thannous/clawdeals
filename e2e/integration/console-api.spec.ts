@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { consoleTest as test, expect } from "./helpers/fixtures";
 
 import { assertIntegrationEnv } from "./helpers/env";
 import { randomId, sha256Hex } from "./helpers/ids";

@@ -5,6 +5,7 @@ import { encodeAuditCursor } from "./audit-cursor";
 const DEFAULT_LIMIT = 50;
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const EXPORT_BATCH_SIZE = 500;
+export const MAX_EXPORT_ROWS = 10_000;
 
 function formatFilterValue(value) {
   if (typeof value !== "string") return String(value);
@@ -39,7 +40,7 @@ function mapRow(row) {
   };
 }
 
-function applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome }) {
+function applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId }) {
   query = query.gte("occurred_at", from).lt("occurred_at", to);
 
   if (actorType) {
@@ -60,6 +61,9 @@ function applyFilters(query, { from, to, actorType, actorId, actionName, entityT
   if (outcome) {
     query = query.eq("outcome", outcome);
   }
+  if (requestId) {
+    query = query.eq("request_id", requestId);
+  }
 
   return query;
 }
@@ -73,6 +77,7 @@ export async function listAuditLogs({
   entityType,
   entityId,
   outcome,
+  requestId,
   limit = DEFAULT_LIMIT,
   cursor
 }: any = {}) {
@@ -96,7 +101,7 @@ export async function listAuditLogs({
     .order("id", { ascending: false })
     .limit(pageLimit + 1);
 
-  query = applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome });
+  query = applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId });
 
   if (cursor?.occurred_at && cursor?.id) {
     const occurredAt = formatFilterValue(cursor.occurred_at);
@@ -148,7 +153,8 @@ export async function exportAuditLogsCsv({
   actionName,
   entityType,
   entityId,
-  outcome
+  outcome,
+  requestId
 }: any = {}) {
   if (!from || !to) {
     throw buildServiceError("Both from and to parameters are required", 400, "TIME_RANGE_REQUIRED");
@@ -173,7 +179,7 @@ export async function exportAuditLogsCsv({
       .order("id", { ascending: false })
       .limit(EXPORT_BATCH_SIZE + 1);
 
-    query = applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome });
+    query = applyFilters(query, { from, to, actorType, actorId, actionName, entityType, entityId, outcome, requestId });
 
     if (cursorState) {
       const occurredAt = formatFilterValue(cursorState.occurred_at);
@@ -191,6 +197,14 @@ export async function exportAuditLogsCsv({
     const rows = data || [];
     const hasMore = rows.length > EXPORT_BATCH_SIZE;
     const batch = hasMore ? rows.slice(0, EXPORT_BATCH_SIZE) : rows;
+
+    if (allRows.length + batch.length > MAX_EXPORT_ROWS) {
+      throw buildServiceError("Audit export exceeds the maximum row limit", 413, "EXPORT_TOO_LARGE", {
+        details: {
+          max_rows: MAX_EXPORT_ROWS
+        }
+      });
+    }
 
     allRows.push(...batch);
 

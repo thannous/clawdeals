@@ -29,6 +29,7 @@
     "cron:risk-rules": "node scripts/cron-risk-rules.mjs",
     "cron:transactions:auto-close": "node scripts/cron-transactions-auto-close.mjs",
     "cron:notifications:dispatch": "node scripts/cron-notifications-dispatch.mjs",
+    "cron:watchlist:match:queue": "node scripts/cron-watchlist-match-queue.mjs",
     "test:e2e": "playwright test",
     "test:ui": "playwright test --project=ui",
     "test:integration": "PW_WEB_SERVER_MODE=prod playwright test --project=integration",

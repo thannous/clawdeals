@@ -22,11 +22,6 @@ import {
   incrementChallengeAttempt
 } from "../../../../server/services/owner-verification";
 
-function getOwnerId(req) {
-  const headerValue = req.headers["x-owner-id"];
-  return Array.isArray(headerValue) ? headerValue[0] : headerValue;
-}
-
 function ownerSummary(owner) {
   return {
     owner_id: owner.owner_id,
@@ -36,8 +31,9 @@ function ownerSummary(owner) {
 }
 
 function shouldEchoToken() {
+  if (process.env.NODE_ENV === "production") return false;
   if (process.env.OWNER_VERIFICATION_ECHO_TOKEN === "true") return true;
-  return process.env.NODE_ENV !== "production";
+  return true;
 }
 
 function lockoutResponse(retryAfterSeconds) {
@@ -50,15 +46,26 @@ function lockoutResponse(retryAfterSeconds) {
   );
 }
 
-async function handleStart(req, ctx, { type, tokenKind, eventName }) {
-  const ownerId = getOwnerId(req);
-  if (!ownerId) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id is required"));
-  }
-  if (!isUuid(ownerId)) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
+function requireOwnerAuthentication(ctx) {
+  if (ctx?.authError) {
+    return jsonResponse(
+      ctx.authError.status || 401,
+      errorPayload(ctx.authError.code || "UNAUTHORIZED", ctx.authError.message || "Owner authentication required")
+    );
   }
 
+  if (ctx?.actor?.type !== "owner" || !ctx?.ownerId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+  }
+
+  if (!isUuid(ctx.ownerId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "owner_id must be a UUID"));
+  }
+
+  return null;
+}
+
+async function handleStart(req, ctx, ownerId, { type, tokenKind, eventName }) {
   const owner = await getOwner(ownerId);
   if (!owner) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Owner not found"));
@@ -114,15 +121,7 @@ async function handleStart(req, ctx, { type, tokenKind, eventName }) {
   return jsonResponse(201, { data });
 }
 
-async function handleConfirm(req, ctx, { type, tokenField, eventName }) {
-  const ownerId = getOwnerId(req);
-  if (!ownerId) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id is required"));
-  }
-  if (!isUuid(ownerId)) {
-    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "x-owner-id must be a UUID"));
-  }
-
+async function handleConfirm(req, ctx, ownerId, { type, tokenField, eventName }) {
   const owner = await getOwner(ownerId);
   if (!owner) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Owner not found"));
@@ -182,30 +181,34 @@ export async function handler(req, res, ctx) {
     return methodNotAllowed(["POST"]);
   }
 
+  const authResponse = requireOwnerAuthentication(ctx);
+  if (authResponse) return authResponse;
+  const ownerId = ctx.ownerId;
+
   const rawAction = req.query?.action;
   const action = Array.isArray(rawAction) ? rawAction[0] : rawAction;
 
   switch (action) {
     case "verify-email:start":
-      return handleStart(req, ctx, {
+      return handleStart(req, ctx, ownerId, {
         type: "EMAIL",
         tokenKind: "token",
         eventName: "owner.email_verification_started"
       });
     case "verify-email:confirm":
-      return handleConfirm(req, ctx, {
+      return handleConfirm(req, ctx, ownerId, {
         type: "EMAIL",
         tokenField: "token",
         eventName: "owner.email_verified"
       });
     case "verify-phone:start":
-      return handleStart(req, ctx, {
+      return handleStart(req, ctx, ownerId, {
         type: "PHONE",
         tokenKind: "code",
         eventName: "owner.phone_verification_started"
       });
     case "verify-phone:confirm":
-      return handleConfirm(req, ctx, {
+      return handleConfirm(req, ctx, ownerId, {
         type: "PHONE",
         tokenField: "code",
         eventName: "owner.phone_verified"

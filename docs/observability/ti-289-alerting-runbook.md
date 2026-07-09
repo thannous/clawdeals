@@ -14,7 +14,7 @@ The handler returns JSON and emits structured log lines for any triggered alerts
 Data sources:
 
 - `audit_logs` (Supabase): used to count v1 API requests and status codes.
-- `trustscore_recalc_queue` and `watchlist_backfill_queue` (Supabase): used for queue depth and oldest item age.
+- `trustscore_recalc_queue`, `watchlist_backfill_queue`, and `watchlist_match_queue` (Supabase): used for queue depth and oldest item age.
 
 Windows (defaults, configurable via env):
 
@@ -66,7 +66,12 @@ These alert names are emitted in logs and included in the JSON `alerts[]` array 
    - Default: `ALERTING_WATCHLIST_BACKFILL_QUEUE_DEPTH_THRESHOLD=500`
    - Includes `oldest_updated_at` and `oldest_age_s`.
 
-6. `queue.depth.approvals_pending` (severity: `warning`)
+6. `queue.depth.watchlist_match` (severity: `warning`)
+   - Condition: `watchlist_match_queue` row count exceeds threshold.
+   - Default: `ALERTING_WATCHLIST_MATCH_QUEUE_DEPTH_THRESHOLD=500`
+   - Includes `oldest_updated_at` and `oldest_age_s`.
+
+7. `queue.depth.approvals_pending` (severity: `warning`)
    - Condition: `approvals` rows with `state=PENDING` exceeds threshold.
    - Default: `ALERTING_APPROVALS_PENDING_DEPTH_THRESHOLD=200`
    - Includes `oldest_created_at` and `oldest_age_s`.
@@ -147,6 +152,7 @@ Actions:
 1. Check if the worker cron is running:
    - `POST /api/internal/cron/trustscore-recalc-queue`
    - `POST /api/internal/cron/watchlist-backfill-queue`
+   - `POST /api/internal/cron/watchlist-match-queue`
    - `POST /api/internal/cron/risk-rules`
 2. Check staleness:
    - Use `oldest_age_s` to see if the queue is stuck vs just temporarily behind.
@@ -178,6 +184,7 @@ All variables are optional; defaults are used if unset.
 - `ALERTING_429_SPIKE_MULTIPLIER` (default `3`)
 - `ALERTING_TRUSTSCORE_QUEUE_DEPTH_THRESHOLD` (default `1000`)
 - `ALERTING_WATCHLIST_BACKFILL_QUEUE_DEPTH_THRESHOLD` (default `500`)
+- `ALERTING_WATCHLIST_MATCH_QUEUE_DEPTH_THRESHOLD` (default `500`)
 - `ALERTING_APPROVALS_PENDING_DEPTH_THRESHOLD` (default `200`)
 
 ## Manual Invocation

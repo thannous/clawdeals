@@ -127,4 +127,36 @@ describe("rateLimitMiddleware (redis client selection)", () => {
     ).rejects.toThrow("invalid redis url");
     expect(consumeTokenBucket).not.toHaveBeenCalled();
   });
+
+  it("fails open when redis config is unavailable", async () => {
+    resolveUpstashConfig.mockReturnValueOnce(null);
+
+    const result = await rateLimitMiddleware(request, {
+      routeGroup: "channels.telegram.webhook",
+      channelId: "telegram:hash-user",
+      env: {},
+      ip: "127.0.0.1"
+    });
+
+    expect(result).toBeNull();
+    expect(consumeTokenBucket).not.toHaveBeenCalled();
+  });
+
+  it("throws when redis config is unavailable and failOpen is false", async () => {
+    resolveUpstashConfig.mockReturnValueOnce(null);
+
+    await expect(
+      rateLimitMiddleware(request, {
+        routeGroup: "channels.telegram.webhook",
+        channelId: "telegram:hash-user",
+        env: {},
+        ip: "127.0.0.1",
+        failOpen: false
+      })
+    ).rejects.toMatchObject({
+      code: "RATE_LIMIT_UNAVAILABLE",
+      status: 503
+    });
+    expect(consumeTokenBucket).not.toHaveBeenCalled();
+  });
 });

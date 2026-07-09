@@ -10,7 +10,6 @@ import { cancelPendingListingPublishApproval, createApproval } from "../../../..
 import { publishSseEvent } from "../../../../server/sse/store";
 import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../../server/config/deals";
 import { isUuid } from "../../../../server/utils/validators";
-import { matchListingToWatchlists } from "../../../../server/services/watchlist-matching";
 import {
   normalizeReadMedia,
   parseCoverImageIndex,
@@ -501,33 +500,6 @@ export async function handler(req, res, ctx) {
           // Best-effort: listing removal should not fail due to approval cancellation.
           console.info("approval.cancel_failed", { action: "listing_publish", listingId, error: error?.message || String(error) });
         }
-      }
-    }
-
-    if (currentStatus !== "LIVE" && updated.status === "LIVE") {
-      const effectiveTitle = title !== undefined ? title : listing.title;
-      const effectivePriceAmount = priceAmount !== undefined ? priceAmount : listing.price_amount;
-      const effectiveCurrency = currency !== undefined ? currency : listing.currency;
-
-      try {
-        await matchListingToWatchlists({
-          listing: {
-            listing_id: listingId,
-            title: effectiveTitle,
-            category: listing.category,
-            condition: listing.condition,
-            price_amount: effectivePriceAmount,
-            currency: effectiveCurrency,
-            geo_lat: listing.geo_lat ?? null,
-            geo_lng: listing.geo_lng ?? null,
-            delivery_method: updated.delivery_method ?? null
-          }
-        });
-      } catch (error) {
-        console.info("watchlist.match_listing_failed", {
-          listing_id: listingId,
-          error: error?.message || String(error)
-        });
       }
     }
 
