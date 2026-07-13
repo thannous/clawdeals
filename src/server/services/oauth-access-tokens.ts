@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import { getNumberEnv } from "../config/env";
+import { getSupabaseServiceClient } from "../db/supabase";
 import { getRedis } from "../redis/upstash";
 
 const ACCESS_TOKEN_PREFIX = "cd_at_";
@@ -102,15 +103,68 @@ async function indexAccessTokenHashByInstallation({
     typeof ttlSeconds === "number" && Number.isFinite(ttlSeconds) ? Math.max(1, Math.floor(ttlSeconds)) : 60;
 
   const key = buildInstallationIndexKey(resolvedInstallationId);
-  try {
-    const redis = getRedis();
-    await redis.sadd(key, resolvedHash);
-    // Keep the index slightly longer than access token TTL so revocation can delete all active tokens.
-    await redis.expire(key, resolvedTtlSeconds + 60);
-  } catch (error) {
-    // Best-effort only: never break token issuance if Redis Set operations fail.
-    console.warn("[oauth] failed to index access token by installation", error);
+  const redis = getRedis();
+  await redis.sadd(key, resolvedHash);
+  // Keep the index slightly longer than access token TTL so revocation can delete all active tokens.
+  await redis.expire(key, resolvedTtlSeconds + 60);
+}
+
+function extractRelation(value: any) {
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0] || null;
+  return value;
+}
+
+export async function validateOauthPrincipalState({
+  agentId,
+  ownerId,
+  installationId
+}: {
+  agentId: string;
+  ownerId: string | null;
+  installationId: string;
+}) {
+  const resolvedAgentId = normalizeNonEmptyString(agentId);
+  const resolvedOwnerId = normalizeNonEmptyString(ownerId);
+  const resolvedInstallationId = normalizeNonEmptyString(installationId);
+  if (!resolvedAgentId || !resolvedOwnerId || !resolvedInstallationId) {
+    return { ok: false as const, reason: "revoked" as const };
   }
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("agent_installations")
+    .select(
+      "installation_id, owner_id, agent_id, status, agents ( id, owner_id, suspended_at ), owners ( owner_id, suspended_at )"
+    )
+    .eq("installation_id", resolvedInstallationId)
+    .eq("agent_id", resolvedAgentId)
+    .eq("owner_id", resolvedOwnerId)
+    .maybeSingle();
+
+  if (error) {
+    throw buildServiceError("Failed to validate OAuth principal", 503, "AUTH_UNAVAILABLE");
+  }
+  if (!data || String(data.status || "").toUpperCase() !== "ACTIVE") {
+    return { ok: false as const, reason: "revoked" as const };
+  }
+
+  const agent = extractRelation(data.agents);
+  const owner = extractRelation(data.owners);
+  if (
+    !agent ||
+    !owner ||
+    normalizeNonEmptyString(agent.id) !== resolvedAgentId ||
+    normalizeNonEmptyString(agent.owner_id) !== resolvedOwnerId ||
+    normalizeNonEmptyString(owner.owner_id) !== resolvedOwnerId
+  ) {
+    return { ok: false as const, reason: "revoked" as const };
+  }
+  if (agent.suspended_at || owner.suspended_at) {
+    return { ok: false as const, reason: "principal_suspended" as const };
+  }
+
+  return { ok: true as const };
 }
 
 export async function deleteOauthAccessTokensForInstallation(installationId: string) {
@@ -188,6 +242,15 @@ export async function issueOauthAccessToken({
 
   const resolvedOwnerId = normalizeNonEmptyString(ownerId);
 
+  const principal = await validateOauthPrincipalState({
+    agentId: resolvedAgentId,
+    ownerId: resolvedOwnerId,
+    installationId: resolvedInstallationId
+  });
+  if (!principal.ok) {
+    throw buildServiceError("OAuth principal is not active", 401, "invalid_grant");
+  }
+
   const ttlSeconds = resolveAccessTokenTtlSeconds();
   const issuedAt = now.toISOString();
   const expiresAt = new Date(now.getTime() + ttlSeconds * 1000).toISOString();
@@ -214,11 +277,18 @@ export async function issueOauthAccessToken({
     throw buildServiceError("Failed to issue access token", 503, "AUTH_UNAVAILABLE");
   }
 
-  await indexAccessTokenHashByInstallation({
-    installationId: resolvedInstallationId,
-    accessTokenHash,
-    ttlSeconds
-  });
+  try {
+    await indexAccessTokenHashByInstallation({
+      installationId: resolvedInstallationId,
+      accessTokenHash,
+      ttlSeconds
+    });
+  } catch {
+    // The token value has not been disclosed yet, so compensating deletion is
+    // sufficient even if Redis remains unavailable during cleanup.
+    await deleteOauthAccessTokenByHash(accessTokenHash);
+    throw buildServiceError("Failed to index access token", 503, "AUTH_UNAVAILABLE");
+  }
 
   return {
     access_token: accessToken,
@@ -397,6 +467,19 @@ export async function authenticateOauthAccessToken(accessToken: string, { now = 
   if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
     await deleteOauthAccessTokenByHash(accessTokenHash);
     return { ok: false as const, reason: "expired" };
+  }
+
+  const principal = await validateOauthPrincipalState({
+    agentId: parsed.agent_id,
+    ownerId: parsed.owner_id,
+    installationId: parsed.installation_id
+  });
+  if (!principal.ok) {
+    await deleteOauthAccessTokenByHash(accessTokenHash);
+    return {
+      ok: false as const,
+      reason: principal.reason === "principal_suspended" ? "revoked" : principal.reason
+    };
   }
 
   return {

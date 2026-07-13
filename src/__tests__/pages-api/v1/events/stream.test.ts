@@ -23,7 +23,7 @@ vi.mock("../../../../server/sse/store", () => ({
 
 import { handler } from "../../../../pages/api/v1/events/stream";
 import { acquireAgentConnectionSlot, releaseAgentConnectionSlot } from "../../../../server/sse/connections";
-import { getLatestStreamId, readAfter } from "../../../../server/sse/store";
+import { getLatestStreamId, opsStreamKey, readAfter } from "../../../../server/sse/store";
 
 function createMockReq({ method = "GET", headers = {}, query = {} } = {}) {
   const req: any = new EventEmitter();
@@ -58,6 +58,7 @@ function createMockRes() {
 const acquireAgentConnectionSlotMock = vi.mocked(acquireAgentConnectionSlot);
 const releaseAgentConnectionSlotMock = vi.mocked(releaseAgentConnectionSlot);
 const getLatestStreamIdMock = vi.mocked(getLatestStreamId);
+const opsStreamKeyMock = vi.mocked(opsStreamKey);
 const readAfterMock = vi.mocked(readAfter);
 
 const baseCtx: any = {
@@ -76,6 +77,7 @@ describe("GET /v1/events/stream", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
   it("returns 405 for unsupported methods", async () => {
@@ -98,6 +100,73 @@ describe("GET /v1/events/stream", () => {
     });
     expect(result.status).toBe(401);
     expect(result.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("denies an ordinary owner even when owner operations SSE is enabled", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SSE_ALLOW_OWNER_OPS", "true");
+    vi.stubEnv("CONSOLE_OPS_OWNER_ID", "owner-ops");
+
+    const req = createMockReq({ headers: { accept: "text/event-stream" } });
+    const res = createMockRes();
+    const result: any = await handler(req, res, {
+      requestId: "req-owner",
+      authError: null,
+      actor: { type: "owner", id: "owner-ordinary" },
+      ownerId: "owner-ordinary",
+      agentId: null
+    });
+
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("FORBIDDEN");
+    expect(opsStreamKeyMock).not.toHaveBeenCalled();
+    expect(getLatestStreamIdMock).not.toHaveBeenCalled();
+  });
+
+  it("allows only the configured operations owner onto the ops stream", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SSE_ALLOW_OWNER_OPS", "true");
+    vi.stubEnv("CONSOLE_OPS_OWNER_ID", "owner-ops");
+    getLatestStreamIdMock.mockResolvedValue(null as any);
+    readAfterMock.mockResolvedValue([] as any);
+
+    const req = createMockReq({ headers: { accept: "text/event-stream" } });
+    const res = createMockRes();
+    const result = await handler(req, res, {
+      requestId: "req-owner",
+      authError: null,
+      actor: { type: "owner", id: "owner-ops" },
+      ownerId: "owner-ops",
+      agentId: null
+    });
+
+    expect(result).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["X-SSE-Audience"]).toBe("ops");
+    expect(opsStreamKeyMock).toHaveBeenCalledTimes(1);
+
+    res.end();
+    await vi.runOnlyPendingTimersAsync();
+  });
+
+  it("denies the configured operations owner when the production feature is disabled", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SSE_ALLOW_OWNER_OPS", "false");
+    vi.stubEnv("CONSOLE_OPS_OWNER_ID", "owner-ops");
+
+    const req = createMockReq({ headers: { accept: "text/event-stream" } });
+    const res = createMockRes();
+    const result: any = await handler(req, res, {
+      requestId: "req-owner",
+      authError: null,
+      actor: { type: "owner", id: "owner-ops" },
+      ownerId: "owner-ops",
+      agentId: null
+    });
+
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("FORBIDDEN");
+    expect(opsStreamKeyMock).not.toHaveBeenCalled();
   });
 
   it("returns 400 when Accept header is missing", async () => {

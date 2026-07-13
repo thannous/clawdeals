@@ -20,6 +20,7 @@ import {
   SSE_POLL_INTERVAL_MS,
   SSE_REPLAY_WINDOW_SECONDS
 } from "../../../../server/config/sse";
+import { getOpsConsoleOwnerId } from "../../../../server/config/ops";
 
 function getHeaderValue(req, name) {
   const value = req?.headers?.[name];
@@ -174,12 +175,20 @@ export async function handler(req, res, ctx) {
   const allowOwnerOps = !isProd || process.env.SSE_ALLOW_OWNER_OPS === "true";
 
   const opsAgentId = process.env.CONSOLE_OPS_AGENT_ID || SSE_OPS_AGENT_ID_DEFAULT;
+  const opsOwnerId = getOpsConsoleOwnerId();
 
   let audience = null;
-  if (ctx?.actor?.type === "owner" && ctx?.ownerId && allowOwnerOps) {
+  if (
+    ctx?.actor?.type === "owner" &&
+    ctx?.ownerId &&
+    ctx.ownerId === opsOwnerId &&
+    allowOwnerOps
+  ) {
     audience = "ops";
   } else if (ctx?.actor?.type === "agent" && ctx?.agentId) {
     audience = ctx.agentId === opsAgentId ? "ops" : "agent";
+  } else if (ctx?.actor?.type === "owner") {
+    return jsonResponse(403, errorPayload("FORBIDDEN", "Operations owner required"));
   } else {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Authentication required"));
   }

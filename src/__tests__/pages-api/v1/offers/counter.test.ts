@@ -115,7 +115,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
       previous_offer_id: null,
       amount: 350,
       currency: "EUR",
-      expires_at: "2026-02-06T13:00:00Z",
+      expires_at: validExpiresAt(),
       status: "CREATED",
       created_at: "2026-02-06T12:00:00Z"
     } as any);
@@ -270,6 +270,31 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("OFFER_NOT_COUNTERABLE");
     expect(result.body.error.details?.status).toBe("ACCEPTED");
+    expect(counterOfferMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 OFFER_NOT_COUNTERABLE when the current offer is expired", async () => {
+    getOfferMock.mockResolvedValue({
+      offer_id: offerId,
+      thread_id: threadId,
+      listing_id: listingId,
+      buyer_agent_id: buyerAgentId,
+      seller_agent_id: sellerAgentId,
+      status: "CREATED",
+      expires_at: new Date(Date.now() - 1_000).toISOString()
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-expired" },
+      query: { offer_id: offerId },
+      body: { amount: 360, currency: "EUR", expires_at: validExpiresAt() }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("OFFER_NOT_COUNTERABLE");
+    expect(result.body.error.details?.status).toBe("EXPIRED");
     expect(counterOfferMock).not.toHaveBeenCalled();
   });
 

@@ -19,6 +19,7 @@ import { getChannelIdentity } from "../../../../server/services/channel-identiti
 const createStagedCommandMock = vi.mocked(createStagedCommand);
 const getOfferMock = vi.mocked(getOffer);
 const getChannelIdentityMock = vi.mocked(getChannelIdentity);
+const channelIdentityId = "00000000-0000-4000-a000-000000000888";
 
 const baseCtx: any = {
   agentId: "00000000-0000-4000-a000-000000000111",
@@ -30,7 +31,13 @@ const baseCtx: any = {
 describe("POST /v1/chat/commands:stage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getChannelIdentityMock.mockResolvedValue(null as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: channelIdentityId,
+      owner_id: baseCtx.ownerId,
+      channel_type: "telegram",
+      channel_user_id: "user-1",
+      channel_context_id: "user-1"
+    } as any);
   });
 
   it("requires agent auth", async () => {
@@ -59,6 +66,7 @@ describe("POST /v1/chat/commands:stage", () => {
       headers: {},
       body: {
         action_type: "watchlist.create",
+        channel_identity_id: channelIdentityId,
         origin_context: { kind: "control_dm" },
         payload: {
           name: "My watch",
@@ -111,6 +119,26 @@ describe("POST /v1/chat/commands:stage", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("ORIGIN_CONTEXT_REQUIRED");
+    expect(createStagedCommandMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a caller-claimed CONTROL_DM without a channel attestation", async () => {
+    getChannelIdentityMock.mockResolvedValue(null as any);
+    const req: any = {
+      method: "POST",
+      query: { command: "commands:stage" },
+      headers: { "x-clawdeals-origin": "webmcp" },
+      body: {
+        action_type: "watchlist.create",
+        origin_context: { kind: "control_dm" },
+        payload: { name: "Nope", active: true, criteria: { query: "iphone" } }
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx, origin: "webmcp" });
+
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_UNATTESTED");
     expect(createStagedCommandMock).not.toHaveBeenCalled();
   });
 
@@ -203,8 +231,8 @@ describe("POST /v1/chat/commands:stage", () => {
     const result: any = await handler(req, null, ctx);
 
     expect(result.status).toBe(403);
-    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_BLOCKED");
-    expect(ctx.outcome).toEqual({ type: "BLOCKED", reason: "origin_context_unknown" });
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_UNATTESTED");
+    expect(createStagedCommandMock).not.toHaveBeenCalled();
   });
 
   it("offer.counter staging is anti-enumeration safe (404 for non-party)", async () => {
@@ -221,6 +249,7 @@ describe("POST /v1/chat/commands:stage", () => {
       headers: {},
       body: {
         action_type: "offer.counter",
+        channel_identity_id: channelIdentityId,
         origin_context: { kind: "control_dm" },
         payload: {
           offer_id: "00000000-0000-4000-a000-000000000333",

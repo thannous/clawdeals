@@ -85,7 +85,7 @@ describe("POST /v1/disputes/:id/resolve concurrency guard", () => {
       headers: { "idempotency-key": "k1" },
       body: { resolution: "REFUND", notes: "ok" },
     };
-    const ctx: any = { ownerId: OPS_OWNER_ID, authError: null };
+    const ctx: any = { ownerId: OPS_OWNER_ID, actor: { type: "owner", id: OPS_OWNER_ID }, authError: null };
 
     const result: any = await handler(req, null, ctx);
 
@@ -111,7 +111,7 @@ describe("POST /v1/disputes/:id/resolve concurrency guard", () => {
       headers: { "idempotency-key": "k1" },
       body: { resolution: "REFUND", notes: "ok" },
     };
-    const ctx: any = { ownerId: OPS_OWNER_ID, authError: null };
+    const ctx: any = { ownerId: OPS_OWNER_ID, actor: { type: "owner", id: OPS_OWNER_ID }, authError: null };
 
     const result: any = await handler(req, null, ctx);
 
@@ -138,7 +138,7 @@ describe("POST /v1/disputes/:id/resolve concurrency guard", () => {
       headers: { "idempotency-key": "k1" },
       body: { resolution: "REFUND", notes: "ok" },
     };
-    const ctx: any = { ownerId: OPS_OWNER_ID, authError: null };
+    const ctx: any = { ownerId: OPS_OWNER_ID, actor: { type: "owner", id: OPS_OWNER_ID }, authError: null };
 
     const result: any = await handler(req, null, ctx);
 
@@ -173,7 +173,7 @@ describe("POST /v1/disputes/:id/resolve concurrency guard", () => {
       headers: { "idempotency-key": "k1" },
       body: { resolution: "REFUND", notes: "ok" },
     };
-    const ctx: any = { ownerId: OPS_OWNER_ID, authError: null };
+    const ctx: any = { ownerId: OPS_OWNER_ID, actor: { type: "owner", id: OPS_OWNER_ID }, authError: null };
 
     const result: any = await handler(req, null, ctx);
 

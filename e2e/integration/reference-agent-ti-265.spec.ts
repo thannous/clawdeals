@@ -67,7 +67,7 @@ test.describe.serial("Integration: Reference agent (TI-265)", () => {
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        auto_approve: { message_types: [], actions: ["listing.create", "thread.create", "offer.accept"] },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }

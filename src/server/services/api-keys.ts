@@ -114,12 +114,15 @@ export async function authenticateApiKey(apiKey) {
   const prefix = parsed.prefix;
 
   const cached = await getCachedApiKeyAuthRecord(prefix);
+  let cachedSecretMatches = false;
   if (cached) {
     const matches = await verifyApiKeySecret(parsed.secret, cached.key_hash);
     if (!matches) {
       await deleteCachedApiKeyAuthRecord(prefix);
       return { ok: false, reason: "mismatch" };
     }
+
+    cachedSecretMatches = true;
 
     if (cached.key_state === "REVOKED" || cached.revoked_at) {
       await deleteCachedApiKeyAuthRecord(prefix);
@@ -144,18 +147,11 @@ export async function authenticateApiKey(apiKey) {
       await deleteCachedApiKeyAuthRecord(prefix);
       return { ok: false, reason: "invalid_state" };
     }
-
-    return {
-      ok: true,
-      agentId: cached.agent_id,
-      ownerId: cached.owner_id || null,
-      installationId: cached.installation_id || null,
-      apiKeyId: cached.api_key_id,
-      keyState: cached.key_state,
-      suspendedAt: cached.suspended_at || null
-    };
   }
 
+  // A positive cache entry may accelerate secret verification, but it must not
+  // authorize mutable key or suspension state. Revocation commits in Postgres
+  // independently of Redis invalidation, so always re-read the authoritative row.
   const client = getSupabaseServiceClient();
   const { data, error } = await client
     .from("api_keys")
@@ -169,15 +165,24 @@ export async function authenticateApiKey(apiKey) {
     throw mapSupabaseServiceError(error);
   }
   if (!data) {
+    if (cached) {
+      await deleteCachedApiKeyAuthRecord(prefix);
+    }
     return { ok: false, reason: "not_found" };
   }
 
-  const matches = await verifyApiKeySecret(parsed.secret, data.key_hash);
+  const matches =
+    cachedSecretMatches && cached?.api_key_id === data.api_key_id && cached?.key_hash === data.key_hash
+      ? true
+      : await verifyApiKeySecret(parsed.secret, data.key_hash);
   if (!matches) {
     return { ok: false, reason: "mismatch" };
   }
 
   if (data.key_state === "REVOKED" || data.revoked_at) {
+    if (cached) {
+      await deleteCachedApiKeyAuthRecord(prefix);
+    }
     return { ok: false, reason: "revoked" };
   }
 

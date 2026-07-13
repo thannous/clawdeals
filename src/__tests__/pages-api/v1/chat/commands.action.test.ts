@@ -20,6 +20,9 @@ vi.mock("../../../../pages/api/v1/offers/[offer_id]/cancel", () => ({ handler: v
 vi.mock("../../../../pages/api/v1/transactions/[tx_id]/request-contact-reveal", () => ({ handler: vi.fn() }));
 vi.mock("../../../../pages/api/v1/transactions/[tx_id]/mark-completed", () => ({ handler: vi.fn() }));
 vi.mock("../../../../server/services/channel-identities", () => ({ getChannelIdentity: vi.fn() }));
+vi.mock("../../../../server/services/installation-scopes-cache", () => ({
+  getInstallationOauthScopes: vi.fn()
+}));
 
 import { handler } from "../../../../pages/api/v1/chat/commands/[command]";
 import {
@@ -32,8 +35,14 @@ import {
 } from "../../../../server/services/staged-commands";
 
 import { handler as offerCreateHandler } from "../../../../pages/api/v1/listings/[id]/offers";
+import { handler as watchlistCreateHandler } from "../../../../pages/api/v1/watchlists/index";
+import { handler as listingCreateHandler } from "../../../../pages/api/v1/listings";
+import { handler as offerCounterHandler } from "../../../../pages/api/v1/offers/[offer_id]/counter";
 import { handler as offerCancelHandler } from "../../../../pages/api/v1/offers/[offer_id]/cancel";
+import { handler as requestContactRevealHandler } from "../../../../pages/api/v1/transactions/[tx_id]/request-contact-reveal";
+import { handler as markCompletedHandler } from "../../../../pages/api/v1/transactions/[tx_id]/mark-completed";
 import { getChannelIdentity } from "../../../../server/services/channel-identities";
+import { getInstallationOauthScopes } from "../../../../server/services/installation-scopes-cache";
 
 const getStagedCommandForAgentMock = vi.mocked(getStagedCommandForAgent);
 const confirmStagedCommandMock = vi.mocked(confirmStagedCommand);
@@ -43,8 +52,15 @@ const cancelStagedCommandMock = vi.mocked(cancelStagedCommand);
 const markStagedCommandUndoneMock = vi.mocked(markStagedCommandUndone);
 
 const offerCreateHandlerMock = vi.mocked(offerCreateHandler);
+const watchlistCreateHandlerMock = vi.mocked(watchlistCreateHandler);
+const listingCreateHandlerMock = vi.mocked(listingCreateHandler);
+const offerCounterHandlerMock = vi.mocked(offerCounterHandler);
 const offerCancelHandlerMock = vi.mocked(offerCancelHandler);
+const requestContactRevealHandlerMock = vi.mocked(requestContactRevealHandler);
+const markCompletedHandlerMock = vi.mocked(markCompletedHandler);
 const getChannelIdentityMock = vi.mocked(getChannelIdentity);
+const getInstallationOauthScopesMock = vi.mocked(getInstallationOauthScopes);
+const channelIdentityId = "00000000-0000-4000-a000-000000000888";
 
 const baseCtx: any = {
   agentId: "00000000-0000-4000-a000-000000000111",
@@ -56,7 +72,13 @@ const baseCtx: any = {
 describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getChannelIdentityMock.mockResolvedValue(null as any);
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: channelIdentityId,
+      owner_id: baseCtx.ownerId,
+      channel_type: "telegram",
+      channel_user_id: "user-1",
+      channel_context_id: "user-1"
+    } as any);
   });
 
   it("requires Idempotency-Key and it must equal command_id", async () => {
@@ -66,6 +88,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
+      channel_identity_id: channelIdentityId,
       state: "STAGED",
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -99,6 +122,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
+      channel_identity_id: channelIdentityId,
       state: "STAGED",
       action_type: "watchlist.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -116,6 +140,142 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     expect(result.body.error.code).toBe("ORIGIN_CONTEXT_REQUIRED");
   });
 
+  it("rejects caller-claimed CONTROL_DM authority without a channel attestation", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000333";
+    getStagedCommandForAgentMock.mockResolvedValue({
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      state: "STAGED",
+      action_type: "watchlist.create",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+      payload_redacted: { payload: { name: "WL", criteria: { query: "x" }, active: true } }
+    } as any);
+
+    const result: any = await handler(
+      {
+        method: "POST",
+        headers: { "idempotency-key": commandId, "x-clawdeals-origin": "webmcp" },
+        query: { command: `${commandId}:confirm` },
+        body: { origin_context: { kind: "control_dm" } }
+      } as any,
+      null,
+      { ...baseCtx, origin: "webmcp" }
+    );
+
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("ORIGIN_CONTEXT_UNATTESTED");
+    expect(confirmStagedCommandMock).not.toHaveBeenCalled();
+    expect(watchlistCreateHandlerMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["watchlist.create", "watchlists:write", watchlistCreateHandlerMock],
+    ["listing.create", "listings:write", listingCreateHandlerMock],
+    ["offer.create", "offers:write", offerCreateHandlerMock],
+    ["offer.counter", "offers:write", offerCounterHandlerMock],
+    ["contact_reveal.request", "contacts:reveal", requestContactRevealHandlerMock],
+    ["transaction.mark_completed", "transactions:write", markCompletedHandlerMock]
+  ])(
+    "checks current installation grants before confirming %s",
+    async (actionType, requiredScope, actionHandlerMock) => {
+      const commandId = "00000000-0000-4000-a000-000000000334";
+      const stagedRow: any = {
+        command_id: commandId,
+        agent_id: baseCtx.agentId,
+        owner_id: baseCtx.ownerId,
+        channel_identity_id: channelIdentityId,
+        state: "STAGED",
+        action_type: actionType,
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+        payload_redacted: {
+          authority: { decision: "EXECUTED", reason: "control_dm_allowed", requires_control_dm_confirm: false },
+          origin_context: { kind: "control_dm" },
+          payload: {
+            listing_id: "00000000-0000-4000-a000-000000000444",
+            offer_id: "00000000-0000-4000-a000-000000000555",
+            tx_id: "00000000-0000-4000-a000-000000000666"
+          }
+        }
+      };
+      getStagedCommandForAgentMock.mockResolvedValue(stagedRow);
+      confirmStagedCommandMock.mockResolvedValue({ ...stagedRow, state: "CONFIRMED" } as any);
+      (actionHandlerMock as any).mockResolvedValue({ status: 200, headers: {}, body: {} });
+      markStagedCommandExecutedMock.mockResolvedValue({
+        ...stagedRow,
+        state: "EXECUTED",
+        undo_supported: false,
+        result_ref_type: null,
+        result_ref_id: null
+      } as any);
+
+      const req: any = {
+        method: "POST",
+        headers: { "idempotency-key": commandId },
+        query: { command: `${commandId}:confirm` },
+        body: { origin_context: { kind: "control_dm" } }
+      };
+      const ctx: any = {
+        ...baseCtx,
+        installationId: "00000000-0000-4000-a000-000000000999"
+      };
+
+      getInstallationOauthScopesMock.mockResolvedValue(["watchlists:read"] as any);
+      const denied: any = await handler(req, null, { ...ctx });
+      expect(denied.status).toBe(403);
+      expect(denied.body.error.code).toBe("INSUFFICIENT_SCOPE");
+      expect(denied.body.error.details.required_scopes).toEqual([requiredScope]);
+      expect(confirmStagedCommandMock).not.toHaveBeenCalled();
+      expect(actionHandlerMock).not.toHaveBeenCalled();
+
+      getInstallationOauthScopesMock.mockResolvedValue([requiredScope] as any);
+      const allowed: any = await handler(req, null, { ...ctx });
+      expect(allowed.status).toBe(200);
+      expect(confirmStagedCommandMock).toHaveBeenCalledTimes(1);
+      expect(actionHandlerMock).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it("fails closed before confirmation when the current grant set is unavailable", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000336";
+    getStagedCommandForAgentMock.mockResolvedValue({
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      channel_identity_id: channelIdentityId,
+      state: "STAGED",
+      action_type: "offer.create",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+      payload_redacted: {
+        authority: { decision: "EXECUTED", reason: "control_dm_allowed", requires_control_dm_confirm: false },
+        origin_context: { kind: "control_dm" },
+        payload: { listing_id: "00000000-0000-4000-a000-000000000444" }
+      }
+    } as any);
+    getInstallationOauthScopesMock.mockRejectedValue(
+      Object.assign(new Error("scope cache unavailable"), { status: 503, code: "AUTH_UNAVAILABLE" })
+    );
+
+    const result: any = await handler(
+      {
+        method: "POST",
+        headers: { "idempotency-key": commandId },
+        query: { command: `${commandId}:confirm` },
+        body: { origin_context: { kind: "control_dm" } }
+      } as any,
+      null,
+      {
+        ...baseCtx,
+        installationId: "00000000-0000-4000-a000-000000000999"
+      }
+    );
+
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("AUTH_UNAVAILABLE");
+    expect(confirmStagedCommandMock).not.toHaveBeenCalled();
+    expect(offerCreateHandlerMock).not.toHaveBeenCalled();
+  });
+
   it("confirm executes offer.create and enables undo (offer.cancel)", async () => {
     const commandId = "00000000-0000-4000-a000-000000000333";
     const listingId = "00000000-0000-4000-a000-000000000444";
@@ -125,6 +285,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
+      channel_identity_id: channelIdentityId,
       state: "STAGED",
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -347,6 +508,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
       command_id: commandId,
       agent_id: baseCtx.agentId,
       owner_id: baseCtx.ownerId,
+      channel_identity_id: channelIdentityId,
       state: "STAGED",
       action_type: "offer.create",
       expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -395,6 +557,7 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
         command_id: commandId,
         agent_id: baseCtx.agentId,
         owner_id: baseCtx.ownerId,
+        channel_identity_id: channelIdentityId,
         state: "STAGED",
         action_type: "offer.create",
         expires_at: new Date(Date.now() + 60000).toISOString(),
@@ -473,6 +636,54 @@ describe("POST /v1/chat/commands/{command_id}:(confirm|cancel|undo)", () => {
     expect(offerCancelHandlerMock).toHaveBeenCalledTimes(1);
     expect(markStagedCommandUndoneMock).toHaveBeenCalledTimes(1);
     expect(ctx.auditEvent).toBe("chat.command_undone");
+  });
+
+  it("checks current offers:write scope before undoing offer.create", async () => {
+    const commandId = "00000000-0000-4000-a000-000000000335";
+    const offerId = "00000000-0000-4000-a000-000000000556";
+    const command: any = {
+      command_id: commandId,
+      agent_id: baseCtx.agentId,
+      owner_id: baseCtx.ownerId,
+      state: "EXECUTED",
+      action_type: "offer.create",
+      result_ref_id: offerId,
+      undo_supported: true,
+      undo_action_type: "offer.cancel",
+      undo_expires_at: new Date(Date.now() + 30000).toISOString(),
+      undone_at: null
+    };
+    getStagedCommandForAgentMock.mockResolvedValue(command);
+    offerCancelHandlerMock.mockResolvedValue({
+      status: 200,
+      headers: {},
+      body: { offer_id: offerId, status: "CANCELLED" }
+    } as any);
+    markStagedCommandUndoneMock.mockResolvedValue({ ...command, undone_at: new Date().toISOString() } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": commandId },
+      query: { command: `${commandId}:undo` },
+      body: {}
+    };
+    const ctx: any = {
+      ...baseCtx,
+      installationId: "00000000-0000-4000-a000-000000000999"
+    };
+
+    getInstallationOauthScopesMock.mockResolvedValue(["watchlists:read"] as any);
+    const denied: any = await handler(req, null, { ...ctx });
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.details.required_scopes).toEqual(["offers:write"]);
+    expect(offerCancelHandlerMock).not.toHaveBeenCalled();
+    expect(markStagedCommandUndoneMock).not.toHaveBeenCalled();
+
+    getInstallationOauthScopesMock.mockResolvedValue(["offers:write"] as any);
+    const allowed: any = await handler(req, null, { ...ctx });
+    expect(allowed.status).toBe(200);
+    expect(offerCancelHandlerMock).toHaveBeenCalledTimes(1);
+    expect(markStagedCommandUndoneMock).toHaveBeenCalledTimes(1);
   });
 
   it("cancel transitions STAGED -> CANCELLED", async () => {

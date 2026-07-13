@@ -289,11 +289,14 @@ const ROUTE_GROUP_REQUIRED_SCOPES: Record<string, string[]> = {
   "listings.create": ["listings:write"],
   "listings.write": ["listings:write"],
   "threads.read": ["threads:read"],
+  "threads.watch": ["threads:read"],
   "threads.create": ["threads:write"],
   "messages.send": ["threads:write"],
   "offers.create": ["offers:write"],
   "offers.actions": ["offers:write"],
   "offers.write": ["offers:write"],
+  "transactions.actions": ["transactions:write"],
+  "ratings.create": ["ratings:write"],
   "deals.read": ["deals:read"],
   "deals.comments.read": ["deals:read"],
   "deals.create": ["deals:write"],
@@ -312,26 +315,29 @@ const ROUTE_GROUP_REQUIRED_SCOPES: Record<string, string[]> = {
   "approvals.approve": ["approvals:admin"],
   "approvals.deny": ["approvals:admin"],
   "contact_reveal.request": ["contacts:reveal"],
+  "disputes.open": ["escrow:*"],
+  "evidence.read": ["evidence:read"],
+  "evidence.write": ["evidence:write"],
   "escrows.create": ["escrow:*"],
   "escrows.pay": ["escrow:*"],
   "escrows.mark_delivered": ["escrow:*"],
   "escrows.confirm_received": ["escrow:*", "payout:*"]
 };
 
-function resolveRequiredScopesForRouteGroup(routeGroup: any): string[] | null {
+export function resolveRequiredScopesForRouteGroup(routeGroup: any): string[] | null {
   if (!routeGroup || typeof routeGroup !== "string") return null;
   const required = ROUTE_GROUP_REQUIRED_SCOPES[routeGroup];
   if (!required || required.length === 0) return null;
   return sortScopesStable(required);
 }
 
-async function enforceInstallationScopes(req: any, res: any, ctx: any) {
+export async function enforceInstallationScopesForRouteGroup(ctx: any, routeGroup: any) {
   // Enforce scopes only for installation-scoped credentials.
   if (ctx?.authError) return null;
   if (ctx?.actor?.type !== "agent") return null;
   if (!ctx?.installationId) return null;
 
-  const requiredScopes = resolveRequiredScopesForRouteGroup(ctx?.routeGroup);
+  const requiredScopes = resolveRequiredScopesForRouteGroup(routeGroup);
   if (!requiredScopes) return null;
 
   let grantedScopes: string[] = [];
@@ -341,11 +347,7 @@ async function enforceInstallationScopes(req: any, res: any, ctx: any) {
     const status = error?.status || 503;
     const code = error?.code || "AUTH_UNAVAILABLE";
     const message = error?.message || "Failed to load installation scopes";
-    const response = jsonResponse(status, errorPayload(code, message));
-    if (!res.writableEnded) {
-      sendJson(res, response.status, response.body, response.headers);
-    }
-    return response;
+    return jsonResponse(status, errorPayload(code, message));
   }
 
   const granted = new Set(Array.isArray(grantedScopes) ? grantedScopes : []);
@@ -371,10 +373,14 @@ async function enforceInstallationScopes(req: any, res: any, ctx: any) {
     })
   );
 
-  if (!res.writableEnded) {
+  return response;
+}
+
+async function enforceInstallationScopes(res: any, ctx: any) {
+  const response = await enforceInstallationScopesForRouteGroup(ctx, ctx?.routeGroup);
+  if (response && !res.writableEnded) {
     sendJson(res, response.status, response.body, response.headers);
   }
-
   return response;
 }
 
@@ -449,7 +455,7 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
     try {
       // TI-331: installation-scoped OAuth scopes (v1).
       // Keep this before rate limiting / idempotency: blocked requests should not consume limits or locks.
-      const scopesResponse = await enforceInstallationScopes(req, res, ctx);
+      const scopesResponse = await enforceInstallationScopes(res, ctx);
       if (scopesResponse) {
         ctx.response = scopesResponse;
         return;

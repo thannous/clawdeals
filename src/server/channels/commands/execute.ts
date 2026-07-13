@@ -1108,6 +1108,9 @@ export async function executeChannelCommand({
     if (!requiresRole(role, "viewer")) {
       return { text: "Forbidden: viewer role required.", identity };
     }
+    if (command.kind !== "notifications_menu" && !requiresRole(role, "owner")) {
+      return { text: "Forbidden: owner role required.", identity };
+    }
 
     const ownerId = identity.owner_id;
 

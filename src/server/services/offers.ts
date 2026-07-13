@@ -75,6 +75,7 @@ export async function createOffer({
     listing_id: listingId,
     buyer_agent_id: buyerAgentId,
     seller_agent_id: sellerAgentId,
+    proposed_by_agent_id: buyerAgentId,
     previous_offer_id: previousOfferId || null,
     amount,
     currency,
@@ -100,7 +101,7 @@ export async function createOffer({
 }
 
 function isOfferNotCounterableError(error) {
-  return Boolean(error?.message) && /offer not counterable/i.test(error.message);
+  return Boolean(error?.message) && /offer not counterable|OFFER_NOT_COUNTERABLE/i.test(error.message);
 }
 
 function isOfferNotFoundError(error) {
@@ -138,10 +139,11 @@ export async function counterOffer({
     }
     if (isOfferNotCounterableError(error)) {
       const current = previousOfferId ? await getOffer(previousOfferId) : null;
+      const expired = /OFFER_NOT_COUNTERABLE:EXPIRED/i.test(error?.message || "");
       throw Object.assign(new Error("Offer not counterable"), {
         status: 409,
         code: "OFFER_NOT_COUNTERABLE",
-        details: { status: current?.status || null }
+        details: { status: expired ? "EXPIRED" : current?.status || null }
       });
     }
     if (isOfferNotFoundError(error)) {
@@ -165,6 +167,15 @@ export function mapOfferActionError(error: any) {
 
   if (/LISTING_LOCKED/i.test(message)) {
     return { status: 409, code: "LISTING_LOCKED", message: "Listing locked" };
+  }
+
+  if (/OFFER_POLICY_REQUIRED/i.test(message)) {
+    return {
+      status: 409,
+      code: "APPROVAL_REQUIRED",
+      message: "Owner approval required",
+      details: { action: "offer.accept" }
+    };
   }
 
   const notActionableMatch = /OFFER_NOT_ACTIONABLE:([A-Z_]+)/i.exec(message);

@@ -1,4 +1,7 @@
-import { withApiMiddlewares } from "../../../../../server/middleware/with-api-middlewares";
+import {
+  enforceInstallationScopesForRouteGroup,
+  withApiMiddlewares
+} from "../../../../../server/middleware/with-api-middlewares";
 import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
@@ -31,6 +34,30 @@ import { handler as offerCounterHandler } from "../../offers/[offer_id]/counter"
 import { handler as offerCancelHandler } from "../../offers/[offer_id]/cancel";
 import { handler as requestContactRevealHandler } from "../../transactions/[tx_id]/request-contact-reveal";
 import { handler as markCompletedHandler } from "../../transactions/[tx_id]/mark-completed";
+
+export const CHAT_ACTION_ROUTE_GROUPS: Readonly<Record<string, string>> = Object.freeze({
+  "watchlist.create": "watchlists.write",
+  "listing.create": "listings.create",
+  "offer.create": "offers.create",
+  "offer.counter": "offers.actions",
+  "contact_reveal.request": "contact_reveal.request",
+  "transaction.mark_completed": "transactions.actions"
+});
+
+const CHAT_UNDO_ROUTE_GROUPS: Readonly<Record<string, string>> = Object.freeze({
+  "offer.cancel": "offers.actions"
+});
+
+async function enforceChatActionScopes(ctx: any, actionType: any, routeGroups: Readonly<Record<string, string>>) {
+  const routeGroup = typeof actionType === "string" ? routeGroups[actionType] : null;
+  if (!routeGroup) {
+    return jsonResponse(
+      500,
+      errorPayload("AUTHORIZATION_POLICY_MISSING", "Chat action authorization policy is missing")
+    );
+  }
+  return enforceInstallationScopesForRouteGroup(ctx, routeGroup);
+}
 
 function getHeaderValue(req: any, name: string) {
   const value = req.headers?.[name];
@@ -333,6 +360,9 @@ export async function handler(req: any, _res: any, ctx: any) {
     if (attestation.ok === false) {
       return jsonResponse(attestation.status, errorPayload(attestation.code, attestation.message, attestation.details));
     }
+    if (attestation.attested !== true) {
+      return jsonResponse(403, errorPayload("ORIGIN_CONTEXT_UNATTESTED", "Server-attested origin_context required"));
+    }
 
     const commandMeta = extractCommandMeta(command);
     const requestOriginContext = resolveOriginContext({
@@ -451,6 +481,11 @@ export async function handler(req: any, _res: any, ctx: any) {
           state: command.state
         })
       );
+    }
+
+    const scopeFailure = await enforceChatActionScopes(ctx, command.action_type, CHAT_ACTION_ROUTE_GROUPS);
+    if (scopeFailure) {
+      return scopeFailure;
     }
 
     // Ensure the STAGED -> CONFIRMED transition actually happened before executing side effects.
@@ -681,6 +716,11 @@ export async function handler(req: any, _res: any, ctx: any) {
         409,
         errorPayload("UNDO_EXPIRED", "Undo window expired", { command_id: commandId, undo_expires_at: undoExpiresAt.toISOString() })
       );
+    }
+
+    const scopeFailure = await enforceChatActionScopes(ctx, command.undo_action_type, CHAT_UNDO_ROUTE_GROUPS);
+    if (scopeFailure) {
+      return scopeFailure;
     }
 
     const undoCtx = { ...ctx };

@@ -584,7 +584,7 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
       channel_identity_id: "cid-1",
       owner_id: "owner-1",
-      role: "viewer",
+      role: "owner",
       state: "ACTIVE"
     } as any);
     vi.mocked(touchLastSeen).mockResolvedValue(undefined as any);
@@ -800,7 +800,7 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     vi.mocked(findActiveIdentityByChannel).mockResolvedValue({
       channel_identity_id: "cid-1",
       owner_id: "owner-1",
-      role: "viewer",
+      role: "owner",
       state: "ACTIVE"
     } as any);
     vi.mocked(touchLastSeen).mockResolvedValue(undefined as any);

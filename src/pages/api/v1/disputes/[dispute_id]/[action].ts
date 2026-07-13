@@ -56,29 +56,31 @@ function isEscrowStatusCompatibleWithResolution(escrowStatus: string, resolution
 }
 
 async function resolveEvidenceRole({
+  actorType,
   actorAgentId,
   actorOwnerId,
   escrow
 }: {
+  actorType: "agent" | "owner" | "anonymous";
   actorAgentId: string | null;
   actorOwnerId: string | null;
   escrow: any;
 }): Promise<{ ok: true; submittedBy: "BUYER" | "SELLER" | "OPS" } | { ok: false }> {
   if (!escrow) return { ok: false };
 
-  if (actorOwnerId && actorOwnerId === getOpsConsoleOwnerId()) {
+  if (actorType === "owner" && actorOwnerId && actorOwnerId === getOpsConsoleOwnerId()) {
     return { ok: true, submittedBy: "OPS" };
   }
 
-  if (actorAgentId && actorAgentId === escrow.buyer_agent_id) {
+  if (actorType === "agent" && actorAgentId && actorAgentId === escrow.buyer_agent_id) {
     return { ok: true, submittedBy: "BUYER" };
   }
-  if (actorAgentId && actorAgentId === escrow.seller_agent_id) {
+  if (actorType === "agent" && actorAgentId && actorAgentId === escrow.seller_agent_id) {
     return { ok: true, submittedBy: "SELLER" };
   }
 
   // Owner acting on behalf of their agent.
-  if (actorOwnerId) {
+  if (actorType === "owner" && actorOwnerId) {
     const [buyerAgent, sellerAgent] = await Promise.all([
       escrow.buyer_agent_id ? getAgentById(escrow.buyer_agent_id) : null,
       escrow.seller_agent_id ? getAgentById(escrow.seller_agent_id) : null
@@ -119,6 +121,10 @@ export async function handler(req, res, ctx) {
   }
 
   if (action === "resolve" && req.method === "POST") {
+    if (ctx?.actor?.type !== "owner") {
+      return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
+    }
+
     const actorOwnerId = ctx?.ownerId || null;
     if (!actorOwnerId || actorOwnerId !== getOpsConsoleOwnerId()) {
       return jsonResponse(403, errorPayload("PERMISSION_DENIED", "Permission denied"));
@@ -272,12 +278,23 @@ export async function handler(req, res, ctx) {
   }
 
   const role = await resolveEvidenceRole({
+    actorType: ctx?.actor?.type || "anonymous",
     actorAgentId: ctx?.agentId || null,
     actorOwnerId: ctx?.ownerId || null,
     escrow
   });
   if (!role.ok) {
     // Anti-enumeration: hide existence.
+    return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
+  }
+
+  const evidenceActor =
+    ctx?.actor?.type === "owner" && ctx?.ownerId
+      ? { type: "owner" as const, id: String(ctx.ownerId) }
+      : ctx?.actor?.type === "agent" && ctx?.agentId
+        ? { type: "agent" as const, id: String(ctx.agentId) }
+        : null;
+  if (!evidenceActor) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
   }
 
@@ -295,7 +312,11 @@ export async function handler(req, res, ctx) {
     }
 
     try {
-      const result = await initEvidenceUpload({ disputeId: String(disputeId) });
+      const result = await initEvidenceUpload({
+        disputeId: String(disputeId),
+        submittedBy: role.submittedBy,
+        actor: evidenceActor
+      });
       return jsonResponse(200, { upload: result.upload });
     } catch (error) {
       return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
@@ -348,7 +369,8 @@ export async function handler(req, res, ctx) {
         key,
         sha256,
         contentType,
-        bytes
+        bytes,
+        actor: evidenceActor
       });
       return jsonResponse(200, { evidence_item_id: result.item.evidence_item_id });
     } catch (error) {

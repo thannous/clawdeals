@@ -374,6 +374,37 @@ describe("POST /oauth/token", () => {
     expect(rotateRefreshToken).not.toHaveBeenCalled();
   });
 
+  it("does not rotate a refresh token when its OAuth principal is suspended", async () => {
+    getRefreshMock.mockResolvedValue({
+      tokenHash: "hash",
+      record: {
+        token_id: "old",
+        owner_id: "owner-1",
+        agent_id: "agent-1",
+        revoked_at: null,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        installation_id: "inst-1"
+      }
+    } as any);
+    issueAccessMock.mockRejectedValue({
+      status: 401,
+      code: "invalid_grant",
+      message: "OAuth principal is not active"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: { client_id: "openclaw", grant_type: "refresh_token", refresh_token: "cd_rt_suspended" }
+    };
+
+    const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1", body: req.body });
+
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("invalid_grant");
+    expect(rotateRefreshToken).not.toHaveBeenCalled();
+  });
+
   it("returns invalid_grant and revokes issued access token when rotation loses refresh race", async () => {
     getRefreshMock.mockResolvedValue({
       tokenHash: "hash",

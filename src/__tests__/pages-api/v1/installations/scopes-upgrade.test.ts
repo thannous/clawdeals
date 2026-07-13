@@ -123,4 +123,30 @@ describe("POST /v1/installations/:installation_id:scopes-upgrade", () => {
       })
     );
   });
+
+  it("requires owner approval for newly introduced sensitive action scopes", async () => {
+    const requestedScopes = ["transactions:write", "evidence:read", "evidence:write", "ratings:write"];
+    createApprovalMock.mockResolvedValue({
+      approval_id: "appr-sensitive",
+      action_payload_redacted: { requested_scopes: requestedScopes }
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      query: { id_action: `${installationId}:scopes-upgrade` },
+      headers: { "idempotency-key": "idem-sensitive" },
+      body: { requested_scopes: requestedScopes }
+    };
+
+    const result: any = await handler(req, null, makeOwnerCtx());
+
+    expect(result.status).toBe(202);
+    expect(result.body.status).toBe("PENDING_APPROVAL");
+    expect(result.body.requested_scopes).toEqual(requestedScopes);
+    expect(createApprovalMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionPayload: expect.objectContaining({ requested_scopes: requestedScopes })
+      })
+    );
+  });
 });

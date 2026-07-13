@@ -12,7 +12,11 @@ vi.mock("../audit/singleton", () => ({
   safeAuditLog: vi.fn(async () => {})
 }));
 
-import { withApiMiddlewares } from "./with-api-middlewares";
+import {
+  enforceInstallationScopesForRouteGroup,
+  resolveRequiredScopesForRouteGroup,
+  withApiMiddlewares
+} from "./with-api-middlewares";
 import { jsonResponse } from "../http/response";
 import { authenticateApiKey } from "../services/api-keys";
 import { getInstallationOauthScopes } from "../services/installation-scopes-cache";
@@ -188,5 +192,50 @@ describe("withApiMiddlewares scopes", () => {
     expect(event?.outcome).toBe("BLOCKED");
     expect(event?.security?.missing_scopes).toEqual(["listings:write"]);
     expect(event?.security?.installation_id).toBe("00000000-0000-4000-a000-000000000333");
+  });
+
+  it.each([
+    ["transactions.actions", "transactions:write"],
+    ["disputes.open", "escrow:*"],
+    ["evidence.read", "evidence:read"],
+    ["evidence.write", "evidence:write"],
+    ["ratings.create", "ratings:write"],
+    ["threads.watch", "threads:read"]
+  ])("enforces the dedicated policy for %s", async (routeGroup, requiredScope) => {
+    const ctx: any = {
+      actor: { type: "agent", id: "agent-1" },
+      agentId: "agent-1",
+      installationId: "00000000-0000-4000-a000-000000000444",
+      authError: null
+    };
+
+    expect(resolveRequiredScopesForRouteGroup(routeGroup)).toEqual([requiredScope]);
+
+    vi.mocked(getInstallationOauthScopes).mockResolvedValue(["watchlists:read"] as any);
+    const denied: any = await enforceInstallationScopesForRouteGroup(ctx, routeGroup);
+    expect(denied?.status).toBe(403);
+    expect(denied?.body?.error?.code).toBe("INSUFFICIENT_SCOPE");
+    expect(denied?.body?.error?.details?.required_scopes).toEqual([requiredScope]);
+
+    vi.mocked(getInstallationOauthScopes).mockResolvedValue([requiredScope] as any);
+    await expect(enforceInstallationScopesForRouteGroup(ctx, routeGroup)).resolves.toBeNull();
+  });
+
+  it("fails closed when installation grants cannot be loaded", async () => {
+    vi.mocked(getInstallationOauthScopes).mockRejectedValue(
+      Object.assign(new Error("scope cache unavailable"), { status: 503, code: "AUTH_UNAVAILABLE" })
+    );
+
+    const response: any = await enforceInstallationScopesForRouteGroup(
+      {
+        actor: { type: "agent", id: "agent-1" },
+        installationId: "00000000-0000-4000-a000-000000000555",
+        authError: null
+      },
+      "evidence.write"
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.body.error.code).toBe("AUTH_UNAVAILABLE");
   });
 });

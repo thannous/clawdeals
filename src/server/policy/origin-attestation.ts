@@ -36,16 +36,6 @@ function deriveOriginContextFromChannelIdentity(identity: any): string {
   return channelContextId === channelUserId ? ORIGIN_CONTEXT_KIND.CONTROL_DM : ORIGIN_CONTEXT_KIND.PUBLIC_GROUP;
 }
 
-function deriveOriginContextFromRequestOrigin(requestOrigin: any): string | null {
-  const origin = normalizeText(requestOrigin).toLowerCase();
-  if (!origin) return null;
-  // Telegram webhook currently accepts private chats only; treat channel webhook context as CONTROL_DM.
-  if (origin === "channel:telegram") return ORIGIN_CONTEXT_KIND.CONTROL_DM;
-  // WebMCP is a first-party client entrypoint.
-  if (origin === "webmcp") return ORIGIN_CONTEXT_KIND.CONTROL_DM;
-  return null;
-}
-
 export async function attestOriginContextForOwner({
   ownerId,
   requestedOriginContext,
@@ -60,11 +50,13 @@ export async function attestOriginContextForOwner({
   const requested = resolveOriginContext({ originContext: requestedOriginContext });
   if (requested.kind === ORIGIN_CONTEXT_KIND.UNKNOWN) {
     return {
-      ok: true,
-      originContext: requested,
-      source: null,
-      attested: false,
-      requestedOriginContext: requested
+      ok: false,
+      status: 403,
+      code: "ORIGIN_CONTEXT_UNATTESTED",
+      message: "origin_context requires server attestation",
+      details: {
+        origin_context: requested
+      }
     };
   }
 
@@ -104,28 +96,20 @@ export async function attestOriginContextForOwner({
     attestedKind = derived;
     source = "channel_identity";
   } else {
-    attestedKind = deriveOriginContextFromRequestOrigin(requestOrigin);
-    source = attestedKind ? "request_origin" : null;
+    // requestOrigin is populated from a public request header. It is useful for
+    // telemetry, but it is not authenticated evidence for an authority decision.
+    void requestOrigin;
   }
 
   if (!attestedKind) {
-    if (requested.kind !== ORIGIN_CONTEXT_KIND.CONTROL_DM) {
-      return {
-        ok: false,
-        status: 403,
-        code: "ORIGIN_CONTEXT_UNATTESTED",
-        message: "Non-control origin_context requires server attestation",
-        details: {
-          origin_context: requested
-        }
-      };
-    }
     return {
-      ok: true,
-      originContext: requested,
-      source: null,
-      attested: false,
-      requestedOriginContext: requested
+      ok: false,
+      status: 403,
+      code: "ORIGIN_CONTEXT_UNATTESTED",
+      message: "origin_context requires server attestation",
+      details: {
+        origin_context: requested
+      }
     };
   }
 

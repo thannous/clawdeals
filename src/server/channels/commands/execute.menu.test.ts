@@ -68,7 +68,16 @@ vi.mock("../command-confirmations", () => ({
   consumeConfirmation: vi.fn(async () => ({ ok: true }))
 }));
 
+import { findActiveIdentityByChannel } from "../../services/channel-identities";
+import {
+  getOrCreateNotificationPreferences,
+  updateNotificationPreferences
+} from "../../services/notification-preferences";
 import { executeChannelCommand } from "./execute";
+
+const findActiveIdentityByChannelMock = vi.mocked(findActiveIdentityByChannel);
+const getOrCreateNotificationPreferencesMock = vi.mocked(getOrCreateNotificationPreferences);
+const updateNotificationPreferencesMock = vi.mocked(updateNotificationPreferences);
 
 describe("executeChannelCommand (menu cards)", () => {
   beforeEach(() => {
@@ -110,5 +119,56 @@ describe("executeChannelCommand (menu cards)", () => {
     expect(actionIds).toContain("watchlists.back");
     expect(actionIds).toContain("watchlists.create");
   });
-});
 
+  it("allows viewers to read notification preferences", async () => {
+    findActiveIdentityByChannelMock.mockResolvedValueOnce({
+      channel_identity_id: "cid-viewer",
+      owner_id: "owner-1",
+      role: "viewer",
+      state: "PAIRED"
+    } as any);
+
+    const result = await executeChannelCommand({
+      channel: { channelType: "telegram", channelUserId: "u1", channelContextId: "c1", displayName: "u" },
+      command: { kind: "notifications_menu" } as any,
+      ctx: {}
+    });
+
+    expect(result.text).not.toContain("Forbidden");
+    expect(getOrCreateNotificationPreferencesMock).toHaveBeenCalledTimes(1);
+    expect(updateNotificationPreferencesMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks viewers from mutating owner notification preferences", async () => {
+    findActiveIdentityByChannelMock.mockResolvedValueOnce({
+      channel_identity_id: "cid-viewer",
+      owner_id: "owner-1",
+      role: "viewer",
+      state: "PAIRED"
+    } as any);
+
+    const result = await executeChannelCommand({
+      channel: { channelType: "telegram", channelUserId: "u1", channelContextId: "c1", displayName: "u" },
+      command: { kind: "notifications_mode", mode: "SILENT" } as any,
+      ctx: {}
+    });
+
+    expect(result.text).toBe("Forbidden: owner role required.");
+    expect(getOrCreateNotificationPreferencesMock).not.toHaveBeenCalled();
+    expect(updateNotificationPreferencesMock).not.toHaveBeenCalled();
+  });
+
+  it("preserves owner notification preference updates", async () => {
+    const result = await executeChannelCommand({
+      channel: { channelType: "telegram", channelUserId: "u1", channelContextId: "c1", displayName: "u" },
+      command: { kind: "notifications_mode", mode: "SILENT" } as any,
+      ctx: {}
+    });
+
+    expect(result.text).not.toContain("Forbidden");
+    expect(updateNotificationPreferencesMock).toHaveBeenCalledWith({
+      ownerId: "owner-1",
+      patch: { mode: "SILENT" }
+    });
+  });
+});

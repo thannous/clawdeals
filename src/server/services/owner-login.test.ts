@@ -17,15 +17,25 @@ vi.mock("./owner-sessions", () => ({
   touchOwnerSession: vi.fn()
 }));
 
+const consumeMaybeSingle = vi.fn();
+const consumeQuery: any = { maybeSingle: consumeMaybeSingle };
+consumeQuery.eq = vi.fn(() => consumeQuery);
+consumeQuery.gt = vi.fn(() => consumeQuery);
+consumeQuery.select = vi.fn(() => consumeQuery);
+const consumeUpdate = vi.fn(() => consumeQuery);
+const consumeFrom = vi.fn(() => ({ update: consumeUpdate }));
+
+vi.mock("../db/supabase", () => ({
+  getSupabaseServiceClient: () => ({ from: consumeFrom })
+}));
+
 import { getOwner, getOwnerByEmail } from "./owners";
 import {
   createOwnerSession,
   getOwnerSessionById,
   incrementOwnerSessionAttempt,
-  markOwnerSessionActive,
   markOwnerSessionExpired,
-  markOwnerSessionRevoked,
-  touchOwnerSession
+  markOwnerSessionRevoked
 } from "./owner-sessions";
 import { buildOwnerSessionCookie } from "../auth/session-cookie";
 import { hashOwnerSessionToken } from "../utils/session-tokens";
@@ -43,6 +53,7 @@ describe("owner-login", () => {
     process.env = { ...process.env, NODE_ENV: "development" };
     delete process.env.OWNER_SESSION_COOKIE_SECURE;
     delete process.env.OWNER_SESSION_COOKIE_SAMESITE;
+    consumeMaybeSingle.mockResolvedValue({ data: null, error: null });
   });
 
   afterEach(() => {
@@ -158,7 +169,7 @@ describe("owner-login", () => {
     expect(markOwnerSessionRevoked).toHaveBeenCalledWith("sess-1", expect.any(Date));
   });
 
-  it("confirms a pending session and marks it active", async () => {
+  it("atomically consumes a pending link and returns a distinct active session token", async () => {
     const token = TOKEN_VALID;
     const session = {
       session_id: "sess-1",
@@ -173,16 +184,28 @@ describe("owner-login", () => {
 
     vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
     vi.mocked(getOwner).mockResolvedValue(owner as any);
-    vi.mocked(markOwnerSessionActive).mockResolvedValue({ ...session, status: "ACTIVE" } as any);
+    consumeMaybeSingle.mockResolvedValueOnce({
+      data: { ...session, status: "ACTIVE", token_hash: "replacement-hash" },
+      error: null
+    });
 
     const result = await confirmOwnerLogin({ sessionId: "sess-1", token });
 
-    expect(markOwnerSessionActive).toHaveBeenCalledWith("sess-1", expect.any(Date));
     expect(result.owner).toBe(owner);
-    expect(result.set_cookie).toContain(`cd_owner_session=${TOKEN_VALID}`);
+    const cookieToken = /cd_owner_session=([^;]+)/.exec(result.set_cookie)?.[1];
+    expect(cookieToken).toMatch(/^cd_os_/);
+    expect(cookieToken).not.toBe(TOKEN_VALID);
+    expect(consumeUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: "ACTIVE",
+        token_hash: hashOwnerSessionToken(cookieToken as string)
+      })
+    );
+    expect(consumeQuery.eq).toHaveBeenCalledWith("status", "PENDING");
+    expect(consumeQuery.eq).toHaveBeenCalledWith("token_hash", hashOwnerSessionToken(TOKEN_VALID));
   });
 
-  it("touches active sessions on confirm", async () => {
+  it("rejects replay of an already consumed magic link", async () => {
     const token = TOKEN_VALID;
     const session = {
       session_id: "sess-1",
@@ -197,11 +220,63 @@ describe("owner-login", () => {
 
     vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
     vi.mocked(getOwner).mockResolvedValue(owner as any);
-    vi.mocked(touchOwnerSession).mockResolvedValue({ ...session, last_used_at: "2026-02-11T00:00:00Z" } as any);
 
-    await confirmOwnerLogin({ sessionId: "sess-1", token });
+    await expect(confirmOwnerLogin({ sessionId: "sess-1", token })).rejects.toMatchObject({
+      status: 401,
+      code: "LINK_USED"
+    });
 
-    expect(touchOwnerSession).toHaveBeenCalledWith("sess-1", expect.any(Date));
+    expect(consumeUpdate).not.toHaveBeenCalled();
+  });
+
+  it("allows exactly one success across concurrent confirmations", async () => {
+    const token = TOKEN_VALID;
+    const session = {
+      session_id: "sess-1",
+      owner_id: "owner-1",
+      status: "PENDING",
+      token_hash: hashOwnerSessionToken(token),
+      attempt_count: 0,
+      max_attempts: 5,
+      expires_at: "2099-01-01T00:00:00Z"
+    };
+    const owner = { owner_id: "owner-1", suspended_at: null, email_verified_at: "2026-02-01T00:00:00Z" };
+    vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
+    vi.mocked(getOwner).mockResolvedValue(owner as any);
+    consumeMaybeSingle
+      .mockResolvedValueOnce({ data: { ...session, status: "ACTIVE" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+
+    const results = await Promise.allSettled([
+      confirmOwnerLogin({ sessionId: "sess-1", token }),
+      confirmOwnerLogin({ sessionId: "sess-1", token })
+    ]);
+
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    const rejected = results.find((result) => result.status === "rejected") as PromiseRejectedResult;
+    expect(rejected.reason).toMatchObject({ status: 401, code: "LINK_USED" });
+  });
+
+  it("fails closed when the atomic link exchange cannot be committed", async () => {
+    const token = TOKEN_VALID;
+    const session = {
+      session_id: "sess-1",
+      owner_id: "owner-1",
+      status: "PENDING",
+      token_hash: hashOwnerSessionToken(token),
+      attempt_count: 0,
+      max_attempts: 5,
+      expires_at: "2099-01-01T00:00:00Z"
+    };
+    vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
+    vi.mocked(getOwner).mockResolvedValue({
+      owner_id: "owner-1",
+      suspended_at: null,
+      email_verified_at: "2026-02-01T00:00:00Z"
+    } as any);
+    consumeMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } });
+
+    await expect(confirmOwnerLogin({ sessionId: "sess-1", token })).rejects.toMatchObject({ status: 500 });
   });
 
   it("builds dev cookie without Secure and with SameSite=Lax", () => {

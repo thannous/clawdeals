@@ -15,15 +15,25 @@ describe("attestOriginContextForOwner", () => {
     getChannelIdentityMock.mockResolvedValue(null as any);
   });
 
-  it("allows CONTROL_DM without external attestation source", async () => {
+  it("rejects CONTROL_DM without a server attestation source", async () => {
     const result = await attestOriginContextForOwner({
       ownerId: "00000000-0000-4000-a000-000000000111",
       requestedOriginContext: { kind: "control_dm" }
     });
 
-    expect(result.ok).toBe(true);
-    expect((result as any).originContext.kind).toBe("CONTROL_DM");
-    expect((result as any).attested).toBe(false);
+    expect(result.ok).toBe(false);
+    expect((result as any).code).toBe("ORIGIN_CONTEXT_UNATTESTED");
+  });
+
+  it("does not trust a caller-controlled request origin header", async () => {
+    const result = await attestOriginContextForOwner({
+      ownerId: "00000000-0000-4000-a000-000000000111",
+      requestedOriginContext: { kind: "control_dm" },
+      requestOrigin: "webmcp"
+    });
+
+    expect(result.ok).toBe(false);
+    expect((result as any).code).toBe("ORIGIN_CONTEXT_UNATTESTED");
   });
 
   it("rejects non-control origin without attestation", async () => {
@@ -72,6 +82,27 @@ describe("attestOriginContextForOwner", () => {
 
     expect(result.ok).toBe(true);
     expect((result as any).originContext.kind).toBe("PUBLIC_GROUP");
+    expect((result as any).attested).toBe(true);
+  });
+
+  it("accepts CONTROL_DM derived from an owner-scoped private channel identity", async () => {
+    getChannelIdentityMock.mockResolvedValue({
+      channel_identity_id: "00000000-0000-4000-a000-000000000888",
+      owner_id: "00000000-0000-4000-a000-000000000111",
+      channel_type: "telegram",
+      channel_user_id: "user-1",
+      channel_context_id: "user-1"
+    } as any);
+
+    const result = await attestOriginContextForOwner({
+      ownerId: "00000000-0000-4000-a000-000000000111",
+      requestedOriginContext: { kind: "control_dm" },
+      channelIdentityId: "00000000-0000-4000-a000-000000000888"
+    });
+
+    expect(result.ok).toBe(true);
+    expect((result as any).originContext.kind).toBe("CONTROL_DM");
+    expect((result as any).source).toBe("channel_identity");
     expect((result as any).attested).toBe(true);
   });
 });

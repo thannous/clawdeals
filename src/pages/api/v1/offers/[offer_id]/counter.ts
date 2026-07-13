@@ -173,6 +173,17 @@ export async function handler(req, res, ctx) {
       );
     }
 
+    const currentOfferExpiresAt = new Date(offer.expires_at);
+    if (
+      Number.isNaN(currentOfferExpiresAt.getTime()) ||
+      currentOfferExpiresAt.getTime() <= Date.now()
+    ) {
+      return jsonResponse(
+        409,
+        errorPayload("OFFER_NOT_COUNTERABLE", "Offer not counterable", { status: "EXPIRED" })
+      );
+    }
+
     const listing = await getListing(offer.listing_id);
     if (!listing) {
       return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));

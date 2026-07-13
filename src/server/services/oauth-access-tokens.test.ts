@@ -24,12 +24,23 @@ const mockRedis = {
   expire: vi.fn(async (_key: string, _seconds: number) => 1),
 };
 
+const principalMaybeSingle = vi.fn();
+const principalQuery: any = { maybeSingle: principalMaybeSingle };
+principalQuery.eq = vi.fn(() => principalQuery);
+const principalSelect = vi.fn(() => principalQuery);
+const principalFrom = vi.fn(() => ({ select: principalSelect }));
+
 vi.mock("../redis/upstash", () => ({
   getRedis: () => mockRedis,
 }));
 
+vi.mock("../db/supabase", () => ({
+  getSupabaseServiceClient: () => ({ from: principalFrom }),
+}));
+
 import {
   deleteOauthAccessTokensForInstallation,
+  authenticateOauthAccessToken,
   getOauthAccessTokenRecordByToken,
   issueOauthAccessToken,
   revokeOauthAccessToken,
@@ -44,6 +55,17 @@ describe("oauth-access-tokens (installation index)", () => {
     sets.clear();
     process.env.OAUTH_TOKEN_SECRET = "test-secret";
     process.env.OAUTH_ACCESS_TOKEN_TTL_SECONDS = "10";
+    principalMaybeSingle.mockResolvedValue({
+      data: {
+        installation_id: "install-1",
+        owner_id: "owner-1",
+        agent_id: "agent-1",
+        status: "ACTIVE",
+        agents: { id: "agent-1", owner_id: "owner-1", suspended_at: null },
+        owners: { owner_id: "owner-1", suspended_at: null },
+      },
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -75,6 +97,153 @@ describe("oauth-access-tokens (installation index)", () => {
     const indexKey = "auth:oauth:access_installation:v1:install-1";
     expect(mockRedis.sadd).toHaveBeenCalledWith(indexKey, issued.access_token_hash);
     expect(mockRedis.expire).toHaveBeenCalledWith(indexKey, 70);
+  });
+
+  it("fails issuance and removes the undisclosed primary token when installation indexing fails", async () => {
+    mockRedis.sadd.mockRejectedValueOnce(new Error("redis index unavailable"));
+
+    await expect(
+      issueOauthAccessToken({
+        agentId: "agent-1",
+        ownerId: "owner-1",
+        installationId: "install-1",
+        scopes: ["agent:read"],
+        now: new Date("2026-02-10T12:00:00Z"),
+      })
+    ).rejects.toMatchObject({ status: 503, code: "AUTH_UNAVAILABLE" });
+
+    expect(mockRedis.del).toHaveBeenCalledWith(expect.stringMatching(/^auth:oauth:access:v1:/));
+    expect(Array.from(kv.keys()).filter((key) => key.startsWith("auth:oauth:access:v1:"))).toEqual([]);
+  });
+
+  it("fails issuance and removes the primary token when index expiry cannot be established", async () => {
+    mockRedis.expire.mockRejectedValueOnce(new Error("redis expire unavailable"));
+
+    await expect(
+      issueOauthAccessToken({
+        agentId: "agent-1",
+        ownerId: "owner-1",
+        installationId: "install-1",
+        scopes: ["agent:read"],
+        now: new Date("2026-02-10T12:00:00Z"),
+      })
+    ).rejects.toMatchObject({ status: 503, code: "AUTH_UNAVAILABLE" });
+
+    expect(Array.from(kv.keys()).filter((key) => key.startsWith("auth:oauth:access:v1:"))).toEqual([]);
+  });
+
+  it("rejects an indexed access token immediately after installation revocation", async () => {
+    const issued = await issueOauthAccessToken({
+      agentId: "agent-1",
+      ownerId: "owner-1",
+      installationId: "install-1",
+      scopes: ["agent:read"],
+      now: new Date("2026-02-10T12:00:00Z"),
+    });
+    principalMaybeSingle.mockResolvedValueOnce({
+      data: {
+        installation_id: "install-1",
+        owner_id: "owner-1",
+        agent_id: "agent-1",
+        status: "REVOKED",
+        agents: { id: "agent-1", owner_id: "owner-1", suspended_at: null },
+        owners: { owner_id: "owner-1", suspended_at: null },
+      },
+      error: null,
+    });
+
+    await expect(
+      authenticateOauthAccessToken(issued.access_token, { now: new Date("2026-02-10T12:00:05Z") })
+    ).resolves.toEqual({ ok: false, reason: "revoked" });
+    expect(kv.has(`auth:oauth:access:v1:${issued.access_token_hash}`)).toBe(false);
+  });
+
+  it("continues to authenticate an unexpired token for an active principal", async () => {
+    const issued = await issueOauthAccessToken({
+      agentId: "agent-1",
+      ownerId: "owner-1",
+      installationId: "install-1",
+      scopes: ["agent:read"],
+      now: new Date("2026-02-10T12:00:00Z"),
+    });
+
+    await expect(
+      authenticateOauthAccessToken(issued.access_token, { now: new Date("2026-02-10T12:00:05Z") })
+    ).resolves.toMatchObject({
+      ok: true,
+      agentId: "agent-1",
+      ownerId: "owner-1",
+      installationId: "install-1",
+      scopes: ["agent:read"],
+    });
+  });
+
+  it.each([
+    ["agent", "2026-02-10T12:00:01Z", null],
+    ["owner", null, "2026-02-10T12:00:01Z"],
+  ])("rejects a valid access token after %s suspension", async (_principal, agentSuspendedAt, ownerSuspendedAt) => {
+    const issued = await issueOauthAccessToken({
+      agentId: "agent-1",
+      ownerId: "owner-1",
+      installationId: "install-1",
+      scopes: ["agent:read"],
+      now: new Date("2026-02-10T12:00:00Z"),
+    });
+    principalMaybeSingle.mockResolvedValueOnce({
+      data: {
+        installation_id: "install-1",
+        owner_id: "owner-1",
+        agent_id: "agent-1",
+        status: "ACTIVE",
+        agents: { id: "agent-1", owner_id: "owner-1", suspended_at: agentSuspendedAt },
+        owners: { owner_id: "owner-1", suspended_at: ownerSuspendedAt },
+      },
+      error: null,
+    });
+
+    await expect(
+      authenticateOauthAccessToken(issued.access_token, { now: new Date("2026-02-10T12:00:05Z") })
+    ).resolves.toEqual({ ok: false, reason: "revoked" });
+  });
+
+  it("does not issue a new token for a suspended principal", async () => {
+    principalMaybeSingle.mockResolvedValueOnce({
+      data: {
+        installation_id: "install-1",
+        owner_id: "owner-1",
+        agent_id: "agent-1",
+        status: "ACTIVE",
+        agents: { id: "agent-1", owner_id: "owner-1", suspended_at: "2026-02-10T12:00:01Z" },
+        owners: { owner_id: "owner-1", suspended_at: null },
+      },
+      error: null,
+    });
+
+    await expect(
+      issueOauthAccessToken({
+        agentId: "agent-1",
+        ownerId: "owner-1",
+        installationId: "install-1",
+        scopes: ["agent:read"],
+        now: new Date("2026-02-10T12:00:05Z"),
+      })
+    ).rejects.toMatchObject({ status: 401, code: "invalid_grant" });
+    expect(mockRedis.set).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when live OAuth principal validation is unavailable", async () => {
+    const issued = await issueOauthAccessToken({
+      agentId: "agent-1",
+      ownerId: "owner-1",
+      installationId: "install-1",
+      scopes: ["agent:read"],
+      now: new Date("2026-02-10T12:00:00Z"),
+    });
+    principalMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } });
+
+    await expect(
+      authenticateOauthAccessToken(issued.access_token, { now: new Date("2026-02-10T12:00:05Z") })
+    ).rejects.toMatchObject({ status: 503, code: "AUTH_UNAVAILABLE" });
   });
 
   it("deletes all indexed access tokens and the index key", async () => {

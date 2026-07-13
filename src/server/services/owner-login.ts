@@ -1,17 +1,17 @@
 import crypto from "node:crypto";
 
 import { buildOwnerSessionCookie } from "../auth/session-cookie";
+import { getSupabaseServiceClient } from "../db/supabase";
 import { normalizeEmail, secondsUntil } from "../utils/owner-verification";
 import { generateOwnerSessionToken, hashOwnerSessionToken, isOwnerSessionToken } from "../utils/session-tokens";
 import { getOwner, getOwnerByEmail, setOwnerVerified, upsertOwner } from "./owners";
+import { mapSupabaseError } from "./supabase-errors";
 import {
   createOwnerSession,
   getOwnerSessionById,
   incrementOwnerSessionAttempt,
-  markOwnerSessionActive,
   markOwnerSessionExpired,
-  markOwnerSessionRevoked,
-  touchOwnerSession
+  markOwnerSessionRevoked
 } from "./owner-sessions";
 
 const DEFAULT_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -23,6 +23,46 @@ function buildServiceError(message: string, status = 500, code = "ERROR", detail
   error.code = code;
   if (details) error.details = details;
   return error;
+}
+
+function mapSupabaseServiceError(error: any) {
+  const mapped = mapSupabaseError(error);
+  return buildServiceError(mapped.message, mapped.status, mapped.code);
+}
+
+async function consumeOwnerLoginToken({
+  sessionId,
+  expectedTokenHash,
+  replacementTokenHash,
+  now
+}: {
+  sessionId: string;
+  expectedTokenHash: string;
+  replacementTokenHash: string;
+  now: Date;
+}) {
+  const nowIso = now.toISOString();
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("owner_sessions")
+    .update({
+      status: "ACTIVE",
+      token_hash: replacementTokenHash,
+      activated_at: nowIso,
+      last_used_at: nowIso,
+      updated_at: nowIso
+    })
+    .eq("session_id", sessionId)
+    .eq("status", "PENDING")
+    .eq("token_hash", expectedTokenHash)
+    .gt("expires_at", nowIso)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw mapSupabaseServiceError(error);
+  }
+  return data || null;
 }
 
 function normalizeNonEmptyString(value: any) {
@@ -182,6 +222,10 @@ export async function confirmOwnerLogin({
     throw buildServiceError("Owner session expired", 410, "SESSION_EXPIRED");
   }
 
+  if (session.status !== "PENDING") {
+    throw buildServiceError("Login link already used", 401, "LINK_USED");
+  }
+
   if (isSessionLocked(session)) {
     throw lockoutError(session, now);
   }
@@ -220,31 +264,15 @@ export async function confirmOwnerLogin({
     throw buildServiceError("Owner account is suspended", 403, "OWNER_SUSPENDED");
   }
 
-  let active = session.status === "ACTIVE"
-    ? await touchOwnerSession(resolvedSessionId, now)
-    : await markOwnerSessionActive(resolvedSessionId, now);
+  const sessionToken = generateOwnerSessionToken();
+  const active = await consumeOwnerLoginToken({
+    sessionId: resolvedSessionId,
+    expectedTokenHash: tokenHash,
+    replacementTokenHash: hashOwnerSessionToken(sessionToken),
+    now
+  });
   if (!active) {
-    // State changed (race): re-fetch to determine current status.
-    active = await getOwnerSessionById(resolvedSessionId);
-  }
-  if (!active) {
-    throw buildServiceError("Owner session not found", 404, "NOT_FOUND");
-  }
-  if (active.status === "REVOKED") {
-    throw buildServiceError("Owner session revoked", 401, "SESSION_REVOKED");
-  }
-  if (active.status === "EXPIRED" || isSessionExpired(active, now)) {
-    if (active.status !== "EXPIRED") {
-      try {
-        await markOwnerSessionExpired(resolvedSessionId, now);
-      } catch {
-        // Best-effort only.
-      }
-    }
-    throw buildServiceError("Owner session expired", 410, "SESSION_EXPIRED");
-  }
-  if (active.status !== "ACTIVE") {
-    throw buildServiceError("Owner session not active", 401, "SESSION_INACTIVE");
+    throw buildServiceError("Login link already used", 401, "LINK_USED");
   }
   const expiresAt = active.expires_at ? new Date(active.expires_at) : new Date(now.getTime());
 
@@ -261,7 +289,7 @@ export async function confirmOwnerLogin({
     owner,
     session: active,
     set_cookie: buildOwnerSessionCookie({
-      token: resolvedToken,
+      token: sessionToken,
       expiresAt,
       secure: cookieSecure
     })

@@ -414,7 +414,7 @@ test.describe.serial("Integration: Telegram approvals (TI-299)", () => {
       data: {
         budgets: { max_offer: 1000, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        auto_approve: { message_types: [], actions: ["listing.create", "thread.create", "offer.accept"] },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }

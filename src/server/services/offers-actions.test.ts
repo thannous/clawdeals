@@ -15,6 +15,15 @@ describe("mapOfferActionError (TI-201)", () => {
     expect(mapped.code).toBe("LISTING_LOCKED");
   });
 
+  it("maps missing offer.accept policy to APPROVAL_REQUIRED", () => {
+    expect(mapOfferActionError({ message: "OFFER_POLICY_REQUIRED" })).toEqual({
+      status: 409,
+      code: "APPROVAL_REQUIRED",
+      message: "Owner approval required",
+      details: { action: "offer.accept" }
+    });
+  });
+
   it("maps OFFER_NOT_ACTIONABLE:<STATUS> to 409 with details", () => {
     const mapped = mapOfferActionError({ message: "OFFER_NOT_ACTIONABLE:ACCEPTED" });
     expect(mapped.status).toBe(409);
@@ -22,4 +31,3 @@ describe("mapOfferActionError (TI-201)", () => {
     expect(mapped.details).toEqual({ status: "ACCEPTED" });
   });
 });
-

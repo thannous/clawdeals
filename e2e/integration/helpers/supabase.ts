@@ -17,7 +17,21 @@ export async function ensureStorageBucket(
   const { data: buckets, error } = await supabase.storage.listBuckets();
   if (error) throw error;
   const exists = (buckets || []).some((bucket: any) => bucket.name === bucketName);
-  if (exists) return;
+  if (exists) {
+    if (
+      options.public !== undefined ||
+      options.fileSizeLimit !== undefined ||
+      options.allowedMimeTypes !== undefined
+    ) {
+      const { error: updateError } = await supabase.storage.updateBucket(bucketName, {
+        public: options.public ?? false,
+        fileSizeLimit: options.fileSizeLimit,
+        allowedMimeTypes: options.allowedMimeTypes
+      });
+      if (updateError) throw updateError;
+    }
+    return;
+  }
 
   const { error: createError } = await supabase.storage.createBucket(bucketName, {
     public: options.public ?? false,
@@ -143,16 +157,11 @@ export async function ensureOpsConsoleAgent(supabase: any) {
 }
 
 export async function ensureEvidenceBucket(supabase: any) {
-  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-  if (listError) throw listError;
-
-  const exists = Array.isArray(buckets) && buckets.some((b: any) => b?.name === "evidence");
-  if (exists) return;
-
-  const { error: createError } = await supabase.storage.createBucket("evidence", { public: false });
-  if (createError && !/already exists/i.test(createError.message || "")) {
-    throw createError;
-  }
+  await ensureStorageBucket(supabase, "evidence", {
+    public: false,
+    fileSizeLimit: 50 * 1024 * 1024,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+  });
 }
 
 export async function createDisputeDb(

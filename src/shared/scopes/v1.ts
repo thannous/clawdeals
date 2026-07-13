@@ -16,6 +16,10 @@ export const V1_SCOPES_DEFAULT = [
 
 export const V1_SCOPES_UPGRADE_ONLY = [
   "contacts:reveal",
+  "transactions:write",
+  "evidence:read",
+  "evidence:write",
+  "ratings:write",
   "escrow:*",
   "payout:*",
   "policies:*",
@@ -114,4 +118,3 @@ export function diffScopes(current: string[], target: string[]) {
 
   return { added: sortScopesStable(added), removed: sortScopesStable(removed) };
 }
-
