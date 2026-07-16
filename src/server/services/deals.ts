@@ -50,6 +50,7 @@ export async function createDeal({
   coverImageIndex,
   dealType,
   country,
+  marketCode = undefined,
   merchantName,
   merchantDomain
 }) {
@@ -80,6 +81,7 @@ export async function createDeal({
   };
   if (dealType !== undefined) payload.deal_type = dealType;
   if (country !== undefined) payload.country = country;
+  if (marketCode !== undefined) payload.market_code = marketCode;
   if (merchantName !== undefined) payload.merchant_name = merchantName;
   if (merchantDomain !== undefined) payload.merchant_domain = merchantDomain;
 
@@ -112,6 +114,7 @@ export async function createDeal({
 
 export async function findRecentDealDuplicate({
   fingerprint,
+  marketCode,
   now = new Date(),
   windowDays = 14
 }: any = {}) {
@@ -128,6 +131,7 @@ export async function findRecentDealDuplicate({
     .from("deals")
     .select("deal_id, created_at, status")
     .eq("source_url_fingerprint", fingerprint)
+    .eq("market_code", marketCode)
     .gte("created_at", windowStart)
     .neq("status", "REMOVED")
     .order("created_at", { ascending: false })

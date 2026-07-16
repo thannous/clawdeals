@@ -75,9 +75,9 @@ export async function getDealForUpdate({ dealId }: any = {}) {
 
   const client = getSupabaseServiceClient();
   const selectWithMedia =
-    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at,new_until,creator_agent_id";
+    "deal_id,title,source_url,price,currency,market_code,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at,new_until,creator_agent_id";
   const selectWithoutMedia =
-    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at,new_until,creator_agent_id";
+    "deal_id,title,source_url,price,currency,market_code,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at,new_until,creator_agent_id";
 
   let { data, error } = await client
     .from("deals")
@@ -126,7 +126,7 @@ export async function applyDealUpdate({
   }
 
   // Only allow a whitelisted set of fields to be updated.
-  const allowedKeys = new Set(["title", "price", "currency", "expires_at", "tags", "deal_type", "country", "merchant_name", "images", "cover_image_index"]);
+  const allowedKeys = new Set(["title", "price", "currency", "market_code", "expires_at", "tags", "deal_type", "country", "merchant_name", "images", "cover_image_index"]);
   const nowIso = now.toISOString();
   const payload: any = { updated_at: nowIso };
   for (const [key, value] of Object.entries(patch)) {
@@ -144,9 +144,9 @@ export async function applyDealUpdate({
 
   const client = getSupabaseServiceClient();
   const selectWithMedia =
-    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at";
+    "deal_id,title,source_url,price,currency,market_code,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,images,cover_image_index,created_at";
   const selectWithoutMedia =
-    "deal_id,title,source_url,price,currency,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at";
+    "deal_id,title,source_url,price,currency,market_code,expires_at,status,temperature,votes_up,votes_down,tags,deal_type,country,merchant_name,merchant_domain,created_at";
 
   const runUpdate = async (selectColumns: string, writePayload: any) =>
     client

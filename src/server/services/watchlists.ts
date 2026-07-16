@@ -124,6 +124,8 @@ export async function createWatchlist({
   queryText,
   tags,
   priceMax,
+  marketCode,
+  currency,
   geoLat,
   geoLon,
   distanceKm
@@ -154,6 +156,8 @@ export async function createWatchlist({
     query_text: queryText || null,
     tags: tags || [],
     price_max: priceMax ?? null,
+    market_code: marketCode,
+    currency,
     geo_lat: geoLat ?? null,
     geo_lon: geoLon ?? null,
     distance_km: distanceKm ?? null,
@@ -314,6 +318,10 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
     payload.geo_lat = patch.geoLat ?? null;
     payload.geo_lon = patch.geoLon ?? null;
     payload.distance_km = patch.distanceKm ?? null;
+  }
+  if (patch && Object.prototype.hasOwnProperty.call(patch, "marketCode")) {
+    payload.market_code = patch.marketCode;
+    payload.currency = patch.currency;
   }
 
   const client = getSupabaseServiceClient();

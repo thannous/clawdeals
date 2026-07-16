@@ -46,7 +46,7 @@ async function enrichDeliveryMethodRows({ client, rows }: any = {}) {
     new Set(
       list
         .filter((row) => row && typeof row === "object")
-        .filter((row) => row.delivery_method === undefined)
+        .filter((row) => row.delivery_method === undefined || row.market_code === undefined)
         .map((row) => row.listing_id)
         .filter((id) => typeof id === "string" && id)
     )
@@ -56,7 +56,7 @@ async function enrichDeliveryMethodRows({ client, rows }: any = {}) {
 
   const { data, error } = await client
     .from("listings")
-    .select("listing_id,delivery_method")
+    .select("listing_id,delivery_method,market_code")
     .in("listing_id", listingIds);
 
   if (error) {
@@ -66,16 +66,20 @@ async function enrichDeliveryMethodRows({ client, rows }: any = {}) {
   const byListingId = new Map();
   for (const row of Array.isArray(data) ? data : []) {
     if (!row?.listing_id) continue;
-    byListingId.set(row.listing_id, row.delivery_method ?? null);
+    byListingId.set(row.listing_id, {
+      delivery_method: row.delivery_method ?? null,
+      market_code: row.market_code ?? null
+    });
   }
 
   return list.map((row) => {
     if (!row || typeof row !== "object") return row;
-    if (row.delivery_method !== undefined) return row;
     const listingId = typeof row.listing_id === "string" ? row.listing_id : null;
+    const metadata = listingId ? byListingId.get(listingId) : null;
     return {
       ...row,
-      delivery_method: listingId ? byListingId.get(listingId) ?? null : null
+      delivery_method: row.delivery_method ?? metadata?.delivery_method ?? null,
+      market_code: row.market_code ?? metadata?.market_code ?? null
     };
   });
 }
@@ -149,6 +153,7 @@ export async function createListing({
   status,
   priceAmount,
   currency,
+  marketCode,
   geoLat,
   geoLng,
   photos,
@@ -174,6 +179,7 @@ export async function createListing({
     condition,
     price_amount: priceAmount,
     currency,
+    market_code: marketCode,
     geo_lat: geoLat ?? null,
     geo_lng: geoLng ?? null,
     duplicate_fingerprint: duplicateFingerprint ?? null,
@@ -187,7 +193,7 @@ export async function createListing({
     client
       .from("listings")
       .insert(row)
-      .select("listing_id,status,delivery_method,created_at")
+      .select("listing_id,status,delivery_method,market_code,currency,created_at")
       .single();
 
   let { data, error } = await insert(payload);
@@ -251,6 +257,7 @@ export async function updateListingBySeller({
     "description",
     "price_amount",
     "currency",
+    "market_code",
     "status",
     "delivery_method",
     "photos",
@@ -495,9 +502,9 @@ export async function listListingsByOwner({ ownerId, status, limit = 50, cursor,
   const fetchLimit = cappedLimit + 1;
 
   const selectWithCover =
-    "listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id";
+    "listing_id,title,category,condition,price_amount,currency,market_code,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id";
   const selectWithoutCover =
-    "listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,created_at,updated_at,seller_agent_id";
+    "listing_id,title,category,condition,price_amount,currency,market_code,status,delivery_method,photos,created_at,updated_at,seller_agent_id";
 
   const runOwnerQuery = async (selectColumns: string) => {
     let query = client

@@ -1,11 +1,27 @@
 import { describe, expect, it } from "vitest";
 import {
   tokenize,
-  evaluateWatchlistMatch,
+  evaluateWatchlistMatch as evaluateWatchlistMatchRaw,
   buildEntityTokensFromDeal,
   buildEntityTokensFromListing,
-  evaluateWatchlistMatchListing
+  evaluateWatchlistMatchListing as evaluateWatchlistMatchListingRaw
 } from "./matching";
+
+function evaluateWatchlistMatch({ deal, watchlist, ...rest }: any) {
+  return evaluateWatchlistMatchRaw({
+    deal: { market_code: "FR", ...deal },
+    watchlist: { market_code: "FR", currency: "EUR", ...watchlist },
+    ...rest
+  });
+}
+
+function evaluateWatchlistMatchListing({ listing, watchlist, ...rest }: any) {
+  return evaluateWatchlistMatchListingRaw({
+    listing: { market_code: "FR", ...listing },
+    watchlist: { market_code: "FR", currency: "EUR", ...watchlist },
+    ...rest
+  });
+}
 
 describe("tokenize", () => {
   it("lowercases, splits, and de-dupes tokens", () => {
@@ -56,12 +72,28 @@ describe("evaluateWatchlistMatch", () => {
     expect(result.matched).toBe(false);
   });
 
-  it("enforces EUR currency when price_max is set", () => {
+  it("enforces the watchlist currency when price_max is set", () => {
     const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "USD", price: 399 };
     const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], price_max: 450 };
     const result = evaluateWatchlistMatch({ deal, watchlist });
     expect(result.matched).toBe(false);
     expect(result.reason.currency_mismatch).toBe(true);
+  });
+
+  it("matches a native GBP watchlist in the GB market", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "GBP", market_code: "GB", price: 399 };
+    const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], price_max: 450, currency: "GBP", market_code: "GB" };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.price_ok).toBe(true);
+  });
+
+  it("does not match watchlists from another market", () => {
+    const deal = { title: "RTX 4070 deal", tags: ["gpu"], currency: "EUR", market_code: "ES", price: 399 };
+    const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], currency: "EUR", market_code: "FR" };
+    const result = evaluateWatchlistMatch({ deal, watchlist });
+    expect(result.matched).toBe(false);
+    expect(result.reason.market_ok).toBe(false);
   });
 
   it("treats geo watchlists as non-match (v0 deals have no geo)", () => {
@@ -145,12 +177,20 @@ describe("evaluateWatchlistMatchListing", () => {
     expect(result.reason.tags_ok).toBe(false);
   });
 
-  it("enforces EUR currency when price_max is set", () => {
+  it("enforces the watchlist currency when price_max is set", () => {
     const listing = { title: "RTX 4070", category: "gpu", currency: "USD", price_amount: 399 };
     const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], price_max: 450 };
     const result = evaluateWatchlistMatchListing({ listing, watchlist });
     expect(result.matched).toBe(false);
     expect(result.reason.currency_mismatch).toBe(true);
+  });
+
+  it("matches a native GBP listing in the GB market", () => {
+    const listing = { title: "RTX 4070", category: "gpu", currency: "GBP", market_code: "GB", price_amount: 399 };
+    const watchlist = { active: true, query_text: "rtx", tags: ["gpu"], price_max: 450, currency: "GBP", market_code: "GB" };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result.matched).toBe(true);
+    expect(result.reason.price_ok).toBe(true);
   });
 
   it("enforces geo distance when geo criteria is present", () => {

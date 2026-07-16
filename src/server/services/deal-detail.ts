@@ -28,9 +28,9 @@ export async function getDealById({ dealId }: any = {}) {
 
   const client = getSupabaseServiceClient();
   const selectWithMedia =
-    "deal_id, title, source_url, price, currency, expires_at, status, temperature, votes_up, votes_down, tags, reasons_count, deal_type, country, merchant_name, merchant_domain, images, cover_image_index, created_at";
+    "deal_id, title, source_url, price, currency, market_code, expires_at, status, temperature, votes_up, votes_down, tags, reasons_count, deal_type, country, merchant_name, merchant_domain, images, cover_image_index, created_at";
   const selectWithoutMedia =
-    "deal_id, title, source_url, price, currency, expires_at, status, temperature, votes_up, votes_down, tags, reasons_count, deal_type, country, merchant_name, merchant_domain, created_at";
+    "deal_id, title, source_url, price, currency, market_code, expires_at, status, temperature, votes_up, votes_down, tags, reasons_count, deal_type, country, merchant_name, merchant_domain, created_at";
 
   let { data, error } = await client
     .from("deals")

@@ -68,7 +68,8 @@ describe("GET/POST /api/internal/cron/watchlist-match-queue", () => {
       skipped_count: 0,
       error_count: 0,
       matched_count: 2,
-      inserted_count: 1
+      inserted_count: 1,
+      markets: { FR: { processed_count: 1, error_count: 0, matched_count: 2, inserted_count: 1 } }
     });
 
     const req: any = {

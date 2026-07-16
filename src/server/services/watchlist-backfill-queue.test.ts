@@ -28,6 +28,7 @@ describe("runWatchlistBackfillQueue", () => {
       tags: [],
       price: 100,
       currency: "EUR",
+      market_code: "FR",
       status: "ACTIVE",
       created_at: new Date(now.getTime() - index * 1000).toISOString()
     }));
@@ -76,6 +77,8 @@ describe("runWatchlistBackfillQueue", () => {
           watchlist_id: "wl-1",
           agent_id: "agent-1",
           active: true,
+          market_code: "FR",
+          currency: "EUR",
           query_text: "console",
           tags: [],
           price_max: null,

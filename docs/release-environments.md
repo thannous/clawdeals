@@ -18,13 +18,12 @@ Environment model:
 
 Authoritative identifiers:
 - Production Supabase project ref: `gztfmpuqtpvncdcuhqxy`
-- Staging Supabase project: create and run in org `vercel_icfg_xONouQQU8hcFdkKBpX1Ebbzi` (`Thanh's projects`)
+- Staging Supabase project: separate European project with synthetic data only
 
 Deployment model:
-- Vercel uses the same project (`clawdeals`) with branch-based promotion
-- `feature/*` -> preview deployments
-- `staging` -> stable staging deployment (`https://staging.app.clawdeals.com`)
-- `main` -> production deployment (`https://app.clawdeals.com`)
+- `clawdeals` Vercel project -> production (`https://app.clawdeals.com`)
+- `clawdeals-staging` Vercel project -> isolated staging (`https://staging.app.clawdeals.com`)
+- Both consume the repository without sharing Supabase, Upstash, or application secrets
 
 Hard rule:
 - Remote tests run on staging only, never production.

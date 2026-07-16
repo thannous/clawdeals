@@ -726,6 +726,7 @@ test.describe.serial("Integration: Deals API", () => {
     expect(listBody.items.length).toBeGreaterThanOrEqual(1);
 
     const item = listBody.items[0];
+    expect(item.market_code).toBe("FR");
     expect(item.deal_type).toBe("LOCAL");
     expect(item.country).toBe("FR");
     expect(item.merchant_name).toBe("Darty");

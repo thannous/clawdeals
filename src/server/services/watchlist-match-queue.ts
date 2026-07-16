@@ -21,6 +21,7 @@ type WatchlistMatchQueueSummary = {
   error_count: number;
   matched_count: number;
   inserted_count: number;
+  markets: Record<string, { processed_count: number; error_count: number; matched_count: number; inserted_count: number }>;
 };
 
 function buildServiceError(message: string, status = 500, code = "ERROR") {
@@ -53,7 +54,7 @@ function errorMessage(error: any) {
 async function fetchDealForMatch({ client, dealId }: { client: any; dealId: string }) {
   const { data, error } = await client
     .from("deals")
-    .select("deal_id,title,tags,price,currency,status,created_at")
+    .select("deal_id,title,tags,price,currency,market_code,status,created_at")
     .eq("deal_id", dealId)
     .in("status", ["NEW", "ACTIVE"])
     .maybeSingle();
@@ -68,7 +69,7 @@ async function fetchDealForMatch({ client, dealId }: { client: any; dealId: stri
 async function fetchListingForMatch({ client, listingId }: { client: any; listingId: string }) {
   const { data, error } = await client
     .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,geo_lat,geo_lng,status,delivery_method,created_at")
+    .select("listing_id,title,category,condition,price_amount,currency,market_code,geo_lat,geo_lng,status,delivery_method,created_at")
     .eq("listing_id", listingId)
     .eq("status", "LIVE")
     .maybeSingle();
@@ -147,6 +148,12 @@ function addMatchCounters(summary: WatchlistMatchQueueSummary, result: any) {
   const inserted = Number(result?.inserted_count);
   if (Number.isFinite(matched) && matched > 0) summary.matched_count += matched;
   if (Number.isFinite(inserted) && inserted > 0) summary.inserted_count += inserted;
+  const marketCode = typeof result?.market_code === "string" ? result.market_code : "UNKNOWN";
+  const market = summary.markets[marketCode] || { processed_count: 0, error_count: 0, matched_count: 0, inserted_count: 0 };
+  market.processed_count += 1;
+  if (Number.isFinite(matched) && matched > 0) market.matched_count += matched;
+  if (Number.isFinite(inserted) && inserted > 0) market.inserted_count += inserted;
+  summary.markets[marketCode] = market;
 }
 
 export async function runWatchlistMatchQueue({
@@ -173,7 +180,8 @@ export async function runWatchlistMatchQueue({
     skipped_count: 0,
     error_count: 0,
     matched_count: 0,
-    inserted_count: 0
+    inserted_count: 0,
+    markets: {}
   };
 
   const { data, error } = await client
@@ -197,6 +205,7 @@ export async function runWatchlistMatchQueue({
       continue;
     }
 
+    let marketCode = "UNKNOWN";
     try {
       const entity =
         row.entity_type === "deal"
@@ -208,6 +217,8 @@ export async function runWatchlistMatchQueue({
         summary.skipped_count += 1;
         continue;
       }
+
+      marketCode = typeof entity.market_code === "string" ? entity.market_code : "UNKNOWN";
 
       summary.processed_count += 1;
       const result =
@@ -228,10 +239,14 @@ export async function runWatchlistMatchQueue({
       summary.success_count += 1;
     } catch (error) {
       summary.error_count += 1;
+      const market = summary.markets[marketCode] || { processed_count: 0, error_count: 0, matched_count: 0, inserted_count: 0 };
+      market.error_count += 1;
+      summary.markets[marketCode] = market;
       await markQueueRowFailed({ client, row, now, error });
       console.info("watchlist.match_queue_row_failed", {
         entity_type: row.entity_type,
         entity_id: row.entity_id,
+        market_code: marketCode,
         error: errorMessage(error)
       });
     }

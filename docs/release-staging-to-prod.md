@@ -27,17 +27,14 @@ A production deployment should not proceed without both confirmations.
 ## Preconditions
 
 1. Staging and production credentials are segregated.
-2. Staging app is live at `https://staging.app.clawdeals.com`.
-3. Branch mapping is respected:
-   - `feature/*` -> preview
-   - `staging` -> staging
-   - `main` -> production
+2. Staging app is live at `https://staging.app.clawdeals.com` from the isolated `clawdeals-staging` Vercel project.
+3. Staging and production use distinct Supabase, Upstash, and application secret sets.
 4. Guardrail policy is acknowledged:
    - no tests against prod Supabase host `db.gztfmpuqtpvncdcuhqxy.supabase.co`.
 
 ## Step 1: Prepare Release Candidate On Staging
 
-1. Merge required changes into `staging`.
+1. Deploy the validated `main` commit to the isolated staging Vercel project.
 2. Confirm staging deployment is healthy.
 3. Verify staging environment variables:
    - `SUPABASE_URL=<SUPABASE_URL_STAGING>`
@@ -80,7 +77,7 @@ Required approvals:
 
 ## Step 5: Promote To Production
 
-1. Merge `staging` into `main`.
+1. Confirm the exact staging commit is the current `main` commit.
 2. Deploy app to production (`https://app.clawdeals.com`).
 3. Deploy Cloudflare edge router (`npm run deploy:cloudflare`).
 4. Apply the same migrations to production in the same order.

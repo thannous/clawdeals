@@ -15,6 +15,7 @@ import {
   COUNTRY_RE,
   DUPLICATE_WINDOW_DAYS
 } from "../../../server/config/deals";
+import { assertNativeMarketCurrency, resolveMarketCode } from "../../../server/config/markets";
 import { extractMerchantFromUrl, fingerprintUrl, normalizeDealUrl, normalizeTags } from "../../../server/utils/deals";
 import {
   normalizeReadMedia,
@@ -79,6 +80,7 @@ function mapDealSummary(deal: any) {
     votes_down: deal.votes_down,
     deal_type: deal.deal_type || "ONLINE",
     country: deal.country || null,
+    market_code: deal.market_code || null,
     merchant_name: deal.merchant_name || null,
     merchant_domain: deal.merchant_domain || null,
     images_count: media.images_count,
@@ -279,7 +281,7 @@ export async function handler(req, res, ctx) {
 
   const {
     title, url, price, currency, expires_at: expiresAtRaw, tags,
-    deal_type: rawDealType, country: rawCountry, merchant_name: rawMerchantName,
+    deal_type: rawDealType, country: rawCountry, market_code: rawMarketCode, merchant_name: rawMerchantName,
     images: rawImages,
     cover_image_index: rawCoverImageIndex
   } = req.body || {};
@@ -362,6 +364,18 @@ export async function handler(req, res, ctx) {
     }
   }
 
+  let marketCode;
+  try {
+    marketCode = resolveMarketCode({
+      marketCode: rawMarketCode,
+      currency: normalizedCurrency,
+      country
+    });
+    assertNativeMarketCurrency(marketCode, normalizedCurrency);
+  } catch (error) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+  }
+
   let merchantName = null;
   if (rawMerchantName !== undefined && rawMerchantName !== null) {
     if (typeof rawMerchantName !== "string") {
@@ -401,6 +415,7 @@ export async function handler(req, res, ctx) {
 
     const duplicate = await findRecentDealDuplicate({
       fingerprint,
+      marketCode,
       now,
       windowDays: DUPLICATE_WINDOW_DAYS
     });
@@ -471,6 +486,7 @@ export async function handler(req, res, ctx) {
       coverImageIndex,
       dealType,
       country,
+      marketCode,
       merchantName,
       merchantDomain
     });

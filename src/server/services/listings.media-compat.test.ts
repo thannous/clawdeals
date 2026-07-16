@@ -61,7 +61,11 @@ describe("listings media compatibility", () => {
     expect(result.items).toHaveLength(1);
     expect(result.items[0].images_count).toBe(1);
     expect(result.items[0].cover_image?.storage_key).toBe("listings/l-1/1.jpg");
-    expect(selectCalls).toEqual(["listing_id,photos,cover_image_index", "listing_id,photos"]);
+    expect(selectCalls).toEqual([
+      "listing_id,delivery_method,market_code",
+      "listing_id,photos,cover_image_index",
+      "listing_id,photos"
+    ]);
   });
 
   it("listListingsByOwner retries without cover_image_index on legacy schema", async () => {
@@ -109,10 +113,10 @@ describe("listings media compatibility", () => {
     expect(result.items[0].images_count).toBe(1);
     expect(result.items[0].cover_image?.storage_key).toBe("listings/l-1/1.jpg");
     expect(listingsChain.select).toHaveBeenCalledWith(
-      "listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id"
+      "listing_id,title,category,condition,price_amount,currency,market_code,status,delivery_method,photos,cover_image_index,created_at,updated_at,seller_agent_id"
     );
     expect(listingsChain.select).toHaveBeenCalledWith(
-      "listing_id,title,category,condition,price_amount,currency,status,delivery_method,photos,created_at,updated_at,seller_agent_id"
+      "listing_id,title,category,condition,price_amount,currency,market_code,status,delivery_method,photos,created_at,updated_at,seller_agent_id"
     );
   });
 

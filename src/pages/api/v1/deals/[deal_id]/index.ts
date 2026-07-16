@@ -7,6 +7,7 @@ import { applyDealUpdate, getDealForUpdate } from "../../../../../server/service
 import { getDealForRemove, removeDeal } from "../../../../../server/services/deal-remove";
 import { isUuid } from "../../../../../server/utils/validators";
 import { ALLOWED_CURRENCIES, DEAL_MAX_TTL_DAYS, DEAL_TYPES, COUNTRY_RE } from "../../../../../server/config/deals";
+import { assertNativeMarketCurrency, resolveMarketCode } from "../../../../../server/config/markets";
 import { normalizeTags } from "../../../../../server/utils/deals";
 import {
   normalizeReadMedia,
@@ -63,6 +64,7 @@ function mapDealResponse(deal: any, { includeImages = false }: { includeImages?:
     tags: deal.tags || [],
     deal_type: deal.deal_type || "ONLINE",
     country: deal.country || null,
+    market_code: deal.market_code || null,
     merchant_name: deal.merchant_name || null,
     merchant_domain: deal.merchant_domain || null,
     images_count: media.images_count,
@@ -155,6 +157,26 @@ export async function handler(req, res, ctx) {
           return jsonResponse(400, errorPayload("VALIDATION_ERROR", "currency is invalid"));
         }
         patch.currency = normalizedCurrency;
+      }
+
+      if (
+        Object.prototype.hasOwnProperty.call(body, "market_code") ||
+        Object.prototype.hasOwnProperty.call(body, "currency")
+      ) {
+        try {
+          const effectiveCurrency = patch.currency || existing.currency;
+          const marketCode = resolveMarketCode({
+            marketCode: Object.prototype.hasOwnProperty.call(body, "market_code")
+              ? body.market_code
+              : existing.market_code,
+            currency: effectiveCurrency,
+            country: existing.country
+          });
+          assertNativeMarketCurrency(marketCode, effectiveCurrency);
+          patch.market_code = marketCode;
+        } catch (error) {
+          return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+        }
       }
 
       if (Object.prototype.hasOwnProperty.call(body, "expires_at")) {

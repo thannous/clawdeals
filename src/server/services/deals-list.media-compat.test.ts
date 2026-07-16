@@ -96,10 +96,10 @@ describe("deals-list media compatibility", () => {
     expect(result.items[0].images_count).toBe(0);
     expect(result.items[0].cover_image).toBeNull();
     expect(dealsChain.select).toHaveBeenCalledWith(
-      "deal_id,title,status,temperature,price,currency,images,cover_image_index,created_at,creator_agent_id"
+      "deal_id,title,status,temperature,price,currency,market_code,images,cover_image_index,created_at,creator_agent_id"
     );
     expect(dealsChain.select).toHaveBeenCalledWith(
-      "deal_id,title,status,temperature,price,currency,created_at,creator_agent_id"
+      "deal_id,title,status,temperature,price,currency,market_code,created_at,creator_agent_id"
     );
   });
 });

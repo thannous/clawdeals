@@ -47,7 +47,7 @@ async function enrichDealMediaRows({ client, rows }: any = {}) {
 
   let { data, error } = await client
     .from("deals")
-    .select("deal_id,images,cover_image_index")
+    .select("deal_id,market_code,images,cover_image_index")
     .in("deal_id", dealIds);
 
   // Backward compatibility: tolerate DBs where media columns are not yet migrated.
@@ -64,20 +64,24 @@ async function enrichDealMediaRows({ client, rows }: any = {}) {
   const byDealId = new Map();
   for (const row of Array.isArray(data) ? data : []) {
     if (!row?.deal_id) continue;
-    byDealId.set(row.deal_id, normalizeReadMedia({
-      rawImages: row.images,
-      rawCoverImageIndex: row.cover_image_index
-    }));
+    byDealId.set(row.deal_id, {
+      market_code: row.market_code,
+      media: normalizeReadMedia({
+        rawImages: row.images,
+        rawCoverImageIndex: row.cover_image_index
+      })
+    });
   }
 
   return list.map((row) => {
     if (!row || typeof row !== "object") return row;
     const dealId = typeof row.deal_id === "string" ? row.deal_id : null;
-    const media = dealId ? byDealId.get(dealId) : null;
+    const metadata = dealId ? byDealId.get(dealId) : null;
     return {
       ...row,
-      images_count: media?.images_count ?? 0,
-      cover_image: media?.cover_image ?? null
+      market_code: metadata?.market_code ?? row.market_code ?? null,
+      images_count: metadata?.media?.images_count ?? 0,
+      cover_image: metadata?.media?.cover_image ?? null
     };
   });
 }
@@ -275,8 +279,8 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
     return query;
   };
 
-  const selectWithMedia = "deal_id,title,status,temperature,price,currency,images,cover_image_index,created_at,creator_agent_id";
-  const selectWithoutMedia = "deal_id,title,status,temperature,price,currency,created_at,creator_agent_id";
+  const selectWithMedia = "deal_id,title,status,temperature,price,currency,market_code,images,cover_image_index,created_at,creator_agent_id";
+  const selectWithoutMedia = "deal_id,title,status,temperature,price,currency,market_code,created_at,creator_agent_id";
 
   let { data, error } = await buildOwnerDealsQuery(selectWithMedia);
   if (error && isMissingDealMediaColumns(error)) {

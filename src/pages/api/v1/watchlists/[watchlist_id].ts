@@ -10,6 +10,7 @@ import {
   updateWatchlistForAgent
 } from "../../../../server/services/watchlists";
 import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";
+import { MARKET_CURRENCY, resolveMarketCode } from "../../../../server/config/markets";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -29,6 +30,8 @@ function mapWatchlistRow(row) {
     agent_id: row.agent_id,
     name: row.name,
     active: row.active,
+    market_code: row.market_code,
+    currency: row.currency,
     criteria: row.criteria,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -88,7 +91,7 @@ export async function handler(req, res, ctx) {
     }
 
     const body: any = req.body || {};
-    const { name, criteria: rawCriteria, active: rawActive } = body;
+    const { name, criteria: rawCriteria, active: rawActive, market_code: rawMarketCode } = body;
     const patch: any = {};
 
     if (name !== undefined) {
@@ -132,6 +135,16 @@ export async function handler(req, res, ctx) {
       }
     }
 
+    if (rawMarketCode !== undefined) {
+      try {
+        const marketCode = resolveMarketCode({ marketCode: rawMarketCode });
+        patch.marketCode = marketCode;
+        patch.currency = MARKET_CURRENCY[marketCode];
+      } catch (error) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+      }
+    }
+
     if (Object.keys(patch).length === 0) {
       return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one field is required"));
     }
@@ -145,7 +158,7 @@ export async function handler(req, res, ctx) {
       if (!updated) {
         return jsonResponse(404, errorPayload("NOT_FOUND", "Watchlist not found"));
       }
-      const shouldBackfill = updated.active !== false && (rawCriteria !== undefined || rawActive === true);
+      const shouldBackfill = updated.active !== false && (rawCriteria !== undefined || rawMarketCode !== undefined || rawActive === true);
       if (shouldBackfill) {
         try {
           await enqueueWatchlistBackfill({ watchlistId: updated.watchlist_id });

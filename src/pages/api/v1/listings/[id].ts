@@ -9,6 +9,7 @@ import { getPolicyOrDefault } from "../../../../server/services/policies";
 import { cancelPendingListingPublishApproval, createApproval } from "../../../../server/services/approvals";
 import { publishSseEvent } from "../../../../server/sse/store";
 import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../../server/config/deals";
+import { assertNativeMarketCurrency, resolveMarketCode } from "../../../../server/config/markets";
 import { isUuid } from "../../../../server/utils/validators";
 import {
   normalizeReadMedia,
@@ -65,6 +66,7 @@ function mapListingDetail(listing: any) {
       amount: listing.price_amount,
       currency: listing.currency
     },
+    market_code: listing.market_code || null,
     geo,
     images: media.images,
     photos: media.images,
@@ -135,6 +137,7 @@ export async function handler(req, res, ctx) {
   const rawPrice = body.price;
   const rawStatus = body.status;
   const rawDeliveryMethod = body.delivery_method;
+  const rawMarketCode = body.market_code;
   const rawImages = body.images;
   const rawPhotos = body.photos;
   const hasCoverImageIndex = Object.prototype.hasOwnProperty.call(body, "cover_image_index");
@@ -145,10 +148,11 @@ export async function handler(req, res, ctx) {
   const hasPrice = rawPrice !== undefined;
   const hasStatus = rawStatus !== undefined;
   const hasDeliveryMethod = rawDeliveryMethod !== undefined;
+  const hasMarketCode = rawMarketCode !== undefined;
   const hasImages = rawImages !== undefined;
   const hasPhotos = rawPhotos !== undefined;
   const hasMediaPatch = hasImages || hasPhotos || hasCoverImageIndex;
-  const hasNonMediaPatch = hasTitle || hasDescription || hasPrice || hasStatus || hasDeliveryMethod;
+  const hasNonMediaPatch = hasTitle || hasDescription || hasPrice || hasStatus || hasDeliveryMethod || hasMarketCode;
 
   if (!hasNonMediaPatch && !hasMediaPatch) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "At least one mutable field is required"));
@@ -160,6 +164,7 @@ export async function handler(req, res, ctx) {
   let description = undefined;
   let priceAmount = undefined;
   let currency = undefined;
+  let marketCode = undefined;
   let requestedStatus = null;
   let deliveryMethod = undefined;
   let parsedImages = undefined;
@@ -291,8 +296,22 @@ export async function handler(req, res, ctx) {
       return jsonResponse(409, errorPayload("LISTING_LOCKED", "Listing is locked"));
     }
 
+    if (hasPrice || hasMarketCode) {
+      try {
+        const effectiveCurrency = hasPrice ? currency : listing.currency;
+        marketCode = resolveMarketCode({
+          marketCode: hasMarketCode ? rawMarketCode : listing.market_code,
+          currency: effectiveCurrency
+        });
+        assertNativeMarketCurrency(marketCode, effectiveCurrency);
+        if (hasMarketCode) fieldsChanged.push("market_code");
+      } catch (error) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+      }
+    }
+
     // Updating fields is only allowed in mutable states (even if we are also transitioning to REMOVED).
-    const wantsFieldUpdate = title !== undefined || description !== undefined || priceAmount !== undefined || currency !== undefined || deliveryMethod !== undefined;
+    const wantsFieldUpdate = title !== undefined || description !== undefined || priceAmount !== undefined || currency !== undefined || marketCode !== undefined || deliveryMethod !== undefined;
     if (wantsFieldUpdate && !MUTABLE_STATES.has(currentStatus)) {
       return jsonResponse(409, errorPayload("LISTING_LOCKED", "Listing is locked"));
     }
@@ -421,6 +440,7 @@ export async function handler(req, res, ctx) {
     if (description !== undefined) patch.description = description;
     if (priceAmount !== undefined) patch.price_amount = priceAmount;
     if (currency !== undefined) patch.currency = currency;
+    if (marketCode !== undefined) patch.market_code = marketCode;
     if (deliveryMethod !== undefined) patch.delivery_method = deliveryMethod;
     if (nextPhotos !== undefined) patch.photos = nextPhotos;
     if (nextCoverImageIndex !== undefined) patch.cover_image_index = nextCoverImageIndex;

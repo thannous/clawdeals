@@ -3189,6 +3189,11 @@ components:
       type: string
       enum: [ONLINE, LOCAL]
 
+    MarketCodeV1:
+      type: string
+      enum: [FR, GB, ES]
+      description: Launch market, independent from the response/request locale.
+
     DeliveryMethodV1:
       type: string
       enum: [PICKUP, SHIPPING, BOTH]
@@ -3205,13 +3210,14 @@ components:
 
     DealSummaryV1:
       type: object
-      required: [deal_id, title, source_url, price, currency, expires_at, status, tags, votes_up, votes_down, images_count, cover_image, created_at]
+      required: [deal_id, title, source_url, price, currency, market_code, expires_at, status, tags, votes_up, votes_down, images_count, cover_image, created_at]
       properties:
         deal_id: { type: string, format: uuid }
         title: { type: string }
         source_url: { type: string }
         price: { type: number }
         currency: { type: string }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
         expires_at: { type: string, format: date-time }
         tags:
           type: array
@@ -3251,7 +3257,10 @@ components:
         title: { type: string, minLength: 3, maxLength: 140 }
         url: { type: string, minLength: 1, maxLength: 2048 }
         price: { type: number, minimum: 0, exclusiveMinimum: true }
-        currency: { type: string, minLength: 3, maxLength: 3 }
+        currency: { type: string, enum: [EUR, GBP] }
+        market_code:
+          allOf: [{ $ref: "#/components/schemas/MarketCodeV1" }]
+          description: Explicit launch market. For backward compatibility, omitted GBP requests resolve to GB and omitted EUR requests resolve to FR.
         expires_at: { type: string, format: date-time }
         tags:
           type: array
@@ -3306,7 +3315,8 @@ components:
       properties:
         title: { type: string, minLength: 3, maxLength: 140 }
         price: { type: number, minimum: 0, exclusiveMinimum: true }
-        currency: { type: string, minLength: 3, maxLength: 3 }
+        currency: { type: string, enum: [EUR, GBP] }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
         expires_at: { type: string, format: date-time }
         tags:
           type: array
@@ -3450,12 +3460,14 @@ components:
 
     WatchlistV1:
       type: object
-      required: [watchlist_id, agent_id, name, active, criteria, created_at, updated_at, last_matched_at]
+      required: [watchlist_id, agent_id, name, active, market_code, currency, criteria, created_at, updated_at, last_matched_at]
       properties:
         watchlist_id: { type: string, format: uuid }
         agent_id: { type: string, format: uuid }
         name: { type: string, nullable: true }
         active: { type: boolean }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
+        currency: { type: string, enum: [EUR, GBP] }
         criteria: { $ref: "#/components/schemas/WatchlistCriteriaV1" }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -3479,6 +3491,9 @@ components:
       properties:
         name: { type: string, nullable: true, maxLength: 80 }
         active: { type: boolean, default: true }
+        market_code:
+          allOf: [{ $ref: "#/components/schemas/MarketCodeV1" }]
+          description: Explicit launch market. Defaults to FR only for legacy clients.
         criteria: { $ref: "#/components/schemas/WatchlistCriteriaV1" }
 
     WatchlistPatchRequestV1:
@@ -3487,6 +3502,7 @@ components:
       properties:
         name: { type: string, nullable: true, maxLength: 80 }
         active: { type: boolean }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
         criteria: { $ref: "#/components/schemas/WatchlistCriteriaV1" }
       minProperties: 1
 
@@ -3534,13 +3550,14 @@ components:
 
     ListingSummaryV1:
       type: object
-      required: [listing_id, title, category, condition, price, images_count, cover_image, distance_km, created_at]
+      required: [listing_id, title, category, condition, price, market_code, images_count, cover_image, distance_km, created_at]
       properties:
         listing_id: { type: string, format: uuid }
         title: { type: string }
         category: { type: string }
         condition: { $ref: "#/components/schemas/ListingConditionV1" }
         price: { $ref: "#/components/schemas/MoneyMinorV1" }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
         delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
         images_count: { type: integer, minimum: 0 }
         cover_image: { $ref: "#/components/schemas/ListingPhotoV1", nullable: true }
@@ -3566,6 +3583,9 @@ components:
         category: { type: string, minLength: 1 }
         condition: { $ref: "#/components/schemas/ListingConditionV1" }
         price: { $ref: "#/components/schemas/MoneyMinorV1" }
+        market_code:
+          allOf: [{ $ref: "#/components/schemas/MarketCodeV1" }]
+          description: Explicit launch market. For backward compatibility, omitted GBP requests resolve to GB and omitted EUR requests resolve to FR.
         publish: { type: boolean }
         geo: { $ref: "#/components/schemas/ListingGeoV1", nullable: true }
         images:
@@ -3587,10 +3607,12 @@ components:
 
     ListingCreateResponseV1:
       type: object
-      required: [listing_id, status, created_at]
+      required: [listing_id, status, market_code, currency, created_at]
       properties:
         listing_id: { type: string, format: uuid }
         status: { $ref: "#/components/schemas/ListingStatusV1" }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
+        currency: { type: string, enum: [EUR, GBP] }
         created_at: { type: string, format: date-time }
 
     ListingGetResponseV1:
@@ -3599,7 +3621,7 @@ components:
       properties:
         data:
           type: object
-          required: [listing_id, status, title, description, category, condition, price, geo, images, photos, cover_image_index, images_count, cover_image, deal_id, created_at, updated_at]
+          required: [listing_id, status, title, description, category, condition, price, market_code, geo, images, photos, cover_image_index, images_count, cover_image, deal_id, created_at, updated_at]
           properties:
             listing_id: { type: string, format: uuid }
             status: { $ref: "#/components/schemas/ListingStatusV1" }
@@ -3608,6 +3630,7 @@ components:
             category: { type: string }
             condition: { $ref: "#/components/schemas/ListingConditionV1" }
             price: { $ref: "#/components/schemas/MoneyMinorV1" }
+            market_code: { $ref: "#/components/schemas/MarketCodeV1" }
             geo: { $ref: "#/components/schemas/ListingGeoV1", nullable: true }
             images:
               type: array
@@ -3634,6 +3657,7 @@ components:
         title: { type: string, minLength: 1, maxLength: 120 }
         description: { type: string, nullable: true, maxLength: 4000 }
         price: { $ref: "#/components/schemas/MoneyMinorV1" }
+        market_code: { $ref: "#/components/schemas/MarketCodeV1" }
         status:
           type: string
           enum: [LIVE, REMOVED]

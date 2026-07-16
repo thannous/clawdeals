@@ -15,7 +15,7 @@ function mapError(error) {
 
 const DUPLICATE_STATES = ["LIVE", "PENDING_APPROVAL", "RESERVED", "CONTACT_REVEALED"];
 
-export async function findListingDuplicate({ fingerprint }: { fingerprint: string }) {
+export async function findListingDuplicate({ fingerprint, marketCode }: { fingerprint: string; marketCode: string }) {
   if (!fingerprint || typeof fingerprint !== "string") return null;
 
   const client = getSupabaseServiceClient();
@@ -23,6 +23,7 @@ export async function findListingDuplicate({ fingerprint }: { fingerprint: strin
     .from("listings")
     .select("listing_id,created_at,status")
     .eq("duplicate_fingerprint", fingerprint)
+    .eq("market_code", marketCode)
     .eq("duplicate_override", false)
     .in("status", DUPLICATE_STATES as any)
     .order("created_at", { ascending: false })

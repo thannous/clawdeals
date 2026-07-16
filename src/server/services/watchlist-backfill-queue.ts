@@ -47,7 +47,7 @@ export async function enqueueWatchlistBackfill({ watchlistId, now = new Date(), 
 async function fetchWatchlist({ client, watchlistId }: any = {}) {
   const { data, error } = await client
     .from("watchlists")
-    .select("watchlist_id,agent_id,active,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at")
+    .select("watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at")
     .eq("watchlist_id", watchlistId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -61,7 +61,7 @@ async function fetchRecentDeals({ client, limit }: any = {}) {
   const capped = Math.max(1, Math.min(5000, toPositiveInt(limit, 500)));
   const { data, error } = await client
     .from("deals")
-    .select("deal_id,title,tags,price,currency,status,created_at")
+    .select("deal_id,title,tags,price,currency,market_code,status,created_at")
     .in("status", ["NEW", "ACTIVE"])
     .order("created_at", { ascending: false })
     .order("deal_id", { ascending: false })
@@ -76,7 +76,7 @@ async function fetchRecentLiveListings({ client, limit }: any = {}) {
   const capped = Math.max(1, Math.min(5000, toPositiveInt(limit, 500)));
   const { data, error } = await client
     .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,geo_lat,geo_lng,status,created_at")
+    .select("listing_id,title,category,condition,price_amount,currency,market_code,geo_lat,geo_lng,status,created_at")
     .eq("status", "LIVE")
     .order("created_at", { ascending: false })
     .order("listing_id", { ascending: false })

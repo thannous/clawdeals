@@ -374,6 +374,7 @@ test.describe.serial("Integration: Listings (TI-193 + TI-194 + TI-268 + TI-271)"
     );
     await expectStatus(listRes, 200);
     const listBody = await listRes.json();
+    expect((listBody.data || []).every((item: any) => item.market_code === "FR")).toBe(true);
     const deliveryMethods = (listBody.data || []).map((item: any) => item.delivery_method);
     expect(deliveryMethods).toContain("SHIPPING");
     expect(deliveryMethods).toContain("BOTH");

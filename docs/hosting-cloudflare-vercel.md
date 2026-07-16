@@ -13,17 +13,17 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 Use a 3-environment model and keep all automated tests away from production data.
 
 - Production Supabase project ref: `gztfmpuqtpvncdcuhqxy`
-- Staging Supabase project: create and operate it in org `vercel_icfg_xONouQQU8hcFdkKBpX1Ebbzi` (`Thanh's projects`)
-- Vercel model: same Vercel project (`clawdeals`) with a dedicated `staging` Git branch for a stable staging deployment
+- Staging Supabase project: separate European project with synthetic data only
+- Vercel model: separate `clawdeals-staging` project connected to this repository, so staging credentials cannot leak into production previews
 - Domains:
   - Production app: `https://app.clawdeals.com`
   - Staging app: `https://staging.app.clawdeals.com`
 - Remote test policy: integration/smoke/E2E tests must target staging only, never production
 
-Branch/deployment mapping:
-- `feature/*` -> Vercel preview deployments
-- `staging` -> stable staging deployment (`staging.app.clawdeals.com`)
-- `main` -> production deployment (`app.clawdeals.com`)
+Deployment mapping:
+- Vercel project `clawdeals` -> production (`app.clawdeals.com`)
+- Vercel project `clawdeals-staging` -> isolated staging (`staging.app.clawdeals.com`)
+- Repository work remains on `main`; staging isolation is provided by distinct service projects and credentials
 
 ## Cible des domaines
 
@@ -43,6 +43,7 @@ Routage attendu:
 1. Vercel > Project `clawdeals` > Domains: ajouter `app.clawdeals.com`.
 2. Cloudflare DNS: creer un record `CNAME` `app` vers la cible indiquee par Vercel (souvent `cname.vercel-dns.com`).
 3. Re-deployer (ou attendre la verification).
+4. Conserver `regions: ["fra1"]` dans `vercel.json`; c'est le réglage durable des Functions.
 
 Note SSE: si tu utilises le live feed (`/console/live-feed`) en production, evite de mettre Cloudflare "proxied" devant `app` tant que tu n'as pas verifie le comportement des connexions longues.
 
@@ -58,6 +59,9 @@ Note SSE: si tu utilises le live feed (`/console/live-feed`) en production, evit
 - `SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY_PROD>`
 - `NEXT_PUBLIC_SUPABASE_URL=<NEXT_PUBLIC_SUPABASE_URL_PROD>`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<NEXT_PUBLIC_SUPABASE_ANON_KEY_PROD>`
+- `UPSTASH_REDIS_REST_URL=<UPSTASH_REDIS_REST_URL_PROD>`
+- `UPSTASH_REDIS_REST_TOKEN=<UPSTASH_REDIS_REST_TOKEN_PROD>`
+- `CRON_SECRET=<CRON_SECRET_PROD>`
 
 Si la landing (sur `www`) doit appeler l'API sur `app` (ex: waitlist):
 - `CORS_ALLOW_ORIGINS=https://www.clawdeals.com,https://clawdeals.com`
@@ -66,7 +70,7 @@ Si la landing (sur `www`) doit appeler l'API sur `app` (ex: waitlist):
 Optionnel (SSE hors Vercel):
 - `NEXT_PUBLIC_SSE_BASE_URL=https://<host-sse>` (cote Vercel)
 
-### Vercel Preview/Staging (`staging` branch)
+### Vercel Staging (`clawdeals-staging` project)
 
 - `APP_HOST=staging.app.clawdeals.com`
 - `MARKETING_HOSTS=clawdeals.com`
@@ -77,6 +81,9 @@ Optionnel (SSE hors Vercel):
 - `NEXT_PUBLIC_SUPABASE_URL=<NEXT_PUBLIC_SUPABASE_URL_STAGING>`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING>`
 - `NEXT_PUBLIC_API_BASE_URL=https://staging.app.clawdeals.com`
+- `UPSTASH_REDIS_REST_URL=<UPSTASH_REDIS_REST_URL_STAGING>`
+- `UPSTASH_REDIS_REST_TOKEN=<UPSTASH_REDIS_REST_TOKEN_STAGING>`
+- `CRON_SECRET=<CRON_SECRET_STAGING>`
 
 Important:
 - Never set production Supabase credentials in Vercel Preview environment.
@@ -127,3 +134,4 @@ La landing (`clawdeals.com`) reste la source canonique (SSR + cache edge).
 - Canonical environment policy: `docs/release-environments.md`
 - Manual promotion procedure: `docs/release-staging-to-prod.md`
 - Edge router deploy details: `docs/deploy-edge-router.md`
+- EU launch and market contract: `docs/launch-eu-fr-gb-es.md`

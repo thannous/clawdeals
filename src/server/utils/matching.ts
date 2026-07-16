@@ -108,6 +108,13 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens }: Evalua
 
   const reason: WatchlistMatchReason = {};
 
+  const dealMarket = coerceString(deal.market_code);
+  const watchlistMarket = coerceString(watchlist.market_code);
+  if (!dealMarket || !watchlistMarket || dealMarket.toUpperCase() !== watchlistMarket.toUpperCase()) {
+    return { matched: false, reason: { market_ok: false } };
+  }
+  reason.market_ok = true;
+
   const tokens = Array.isArray(entityTokens) ? entityTokens : buildEntityTokensFromDeal(deal);
   const tokenSet = new Set(tokens.map((t) => String(t || "").toLowerCase()).filter(Boolean));
 
@@ -167,7 +174,8 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens }: Evalua
   if (hasPrice) {
     const currency = coerceString(deal.currency);
     const normalizedCurrency = currency ? currency.toUpperCase() : null;
-    if (normalizedCurrency !== "EUR") {
+    const watchlistCurrency = coerceString(watchlist.currency);
+    if (!watchlistCurrency || normalizedCurrency !== watchlistCurrency.toUpperCase()) {
       return { matched: false, reason: { ...reason, currency_mismatch: true } };
     }
 
@@ -243,6 +251,13 @@ export function evaluateWatchlistMatchListing({
 
   const reason: WatchlistMatchReason = {};
 
+  const listingMarket = coerceString(listing.market_code);
+  const watchlistMarket = coerceString(watchlist.market_code);
+  if (!listingMarket || !watchlistMarket || listingMarket.toUpperCase() !== watchlistMarket.toUpperCase()) {
+    return { matched: false, reason: { market_ok: false } };
+  }
+  reason.market_ok = true;
+
   const tokens = Array.isArray(entityTokens) ? entityTokens : buildEntityTokensFromListing(listing);
   const tokenSet = new Set(tokens.map((t) => String(t || "").toLowerCase()).filter(Boolean));
 
@@ -282,7 +297,8 @@ export function evaluateWatchlistMatchListing({
   if (hasPrice) {
     const currency = coerceString(listing.currency);
     const normalizedCurrency = currency ? currency.toUpperCase() : null;
-    if (normalizedCurrency !== "EUR") {
+    const watchlistCurrency = coerceString(watchlist.currency);
+    if (!watchlistCurrency || normalizedCurrency !== watchlistCurrency.toUpperCase()) {
       return { matched: false, reason: { ...reason, currency_mismatch: true } };
     }
 

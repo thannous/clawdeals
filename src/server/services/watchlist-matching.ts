@@ -45,7 +45,9 @@ function toNumber(value) {
 
 async function fetchCandidateWatchlists({ deal, client }) {
   const select =
-    "watchlist_id,agent_id,active,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+    "watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+
+  const marketCode = typeof deal?.market_code === "string" ? deal.market_code.trim().toUpperCase() : null;
 
   const baseQuery = () =>
     client
@@ -53,6 +55,7 @@ async function fetchCandidateWatchlists({ deal, client }) {
       .select(select)
       .eq("active", true)
       .is("deleted_at", null)
+      .eq("market_code", marketCode)
       // Deals have no geo in v0; avoid pulling watchlists that can never match.
       .is("geo_lat", null)
       .is("geo_lon", null);
@@ -72,7 +75,7 @@ async function fetchCandidateWatchlists({ deal, client }) {
   queries.push(baseQuery().not("query_text", "is", null).limit(5000));
 
   // Price-only watchlists (or query+price) need to be considered too.
-  if (dealCurrency === "EUR" && Number.isFinite(dealPrice)) {
+  if (dealCurrency && Number.isFinite(dealPrice)) {
     queries.push(baseQuery().gte("price_max", dealPrice).limit(5000));
   }
 
@@ -97,14 +100,17 @@ async function fetchCandidateWatchlists({ deal, client }) {
 
 async function fetchCandidateWatchlistsForListing({ listing, client }) {
   const select =
-    "watchlist_id,agent_id,active,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+    "watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+
+  const marketCode = typeof listing?.market_code === "string" ? listing.market_code.trim().toUpperCase() : null;
 
   const baseQuery = () =>
     client
       .from("watchlists")
       .select(select)
       .eq("active", true)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .eq("market_code", marketCode);
 
   const category = typeof listing?.category === "string" ? listing.category.trim().toLowerCase() : null;
   const listingTags = category ? [category] : [];
@@ -128,7 +134,7 @@ async function fetchCandidateWatchlistsForListing({ listing, client }) {
   queries.push(baseQuery().not("query_text", "is", null).limit(5000));
 
   // Price-only watchlists (or query+price) need to be considered too.
-  if (listingCurrency === "EUR" && Number.isFinite(listingPrice)) {
+  if (listingCurrency && Number.isFinite(listingPrice)) {
     queries.push(baseQuery().gte("price_max", listingPrice).limit(5000));
   }
 
@@ -211,7 +217,7 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
 
   const candidates = await fetchCandidateWatchlists({ deal, client: supabase });
   if (candidates.length === 0) {
-    return { ok: true, candidates_count: 0, matched_count: 0, inserted_count: 0 };
+    return { ok: true, market_code: deal.market_code, candidates_count: 0, matched_count: 0, inserted_count: 0 };
   }
 
   const matches = [];
@@ -225,6 +231,7 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
       if (matches.length > MAX_MATCHES_PER_DEAL) {
         console.info("watchlist.match_overflow", {
           deal_id: deal.deal_id,
+          market_code: deal.market_code,
           max_matches_per_deal: MAX_MATCHES_PER_DEAL
         });
         return { ok: false, reason: "overflow", candidates_count: candidates.length, matched_count: matches.length };
@@ -254,6 +261,7 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
     return {
       ok: true,
       candidates_count: candidates.length,
+      market_code: deal.market_code,
       matched_count: matches.length,
       inserted_count: 0
     };
@@ -285,6 +293,7 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
     console.info("notifications.outbox_enqueue_failed", {
       entity_type: "deal",
       entity_id: deal.deal_id,
+      market_code: deal.market_code,
       error: error?.message || String(error)
     });
   }
@@ -309,6 +318,7 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
       entity: { type: "deal", id: deal.deal_id },
       payload: {
         deal_id: deal.deal_id,
+        market_code: deal.market_code,
         watchlist_ids: watchlistIds,
         watchlist_ids_truncated: watchlistIdsTruncated
       },
@@ -318,12 +328,13 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
     if (result?.ok) {
       await markDelivered({ client: supabase, matchIds: state.matchIds, deliveredAt });
     } else {
-      console.info("watchlist.match_sse_failed", { agent_id: agentId, deal_id: deal.deal_id, result });
+      console.info("watchlist.match_sse_failed", { agent_id: agentId, deal_id: deal.deal_id, market_code: deal.market_code, result });
     }
   }
 
   return {
     ok: true,
+    market_code: deal.market_code,
     candidates_count: candidates.length,
     matched_count: matches.length,
     inserted_count: inserted.length
@@ -343,7 +354,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
 
   const candidates = await fetchCandidateWatchlistsForListing({ listing, client: supabase });
   if (candidates.length === 0) {
-    return { ok: true, candidates_count: 0, matched_count: 0, inserted_count: 0 };
+    return { ok: true, market_code: listing.market_code, candidates_count: 0, matched_count: 0, inserted_count: 0 };
   }
 
   const matches = [];
@@ -357,6 +368,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
       if (matches.length > MAX_MATCHES_PER_DEAL) {
         console.info("watchlist.match_overflow", {
           listing_id: listing.listing_id,
+          market_code: listing.market_code,
           max_matches_per_entity: MAX_MATCHES_PER_DEAL
         });
         return { ok: false, reason: "overflow", candidates_count: candidates.length, matched_count: matches.length };
@@ -386,6 +398,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     return {
       ok: true,
       candidates_count: candidates.length,
+      market_code: listing.market_code,
       matched_count: matches.length,
       inserted_count: 0
     };
@@ -417,6 +430,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     console.info("notifications.outbox_enqueue_failed", {
       entity_type: "listing",
       entity_id: listing.listing_id,
+      market_code: listing.market_code,
       error: error?.message || String(error)
     });
   }
@@ -441,6 +455,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
       entity: { type: "listing", id: listing.listing_id },
       payload: {
         listing_id: listing.listing_id,
+        market_code: listing.market_code,
         watchlist_ids: watchlistIds,
         watchlist_ids_truncated: watchlistIdsTruncated
       },
@@ -450,12 +465,13 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     if (result?.ok) {
       await markDelivered({ client: supabase, matchIds: state.matchIds, deliveredAt });
     } else {
-      console.info("watchlist.match_sse_failed", { agent_id: agentId, listing_id: listing.listing_id, result });
+      console.info("watchlist.match_sse_failed", { agent_id: agentId, listing_id: listing.listing_id, market_code: listing.market_code, result });
     }
   }
 
   return {
     ok: true,
+    market_code: listing.market_code,
     candidates_count: candidates.length,
     matched_count: matches.length,
     inserted_count: inserted.length

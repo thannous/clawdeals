@@ -142,7 +142,7 @@ test.describe.serial("Integration: Watchlists", () => {
 
     const wlRes = await request.post("/api/v1/watchlists", {
       headers: { Authorization: `Bearer ${agentA.apiKey}`, "Idempotency-Key": randomId() },
-      data: { name: "TI-190 match", criteria: { tags: [matchTag] }, active: true }
+      data: { name: "TI-190 match", market_code: "FR", criteria: { tags: [matchTag] }, active: true }
     });
     await expectStatus(wlRes, 201);
     const wlBody = await wlRes.json();
@@ -168,7 +168,8 @@ test.describe.serial("Integration: Watchlists", () => {
           title: `TI-190 ${matchTag}`,
           url: `https://example.com/ti-190/${randomId()}`,
           price: 99.99,
-          currency: "USD",
+          currency: "EUR",
+          market_code: "FR",
           expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
           tags: [matchTag]
         }
@@ -213,6 +214,60 @@ test.describe.serial("Integration: Watchlists", () => {
     } finally {
       controller.abort();
     }
+  });
+
+  test("GB/GBP matching stays isolated from FR/EUR watchlists", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const gbAgent = await setupAgent(supabase);
+    const frAgent = await setupAgent(supabase);
+    const dealAgent = await setupAgent(supabase);
+    const matchTag = `gbp_${sha256Hex(randomId()).slice(0, 12)}`;
+
+    const gbWatchlistRes = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${gbAgent.apiKey}`, "Idempotency-Key": randomId() },
+      data: { name: "GB launch", market_code: "GB", criteria: { tags: [matchTag], price_max: 200 }, active: true }
+    });
+    await expectStatus(gbWatchlistRes, 201);
+    const gbWatchlist = await gbWatchlistRes.json();
+    expect(gbWatchlist.market_code).toBe("GB");
+    expect(gbWatchlist.currency).toBe("GBP");
+
+    const frWatchlistRes = await request.post("/api/v1/watchlists", {
+      headers: { Authorization: `Bearer ${frAgent.apiKey}`, "Idempotency-Key": randomId() },
+      data: { name: "FR isolation", market_code: "FR", criteria: { tags: [matchTag], price_max: 200 }, active: true }
+    });
+    await expectStatus(frWatchlistRes, 201);
+    const frWatchlist = await frWatchlistRes.json();
+
+    const dealRes = await request.post("/api/v1/deals", {
+      headers: { Authorization: `Bearer ${dealAgent.apiKey}`, "Idempotency-Key": randomId() },
+      data: {
+        title: `GB launch ${matchTag}`,
+        url: `https://example.co.uk/launch/${randomId()}`,
+        price: 149,
+        currency: "GBP",
+        market_code: "GB",
+        country: "GB",
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        tags: [matchTag]
+      }
+    });
+    await expectStatus(dealRes, 201);
+    const dealBody = await dealRes.json();
+    const dealId = dealBody.deal?.deal_id;
+    expect(dealBody.deal?.market_code).toBe("GB");
+
+    const queueResult = await runWatchlistMatchQueueCron(request);
+    expect(queueResult.markets?.GB?.matched_count).toBeGreaterThanOrEqual(1);
+
+    const { data: matches, error } = await supabase
+      .from("watchlist_matches")
+      .select("watchlist_id")
+      .eq("entity_type", "deal")
+      .eq("entity_id", dealId);
+    expect(error).toBeNull();
+    expect((matches || []).map((row: any) => row.watchlist_id)).toContain(gbWatchlist.watchlist_id);
+    expect((matches || []).map((row: any) => row.watchlist_id)).not.toContain(frWatchlist.watchlist_id);
   });
 
 	  test("watchlist matching on listing create + matches endpoint listing + sse (TI-272)", async ({ request }) => {

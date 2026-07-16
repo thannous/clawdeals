@@ -11,6 +11,7 @@ import {
   WATCHLISTS_MAX_LIMIT
 } from "../../../../server/services/watchlists";
 import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";
+import { MARKET_CURRENCY, resolveMarketCode } from "../../../../server/config/markets";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -55,6 +56,8 @@ function mapWatchlistRow(row) {
     agent_id: row.agent_id,
     name: row.name,
     active: row.active,
+    market_code: row.market_code,
+    currency: row.currency,
     criteria: row.criteria,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -144,7 +147,7 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
   }
 
-  const { name, criteria: rawCriteria, active: rawActive } = req.body || {};
+  const { name, criteria: rawCriteria, active: rawActive, market_code: rawMarketCode } = req.body || {};
 
   let normalizedName = null;
   if (name !== undefined && name !== null) {
@@ -175,6 +178,13 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
   }
 
+  let marketCode;
+  try {
+    marketCode = resolveMarketCode({ marketCode: rawMarketCode, currency: "EUR" });
+  } catch (error) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", error.message));
+  }
+
   try {
     const created = await createWatchlist({
       agentId: ctx.agentId,
@@ -184,6 +194,8 @@ export async function handler(req, res, ctx) {
       queryText: criteria.queryText,
       tags: criteria.tags,
       priceMax: criteria.priceMax,
+      marketCode,
+      currency: MARKET_CURRENCY[marketCode],
       geoLat: criteria.geoLat,
       geoLon: criteria.geoLon,
       distanceKm: criteria.distanceKm

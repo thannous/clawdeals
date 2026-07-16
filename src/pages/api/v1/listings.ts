@@ -11,6 +11,7 @@ import { createApproval } from "../../../server/services/approvals";
 import { publishSseEvent } from "../../../server/sse/store";
 import { decodeListingsCursor } from "../../../server/services/listings-cursor";
 import { ALLOWED_CURRENCIES, DELIVERY_METHODS } from "../../../server/config/deals";
+import { assertNativeMarketCurrency, resolveMarketCode } from "../../../server/config/markets";
 import { computeListingDuplicateFingerprint } from "../../../server/utils/listings-duplicates";
 import { isUuid } from "../../../server/utils/validators";
 import {
@@ -120,6 +121,7 @@ function mapListingRow(row) {
       amount: row.price_amount,
       currency: row.currency
     },
+    market_code: row.market_code || null,
     delivery_method: row.delivery_method || null,
     images_count: typeof row?.images_count === "number" ? row.images_count : 0,
     cover_image: row?.cover_image ?? null,
@@ -413,6 +415,7 @@ export async function handler(req, res, ctx) {
   const rawDealId = body.deal_id;
   const rawForceCreate = body.force_create;
   const rawDeliveryMethod = body.delivery_method;
+  const rawMarketCode = body.market_code;
 
   let title;
   let description;
@@ -420,6 +423,7 @@ export async function handler(req, res, ctx) {
   let condition;
   let priceAmount;
   let currency;
+  let marketCode;
   let geo;
   let images;
   let coverImageIndex = null;
@@ -458,6 +462,8 @@ export async function handler(req, res, ctx) {
     if (!ALLOWED_CURRENCIES.has(currency)) {
       throw new Error("price.currency is invalid");
     }
+    marketCode = resolveMarketCode({ marketCode: rawMarketCode, currency });
+    assertNativeMarketCurrency(marketCode, currency);
 
     geo = parseGeo(rawGeo);
 
@@ -557,7 +563,7 @@ export async function handler(req, res, ctx) {
       : null;
 
     const existingDuplicate = duplicateFingerprint
-      ? await findListingDuplicate({ fingerprint: duplicateFingerprint })
+      ? await findListingDuplicate({ fingerprint: duplicateFingerprint, marketCode })
       : null;
 
     if (existingDuplicate && !forceCreate) {
@@ -631,6 +637,7 @@ export async function handler(req, res, ctx) {
       status,
       priceAmount,
       currency,
+      marketCode,
       geoLat: geo ? geo.lat : null,
       geoLng: geo ? geo.lng : null,
       photos: images,
@@ -645,7 +652,7 @@ export async function handler(req, res, ctx) {
     });
     } catch (error) {
       if (duplicateFingerprint && error?.code === "CONFLICT" && !duplicateOverride) {
-        const dup = await findListingDuplicate({ fingerprint: duplicateFingerprint });
+        const dup = await findListingDuplicate({ fingerprint: duplicateFingerprint, marketCode });
         if (dup) {
           if (ctx) {
             ctx.auditEvent = "listing.duplicate_detected";
@@ -704,6 +711,8 @@ export async function handler(req, res, ctx) {
     const responseBody: any = {
       listing_id: listing.listing_id,
       status,
+      market_code: listing.market_code || marketCode,
+      currency: listing.currency || currency,
       delivery_method: listing.delivery_method || null,
       created_at: listing.created_at
     };
