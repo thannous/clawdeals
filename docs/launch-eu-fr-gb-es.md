@@ -9,8 +9,8 @@ access. It contains no credentials.
 - One European production stack for all three markets; never one stack per country.
 - Cloudflare owns `clawdeals.com` DNS, the marketing Worker, redirects, and WAF.
 - `app.clawdeals.com` remains DNS-only at Cloudflare and points directly to Vercel.
-- Vercel hosts the Next.js app and APIs. `vercel.json` pins Functions to Frankfurt (`fra1`).
-- Supabase hosts Postgres/Auth/Storage in one European project.
+- Vercel hosts the Next.js app and APIs. `vercel.json` pins Functions to Dublin (`dub1`).
+- Supabase hosts Postgres/Auth/Storage in one European project, currently AWS `eu-west-1` (Ireland).
 - Upstash Redis provides rate limits, anti-replay, idempotency, and SSE streams.
 - PostgreSQL remains the durable watchlist queue; Redis is not the job queue.
 
@@ -82,7 +82,7 @@ remain unset in both hosted environments.
 
 1. Read the current Supabase project region from the service, not from this repo.
 2. If it is European, keep it and choose the closest Vercel/Upstash region.
-3. If it is Frankfurt, use Vercel `fra1` and Upstash `eu-central-1`.
+3. For the current Ireland primary (`eu-west-1`), use Vercel Dublin (`dub1`).
 4. If it is another European region, change `vercel.json` and Upstash to the
    nearest compatible region instead of migrating Supabase only for theoretical alignment.
 5. If Supabase is outside Europe, stop. A region change requires a new project
@@ -95,11 +95,27 @@ do not add replicas merely for launch: <https://upstash.com/docs/redis/features/
 
 ## Crons and plans
 
-Keep the PostgreSQL queues and current cron endpoints. The five-minute watchlist
-cron requires Vercel Pro or Enterprise; Hobby accepts only daily schedules.
-Do not lower the frequency or subscribe to a plan silently. If the current plan
-is Hobby, leave the repository schedule unchanged and obtain approval for Pro
-or configure an already-funded external scheduler.
+Keep the PostgreSQL queues and current cron endpoints. Vercel runs the daily
+trust-score recalculation, which is compatible with Hobby. The existing
+Cloudflare Worker contains a tested scheduled handler for the watchlist match
+queue, but `wrangler.jsonc` intentionally does not activate a Cron Trigger yet.
+
+`CRON_SECRET` must contain the same random value in Vercel Production and as an
+encrypted secret on the Cloudflare Worker. Never put the value in
+`wrangler.jsonc`, GitHub Actions, or repository files. Configure it with the
+Cloudflare dashboard or `npx wrangler secret put CRON_SECRET`. The scheduled
+handler calls `app.clawdeals.com` directly and does not place normal app or SSE
+traffic behind the Cloudflare proxy.
+
+Activation is blocked while the connected Upstash Redis resource remains on
+Pay As You Go: matched rows can emit rate-limit and SSE commands, and that plan
+bills commands from the first request. To keep incremental cost at exactly zero,
+do not add `"triggers": { "crons": ["*/5 * * * *"] }` until the Redis resource
+can be moved safely to Free or paid command usage is explicitly approved.
+
+Do not use a five-minute GitHub Actions schedule for this private repository:
+hosted-runner minutes are billable after the account allowance. Do not subscribe
+to Vercel Pro or any other paid scheduler without explicit approval.
 
 ## Observability
 
@@ -121,7 +137,7 @@ Both observability views are service-role only. They must never be granted to
 2. Run market/matching/migration unit tests, typecheck, lint, and relevant integration suites.
 3. Apply migrations to isolated staging.
 4. Run staging watchlist/listing/deal integrations, including a GB/GBP match.
-5. Verify `x-vercel-id` shows `fra1` for an uncached API invocation.
+5. Verify `x-vercel-id` shows `dub1` for an uncached API invocation.
 6. Verify `app.clawdeals.com` resolves to Vercel without a Cloudflare `cf-ray` response header.
 7. Open an SSE stream for longer than the normal client reconnect window and confirm events/replay.
 8. Obtain the release approval before applying the additive migration to production.

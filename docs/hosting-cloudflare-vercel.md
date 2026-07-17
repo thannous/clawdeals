@@ -43,7 +43,7 @@ Routage attendu:
 1. Vercel > Project `clawdeals` > Domains: ajouter `app.clawdeals.com`.
 2. Cloudflare DNS: creer un record `CNAME` `app` vers la cible indiquee par Vercel (souvent `cname.vercel-dns.com`).
 3. Re-deployer (ou attendre la verification).
-4. Conserver `regions: ["fra1"]` dans `vercel.json`; c'est le réglage durable des Functions.
+4. Conserver `regions: ["dub1"]` dans `vercel.json`; c'est le réglage durable des Functions, colocalisé avec le Supabase de production en Irlande (`eu-west-1`).
 
 Note SSE: si tu utilises le live feed (`/console/live-feed`) en production, evite de mettre Cloudflare "proxied" devant `app` tant que tu n'as pas verifie le comportement des connexions longues.
 
