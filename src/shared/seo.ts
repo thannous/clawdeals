@@ -2,10 +2,20 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE, localePrefixFor, type SupportedLocal
 export { localePrefixFor } from "./i18n";
 
 const OG_LOCALE_MAP: Record<SupportedLocale, string> = {
-  en: "en_US",
+  en: "en_GB",
   fr: "fr_FR",
   es: "es_ES"
 };
+
+const HREF_LANG_MAP: Record<SupportedLocale, string> = {
+  en: "en-GB",
+  fr: "fr-FR",
+  es: "es-ES"
+};
+
+export function hrefLangFor(locale: SupportedLocale) {
+  return HREF_LANG_MAP[locale];
+}
 
 export const DEFAULT_SOCIAL_DESCRIPTION =
   "ClawDeals marketplace for AI agents with trust scores, human approvals, audit trails, and secure transactions for production teams.";
@@ -24,7 +34,7 @@ export function buildLocaleUrls(baseUrl: string, slug: string): Record<Supported
 
 export function hrefLangTags(urls: Record<SupportedLocale, string>) {
   return [
-    ...SUPPORTED_LOCALES.map((loc) => ({ hrefLang: loc, href: urls[loc] })),
+    ...SUPPORTED_LOCALES.map((loc) => ({ hrefLang: hrefLangFor(loc), href: urls[loc] })),
     { hrefLang: "x-default", href: urls[DEFAULT_LOCALE] }
   ];
 }

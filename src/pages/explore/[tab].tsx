@@ -19,6 +19,7 @@ const VALID_TABS = new Set<string>(Object.keys(TAB_SLUGS));
 export const TAB_META: Record<TabSlug, {
   fr: { title: string; description: string; ogTitle: string; ogDescription: string };
   en: { title: string; description: string; ogTitle: string; ogDescription: string };
+  es: { title: string; description: string; ogTitle: string; ogDescription: string };
   jsonLdType: string;
 }> = {
   agents: {
@@ -37,6 +38,14 @@ export const TAB_META: Record<TabSlug, {
       ogTitle: "Tactical Agents -- Deployment & Rental -- ClawDeals",
       ogDescription:
         "Specialized agents, pay per execution, secure sandbox. Deploy without infra."
+    },
+    es: {
+      title: "Agentes tácticos -- Despliegue y alquiler -- ClawDeals",
+      description:
+        "Alquila agentes de IA especializados para tareas breves en ClawDeals. Paga por ejecución, usa un entorno aislado seguro y evita gestionar infraestructura.",
+      ogTitle: "Agentes tácticos -- Despliegue y alquiler -- ClawDeals",
+      ogDescription:
+        "Agentes especializados, pago por ejecución y entorno aislado seguro. Despliega sin infraestructura."
     },
     jsonLdType: "CollectionPage"
   },
@@ -57,6 +66,14 @@ export const TAB_META: Record<TabSlug, {
       ogDescription:
         "Verified capabilities for your bots. Banking, ops, admin. Audits and traceability."
     },
+    es: {
+      title: "Módulos de skills certificados -- MCP y API -- ClawDeals",
+      description:
+        "Equipa tus bots con módulos de skills verificados en ClawDeals. Capacidades de banca, operaciones y administración con auditoría y trazabilidad.",
+      ogTitle: "Módulos de skills certificados -- MCP y API -- ClawDeals",
+      ogDescription:
+        "Capacidades verificadas para tus bots. Banca, operaciones y administración con auditoría y trazabilidad."
+    },
     jsonLdType: "CollectionPage"
   },
   data: {
@@ -75,6 +92,14 @@ export const TAB_META: Record<TabSlug, {
       ogTitle: "Contextual Data Assets -- RAG & Vectors -- ClawDeals",
       ogDescription:
         "Grounded sources for RAG. Legal, technical, scientific datasets ready for agents."
+    },
+    es: {
+      title: "Activos de datos contextuales -- RAG y vectores -- ClawDeals",
+      description:
+        "Reduce las alucinaciones con fuentes de datos fundamentadas en ClawDeals. Conjuntos jurídicos, técnicos y científicos preparados para tus agentes de IA.",
+      ogTitle: "Activos de datos contextuales -- RAG y vectores -- ClawDeals",
+      ogDescription:
+        "Fuentes fundamentadas para RAG. Datos jurídicos, técnicos y científicos preparados para agentes."
     },
     jsonLdType: "DataCatalog"
   }
@@ -161,13 +186,14 @@ export default function ExploreTab({
   const router = useRouter();
   const currentLocale: SupportedLocale = resolveSupportedLocale(router.locale || locale || "en");
   const tabMeta = TAB_META[tab] || TAB_META.agents;
-  const meta = currentLocale === "fr" ? tabMeta.fr : tabMeta.en;
+  const meta = tabMeta[currentLocale];
   const urls = buildLocaleUrls(baseUrl, `explore/${tab}`);
   const canonicalUrl = urls[currentLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(currentLocale);
   const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
   const exploreIndexUrl = `${baseUrl}${localePrefixFor(currentLocale)}/explore`;
+  const exploreBreadcrumb = currentLocale === "es" ? "Explorar" : currentLocale === "fr" ? "Explorer" : "Explore";
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -215,13 +241,13 @@ export default function ExploreTab({
               name: meta.title,
               description: meta.description,
               isPartOf: { "@id": `${baseUrl}/#website` },
-              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-US"
+              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-GB"
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
                 { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                { "@type": "ListItem", position: 2, name: "Explore", item: exploreIndexUrl },
+                { "@type": "ListItem", position: 2, name: exploreBreadcrumb, item: exploreIndexUrl },
                 { "@type": "ListItem", position: 3, name: meta.title.split(" -- ")[0], item: canonicalUrl }
               ]
             }

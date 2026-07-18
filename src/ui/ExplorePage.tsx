@@ -60,6 +60,78 @@ function toStableStringEntries(values: readonly string[]) {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const EXPLORE_LABELS = {
+  en: {
+    liveCamera: "LIVE",
+    rate: "RATE",
+    developer: "DEV",
+    status: "STATUS",
+    speed: "SPEED",
+    security: "SECURITY",
+    installs: "INSTALLS",
+    format: "FORMAT",
+    size: "SIZE",
+    select: "SELECT",
+    availableUnits: "Available Units",
+    skillModules: "Skill Modules",
+    dataContexts: "Data Contexts",
+    nextStep: "NEXT STEP",
+    ctaTitle: "Found something? Connect your agent to act on it.",
+    ctaBody: "Deals, watchlists, offers — your agent handles the busywork.",
+    ctaButton: "Connect Your Agent",
+    mcpGuide: "MCP Guide"
+  },
+  fr: {
+    liveCamera: "DIRECT",
+    rate: "TARIF",
+    developer: "DEV",
+    status: "STATUT",
+    speed: "VITESSE",
+    security: "SÉCURITÉ",
+    installs: "INSTALLATIONS",
+    format: "FORMAT",
+    size: "TAILLE",
+    select: "SÉLECTIONNER",
+    availableUnits: "Unités disponibles",
+    skillModules: "Modules de skills",
+    dataContexts: "Contextes data",
+    nextStep: "ÉTAPE SUIVANTE",
+    ctaTitle: "Tu as trouvé ? Connecte ton agent pour agir.",
+    ctaBody: "Deals, watchlists, offres — ton agent gère le quotidien.",
+    ctaButton: "Connecte ton agent",
+    mcpGuide: "Guide MCP"
+  },
+  es: {
+    liveCamera: "EN DIRECTO",
+    rate: "TARIFA",
+    developer: "DESARROLLADOR",
+    status: "ESTADO",
+    speed: "VELOCIDAD",
+    security: "SEGURIDAD",
+    installs: "INSTALACIONES",
+    format: "FORMATO",
+    size: "TAMAÑO",
+    select: "SELECCIONAR",
+    availableUnits: "Unidades disponibles",
+    skillModules: "Módulos de skills",
+    dataContexts: "Contextos de datos",
+    nextStep: "SIGUIENTE PASO",
+    ctaTitle: "¿Has encontrado algo? Conecta tu agente para actuar.",
+    ctaBody: "Deals, watchlists y ofertas: tu agente se ocupa del trabajo diario.",
+    ctaButton: "Conecta tu agente",
+    mcpGuide: "Guía MCP"
+  }
+} as const;
+
+function resolveExploreLocale(locale: string): keyof typeof EXPLORE_LABELS {
+  return locale === "fr" || locale === "es" ? locale : "en";
+}
+
+function appLocalePrefix(locale: string): string {
+  const resolved = resolveExploreLocale(locale);
+  return resolved === "en" ? "" : `/${resolved}`;
+}
+
 function ExploreWaitlistForm({
   waitlist,
   locale,
@@ -276,7 +348,7 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
         {/* Keep previous hero CTAs in code for later re-enable; hidden for now. */}
         <div className="hidden flex-wrap gap-4">
           <Link
-            href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
+            href={getPublicAppEntryHref(appLocalePrefix(locale))}
             className="px-8 py-4 font-bold uppercase tracking-wider transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
           >
             <span className="relative z-10 flex items-center gap-2">
@@ -294,7 +366,9 @@ const HeroFrame = ({ copy, hero, iconColor, iconClassName, orbitBorderClass, Ico
       </div>
 
       <div className="hidden lg:block h-full min-h-[400px] relative border border-border bg-bg p-2">
-        <div className="absolute top-2 left-2 text-xs font-mono text-primary">CAM_01 // LIVE</div>
+        <div className="absolute top-2 left-2 text-xs font-mono text-primary">
+          CAM_01 // {EXPLORE_LABELS[resolveExploreLocale(locale)].liveCamera}
+        </div>
         <div className="absolute top-2 right-2 text-xs font-mono text-subtle">REC ●</div>
 
         <div className="absolute inset-0 flex items-center justify-center">
@@ -372,10 +446,89 @@ const DataHero = ({ copy, locale }) => (
   />
 );
 
+function SpanishTerminalExample() {
+  return (
+    <div className="mt-20 border border-border-strong bg-bg p-1 shadow-2xl">
+      <div className="bg-surface-alt px-4 py-1 flex items-center justify-between border-b border-border">
+        <span className="text-xs font-mono text-muted">TERMINAL_RELAY_V2.0</span>
+        <div className="flex gap-2">
+          <div className="w-2 h-2 bg-border-strong rounded-full" />
+          <div className="w-2 h-2 bg-border-strong rounded-full" />
+        </div>
+      </div>
+      <div className="p-6 font-mono text-sm leading-relaxed h-64 overflow-y-auto">
+        <div className="text-subtle mb-2"># Sesión segura iniciada mediante la CLI de ClawDeals</div>
+        <div className="flex gap-2">
+          <span className="text-primary">root@clawbot:~$</span>
+          <span className="text-text">@market list --category scraper --sort speed</span>
+        </div>
+        <div className="pl-4 text-success my-2">
+          [CORRECTO] Se han encontrado tres agentes:
+          <br />
+          &gt; 101: Agente de vigilancia de mercado (0,50 EUR/ejecución) [DISPONIBLE]
+          <br />
+          &gt; 102: Auditor SEO (2,00 EUR/ejecución) [OCUPADO]
+          <br />
+          &gt; 104: Motor OCR de facturas (0,20 EUR/documento) [DISPONIBLE]
+        </div>
+        <div className="flex gap-2 mt-4">
+          <span className="text-primary">root@clawbot:~$</span>
+          <span className="text-text">@market hire 101 --budget 2eur</span>
+        </div>
+        <div className="pl-4 text-muted my-2">
+          <span className="text-blue-400">[SISTEMA]</span> Estableciendo un túnel seguro…
+          <br />
+          <span className="text-warning">[PAGO]</span> 2,00 EUR bloqueados en escrow.
+          <br />
+          <span className="text-success">[AGENTE]</span> Tarea iniciada. PID: 49202. Tiempo estimado: 45 s.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExploreMcpCallout({ copy, locale }) {
+  if (resolveExploreLocale(locale) !== "es") return <NpmCallout />;
+
+  return (
+    <div className="mt-24 border border-border bg-surface p-12 relative overflow-hidden group">
+      <div className="relative z-10 flex flex-col md:flex-row gap-12 items-center">
+        <div className="flex-1">
+          <h3 className="text-3xl font-bold uppercase text-text mb-4">{copy.mcp.title}</h3>
+          <p className="font-mono text-muted mb-6">{copy.mcp.description}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="inline-flex items-center gap-4 border border-secondary/30 bg-secondary/5 px-6 py-3">
+              <span className="font-mono text-secondary">{copy.mcp.snippet}</span>
+              <Code className="w-4 h-4 text-secondary" />
+            </div>
+            <Link
+              href="/mcp"
+              className="h-10 px-5 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest inline-flex items-center"
+            >
+              {EXPLORE_LABELS.es.mcpGuide}
+            </Link>
+          </div>
+        </div>
+        <div className="flex-1 flex justify-center">
+          <div className="w-64 h-64 border border-secondary rounded-full flex items-center justify-center relative">
+            <div className="absolute inset-0 border border-secondary rounded-full animate-ping opacity-20" />
+            <Package className="w-24 h-24 text-secondary" />
+          </div>
+        </div>
+      </div>
+      <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-secondary/10 via-transparent to-transparent opacity-50 pointer-events-none" />
+    </div>
+  );
+}
+
 /* ── Market cards & section ── */
 
-const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
-  <TechBorder className="h-full" dataTestId={dataTestId}>
+const MarketCard = ({ item, type, copy, dataTestId, locale }) => {
+  const labels = EXPLORE_LABELS[resolveExploreLocale(locale)];
+  const isBusy = item.status === "BUSY" || item.status === "OCUPADO";
+
+  return (
+    <TechBorder className="h-full" dataTestId={dataTestId}>
     <div className="p-6 flex flex-col h-full relative">
       <div className="flex justify-between items-start mb-4">
         <div className="w-10 h-10 border border-border-strong bg-surface-alt/50 flex items-center justify-center text-muted">
@@ -385,12 +538,12 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         </div>
         <div className="text-right">
           <div className="text-primary font-bold font-mono text-lg">{item.price}</div>
-          <div className="text-xs text-subtle font-mono">RATE</div>
+          <div className="text-xs text-subtle font-mono">{labels.rate}</div>
         </div>
       </div>
 
       <h3 className="text-xl font-bold text-text mb-1 uppercase truncate">{item.title}</h3>
-      <p className="text-xs font-mono text-subtle mb-4">DEV: {item.author}</p>
+      <p className="text-xs font-mono text-subtle mb-4">{labels.developer}: {item.author}</p>
 
       <p className="text-sm text-muted mb-6 flex-grow leading-relaxed border-l border-border pl-3">
         {item.description}
@@ -399,25 +552,25 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
       <div className="bg-bg border border-border p-3 mb-4 grid grid-cols-2 gap-2 font-mono text-xs">
         {type === "gig" && (
           <>
-            <div className="text-subtle">STATUS:</div>
-            <div className={item.status === "IDLE" ? "text-success" : "text-error"}>{item.status}</div>
-            <div className="text-subtle">SPEED:</div>
+            <div className="text-subtle">{labels.status}:</div>
+            <div className={isBusy ? "text-error" : "text-success"}>{item.status}</div>
+            <div className="text-subtle">{labels.speed}:</div>
             <div className="text-text">{item.speed}</div>
           </>
         )}
         {type === "npm" && (
           <>
-            <div className="text-subtle">SECURITY:</div>
+            <div className="text-subtle">{labels.security}:</div>
             <div className="text-primary">{item.securityLevel}</div>
-            <div className="text-subtle">INSTALLS:</div>
+            <div className="text-subtle">{labels.installs}:</div>
             <div className="text-text">{item.downloads}</div>
           </>
         )}
         {type === "data" && (
           <>
-            <div className="text-subtle">FORMAT:</div>
+            <div className="text-subtle">{labels.format}:</div>
             <div className="text-success">{item.format}</div>
-            <div className="text-subtle">SIZE:</div>
+            <div className="text-subtle">{labels.size}:</div>
             <div className="text-text">{item.size}</div>
           </>
         )}
@@ -433,7 +586,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
             ))}
         </div>
         <Link
-          href={`${getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}?from=explore-card-${type}-${item.id}`}
+          href={`${getPublicAppEntryHref(appLocalePrefix(locale))}?from=explore-card-${type}-${item.id}`}
           className="bg-text text-bg text-xs font-bold uppercase px-4 py-2 transition-colors hover:bg-primary hover:text-text"
         >
           {type === "gig" ? copy.actions.deploy : copy.actions.acquire}
@@ -444,8 +597,9 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => (
         <div className="w-2 h-2 bg-border-strong" />
       </div>
     </div>
-  </TechBorder>
-);
+    </TechBorder>
+  );
+};
 
 const MarketSection = ({ title, items, type, copy, locale }) => (
   <>
@@ -487,7 +641,7 @@ const MarketSection = ({ title, items, type, copy, locale }) => (
 
 /* ── Task selector (Mission) ── */
 
-const TaskSelector = ({ copy }) => (
+const TaskSelector = ({ copy, locale }) => (
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
     {[
       { icon: <Activity />, ...copy.taskSelector[0] },
@@ -504,7 +658,7 @@ const TaskSelector = ({ copy }) => (
         </div>
         <div className="relative z-10 flex flex-col justify-end h-full">
           <div className="font-mono text-xs text-subtle mb-1 group-hover:text-primary">
-            0{idx + 1} {"//"}  SELECT
+            0{idx + 1} {"//"} {EXPLORE_LABELS[resolveExploreLocale(locale)].select}
           </div>
           <div className="font-bold text-text text-sm uppercase">{item.label}</div>
         </div>
@@ -517,18 +671,18 @@ const TaskSelector = ({ copy }) => (
 /* ── Tab panels ── */
 
 const GigTabPanel = ({ copy, locale, items }) => {
-  const marketTitle = locale === "fr" ? "Unités disponibles" : "Available Units";
+  const labels = EXPLORE_LABELS[resolveExploreLocale(locale)];
 
   return (
     <>
       <SectionHeader title={copy.headers.mission.title} subtitle={copy.headers.mission.subtitle} />
-      <TaskSelector copy={copy} />
-      <MarketSection title={marketTitle} items={items} type="gig" copy={copy} locale={locale} />
+      <TaskSelector copy={copy} locale={locale} />
+      <MarketSection title={labels.availableUnits} items={items} type="gig" copy={copy} locale={locale} />
 
       <div className="mt-24 max-w-7xl mx-auto">
         <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
         <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
-          <TerminalEmulator />
+          {resolveExploreLocale(locale) === "es" ? <SpanishTerminalExample /> : <TerminalEmulator />}
         </div>
       </div>
     </>
@@ -536,20 +690,20 @@ const GigTabPanel = ({ copy, locale, items }) => {
 };
 
 const NpmTabPanel = ({ copy, locale, items }) => {
-  const marketTitle = locale === "fr" ? "Modules de skills" : "Skill Modules";
+  const labels = EXPLORE_LABELS[resolveExploreLocale(locale)];
 
   return (
     <>
-      <MarketSection title={marketTitle} items={items} type="npm" copy={copy} locale={locale} />
+      <MarketSection title={labels.skillModules} items={items} type="npm" copy={copy} locale={locale} />
       <div style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
-        <NpmCallout />
+        <ExploreMcpCallout copy={copy} locale={locale} />
       </div>
     </>
   );
 };
 
 const DataTabPanel = ({ copy, locale, items }) => {
-  const marketTitle = locale === "fr" ? "Contextes data" : "Data Contexts";
+  const marketTitle = EXPLORE_LABELS[resolveExploreLocale(locale)].dataContexts;
 
   return <MarketSection title={marketTitle} items={items} type="data" copy={copy} locale={locale} />;
 };
@@ -576,6 +730,7 @@ export default function ExplorePage({
   const activeTab = initialTab;
   const { themeId, setTheme, themes } = useTheme();
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
+  const labels = EXPLORE_LABELS[resolveExploreLocale(locale)];
 
   const tabVariants = {
     gig: { Hero: GigHero, Panel: GigTabPanel, items: copy.cards.gig },
@@ -627,23 +782,19 @@ export default function ExplorePage({
         <div className="border-t border-border bg-surface">
           <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
             <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
-              {locale === "fr" ? "ÉTAPE SUIVANTE" : "NEXT STEP"}
+              {labels.nextStep}
             </div>
             <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
-              {locale === "fr"
-                ? "Tu as trouvé ? Connecte ton agent pour agir."
-                : "Found something? Connect your agent to act on it."}
+              {labels.ctaTitle}
             </h2>
             <p className="text-sm text-muted font-mono max-w-lg mb-8">
-              {locale === "fr"
-                ? "Deals, watchlists, offres — ton agent gère le quotidien."
-                : "Deals, watchlists, offers — your agent handles the busywork."}
+              {labels.ctaBody}
             </p>
             <Link
-              href={getPublicAppEntryHref(locale === "fr" ? "/fr" : "")}
+              href={getPublicAppEntryHref(appLocalePrefix(locale))}
               className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
             >
-              {locale === "fr" ? "Connect ton agent" : "Connect Your Agent"}
+              {labels.ctaButton}
             </Link>
           </div>
         </div>

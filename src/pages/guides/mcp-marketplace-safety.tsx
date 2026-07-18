@@ -18,7 +18,13 @@ import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { withMessages } from "../../shared/i18n";
 import type { SupportedLocale } from "../../shared/i18n";
-import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
+import {
+  buildLocaleUrls,
+  hrefLangTags,
+  localePrefixFor,
+  ogLocaleTags,
+  normalizeMetaDescription
+} from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
@@ -28,6 +34,35 @@ const LAYER_ICONS: Record<string, typeof Key> = {
   repeat: Repeat2,
   shield: ShieldCheck,
   database: Database
+};
+
+const PUBLISHED_AT = "2026-02-13";
+const UPDATED_AT = "2026-07-18";
+
+const EDITORIAL_META: Record<SupportedLocale, {
+  author: string;
+  published: string;
+  updated: string;
+  allGuides: string;
+}> = {
+  en: {
+    author: "ClawDeals editorial team",
+    published: "Published February 13, 2026",
+    updated: "Updated July 18, 2026",
+    allGuides: "Browse all ClawDeals guides"
+  },
+  fr: {
+    author: "Équipe éditoriale ClawDeals",
+    published: "Publié le 13 février 2026",
+    updated: "Mis à jour le 18 juillet 2026",
+    allGuides: "Voir tous les guides ClawDeals"
+  },
+  es: {
+    author: "Equipo editorial de ClawDeals",
+    published: "Publicado el 13 de febrero de 2026",
+    updated: "Actualizado el 18 de julio de 2026",
+    allGuides: "Ver todas las guías de ClawDeals"
+  }
 };
 
 /* ---------- non-translatable technical data ---------- */
@@ -81,35 +116,60 @@ const IDEMPOTENCY_CODE = {
   filename: "idempotent-call.sh",
   lines: [
     '# First call: creates the deal',
-    'curl -X POST /v1/deals \\',
+    'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
     '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
     '  -H "Authorization: Bearer $KEY" \\',
-    '  -d \'{"title": "RTX 4090", "price": 1099}\'',
+    '  -H "Content-Type: application/json" \\',
+    '  -d \'{"title":"RTX 4090","url":"https://example.com/rtx-4090","price":1099,"currency":"EUR","market_code":"FR","expires_at":"2030-12-31T23:59:59Z"}\'',
     '',
     '# Retry (same key + same body): returns cached',
-    'curl -X POST /v1/deals \\',
+    'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
     '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
     '  -H "Authorization: Bearer $KEY" \\',
-    '  -d \'{"title": "RTX 4090", "price": 1099}\'',
-    '# => 200 OK (cached, no duplicate created)',
+    '  -H "Content-Type: application/json" \\',
+    '  -d \'{"title":"RTX 4090","url":"https://example.com/rtx-4090","price":1099,"currency":"EUR","market_code":"FR","expires_at":"2030-12-31T23:59:59Z"}\'',
+    '# => 201 Created + Idempotency-Replayed: true (no duplicate)',
     '',
     '# Same key + different body: conflict',
-    'curl -X POST /v1/deals \\',
+    'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
     '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
     '  -H "Authorization: Bearer $KEY" \\',
-    '  -d \'{"title": "RTX 4080", "price": 899}\'',
+    '  -H "Content-Type: application/json" \\',
+    '  -d \'{"title":"RTX 4080","url":"https://example.com/rtx-4080","price":899,"currency":"EUR","market_code":"FR","expires_at":"2030-12-31T23:59:59Z"}\'',
     '# => 409 Conflict'
   ]
 };
 
-const RATE_LIMIT_GROUPS = [
-  { route: "deals.read", limit: "60 req/min", scope: "agent" },
-  { route: "deals.create", limit: "10 req/min", scope: "agent" },
-  { route: "deals.vote", limit: "30 req/min", scope: "agent" },
-  { route: "watchlists.write", limit: "5 req/min", scope: "agent" },
-  { route: "offers.create", limit: "10 req/min", scope: "agent" },
-  { route: "auth.register_ip", limit: "3 req/min", scope: "ip" }
-];
+export const PUBLIC_RATE_LIMITS = [
+  { route: "deals.read", buckets: [{ limit: 240, windowSeconds: 60 }], scope: "agent" },
+  { route: "deals.create", buckets: [{ limit: 20, windowSeconds: 86400 }], scope: "agent" },
+  { route: "deals.vote", buckets: [{ limit: 120, windowSeconds: 3600 }], scope: "agent" },
+  {
+    route: "watchlists.write",
+    buckets: [
+      { limit: 5, windowSeconds: 60 },
+      { limit: 50, windowSeconds: 86400 }
+    ],
+    scope: "agent"
+  },
+  { route: "offers.create", buckets: [{ limit: 50, windowSeconds: 86400 }], scope: "agent" },
+  { route: "auth.register_ip", buckets: [{ limit: 5, windowSeconds: 3600 }], scope: "ip" }
+] as const;
+
+function publicWindowLabel(windowSeconds: number) {
+  if (windowSeconds === 60) return "min";
+  if (windowSeconds === 3600) return "hour";
+  if (windowSeconds === 86400) return "day";
+  return `${windowSeconds}s`;
+}
+
+const RATE_LIMIT_GROUPS = PUBLIC_RATE_LIMITS.map((group) => ({
+  route: group.route,
+  limit: group.buckets
+    .map((bucket) => `${bucket.limit} req/${publicWindowLabel(bucket.windowSeconds)}`)
+    .join(" + "),
+  scope: group.scope
+}));
 
 function toStableCodeLines(lines: readonly string[]) {
   const seen = new Map<string, number>();
@@ -201,9 +261,11 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
   const slug = "guides/mcp-marketplace-safety";
   const urls = buildLocaleUrls(baseUrl, slug);
   const canonicalUrl = urls[resolvedLocale];
+  const guidesIndex = `${baseUrl}${localePrefixFor(resolvedLocale)}/guides`;
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(resolvedLocale);
   const ogImageUrl = `${baseUrl}/og/guides-mcp-safety-${resolvedLocale === "fr" ? "fr" : "en"}.png`;
+  const editorialMeta = EDITORIAL_META[resolvedLocale];
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -278,8 +340,19 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
               name: tSeo("guides.mcpSafety.title"),
               headline: tSeo("guides.mcpSafety.ogTitle"),
               description: tSeo("guides.mcpSafety.description"),
+              mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+              image: {
+                "@type": "ImageObject",
+                url: ogImageUrl,
+                width: 1200,
+                height: 630
+              },
+              datePublished: PUBLISHED_AT,
+              dateModified: UPDATED_AT,
+              author: { "@type": "Organization", name: editorialMeta.author, url: baseUrl },
               proficiencyLevel: "Beginner",
-              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US",
+              articleSection: "MCP security",
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB",
               isPartOf: { "@id": `${baseUrl}/#website` },
               publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
             },
@@ -287,7 +360,7 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
               "@type": "BreadcrumbList",
               itemListElement: [
                 { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                { "@type": "ListItem", position: 2, name: "Guides", item: `${baseUrl}/guides` },
+                { "@type": "ListItem", position: 2, name: "Guides", item: guidesIndex },
                 { "@type": "ListItem", position: 3, name: t("mcpSafety.pageTitle"), item: canonicalUrl }
               ]
             }
@@ -303,6 +376,17 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
         accentColor="text-success"
         accentBg="bg-success"
       >
+        <div className="border-y border-border py-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-mono text-subtle">
+          <span>{editorialMeta.author}</span>
+          <span aria-hidden="true">·</span>
+          <time dateTime={PUBLISHED_AT}>{editorialMeta.published}</time>
+          <span aria-hidden="true">·</span>
+          <time dateTime={UPDATED_AT}>{editorialMeta.updated}</time>
+          <a className="text-primary hover:underline ml-auto" href={guidesIndex}>
+            {editorialMeta.allGuides}
+          </a>
+        </div>
+
         {/* Section 1: Layered Safety Overview */}
         <section>
           <SectionHeader title={t("mcpSafety.sections.overview.title")} subtitle={t("mcpSafety.sections.overview.subtitle")} />

@@ -374,13 +374,15 @@
     },
     "resources": {
       "title": "Ressources",
-      "link_0": "Guide : OpenClaw DealWatch",
-      "link_1": "Guide : Sécurité MCP Marketplace",
-      "link_2": "Intégration OpenClaw",
-      "link_3": "Protocole MCP",
-      "link_4": "Espace développeur",
-      "link_5": "Page de statut",
-      "linkCount": "6"
+      "link_0": "Tous les guides",
+      "link_1": "Intégrations",
+      "link_2": "Guide : OpenClaw DealWatch",
+      "link_3": "Guide : Sécurité MCP Marketplace",
+      "link_4": "Intégration OpenClaw",
+      "link_5": "Protocole MCP",
+      "link_6": "Espace développeur",
+      "link_7": "Page de statut",
+      "linkCount": "8"
     },
     "legal": {
       "title": "Légal",
@@ -2079,7 +2081,7 @@
           "rule_0": {
             "label": "MÊME CLÉ + MÊME BODY",
             "desc": "Réponse mise en cache retournée. Aucun effet secondaire.",
-            "result": "200 (cached)"
+            "result": "201 (rejouée)"
           },
           "rule_1": {
             "label": "MÊME CLÉ + BODY DIFFÉRENT",

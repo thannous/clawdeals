@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
 import { Copy, ExternalLink, Key, Terminal } from "lucide-react";
 
@@ -7,15 +8,56 @@ import { SectionHeader, TechBorder } from "../landing/primitives";
 import PageHeader from "../shared/PageHeader";
 import { getPublicAppUrl, getPublicLandingUrl, joinUrl } from "../../shared/urls";
 
-type McpLocale = "fr" | "en";
+type McpLocale = "fr" | "en" | "es";
 type ConfigTab = "cursor" | "claude" | "claudeCode" | "codex" | "windsurf" | "gemini" | "generic";
+
+const MCP_LABELS: Record<
+  McpLocale,
+  {
+    newBadge: string;
+    recommended: string;
+    example: string;
+    deals: string;
+    watchlists: string;
+    listings: string;
+    offers: string;
+  }
+> = {
+  en: {
+    newBadge: "NEW",
+    recommended: "recommended",
+    example: "Example",
+    deals: "Deals",
+    watchlists: "Watchlists",
+    listings: "Listings",
+    offers: "Offers"
+  },
+  fr: {
+    newBadge: "NOUVEAU",
+    recommended: "recommandé",
+    example: "Exemple",
+    deals: "Deals",
+    watchlists: "Listes de veille",
+    listings: "Annonces",
+    offers: "Offres"
+  },
+  es: {
+    newBadge: "NUEVO",
+    recommended: "recomendado",
+    example: "Ejemplo",
+    deals: "Deals",
+    watchlists: "Listas de seguimiento",
+    listings: "Anuncios",
+    offers: "Ofertas"
+  }
+};
 
 function usesMcpServersKey(configTab: ConfigTab) {
   return configTab === "claude" || configTab === "claudeCode" || configTab === "windsurf" || configTab === "gemini";
 }
 
 const COPY: Record<
-  McpLocale,
+  Exclude<McpLocale, "es">,
   {
     title: string;
     subtitle: string;
@@ -175,18 +217,19 @@ function CodeBlock({
   value: string;
   compact?: boolean;
 }) {
+  const t = useTranslations("mcp");
   const [msg, setMsg] = useState("");
 
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setMsg("Copied");
+      setMsg(t("copied"));
       setTimeout(() => setMsg(""), 1500);
     } catch {
-      setMsg("Copy failed");
+      setMsg(t("copyFailed"));
       setTimeout(() => setMsg(""), 1500);
     }
-  }, [value]);
+  }, [t, value]);
 
   return (
     <div className="border border-border bg-bg/60">
@@ -200,7 +243,7 @@ function CodeBlock({
             className="inline-flex items-center gap-2 border border-border px-3 py-1.5 text-xs font-mono font-bold uppercase text-text hover:border-border-strong"
           >
             <Copy className="w-3.5 h-3.5" />
-            Copy
+            {t("copy")}
           </button>
         </div>
       </div>
@@ -260,8 +303,52 @@ export default function McpPage() {
 
 function useMcpPageView() {
   const router = useRouter();
-  const locale = (router.locale === "fr" ? "fr" : "en") as McpLocale;
-  const copy = COPY[locale];
+  const t = useTranslations("mcp");
+  const locale: McpLocale = router.locale === "fr" || router.locale === "es" ? router.locale : "en";
+  const translatedCopy = {
+    title: t("title"),
+    subtitle: t("subtitle"),
+    lead: t("lead"),
+    stepsTitle: t("stepsTitle"),
+    step1Title: t("step1Title"),
+    step1Body: t("step1Body"),
+    step1Hint: t("step1Hint"),
+    step2Title: t("step2Title"),
+    step2Body: t("step2Body"),
+    step2Hint: t("step2Hint"),
+    step3Title: t("step3Title"),
+    step3Body: t("step3Body"),
+    configTitle: t("configTitle"),
+    configCursor: t("configCursor"),
+    configClaude: t("configClaude"),
+    configClaudeCode: t("configClaudeCode"),
+    configCodex: t("configCodex"),
+    configWindsurf: t("configWindsurf"),
+    configGemini: t("configGemini"),
+    configGeneric: t("configGeneric"),
+    verifyTitle: t("verifyTitle"),
+    verifyBody: t("verifyBody"),
+    errorsTitle: t("errorsTitle"),
+    errorsLead: t("errorsLead"),
+    errors: [
+      { code: "UNAUTHORIZED", fix: t("error.unauthorized") },
+      { code: "EXPIRES_AT_INVALID", fix: t("error.expiresInvalid") },
+      { code: "NOT_SUPPORTED (dry_run)", fix: t("error.dryRunNotSupported") }
+    ],
+    footerHint: t("footerHint"),
+    openStart: t("openStart"),
+    step0Title: t("step0Title"),
+    step0Body: t("step0Body"),
+    step0Cta: t("step0Cta"),
+    step0Hint: t("step0Hint"),
+    step0AltTitle: t("step0AltTitle"),
+    step0AltBody: t("step0AltBody"),
+    step0AltHint: t("step0AltHint"),
+    step0AltConfigTitle: t("step0AltConfigTitle"),
+    step0AltOr: t("step0AltOr")
+  };
+  const copy = locale === "es" ? translatedCopy : COPY[locale];
+  const labels = MCP_LABELS[locale];
 
   const [configTab, setConfigTab] = useState<ConfigTab>("cursor");
 
@@ -294,9 +381,13 @@ function useMcpPageView() {
   else if (configTab === "windsurf") manualConfigTitle = "~/.codeium/windsurf/mcp_config.json";
   else if (configTab === "gemini") manualConfigTitle = "~/.gemini/settings.json";
 
-  const verifyPrompt = `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
+  const verifyPrompt = locale === "es"
+    ? `Llama a: clawdeals.deals.list\nArgumentos: { \"limit\": 1 }`
+    : `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
 
-  const writeExample = `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
+  const writeExample = locale === "es"
+    ? `Herramienta: clawdeals.deals.create\nArgumentos: {\n  \"idempotency_key\": \"idem-ejecucion-1\",\n  \"title\": \"PRUEBA MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<AHORA_MAS_24H_ISO>\"\n}`
+    : `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
 
   const bootstrapConfig = (() => {
     if (configTab === "codex") {
@@ -322,19 +413,12 @@ function useMcpPageView() {
   const mcpBackUrl = landingBase ? joinUrl(landingBase, "/mcp") : "/mcp";
   const keysUrl = `${appBase}${localePrefix}/keys?next=${encodeURIComponent(mcpBackUrl)}`;
 
-  const optionsNote =
-    locale === "fr"
-      ? "Dans STEP_01, choisissez une seule option d'installation: A ou B."
-      : "In STEP_01, choose one install option only: A or B.";
-
-  const installStepTitle = locale === "fr" ? "Installer (choisir A ou B)" : "Install (choose A or B)";
-  const installStepBody =
-    locale === "fr"
-      ? "Option A = automatique (recommandé). Option B = manuel (secours)."
-      : "Option A = automatic (recommended). Option B = manual (fallback).";
-  const optionALabel = locale === "fr" ? "Option A (recommandé)" : "Option A (recommended)";
-  const optionBLabel = locale === "fr" ? "Option B (secours)" : "Option B (fallback)";
-  const verifyStepTitle = locale === "fr" ? "Vérifier" : "Verify";
+  const optionsNote = t("optionsNote");
+  const installStepTitle = t("installStepTitle");
+  const installStepBody = t("installStepBody");
+  const optionALabel = t("optionALabel");
+  const optionBLabel = t("optionBLabel");
+  const verifyStepTitle = t("step3Title");
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -372,7 +456,7 @@ function useMcpPageView() {
               className="h-9 px-4 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
-              Tools
+              {t("tools")}
             </a>
           </>
         }
@@ -432,7 +516,7 @@ function useMcpPageView() {
               <div className="flex items-center gap-2">
                 <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-secondary/60">STEP_00</div>
                 <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-secondary/40 text-secondary">
-                  NEW
+                  {labels.newBadge}
                 </span>
               </div>
               <div className="text-lg font-bold uppercase tracking-wider text-text">{copy.step0AltTitle}</div>
@@ -450,14 +534,16 @@ function useMcpPageView() {
             {/* Option A */}
             <div className="space-y-3 p-4 border border-primary/20 bg-primary/3">
               <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{optionALabel}</div>
-              <CodeBlock title="npx (recommended)" value={installSnippetNpx} compact />
+              <CodeBlock title={`npx (${labels.recommended})`} value={installSnippetNpx} compact />
               <div className="text-xs font-mono text-subtle">{copy.step1Hint}</div>
             </div>
 
             {/* OR divider */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex-1 border-t border-dashed border-border" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-subtle">or</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-subtle">
+                {copy.step0AltOr}
+              </span>
               <div className="flex-1 border-t border-dashed border-border" />
             </div>
 
@@ -558,14 +644,11 @@ function useMcpPageView() {
             <StepCard
               k="STEP_03"
               stepNum="3"
-              title="Write smoke (optional)"
-              body="If you need to validate writes end-to-end, run a deal create with an idempotency key (and delete it after)."
+              title={t("writeSmokeTitle")}
+              body={t("writeSmokeBody")}
             >
-              <CodeBlock title="Example" value={writeExample} compact />
-              <div className="text-xs font-mono text-subtle">
-                Note: <span className="text-text">expires_at</span> max TTL is{" "}
-                <span className="text-text">30 days</span>.
-              </div>
+              <CodeBlock title={labels.example} value={writeExample} compact />
+              <div className="text-xs font-mono text-subtle">{t("writeSmokeNote")}</div>
             </StepCard>
           </div>
         </div>
@@ -587,14 +670,14 @@ function useMcpPageView() {
         </div>
 
         <div id="catalog" className="space-y-4 scroll-mt-24">
-          <SectionHeader title="Tools" subtitle="V0_CATALOG" accentText="text-secondary" accentBg="bg-secondary" />
+          <SectionHeader title={t("tools")} subtitle="V0_CATALOG" accentText="text-secondary" accentBg="bg-secondary" />
           <div className="border border-border bg-surface p-4 space-y-3">
             <div className="text-xs font-mono text-muted">
-              Prefix: <span className="text-text">clawdeals.</span>
+              {t("toolPrefix")} <span className="text-text">clawdeals.</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="border border-border bg-bg/50 p-3">
-                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">Deals</div>
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{labels.deals}</div>
                 <div className="mt-2 text-xs font-mono text-muted space-y-1">
                   <div>clawdeals.deals.list</div>
                   <div>clawdeals.deals.get</div>
@@ -605,7 +688,7 @@ function useMcpPageView() {
                 </div>
               </div>
               <div className="border border-border bg-bg/50 p-3">
-                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">Watchlists</div>
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{labels.watchlists}</div>
                 <div className="mt-2 text-xs font-mono text-muted space-y-1">
                   <div>clawdeals.watchlists.create</div>
                   <div>clawdeals.watchlists.list</div>
@@ -614,7 +697,7 @@ function useMcpPageView() {
                 </div>
               </div>
               <div className="border border-border bg-bg/50 p-3">
-                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">Listings</div>
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{labels.listings}</div>
                 <div className="mt-2 text-xs font-mono text-muted space-y-1">
                   <div>clawdeals.listings.list</div>
                   <div>clawdeals.listings.get</div>
@@ -623,7 +706,7 @@ function useMcpPageView() {
                 </div>
               </div>
               <div className="border border-border bg-bg/50 p-3">
-                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">Offers</div>
+                <div className="text-xs font-mono font-bold uppercase tracking-widest text-primary">{labels.offers}</div>
                 <div className="mt-2 text-xs font-mono text-muted space-y-1">
                   <div>clawdeals.offers.create</div>
                   <div>clawdeals.offers.counter</div>

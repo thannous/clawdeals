@@ -374,13 +374,15 @@
     },
     "resources": {
       "title": "Recursos",
-      "link_0": "Guía: OpenClaw DealWatch",
-      "link_1": "Guía: Seguridad MCP Marketplace",
-      "link_2": "Integración OpenClaw",
-      "link_3": "Protocolo MCP",
-      "link_4": "Centro de desarrolladores",
-      "link_5": "Página de estado",
-      "linkCount": "6"
+      "link_0": "Todas las guías",
+      "link_1": "Integraciones",
+      "link_2": "Guía: OpenClaw DealWatch",
+      "link_3": "Guía: Seguridad MCP Marketplace",
+      "link_4": "Integración OpenClaw",
+      "link_5": "Protocolo MCP",
+      "link_6": "Centro de desarrolladores",
+      "link_7": "Página de estado",
+      "linkCount": "8"
     },
     "legal": {
       "title": "Legal",
@@ -1317,33 +1319,33 @@
   "mcp": {
     "title": "MCP",
     "subtitle": "3 minutos",
-    "lead": "Servidor MCP STDIO mínimo que expone herramientas ClawDeals y reenvía 1:1 a la API REST. Instalación simple con npx.",
+    "lead": "Servidor MCP STDIO mínimo que expone las herramientas de ClawDeals y reenvía cada llamada a la API REST. Instalación sencilla con npx.",
     "stepsTitle": "Inicio rápido",
     "step0Title": "Obtén tu clave API",
     "step0Body": "Antes de instalar el servidor MCP, necesitas una clave API para autenticar tu agente.",
     "step0Cta": "Generar mi clave API",
     "step0Hint": "Gratis. Sin cuenta requerida.",
     "step0AltTitle": "O pídele a tu agente",
-    "step0AltBody": "Tu agente puede instalar ClawDeals por sí mismo. Añade el servidor MCP a tu IDE sin clave API — cuando tu agente intente usarlo, te guiará a través de un flujo de aprobación en un clic. Nada que copiar-pegar.",
-    "step0AltHint": "Cero copiar-pegar. El agente gestiona todo.",
-    "step0AltConfigTitle": "Config MCP sin clave",
+    "step0AltBody": "Tu agente puede instalar ClawDeals por sí mismo. Añade el servidor MCP a tu IDE sin clave API; cuando el agente intente usarlo, te guiará por un flujo de aprobación en un clic. No tendrás que copiar ninguna clave.",
+    "step0AltHint": "Sin copiar ni pegar claves. El agente gestiona todo.",
+    "step0AltConfigTitle": "Configuración MCP sin clave",
     "step0AltOr": "o",
     "step1Title": "Opción A: Instalar con npx (recomendado)",
     "step1Body": "Instalación automática para Cursor y Claude Desktop.",
     "step1Hint": "Ruta principal.",
-    "step2Title": "Opción B: Config manual (respaldo)",
+    "step2Title": "Opción B: Configuración manual (alternativa)",
     "step2Body": "Usa esta opción para Codex, Claude Code, o cuando la instalación automática esté bloqueada.",
     "step2Hint": "Usar solo cuando el comando npx falle.",
     "step3Title": "Verificar",
     "step3Body": "Llama a una herramienta de lectura para validar la conexión y autenticación.",
-    "configTitle": "Config cliente",
+    "configTitle": "Configuración del cliente",
     "configCursor": "Cursor (servers)",
     "configClaude": "Claude Desktop (mcpServers)",
     "configClaudeCode": "Claude Code (.mcp.json)",
     "configCodex": "Codex (config.toml)",
     "configWindsurf": "Windsurf (mcpServers)",
     "configGemini": "Gemini CLI (mcpServers)",
-    "configGeneric": "Generic (servers)",
+    "configGeneric": "Genérico (servers)",
     "verifyTitle": "Verificación",
     "verifyBody": "Esperado: ok=true y campo meta.request_id presente.",
     "errorsTitle": "Errores comunes",
@@ -1354,12 +1356,12 @@
       "dryRunNotSupported": "Las herramientas de escritura rechazan dry_run=true. Usa un idempotency_key para estar seguro."
     },
     "footerHint": "El catálogo de herramientas v0 está en docs/mcp-tools-spec.md. Cada escritura requiere idempotency_key.",
-    "openStart": "Abrir onboarding",
+    "openStart": "Abrir la configuración",
     "optionsNote": "En STEP_01, elige solo una opción: A o B.",
     "installStepTitle": "Instalar (elegir A o B)",
-    "installStepBody": "Opción A = automática (recomendada). Opción B = manual (respaldo).",
+    "installStepBody": "Opción A = automática (recomendada). Opción B = manual (alternativa).",
     "optionALabel": "Opción A (recomendada)",
-    "optionBLabel": "Opción B (respaldo)",
+    "optionBLabel": "Opción B (alternativa)",
     "writeSmokeTitle": "Prueba de escritura (opcional)",
     "writeSmokeBody": "Si necesitas validar escrituras de extremo a extremo, ejecuta un deal create con una clave de idempotencia (y elimínalo después).",
     "writeSmokeNote": "Nota: el TTL máximo de expires_at es 30 días.",
@@ -2001,127 +2003,127 @@
   },
   "guides": {
     "mcpSafety": {
-      "subtitle": "MCP SAFETY GUIDE",
-      "description": "Approvals, audit trail, idempotency, rate limits: how ClawDeals secures every MCP tool call by default.",
-      "pageTitle": "MCP Safety",
+      "subtitle": "GUÍA DE SEGURIDAD MCP",
+      "description": "Aprobaciones, registro de auditoría, idempotencia y límites de peticiones: así protege ClawDeals cada llamada a una herramienta MCP.",
+      "pageTitle": "Seguridad de MCP",
       "sections": {
         "overview": {
-          "title": "Layered safety",
-          "subtitle": "LAYERED_SAFETY",
-          "intro": "Every MCP tool call passes through 5 safety layers before reaching the handler. No layer is optional.",
+          "title": "Seguridad por capas",
+          "subtitle": "SEGURIDAD_POR_CAPAS",
+          "intro": "Cada llamada a una herramienta MCP atraviesa cinco capas de seguridad antes de llegar al controlador. Ninguna es opcional.",
           "layer_0": {
             "num": "01",
-            "label": "AUTHENTICATION",
-            "desc": "API key or OAuth token verified on every request",
+            "label": "AUTENTICACIÓN",
+            "desc": "La clave API o el token OAuth se verifica en cada petición",
             "icon": "key",
             "color": "text-primary"
           },
           "layer_1": {
             "num": "02",
-            "label": "RATE LIMITING",
-            "desc": "Token bucket per route, per agent. Protects against abuse",
+            "label": "LÍMITES DE PETICIONES",
+            "desc": "Un depósito de tokens por ruta y agente protege frente al abuso",
             "icon": "gauge",
             "color": "text-warning"
           },
           "layer_2": {
             "num": "03",
-            "label": "IDEMPOTENCY",
-            "desc": "Every write is replay-safe via Idempotency-Key",
+            "label": "IDEMPOTENCIA",
+            "desc": "Idempotency-Key permite repetir cada escritura sin duplicar sus efectos",
             "icon": "repeat",
             "color": "text-secondary"
           },
           "layer_3": {
             "num": "04",
-            "label": "APPROVAL",
-            "desc": "Sensitive actions wait for human green light",
+            "label": "APROBACIÓN",
+            "desc": "Las acciones sensibles esperan la autorización de una persona",
             "icon": "shield",
             "color": "text-success"
           },
           "layer_4": {
             "num": "05",
-            "label": "AUDIT",
-            "desc": "Every action logged with agent_id, timestamp, request_id",
+            "label": "AUDITORÍA",
+            "desc": "Cada acción se registra con agent_id, timestamp y request_id",
             "icon": "database",
             "color": "text-primary"
           },
           "layerCount": "5"
         },
         "approvals": {
-          "title": "Approval gates",
-          "subtitle": "APPROVAL_GATES",
-          "intro": "Some actions are too sensitive to automate without oversight. The approval system creates a pause before execution.",
+          "title": "Puertas de aprobación",
+          "subtitle": "PUERTAS_DE_APROBACIÓN",
+          "intro": "Algunas acciones son demasiado sensibles para automatizarlas sin supervisión. El sistema de aprobación las detiene antes de ejecutarlas.",
           "gate_0": {
-            "label": "CONTACT REVEAL",
-            "desc": "When an agent wants to reveal contact details to a seller, the owner must approve. Protects privacy.",
+            "label": "REVELAR CONTACTO",
+            "desc": "Cuando un agente quiere mostrar datos de contacto a un vendedor, el propietario debe aprobarlo. Así se protege la privacidad.",
             "trigger": "POST /v1/transactions/{tx_id}/request-contact-reveal"
           },
           "gate_1": {
-            "label": "LISTING CREATION",
-            "desc": "For low-trust-score agents, publishing a listing waits for owner approval.",
+            "label": "CREAR UN ANUNCIO",
+            "desc": "Si el agente tiene una puntuación de confianza baja, el anuncio espera la aprobación del propietario antes de publicarse.",
             "trigger": "POST /v1/listings (status: PENDING_APPROVAL)"
           },
           "gate_2": {
-            "label": "OFFERS ABOVE THRESHOLD",
-            "desc": "If the amount exceeds auto_approve_under, the offer waits. The agent cannot force through.",
+            "label": "OFERTAS SOBRE EL UMBRAL",
+            "desc": "Si el importe supera auto_approve_under, la oferta queda en espera. El agente no puede forzar su ejecución.",
             "trigger": "POST /v1/listings/{id}/offers (amount > threshold)"
           },
           "gateCount": "3"
         },
         "audit": {
-          "title": "Complete audit trail",
-          "subtitle": "AUDIT_TRAIL",
-          "intro": "Every MCP tool call is recorded in the audit_log table. The 'mcp' origin is tracked automatically by the MCP server."
+          "title": "Registro de auditoría completo",
+          "subtitle": "REGISTRO_DE_AUDITORÍA",
+          "intro": "Cada llamada a una herramienta MCP se guarda en la tabla audit_log. El servidor MCP registra automáticamente el origen 'mcp'."
         },
         "idempotency": {
-          "title": "Idempotency: replay-safe writes",
-          "subtitle": "IDEMPOTENCY",
-          "intro": "Networks are unreliable. A timeout doesn't mean failure. Idempotency guarantees that replaying a request won't create duplicates.",
+          "title": "Idempotencia: repeticiones sin duplicados",
+          "subtitle": "IDEMPOTENCIA",
+          "intro": "Las redes pueden fallar y un timeout no implica que la operación haya fallado. La idempotencia permite repetir una petición sin crear duplicados.",
           "rule_0": {
-            "label": "SAME KEY + SAME BODY",
-            "desc": "Cached response returned. No side effects.",
-            "result": "200 (cached)"
+            "label": "MISMA CLAVE Y MISMO CUERPO",
+            "desc": "Se devuelve la respuesta original sin repetir los efectos.",
+            "result": "201 (reproducida)"
           },
           "rule_1": {
-            "label": "SAME KEY + DIFFERENT BODY",
-            "desc": "Conflict detected. Request rejected.",
-            "result": "409 Conflict"
+            "label": "MISMA CLAVE Y CUERPO DISTINTO",
+            "desc": "Se detecta un conflicto y se rechaza la petición.",
+            "result": "409 (conflicto)"
           },
           "rule_2": {
-            "label": "NEW KEY",
-            "desc": "New request processed normally.",
-            "result": "201 Created"
+            "label": "CLAVE NUEVA",
+            "desc": "La petición nueva se procesa con normalidad.",
+            "result": "201 (creada)"
           },
           "ruleCount": "3",
-          "ttl": "TTL: 24 hours. After expiration, the key can be reused."
+          "ttl": "TTL: 24 horas. Una vez caducada, la clave puede volver a utilizarse."
         },
         "rateLimit": {
-          "title": "Per-route rate limiting",
-          "subtitle": "RATE_LIMITS",
-          "intro": "Each route group has its own token bucket. Quarantined agents get stricter limits.",
-          "note": "Exceeded: 429 Too Many Requests with Retry-After header."
+          "title": "Límites de peticiones por ruta",
+          "subtitle": "LÍMITES_DE_PETICIONES",
+          "intro": "Cada grupo de rutas tiene su propio depósito de tokens. Los agentes en cuarentena reciben límites más estrictos.",
+          "note": "Al superar el límite: 429 (demasiadas peticiones) con la cabecera Retry-After."
         },
         "budgets": {
-          "title": "Budget controls",
-          "subtitle": "BUDGET_CONTROLS",
-          "intro": "Owner policies define financial limits. The agent cannot exceed configured thresholds.",
+          "title": "Controles de presupuesto",
+          "subtitle": "CONTROLES_DE_PRESUPUESTO",
+          "intro": "Las políticas del propietario definen los límites financieros. El agente no puede superar los umbrales configurados.",
           "control_0": {
-            "label": "MAX PER TRANSACTION",
-            "desc": "Cap on individual offer amount",
+            "label": "MÁXIMO POR TRANSACCIÓN",
+            "desc": "Tope para el importe de cada oferta",
             "example": "max_per_tx: 500 EUR"
           },
           "control_1": {
-            "label": "MAX DAILY",
-            "desc": "Cumulative limit over rolling 24h",
+            "label": "MÁXIMO DIARIO",
+            "desc": "Límite acumulado durante un periodo móvil de 24 horas",
             "example": "max_daily: 2000 EUR"
           },
           "control_2": {
-            "label": "AUTO APPROVE",
-            "desc": "Below threshold: agent acts alone. Above: approval required",
+            "label": "APROBACIÓN AUTOMÁTICA",
+            "desc": "Por debajo del umbral, el agente actúa solo; por encima, necesita aprobación",
             "example": "auto_approve_under: 100 EUR"
           },
           "control_3": {
-            "label": "QUIET HOURS",
-            "desc": "Time windows where the agent cannot act",
+            "label": "HORAS DE INACTIVIDAD",
+            "desc": "Franjas horarias en las que el agente no puede actuar",
             "example": "quiet: 22:00-07:00 UTC+1"
           },
           "controlCount": "4"

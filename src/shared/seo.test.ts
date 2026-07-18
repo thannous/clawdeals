@@ -1,5 +1,25 @@
 import { describe, expect, test } from "vitest";
-import { DEFAULT_SOCIAL_DESCRIPTION, normalizeMetaDescription } from "./seo";
+import {
+  buildLocaleUrls,
+  DEFAULT_SOCIAL_DESCRIPTION,
+  hrefLangTags,
+  normalizeMetaDescription,
+  ogLocaleTags
+} from "./seo";
+
+describe("regional SEO locales", () => {
+  test("targets France, the United Kingdom, and Spain consistently", () => {
+    const urls = buildLocaleUrls("https://clawdeals.com", "guides");
+
+    expect(hrefLangTags(urls)).toEqual([
+      { hrefLang: "en-GB", href: "https://clawdeals.com/guides" },
+      { hrefLang: "fr-FR", href: "https://clawdeals.com/fr/guides" },
+      { hrefLang: "es-ES", href: "https://clawdeals.com/es/guides" },
+      { hrefLang: "x-default", href: "https://clawdeals.com/guides" }
+    ]);
+    expect(ogLocaleTags("en").current).toBe("en_GB");
+  });
+});
 
 describe("normalizeMetaDescription", () => {
   test("keeps descriptions already in the recommended range", () => {

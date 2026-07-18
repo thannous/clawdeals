@@ -374,13 +374,15 @@
     },
     "resources": {
       "title": "Resources",
-      "link_0": "Guide: OpenClaw DealWatch",
-      "link_1": "Guide: MCP Marketplace Safety",
-      "link_2": "OpenClaw Integration",
-      "link_3": "MCP Protocol",
-      "link_4": "Developer Hub",
-      "link_5": "Status Page",
-      "linkCount": "6"
+      "link_0": "All Guides",
+      "link_1": "Integrations",
+      "link_2": "Guide: OpenClaw DealWatch",
+      "link_3": "Guide: MCP Marketplace Safety",
+      "link_4": "OpenClaw Integration",
+      "link_5": "MCP Protocol",
+      "link_6": "Developer Hub",
+      "link_7": "Status Page",
+      "linkCount": "8"
     },
     "legal": {
       "title": "Legal",
@@ -2109,7 +2111,7 @@
           "rule_0": {
             "label": "SAME KEY + SAME BODY",
             "desc": "Cached response returned. No side effects.",
-            "result": "200 (cached)"
+            "result": "201 (replayed)"
           },
           "rule_1": {
             "label": "SAME KEY + DIFFERENT BODY",

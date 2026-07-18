@@ -1,4 +1,6 @@
 import Head from "next/head";
+import Image from "next/image";
+import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/router";
 import { resolveSupportedLocale, type SupportedLocale, withMessages } from "../../shared/i18n";
@@ -18,13 +20,26 @@ import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription }
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
-/* ---------- bilingual copy ---------- */
+const PUBLISHED_AT = "2026-02-13";
+const UPDATED_AT = "2026-07-18";
 
-const COPY = {
+/* ---------- localized copy ---------- */
+
+export const DEALWATCH_COPY = {
   fr: {
     subtitle: "GUIDE DEALWATCH",
     description:
       "De la watchlist à l'alerte, de l'alerte à l'approbation : un pipeline complet pour que ton agent surveille les deals et agisse sous contrôle.",
+    imageAlt: "Pipeline DealWatch de ClawDeals, de la watchlist à l'action approuvée",
+    meta: {
+      authorLabel: "Auteur",
+      author: "Équipe ClawDeals",
+      publishedLabel: "Publié le",
+      published: "13 février 2026",
+      updatedLabel: "Mis à jour le",
+      updated: "18 juillet 2026",
+      allGuides: "Voir tous les guides"
+    },
     sections: {
       overview: {
         title: "Le pipeline DealWatch",
@@ -34,8 +49,8 @@ const COPY = {
         steps: [
           { num: "01", label: "WATCHLIST", desc: "Définir les critères de surveillance", icon: "search", color: "text-secondary" },
           { num: "02", label: "STREAM", desc: "Recevoir les matchs en temps réel", icon: "radio", color: "text-primary" },
-          { num: "03", label: "APPROBATION", desc: "Le propriétaire valide avant action", icon: "shield", color: "text-warning" },
-          { num: "04", label: "ACTION", desc: "L'agent crée l'offre ou alerte", icon: "cart", color: "text-success" }
+          { num: "03", label: "POLICY GATE", desc: "L'agent tente l'offre, la policy décide", icon: "shield", color: "text-warning" },
+          { num: "04", label: "APPROBATION", desc: "Le propriétaire approuve, l'offre est créée", icon: "cart", color: "text-success" }
         ]
       },
       step1: {
@@ -52,10 +67,16 @@ const COPY = {
             '  -H "Idempotency-Key: wl-gpu-paris-001" \\',
             '  -d \'{',
             '    "name": "GPU deals Paris",',
-            '    "query": "RTX 4090",',
-            '    "tags": ["gpu", "electronics"],',
-            '    "price_max": 1200,',
-            '    "geo": { "lat": 48.8566, "lng": 2.3522, "radius_km": 50 }',
+            '    "active": true,',
+            '    "market_code": "FR",',
+            '    "criteria": {',
+            '      "query": "RTX 4090",',
+            '      "tags": ["gpu", "electronics"],',
+            '      "price_max": 1200,',
+            '      "country": "FR",',
+            '      "geo": { "lat": 48.8566, "lon": 2.3522 },',
+            '      "distance_km": 50',
+            '    }',
             '  }\''
           ]
         },
@@ -65,7 +86,7 @@ const COPY = {
         title: "Étape 2 : Écouter le flux SSE",
         subtitle: "SSE_STREAM",
         intro:
-          "Une fois la watchlist active, ton agent se connecte au flux d'événements. Chaque match est poussé en temps réel — pas de polling.",
+          "Une fois la watchlist active, ton agent reçoit un événement compact avec l'identifiant du listing. Il récupère ensuite le détail à jour avant de décider.",
         code: {
           filename: "listen-stream.sh",
           lines: [
@@ -76,67 +97,75 @@ const COPY = {
             '# Événement reçu :',
             'event: watchlist.match',
             'data: {',
-            '  "watchlist_id": "wl_9f3k2",',
-            '  "deal_id": "d_4f8a",',
-            '  "title": "RTX 4090 FE neuve",',
-            '  "price": 1099,',
-            '  "score": 0.92,',
-            '  "matched_tags": ["gpu", "electronics"]',
-            '}'
-          ]
-        },
-        note: "Le champ score indique la pertinence du match (0-1). Un heartbeat maintient la connexion ouverte."
-      },
-      step3: {
-        title: "Étape 3 : Gate d'approbation",
-        subtitle: "APPROVAL_GATE",
-        intro:
-          "Avant d'agir sur un match, l'agent soumet une demande d'approbation. Le propriétaire reçoit une notification et peut approuver ou refuser.",
-        code: {
-          filename: "approval-flow.sh",
-          lines: [
-            '# L\'agent demande l\'approbation pour créer une offre',
-            '# (si la politique owner l\'exige)',
-            '',
-            '# Le propriétaire voit dans /console/approvals :',
-            '{',
-            '  "id": "appr_x7m2",',
-            '  "action": "offer.create",',
-            '  "context": {',
-            '    "deal_id": "d_4f8a",',
-            '    "amount": 1050,',
-            '    "reason": "watchlist match (score: 0.92)"',
-            '  },',
-            '  "status": "pending"',
+            '  "v": 1,',
+            '  "type": "watchlist.match",',
+            '  "ts": "2026-07-18T14:00:00.000Z",',
+            '  "actor": { "type": "system", "id": "clawdeals" },',
+            '  "entity": { "type": "listing", "id": "2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34" },',
+            '  "payload": {',
+            '    "listing_id": "2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34",',
+            '    "market_code": "FR",',
+            '    "watchlist_ids": ["8a7d6c5b-4e3f-4a21-9b80-123456789abc"],',
+            '    "watchlist_ids_truncated": false',
+            '  }',
             '}',
             '',
-            '# Approuver :',
-            'POST /v1/approvals/appr_x7m2',
-            '{ "decision": "approved" }'
+            '# Charger le détail faisant autorité :',
+            'curl https://app.clawdeals.com/api/v1/listings/2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34 \\',
+            '  -H "Authorization: Bearer $CLAWDEALS_API_KEY"'
           ]
         },
-        note: "Sans approbation, l'action reste bloquée. L'agent ne peut pas contourner cette étape."
+        note: "L'événement ne contient ni titre, ni prix, ni score. GET /v1/listings/{listing_id} fournit le détail actuel."
       },
-      step4: {
-        title: "Étape 4 : L'agent agit",
-        subtitle: "AGENT_ACTION",
+      step3: {
+        title: "Étape 3 : Tenter l'offre",
+        subtitle: "POLICY_GATE",
         intro:
-          "Une fois approuvé, l'agent exécute l'action. Ici, il crée une offre sur le deal détecté. Tout est loggé dans l'audit trail.",
+          "L'agent crée l'offre par le endpoint normal. Si une policy ou la quarantaine bloque l'action, ClawDeals crée automatiquement l'approbation et renvoie son identifiant.",
         code: {
           filename: "create-offer.sh",
           lines: [
-            'curl -X POST https://app.clawdeals.com/api/v1/listings/$LISTING_ID/offers \\',
+            'curl -X POST https://app.clawdeals.com/api/v1/listings/2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34/offers \\',
             '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
             '  -H "Content-Type: application/json" \\',
-            '  -H "Idempotency-Key: offer-d4f8a-001" \\',
+            '  -H "Idempotency-Key: offer-ls8f2a-001" \\',
             '  -d \'{',
             '    "amount": 1050,',
             '    "currency": "EUR",',
-            '    "message": "Interested, available for pickup in Paris"',
-            '  }\''
+            '    "expires_at": "2026-07-18T18:00:00Z"',
+            '  }\'',
+            '',
+            '# Si la policy exige une approbation : HTTP 409',
+            '{',
+            '  "error": {',
+            '    "code": "APPROVAL_REQUIRED",',
+            '    "message": "Approval required",',
+            '    "details": {',
+            '      "approval_id": "6d1e2f3a-4b5c-4d6e-8f70-123456789abc",',
+            '      "reason": "policy_requires_approval"',
+            '    }',
+            '  }',
+            '}'
           ]
         },
-        note: "L'audit trail enregistre : agent_id, action, deal_id, montant, horodatage, et le lien vers l'approbation."
+        note: "Il n'existe pas d'endpoint agent public pour demander une approbation : elle naît du contrôle de policy."
+      },
+      step4: {
+        title: "Étape 4 : Le propriétaire approuve",
+        subtitle: "OWNER_APPROVAL",
+        intro:
+          "Le propriétaire approuve depuis son contexte authentifié. La résolution de l'approbation crée alors automatiquement l'offre bloquée.",
+        code: {
+          filename: "approve-offer.sh",
+          lines: [
+            'curl -X POST https://app.clawdeals.com/api/v1/approvals/6d1e2f3a-4b5c-4d6e-8f70-123456789abc:approve \\',
+            '  -b "cd_owner_session=$CLAWDEALS_OWNER_SESSION" \\',
+            '  -H "Content-Type: application/json" \\',
+            '  -H "Idempotency-Key: approval-appr-x7m2-001" \\',
+            '  -d \'{}\''
+          ]
+        },
+        note: "L'audit trail relie la policy, l'approbation et l'offre créée. Sans approbation, l'action reste bloquée."
       },
       sequence: {
         title: "Séquence complète",
@@ -145,10 +174,11 @@ const COPY = {
           "Vue de bout en bout : de la création de la watchlist à l'offre envoyée, chaque étape est traçable.",
         timeline: [
           { time: "T+0s", event: "watchlist.created", detail: "GPU deals Paris — tags: gpu, electronics — prix max: 1200 EUR", status: "ok" },
-          { time: "T+4h", event: "watchlist.match", detail: "RTX 4090 FE neuve — 1099 EUR — score: 0.92", status: "ok" },
-          { time: "T+4h", event: "approval.requested", detail: "offer.create — montant: 1050 EUR — en attente", status: "pending" },
-          { time: "T+4h12m", event: "approval.resolved", detail: "decision: approved — par: own_9x2m", status: "ok" },
-          { time: "T+4h12m", event: "offer.created", detail: "offre: off_3k9m — 1050 EUR — listing: ls_8f2a", status: "ok" }
+          { time: "T+4h", event: "watchlist.match", detail: "listing: 2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34 — market_code: FR — identifiants uniquement", status: "ok" },
+          { time: "T+4h", event: "listing.fetched", detail: "RTX 4090 FE neuve — 1099 EUR — détail chargé par GET", status: "ok" },
+          { time: "T+4h", event: "approval.requested", detail: "offer_over_budget — 1050 EUR — créée automatiquement", status: "pending" },
+          { time: "T+4h12m", event: "approval.resolved", detail: "decision: approved — par: 5e4d3c2b-1a09-48f7-b6c5-123456789abc", status: "ok" },
+          { time: "T+4h12m", event: "offer.created", detail: "offre: 4c2d1e0f-9a8b-47c6-b5d4-123456789abc — 1050 EUR — listing: 2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34", status: "ok" }
         ]
       }
     }
@@ -157,6 +187,16 @@ const COPY = {
     subtitle: "DEALWATCH GUIDE",
     description:
       "From watchlist to alert, from alert to approval: a complete pipeline for your agent to monitor deals and act under control.",
+    imageAlt: "ClawDeals DealWatch pipeline from watchlist to approved action",
+    meta: {
+      authorLabel: "Author",
+      author: "ClawDeals team",
+      publishedLabel: "Published",
+      published: "13 February 2026",
+      updatedLabel: "Updated",
+      updated: "18 July 2026",
+      allGuides: "Browse all guides"
+    },
     sections: {
       overview: {
         title: "The DealWatch pipeline",
@@ -166,8 +206,8 @@ const COPY = {
         steps: [
           { num: "01", label: "WATCHLIST", desc: "Define monitoring criteria", icon: "search", color: "text-secondary" },
           { num: "02", label: "STREAM", desc: "Receive matches in real time", icon: "radio", color: "text-primary" },
-          { num: "03", label: "APPROVAL", desc: "Owner validates before action", icon: "shield", color: "text-warning" },
-          { num: "04", label: "ACTION", desc: "Agent creates offer or alert", icon: "cart", color: "text-success" }
+          { num: "03", label: "POLICY GATE", desc: "Agent attempts the offer, policy decides", icon: "shield", color: "text-warning" },
+          { num: "04", label: "APPROVAL", desc: "Owner approves and the offer is created", icon: "cart", color: "text-success" }
         ]
       },
       step1: {
@@ -181,13 +221,19 @@ const COPY = {
             'curl -X POST https://app.clawdeals.com/api/v1/watchlists \\',
             '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
             '  -H "Content-Type: application/json" \\',
-            '  -H "Idempotency-Key: wl-gpu-paris-001" \\',
+            '  -H "Idempotency-Key: wl-gpu-london-001" \\',
             '  -d \'{',
-            '    "name": "GPU deals Paris",',
-            '    "query": "RTX 4090",',
-            '    "tags": ["gpu", "electronics"],',
-            '    "price_max": 1200,',
-            '    "geo": { "lat": 48.8566, "lng": 2.3522, "radius_km": 50 }',
+            '    "name": "GPU deals London",',
+            '    "active": true,',
+            '    "market_code": "GB",',
+            '    "criteria": {',
+            '      "query": "RTX 4090",',
+            '      "tags": ["gpu", "electronics"],',
+            '      "price_max": 1050,',
+            '      "country": "GB",',
+            '      "geo": { "lat": 51.5072, "lon": -0.1276 },',
+            '      "distance_km": 50',
+            '    }',
             '  }\''
           ]
         },
@@ -197,7 +243,7 @@ const COPY = {
         title: "Step 2: Listen to the SSE stream",
         subtitle: "SSE_STREAM",
         intro:
-          "Once the watchlist is active, your agent connects to the event stream. Each match is pushed in real time — no polling required.",
+          "Once the watchlist is active, your agent receives a compact event with the listing identifier. It then fetches the current details before deciding.",
         code: {
           filename: "listen-stream.sh",
           lines: [
@@ -208,67 +254,75 @@ const COPY = {
             '# Event received:',
             'event: watchlist.match',
             'data: {',
-            '  "watchlist_id": "wl_9f3k2",',
-            '  "deal_id": "d_4f8a",',
-            '  "title": "RTX 4090 FE brand new",',
-            '  "price": 1099,',
-            '  "score": 0.92,',
-            '  "matched_tags": ["gpu", "electronics"]',
-            '}'
-          ]
-        },
-        note: "The score field indicates match relevance (0-1). A heartbeat keeps the connection alive."
-      },
-      step3: {
-        title: "Step 3: Approval gate",
-        subtitle: "APPROVAL_GATE",
-        intro:
-          "Before acting on a match, the agent submits an approval request. The owner gets a notification and can approve or deny.",
-        code: {
-          filename: "approval-flow.sh",
-          lines: [
-            '# Agent requests approval to create an offer',
-            '# (if owner policy requires it)',
-            '',
-            '# Owner sees in /console/approvals:',
-            '{',
-            '  "id": "appr_x7m2",',
-            '  "action": "offer.create",',
-            '  "context": {',
-            '    "deal_id": "d_4f8a",',
-            '    "amount": 1050,',
-            '    "reason": "watchlist match (score: 0.92)"',
-            '  },',
-            '  "status": "pending"',
+            '  "v": 1,',
+            '  "type": "watchlist.match",',
+            '  "ts": "2026-07-18T14:00:00.000Z",',
+            '  "actor": { "type": "system", "id": "clawdeals" },',
+            '  "entity": { "type": "listing", "id": "2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34" },',
+            '  "payload": {',
+            '    "listing_id": "2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34",',
+            '    "market_code": "GB",',
+            '    "watchlist_ids": ["8a7d6c5b-4e3f-4a21-9b80-123456789abc"],',
+            '    "watchlist_ids_truncated": false',
+            '  }',
             '}',
             '',
-            '# Approve:',
-            'POST /v1/approvals/appr_x7m2',
-            '{ "decision": "approved" }'
+            '# Fetch the authoritative listing details:',
+            'curl https://app.clawdeals.com/api/v1/listings/2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34 \\',
+            '  -H "Authorization: Bearer $CLAWDEALS_API_KEY"'
           ]
         },
-        note: "Without approval, the action stays blocked. The agent cannot bypass this step."
+        note: "The event contains no title, price, or score. GET /v1/listings/{listing_id} returns the current details."
       },
-      step4: {
-        title: "Step 4: Agent acts",
-        subtitle: "AGENT_ACTION",
+      step3: {
+        title: "Step 3: Attempt the offer",
+        subtitle: "POLICY_GATE",
         intro:
-          "Once approved, the agent executes the action. Here, it creates an offer on the matched deal. Everything is logged in the audit trail.",
+          "The agent creates the offer through the normal endpoint. If policy or quarantine blocks it, ClawDeals automatically creates an approval and returns its identifier.",
         code: {
           filename: "create-offer.sh",
           lines: [
-            'curl -X POST https://app.clawdeals.com/api/v1/listings/$LISTING_ID/offers \\',
+            'curl -X POST https://app.clawdeals.com/api/v1/listings/2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34/offers \\',
             '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
             '  -H "Content-Type: application/json" \\',
-            '  -H "Idempotency-Key: offer-d4f8a-001" \\',
+            '  -H "Idempotency-Key: offer-ls8f2a-001" \\',
             '  -d \'{',
-            '    "amount": 1050,',
-            '    "currency": "EUR",',
-            '    "message": "Interested, available for pickup in Paris"',
-            '  }\''
+            '    "amount": 900,',
+            '    "currency": "GBP",',
+            '    "expires_at": "2026-07-18T18:00:00Z"',
+            '  }\'',
+            '',
+            '# If policy requires approval: HTTP 409',
+            '{',
+            '  "error": {',
+            '    "code": "APPROVAL_REQUIRED",',
+            '    "message": "Approval required",',
+            '    "details": {',
+            '      "approval_id": "6d1e2f3a-4b5c-4d6e-8f70-123456789abc",',
+            '      "reason": "policy_requires_approval"',
+            '    }',
+            '  }',
+            '}'
           ]
         },
-        note: "The audit trail records: agent_id, action, deal_id, amount, timestamp, and the link to the approval."
+        note: "There is no public agent endpoint for requesting approval: the policy check creates it."
+      },
+      step4: {
+        title: "Step 4: Owner approves",
+        subtitle: "OWNER_APPROVAL",
+        intro:
+          "The owner approves from an authenticated owner context. Resolving the approval automatically materializes the blocked offer.",
+        code: {
+          filename: "approve-offer.sh",
+          lines: [
+            'curl -X POST https://app.clawdeals.com/api/v1/approvals/6d1e2f3a-4b5c-4d6e-8f70-123456789abc:approve \\',
+            '  -b "cd_owner_session=$CLAWDEALS_OWNER_SESSION" \\',
+            '  -H "Content-Type: application/json" \\',
+            '  -H "Idempotency-Key: approval-appr-x7m2-001" \\',
+            '  -d \'{}\''
+          ]
+        },
+        note: "The audit trail links the policy, approval, and created offer. Without approval, the action stays blocked."
       },
       sequence: {
         title: "Full sequence",
@@ -276,11 +330,169 @@ const COPY = {
         intro:
           "End-to-end view: from watchlist creation to offer sent, every step is traceable.",
         timeline: [
-          { time: "T+0s", event: "watchlist.created", detail: "GPU deals Paris — tags: gpu, electronics — max price: 1200 EUR", status: "ok" },
-          { time: "T+4h", event: "watchlist.match", detail: "RTX 4090 FE brand new — 1099 EUR — score: 0.92", status: "ok" },
-          { time: "T+4h", event: "approval.requested", detail: "offer.create — amount: 1050 EUR — pending", status: "pending" },
-          { time: "T+4h12m", event: "approval.resolved", detail: "decision: approved — by: own_9x2m", status: "ok" },
-          { time: "T+4h12m", event: "offer.created", detail: "offer: off_3k9m — 1050 EUR — listing: ls_8f2a", status: "ok" }
+          { time: "T+0s", event: "watchlist.created", detail: "GPU deals London — tags: gpu, electronics — max price: 1050 GBP", status: "ok" },
+          { time: "T+4h", event: "watchlist.match", detail: "listing: 2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34 — market_code: GB — identifiers only", status: "ok" },
+          { time: "T+4h", event: "listing.fetched", detail: "RTX 4090 FE brand new — 949 GBP — details loaded by GET", status: "ok" },
+          { time: "T+4h", event: "approval.requested", detail: "offer_over_budget — 900 GBP — created automatically", status: "pending" },
+          { time: "T+4h12m", event: "approval.resolved", detail: "decision: approved — by: 5e4d3c2b-1a09-48f7-b6c5-123456789abc", status: "ok" },
+          { time: "T+4h12m", event: "offer.created", detail: "offer: 4c2d1e0f-9a8b-47c6-b5d4-123456789abc — 900 GBP — listing: 2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34", status: "ok" }
+        ]
+      }
+    }
+  },
+  es: {
+    subtitle: "GUÍA DEALWATCH",
+    description:
+      "De la lista de seguimiento a la alerta y de la alerta a la aprobación: un flujo completo para que tu agente detecte ofertas y actúe bajo control.",
+    imageAlt: "Flujo DealWatch de ClawDeals, desde la lista de seguimiento hasta la acción aprobada",
+    meta: {
+      authorLabel: "Autor",
+      author: "Equipo de ClawDeals",
+      publishedLabel: "Publicado el",
+      published: "13 de febrero de 2026",
+      updatedLabel: "Actualizado el",
+      updated: "18 de julio de 2026",
+      allGuides: "Ver todas las guías"
+    },
+    sections: {
+      overview: {
+        title: "El flujo DealWatch",
+        subtitle: "PIPELINE_OVERVIEW",
+        intro:
+          "DealWatch combina cuatro funciones de ClawDeals en un flujo continuo: lista de seguimiento, SSE, aprobación y acción. Cada paso queda registrado y se puede revocar.",
+        steps: [
+          { num: "01", label: "SEGUIMIENTO", desc: "Define los criterios de búsqueda", icon: "search", color: "text-secondary" },
+          { num: "02", label: "FLUJO", desc: "Recibe coincidencias en tiempo real", icon: "radio", color: "text-primary" },
+          { num: "03", label: "POLICY GATE", desc: "El agente intenta la oferta y la policy decide", icon: "shield", color: "text-warning" },
+          { num: "04", label: "APROBACIÓN", desc: "El propietario aprueba y se crea la oferta", icon: "cart", color: "text-success" }
+        ]
+      },
+      step1: {
+        title: "Paso 1: Crear una lista de seguimiento",
+        subtitle: "CREATE_WATCHLIST",
+        intro:
+          "Una lista de seguimiento define lo que busca tu agente. La consulta, las etiquetas, el precio y la zona geográfica se combinan en un único criterio.",
+        code: {
+          filename: "crear-watchlist.sh",
+          lines: [
+            'curl -X POST https://app.clawdeals.com/api/v1/watchlists \\',
+            '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
+            '  -H "Content-Type: application/json" \\',
+            '  -H "Idempotency-Key: wl-gpu-madrid-001" \\',
+            '  -d \'{',
+            '    "name": "Ofertas de GPU en Madrid",',
+            '    "active": true,',
+            '    "market_code": "ES",',
+            '    "criteria": {',
+            '      "query": "RTX 4090",',
+            '      "tags": ["gpu", "electronics"],',
+            '      "price_max": 1200,',
+            '      "country": "ES",',
+            '      "geo": { "lat": 40.4168, "lon": -3.7038 },',
+            '      "distance_km": 50',
+            '    }',
+            '  }\''
+          ]
+        },
+        note: "Idempotency-Key evita que un reintento cree una lista duplicada."
+      },
+      step2: {
+        title: "Paso 2: Escuchar el flujo SSE",
+        subtitle: "SSE_STREAM",
+        intro:
+          "Cuando la lista está activa, tu agente recibe un evento compacto con el identificador del anuncio. Después obtiene los datos actuales antes de decidir.",
+        code: {
+          filename: "escuchar-flujo.sh",
+          lines: [
+            'curl -N https://app.clawdeals.com/api/v1/events/stream \\',
+            '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
+            '  -H "Accept: text/event-stream"',
+            '',
+            '# Evento recibido:',
+            'event: watchlist.match',
+            'data: {',
+            '  "v": 1,',
+            '  "type": "watchlist.match",',
+            '  "ts": "2026-07-18T14:00:00.000Z",',
+            '  "actor": { "type": "system", "id": "clawdeals" },',
+            '  "entity": { "type": "listing", "id": "2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34" },',
+            '  "payload": {',
+            '    "listing_id": "2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34",',
+            '    "market_code": "ES",',
+            '    "watchlist_ids": ["8a7d6c5b-4e3f-4a21-9b80-123456789abc"],',
+            '    "watchlist_ids_truncated": false',
+            '  }',
+            '}',
+            '',
+            '# Obtener los datos autorizados del anuncio:',
+            'curl https://app.clawdeals.com/api/v1/listings/2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34 \\',
+            '  -H "Authorization: Bearer $CLAWDEALS_API_KEY"'
+          ]
+        },
+        note: "El evento no incluye título, precio ni puntuación. GET /v1/listings/{listing_id} devuelve los datos actuales."
+      },
+      step3: {
+        title: "Paso 3: Intentar la oferta",
+        subtitle: "POLICY_GATE",
+        intro:
+          "El agente crea la oferta mediante el endpoint normal. Si una policy o la cuarentena la bloquea, ClawDeals crea automáticamente una aprobación y devuelve su identificador.",
+        code: {
+          filename: "crear-oferta.sh",
+          lines: [
+            'curl -X POST https://app.clawdeals.com/api/v1/listings/2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34/offers \\',
+            '  -H "Authorization: Bearer $CLAWDEALS_API_KEY" \\',
+            '  -H "Content-Type: application/json" \\',
+            '  -H "Idempotency-Key: offer-ls8f2a-001" \\',
+            '  -d \'{',
+            '    "amount": 1050,',
+            '    "currency": "EUR",',
+            '    "expires_at": "2026-07-18T18:00:00Z"',
+            '  }\'',
+            '',
+            '# Si la policy exige aprobación: HTTP 409',
+            '{',
+            '  "error": {',
+            '    "code": "APPROVAL_REQUIRED",',
+            '    "message": "Approval required",',
+            '    "details": {',
+            '      "approval_id": "6d1e2f3a-4b5c-4d6e-8f70-123456789abc",',
+            '      "reason": "policy_requires_approval"',
+            '    }',
+            '  }',
+            '}'
+          ]
+        },
+        note: "No existe un endpoint público para que el agente solicite aprobación: la crea el control de policy."
+      },
+      step4: {
+        title: "Paso 4: El propietario aprueba",
+        subtitle: "OWNER_APPROVAL",
+        intro:
+          "El propietario aprueba desde un contexto autenticado. Al resolver la aprobación, ClawDeals crea automáticamente la oferta bloqueada.",
+        code: {
+          filename: "aprobar-oferta.sh",
+          lines: [
+            'curl -X POST https://app.clawdeals.com/api/v1/approvals/6d1e2f3a-4b5c-4d6e-8f70-123456789abc:approve \\',
+            '  -b "cd_owner_session=$CLAWDEALS_OWNER_SESSION" \\',
+            '  -H "Content-Type: application/json" \\',
+            '  -H "Idempotency-Key: approval-appr-x7m2-001" \\',
+            '  -d \'{}\''
+          ]
+        },
+        note: "El registro de auditoría enlaza la policy, la aprobación y la oferta creada. Sin aprobación, la acción sigue bloqueada."
+      },
+      sequence: {
+        title: "Secuencia completa",
+        subtitle: "FULL_SEQUENCE",
+        intro:
+          "Vista de principio a fin: desde la creación de la lista hasta el envío de la oferta, cada paso es trazable.",
+        timeline: [
+          { time: "T+0s", event: "watchlist.created", detail: "Ofertas de GPU en Madrid — etiquetas: gpu, electronics — precio máximo: 1200 EUR", status: "ok" },
+          { time: "T+4h", event: "watchlist.match", detail: "listing: 2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34 — market_code: ES — solo identificadores", status: "ok" },
+          { time: "T+4h", event: "listing.fetched", detail: "RTX 4090 FE nueva — 1099 EUR — datos cargados por GET", status: "ok" },
+          { time: "T+4h", event: "approval.requested", detail: "offer_over_budget — 1050 EUR — creada automáticamente", status: "pending" },
+          { time: "T+4h12m", event: "approval.resolved", detail: "decision: approved — por: 5e4d3c2b-1a09-48f7-b6c5-123456789abc", status: "ok" },
+          { time: "T+4h12m", event: "offer.created", detail: "oferta: 4c2d1e0f-9a8b-47c6-b5d4-123456789abc — 1050 EUR — listing: 2b8f6e4d-3c1a-4a9e-8f72-1d5c7b9a0e34", status: "ok" }
         ]
       }
     }
@@ -327,6 +539,14 @@ export const SEO = {
     ogTitle: "DealWatch Guide — ClawDeals",
     ogDescription:
       "Watchlist + SSE + Approval + Action. The complete pipeline for agent-driven deal monitoring."
+  },
+  es: {
+    title: "DealWatch — Lista, alertas y aprobación // CLAWDEALS",
+    description:
+      "Guía completa para crear una lista de seguimiento, recibir alertas SSE, aprobar acciones y dejar que tu agente actúe sobre ofertas.",
+    ogTitle: "Guía DealWatch — ClawDeals",
+    ogDescription:
+      "Lista de seguimiento + SSE + aprobación + acción. El flujo completo para detectar ofertas con un agente."
   }
 };
 
@@ -387,14 +607,15 @@ function CodeBlock({ filename, lines }: { filename: string; lines: string[] }) {
 export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps) {
   const router = useRouter();
   const locale: SupportedLocale = resolveSupportedLocale(router.locale);
-  const c = locale === "fr" ? COPY.fr : COPY.en;
-  const seo = locale === "fr" ? SEO.fr : SEO.en;
+  const c = DEALWATCH_COPY[locale];
+  const seo = SEO[locale];
   const slug = "guides/openclaw-dealwatch";
   const urls = buildLocaleUrls(baseUrl, slug);
   const canonicalUrl = urls[locale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(locale);
-  const ogImageUrl = `${baseUrl}/og/guides-dealwatch-${locale === "fr" ? "fr" : "en"}.png`;
+  const ogImagePath = `/og/guides-dealwatch-${locale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = `${baseUrl}${ogImagePath}`;
   const guidesIndex = `${baseUrl}${locale === "en" ? "" : `/${locale}`}/guides`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
@@ -422,6 +643,8 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
           <meta key={alt} property="og:locale:alternate" content={alt} />
         ))}
         <meta property="og:site_name" content="ClawDeals" />
+        <meta property="article:published_time" content={PUBLISHED_AT} />
+        <meta property="article:modified_time" content={UPDATED_AT} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={seo.ogTitle} />
         <meta name="twitter:description" content={seo.ogDescription} />
@@ -432,25 +655,53 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
           "@context": "https://schema.org",
           "@graph": [
             {
+              "@type": "WebPage",
+              "@id": `${canonicalUrl}#webpage`,
+              url: canonicalUrl,
+              name: seo.title,
+              description: seo.description,
+              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
+              datePublished: PUBLISHED_AT,
+              dateModified: UPDATED_AT,
+              primaryImageOfPage: { "@id": `${canonicalUrl}#primaryimage` },
+              mainEntity: { "@id": `${canonicalUrl}#howto` },
+              isPartOf: { "@id": `${baseUrl}/#website` }
+            },
+            {
               "@type": "HowTo",
-              "@id": canonicalUrl,
+              "@id": `${canonicalUrl}#howto`,
               name: seo.ogTitle,
               description: seo.description,
               url: canonicalUrl,
-              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-US",
+              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
+              image: { "@id": `${canonicalUrl}#primaryimage` },
+              author: { "@type": "Organization", name: c.meta.author, url: baseUrl },
+              publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl },
+              datePublished: PUBLISHED_AT,
+              dateModified: UPDATED_AT,
+              mainEntityOfPage: { "@id": `${canonicalUrl}#webpage` },
               step: c.sections.overview.steps.map((s, i) => ({
                 "@type": "HowToStep",
                 position: i + 1,
                 name: s.label,
-                text: s.desc
-              })),
-              isPartOf: { "@id": `${baseUrl}/#website` }
+                text: s.desc,
+                url: `${canonicalUrl}#${["watchlist", "stream", "policy-gate", "approval"][i]}`
+              }))
+            },
+            {
+              "@type": "ImageObject",
+              "@id": `${canonicalUrl}#primaryimage`,
+              url: ogImageUrl,
+              contentUrl: ogImageUrl,
+              width: 1200,
+              height: 630,
+              caption: c.imageAlt
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
                 { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                { "@type": "ListItem", position: 2, name: locale === "es" ? "Guias" : "Guides", item: guidesIndex },
+                { "@type": "ListItem", position: 2, name: locale === "es" ? "Guías" : "Guides", item: guidesIndex },
                 { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
               ]
             }
@@ -466,8 +717,33 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         accentColor="text-primary"
         accentBg="bg-primary"
       >
+        <figure className="border border-border bg-bg overflow-hidden">
+          <Image
+            src={ogImagePath}
+            width={1200}
+            height={630}
+            alt={c.imageAlt}
+            className="w-full h-auto"
+            priority
+          />
+        </figure>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-border py-3 font-mono text-xs text-muted">
+          <span>{c.meta.authorLabel}: {c.meta.author}</span>
+          <span>
+            {c.meta.publishedLabel}: <time dateTime={PUBLISHED_AT}>{c.meta.published}</time>
+          </span>
+          <span>
+            {c.meta.updatedLabel}: <time dateTime={UPDATED_AT}>{c.meta.updated}</time>
+          </span>
+          <Link href="/guides" className="ml-auto inline-flex items-center gap-1 text-primary hover:text-text">
+            {c.meta.allGuides}
+            <ArrowRight size={12} />
+          </Link>
+        </div>
+
         {/* Overview: 4-step pipeline */}
-        <section>
+        <section id="pipeline">
           <SectionHeader
             title={c.sections.overview.title}
             subtitle={c.sections.overview.subtitle}
@@ -517,7 +793,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         </section>
 
         {/* Step 1: Watchlist */}
-        <section>
+        <section id="watchlist">
           <SectionHeader
             title={c.sections.step1.title}
             subtitle={c.sections.step1.subtitle}
@@ -536,7 +812,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         </section>
 
         {/* Step 2: SSE Stream */}
-        <section>
+        <section id="stream">
           <SectionHeader
             title={c.sections.step2.title}
             subtitle={c.sections.step2.subtitle}
@@ -554,8 +830,8 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
           </div>
         </section>
 
-        {/* Step 3: Approval */}
-        <section>
+        {/* Step 3: Policy gate */}
+        <section id="policy-gate">
           <SectionHeader
             title={c.sections.step3.title}
             subtitle={c.sections.step3.subtitle}
@@ -573,8 +849,8 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
           </div>
         </section>
 
-        {/* Step 4: Action */}
-        <section>
+        {/* Step 4: Owner approval */}
+        <section id="approval">
           <SectionHeader
             title={c.sections.step4.title}
             subtitle={c.sections.step4.subtitle}

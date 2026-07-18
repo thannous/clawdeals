@@ -3,14 +3,14 @@ import type { ExploreCopy } from "./types";
 
 type ExploreCopyLoader = () => Promise<{ default: ExploreCopy }>;
 
-const COPY_LOADERS: Record<"en" | "fr", ExploreCopyLoader> = {
+const COPY_LOADERS: Record<"en" | "fr" | "es", ExploreCopyLoader> = {
   en: () => import("./en"),
-  fr: () => import("./fr")
+  fr: () => import("./fr"),
+  es: () => import("./es")
 };
 
 export async function loadExploreCopy(locale: string): Promise<ExploreCopy> {
   const resolvedLocale = resolveSupportedLocale(locale);
-  const localeWithCopy = resolvedLocale === "fr" ? "fr" : "en";
-  const loadedCopyModule = await COPY_LOADERS[localeWithCopy]();
+  const loadedCopyModule = await COPY_LOADERS[resolvedLocale]();
   return loadedCopyModule.default;
 }

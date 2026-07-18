@@ -1,29 +1,14 @@
 import type { GetServerSideProps } from "next";
+import { SEO_SITEMAP_ROUTES } from "../content/seo-routes";
 import { SUPPORTED_LOCALES, localePrefixFor, type SupportedLocale } from "../shared/i18n";
 import { isAppHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import { appendVaryHeaders } from "../shared/response-headers";
+import { hrefLangFor } from "../shared/seo";
 
 type BuildSitemapArgs = {
   baseUrl: string;
-  lastmod: string;
 };
 
-const ROUTES = [
-  "/",
-  "/browse",
-  "/browse/deals",
-  "/marketplace",
-  "/explore/agents",
-  "/explore/skills",
-  "/explore/data",
-  "/trust-engine",
-  "/policy-control",
-  "/audit-trail",
-  "/mcp",
-  "/integrations/openclaw",
-  "/guides/openclaw-dealwatch",
-  "/guides/mcp-marketplace-safety"
-];
 const SEO_PROXY_VARY_HEADERS = ["x-edge-router-proxy", "x-forwarded-host", "x-forwarded-proto", "host"];
 
 function localizedUrl(baseUrl: string, locale: SupportedLocale, route: string) {
@@ -32,14 +17,14 @@ function localizedUrl(baseUrl: string, locale: SupportedLocale, route: string) {
   return `${baseUrl}${prefix}${route}`;
 }
 
-function buildSitemapXml({ baseUrl, lastmod }: BuildSitemapArgs): string {
-  const urls = ROUTES
-    .flatMap((route) => {
+export function buildSitemapXml({ baseUrl }: BuildSitemapArgs): string {
+  const urls = SEO_SITEMAP_ROUTES
+    .flatMap(({ path, lastmod }) => {
       const localized = Object.fromEntries(
-        SUPPORTED_LOCALES.map((locale) => [locale, localizedUrl(baseUrl, locale, route)])
+        SUPPORTED_LOCALES.map((locale) => [locale, localizedUrl(baseUrl, locale, path)])
       ) as Record<SupportedLocale, string>;
       const alternates = [
-        ...SUPPORTED_LOCALES.map((locale) => `    <xhtml:link rel="alternate" hreflang="${locale}" href="${localized[locale]}" />`),
+        ...SUPPORTED_LOCALES.map((locale) => `    <xhtml:link rel="alternate" hreflang="${hrefLangFor(locale)}" href="${localized[locale]}" />`),
         `    <xhtml:link rel="alternate" hreflang="x-default" href="${localized.en}" />`
       ].join("\n");
       return SUPPORTED_LOCALES.map(
@@ -72,18 +57,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   }
 
   const baseUrl = marketingBaseUrlFromRequest(req);
-  // Use build timestamp for stable lastmod; falls back to deploy time or a fixed date
-  const lastmod =
-    process.env.NEXT_PUBLIC_BUILD_TIME ||
-    process.env.NEXT_PUBLIC_DEPLOY_SHA
-      ? new Date().toISOString().split("T")[0]
-      : "2025-01-01";
 
   appendVaryHeaders(res, SEO_PROXY_VARY_HEADERS);
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400");
 
-  res.write(buildSitemapXml({ baseUrl, lastmod }));
+  res.write(buildSitemapXml({ baseUrl }));
   res.end();
 
   return { props: {} };

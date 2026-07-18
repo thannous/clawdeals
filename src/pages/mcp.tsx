@@ -24,13 +24,39 @@ export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req, lo
   };
 };
 
-const TITLE = "MCP Server — Connect Your Agent — ClawDeals";
-export const META_DESCRIPTION =
-  "Install and connect the ClawDeals MCP server via npx. Copy and paste client configuration, verify your connection, and start trading in minutes.";
+export const MCP_SEO: Record<
+  SupportedLocale,
+  { title: string; description: string; breadcrumb: string; applicationName: string }
+> = {
+  en: {
+    title: "MCP Server — Connect Your Agent — ClawDeals",
+    description:
+      "Install and connect the ClawDeals MCP server via npx. Copy and paste client configuration, verify your connection, and start trading in minutes.",
+    breadcrumb: "MCP Server",
+    applicationName: "ClawDeals MCP Server"
+  },
+  fr: {
+    title: "Serveur MCP — Connectez votre agent — ClawDeals",
+    description:
+      "Installez le serveur MCP ClawDeals avec npx, configurez votre client, vérifiez la connexion et permettez à votre agent d'agir en quelques minutes.",
+    breadcrumb: "Serveur MCP",
+    applicationName: "Serveur MCP de ClawDeals"
+  },
+  es: {
+    title: "Servidor MCP — Conecta tu agente — ClawDeals",
+    description:
+      "Instala el servidor MCP de ClawDeals con npx, configura tu cliente, verifica la conexión y permite que tu agente empiece a operar en pocos minutos.",
+    breadcrumb: "Servidor MCP",
+    applicationName: "Servidor MCP de ClawDeals"
+  }
+};
+
+export const META_DESCRIPTION = MCP_SEO.en.description;
 
 export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
   const router = useRouter();
   const locale: SupportedLocale = resolveSupportedLocale(router.locale);
+  const seo = MCP_SEO[locale];
   const urls = buildLocaleUrls(baseUrl, "mcp");
   const canonicalUrl = urls[locale];
   const hrefLangs = hrefLangTags(urls);
@@ -43,16 +69,16 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
   return (
     <>
       <Head>
-        <title>{TITLE}</title>
-        <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
+        <title>{seo.title}</title>
+        <meta name="description" content={normalizeMetaDescription(seo.description)} />
         <meta name="robots" content={robotsContent} />
         <link rel="canonical" href={canonicalUrl} />
         {hrefLangs.map((tag) => (
           <link key={tag.hrefLang} rel="alternate" hrefLang={tag.hrefLang} href={tag.href} />
         ))}
 
-        <meta property="og:title" content={TITLE} />
-        <meta property="og:description" content={META_DESCRIPTION} />
+        <meta property="og:title" content={seo.title} />
+        <meta property="og:description" content={seo.description} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content={ogImageUrl} />
@@ -66,8 +92,8 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
         <meta property="og:site_name" content="ClawDeals" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={TITLE} />
-        <meta name="twitter:description" content={META_DESCRIPTION} />
+        <meta name="twitter:title" content={seo.title} />
+        <meta name="twitter:description" content={seo.description} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
       <Script id="mcp-server-json-ld" type="application/ld+json" strategy="afterInteractive">
@@ -77,19 +103,20 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
             {
               "@type": "SoftwareApplication",
               "@id": canonicalUrl,
-              name: "ClawDeals MCP Server",
+              name: seo.applicationName,
               applicationCategory: "DeveloperApplication",
               operatingSystem: "Any",
-              description: META_DESCRIPTION,
+              description: seo.description,
               url: canonicalUrl,
-              offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
+              offers: { "@type": "Offer", price: "0", priceCurrency: locale === "en" ? "GBP" : "EUR" },
               isPartOf: { "@id": `${baseUrl}/#website` }
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
                 { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                { "@type": "ListItem", position: 2, name: "MCP Server", item: canonicalUrl }
+                { "@type": "ListItem", position: 2, name: seo.breadcrumb, item: canonicalUrl }
               ]
             }
           ]

@@ -22,6 +22,8 @@ const PLATFORM_HREFS = [
 ];
 
 const RESOURCES_HREFS = [
+  "/guides",
+  "/integrations",
   "/guides/openclaw-dealwatch",
   "/guides/mcp-marketplace-safety",
   "/integrations/openclaw",
