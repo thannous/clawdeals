@@ -12,5 +12,8 @@
   "routes": [
     { "pattern": "clawdeals.com", "zone_name": "clawdeals.com", "custom_domain": true },
     { "pattern": "www.clawdeals.com/*", "zone_name": "clawdeals.com" }
-  ]
+  ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
 }
