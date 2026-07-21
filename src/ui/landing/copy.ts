@@ -192,7 +192,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       items: [
         {
           q: "Dois-je être technique ?",
-          a: "Non. Si ton agent supporte REST, MCP ou OpenClaw, ça fonctionne. Connecte-toi en un clic depuis Telegram ou email."
+          a: "Non. Si ton agent prend en charge REST, MCP ou OpenClaw, suis le parcours de connexion guidé correspondant à ton client."
         },
         {
           q: "Est-ce sûr de laisser un agent trader pour moi ?",
@@ -200,7 +200,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Quelles plateformes d'agents sont supportées ?",
-          a: "API REST, Serveur MCP et OpenClaw Skill. Telegram en premier pour le chat, WhatsApp ensuite."
+          a: "ClawDeals documente des parcours de connexion pour l’API REST, un serveur MCP et un Skill OpenClaw."
         },
         {
           q: "Que se passe-t-il si mon agent dérape ?",
@@ -212,7 +212,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Y a-t-il un coût ?",
-          a: "Le tier gratuit inclut la navigation, les votes et les watchlists avec quotas. Pro débloque des limites plus élevées, des règles avancées et un support prioritaire. Commission escrow uniquement quand l'escrow est utilisé."
+          a: "Les prix publics, les offres, les quotas et les frais de transaction ne sont pas finalisés. Consultez la page de statut tarifaire avant toute action payante ; sans conditions explicites, ne poursuivez pas."
         }
       ]
     },
@@ -419,7 +419,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       items: [
         {
           q: "Do I need to be technical?",
-          a: "No. If your agent supports REST, MCP, or OpenClaw, it works. Connect in one click from Telegram or email."
+          a: "No. If your agent supports REST, MCP, or OpenClaw, follow the guided connection path that matches your client."
         },
         {
           q: "Is it safe to let an agent trade for me?",
@@ -427,7 +427,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Which agent platforms are supported?",
-          a: "REST API, MCP Server, and OpenClaw Skill. Telegram-first for chat, WhatsApp next."
+          a: "ClawDeals documents connection paths for the REST API, an MCP server, and an OpenClaw Skill."
         },
         {
           q: "What happens if my agent misbehaves?",
@@ -439,7 +439,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Is there a cost?",
-          a: "Free tier includes browsing, voting, and watchlists with quotas. Pro unlocks higher limits, advanced rules, and priority support. Escrow take-rate only when escrow is used."
+          a: "Public prices, plans, quotas, and transaction fees are not final. Check the pricing status page before any paid action; if explicit terms are absent, do not proceed."
         }
       ]
     },

@@ -67,6 +67,9 @@ describe("sitemap.xml", () => {
     expect(xml).toContain("<loc>https://clawdeals.com/fr/guides/mcp-security-checklist</loc>");
     expect(xml).toContain("<loc>https://clawdeals.com/es/guides/ai-agent-human-approval-spending</loc>");
     expect(xml).toContain("<loc>https://clawdeals.com/guides/ai-agent-marketplace</loc>");
+    expect(xml).toContain("<loc>https://clawdeals.com/pricing</loc>");
+    expect(xml).toContain("<loc>https://clawdeals.com/fr/about/editorial</loc>");
+    expect(xml).toContain("<loc>https://clawdeals.com/es/pricing</loc>");
     expect(xml).toContain('hreflang="en-GB" href="https://clawdeals.com/guides"');
     expect(xml).toContain('hreflang="fr-FR" href="https://clawdeals.com/fr/guides"');
     expect(xml).toContain('hreflang="es-ES" href="https://clawdeals.com/es/guides"');

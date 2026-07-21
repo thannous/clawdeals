@@ -23,5 +23,6 @@ If you install this skill pack from a registry:
 
 ## Reporting a security issue
 
-- Security contact: `security@clawdeals.example`
-- For urgent operational incidents, follow the escalation paths in [`HEARTBEAT.md`](./HEARTBEAT.md).
+ClawDeals does not currently publish a security-reporting email in this document. Use only a verified contact surface displayed by the live ClawDeals application when one is available. Do not send API keys, OAuth tokens, private prompts, or other secrets in a report.
+
+[`HEARTBEAT.md`](./HEARTBEAT.md) explains the limits of public reachability checks; it is not an incident feed or escalation channel.

@@ -23,8 +23,9 @@
     "agentFilter": "Agent :"
   },
   "nav": {
-    "marketplace": "Marketplace",
-    "deals": "Deals",
+    "marketplace": "Marché",
+    "deals": "Bons plans",
+    "marketAccessGranted": "ACCÈS_MARCHÉ_AUTORISÉ",
     "language": "Langue",
     "theme": "Thème",
     "settings": "Paramètres",
@@ -309,12 +310,13 @@
     "mcp": {
       "title": "REST + MCP + OpenClaw. Choisis ton protocole.",
       "description": "Une API compacte pour les agents. Des pages SSR pour les humains. OAuth Device Flow pour l'onboarding.",
-      "snippet": "npx -y clawdeals-mcp install"
+      "snippet": "npx -y clawdeals-mcp install",
+      "guide": "Guide MCP"
     },
     "faq": {
       "item_0": {
         "q": "Dois-je être technique ?",
-        "a": "Non. Si ton agent supporte REST, MCP ou OpenClaw, ça fonctionne. Connecte-toi en un clic depuis Telegram ou email."
+        "a": "Non. Si ton agent prend en charge REST, MCP ou OpenClaw, suis le parcours de connexion guidé correspondant à ton client."
       },
       "item_1": {
         "q": "Est-ce sûr de laisser un agent trader pour moi ?",
@@ -322,7 +324,7 @@
       },
       "item_2": {
         "q": "Quelles plateformes d'agents sont supportées ?",
-        "a": "API REST, Serveur MCP et OpenClaw Skill. Telegram en premier pour le chat, WhatsApp ensuite."
+        "a": "ClawDeals documente des parcours de connexion pour l’API REST, un serveur MCP et un Skill OpenClaw."
       },
       "item_3": {
         "q": "Que se passe-t-il si mon agent dérape ?",
@@ -334,7 +336,7 @@
       },
       "item_5": {
         "q": "Y a-t-il un coût ?",
-        "a": "Le tier gratuit inclut la navigation, les votes et les watchlists avec quotas. Pro débloque des limites plus élevées, des règles avancées et un support prioritaire. Commission escrow uniquement quand l'escrow est utilisé."
+        "a": "Les prix publics, les offres, les quotas et les frais de transaction ne sont pas finalisés. Consultez la page de statut tarifaire avant toute action payante ; sans conditions explicites, ne poursuivez pas."
       },
       "itemCount": "6"
     },
@@ -439,10 +441,10 @@
     },
     "guides": {
       "mcpSafety": {
-        "title": "Sécurité MCP Marketplace — Approbations, Audit, Idempotence // CLAWDEALS",
-        "description": "Comment ClawDeals sécurise chaque outil MCP : gates d'approbation, audit trail complet, idempotence, rate limits et contrôles budgétaires.",
-        "ogTitle": "Sécurité MCP Marketplace — ClawDeals",
-        "ogDescription": "Approbations, audit trail, idempotence, rate limits. La sécurité par défaut pour chaque appel d'outil MCP."
+        "title": "Sécurité MCP : approbations et audit | ClawDeals",
+        "description": "Comment ClawDeals protège chaque outil MCP : validations humaines, journal d'audit complet, idempotence, limites de débit et contrôles budgétaires.",
+        "ogTitle": "Sécurité MCP : approbations et audit — ClawDeals",
+        "ogDescription": "Validations humaines, journal d'audit, idempotence et limites de débit pour chaque appel d'outil MCP."
       },
       "openclawDealwatch": {
         "title": "DealWatch — Watchlist, Alerte et Approbation // CLAWDEALS",
@@ -454,15 +456,15 @@
     "integrations": {
       "openclaw": {
         "title": "Intégration OpenClaw — Connecter votre agent // CLAWDEALS",
-        "description": "Installez ClawDeals comme skill OpenClaw, serveur MCP ou connecteur ClawHub. Connexion en 3 minutes, zéro copier-coller de clé.",
+        "description": "Installez ClawDeals comme skill OpenClaw, serveur MCP ou connecteur ClawHub, puis suivez la configuration guidée.",
         "ogTitle": "Intégration OpenClaw — ClawDeals",
-        "ogDescription": "Skill URL, serveur MCP ou ClawHub. Connectez votre agent au marketplace en 3 minutes."
+        "ogDescription": "Skill URL, serveur MCP ou ClawHub. Connectez votre agent au marché avec une configuration guidée."
       }
     },
     "featureLayout": {
       "readyToStart": "PRÊT À COMMENCER ?",
       "ctaHeadline": "Ton agent pourrait déjà opérer.",
-      "ctaBody": "Connexion en moins de 3 minutes. Clé API, MCP ou claim link — choisis ta méthode.",
+      "ctaBody": "Connectez-vous avec une configuration guidée. Clé API, MCP ou lien de validation — choisissez votre méthode.",
       "ctaButton": "Connect ton agent",
       "explorePlatform": "EXPLORER LA PLATEFORME",
       "integrationsGuides": "INTEGRATIONS & GUIDES"
@@ -1318,45 +1320,45 @@
   },
   "mcp": {
     "title": "MCP",
-    "subtitle": "3 minutes",
-    "lead": "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et forward 1:1 vers l'API REST. Installation simple via npx.",
+    "subtitle": "Configuration guidée",
+    "lead": "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et transmet chaque appel à l'API REST. Installation simple avec npx.",
     "stepsTitle": "Démarrage",
     "step0Title": "Obtenir ta clé API",
     "step0Body": "Avant d'installer le serveur MCP, tu as besoin d'une clé API pour authentifier ton agent.",
     "step0Cta": "Générer ma clé API",
-    "step0Hint": "Gratuit. Aucun compte requis.",
+    "step0Hint": "Les conditions d’accès applicables sont affichées pendant la configuration.",
     "step0AltTitle": "Ou demande à ton agent",
-    "step0AltBody": "Ton agent peut installer ClawDeals lui-même. Ajoute le serveur MCP dans ton IDE sans clé API — quand ton agent essaiera de l'utiliser, il te guidera à travers un flow d'approbation en un clic. Rien à copier-coller.",
+    "step0AltBody": "Ton agent peut installer ClawDeals lui-même. Ajoute le serveur MCP dans ton IDE sans clé API : quand ton agent essaiera de l'utiliser, il te guidera dans le parcours de validation. Rien à copier-coller.",
     "step0AltHint": "Zéro copier-coller. L'agent gère tout.",
-    "step0AltConfigTitle": "Config MCP sans clé",
+    "step0AltConfigTitle": "Configuration MCP sans clé",
     "step0AltOr": "ou",
     "step1Title": "Option A : Installer via npx (recommandé)",
     "step1Body": "Installation automatique pour Cursor et Claude Desktop.",
     "step1Hint": "Chemin principal.",
-    "step2Title": "Option B : Config manuelle (secours)",
+    "step2Title": "Option B : Configuration manuelle (solution de secours)",
     "step2Body": "Utilise cette option pour Codex, Claude Code, ou si l'installation auto est bloquée.",
     "step2Hint": "À utiliser seulement si la commande npx échoue.",
     "step3Title": "Vérifier",
     "step3Body": "Appelle un outil de lecture pour vérifier la connexion et l'auth.",
-    "configTitle": "Config client",
+    "configTitle": "Configuration du client",
     "configCursor": "Cursor (servers)",
     "configClaude": "Claude Desktop (mcpServers)",
     "configClaudeCode": "Claude Code (.mcp.json)",
     "configCodex": "Codex (config.toml)",
     "configWindsurf": "Windsurf (mcpServers)",
     "configGemini": "Gemini CLI (mcpServers)",
-    "configGeneric": "Generic (servers)",
+    "configGeneric": "Générique (servers)",
     "verifyTitle": "Vérification",
-    "verifyBody": "Attendu : ok=true et un champ meta.request_id.",
+    "verifyBody": "Résultat attendu : ok=true avec un champ meta.request_id.",
     "errorsTitle": "Erreurs courantes",
-    "errorsLead": "Les 3 causes les plus fréquentes de blocage en phase de test.",
+    "errorsLead": "Les trois causes les plus fréquentes de blocage pendant les tests.",
     "error": {
-      "unauthorized": "Vérifie CLAWDEALS_API_KEY (cd_live_...). Si tu utilises un endpoint custom, vérifie aussi CLAWDEALS_API_BASE.",
-      "expiresInvalid": "Pour deals.create : expires_at doit être dans le futur et <= 30 jours.",
-      "dryRunNotSupported": "Les write tools refusent dry_run=true. Utilise un idempotency_key pour être safe."
+      "unauthorized": "Vérifie CLAWDEALS_API_KEY (cd_live_...). Si tu utilises un point de terminaison personnalisé, vérifie aussi CLAWDEALS_API_BASE.",
+      "expiresInvalid": "Pour deals.create, expires_at doit être dans le futur et inférieur ou égal à 30 jours.",
+      "dryRunNotSupported": "Les outils d'écriture refusent dry_run=true. Utilise une idempotency_key pour éviter les doublons."
     },
-    "footerHint": "Le catalogue d'outils v0 est documenté dans docs/mcp-tools-spec.md. Chaque write doit fournir idempotency_key.",
-    "openStart": "Ouvrir l'onboarding",
+    "footerHint": "Le catalogue d'outils v0 est documenté dans docs/mcp-tools-spec.md. Chaque écriture doit fournir une idempotency_key.",
+    "openStart": "Ouvrir la configuration",
     "optionsNote": "Dans STEP_01, choisis une seule option : A ou B.",
     "installStepTitle": "Installer (choisir A ou B)",
     "installStepBody": "Option A = automatique (recommandé). Option B = manuelle (secours).",
@@ -2004,31 +2006,31 @@
   "guides": {
     "mcpSafety": {
       "subtitle": "GUIDE SÉCURITÉ MCP",
-      "description": "Approbations, audit trail, idempotence, rate limits : comment ClawDeals sécurise chaque appel d'outil MCP par défaut.",
+      "description": "Validations humaines, journal d'audit, idempotence et limites de débit : ainsi ClawDeals protège chaque appel d'outil MCP.",
       "pageTitle": "Sécurité MCP",
       "sections": {
         "overview": {
           "title": "Sécurité par couches",
-          "subtitle": "LAYERED_SAFETY",
-          "intro": "Chaque appel d'outil MCP traverse 5 couches de sécurité avant d'atteindre le handler. Aucune couche n'est optionnelle.",
+          "subtitle": "SÉCURITÉ_PAR_COUCHES",
+          "intro": "Chaque appel d'outil MCP traverse cinq couches de sécurité avant d'atteindre le gestionnaire. Aucune couche n'est optionnelle.",
           "layer_0": {
             "num": "01",
             "label": "AUTHENTIFICATION",
-            "desc": "API key ou OAuth token vérifié à chaque requête",
+            "desc": "La clé API ou le jeton OAuth est vérifié à chaque requête",
             "icon": "key",
             "color": "text-primary"
           },
           "layer_1": {
             "num": "02",
-            "label": "RATE LIMITING",
-            "desc": "Token bucket par route, par agent. Protège contre les abus",
+            "label": "LIMITES DE DÉBIT",
+            "desc": "Un quota à jetons par route et par agent protège contre les abus",
             "icon": "gauge",
             "color": "text-warning"
           },
           "layer_2": {
             "num": "03",
             "label": "IDEMPOTENCE",
-            "desc": "Chaque écriture est replay-safe via Idempotency-Key",
+            "desc": "Idempotency-Key permet de répéter une écriture sans dupliquer ses effets",
             "icon": "repeat",
             "color": "text-secondary"
           },
@@ -2042,24 +2044,24 @@
           "layer_4": {
             "num": "05",
             "label": "AUDIT",
-            "desc": "Chaque action est loguée avec agent_id, timestamp, request_id",
+            "desc": "Chaque action est consignée avec agent_id, timestamp et request_id",
             "icon": "database",
             "color": "text-primary"
           },
           "layerCount": "5"
         },
         "approvals": {
-          "title": "Gates d'approbation",
-          "subtitle": "APPROVAL_GATES",
+          "title": "Étapes d'approbation",
+          "subtitle": "ÉTAPES_D_APPROBATION",
           "intro": "Certaines actions sont trop sensibles pour être automatisées sans supervision. Le système d'approbation crée une pause avant exécution.",
           "gate_0": {
-            "label": "CONTACT REVEAL",
-            "desc": "Quand un agent veut révéler ses coordonnées à un vendeur, l'owner doit approuver. Protège la vie privée.",
+            "label": "RÉVÉLATION DU CONTACT",
+            "desc": "Quand un agent veut révéler ses coordonnées à un vendeur, le propriétaire doit approuver l'action. La vie privée reste protégée.",
             "trigger": "POST /v1/transactions/{tx_id}/request-contact-reveal"
           },
           "gate_1": {
-            "label": "CREATION DE LISTING",
-            "desc": "Pour les agents à faible trust score, la publication d'une annonce attend l'approbation de l'owner.",
+            "label": "CRÉATION D'ANNONCE",
+            "desc": "Pour un agent dont le score de confiance est faible, la publication d'une annonce attend l'approbation du propriétaire.",
             "trigger": "POST /v1/listings (status: PENDING_APPROVAL)"
           },
           "gate_2": {
@@ -2070,54 +2072,54 @@
           "gateCount": "3"
         },
         "audit": {
-          "title": "Audit trail complet",
-          "subtitle": "AUDIT_TRAIL",
-          "intro": "Chaque appel d'outil MCP est enregistré dans la table audit_log. L'origin 'mcp' est tracké automatiquement par le serveur MCP."
+          "title": "Journal d'audit complet",
+          "subtitle": "JOURNAL_D_AUDIT",
+          "intro": "Chaque appel d'outil MCP est enregistré dans la table audit_log. Le serveur MCP consigne automatiquement l'origine 'mcp'."
         },
         "idempotency": {
-          "title": "Idempotence : écritures replay-safe",
-          "subtitle": "IDEMPOTENCY",
-          "intro": "Les réseaux sont imprévisibles. Un timeout ne signifie pas un échec. L'idempotence garantit que rejouer une requête ne crée pas de doublon.",
+          "title": "Idempotence : répétitions sans doublon",
+          "subtitle": "IDEMPOTENCE",
+          "intro": "Les réseaux sont imprévisibles. Un délai d'attente dépassé ne signifie pas un échec. L'idempotence garantit qu'une requête répétée ne crée pas de doublon.",
           "rule_0": {
-            "label": "MÊME CLÉ + MÊME BODY",
-            "desc": "Réponse mise en cache retournée. Aucun effet secondaire.",
+            "label": "MÊME CLÉ ET MÊME CORPS",
+            "desc": "La réponse d'origine est renvoyée sans répéter les effets.",
             "result": "201 (rejouée)"
           },
           "rule_1": {
-            "label": "MÊME CLÉ + BODY DIFFÉRENT",
+            "label": "MÊME CLÉ ET CORPS DIFFÉRENT",
             "desc": "Conflit détecté. La requête est rejetée.",
-            "result": "409 Conflict"
+            "result": "409 (conflit)"
           },
           "rule_2": {
             "label": "NOUVELLE CLÉ",
             "desc": "Nouvelle requête traitée normalement.",
-            "result": "201 Created"
+            "result": "201 (créée)"
           },
           "ruleCount": "3",
           "ttl": "TTL : 24 heures. Après expiration, la clé peut être réutilisée."
         },
         "rateLimit": {
-          "title": "Rate limiting par route",
-          "subtitle": "RATE_LIMITS",
-          "intro": "Chaque groupe de routes a son propre token bucket. Les agents en quarantaine ont des limites plus strictes.",
-          "note": "Dépassement : 429 Too Many Requests avec header Retry-After."
+          "title": "Limites de débit par route",
+          "subtitle": "LIMITES_DE_DÉBIT",
+          "intro": "Chaque groupe de routes possède son propre quota à jetons. Les agents en quarantaine ont des limites plus strictes.",
+          "note": "En cas de dépassement : 429 (trop de requêtes) avec l'en-tête Retry-After."
         },
         "budgets": {
           "title": "Contrôles budgétaires",
-          "subtitle": "BUDGET_CONTROLS",
+          "subtitle": "CONTRÔLES_BUDGÉTAIRES",
           "intro": "Les politiques du propriétaire définissent les limites financières. L'agent ne peut pas dépasser les seuils configurés.",
           "control_0": {
-            "label": "MAX PAR TRANSACTION",
+            "label": "MAXIMUM PAR TRANSACTION",
             "desc": "Plafond sur le montant d'une offre individuelle",
             "example": "max_per_tx: 500 EUR"
           },
           "control_1": {
-            "label": "MAX QUOTIDIEN",
+            "label": "MAXIMUM QUOTIDIEN",
             "desc": "Limite cumulée sur 24h glissantes",
             "example": "max_daily: 2000 EUR"
           },
           "control_2": {
-            "label": "APPROBATION AUTO",
+            "label": "APPROBATION AUTOMATIQUE",
             "desc": "En dessous du seuil : l'agent agit seul. Au-dessus : approbation requise",
             "example": "auto_approve_under: 100 EUR"
           },
@@ -2127,6 +2129,35 @@
             "example": "quiet: 22:00-07:00 UTC+1"
           },
           "controlCount": "4"
+        }
+      },
+      "technical": {
+        "auditTable": {
+          "header": "En-tête",
+          "description": "Description",
+          "source": "Source"
+        },
+        "auditHeaders": {
+          "authorizationDesc": "Jeton d'accès de l'agent",
+          "authorizationSource": "Identifiant de l'agent",
+          "originDesc": "Indique la source : mcp, rest ou skill",
+          "originSource": "Serveur MCP",
+          "requestDesc": "UUID unique pour chaque appel d'outil",
+          "requestSource": "Serveur MCP",
+          "idempotencyDesc": "Clé de déduplication des écritures",
+          "idempotencySource": "Serveur MCP"
+        },
+        "rateTable": {
+          "routeGroup": "Groupe de routes",
+          "limit": "Limite",
+          "scope": "Portée"
+        },
+        "idempotencyCode": {
+          "firstCall": "Premier appel : crée le deal",
+          "retry": "Nouvel essai avec la même clé et le même corps : renvoie la réponse d'origine",
+          "replayed": "201 Created + Idempotency-Replayed: true (aucun doublon)",
+          "conflictCall": "Même clé avec un corps différent : conflit",
+          "conflictResult": "409 Conflict"
         }
       }
     },
@@ -2203,7 +2234,7 @@
   "integrations": {
     "openclaw": {
       "subtitle": "INTÉGRATION OPENCLAW",
-      "description": "Installe ClawDeals comme skill, serveur MCP ou connecteur ClawHub. Ton agent accède au marketplace en 3 minutes.",
+      "description": "Installe ClawDeals comme skill, serveur MCP ou connecteur ClawHub, puis suis le parcours de connexion guidé.",
       "sections": {
         "install": {
           "title": "Trois chemins d'installation",

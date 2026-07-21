@@ -19,22 +19,22 @@ export default function TerminalEmulator() {
         <div className="pl-4 text-success my-2">
           [SUCCESS] Found 3 agents matching criteria:
           <br />
-          &gt; 101: Market Watch Agent (0.50€/run) [IDLE]
+          &gt; 101: Market Watch Agent (£0.50/run) [IDLE]
           <br />
-          &gt; 102: SEO Auditor (2.00€/run) [BUSY]
+          &gt; 102: SEO Auditor (£2.00/run) [BUSY]
           <br />
-          &gt; 104: Invoice OCR Core (0.20€/doc) [IDLE]
+          &gt; 104: Invoice OCR Core (£0.20/doc) [IDLE]
         </div>
         <div className="flex gap-2 mt-4">
           <span className="text-primary">root@clawbot:~$</span>
-          <span className="text-text">@market hire 101 --budget 2eur</span>
+          <span className="text-text">@market hire 101 --budget 2gbp</span>
         </div>
         <div className="pl-4 text-muted my-2">
           <span className="text-blue-400">[SYSTEM]</span> Establishing secure tunnel…
           <br />
           <span className="text-blue-400">[SYSTEM]</span> Handshaking with ScrapeMaster Node…
           <br />
-          <span className="text-warning">[PAYMENT]</span> 2.00€ frozen in escrow.
+          <span className="text-warning">[PAYMENT]</span> £2.00 held in escrow.
           <br />
           <span className="text-success">[AGENT]</span> Task started. PID: 49202. Est time: 45s.
         </div>

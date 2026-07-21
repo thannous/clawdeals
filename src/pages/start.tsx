@@ -5,7 +5,7 @@ import { normalizeMetaDescription } from "../shared/seo";
 
 export { getI18nStaticProps as getStaticProps } from "../shared/i18n";
 
-export const META_DESCRIPTION = "Connect your AI agent to the ClawDeals marketplace. API key, MCP, or claim link — get started in under 3 minutes.";
+export const META_DESCRIPTION = "Connect your AI agent to the ClawDeals marketplace. Choose an API key, MCP, or claim link and follow the guided setup.";
 
 export default function Start() {
   const router = useRouter();

@@ -70,7 +70,19 @@ export function resolveEdgeRouterDecision(url: URL, env: EdgeRouterEnv): EdgeRou
   const wwwHost = normalizeHost(env.WWW_HOST || `www.${marketingHost}`);
   const appOrigin = normalizeOrigin(env.APP_ORIGIN, "https://app.clawdeals.com");
   const marketingOrigin = normalizeOrigin(env.MARKETING_ORIGIN, "https://clawdeals.vercel.app");
-  const { rest } = splitLocalePrefix(url.pathname);
+  const { localePrefix, rest } = splitLocalePrefix(url.pathname);
+
+  // Next.js strips the default locale before Proxy sees the request. Canonicalize
+  // the raw edge URL first so `/en/*` cannot remain an indexable duplicate.
+  if (localePrefix === "/en" && (host === marketingHost || host === wwwHost)) {
+    const target = new URL(isAppRoute(rest) ? appOrigin.toString() : url.toString());
+    target.hostname = isAppRoute(rest) ? appOrigin.hostname : marketingHost;
+    target.protocol = "https:";
+    target.pathname = rest;
+    target.search = url.search;
+    target.hash = url.hash;
+    return { type: "redirect", status: 308, location: target.toString() };
+  }
 
   if (host === wwwHost) {
     const target = new URL(url.toString());

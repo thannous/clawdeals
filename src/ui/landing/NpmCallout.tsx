@@ -21,7 +21,7 @@ export default function NpmCallout() {
               href="/mcp"
               className="h-10 px-5 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest inline-flex items-center"
             >
-              MCP Guide
+              {t("mcp.guide")}
             </MarketingLink>
           </div>
         </div>

@@ -1,7 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import { useRouter } from "next/router";
 import { resolveSupportedLocale, type SupportedLocale, withMessages } from "../../shared/i18n";
 import {
@@ -15,6 +14,9 @@ import {
   ShoppingCart
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
+import { JsonLd } from "../../ui/guides/SeoGuidePage";
+import GuideEvidenceSections from "../../ui/guides/GuideEvidenceSections";
+import { getLegacyGuideEnhancement } from "../../content/legacy-guide-enhancements";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
@@ -33,7 +35,7 @@ export const DEALWATCH_COPY = {
     imageAlt: "Pipeline DealWatch de ClawDeals, de la watchlist à l'action approuvée",
     meta: {
       authorLabel: "Auteur",
-      author: "Équipe ClawDeals",
+      author: "Équipe éditoriale ClawDeals",
       publishedLabel: "Publié le",
       published: "13 février 2026",
       updatedLabel: "Mis à jour le",
@@ -190,7 +192,7 @@ export const DEALWATCH_COPY = {
     imageAlt: "ClawDeals DealWatch pipeline from watchlist to approved action",
     meta: {
       authorLabel: "Author",
-      author: "ClawDeals team",
+      author: "ClawDeals Editorial Team",
       publishedLabel: "Published",
       published: "13 February 2026",
       updatedLabel: "Updated",
@@ -347,7 +349,7 @@ export const DEALWATCH_COPY = {
     imageAlt: "Flujo DealWatch de ClawDeals, desde la lista de seguimiento hasta la acción aprobada",
     meta: {
       authorLabel: "Autor",
-      author: "Equipo de ClawDeals",
+      author: "Equipo editorial de ClawDeals",
       publishedLabel: "Publicado el",
       published: "13 de febrero de 2026",
       updatedLabel: "Actualizado el",
@@ -608,15 +610,17 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
   const router = useRouter();
   const locale: SupportedLocale = resolveSupportedLocale(router.locale);
   const c = DEALWATCH_COPY[locale];
+  const enhancement = getLegacyGuideEnhancement("openclaw-dealwatch", locale);
   const seo = SEO[locale];
   const slug = "guides/openclaw-dealwatch";
   const urls = buildLocaleUrls(baseUrl, slug);
   const canonicalUrl = urls[locale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(locale);
-  const ogImagePath = `/og/guides-dealwatch-${locale === "fr" ? "fr" : "en"}.png`;
+  const ogImagePath = locale === "es" ? "/og/es.png" : `/og/guides-dealwatch-${locale}.png`;
   const ogImageUrl = `${baseUrl}${ogImagePath}`;
   const guidesIndex = `${baseUrl}${locale === "en" ? "" : `/${locale}`}/guides`;
+  const editorialUrl = buildLocaleUrls(baseUrl, "about/editorial")[locale];
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -650,8 +654,9 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         <meta name="twitter:description" content={seo.ogDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
-      <Script id="guide-openclaw-dealwatch-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="guide-openclaw-dealwatch-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -675,7 +680,12 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
               url: canonicalUrl,
               inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
               image: { "@id": `${canonicalUrl}#primaryimage` },
-              author: { "@type": "Organization", name: c.meta.author, url: baseUrl },
+              author: {
+                "@type": "Organization",
+                "@id": `${editorialUrl}#team`,
+                name: "ClawDeals Editorial Team",
+                url: editorialUrl
+              },
               publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl },
               datePublished: PUBLISHED_AT,
               dateModified: UPDATED_AT,
@@ -704,10 +714,22 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
                 { "@type": "ListItem", position: 2, name: locale === "es" ? "Guías" : "Guides", item: guidesIndex },
                 { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
               ]
+            },
+            {
+              "@type": "FAQPage",
+              "@id": `${canonicalUrl}#faq`,
+              url: `${canonicalUrl}#faq`,
+              inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
+              isPartOf: { "@id": canonicalUrl },
+              mainEntity: enhancement.faqs.map((faq) => ({
+                "@type": "Question",
+                name: faq.question,
+                acceptedAnswer: { "@type": "Answer", text: faq.answer }
+              }))
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
 
       <FeaturePageLayout
         title="DealWatch"
@@ -716,6 +738,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         icon={<Eye size={20} />}
         accentColor="text-primary"
         accentBg="bg-primary"
+        contentAs="article"
       >
         <figure className="border border-border bg-bg overflow-hidden">
           <Image
@@ -729,7 +752,12 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
         </figure>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-border py-3 font-mono text-xs text-muted">
-          <span>{c.meta.authorLabel}: {c.meta.author}</span>
+          <span>
+            {c.meta.authorLabel}:{" "}
+            <Link href="/about/editorial" className="underline decoration-border-strong underline-offset-4 hover:text-primary">
+              {c.meta.author}
+            </Link>
+          </span>
           <span>
             {c.meta.publishedLabel}: <time dateTime={PUBLISHED_AT}>{c.meta.published}</time>
           </span>
@@ -913,6 +941,8 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
             </div>
           </div>
         </section>
+
+        <GuideEvidenceSections enhancement={enhancement} />
       </FeaturePageLayout>
     </>
   );

@@ -1,0 +1,10 @@
+ClawDeals pricing status
+Last reviewed: 2026-07-18
+
+Public prices, plan definitions, usage quotas, billing intervals, and transaction fee rates are not final.
+
+Do not infer a price, quota, discount, billing commitment, or fee from marketing copy or older documentation. Before a paid action, verify the exact amount, currency, scope, and billing interval displayed by the live ClawDeals application and require human approval. If explicit terms are absent, treat the price as unavailable and do not proceed.
+
+Human-readable status: https://clawdeals.com/pricing
+Markdown status: https://clawdeals.com/pricing.md
+Policy manifest: https://clawdeals.com/policies.md

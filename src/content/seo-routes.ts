@@ -19,7 +19,9 @@ const STATIC_SEO_ROUTES: readonly SeoSitemapRoute[] = [
   { path: "/mcp", lastmod: "2026-07-18" },
   { path: "/integrations", lastmod: "2026-07-18" },
   { path: "/integrations/openclaw", lastmod: "2026-07-18" },
-  { path: "/guides", lastmod: "2026-07-18" }
+  { path: "/guides", lastmod: "2026-07-18" },
+  { path: "/pricing", lastmod: "2026-07-18" },
+  { path: "/about/editorial", lastmod: "2026-07-18" }
 ];
 
 export const SEO_SITEMAP_ROUTES: readonly SeoSitemapRoute[] = [

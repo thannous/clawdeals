@@ -191,7 +191,7 @@ export default function ExploreTab({
   const canonicalUrl = urls[currentLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(currentLocale);
-  const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
   const exploreIndexUrl = `${baseUrl}${localePrefixFor(currentLocale)}/explore`;
   const exploreBreadcrumb = currentLocale === "es" ? "Explorar" : currentLocale === "fr" ? "Explorer" : "Explore";
   const robotsContent = isPreviewHost

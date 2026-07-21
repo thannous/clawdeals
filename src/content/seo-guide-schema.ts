@@ -1,6 +1,7 @@
 import { getSeoGuide, type GuideSlug } from "./seo-guides";
 import type { SupportedLocale } from "../shared/i18n";
 import { buildLocaleUrls } from "../shared/seo";
+import { getSeoGuideEnhancement } from "./seo-guide-enhancements";
 
 const GUIDE_LABELS: Record<SupportedLocale, string> = {
   en: "Guides",
@@ -25,8 +26,10 @@ export function buildSeoGuideStructuredData({
 }) {
   const guide = getSeoGuide(slug);
   const content = guide.content[locale];
+  const enhancement = getSeoGuideEnhancement(slug, locale);
   const canonicalUrl = buildLocaleUrls(baseUrl, `guides/${slug}`)[locale];
   const guidesUrl = buildLocaleUrls(baseUrl, "guides")[locale];
+  const editorialUrl = buildLocaleUrls(baseUrl, "about/editorial")[locale];
   const ogImageUrl = `${baseUrl}/og/${locale}.png`;
   const schemaSteps = guide.schemaType === "HowTo"
     ? content.sections.map((section, index) => ({
@@ -52,7 +55,12 @@ export function buildSeoGuideStructuredData({
         image: ogImageUrl,
         datePublished: guide.publishedAt,
         dateModified: guide.updatedAt,
-        author: { "@type": "Organization", name: "ClawDeals", url: baseUrl },
+        author: {
+          "@type": "Organization",
+          "@id": `${editorialUrl}#team`,
+          name: "ClawDeals Editorial Team",
+          url: editorialUrl
+        },
         publisher: {
           "@type": "Organization",
           name: "ClawDeals",
@@ -71,6 +79,21 @@ export function buildSeoGuideStructuredData({
           { "@type": "ListItem", position: 2, name: GUIDE_LABELS[locale], item: guidesUrl },
           { "@type": "ListItem", position: 3, name: content.title, item: canonicalUrl }
         ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${canonicalUrl}#faq`,
+        url: `${canonicalUrl}#faq`,
+        inLanguage: languageTag(locale),
+        isPartOf: { "@id": canonicalUrl },
+        mainEntity: enhancement.faqs.map((faq) => ({
+          "@type": "Question",
+          name: faq.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.answer
+          }
+        }))
       }
     ]
   };

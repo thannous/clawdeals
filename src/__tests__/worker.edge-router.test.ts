@@ -6,6 +6,22 @@ describe("worker edge router", () => {
     vi.restoreAllMocks();
   });
 
+  it("permanently redirects a non-canonical English marketing URL before proxying", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const response = await edgeRouterWorker.fetch(
+      new Request("https://clawdeals.com/en/guides?topic=mcp"),
+      {
+        APP_ORIGIN: "https://app.clawdeals.com",
+        MARKETING_ORIGIN: "https://clawdeals.vercel.app",
+        MARKETING_HOST: "clawdeals.com"
+      }
+    );
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe("https://clawdeals.com/guides?topic=mcp");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("serves marketing robots.txt directly without upstream fetch", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const request = new Request("https://clawdeals.com/robots.txt");

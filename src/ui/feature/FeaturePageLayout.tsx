@@ -15,7 +15,14 @@ type FeaturePageLayoutProps = {
   icon: React.ReactNode;
   accentColor: string;
   accentBg: string;
+  contentAs?: "div" | "article";
   children: React.ReactNode;
+};
+
+const TRUST_PAGE_LABELS: Record<SupportedLocale, { pricing: string; editorial: string }> = {
+  en: { pricing: "Pricing status", editorial: "Editorial standards" },
+  fr: { pricing: "Statut des tarifs", editorial: "Normes éditoriales" },
+  es: { pricing: "Estado de precios", editorial: "Normas editoriales" }
 };
 
 export default function FeaturePageLayout({
@@ -25,6 +32,7 @@ export default function FeaturePageLayout({
   icon,
   accentColor,
   accentBg,
+  contentAs = "div",
   children
 }: FeaturePageLayoutProps) {
   const router = useRouter();
@@ -33,17 +41,12 @@ export default function FeaturePageLayout({
   const detected = router.locale ?? "en";
   const locale: SupportedLocale = (detected === "fr" || detected === "es") ? detected : "en";
   const localePrefix = localePrefixFor(locale);
+  const trustPageLabels = TRUST_PAGE_LABELS[locale];
   // `router.pathname` is stable across locales and ignores query/hash.
   const activePath = router.pathname;
 
-  return (
-    <div className="min-h-screen bg-bg text-text">
-      <NavbarCurrent
-        themeId={themeId}
-        setTheme={setTheme}
-        themes={themes}
-      />
-
+  const pageContent = (
+    <>
       {/* Hero */}
       <div className="relative pt-28 pb-16 px-6 border-b border-border bg-surface overflow-hidden">
         <div className="animate-scanline" />
@@ -76,27 +79,41 @@ export default function FeaturePageLayout({
       <div className="max-w-[960px] mx-auto px-6 py-16 space-y-20">
         {children}
       </div>
+    </>
+  );
 
-      {/* Connect CTA */}
-      <div className="border-t border-border bg-bg">
-        <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
-          <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
-            {t("featureLayout.readyToStart")}
+  return (
+    <div className="min-h-screen bg-bg text-text">
+      <NavbarCurrent
+        themeId={themeId}
+        setTheme={setTheme}
+        themes={themes}
+      />
+
+      <main id="main-content" tabIndex={-1}>
+        {contentAs === "article" ? <article>{pageContent}</article> : pageContent}
+
+        {/* Connect CTA */}
+        <div className="border-t border-border bg-bg">
+          <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
+            <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
+              {t("featureLayout.readyToStart")}
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
+              {t("featureLayout.ctaHeadline")}
+            </h2>
+            <p className="text-sm text-muted font-mono max-w-lg mb-8">
+              {t("featureLayout.ctaBody")}
+            </p>
+            <MarketingLink
+              href={getPublicAppEntryHref(localePrefix)}
+              className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+            >
+              {t("featureLayout.ctaButton")}
+            </MarketingLink>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
-            {t("featureLayout.ctaHeadline")}
-          </h2>
-          <p className="text-sm text-muted font-mono max-w-lg mb-8">
-            {t("featureLayout.ctaBody")}
-          </p>
-          <MarketingLink
-            href={getPublicAppEntryHref(localePrefix)}
-            className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
-          >
-            {t("featureLayout.ctaButton")}
-          </MarketingLink>
         </div>
-      </div>
+      </main>
 
       {/* Footer nav */}
       <div className="border-t border-border bg-surface">
@@ -175,6 +192,26 @@ export default function FeaturePageLayout({
               }`}
             >
               MCP Safety
+            </MarketingLink>
+            <MarketingLink
+              href="/pricing"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/pricing"
+                  ? "border-warning bg-warning/10 text-warning"
+                  : "border-border text-muted hover:border-warning hover:text-warning"
+              }`}
+            >
+              {trustPageLabels.pricing}
+            </MarketingLink>
+            <MarketingLink
+              href="/about/editorial"
+              className={`px-6 py-3 font-bold uppercase tracking-wider text-xs border transition-colors ${
+                activePath === "/about/editorial"
+                  ? "border-secondary bg-secondary/10 text-secondary"
+                  : "border-border text-muted hover:border-secondary hover:text-secondary"
+              }`}
+            >
+              {trustPageLabels.editorial}
             </MarketingLink>
           </div>
         </div>

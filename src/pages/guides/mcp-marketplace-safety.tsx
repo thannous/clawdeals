@@ -1,5 +1,4 @@
 import Head from "next/head";
-import Script from "next/script";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import {
@@ -15,6 +14,9 @@ import {
   Timer
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
+import { JsonLd } from "../../ui/guides/SeoGuidePage";
+import GuideEvidenceSections from "../../ui/guides/GuideEvidenceSections";
+import { getLegacyGuideEnhancement } from "../../content/legacy-guide-enhancements";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { withMessages } from "../../shared/i18n";
 import type { SupportedLocale } from "../../shared/i18n";
@@ -85,13 +87,6 @@ const APPROVAL_CODE = {
   ]
 };
 
-const AUDIT_HEADERS = [
-  { header: "Authorization", desc: "Agent bearer token", source: "Agent credential" },
-  { header: "x-clawdeals-origin", desc: "Identifies source: mcp, rest, skill", source: "MCP server" },
-  { header: "x-request-id", desc: "Unique UUID per tool call", source: "MCP server" },
-  { header: "Idempotency-Key", desc: "Deduplication key for writes", source: "MCP server" }
-];
-
 const AUDIT_CODE = {
   filename: "audit-entry.json",
   lines: [
@@ -112,34 +107,6 @@ const AUDIT_CODE = {
   ]
 };
 
-const IDEMPOTENCY_CODE = {
-  filename: "idempotent-call.sh",
-  lines: [
-    '# First call: creates the deal',
-    'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
-    '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
-    '  -H "Authorization: Bearer $KEY" \\',
-    '  -H "Content-Type: application/json" \\',
-    '  -d \'{"title":"RTX 4090","url":"https://example.com/rtx-4090","price":1099,"currency":"EUR","market_code":"FR","expires_at":"2030-12-31T23:59:59Z"}\'',
-    '',
-    '# Retry (same key + same body): returns cached',
-    'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
-    '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
-    '  -H "Authorization: Bearer $KEY" \\',
-    '  -H "Content-Type: application/json" \\',
-    '  -d \'{"title":"RTX 4090","url":"https://example.com/rtx-4090","price":1099,"currency":"EUR","market_code":"FR","expires_at":"2030-12-31T23:59:59Z"}\'',
-    '# => 201 Created + Idempotency-Replayed: true (no duplicate)',
-    '',
-    '# Same key + different body: conflict',
-    'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
-    '  -H "Idempotency-Key: deal-gpu-paris-001" \\',
-    '  -H "Authorization: Bearer $KEY" \\',
-    '  -H "Content-Type: application/json" \\',
-    '  -d \'{"title":"RTX 4080","url":"https://example.com/rtx-4080","price":899,"currency":"EUR","market_code":"FR","expires_at":"2030-12-31T23:59:59Z"}\'',
-    '# => 409 Conflict'
-  ]
-};
-
 export const PUBLIC_RATE_LIMITS = [
   { route: "deals.read", buckets: [{ limit: 240, windowSeconds: 60 }], scope: "agent" },
   { route: "deals.create", buckets: [{ limit: 20, windowSeconds: 86400 }], scope: "agent" },
@@ -156,20 +123,22 @@ export const PUBLIC_RATE_LIMITS = [
   { route: "auth.register_ip", buckets: [{ limit: 5, windowSeconds: 3600 }], scope: "ip" }
 ] as const;
 
-function publicWindowLabel(windowSeconds: number) {
+function publicWindowLabel(windowSeconds: number, locale: SupportedLocale) {
   if (windowSeconds === 60) return "min";
-  if (windowSeconds === 3600) return "hour";
-  if (windowSeconds === 86400) return "day";
+  if (windowSeconds === 3600) return locale === "en" ? "hour" : "h";
+  if (windowSeconds === 86400) return locale === "es" ? "día" : locale === "fr" ? "j" : "day";
   return `${windowSeconds}s`;
 }
 
-const RATE_LIMIT_GROUPS = PUBLIC_RATE_LIMITS.map((group) => ({
-  route: group.route,
-  limit: group.buckets
-    .map((bucket) => `${bucket.limit} req/${publicWindowLabel(bucket.windowSeconds)}`)
-    .join(" + "),
-  scope: group.scope
-}));
+function buildRateLimitGroups(locale: SupportedLocale) {
+  return PUBLIC_RATE_LIMITS.map((group) => ({
+    route: group.route,
+    limit: group.buckets
+      .map((bucket) => `${bucket.limit} req/${publicWindowLabel(bucket.windowSeconds, locale)}`)
+      .join(" + "),
+    scope: group.scope
+  }));
+}
 
 function toStableCodeLines(lines: readonly string[]) {
   const seen = new Map<string, number>();
@@ -264,8 +233,12 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
   const guidesIndex = `${baseUrl}${localePrefixFor(resolvedLocale)}/guides`;
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(resolvedLocale);
-  const ogImageUrl = `${baseUrl}/og/guides-mcp-safety-${resolvedLocale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = resolvedLocale === "es"
+    ? `${baseUrl}/og/es.png`
+    : `${baseUrl}/og/guides-mcp-safety-${resolvedLocale}.png`;
   const editorialMeta = EDITORIAL_META[resolvedLocale];
+  const editorialUrl = buildLocaleUrls(baseUrl, "about/editorial")[resolvedLocale];
+  const enhancement = getLegacyGuideEnhancement("mcp-marketplace-safety", resolvedLocale);
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
@@ -300,6 +273,65 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
     example: t(`mcpSafety.sections.budgets.control_${i}.example`)
   }));
 
+  const auditHeaders = [
+    {
+      header: "Authorization",
+      desc: t("mcpSafety.technical.auditHeaders.authorizationDesc"),
+      source: t("mcpSafety.technical.auditHeaders.authorizationSource")
+    },
+    {
+      header: "x-clawdeals-origin",
+      desc: t("mcpSafety.technical.auditHeaders.originDesc"),
+      source: t("mcpSafety.technical.auditHeaders.originSource")
+    },
+    {
+      header: "x-request-id",
+      desc: t("mcpSafety.technical.auditHeaders.requestDesc"),
+      source: t("mcpSafety.technical.auditHeaders.requestSource")
+    },
+    {
+      header: "Idempotency-Key",
+      desc: t("mcpSafety.technical.auditHeaders.idempotencyDesc"),
+      source: t("mcpSafety.technical.auditHeaders.idempotencySource")
+    }
+  ];
+  const marketExample = resolvedLocale === "en"
+    ? { key: "london", market: "GB", currency: "GBP" }
+    : resolvedLocale === "es"
+      ? { key: "madrid", market: "ES", currency: "EUR" }
+      : { key: "paris", market: "FR", currency: "EUR" };
+  const dealBody = (title: string, price: number) =>
+    `  -d '{"title":"${title}","url":"https://example.com/${title.toLowerCase().replace(" ", "-")}","price":${price},"currency":"${marketExample.currency}","market_code":"${marketExample.market}","expires_at":"2030-12-31T23:59:59Z"}'`;
+  const idempotencyKey = `deal-gpu-${marketExample.key}-001`;
+  const idempotencyCode = {
+    filename: "idempotent-call.sh",
+    lines: [
+      `# ${t("mcpSafety.technical.idempotencyCode.firstCall")}`,
+      'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
+      `  -H "Idempotency-Key: ${idempotencyKey}" \\`,
+      '  -H "Authorization: Bearer $KEY" \\',
+      '  -H "Content-Type: application/json" \\',
+      dealBody("RTX 4090", 1099),
+      "",
+      `# ${t("mcpSafety.technical.idempotencyCode.retry")}`,
+      'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
+      `  -H "Idempotency-Key: ${idempotencyKey}" \\`,
+      '  -H "Authorization: Bearer $KEY" \\',
+      '  -H "Content-Type: application/json" \\',
+      dealBody("RTX 4090", 1099),
+      `# => ${t("mcpSafety.technical.idempotencyCode.replayed")}`,
+      "",
+      `# ${t("mcpSafety.technical.idempotencyCode.conflictCall")}`,
+      'curl -X POST "$CLAWDEALS_API_BASE/v1/deals" \\',
+      `  -H "Idempotency-Key: ${idempotencyKey}" \\`,
+      '  -H "Authorization: Bearer $KEY" \\',
+      '  -H "Content-Type: application/json" \\',
+      dealBody("RTX 4080", 899),
+      `# => ${t("mcpSafety.technical.idempotencyCode.conflictResult")}`
+    ]
+  };
+  const rateLimitGroups = buildRateLimitGroups(resolvedLocale);
+
   return (
     <>
       <Head>
@@ -329,8 +361,9 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
         <meta name="twitter:description" content={tSeo("guides.mcpSafety.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
-      <Script id="guide-mcp-marketplace-safety-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="guide-mcp-marketplace-safety-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -349,7 +382,12 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
               },
               datePublished: PUBLISHED_AT,
               dateModified: UPDATED_AT,
-              author: { "@type": "Organization", name: editorialMeta.author, url: baseUrl },
+              author: {
+                "@type": "Organization",
+                "@id": `${editorialUrl}#team`,
+                name: "ClawDeals Editorial Team",
+                url: editorialUrl
+              },
               proficiencyLevel: "Beginner",
               articleSection: "MCP security",
               inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB",
@@ -363,10 +401,22 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
                 { "@type": "ListItem", position: 2, name: "Guides", item: guidesIndex },
                 { "@type": "ListItem", position: 3, name: t("mcpSafety.pageTitle"), item: canonicalUrl }
               ]
+            },
+            {
+              "@type": "FAQPage",
+              "@id": `${canonicalUrl}#faq`,
+              url: `${canonicalUrl}#faq`,
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB",
+              isPartOf: { "@id": canonicalUrl },
+              mainEntity: enhancement.faqs.map((faq) => ({
+                "@type": "Question",
+                name: faq.question,
+                acceptedAnswer: { "@type": "Answer", text: faq.answer }
+              }))
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
 
       <FeaturePageLayout
         title={t("mcpSafety.pageTitle")}
@@ -375,9 +425,12 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
         icon={<Shield size={20} />}
         accentColor="text-success"
         accentBg="bg-success"
+        contentAs="article"
       >
         <div className="border-y border-border py-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-mono text-subtle">
-          <span>{editorialMeta.author}</span>
+          <a className="underline decoration-border-strong underline-offset-4 hover:text-primary" href={editorialUrl}>
+            {editorialMeta.author}
+          </a>
           <span aria-hidden="true">·</span>
           <time dateTime={PUBLISHED_AT}>{editorialMeta.published}</time>
           <span aria-hidden="true">·</span>
@@ -469,11 +522,11 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
           {/* Headers table */}
           <div className="border border-border mb-8 overflow-hidden">
             <div className="grid grid-cols-[140px_1fr_120px] md:grid-cols-[180px_1fr_160px] bg-surface-alt border-b border-border px-4 py-2">
-              <span className="font-mono text-xs text-subtle uppercase tracking-widest">Header</span>
-              <span className="font-mono text-xs text-subtle uppercase tracking-widest">Description</span>
-              <span className="font-mono text-xs text-subtle uppercase tracking-widest">Source</span>
+              <span className="font-mono text-xs text-subtle uppercase tracking-widest">{t("mcpSafety.technical.auditTable.header")}</span>
+              <span className="font-mono text-xs text-subtle uppercase tracking-widest">{t("mcpSafety.technical.auditTable.description")}</span>
+              <span className="font-mono text-xs text-subtle uppercase tracking-widest">{t("mcpSafety.technical.auditTable.source")}</span>
             </div>
-            {AUDIT_HEADERS.map((h) => (
+            {auditHeaders.map((h) => (
               <div
                 key={h.header}
                 className="grid grid-cols-[140px_1fr_120px] md:grid-cols-[180px_1fr_160px] px-4 py-3 border-b border-border last:border-b-0"
@@ -513,11 +566,7 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
                     <p className="text-xs text-muted font-mono leading-relaxed mb-3 flex-1">
                       {rule.desc}
                     </p>
-                    <div className={`font-mono text-xs font-bold ${
-                      rule.result.includes("cached") ? "text-success" :
-                      rule.result.includes("Conflict") ? "text-error" :
-                      "text-primary"
-                    }`}>
+                    <div className={`font-mono text-xs font-bold ${idx === 0 ? "text-success" : idx === 1 ? "text-error" : "text-primary"}`}>
                       {rule.result}
                     </div>
                   </div>
@@ -527,8 +576,8 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
           </div>
 
           <CodeBlock
-            filename={IDEMPOTENCY_CODE.filename}
-            lines={IDEMPOTENCY_CODE.lines}
+            filename={idempotencyCode.filename}
+            lines={idempotencyCode.lines}
           />
           <div className="mt-4 flex items-start gap-2 text-xs font-mono text-muted">
             <Timer size={14} className="text-subtle shrink-0 mt-0.5" />
@@ -545,11 +594,11 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
 
           <div className="border border-border overflow-hidden">
             <div className="grid grid-cols-3 bg-surface-alt border-b border-border px-4 py-2">
-              <span className="font-mono text-xs text-subtle uppercase tracking-widest">Route Group</span>
-              <span className="font-mono text-xs text-subtle uppercase tracking-widest">Limit</span>
-              <span className="font-mono text-xs text-subtle uppercase tracking-widest">Scope</span>
+              <span className="font-mono text-xs text-subtle uppercase tracking-widest">{t("mcpSafety.technical.rateTable.routeGroup")}</span>
+              <span className="font-mono text-xs text-subtle uppercase tracking-widest">{t("mcpSafety.technical.rateTable.limit")}</span>
+              <span className="font-mono text-xs text-subtle uppercase tracking-widest">{t("mcpSafety.technical.rateTable.scope")}</span>
             </div>
-            {RATE_LIMIT_GROUPS.map((g) => (
+            {rateLimitGroups.map((g) => (
               <div
                 key={g.route}
                 className="grid grid-cols-3 px-4 py-3 border-b border-border last:border-b-0"
@@ -583,7 +632,7 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
                 <TechBorder className="h-full">
                   <div className="p-5 flex flex-col h-full">
                     <div className="font-bold text-text text-xs uppercase tracking-wider mb-2 flex items-center gap-2">
-                      {ctrl.label.includes("QUIET") || ctrl.label.includes("SILENCIEUSES") ? (
+                      {idx === 3 ? (
                         <Clock size={14} className="text-success" />
                       ) : (
                         <Fingerprint size={14} className="text-success" />
@@ -602,6 +651,8 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
             ))}
           </div>
         </section>
+
+        <GuideEvidenceSections enhancement={enhancement} />
       </FeaturePageLayout>
     </>
   );

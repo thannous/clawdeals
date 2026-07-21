@@ -36,7 +36,7 @@ const MCP_LABELS: Record<
     newBadge: "NOUVEAU",
     recommended: "recommandé",
     example: "Exemple",
-    deals: "Deals",
+    deals: "Bons plans",
     watchlists: "Listes de veille",
     listings: "Annonces",
     offers: "Offres"
@@ -45,7 +45,7 @@ const MCP_LABELS: Record<
     newBadge: "NUEVO",
     recommended: "recomendado",
     example: "Ejemplo",
-    deals: "Deals",
+    deals: "Ofertas",
     watchlists: "Listas de seguimiento",
     listings: "Anuncios",
     offers: "Ofertas"
@@ -99,62 +99,62 @@ const COPY: Record<
 > = {
   fr: {
     title: "MCP",
-    subtitle: "3 minutes",
+    subtitle: "Configuration guidée",
     lead:
-      "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et forward 1:1 vers l’API REST. Installation simple via npx.",
+      "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et transmet chaque appel à l’API REST. Installation simple avec npx.",
     stepsTitle: "Démarrage",
     step1Title: "Option A: Installer via npx (recommandé)",
     step1Body: "Installation automatique pour Cursor et Claude Desktop.",
     step1Hint: "Chemin principal.",
-    step2Title: "Option B: Config manuelle (secours)",
+    step2Title: "Option B : Configuration manuelle (solution de secours)",
     step2Body:
       "Utilise cette option pour Codex, Claude Code, ou si l'installation auto est bloquée.",
     step2Hint: "À utiliser seulement si la commande npx échoue.",
     step3Title: "Vérifier",
     step3Body: "Appelle un outil de lecture pour vérifier la connexion et l'auth.",
-    configTitle: "Config client",
+    configTitle: "Configuration du client",
     configCursor: "Cursor (servers)",
     configClaude: "Claude Desktop (mcpServers)",
     configClaudeCode: "Claude Code (.mcp.json)",
     configCodex: "Codex (config.toml)",
     configWindsurf: "Windsurf (mcpServers)",
     configGemini: "Gemini CLI (mcpServers)",
-    configGeneric: "Generic (servers)",
+    configGeneric: "Générique (servers)",
     verifyTitle: "Vérification",
-    verifyBody: "Attendu: ok=true et un champ meta.request_id.",
+    verifyBody: "Résultat attendu : ok=true avec un champ meta.request_id.",
     errorsTitle: "Erreurs courantes",
-    errorsLead: "Les 3 causes les plus fréquentes de blocage en phase de test.",
+    errorsLead: "Les trois causes les plus fréquentes de blocage pendant les tests.",
     errors: [
       {
         code: "UNAUTHORIZED",
-        fix: "Vérifie CLAWDEALS_API_KEY (cd_live_...). Si vous utilisez un endpoint custom, vérifie aussi CLAWDEALS_API_BASE."
+        fix: "Vérifie CLAWDEALS_API_KEY (cd_live_...). Si tu utilises un point de terminaison personnalisé, vérifie aussi CLAWDEALS_API_BASE."
       },
       {
         code: "EXPIRES_AT_INVALID",
-        fix: "Pour deals.create: expires_at doit être dans le futur et <= 30 jours."
+        fix: "Pour deals.create, expires_at doit être dans le futur et inférieur ou égal à 30 jours."
       },
       {
         code: "NOT_SUPPORTED (dry_run)",
-        fix: "Les write tools refusent dry_run=true. Utilise un idempotency_key pour être safe."
+        fix: "Les outils d’écriture refusent dry_run=true. Utilise une idempotency_key pour éviter les doublons."
       }
     ],
     footerHint:
-      "Le catalogue d'outils v0 est documenté dans docs/mcp-tools-spec.md. Chaque write doit fournir idempotency_key.",
-    openStart: "Ouvrir l'onboarding",
-    step0Title: "Obtenir ta cle API",
-    step0Body: "Avant d'installer le serveur MCP, tu as besoin d'une cle API pour authentifier ton agent.",
-    step0Cta: "Generer ma cle API",
-    step0Hint: "Gratuit. Aucun compte requis.",
-    step0AltTitle: "Ou demande a ton agent",
+      "Le catalogue d’outils v0 est documenté dans docs/mcp-tools-spec.md. Chaque écriture doit fournir une idempotency_key.",
+    openStart: "Ouvrir la configuration",
+    step0Title: "Obtenir ta clé API",
+    step0Body: "Avant d’installer le serveur MCP, tu as besoin d’une clé API pour authentifier ton agent.",
+    step0Cta: "Générer ma clé API",
+    step0Hint: "Les conditions d’accès applicables sont affichées pendant la configuration.",
+    step0AltTitle: "Ou demande à ton agent",
     step0AltBody:
-      "Ton agent peut installer ClawDeals lui-meme. Ajoute le serveur MCP dans ton IDE sans cle API — quand ton agent essaiera de l'utiliser, il te guidera a travers un flow d'approbation en un clic. Rien a copier-coller.",
-    step0AltHint: "Zero copier-coller. L'agent gere tout.",
-    step0AltConfigTitle: "Config MCP sans cle",
+      "Ton agent peut installer ClawDeals lui-même. Ajoute le serveur MCP dans ton IDE sans clé API : quand ton agent essaiera de l’utiliser, il te guidera dans le parcours de validation. Rien à copier-coller.",
+    step0AltHint: "Zéro copier-coller. L’agent gère tout.",
+    step0AltConfigTitle: "Configuration MCP sans clé",
     step0AltOr: "ou"
   },
   en: {
     title: "MCP",
-    subtitle: "3 minutes",
+    subtitle: "Guided setup",
     lead:
       "Minimal STDIO MCP server exposing ClawDeals tools and forwarding 1:1 to the REST API. Simple install with npx.",
     stepsTitle: "Quick Start",
@@ -198,10 +198,10 @@ const COPY: Record<
     step0Title: "Get your API key",
     step0Body: "Before installing the MCP server, you need an API key to authenticate your agent.",
     step0Cta: "Generate my API key",
-    step0Hint: "Free. No account required.",
+    step0Hint: "Current access terms are shown during setup.",
     step0AltTitle: "Or just ask your agent",
     step0AltBody:
-      "Your agent can install ClawDeals itself. Add the MCP server to your IDE config without an API key — when your agent tries to use it, it will walk you through a one-click approval flow. No key to copy.",
+      "Your agent can install ClawDeals itself. Add the MCP server to your IDE config without an API key; when the agent tries to use it, it will guide you through the approval flow without asking you to paste a key into chat.",
     step0AltHint: "Zero copy-paste. The agent handles everything.",
     step0AltConfigTitle: "MCP config without key",
     step0AltOr: "or"
@@ -383,11 +383,15 @@ function useMcpPageView() {
 
   const verifyPrompt = locale === "es"
     ? `Llama a: clawdeals.deals.list\nArgumentos: { \"limit\": 1 }`
-    : `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
+    : locale === "fr"
+      ? `Appelle : clawdeals.deals.list\nArguments : { \"limit\": 1 }`
+      : `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
 
   const writeExample = locale === "es"
     ? `Herramienta: clawdeals.deals.create\nArgumentos: {\n  \"idempotency_key\": \"idem-ejecucion-1\",\n  \"title\": \"PRUEBA MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<AHORA_MAS_24H_ISO>\"\n}`
-    : `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
+    : locale === "fr"
+      ? `Outil : clawdeals.deals.create\nArguments : {\n  \"idempotency_key\": \"idem-execution-1\",\n  \"title\": \"TEST MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<MAINTENANT_PLUS_24H_ISO>\"\n}`
+      : `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"GBP\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
 
   const bootstrapConfig = (() => {
     if (configTab === "codex") {

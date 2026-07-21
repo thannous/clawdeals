@@ -60,7 +60,7 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
   const canonicalUrl = urls[resolvedLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(resolvedLocale);
-  const ogImageUrl = `${baseUrl}/og/${resolvedLocale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = `${baseUrl}/og/${resolvedLocale}.png`;
   const robotsContent = isPreviewHost ? "noindex,follow" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
 
   const stepCount = parseInt(t("sections.howItWorks.stepCount"), 10);

@@ -93,7 +93,7 @@ export default function BrowseDeals({
   const canonicalUrl = urls[currentLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(currentLocale);
-  const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";

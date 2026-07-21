@@ -1,9 +1,9 @@
 import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import Script from "next/script";
 import { useRouter } from "next/router";
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3 } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, ExternalLink } from "lucide-react";
+import { getSeoGuideEnhancement } from "../../content/seo-guide-enhancements";
 import { buildSeoGuideStructuredData } from "../../content/seo-guide-schema";
 import { SEO_GUIDES, getSeoGuide, type GuideSlug } from "../../content/seo-guides";
 import { resolveSupportedLocale, withMessages, type SupportedLocale } from "../../shared/i18n";
@@ -18,6 +18,16 @@ export type SeoGuidePageProps = {
   isPreviewHost: boolean;
   messages: any;
 };
+
+export function JsonLd({ id, data }: { id: string; data: unknown }) {
+  return (
+    <script
+      id={id}
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
+    />
+  );
+}
 
 export const getSeoGuideServerSideProps: GetServerSideProps<SeoGuidePageProps> = async ({ req, res, locale }) => {
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
@@ -106,6 +116,7 @@ export default function SeoGuidePage({
   const locale = resolveSupportedLocale(router.locale);
   const guide = getSeoGuide(slug);
   const content = guide.content[locale];
+  const enhancement = getSeoGuideEnhancement(slug, locale);
   const urls = buildLocaleUrls(baseUrl, `guides/${slug}`);
   const canonicalUrl = urls[locale];
   const hrefLangs = hrefLangTags(urls);
@@ -145,9 +156,7 @@ export default function SeoGuidePage({
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
 
-      <Script id={`guide-${slug}-json-ld`} type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify(structuredData).replace(/</g, "\\u003c")}
-      </Script>
+      <JsonLd id={`guide-${slug}-json-ld`} data={structuredData} />
 
       <FeaturePageLayout
         title={content.title}
@@ -156,6 +165,7 @@ export default function SeoGuidePage({
         icon={<BookOpen size={20} />}
         accentColor="text-primary"
         accentBg="bg-primary"
+        contentAs="article"
       >
         <section aria-label={content.tableOfContentsLabel}>
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 items-stretch">
@@ -181,6 +191,21 @@ export default function SeoGuidePage({
                       </a>
                     </li>
                   ))}
+                  <li>
+                    <a href="#comparison" className="font-mono text-xs text-muted hover:text-primary transition-colors">
+                      {enhancement.table.caption}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#faq" className="font-mono text-xs text-muted hover:text-primary transition-colors">
+                      {enhancement.faqHeading}
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#sources" className="font-mono text-xs text-muted hover:text-primary transition-colors">
+                      {enhancement.sourcesHeading}
+                    </a>
+                  </li>
                 </ol>
               </div>
             </TechBorder>
@@ -190,7 +215,12 @@ export default function SeoGuidePage({
             <span className="inline-flex items-center gap-2"><CalendarDays size={14} className="text-primary" />{content.publishedLabel}: <time dateTime={guide.publishedAt}>{formatDate(guide.publishedAt, locale)}</time></span>
             <span className="inline-flex items-center gap-2"><CalendarDays size={14} className="text-secondary" />{content.updatedLabel}: <time dateTime={guide.updatedAt}>{formatDate(guide.updatedAt, locale)}</time></span>
             <span className="inline-flex items-center gap-2"><Clock3 size={14} className="text-success" />{content.formatLabel}</span>
-            <span>{content.authorLabel}: {ui.author}</span>
+            <span>
+              {content.authorLabel}:{" "}
+              <MarketingLink href="/about/editorial" className="underline decoration-border-strong underline-offset-4 hover:text-primary">
+                {ui.author}
+              </MarketingLink>
+            </span>
             <span>{ui.market}: {guide.market === "global" ? "GLOBAL" : guide.market.join(" / ")}</span>
           </div>
         </section>
@@ -225,6 +255,68 @@ export default function SeoGuidePage({
             </div>
           </section>
         ))}
+
+        <section id="comparison" className="scroll-mt-24" aria-labelledby="comparison-heading">
+          <SectionHeader title={enhancement.table.caption} subtitle="DECISION_TABLE" />
+          <div className="overflow-x-auto border border-border bg-surface">
+            <table className="w-full min-w-[680px] border-collapse text-left text-sm text-muted">
+              <caption id="comparison-heading" className="sr-only">{enhancement.table.caption}</caption>
+              <thead className="bg-surface-alt text-text">
+                <tr>
+                  {enhancement.table.columns.map((column) => (
+                    <th key={column} scope="col" className="border-b border-r last:border-r-0 border-border px-4 py-3 font-mono text-xs uppercase tracking-wider">
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {enhancement.table.rows.map((row) => (
+                  <tr key={row.join("|")} className="border-b last:border-b-0 border-border align-top">
+                    {row.map((cell, index) => (
+                      <td key={`${index}-${cell}`} className={`border-r last:border-r-0 border-border px-4 py-4 leading-6 ${index === 0 ? "font-bold text-text" : ""}`}>
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="faq" className="scroll-mt-24">
+          <SectionHeader title={enhancement.faqHeading} subtitle="FAQ" />
+          <div className="space-y-4 max-w-3xl">
+            {enhancement.faqs.map((faq) => (
+              <details key={faq.question} className="group border border-border bg-surface p-5" open>
+                <summary className="cursor-pointer list-none font-bold text-sm text-text pr-6 marker:hidden">
+                  {faq.question}
+                </summary>
+                <p className="mt-3 text-sm text-muted leading-7">{faq.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section id="sources" className="scroll-mt-24">
+          <SectionHeader title={enhancement.sourcesHeading} subtitle="PRIMARY_SOURCES" />
+          <p className="text-sm text-muted leading-7 max-w-3xl mb-5">{enhancement.sourcesIntro}</p>
+          <ul className="space-y-3 max-w-3xl">
+            {enhancement.sources.map((source) => (
+              <li key={source.url}>
+                <a
+                  href={source.url}
+                  className="flex items-start gap-3 border border-border bg-surface p-4 text-sm text-muted hover:border-primary hover:text-text transition-colors"
+                  {...(source.url.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                >
+                  <ExternalLink size={15} className="mt-1 shrink-0 text-primary" />
+                  <span><strong className="text-text">{source.publisher}:</strong> {source.label}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section>
           <TechBorder>

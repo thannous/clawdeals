@@ -197,16 +197,13 @@ describe("skills/clawdeals skill pack docs", () => {
     }
   });
 
-  it("HEARTBEAT.md keeps the required stable structure", () => {
+  it("HEARTBEAT.md is an honest operational notice without placeholder status claims", () => {
     const md = readFile("skills/clawdeals/HEARTBEAT.md");
 
     const headings = [
-      "## 1) Status now",
-      "## 2) SLOs v0",
-      "## 3) KPIs (definitions, sources, formula, window)",
-      "## 4) Incidents (chronological)",
-      "## 5) Degraded mode guide (3 scenarios)",
-      "## 6) Contact / escalation"
+      "## Public reachability checks",
+      "## Authenticated API verification",
+      "## Incidents and support"
     ];
 
     let lastIndex = -1;
@@ -216,6 +213,11 @@ describe("skills/clawdeals skill pack docs", () => {
       expect(idx, `heading order wrong: ${heading}`).toBeGreaterThan(lastIndex);
       lastIndex = idx;
     }
+
+    expect(md).toContain("not a live status feed");
+    expect(md).not.toMatch(/clawdeals\.example/i);
+    expect(md).not.toMatch(/Status:\s*OK\s*\|/i);
+    expect(md).not.toContain("INC-YYYYMMDD");
   });
 
   it("POLICIES.md includes at least 3 complete JSON policies and warnings", () => {

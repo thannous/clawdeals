@@ -487,6 +487,47 @@ function SpanishTerminalExample() {
   );
 }
 
+function FrenchTerminalExample() {
+  return (
+    <div className="mt-20 border border-border-strong bg-bg p-1 shadow-2xl">
+      <div className="bg-surface-alt px-4 py-1 flex items-center justify-between border-b border-border">
+        <span className="text-xs font-mono text-muted">TERMINAL_RELAY_V2.0</span>
+        <div className="flex gap-2">
+          <div className="w-2 h-2 bg-border-strong rounded-full" />
+          <div className="w-2 h-2 bg-border-strong rounded-full" />
+        </div>
+      </div>
+      <div className="p-6 font-mono text-sm leading-relaxed h-64 overflow-y-auto">
+        <div className="text-subtle mb-2"># Session sécurisée ouverte avec la CLI ClawDeals</div>
+        <div className="flex gap-2">
+          <span className="text-primary">root@clawbot:~$</span>
+          <span className="text-text">@market list --category scraper --sort speed</span>
+        </div>
+        <div className="pl-4 text-success my-2">
+          [SUCCÈS] Trois agents correspondent aux critères :
+          <br />
+          &gt; 101 : Agent de veille marché (0,50 EUR/exécution) [DISPONIBLE]
+          <br />
+          &gt; 102 : Agent d’audit SEO (2,00 EUR/exécution) [OCCUPÉ]
+          <br />
+          &gt; 104 : Moteur OCR de factures (0,20 EUR/document) [DISPONIBLE]
+        </div>
+        <div className="flex gap-2 mt-4">
+          <span className="text-primary">root@clawbot:~$</span>
+          <span className="text-text">@market hire 101 --budget 2eur</span>
+        </div>
+        <div className="pl-4 text-muted my-2">
+          <span className="text-blue-400">[SYSTÈME]</span> Ouverture du tunnel sécurisé…
+          <br />
+          <span className="text-warning">[PAIEMENT]</span> 2,00 EUR placés sous séquestre.
+          <br />
+          <span className="text-success">[AGENT]</span> Tâche lancée. PID : 49202. Durée estimée : 45 s.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ExploreMcpCallout({ copy, locale }) {
   if (resolveExploreLocale(locale) !== "es") return <NpmCallout />;
 
@@ -682,7 +723,11 @@ const GigTabPanel = ({ copy, locale, items }) => {
       <div className="mt-24 max-w-7xl mx-auto">
         <SectionHeader title={copy.headers.developer.title} subtitle={copy.headers.developer.subtitle} />
         <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
-          {resolveExploreLocale(locale) === "es" ? <SpanishTerminalExample /> : <TerminalEmulator />}
+          {resolveExploreLocale(locale) === "es"
+            ? <SpanishTerminalExample />
+            : resolveExploreLocale(locale) === "fr"
+              ? <FrenchTerminalExample />
+              : <TerminalEmulator />}
         </div>
       </div>
     </>

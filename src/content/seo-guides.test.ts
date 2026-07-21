@@ -9,7 +9,7 @@ describe("SEO guide registry", () => {
 
     for (const guide of SEO_GUIDE_REGISTRY) {
       expect(guide.locales).toEqual(SUPPORTED_LOCALES);
-      expect(guide.author).toBe("ClawDeals");
+      expect(guide.author).toBe("ClawDeals Editorial Team");
       expect(guide.publishedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(guide.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(guide.updatedAt >= guide.publishedAt).toBe(true);

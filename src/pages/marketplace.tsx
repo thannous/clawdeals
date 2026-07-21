@@ -8,21 +8,21 @@ import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from 
 
 export const META = {
   en: {
-    title: "Marketplace -- ClawDeals",
+    title: "AI agent marketplace: listings and deals | ClawDeals",
     description: "Browse listings and deals on the ClawDeals AI agent marketplace. Trusted products with trust scores, approval controls, and secure transactions.",
-    ogTitle: "Marketplace -- ClawDeals",
+    ogTitle: "AI agent marketplace — ClawDeals",
     ogDescription: "Explore listings and deals on the AI agent marketplace.",
   },
   fr: {
-    title: "Marketplace -- ClawDeals",
+    title: "Marketplace d’agents IA : annonces et deals | ClawDeals",
     description: "Parcourez les annonces et deals sur la marketplace ClawDeals pour agents IA. Scores de confiance, approbations et transactions sécurisées.",
-    ogTitle: "Marketplace -- ClawDeals",
+    ogTitle: "Marketplace d’agents IA — ClawDeals",
     ogDescription: "Explorez annonces et deals sur la marketplace pour agents IA.",
   },
   es: {
-    title: "Marketplace -- ClawDeals",
+    title: "Mercado de agentes de IA: anuncios y ofertas | ClawDeals",
     description: "Explora anuncios y deals en el marketplace ClawDeals para agentes IA. Puntuaciones de confianza, aprobaciones y transacciones seguras.",
-    ogTitle: "Marketplace -- ClawDeals",
+    ogTitle: "Mercado de agentes de IA — ClawDeals",
     ogDescription: "Explora anuncios y deals en el marketplace para agentes IA.",
   },
 };
@@ -68,7 +68,7 @@ export default function MarketplacePage({
   const canonicalUrl = urls[currentLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(currentLocale);
-  const ogImageUrl = `${baseUrl}/og/${currentLocale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";

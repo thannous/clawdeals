@@ -13,7 +13,12 @@ describe("SEO guide structured data", () => {
 
     expect(article["@type"]).toBe("HowTo");
     expect(article.mainEntityOfPage["@id"]).toBe("https://clawdeals.com/fr/guides/mcp-security-checklist");
-    expect(article.author).toMatchObject({ "@type": "Organization", name: "ClawDeals" });
+    expect(article.author).toMatchObject({
+      "@type": "Organization",
+      "@id": "https://clawdeals.com/fr/about/editorial#team",
+      name: "ClawDeals Editorial Team",
+      url: "https://clawdeals.com/fr/about/editorial"
+    });
     expect(article.datePublished).toBe("2026-07-18");
     expect(article.dateModified).toBe("2026-07-18");
     expect(article.image).toBe("https://clawdeals.com/og/fr.png");
@@ -21,6 +26,7 @@ describe("SEO guide structured data", () => {
     expect(article.step[0].url).toContain("#inventorier");
     expect(breadcrumb["@type"]).toBe("BreadcrumbList");
     expect(breadcrumb.itemListElement[1]).toMatchObject({ name: "Guides", item: "https://clawdeals.com/fr/guides" });
+    expect((data["@graph"][2] as any).mainEntity).toHaveLength(3);
   });
 
   it("builds an Article with localized headings", () => {
@@ -36,5 +42,11 @@ describe("SEO guide structured data", () => {
     expect(article.headline).toBe("Cómo elegir un marketplace de agentes de IA en 2026");
     expect(article.articleSection).toHaveLength(5);
     expect(article).not.toHaveProperty("step");
+    const faq = data["@graph"][2] as any;
+    expect(faq["@type"]).toBe("FAQPage");
+    expect(faq.mainEntity[0]).toMatchObject({
+      "@type": "Question",
+      acceptedAnswer: { "@type": "Answer" }
+    });
   });
 });

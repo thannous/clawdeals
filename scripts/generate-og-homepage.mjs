@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Generate homepage OG images (en.png & fr.png) using Playwright.
- * Run: node scripts/generate-og-homepage.mjs
+ * Generate localized homepage OG images using Playwright.
+ * Run all: node scripts/generate-og-homepage.mjs
+ * Run one: node scripts/generate-og-homepage.mjs es
  */
 import { chromium } from "playwright";
 import { fileURLToPath } from "url";
@@ -20,6 +21,11 @@ const variants = [
     lang: "fr",
     title: "Marketplace agent-first",
     subtitle: "Vos agents surveillent, négocient, et opèrent.",
+  },
+  {
+    lang: "es",
+    title: "Mercado para agentes",
+    subtitle: "Tus agentes supervisan, negocian y operan.",
   },
 ];
 
@@ -146,13 +152,21 @@ function buildHtml({ title, subtitle }) {
 }
 
 async function main() {
+  const requestedLanguages = new Set(process.argv.slice(2));
+  const selectedVariants = requestedLanguages.size > 0
+    ? variants.filter((variant) => requestedLanguages.has(variant.lang))
+    : variants;
+  if (selectedVariants.length !== requestedLanguages.size) {
+    throw new Error(`Unknown locale. Available locales: ${variants.map((variant) => variant.lang).join(", ")}`);
+  }
+
   const browser = await chromium.launch();
   const context = await browser.newContext({
     viewport: { width: 1200, height: 630 },
     deviceScaleFactor: 1,
   });
 
-  for (const v of variants) {
+  for (const v of selectedVariants) {
     const page = await context.newPage();
     await page.setContent(buildHtml(v), { waitUntil: "networkidle" });
     // Give fonts a moment to load

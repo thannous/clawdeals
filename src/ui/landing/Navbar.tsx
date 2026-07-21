@@ -159,7 +159,7 @@ function NavbarFrame({
             <div className="flex flex-col min-w-0">
               <span className="text-base sm:text-xl font-bold tracking-tight text-text leading-none">CLAWDEALS</span>
               <span className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1 hidden sm:block">
-                MARKET_ACCESS_GRANTED
+                {tn("marketAccessGranted")}
               </span>
             </div>
           </MarketingLink>

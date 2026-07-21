@@ -1,5 +1,4 @@
 import Head from "next/head";
-import Script from "next/script";
 import { useRouter } from "next/router";
 import { ArrowRight, Cable, Plug, ShieldCheck, Wrench } from "lucide-react";
 import { resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
@@ -7,7 +6,7 @@ import { buildLocaleUrls, hrefLangTags, normalizeMetaDescription, ogLocaleTags }
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { TechBorder } from "../../ui/landing/primitives";
 import MarketingLink from "../../ui/shared/MarketingLink";
-import { getSeoGuideServerSideProps as withMessages, type SeoGuidePageProps } from "../../ui/guides/SeoGuidePage";
+import { JsonLd, getSeoGuideServerSideProps as withMessages, type SeoGuidePageProps } from "../../ui/guides/SeoGuidePage";
 
 export const getServerSideProps: typeof withMessages = async (context) => withMessages(context);
 
@@ -132,8 +131,9 @@ export default function IntegrationsIndex({ baseUrl, isPreviewHost }: SeoGuidePa
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
 
-      <Script id="integrations-index-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="integrations-index-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -158,8 +158,8 @@ export default function IntegrationsIndex({ baseUrl, isPreviewHost }: SeoGuidePa
               ]
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
 
       <FeaturePageLayout
         title={copy.title}

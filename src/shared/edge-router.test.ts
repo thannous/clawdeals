@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import { resolveEdgeRouterDecision } from "./edge-router";
 
 describe("edge router decision", () => {
+  it.each([
+    ["https://clawdeals.com/en", "https://clawdeals.com/"],
+    ["https://clawdeals.com/en/guides?topic=mcp", "https://clawdeals.com/guides?topic=mcp"],
+    ["https://www.clawdeals.com/en/mcp", "https://clawdeals.com/mcp"],
+    ["https://clawdeals.com/en/start", "https://app.clawdeals.com/start"]
+  ])("removes the default-locale prefix from %s", (source, location) => {
+    expect(resolveEdgeRouterDecision(new URL(source), {})).toEqual({
+      type: "redirect",
+      status: 308,
+      location
+    });
+  });
+
   it("redirects www host to canonical marketing host", () => {
     const decision = resolveEdgeRouterDecision(new URL("https://www.clawdeals.com/fr/guide?x=1"), {});
 

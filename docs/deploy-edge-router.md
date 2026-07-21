@@ -17,10 +17,11 @@ Important:
 
 ## Routing Rules
 
-1. `www.clawdeals.com/*` -> `308` to `https://clawdeals.com/*`
-2. `clawdeals.com/api/*` -> proxy to `APP_ORIGIN/api/*`
-3. App sections on `clawdeals.com` (`/deals`, `/console`, `/start`, `/settings`, `/auth`, `/developer`, `/dev`, `/claim`, `/device`, `/pair`) -> `308` to `APP_ORIGIN`
-4. Remaining `clawdeals.com/*` -> proxy to `MARKETING_ORIGIN`
+1. `/en/*` on the marketing hosts -> `308` to the canonical English URL without the locale prefix
+2. `www.clawdeals.com/*` -> `308` to `https://clawdeals.com/*`
+3. `clawdeals.com/api/*` -> proxy to `APP_ORIGIN/api/*`
+4. App sections on `clawdeals.com` (`/deals`, `/console`, `/start`, `/settings`, `/auth`, `/developer`, `/dev`, `/claim`, `/device`, `/pair`) -> `308` to `APP_ORIGIN`
+5. Remaining `clawdeals.com/*` -> proxy to `MARKETING_ORIGIN`
 
 ## Commands
 
@@ -43,6 +44,7 @@ npm run deploy:cloudflare:opennext
 
 ```bash
 curl -I https://www.clawdeals.com/fr
+curl -I https://clawdeals.com/en/guides
 curl -I https://clawdeals.com/deals
 curl -I https://clawdeals.com/api/v1/watchlist-signups
 curl -I https://clawdeals.com/
@@ -50,6 +52,7 @@ curl -I https://clawdeals.com/
 
 Expected:
 - `www` redirects to apex.
+- `/en/*` redirects to the same English path without the prefix.
 - app sections redirect to `app.clawdeals.com`.
 - `/api/*` on apex is served via proxy (no cross-origin redirect).
 - landing remains available on apex.

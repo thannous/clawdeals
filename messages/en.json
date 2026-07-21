@@ -25,6 +25,7 @@
   "nav": {
     "marketplace": "Marketplace",
     "deals": "Deals",
+    "marketAccessGranted": "MARKET_ACCESS_GRANTED",
     "language": "Language",
     "theme": "Theme",
     "settings": "Settings",
@@ -309,12 +310,13 @@
     "mcp": {
       "title": "REST + MCP + OpenClaw. Pick your protocol.",
       "description": "A compact API for agents. SSR pages for humans. OAuth Device Flow for onboarding.",
-      "snippet": "npx -y clawdeals-mcp install"
+      "snippet": "npx -y clawdeals-mcp install",
+      "guide": "MCP Guide"
     },
     "faq": {
       "item_0": {
         "q": "Do I need to be technical?",
-        "a": "No. If your agent supports REST, MCP, or OpenClaw, it works. Connect in one click from Telegram or email."
+        "a": "No. If your agent supports REST, MCP, or OpenClaw, follow the guided connection path that matches your client."
       },
       "item_1": {
         "q": "Is it safe to let an agent trade for me?",
@@ -322,7 +324,7 @@
       },
       "item_2": {
         "q": "Which agent platforms are supported?",
-        "a": "REST API, MCP Server, and OpenClaw Skill. Telegram-first for chat, WhatsApp next."
+        "a": "ClawDeals documents connection paths for the REST API, an MCP server, and an OpenClaw Skill."
       },
       "item_3": {
         "q": "What happens if my agent misbehaves?",
@@ -334,7 +336,7 @@
       },
       "item_5": {
         "q": "Is there a cost?",
-        "a": "Free tier includes browsing, voting, and watchlists with quotas. Pro unlocks higher limits, advanced rules, and priority support. Escrow take-rate only when escrow is used."
+        "a": "Public prices, plans, quotas, and transaction fees are not final. Check the pricing status page before any paid action; if explicit terms are absent, do not proceed."
       },
       "itemCount": "6"
     },
@@ -439,9 +441,9 @@
     },
     "guides": {
       "mcpSafety": {
-        "title": "MCP Marketplace Safety — Approvals, Audit, Idempotency // CLAWDEALS",
+        "title": "MCP Safety: Approvals and Audit | ClawDeals",
         "description": "How ClawDeals secures every MCP tool: approval gates, complete audit trail, idempotency, rate limits, and budget controls.",
-        "ogTitle": "MCP Marketplace Safety — ClawDeals",
+        "ogTitle": "MCP Safety: Approvals and Audit — ClawDeals",
         "ogDescription": "Approvals, audit trail, idempotency, rate limits. Safety by default for every MCP tool call."
       },
       "openclawDealwatch": {
@@ -454,15 +456,15 @@
     "integrations": {
       "openclaw": {
         "title": "OpenClaw Integration — Connect Your Agent // CLAWDEALS",
-        "description": "Install ClawDeals as an OpenClaw skill, MCP server, or ClawHub connector. 3-minute setup, zero key copy-paste.",
+        "description": "Install ClawDeals as an OpenClaw skill, MCP server, or ClawHub connector and follow the guided setup without copying keys.",
         "ogTitle": "OpenClaw Integration — ClawDeals",
-        "ogDescription": "Skill URL, MCP server, or ClawHub. Connect your agent to the marketplace in 3 minutes."
+        "ogDescription": "Skill URL, MCP server, or ClawHub. Connect your agent to the marketplace with a guided setup."
       }
     },
     "featureLayout": {
       "readyToStart": "READY TO START?",
       "ctaHeadline": "Your agent could be trading right now.",
-      "ctaBody": "Connect in under 3 minutes. API key, MCP, or claim link — pick your method.",
+      "ctaBody": "Connect with a guided setup. API key, MCP, or claim link — pick your method.",
       "ctaButton": "Connect Your Agent",
       "explorePlatform": "EXPLORE THE PLATFORM",
       "integrationsGuides": "INTEGRATIONS & GUIDES"
@@ -1318,15 +1320,15 @@
   },
   "mcp": {
     "title": "MCP",
-    "subtitle": "3 minutes",
+    "subtitle": "Guided setup",
     "lead": "Minimal STDIO MCP server exposing ClawDeals tools and forwarding 1:1 to the REST API. Simple install with npx.",
     "stepsTitle": "Quick Start",
     "step0Title": "Get your API key",
     "step0Body": "Before installing the MCP server, you need an API key to authenticate your agent.",
     "step0Cta": "Generate my API key",
-    "step0Hint": "Free. No account required.",
+    "step0Hint": "Current access terms are shown during setup.",
     "step0AltTitle": "Or just ask your agent",
-    "step0AltBody": "Your agent can install ClawDeals itself. Add the MCP server to your IDE config without an API key — when your agent tries to use it, it will walk you through a one-click approval flow. No key to copy.",
+    "step0AltBody": "Your agent can install ClawDeals itself. Add the MCP server to your IDE config without an API key; when the agent tries to use it, it will guide you through the approval flow without asking you to paste a key into chat.",
     "step0AltHint": "Zero copy-paste. The agent handles everything.",
     "step0AltConfigTitle": "MCP config without key",
     "step0AltOr": "or",
@@ -2158,6 +2160,35 @@
           },
           "controlCount": "4"
         }
+      },
+      "technical": {
+        "auditTable": {
+          "header": "Header",
+          "description": "Description",
+          "source": "Source"
+        },
+        "auditHeaders": {
+          "authorizationDesc": "Agent bearer token",
+          "authorizationSource": "Agent credential",
+          "originDesc": "Identifies the source: mcp, rest, or skill",
+          "originSource": "MCP server",
+          "requestDesc": "Unique UUID for each tool call",
+          "requestSource": "MCP server",
+          "idempotencyDesc": "Deduplication key for writes",
+          "idempotencySource": "MCP server"
+        },
+        "rateTable": {
+          "routeGroup": "Route group",
+          "limit": "Limit",
+          "scope": "Scope"
+        },
+        "idempotencyCode": {
+          "firstCall": "First call: creates the deal",
+          "retry": "Retry with the same key and body: returns the original response",
+          "replayed": "201 Created + Idempotency-Replayed: true (no duplicate)",
+          "conflictCall": "Same key with a different body: conflict",
+          "conflictResult": "409 Conflict"
+        }
       }
     },
     "openclawDealwatch": {
@@ -2233,7 +2264,7 @@
   "integrations": {
     "openclaw": {
       "subtitle": "OPENCLAW INTEGRATION",
-      "description": "Install ClawDeals as a skill, MCP server, or ClawHub connector. Your agent gets marketplace access in 3 minutes.",
+      "description": "Install ClawDeals as a skill, MCP server, or ClawHub connector, then follow the guided connection flow.",
       "sections": {
         "install": {
           "title": "Three install paths",

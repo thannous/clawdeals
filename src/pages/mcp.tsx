@@ -31,21 +31,21 @@ export const MCP_SEO: Record<
   en: {
     title: "MCP Server — Connect Your Agent — ClawDeals",
     description:
-      "Install and connect the ClawDeals MCP server via npx. Copy and paste client configuration, verify your connection, and start trading in minutes.",
+      "Install the ClawDeals MCP server with npx, follow the guided client setup, verify the connection, and let your agent use the marketplace safely.",
     breadcrumb: "MCP Server",
     applicationName: "ClawDeals MCP Server"
   },
   fr: {
     title: "Serveur MCP — Connectez votre agent — ClawDeals",
     description:
-      "Installez le serveur MCP ClawDeals avec npx, configurez votre client, vérifiez la connexion et permettez à votre agent d'agir en quelques minutes.",
+      "Installez le serveur MCP ClawDeals avec npx, suivez la configuration guidée, vérifiez la connexion et laissez votre agent agir en toute sécurité.",
     breadcrumb: "Serveur MCP",
     applicationName: "Serveur MCP de ClawDeals"
   },
   es: {
     title: "Servidor MCP — Conecta tu agente — ClawDeals",
     description:
-      "Instala el servidor MCP de ClawDeals con npx, configura tu cliente, verifica la conexión y permite que tu agente empiece a operar en pocos minutos.",
+      "Instala el servidor MCP de ClawDeals con npx, sigue la configuración guiada, verifica la conexión y deja que tu agente opere de forma segura.",
     breadcrumb: "Servidor MCP",
     applicationName: "Servidor MCP de ClawDeals"
   }
@@ -61,7 +61,7 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
   const canonicalUrl = urls[locale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(locale);
-  const ogImageUrl = `${baseUrl}/og/${locale === "fr" ? "fr" : "en"}.png`;
+  const ogImageUrl = `${baseUrl}/og/${locale}.png`;
   const robotsContent = isPreviewHost
     ? "noindex,follow"
     : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";

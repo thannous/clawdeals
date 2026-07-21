@@ -391,7 +391,7 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
   const canonicalUrl = urls[locale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(locale);
-  const ogImagePath = `/og/integrations-openclaw-${locale === "fr" ? "fr" : "en"}.png`;
+  const ogImagePath = locale === "es" ? "/og/es.png" : `/og/integrations-openclaw-${locale}.png`;
   const ogImageUrl = `${baseUrl}${ogImagePath}`;
   const integrationsIndex = `${baseUrl}${locale === "en" ? "" : `/${locale}`}/integrations`;
   const robotsContent = isPreviewHost
