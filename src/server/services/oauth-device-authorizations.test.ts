@@ -6,11 +6,17 @@ vi.mock("../db/supabase", () => ({
 
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
+  approveOauthDeviceAuthorization,
   assertOauthDeviceUserCodeLookupAllowed,
   consumeOauthDeviceTokenPollAttempt,
+  createOauthDeviceAuthorization,
+  denyOauthDeviceAuthorization,
+  getOauthDeviceAuthorizationByDeviceCode,
+  getOauthDeviceAuthorizationByUserCode,
   getOauthDeviceCodePollingState,
   getOauthUserCodeLockoutState,
   incrementOauthUserCodeLookupFailure,
+  markOauthDeviceAuthorizationExchanged,
   normalizeOauthUserCode,
   recordOauthDeviceUserCodeLookupAttempt,
   recordOauthDeviceCodePoll,
@@ -33,6 +39,8 @@ function createUpdateChain(result: any) {
   const chain: any = {
     update: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    gt: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn(async () => result)
   };
@@ -43,7 +51,8 @@ function createInsertChain(result: any) {
   const chain: any = {
     insert: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn(async () => result)
+    maybeSingle: vi.fn(async () => result),
+    single: vi.fn(async () => result)
   };
   return chain;
 }
@@ -560,5 +569,332 @@ describe("device-code polling primitives", () => {
         last_polled_at: now.toISOString()
       })
     );
+  });
+});
+
+describe("device authorization lifecycle", () => {
+  const now = new Date("2026-02-11T12:00:00.000Z");
+  const future = "2026-02-11T12:10:00.000Z";
+  const past = "2026-02-11T11:59:00.000Z";
+
+  it("validates creation and persists normalized authorization metadata", async () => {
+    await expect(createOauthDeviceAuthorization({
+      clientId: "   ",
+      now
+    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
+
+    const inserted = {
+      authorization_id: "authorization_1",
+      status: "PENDING",
+      expires_at: future
+    };
+    const insertChain = createInsertChain({ data: inserted, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => insertChain)
+    } as any);
+
+    const result = await createOauthDeviceAuthorization({
+      clientId: `  ${"client".repeat(20)}  `,
+      requestedScopes: ["agent:read", "", null, " deals:read "],
+      requestedAgentName: "  Test agent  ",
+      ipTruncated: "  192.0.2.0/24  ",
+      uaHash: ` ${"a".repeat(140)} `,
+      expiresAt: new Date(future),
+      now
+    });
+
+    expect(result.authorization).toEqual(inserted);
+    expect(result.device_code).toMatch(/^cd_dev_[A-Za-z0-9_-]+$/);
+    expect(result.user_code).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+    expect(insertChain.insert).toHaveBeenCalledWith(expect.objectContaining({
+      status: "PENDING",
+      client_id: expect.stringMatching(/^client/),
+      requested_scopes: ["agent:read", "deals:read"],
+      requested_agent_name: "Test agent",
+      ip_truncated: "192.0.2.0/24",
+      ua_hash: "a".repeat(128),
+      created_at: now.toISOString(),
+      expires_at: future,
+      device_code_hash: expect.not.stringContaining("cd_dev_"),
+      user_code_hash: expect.any(String)
+    }));
+    expect(insertChain.insert.mock.calls[0][0].client_id).toHaveLength(80);
+  });
+
+  it("retries code collisions and fails closed after the bounded attempt count", async () => {
+    const collisionChain = createInsertChain({
+      data: null,
+      error: { code: "23505", message: "duplicate key value violates unique constraint" }
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => collisionChain)
+    } as any);
+
+    await expect(createOauthDeviceAuthorization({
+      clientId: "openclaw",
+      now
+    })).rejects.toMatchObject({
+      status: 500,
+      code: "CODE_GENERATION_FAILED"
+    });
+    expect(collisionChain.single).toHaveBeenCalledTimes(10);
+
+    const failureChain = createInsertChain({
+      data: null,
+      error: { code: "PGRST500", message: "insert unavailable" }
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => failureChain)
+    } as any);
+    await expect(createOauthDeviceAuthorization({
+      clientId: "openclaw",
+      now
+    })).rejects.toMatchObject({ message: "insert unavailable" });
+  });
+
+  it("loads by user code and atomically expires stale pending requests", async () => {
+    const pending = {
+      authorization_id: "authorization_expired",
+      user_code_hash: "stored-user-hash",
+      status: "PENDING",
+      expires_at: past
+    };
+    const lookup = createSelectChain({ data: pending, error: null });
+    const expired = {
+      ...pending,
+      status: "EXPIRED",
+      expired_at: now.toISOString()
+    };
+    const expire = createUpdateChain({ data: expired, error: null });
+    const client = {
+      from: vi.fn().mockReturnValueOnce(lookup).mockReturnValueOnce(expire)
+    };
+    vi.mocked(getSupabaseServiceClient).mockReturnValue(client as any);
+
+    await expect(getOauthDeviceAuthorizationByUserCode({
+      userCode: "ABCD-EFGH",
+      now
+    })).resolves.toEqual(expired);
+    expect(expire.update).toHaveBeenCalledWith({
+      status: "EXPIRED",
+      expired_at: now.toISOString(),
+      updated_at: now.toISOString()
+    });
+    expect(expire.eq).toHaveBeenCalledWith("status", "PENDING");
+  });
+
+  it("loads authorized device codes without mutating them and rejects missing codes", async () => {
+    await expect(getOauthDeviceAuthorizationByDeviceCode({
+      deviceCode: "bad-code",
+      now
+    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
+
+    const authorized = {
+      authorization_id: "authorization_authorized",
+      status: "AUTHORIZED",
+      expires_at: future
+    };
+    const lookup = createSelectChain({ data: authorized, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => lookup)
+    } as any);
+    await expect(getOauthDeviceAuthorizationByDeviceCode({
+      deviceCode: "cd_dev_valid_code",
+      now
+    })).resolves.toEqual(authorized);
+
+    const missing = createSelectChain({ data: null, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => missing)
+    } as any);
+    await expect(getOauthDeviceAuthorizationByUserCode({
+      userCode: "ABCD-EFGH",
+      now
+    })).rejects.toMatchObject({
+      status: 404,
+      code: "DEVICE_AUTHORIZATION_NOT_FOUND"
+    });
+  });
+
+  it("marks an authorized code exchanged with an idempotence guard", async () => {
+    const exchanged = {
+      authorization_id: "authorization_1",
+      status: "AUTHORIZED",
+      exchanged_at: now.toISOString(),
+      expires_at: future
+    };
+    const update = createUpdateChain({ data: exchanged, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => update)
+    } as any);
+
+    await expect(markOauthDeviceAuthorizationExchanged({
+      authorizationId: "authorization_1",
+      deviceCode: "cd_dev_valid_code",
+      now
+    })).resolves.toEqual(exchanged);
+    expect(update.is).toHaveBeenCalledWith("exchanged_at", null);
+    expect(update.gt).toHaveBeenCalledWith("expires_at", now.toISOString());
+  });
+
+  it("classifies losing exchange races without issuing a second credential", async () => {
+    const update = createUpdateChain({ data: null, error: null });
+    const alreadyExchanged = createSelectChain({
+      data: {
+        authorization_id: "authorization_1",
+        status: "AUTHORIZED",
+        exchanged_at: "2026-02-11T11:59:00.000Z",
+        expires_at: future
+      },
+      error: null
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValueOnce(update).mockReturnValueOnce(alreadyExchanged)
+    } as any);
+    await expect(markOauthDeviceAuthorizationExchanged({
+      authorizationId: "authorization_1",
+      deviceCode: "cd_dev_valid_code",
+      now
+    })).rejects.toMatchObject({ status: 409, code: "DEVICE_CODE_ALREADY_EXCHANGED" });
+
+    const deniedUpdate = createUpdateChain({ data: null, error: null });
+    const denied = createSelectChain({
+      data: {
+        authorization_id: "authorization_2",
+        status: "DENIED",
+        exchanged_at: null,
+        expires_at: future
+      },
+      error: null
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValueOnce(deniedUpdate).mockReturnValueOnce(denied)
+    } as any);
+    await expect(markOauthDeviceAuthorizationExchanged({
+      authorizationId: "authorization_2",
+      deviceCode: "cd_dev_valid_code",
+      now
+    })).rejects.toMatchObject({ status: 409, code: "DEVICE_AUTHORIZATION_DENIED" });
+  });
+
+  it("approves a pending authorization with owner and agent binding", async () => {
+    await expect(approveOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      ownerId: "",
+      agentId: "agent_1",
+      now
+    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
+    await expect(approveOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      ownerId: "owner_1",
+      agentId: null,
+      now
+    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
+
+    const approved = {
+      authorization_id: "authorization_approved",
+      status: "AUTHORIZED",
+      owner_id: "owner_1",
+      agent_id: "agent_1",
+      expires_at: future
+    };
+    const update = createUpdateChain({ data: approved, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => update)
+    } as any);
+    await expect(approveOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      ownerId: " owner_1 ",
+      agentId: " agent_1 ",
+      now
+    })).resolves.toEqual(approved);
+    expect(update.update).toHaveBeenCalledWith(expect.objectContaining({
+      status: "AUTHORIZED",
+      owner_id: "owner_1",
+      agent_id: "agent_1"
+    }));
+  });
+
+  it("classifies failed approval transitions after a concurrent state change", async () => {
+    const update = createUpdateChain({ data: null, error: null });
+    const denied = createSelectChain({
+      data: {
+        authorization_id: "authorization_denied",
+        status: "DENIED",
+        expires_at: future
+      },
+      error: null
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValueOnce(update).mockReturnValueOnce(denied)
+    } as any);
+
+    await expect(approveOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      ownerId: "owner_1",
+      agentId: "agent_1",
+      now
+    })).rejects.toMatchObject({ status: 409, code: "DEVICE_AUTHORIZATION_DENIED" });
+  });
+
+  it("denies once and treats repeated denies as idempotent", async () => {
+    const denied = {
+      authorization_id: "authorization_denied",
+      status: "DENIED",
+      denied_at: now.toISOString(),
+      expires_at: future
+    };
+    const update = createUpdateChain({ data: denied, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => update)
+    } as any);
+    await expect(denyOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      now
+    })).resolves.toEqual(denied);
+
+    const lostUpdate = createUpdateChain({ data: null, error: null });
+    const lookup = createSelectChain({ data: denied, error: null });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValueOnce(lostUpdate).mockReturnValueOnce(lookup)
+    } as any);
+    await expect(denyOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      now
+    })).resolves.toEqual(denied);
+  });
+
+  it("rejects denial after authorization and maps Supabase transition errors", async () => {
+    const lostUpdate = createUpdateChain({ data: null, error: null });
+    const authorized = createSelectChain({
+      data: {
+        authorization_id: "authorization_authorized",
+        status: "AUTHORIZED",
+        expires_at: future
+      },
+      error: null
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn().mockReturnValueOnce(lostUpdate).mockReturnValueOnce(authorized)
+    } as any);
+    await expect(denyOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      now
+    })).rejects.toMatchObject({
+      status: 409,
+      code: "DEVICE_AUTHORIZATION_ALREADY_AUTHORIZED"
+    });
+
+    const failedUpdate = createUpdateChain({
+      data: null,
+      error: { code: "PGRST500", message: "transition unavailable" }
+    });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({
+      from: vi.fn(() => failedUpdate)
+    } as any);
+    await expect(denyOauthDeviceAuthorization({
+      userCode: "ABCD-EFGH",
+      now
+    })).rejects.toMatchObject({ message: "transition unavailable" });
   });
 });
