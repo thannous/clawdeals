@@ -13,9 +13,15 @@ vi.mock("../../../../../server/services/watchlist-matches", () => ({
 
 import { handler } from "../../../../../pages/api/v1/watchlists/[watchlist_id]/matches";
 import { getWatchlistForAgent } from "../../../../../server/services/watchlists";
-import { hydrateDealSummaries, hydrateListingSummaries, listWatchlistMatches } from "../../../../../server/services/watchlist-matches";
+import {
+  decodeWatchlistMatchesCursor,
+  hydrateDealSummaries,
+  hydrateListingSummaries,
+  listWatchlistMatches
+} from "../../../../../server/services/watchlist-matches";
 
 const getWatchlistForAgentMock = vi.mocked(getWatchlistForAgent);
+const decodeWatchlistMatchesCursorMock = vi.mocked(decodeWatchlistMatchesCursor);
 const listWatchlistMatchesMock = vi.mocked(listWatchlistMatches);
 const hydrateDealSummariesMock = vi.mocked(hydrateDealSummaries);
 const hydrateListingSummariesMock = vi.mocked(hydrateListingSummaries);
@@ -50,6 +56,46 @@ describe("/v1/watchlists/:watchlist_id/matches", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("GET validates and forwards the matches cursor", async () => {
+    decodeWatchlistMatchesCursorMock.mockReturnValue({
+      value: {
+        matched_at: "2026-07-23T08:00:00.000Z",
+        watchlist_match_id: "match-9"
+      }
+    } as any);
+    getWatchlistForAgentMock.mockResolvedValue({
+      watchlist_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "agent-1"
+    } as any);
+    listWatchlistMatchesMock.mockResolvedValue({ items: [], nextCursor: null } as any);
+
+    const result: any = await handler(
+      {
+        method: "GET",
+        query: {
+          watchlist_id: "11111111-1111-4111-8111-111111111111",
+          entity_type: "deal",
+          limit: "25",
+          cursor: "encoded-cursor"
+        }
+      },
+      null,
+      { ...baseCtx }
+    );
+
+    expect(result.status).toBe(200);
+    expect(decodeWatchlistMatchesCursor).toHaveBeenCalledWith("encoded-cursor");
+    expect(listWatchlistMatches).toHaveBeenCalledWith({
+      watchlistId: "11111111-1111-4111-8111-111111111111",
+      entityType: "deal",
+      limit: 25,
+      cursor: {
+        matched_at: "2026-07-23T08:00:00.000Z",
+        watchlist_match_id: "match-9"
+      }
+    });
   });
 
   it("GET returns 404 when watchlist not found", async () => {

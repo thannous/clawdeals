@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { WATCHLIST_BACKFILL_MAX_MATCHES } from "../config/watchlists";
-import { runWatchlistBackfillQueue } from "./watchlist-backfill-queue";
+import { enqueueWatchlistBackfill, runWatchlistBackfillQueue } from "./watchlist-backfill-queue";
 
 function createQueueDeleteChain(filters: Array<{ column: string; value: any }>) {
   const chain: any = {
@@ -17,6 +17,29 @@ function createQueueDeleteChain(filters: Array<{ column: string; value: any }>) 
 describe("runWatchlistBackfillQueue", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("validates and upserts a single durable backfill job", async () => {
+    const upsert = vi.fn(async () => ({ error: null }));
+    const client: any = {
+      from: vi.fn(() => ({ upsert }))
+    };
+    const now = new Date("2026-07-23T08:00:00.000Z");
+
+    await expect(enqueueWatchlistBackfill({ watchlistId: null, client })).rejects.toMatchObject({
+      status: 400,
+      code: "VALIDATION_ERROR"
+    });
+    await expect(enqueueWatchlistBackfill({ watchlistId: "wl-1", now, client })).resolves.toEqual({ ok: true });
+
+    expect(client.from).toHaveBeenCalledWith("watchlist_backfill_queue");
+    expect(upsert).toHaveBeenCalledWith(
+      {
+        watchlist_id: "wl-1",
+        updated_at: now.toISOString()
+      },
+      { onConflict: "watchlist_id" }
+    );
   });
 
   it("upserts every backfill match in bounded batches before cleaning the queue", async () => {
@@ -150,6 +173,168 @@ describe("runWatchlistBackfillQueue", () => {
     expect(queueDeleteFilters).toEqual([
       { column: "watchlist_id", value: "wl-1" },
       { column: "updated_at", value: queueUpdatedAt }
+    ]);
+  });
+
+  it("backfills only entities from the watchlist market even when FR and ES share EUR", async () => {
+    const queueUpdatedAt = "2026-07-23T07:00:00.000Z";
+    const upsertedRows: any[] = [];
+    const queueDeleteChain = createQueueDeleteChain([]);
+
+    let queueTable: any;
+    queueTable = {
+      select: vi.fn(() => queueTable),
+      order: vi.fn(() => queueTable),
+      limit: vi.fn(async () => ({
+        data: [{ watchlist_id: "wl-es", updated_at: queueUpdatedAt }],
+        error: null
+      })),
+      delete: vi.fn(() => queueDeleteChain)
+    };
+
+    const deals = [
+      {
+        deal_id: "deal-es",
+        title: "Console bundle",
+        tags: ["gaming"],
+        price: 100,
+        currency: "EUR",
+        market_code: "ES",
+        status: "ACTIVE",
+        created_at: "2026-07-23T06:00:00.000Z"
+      },
+      {
+        deal_id: "deal-fr",
+        title: "Console bundle",
+        tags: ["gaming"],
+        price: 100,
+        currency: "EUR",
+        market_code: "FR",
+        status: "ACTIVE",
+        created_at: "2026-07-23T05:00:00.000Z"
+      },
+      {
+        deal_id: "deal-gb",
+        title: "Console bundle",
+        tags: ["gaming"],
+        price: 100,
+        currency: "GBP",
+        market_code: "GB",
+        status: "ACTIVE",
+        created_at: "2026-07-23T04:00:00.000Z"
+      }
+    ];
+    let dealsTable: any;
+    dealsTable = {
+      select: vi.fn(() => dealsTable),
+      in: vi.fn(() => dealsTable),
+      order: vi.fn(() => dealsTable),
+      limit: vi.fn(async () => ({ data: deals, error: null }))
+    };
+
+    const listings = [
+      {
+        listing_id: "listing-es",
+        title: "Console bundle",
+        category: "gaming",
+        price_amount: 100,
+        currency: "EUR",
+        market_code: "ES",
+        geo_lat: null,
+        geo_lng: null,
+        status: "LIVE",
+        created_at: "2026-07-23T06:00:00.000Z"
+      },
+      {
+        listing_id: "listing-fr",
+        title: "Console bundle",
+        category: "gaming",
+        price_amount: 100,
+        currency: "EUR",
+        market_code: "FR",
+        geo_lat: null,
+        geo_lng: null,
+        status: "LIVE",
+        created_at: "2026-07-23T05:00:00.000Z"
+      }
+    ];
+    let listingsTable: any;
+    listingsTable = {
+      select: vi.fn(() => listingsTable),
+      eq: vi.fn(() => listingsTable),
+      order: vi.fn(() => listingsTable),
+      limit: vi.fn(async () => ({ data: listings, error: null }))
+    };
+
+    let watchlistsTable: any;
+    watchlistsTable = {
+      select: vi.fn(() => watchlistsTable),
+      eq: vi.fn(() => watchlistsTable),
+      is: vi.fn(() => watchlistsTable),
+      maybeSingle: vi.fn(async () => ({
+        data: {
+          watchlist_id: "wl-es",
+          agent_id: "agent-es",
+          active: true,
+          market_code: "ES",
+          currency: "EUR",
+          query_text: "console",
+          tags: [],
+          price_max: 150,
+          geo_lat: null,
+          geo_lon: null,
+          distance_km: null,
+          criteria: null,
+          deleted_at: null
+        },
+        error: null
+      }))
+    };
+
+    const matchesTable: any = {
+      upsert: vi.fn((rows: any[]) => {
+        upsertedRows.push(...rows);
+        return {
+          select: vi.fn(async () => ({
+            data: rows.map((_, index) => ({ watchlist_match_id: `match-${index}` })),
+            error: null
+          }))
+        };
+      })
+    };
+
+    const client: any = {
+      from: vi.fn((table: string) => {
+        if (table === "watchlist_backfill_queue") return queueTable;
+        if (table === "deals") return dealsTable;
+        if (table === "listings") return listingsTable;
+        if (table === "watchlists") return watchlistsTable;
+        if (table === "watchlist_matches") return matchesTable;
+        throw new Error(`Unexpected table ${table}`);
+      })
+    };
+
+    const result = await runWatchlistBackfillQueue({
+      client,
+      now: new Date("2026-07-23T08:00:00.000Z")
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      processed_count: 1,
+      inserted_count: 2,
+      deals_count: 3,
+      listings_count: 2
+    });
+    expect(dealsTable.select).toHaveBeenCalledWith(
+      "deal_id,title,tags,price,currency,market_code,status,created_at"
+    );
+    expect(listingsTable.select).toHaveBeenCalledWith(
+      "listing_id,title,category,condition,price_amount,currency,market_code,geo_lat,geo_lng,status,created_at"
+    );
+    expect(upsertedRows.map((row) => `${row.entity_type}:${row.entity_id}`)).toEqual([
+      "deal:deal-es",
+      "listing:listing-es"
     ]);
   });
 });

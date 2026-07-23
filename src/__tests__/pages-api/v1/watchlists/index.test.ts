@@ -199,4 +199,47 @@ describe("/v1/watchlists (index)", () => {
     );
     expect(enqueueWatchlistBackfillMock).toHaveBeenCalledWith({ watchlistId: "wl-1" });
   });
+
+  it.each([
+    ["gb", "GB", "GBP"],
+    ["ES", "ES", "EUR"]
+  ])("POST keeps explicit market %s separate with its native currency", async (inputMarket, marketCode, currency) => {
+    createWatchlistMock.mockResolvedValue({
+      watchlist_id: `wl-${marketCode.toLowerCase()}`,
+      agent_id: "agent-1",
+      name: "Console deals",
+      active: true,
+      market_code: marketCode,
+      currency,
+      criteria: { query: "console", tags: [], price_max: 500, geo: null, distance_km: null },
+      created_at: "2026-07-23T08:00:00.000Z",
+      updated_at: "2026-07-23T08:00:00.000Z"
+    } as any);
+
+    const result: any = await handler(
+      {
+        method: "POST",
+        headers: { "idempotency-key": `create-${marketCode}` },
+        body: {
+          name: "Console deals",
+          market_code: inputMarket,
+          criteria: { query: "console", price_max: 500 }
+        }
+      },
+      null,
+      { ...baseCtx }
+    );
+
+    expect(result.status).toBe(201);
+    expect(result.body).toMatchObject({
+      market_code: marketCode,
+      currency
+    });
+    expect(createWatchlist).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marketCode,
+        currency
+      })
+    );
+  });
 });

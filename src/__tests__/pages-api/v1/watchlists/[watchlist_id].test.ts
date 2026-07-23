@@ -147,6 +147,42 @@ describe("/v1/watchlists/:watchlist_id", () => {
     });
   });
 
+  it("PATCH switches market_code and currency together before backfilling", async () => {
+    updateWatchlistForAgentMock.mockResolvedValue({
+      watchlist_id: "11111111-1111-4111-8111-111111111111",
+      agent_id: "agent-1",
+      name: "UK console deals",
+      active: true,
+      market_code: "GB",
+      currency: "GBP",
+      criteria: { query: "console", tags: [], price_max: null, geo: null, distance_km: null },
+      created_at: "2026-02-06T12:00:00Z",
+      updated_at: "2026-07-23T08:00:00Z"
+    } as any);
+
+    const result: any = await handler(
+      {
+        method: "PATCH",
+        query: { watchlist_id: "11111111-1111-4111-8111-111111111111" },
+        headers: { "idempotency-key": "switch-market" },
+        body: { market_code: "gb" }
+      },
+      null,
+      { ...baseCtx }
+    );
+
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({ market_code: "GB", currency: "GBP" });
+    expect(updateWatchlistForAgent).toHaveBeenCalledWith({
+      watchlistId: "11111111-1111-4111-8111-111111111111",
+      agentId: "agent-1",
+      patch: { marketCode: "GB", currency: "GBP" }
+    });
+    expect(enqueueWatchlistBackfill).toHaveBeenCalledWith({
+      watchlistId: "11111111-1111-4111-8111-111111111111"
+    });
+  });
+
   it("PATCH still succeeds when best-effort backfill enqueue fails", async () => {
     updateWatchlistForAgentMock.mockResolvedValue({
       watchlist_id: "11111111-1111-4111-8111-111111111111",

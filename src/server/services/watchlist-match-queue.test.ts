@@ -249,6 +249,57 @@ describe("runWatchlistMatchQueue", () => {
     );
   });
 
+  it("reports success and errors independently for FR, GB, and ES", async () => {
+    const now = new Date("2026-07-23T08:00:00.000Z");
+    const queue = [
+      { entity_type: "deal" as const, entity_id: "deal-fr", updated_at: "2026-07-23T07:00:00.000Z", attempt_count: 0 },
+      { entity_type: "deal" as const, entity_id: "deal-gb", updated_at: "2026-07-23T07:01:00.000Z", attempt_count: 0 },
+      { entity_type: "deal" as const, entity_id: "deal-es", updated_at: "2026-07-23T07:02:00.000Z", attempt_count: 0 }
+    ];
+    const client = new FakeSupabaseClient({
+      queue,
+      deals: [
+        { deal_id: "deal-fr", market_code: "FR", status: "ACTIVE" },
+        { deal_id: "deal-gb", market_code: "GB", status: "ACTIVE" },
+        { deal_id: "deal-es", market_code: "ES", status: "ACTIVE" }
+      ]
+    });
+    const matchDeal = vi.fn(async ({ deal }: { deal: any }) => {
+      if (deal.market_code === "ES") throw new Error("ES matcher unavailable");
+      return {
+        ok: true,
+        market_code: deal.market_code,
+        matched_count: deal.market_code === "FR" ? 2 : 1,
+        inserted_count: 1
+      };
+    });
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+
+    const summary = await runWatchlistMatchQueue({ client, matchDeal, now });
+
+    expect(summary).toMatchObject({
+      scanned_count: 3,
+      processed_count: 3,
+      success_count: 2,
+      error_count: 1,
+      matched_count: 3,
+      inserted_count: 2,
+      markets: {
+        FR: { processed_count: 1, error_count: 0, matched_count: 2, inserted_count: 1 },
+        GB: { processed_count: 1, error_count: 0, matched_count: 1, inserted_count: 1 },
+        ES: { processed_count: 0, error_count: 1, matched_count: 0, inserted_count: 0 }
+      }
+    });
+    expect(client.queue).toEqual([
+      expect.objectContaining({
+        entity_id: "deal-es",
+        attempt_count: 1,
+        last_error: "ES matcher unavailable",
+        updated_at: now.toISOString()
+      })
+    ]);
+  });
+
   it.each([
     {
       entityType: "deal" as const,
