@@ -17,7 +17,7 @@
     "sdk:generate:ts": "node scripts/sdk/generate-typescript-sdk.mjs",
     "sdk:generate:py": "node scripts/sdk/generate-python-sdk.mjs",
     "test:unit": "vitest run",
-    "test:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage --maxWorkers=2 --minWorkers=1",
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:skill": "node scripts/smoke-skill-examples.mjs",
     "test:skill:pack": "node scripts/validate-skill-pack.mjs",
