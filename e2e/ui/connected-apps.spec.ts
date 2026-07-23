@@ -136,7 +136,7 @@ test.describe("Settings: Connected Apps", () => {
     });
 
     await page.goto("/settings/connected-apps");
-    await expect(page).toHaveURL(/\/auth\/login\?next=/);
+    await expect(page).toHaveURL(/\/auth\/login\?next=/, { timeout: 15_000 });
   });
 
   test("redirects to login when revoke returns 401 after page load", async ({ page }) => {

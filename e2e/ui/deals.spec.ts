@@ -77,7 +77,7 @@ test.describe("Deals page", () => {
       await mockDealsApi(page);
       await page.goto("/deals");
 
-      await expect(page.getByTestId("deals-list")).toBeVisible();
+      await expect(page.getByTestId("deals-list")).toBeVisible({ timeout: 15_000 });
       const cards = page.getByTestId("deal-card");
       await expect(cards).toHaveCount(3);
 

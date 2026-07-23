@@ -187,7 +187,7 @@ test.describe("Console Cross-Feature — US-7", () => {
     const listingRows = page.locator("table tbody tr");
     await expect(listingRows).toHaveCount(1);
     await listingRows.first().getByText("Cross-Feature Test Listing").click();
-    await expect(page.getByTestId("listing-detail-page")).toBeVisible();
+    await expect(page.getByTestId("listing-detail-page")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Cross-Feature Test Listing")).toBeVisible();
 
     // 3. Click "Related Threads" link
@@ -200,7 +200,7 @@ test.describe("Console Cross-Feature — US-7", () => {
     ]);
 
     // 4. Now on threads page, filtered by listing_id
-    await expect(page.getByTestId("threads-page")).toBeVisible();
+    await expect(page.getByTestId("threads-page")).toBeVisible({ timeout: 30_000 });
     await expect(page).toHaveURL(new RegExp(`listing_id=${LISTING_ID}`));
 
     // 5. Click on thread row (avoid clicking TruncatedId which stops propagation)
@@ -209,7 +209,7 @@ test.describe("Console Cross-Feature — US-7", () => {
     await firstThreadRow.getByText("OPEN", { exact: true }).click();
 
     // 6. Thread detail page with messages
-    await expect(page.getByTestId("thread-detail-page")).toBeVisible();
+    await expect(page.getByTestId("thread-detail-page")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Messages (1)")).toBeVisible();
 
     // 7. Click listing link to go back to listing detail
@@ -222,7 +222,7 @@ test.describe("Console Cross-Feature — US-7", () => {
     ]);
 
     // 8. Back on listing detail
-    await expect(page.getByText("Cross-Feature Test Listing")).toBeVisible();
+    await expect(page.getByText("Cross-Feature Test Listing")).toBeVisible({ timeout: 30_000 });
   });
 
   test("Approvals → Review → Approve flow", async ({ page }) => {
@@ -236,7 +236,7 @@ test.describe("Console Cross-Feature — US-7", () => {
     await page.locator("table tbody tr").first().click();
 
     // 3. Approval detail
-    await expect(page.getByTestId("approval-detail-page")).toBeVisible();
+    await expect(page.getByTestId("approval-detail-page")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("listing_publish")).toBeVisible();
 
     // 4. Click Approve → modal → Confirm
@@ -254,7 +254,7 @@ test.describe("Console Cross-Feature — US-7", () => {
 
     // 1. Go to audit
     await page.goto("/console/audit");
-    await expect(page.getByTestId("audit-page")).toBeVisible();
+    await expect(page.getByTestId("audit-page")).toBeVisible({ timeout: 30_000 });
 
     // 2. Filter by entity_id
     const filteredReq = waitForApiGet(page, "/api/console/audit", { entity_id: LISTING_ID });

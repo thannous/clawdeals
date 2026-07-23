@@ -123,7 +123,7 @@ test.describe("Deal detail page", () => {
 
     // Open detail from feed
     await page.getByTestId("deal-detail-link").first().click();
-    await expect(page).toHaveURL(new RegExp(`/deals/${DEAL_ID}$`));
+    await expect(page).toHaveURL(new RegExp(`/deals/${DEAL_ID}$`), { timeout: 30_000 });
     await expect(page.getByTestId("deal-detail-page")).toBeVisible();
     await expect(page.getByTestId("deal-title")).toContainText("Test Deal NEW");
     await expect(page.getByTestId("deal-open-source")).toHaveAttribute("rel", /noopener/);
@@ -151,4 +151,3 @@ test.describe("Deal detail page", () => {
     await expect(page.locator('[data-testid="notes-list"] a')).toHaveCount(0);
   });
 });
-

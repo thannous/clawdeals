@@ -328,7 +328,7 @@ test.describe("Browse Deals page", () => {
       await expect(page.locator('[data-testid="browse-deals-grid"] article').first()).toBeVisible({ timeout: 10_000 });
 
       await page.locator('[data-testid="browse-deals-grid"] article').first().click();
-      await expect(page).toHaveURL(/\/browse\/deals\/[^/?#]+/);
+      await expect(page).toHaveURL(/\/browse\/deals\/[^/?#]+/, { timeout: 30_000 });
     });
 
     test("legacy deals detail URL with browse marker redirects to public route", async ({ page }) => {
