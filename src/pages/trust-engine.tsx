@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Scale, Shield, ShieldCheck, TrendingUp } from "lucide-react";
 import FeaturePageLayout from "../ui/feature/FeaturePageLayout";
+import LocalizedMarketContext from "../ui/seo/LocalizedMarketContext";
 import { SectionHeader, TechBorder } from "../ui/landing/primitives";
 import { withMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
@@ -148,6 +149,8 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
         accentColor="text-primary"
         accentBg="bg-primary"
       >
+        <LocalizedMarketContext locale={resolvedLocale} context="trust" />
+
         {/* Section 1: How the score is computed */}
         <section>
           <SectionHeader title={t("sections.howItWorks.title")} subtitle={t("sections.howItWorks.subtitle")} />

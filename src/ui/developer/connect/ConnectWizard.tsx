@@ -8,6 +8,7 @@ import { useTheme } from "../../../theme/theme-context";
 import { getPublicLandingUrl } from "../../../shared/urls";
 import { getLocaleLabels, localePrefixFor } from "../../../shared/seo";
 import { stripLocalePrefix, type SupportedLocale } from "../../../shared/i18n";
+import { ACQUISITION_QUERY_PARAM, normalizeAcquisitionId } from "../../../shared/acquisition";
 import ShareButton from "../../landing/ShareButton";
 import { maskApiKey } from "../api";
 import { useConnectSession } from "./useConnectSession";
@@ -401,12 +402,14 @@ export default function ConnectWizard() {
     <HeaderActions extraActions={headerExtraActions} showLogin={!state.hasOwnerSession} />
   );
 
+  const acquisitionId = normalizeAcquisitionId(router.query?.[ACQUISITION_QUERY_PARAM]);
+
   const handleCreateSession = useCallback(async (agentName?: string) => {
-    const session = await createSession(agentName);
+    const session = await createSession(agentName, acquisitionId);
     setClaimSession(session);
     startPolling(session);
     return session;
-  }, [createSession, setClaimSession, startPolling]);
+  }, [acquisitionId, createSession, setClaimSession, startPolling]);
 
   const handleBack = useCallback(() => {
     stopPolling();

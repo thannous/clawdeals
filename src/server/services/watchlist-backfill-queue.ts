@@ -2,6 +2,7 @@ import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { buildEntityTokensFromDeal, evaluateWatchlistMatch, buildEntityTokensFromListing, evaluateWatchlistMatchListing } from "../utils/matching";
 import { WATCHLIST_BACKFILL_MAX_MATCHES } from "../config/watchlists";
+import { safeRecordAgentMilestone } from "./acquisition";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
   const error: any = new Error(message);
@@ -182,10 +183,23 @@ export async function runWatchlistBackfillQueue({
       });
     }
 
+    let watchlistInsertedCount = 0;
     for (let offset = 0; offset < matchRows.length; offset += WATCHLIST_BACKFILL_MAX_MATCHES) {
-      insertedCount += await upsertMatches({
+      const batchInsertedCount = await upsertMatches({
         client: supabase,
         rows: matchRows.slice(offset, offset + WATCHLIST_BACKFILL_MAX_MATCHES)
+      });
+      insertedCount += batchInsertedCount;
+      watchlistInsertedCount += batchInsertedCount;
+    }
+
+    if (watchlistInsertedCount > 0) {
+      await safeRecordAgentMilestone({
+        eventName: "first_match",
+        agentId: watchlist.agent_id,
+        marketCode: watchlist.market_code || null,
+        occurredAt: now,
+        client: supabase
       });
     }
 

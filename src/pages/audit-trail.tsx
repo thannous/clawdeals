@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { Database, Fingerprint, Key, RotateCcw, Search, ShieldOff, Timer } from "lucide-react";
 import FeaturePageLayout from "../ui/feature/FeaturePageLayout";
+import LocalizedMarketContext from "../ui/seo/LocalizedMarketContext";
 import { SectionHeader, TechBorder } from "../ui/landing/primitives";
 import { withMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
@@ -139,6 +140,8 @@ export default function AuditTrail({ baseUrl, isPreviewHost }: PageProps) {
         accentColor="text-success"
         accentBg="bg-success"
       >
+        <LocalizedMarketContext locale={resolvedLocale} context="audit" />
+
         {/* Section 1: Event Log */}
         <section>
           <SectionHeader

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { Ban, ChevronRight, Clock, DollarSign, ListChecks, Lock, Settings, ShieldAlert, UserCheck } from "lucide-react";
 import FeaturePageLayout from "../ui/feature/FeaturePageLayout";
+import LocalizedMarketContext from "../ui/seo/LocalizedMarketContext";
 import { SectionHeader, TechBorder } from "../ui/landing/primitives";
 import { withMessages } from "../shared/i18n";
 import type { SupportedLocale } from "../shared/i18n";
@@ -143,6 +144,8 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
         accentColor="text-secondary"
         accentBg="bg-secondary"
       >
+        <LocalizedMarketContext locale={resolvedLocale} context="policy" />
+
         {/* Section 1: Rules Engine */}
         <section>
           <SectionHeader

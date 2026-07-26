@@ -15,6 +15,7 @@ import { SectionHeader } from "./landing/primitives";
 import ExploreDemos from "./landing/ExploreDemos";
 import PlatformPillars from "./landing/PlatformPillars";
 import Footer from "./Footer";
+import LocalizedMarketContext from "./seo/LocalizedMarketContext";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -228,6 +229,7 @@ function HeroCurrent({ locale }: { locale: string }) {
       <div className="flex flex-wrap items-center justify-center gap-4">
         <Link
           href={entryUrl}
+          data-acquisition-cta="hero"
           className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
         >
           <span className="relative z-10 flex items-center gap-2">
@@ -399,6 +401,7 @@ function TabbedShowcaseCurrent({ locale }: { locale: string }) {
     deals: (
       <Link
         href={entryUrl}
+        data-acquisition-cta="showcase_deals"
         className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
       >
         {t("showcase.deals.cta")}
@@ -407,6 +410,7 @@ function TabbedShowcaseCurrent({ locale }: { locale: string }) {
     marketplace: (
       <Link
         href={entryUrl}
+        data-acquisition-cta="showcase_marketplace"
         className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
       >
         {t("showcase.marketplace.cta")}
@@ -501,6 +505,12 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
         {banner}
 
         {hero}
+
+        {mode === "current" && locale !== "en" && (
+          <div className="max-w-[1440px] mx-auto px-6 pt-12">
+            <LocalizedMarketContext locale={locale} context="landing" />
+          </div>
+        )}
 
         <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
           <div

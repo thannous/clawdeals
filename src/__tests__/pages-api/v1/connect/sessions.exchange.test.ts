@@ -21,6 +21,10 @@ vi.mock("../../../../server/services/connect-session-exchange", () => ({
   exchangeConnectSessionForInstallationApiKey: vi.fn()
 }));
 
+vi.mock("../../../../server/services/acquisition", () => ({
+  safeRecordAgentConnected: vi.fn().mockResolvedValue({ recorded: true })
+}));
+
 import { jsonResponse } from "../../../../server/http/response";
 import { handler } from "../../../../pages/api/v1/connect/sessions/[session_id]/exchange";
 import { rateLimitMiddleware } from "../../../../server/rate-limit/middleware";

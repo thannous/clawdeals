@@ -8,6 +8,7 @@ import { Chakra_Petch, JetBrains_Mono } from "next/font/google";
 import WebMcpProviderGate from "../webmcp/WebMcpProviderGate";
 import Footer from "../ui/Footer";
 import { DEFAULT_SOCIAL_DESCRIPTION } from "../shared/seo";
+import AcquisitionTelemetry from "../ui/analytics/AcquisitionTelemetry";
 
 /** Paths where the shared footer is hidden (landing has its own, app pages don't need one). */
 const HIDE_FOOTER_PREFIXES = ["/auth", "/console", "/settings", "/device", "/pair", "/start", "/claim", "/dev", "/keys"];
@@ -60,6 +61,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </div>
       )}
       <ThemeProvider>
+        <AcquisitionTelemetry />
         <Head>
           <meta property="og:description" content={DEFAULT_SOCIAL_DESCRIPTION} />
           <meta name="twitter:description" content={DEFAULT_SOCIAL_DESCRIPTION} />

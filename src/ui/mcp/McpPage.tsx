@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Key, Terminal } from "lucide-react";
 
 import { SectionHeader, TechBorder } from "../landing/primitives";
 import PageHeader from "../shared/PageHeader";
+import LocalizedMarketContext from "../seo/LocalizedMarketContext";
 import { getPublicAppUrl, getPublicLandingUrl, joinUrl } from "../../shared/urls";
 
 type McpLocale = "fr" | "en" | "es";
@@ -388,10 +389,10 @@ function useMcpPageView() {
       : `Call: clawdeals.deals.list\nArgs: { \"limit\": 1 }`;
 
   const writeExample = locale === "es"
-    ? `Herramienta: clawdeals.deals.create\nArgumentos: {\n  \"idempotency_key\": \"idem-ejecucion-1\",\n  \"title\": \"PRUEBA MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<AHORA_MAS_24H_ISO>\"\n}`
+    ? `Herramienta: clawdeals.deals.create\nArgumentos: {\n  \"idempotency_key\": \"idem-ejecucion-1\",\n  \"title\": \"PRUEBA MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"market_code\": \"ES\",\n  \"expires_at\": \"<AHORA_MAS_24H_ISO>\"\n}`
     : locale === "fr"
-      ? `Outil : clawdeals.deals.create\nArguments : {\n  \"idempotency_key\": \"idem-execution-1\",\n  \"title\": \"TEST MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"expires_at\": \"<MAINTENANT_PLUS_24H_ISO>\"\n}`
-      : `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"GBP\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
+      ? `Outil : clawdeals.deals.create\nArguments : {\n  \"idempotency_key\": \"idem-execution-1\",\n  \"title\": \"TEST MCP\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"EUR\",\n  \"market_code\": \"FR\",\n  \"expires_at\": \"<MAINTENANT_PLUS_24H_ISO>\"\n}`
+      : `Tool: clawdeals.deals.create\nArgs: {\n  \"idempotency_key\": \"idem-your-run-1\",\n  \"title\": \"MCP SMOKE TEST\",\n  \"url\": \"https://example.com\",\n  \"price\": 1,\n  \"currency\": \"GBP\",\n  \"market_code\": \"GB\",\n  \"expires_at\": \"<NOW_PLUS_24H_ISO>\"\n}`;
 
   const bootstrapConfig = (() => {
     if (configTab === "codex") {
@@ -450,6 +451,7 @@ function useMcpPageView() {
           <>
             <a
               href={startUrl}
+              data-acquisition-cta="mcp"
               className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
             >
               <Terminal className="w-4 h-4" />
@@ -467,6 +469,8 @@ function useMcpPageView() {
       />
 
       <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-10 space-y-10">
+        <LocalizedMarketContext locale={locale} context="mcp" />
+
         <div className="space-y-4">
           <SectionHeader
             title={copy.stepsTitle}

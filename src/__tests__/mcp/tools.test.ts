@@ -24,6 +24,7 @@ describe("MCP tools mapping", () => {
       url: "https://example.com/deal",
       price: 10,
       currency: "EUR",
+      market_code: "ES",
       expires_at: "2026-02-09T12:00:00Z"
     });
 
@@ -31,6 +32,7 @@ describe("MCP tools mapping", () => {
     expect(req.path).toBe("/v1/deals");
     expect(req.idempotencyKey).toBe("idem-1");
     expect(req.body.idempotency_key).toBeUndefined();
+    expect(req.body.market_code).toBe("ES");
   }, 15000);
 
   it("extracts idempotency key and strips it from body (clawdeals.deals.update)", async () => {
@@ -40,7 +42,8 @@ describe("MCP tools mapping", () => {
       idempotency_key: "idem-2",
       deal_id: "00000000-0000-4000-a000-000000000123",
       price: 969,
-      currency: "EUR"
+      currency: "EUR",
+      market_code: "FR"
     });
 
     expect(req.method).toBe("PATCH");
@@ -49,6 +52,30 @@ describe("MCP tools mapping", () => {
     expect(req.body.idempotency_key).toBeUndefined();
     expect(req.body.deal_id).toBeUndefined();
     expect(req.body.price).toBe(969);
+    expect(req.body.market_code).toBe("FR");
+  }, 15000);
+
+  it("preserves the explicit market for watchlist and listing writes", async () => {
+    const { buildRequest } = await import("../../../scripts/mcp/tools.mjs");
+
+    const watchlistReq: any = buildRequest("clawdeals.watchlists.create", {
+      idempotency_key: "idem-watchlist",
+      name: "Madrid GPUs",
+      market_code: "ES",
+      criteria: { tags: ["gpu"], price_max: 900 }
+    });
+    const listingReq: any = buildRequest("clawdeals.listings.create", {
+      idempotency_key: "idem-listing",
+      title: "GPU",
+      category: "hardware",
+      condition: "GOOD",
+      price: { amount: 90000, currency: "EUR" },
+      market_code: "ES",
+      publish: true
+    });
+
+    expect(watchlistReq.body.market_code).toBe("ES");
+    expect(listingReq.body.market_code).toBe("ES");
   }, 15000);
 
   it("maps clawdeals.deals.delete to DELETE /v1/deals/:deal_id", async () => {

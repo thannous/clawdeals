@@ -12,6 +12,10 @@ vi.mock("../../../../server/services/watchlist-backfill-queue", () => ({
   enqueueWatchlistBackfill: vi.fn().mockResolvedValue({ ok: true })
 }));
 
+vi.mock("../../../../server/services/acquisition", () => ({
+  safeRecordAgentMilestone: vi.fn().mockResolvedValue({ recorded: true })
+}));
+
 import { handler } from "../../../../pages/api/v1/watchlists/index";
 import { createWatchlist, decodeWatchlistCursor, listWatchlists } from "../../../../server/services/watchlists";
 import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";

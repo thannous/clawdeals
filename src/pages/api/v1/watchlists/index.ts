@@ -12,6 +12,7 @@ import {
 } from "../../../../server/services/watchlists";
 import { enqueueWatchlistBackfill } from "../../../../server/services/watchlist-backfill-queue";
 import { MARKET_CURRENCY, resolveMarketCode } from "../../../../server/config/markets";
+import { safeRecordAgentMilestone } from "../../../../server/services/acquisition";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -210,6 +211,14 @@ export async function handler(req, res, ctx) {
         error: error?.message || String(error)
       });
     }
+
+    await safeRecordAgentMilestone({
+      eventName: "watchlist_created",
+      agentId: ctx.agentId,
+      watchlistId: created.watchlist_id,
+      marketCode: created.market_code || marketCode,
+      occurredAt: created.created_at ? new Date(created.created_at) : new Date()
+    });
 
     return jsonResponse(201, mapWatchlistRow(created));
   } catch (error) {

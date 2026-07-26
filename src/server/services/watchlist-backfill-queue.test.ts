@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./acquisition", () => ({
+  safeRecordAgentMilestone: vi.fn().mockResolvedValue({ recorded: true })
+}));
+
 import { WATCHLIST_BACKFILL_MAX_MATCHES } from "../config/watchlists";
 import { enqueueWatchlistBackfill, runWatchlistBackfillQueue } from "./watchlist-backfill-queue";
 

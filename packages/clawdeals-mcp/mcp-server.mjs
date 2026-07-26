@@ -32,7 +32,7 @@ async function main() {
 
   const server = new ClawdealsMcpServer({
     name: "clawdeals",
-    version: "0.2.0"
+    version: "0.2.1"
   });
 
   registerConnectSetupTool(server);

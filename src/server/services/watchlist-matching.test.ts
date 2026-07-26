@@ -12,6 +12,10 @@ vi.mock("./notification-outbox", () => ({
   enqueueWatchlistMatchOutbox: vi.fn()
 }));
 
+vi.mock("./acquisition", () => ({
+  safeRecordFirstMatches: vi.fn().mockResolvedValue({ recorded: 1 })
+}));
+
 import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { publishSseEvent } from "../sse/store";
 import { enqueueWatchlistMatchOutbox } from "./notification-outbox";

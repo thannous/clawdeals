@@ -23,6 +23,7 @@ import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryHref, getPublicAppEntryPath, getPublicAppUrl, joinUrl } from "../shared/urls";
 import { NavbarCurrent } from "./landing/Navbar";
 import type { ExploreCopy } from "./explore/copy/types";
+import LocalizedMarketContext, { type LocalizedMarketContextKey } from "./seo/LocalizedMarketContext";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -628,6 +629,7 @@ const MarketCard = ({ item, type, copy, dataTestId, locale }) => {
         </div>
         <Link
           href={`${getPublicAppEntryHref(appLocalePrefix(locale))}?from=explore-card-${type}-${item.id}`}
+          data-acquisition-cta="explore_card"
           className="bg-text text-bg text-xs font-bold uppercase px-4 py-2 transition-colors hover:bg-primary hover:text-text"
         >
           {type === "gig" ? copy.actions.deploy : copy.actions.acquire}
@@ -776,6 +778,12 @@ export default function ExplorePage({
   const { themeId, setTheme, themes } = useTheme();
   const deployShaShort = typeof deploySha === "string" ? deploySha.slice(0, 7) : undefined;
   const labels = EXPLORE_LABELS[resolveExploreLocale(locale)];
+  const resolvedLocale = resolveExploreLocale(locale);
+  const marketContextByTab: Record<string, LocalizedMarketContextKey> = {
+    gig: "explore-agents",
+    npm: "explore-skills",
+    data: "explore-data"
+  };
 
   const tabVariants = {
     gig: { Hero: GigHero, Panel: GigTabPanel, items: copy.cards.gig },
@@ -820,6 +828,14 @@ export default function ExplorePage({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-6 py-16">
+          {resolvedLocale !== "en" && (
+            <div className="mb-16">
+              <LocalizedMarketContext
+                locale={resolvedLocale}
+                context={marketContextByTab[activeTab] || "explore-agents"}
+              />
+            </div>
+          )}
           <ActivePanel copy={copy} locale={locale} items={activeVariant.items} />
         </div>
 
@@ -837,6 +853,7 @@ export default function ExplorePage({
             </p>
             <Link
               href={getPublicAppEntryHref(appLocalePrefix(locale))}
+              data-acquisition-cta="explore_footer"
               className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
             >
               {labels.ctaButton}

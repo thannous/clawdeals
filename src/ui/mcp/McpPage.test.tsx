@@ -51,6 +51,7 @@ describe("McpPage localization", () => {
     expect(container.textContent).toContain("Appelle : clawdeals.deals.list");
     expect(container.textContent).toContain("Outil : clawdeals.deals.create");
     expect(container.textContent).toContain('"currency": "EUR"');
+    expect(container.textContent).toContain('"market_code": "FR"');
     expect(container.textContent).not.toContain("MCP SMOKE TEST");
   });
 
@@ -60,6 +61,7 @@ describe("McpPage localization", () => {
 
     expect(container.textContent).toContain("Guided setup");
     expect(container.textContent).toContain('"currency": "GBP"');
+    expect(container.textContent).toContain('"market_code": "GB"');
     expect(container.textContent).not.toContain("3 minutes");
   });
 });

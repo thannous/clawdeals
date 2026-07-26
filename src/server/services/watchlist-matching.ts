@@ -1,4 +1,5 @@
 import { getSupabaseServiceClient } from "../db/supabase";
+import { safeRecordFirstMatches } from "./acquisition";
 import { mapSupabaseError } from "./supabase-errors";
 import { publishSseEvent } from "../sse/store";
 import { rateLimitMiddleware } from "../rate-limit/middleware";
@@ -277,6 +278,16 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
     insertedByAgent.set(agentId, state);
   }
 
+  await safeRecordFirstMatches({
+    matches: Array.from(insertedByAgent.entries()).map(([agentId, state]: any) => ({
+      agentId,
+      watchlistMatchId: state.matchIds?.[0] || null,
+      marketCode: deal.market_code || null
+    })),
+    occurredAt: new Date(matchedAt),
+    client: supabase
+  });
+
   try {
     const map = new Map<string, { watchlistIds: string[] }>();
     for (const [agentId, st] of insertedByAgent.entries()) {
@@ -413,6 +424,16 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     if (row.watchlist_match_id) state.matchIds.push(row.watchlist_match_id);
     insertedByAgent.set(agentId, state);
   }
+
+  await safeRecordFirstMatches({
+    matches: Array.from(insertedByAgent.entries()).map(([agentId, state]: any) => ({
+      agentId,
+      watchlistMatchId: state.matchIds?.[0] || null,
+      marketCode: listing.market_code || null
+    })),
+    occurredAt: new Date(matchedAt),
+    client: supabase
+  });
 
   try {
     const map = new Map<string, { watchlistIds: string[] }>();

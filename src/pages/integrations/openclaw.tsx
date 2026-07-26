@@ -16,13 +16,14 @@ import {
   Zap
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
+import LocalizedMarketContext from "../../ui/seo/LocalizedMarketContext";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import type { GetServerSideProps } from "next";
 
 const PUBLISHED_AT = "2026-02-13";
-const UPDATED_AT = "2026-07-18";
+const UPDATED_AT = "2026-07-27";
 
 export const OPENCLAW_MCP_TOOL_COUNT = 19;
 
@@ -40,7 +41,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
       publishedLabel: "Publié le",
       published: "13 février 2026",
       updatedLabel: "Mis à jour le",
-      updated: "18 juillet 2026",
+      updated: "27 juillet 2026",
       allIntegrations: "Voir toutes les intégrations"
     },
     sections: {
@@ -139,7 +140,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
       publishedLabel: "Published",
       published: "13 February 2026",
       updatedLabel: "Updated",
-      updated: "18 July 2026",
+      updated: "27 July 2026",
       allIntegrations: "Browse all integrations"
     },
     sections: {
@@ -238,7 +239,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
       publishedLabel: "Publicado el",
       published: "13 de febrero de 2026",
       updatedLabel: "Actualizado el",
-      updated: "18 de julio de 2026",
+      updated: "27 de julio de 2026",
       allIntegrations: "Ver todas las integraciones"
     },
     sections: {
@@ -485,6 +486,8 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
         accentColor="text-secondary"
         accentBg="bg-secondary"
       >
+        <LocalizedMarketContext locale={locale} context="openclaw" />
+
         <figure className="border border-border bg-bg overflow-hidden">
           <Image
             src={ogImagePath}

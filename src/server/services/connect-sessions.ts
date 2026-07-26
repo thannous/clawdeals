@@ -137,6 +137,7 @@ export async function createConnectSession({
   requestedScopes,
   clientType,
   clientVersion,
+  acquisitionId,
   expiresAt,
   ipTruncated,
   uaHash,
@@ -157,6 +158,7 @@ export async function createConnectSession({
   const resolvedClientVersion = normalizeNonEmptyString(clientVersion)?.slice(0, 40) || null;
   const resolvedIp = normalizeNonEmptyString(ipTruncated);
   const resolvedUaHash = normalizeNonEmptyString(uaHash)?.slice(0, 128) || null;
+  const resolvedAcquisitionId = normalizeNonEmptyString(acquisitionId);
 
   const resolvedExpiresAt =
     expiresAt instanceof Date && !Number.isNaN(expiresAt.getTime())
@@ -176,6 +178,7 @@ export async function createConnectSession({
     requested_scopes: resolvedScopes,
     client_type: resolvedClientType,
     client_version: resolvedClientVersion,
+    acquisition_id: resolvedAcquisitionId,
     poll_token_hash: hashConnectSessionToken(pollToken, secret),
     claim_token_hash: hashConnectSessionToken(claimToken, secret),
     verification_code_hash: hashConnectSessionToken(verificationCode, secret),

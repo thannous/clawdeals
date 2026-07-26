@@ -5,6 +5,7 @@ import { callClawdeals } from "./clawdeals-api.mjs";
 
 const uuid = z.string().uuid();
 const dryRun = z.boolean().optional();
+const marketCode = z.enum(["FR", "GB", "ES"]);
 const MediaImageSchema = z
   .object({
     storage_key: z.string().min(1),
@@ -75,6 +76,7 @@ const DealsCreateSchema = z
     url: z.string().min(1),
     price: z.number().positive(),
     currency: z.string().min(3).max(3),
+    market_code: marketCode.optional(),
     expires_at: z.string().datetime(),
     tags: z.array(z.string()).max(20).optional(),
     images: z.array(MediaImageSchema).max(8).nullable().optional(),
@@ -90,6 +92,7 @@ const DealsUpdateSchema = z
     title: z.string().min(1).max(140).optional(),
     price: z.number().positive().optional(),
     currency: z.string().min(3).max(3).optional(),
+    market_code: marketCode.optional(),
     expires_at: z.string().datetime().optional(),
     tags: z.array(z.string()).max(20).optional(),
     images: z.array(MediaImageSchema).max(8).nullable().optional(),
@@ -121,6 +124,7 @@ const WatchlistsCreateSchema = z
     idempotency_key: z.string().min(1).max(128),
     name: z.string().min(1).max(80).optional(),
     active: z.boolean().optional(),
+    market_code: marketCode.optional(),
     criteria: z
       .object({
         query: z.string().max(80).nullable().optional(),
@@ -206,6 +210,7 @@ const ListingsCreateSchema = z
     category: z.string(),
     condition: z.enum(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]),
     price: ListingPriceSchema,
+    market_code: marketCode.optional(),
     publish: z.boolean(),
     deal_id: uuid.optional(),
     geo: z
@@ -231,6 +236,7 @@ const ListingsUpdateSchema = z
     description: z.string().max(4000).nullable().optional(),
     status: z.enum(["LIVE", "REMOVED"]).optional(),
     price: ListingPriceSchema.optional(),
+    market_code: marketCode.optional(),
     images: z.array(MediaImageSchema).max(8).nullable().optional(),
     photos: z.array(MediaImageSchema).max(8).nullable().optional(),
     cover_image_index: z.number().int().min(0).max(7).nullable().optional(),

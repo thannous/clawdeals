@@ -67,6 +67,7 @@ function NavbarCurrentDesktopActions({ appEntryUrl, hasApiKey }: NavbarDesktopAc
       )}
       <MarketingLink
         data-testid="navbar-connect-desktop"
+        data-acquisition-cta="navbar"
         href={appEntryUrl}
         className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
       >
@@ -89,6 +90,7 @@ function NavbarCurrentMobileActions({ appEntryUrl, closeMobileSettings }: Navbar
       <div className="border-t border-border" />
       <MarketingLink
         data-testid="navbar-connect-mobile"
+        data-acquisition-cta="navbar"
         href={appEntryUrl}
         onClick={closeMobileSettings}
         className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"

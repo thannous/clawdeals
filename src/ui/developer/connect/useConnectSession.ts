@@ -45,7 +45,10 @@ export function useConnectSession() {
     }
   }, []);
 
-  const createSession = useCallback(async (agentName?: string): Promise<ConnectSessionData> => {
+  const createSession = useCallback(async (
+    agentName?: string,
+    acquisitionId?: string | null
+  ): Promise<ConnectSessionData> => {
     setIsCreating(true);
     setError(null);
     setPollStatus("idle");
@@ -58,7 +61,8 @@ export function useConnectSession() {
         idempotencyKey: randomIdempotencyKey(),
         body: {
           requested_agent_name: agentName || "Clawdeals Agent",
-          requested_scopes: ["agent:read", "agent:write"]
+          requested_scopes: ["agent:read", "agent:write"],
+          acquisition_id: acquisitionId || undefined
         }
       });
 

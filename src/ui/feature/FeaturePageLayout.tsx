@@ -107,6 +107,7 @@ export default function FeaturePageLayout({
             </p>
             <MarketingLink
               href={getPublicAppEntryHref(localePrefix)}
+              data-acquisition-cta="feature_footer"
               className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
             >
               {t("featureLayout.ctaButton")}

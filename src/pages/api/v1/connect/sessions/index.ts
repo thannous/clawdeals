@@ -6,6 +6,7 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getPublicAppUrl, joinUrl } from "../../../../../shared/urls";
+import { normalizeAcquisitionId } from "../../../../../shared/acquisition";
 import { createConnectSession } from "../../../../../server/services/connect-sessions";
 
 function getHeaderValue(req: any, name: string) {
@@ -130,6 +131,8 @@ export async function handler(req: any, res: any, ctx: any) {
   const body = req.body || {};
   const requestedAgentName = body.requested_agent_name ?? body.requestedAgentName;
   const requestedScopes = body.requested_scopes ?? body.requestedScopes;
+  const rawAcquisitionId = body.acquisition_id ?? body.acquisitionId;
+  const acquisitionId = normalizeAcquisitionId(rawAcquisitionId);
 
   if (!requestedAgentName || typeof requestedAgentName !== "string") {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "requested_agent_name is required"));
@@ -139,6 +142,9 @@ export async function handler(req: any, res: any, ctx: any) {
   }
   if (requestedScopes !== undefined && !Array.isArray(requestedScopes)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "requested_scopes must be an array"));
+  }
+  if (rawAcquisitionId !== undefined && rawAcquisitionId !== null && !acquisitionId) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "acquisition_id must be a UUID"));
   }
 
   const clientType = getHeaderValue(req, "x-client-type");
@@ -154,6 +160,7 @@ export async function handler(req: any, res: any, ctx: any) {
       requestedScopes,
       clientType,
       clientVersion,
+      acquisitionId,
       ipTruncated: truncateIp(ctx?.ip),
       uaHash: hashUserAgent(ctx?.userAgent),
       now: new Date()

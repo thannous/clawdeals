@@ -7,6 +7,7 @@ import { rateLimitMiddleware } from "../../../../../../server/rate-limit/middlew
 import { beginIdempotency, finalizeIdempotency } from "../../../../../../server/idempotency/middleware";
 import { getConnectSessionForPoll, hashConnectSessionPollToken } from "../../../../../../server/services/connect-sessions";
 import { exchangeConnectSessionForInstallationApiKey } from "../../../../../../server/services/connect-session-exchange";
+import { safeRecordAgentConnected } from "../../../../../../server/services/acquisition";
 
 function getHeaderValue(req: any, name: string) {
   const value = req?.headers?.[name] ?? req?.headers?.[name.toLowerCase()];
@@ -307,6 +308,12 @@ export async function handler(req: any, _res: any, ctx: any) {
         api_key_id: exchanged.api_key_id
       };
     }
+
+    await safeRecordAgentConnected({
+      sessionId: exchanged.session_id || String(sessionId),
+      agentId: exchanged.agent_id,
+      occurredAt: exchanged.issued_at ? new Date(exchanged.issued_at) : new Date()
+    });
 
     response = jsonResponse(
       200,
