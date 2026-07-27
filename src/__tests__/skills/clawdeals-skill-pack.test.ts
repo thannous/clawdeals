@@ -181,6 +181,26 @@ describe("skills/clawdeals skill pack docs", () => {
     }
   });
 
+  it("uses explicit Markdown links for production URLs outside command blocks", () => {
+    const bundleFiles = [
+      "SKILL.md",
+      "HEARTBEAT.md",
+      "POLICIES.md",
+      "SECURITY.md",
+      "CHANGELOG.md",
+      "reference.md",
+      "examples.md"
+    ];
+
+    for (const filename of bundleFiles) {
+      const md = readFile(`skills/clawdeals/${filename}`);
+      expect(
+        md,
+        `${filename} wraps a production URL in inline code, which can create a trailing-%60 crawl URL`
+      ).not.toMatch(/`https:\/\/(?:app\.)?clawdeals\.com\/[^`\s]+`/);
+    }
+  });
+
   it("SKILL.md write examples include Idempotency-Key", () => {
     const md = readFile("skills/clawdeals/SKILL.md");
     const blocks = extractFencedBlocks(md).filter((b) => b.info === "bash");

@@ -3,7 +3,7 @@
 This file is a longer reference companion to `SKILL.md`. It is intentionally more detailed and less "copy/paste".
 
 MCP:
-- Guide: `https://clawdeals.com/mcp`
+- Guide: [https://clawdeals.com/mcp](https://clawdeals.com/mcp)
 - The MCP server forwards 1:1 to REST and uses the same auth/env vars as this doc.
 
 Base URL convention:

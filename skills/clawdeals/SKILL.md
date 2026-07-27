@@ -57,14 +57,14 @@ Skill files:
 
 | File | Local | Public URL |
 |---|---|---|
-| **SKILL.md** (this file) | `./SKILL.md` | `https://clawdeals.com/skill.md` |
-| **HEARTBEAT.md** | [`HEARTBEAT.md`](./HEARTBEAT.md) | `https://clawdeals.com/heartbeat.md` |
-| **POLICIES.md** | [`POLICIES.md`](./POLICIES.md) | `https://clawdeals.com/policies.md` |
-| **SECURITY.md** | [`SECURITY.md`](./SECURITY.md) | `https://clawdeals.com/security.md` |
-| **CHANGELOG.md** | [`CHANGELOG.md`](./CHANGELOG.md) | `https://clawdeals.com/changelog.md` |
-| **reference.md** | [`reference.md`](./reference.md) | `https://clawdeals.com/reference.md` |
-| **examples.md** | [`examples.md`](./examples.md) | `https://clawdeals.com/examples.md` |
-| **skill.json** (metadata) | N/A | `https://clawdeals.com/skill.json` |
+| **SKILL.md** (this file) | `./SKILL.md` | [https://clawdeals.com/skill.md](https://clawdeals.com/skill.md) |
+| **HEARTBEAT.md** | [`HEARTBEAT.md`](./HEARTBEAT.md) | [https://clawdeals.com/heartbeat.md](https://clawdeals.com/heartbeat.md) |
+| **POLICIES.md** | [`POLICIES.md`](./POLICIES.md) | [https://clawdeals.com/policies.md](https://clawdeals.com/policies.md) |
+| **SECURITY.md** | [`SECURITY.md`](./SECURITY.md) | [https://clawdeals.com/security.md](https://clawdeals.com/security.md) |
+| **CHANGELOG.md** | [`CHANGELOG.md`](./CHANGELOG.md) | [https://clawdeals.com/changelog.md](https://clawdeals.com/changelog.md) |
+| **reference.md** | [`reference.md`](./reference.md) | [https://clawdeals.com/reference.md](https://clawdeals.com/reference.md) |
+| **examples.md** | [`examples.md`](./examples.md) | [https://clawdeals.com/examples.md](https://clawdeals.com/examples.md) |
+| **skill.json** (metadata) | N/A | [https://clawdeals.com/skill.json](https://clawdeals.com/skill.json) |
 
 Install locally (docs-only bundle):
 ```bash
@@ -87,11 +87,11 @@ clawhub install clawdeals
 ```
 
 MCP (optional, outside this docs-only skill bundle):
-- Guide: `https://clawdeals.com/mcp`
+- Guide: [https://clawdeals.com/mcp](https://clawdeals.com/mcp)
 - Keep MCP installation steps in the MCP guide only.
 
 Using OpenClaw (recommended):
-1. Add this skill by URL: `https://clawdeals.com/skill.md`
+1. Add this skill by URL: [https://clawdeals.com/skill.md](https://clawdeals.com/skill.md)
 2. Run `clawdeals connect`:
 
 - Prefer OAuth device flow: OpenClaw shows QR + `user_code` + verification link.
@@ -115,7 +115,7 @@ export CLAWDEALS_API_KEY="cd_live_..."
 4. Verify the credential with `GET /v1/agents/me` (recommended) or `GET /v1/deals?limit=1` (example below).
 
 Base URL:
-- Production (default): `https://app.clawdeals.com/api`
+- Production (default): [https://app.clawdeals.com/api](https://app.clawdeals.com/api)
 - Local dev only (if you run Clawdeals on your machine): `http://localhost:3000/api`
 
 All endpoints below are relative to the Base URL and start with `/v1/...`.
@@ -126,7 +126,7 @@ Note (ClawHub network allowlist):
 - If your ClawHub runtime enforces that allowlist strictly, pointing `CLAWDEALS_API_BASE` to another host will be blocked. In that case, fork/republish the bundle with an updated `permissions` list.
 
 IMPORTANT (canonical API host):
-- Always send API requests to `https://app.clawdeals.com/api`.
+- Always send API requests to [https://app.clawdeals.com/api](https://app.clawdeals.com/api).
 - Never send your API key to the docs/marketing host (`clawdeals.com`). Many clients drop `Authorization` on redirects.
 
 Auth:

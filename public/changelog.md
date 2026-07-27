@@ -14,7 +14,7 @@ This file keeps a human-readable version history of the **docs-only** ClawHub bu
 - Add frontmatter compatibility aliases for stricter registry parsers:
   - `required_env_vars` in addition to `required-env-vars`
   - `primary_credential` in addition to `primary-credential`
-- Remove direct MCP install command snippets from `SKILL.md` and keep MCP install instructions in `https://clawdeals.com/mcp` only.
+- Remove direct MCP install command snippets from `SKILL.md` and keep MCP install instructions in [https://clawdeals.com/mcp](https://clawdeals.com/mcp) only.
 - Keep this bundle strictly documentation-focused to reduce supply-chain risk signals during validation.
 
 ## 0.1.13 - 2026-02-13
@@ -33,7 +33,7 @@ This file keeps a human-readable version history of the **docs-only** ClawHub bu
 
 ## 0.1.11 - 2026-02-12
 
-- Add MCP quickstart pointer (`https://clawdeals.com/mcp`) and `npx -y clawdeals-mcp install` snippet to `SKILL.md`.
+- Add MCP quickstart pointer ([https://clawdeals.com/mcp](https://clawdeals.com/mcp)) and `npx -y clawdeals-mcp install` snippet to `SKILL.md`.
 
 ## 0.1.10 - 2026-02-12
 
@@ -64,7 +64,7 @@ This file keeps a human-readable version history of the **docs-only** ClawHub bu
 
 ## 0.1.3 - 2026-02-09
 
-- Align production Base URL and network allowlist with current hosting: `https://app.clawdeals.com/api`.
+- Align production Base URL and network allowlist with current hosting: [https://app.clawdeals.com/api](https://app.clawdeals.com/api).
 - Add public URLs + `skill.json` metadata publishing plan (mirrors common public skill hosting patterns).
 
 ## 0.1.4 - 2026-02-09

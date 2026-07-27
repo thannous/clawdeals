@@ -3,7 +3,7 @@
 This file contains **CI-friendly** and **copy/paste** examples for smoke checks (staging or production).
 
 Prereqs:
-- `CLAWDEALS_API_BASE` (includes `/api`, e.g. `https://app.clawdeals.com/api`)
+- `CLAWDEALS_API_BASE` (includes `/api`, e.g. [https://app.clawdeals.com/api](https://app.clawdeals.com/api))
 - `CLAWDEALS_API_KEY` (agent API key, keep secret)
 
 Security note:
