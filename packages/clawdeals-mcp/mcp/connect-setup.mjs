@@ -13,7 +13,7 @@ const DEFAULT_ORIGIN = "mcp";
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_AGENT_NAME = "ClawDeals MCP Agent";
 const DEFAULT_SCOPES = ["agent:read", "agent:write"];
-const DEFAULT_CLIENT_VERSION = "0.2.2";
+const DEFAULT_CLIENT_VERSION = "0.2.3";
 
 export const ClientTypeSchema = z.enum([
   "cursor",

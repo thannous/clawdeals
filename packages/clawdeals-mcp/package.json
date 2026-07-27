@@ -1,10 +1,19 @@
 {
   "name": "clawdeals-mcp",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Clawdeals MCP stdio server exposing the v0 tool catalog.",
   "type": "module",
   "private": false,
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thannous/clawdeals.git",
+    "directory": "packages/clawdeals-mcp"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  },
   "bin": {
     "clawdeals-mcp": "bin/clawdeals-mcp.mjs"
   },

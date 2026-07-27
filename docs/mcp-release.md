@@ -10,10 +10,15 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
 
 ## Prerequisites
 
-- GitHub Actions secret `NPM_TOKEN` configured in `thannous/clawdeals`.
-- Token type:
-  - npm **Automation Token** (recommended), or
-  - granular token with publish rights and 2FA bypass enabled.
+- npm trusted publisher configured for `clawdeals-mcp`:
+  - provider: GitHub Actions
+  - organization or user: `thannous`
+  - repository: `clawdeals`
+  - workflow filename: `mcp-release.yml`
+  - environment: none
+  - allowed action: `npm publish`
+- The workflow must keep `id-token: write`, use a GitHub-hosted runner, Node 24,
+  npm 11.5.1 or newer, and publish without `NODE_AUTH_TOKEN`.
 - You are on `main` with a clean release diff for MCP files.
 
 ## Release Procedure
@@ -54,20 +59,20 @@ npm view clawdeals-mcp version --json
 2. Verify tag version equals package version
 3. Validate CLI entrypoint (`--help`)
 4. Validate publish artifact (`npm pack --dry-run`)
-5. Publish to npm (`npm publish ./packages/clawdeals-mcp --access public`)
+5. Exchange the GitHub Actions OIDC identity for a short-lived npm credential.
+6. Publish to npm (`npm publish ./packages/clawdeals-mcp --access public`)
 
 ## Failure Guide
 
-- `ENEEDAUTH`:
-  - `NPM_TOKEN` missing or empty in GitHub Actions secrets.
-
-- `E403 ... Two-factor authentication or granular access token with bypass 2fa enabled is required`:
-  - npm token does not satisfy your account/org 2FA policy.
-  - regenerate token as Automation Token (recommended).
+- `ENEEDAUTH` or `E404` during `npm publish`:
+  - verify the trusted publisher fields on npmjs.com;
+  - fields are case-sensitive and the workflow must be exactly `mcp-release.yml`;
+  - keep `id-token: write`, Node 24, npm 11.5.1 or newer, and no
+    `NODE_AUTH_TOKEN`.
 
 - `E422 ... Unsupported GitHub Actions source repository visibility: "private"`:
-  - caused by `--provenance` with private repository source.
-  - current workflow intentionally publishes **without** `--provenance`.
+  - provenance is unsupported for this private source repository.
+  - keep `publishConfig.provenance` and `NPM_CONFIG_PROVENANCE` set to `false`.
 
 - Tag/version mismatch:
   - workflow checks `mcp-vX.Y.Z` against `packages/clawdeals-mcp/package.json`.
@@ -78,6 +83,7 @@ npm view clawdeals-mcp version --json
 - Prefer publishing a new patch version (`0.1.x`) instead of reusing the same version.
 - Push a new tag for each retry (`mcp-v0.1.5`, `mcp-v0.1.6`, ...).
 - Avoid deleting npm versions unless absolutely necessary and policy allows it.
+- Do not restore a long-lived npm write token after trusted publishing is active.
 
 ## Operational References
 

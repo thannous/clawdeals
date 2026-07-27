@@ -13,12 +13,12 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
-          cache: npm
+          node-version: 24
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
       - name: Install root deps
         run: npm ci
       - name: Verify version matches tag
@@ -33,5 +33,5 @@ jobs:
         run: npm pack ./packages/clawdeals-mcp --dry-run
       - name: Publish to npm
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "false"
         run: npm publish ./packages/clawdeals-mcp --access public
