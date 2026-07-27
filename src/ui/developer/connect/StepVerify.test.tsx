@@ -138,8 +138,8 @@ describe("StepVerify", () => {
     fireEvent.click(screen.getByText("step.verify.claim.copyLink"));
     await waitFor(() => {
       expect(clipboardWriteText).toHaveBeenCalledWith(claimSession.claim_url);
+      expect(screen.getByText("common.copied")).toBeDefined();
     });
-    expect(screen.getByText("common.copied")).toBeDefined();
 
     fireEvent.click(screen.getByText("step.verify.claim.qrCode"));
     expect(screen.getByTestId("qr-code").textContent).toBe(claimSession.claim_url);
