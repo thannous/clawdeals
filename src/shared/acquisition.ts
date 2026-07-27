@@ -34,6 +34,10 @@ export const ACQUISITION_CTA_LOCATIONS = [
   "explore_footer",
   "mcp",
   "browse",
+  "landing_activation",
+  "mcp_activation",
+  "openclaw_activation",
+  "comparison_activation",
   "other"
 ] as const;
 

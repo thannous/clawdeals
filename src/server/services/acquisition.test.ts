@@ -48,6 +48,26 @@ describe("acquisition funnel service", () => {
     })).toThrow("event_name is not allowed");
   });
 
+  it.each([
+    "landing_activation",
+    "mcp_activation",
+    "openclaw_activation",
+    "comparison_activation"
+  ] as const)("preserves the %s CTA location", (ctaLocation) => {
+    expect(parsePublicAcquisitionEvent({
+      acquisition_id: acquisitionId,
+      event_name: "connect_cta_clicked",
+      landing_path: "/fr/mcp",
+      locale: "fr",
+      source: "google.fr",
+      medium: "organic",
+      cta_location: ctaLocation
+    })).toEqual(expect.objectContaining({
+      event_name: "connect_cta_clicked",
+      cta_location: ctaLocation
+    }));
+  });
+
   it("deduplicates public events by acquisition and milestone", async () => {
     const upsert = vi.fn().mockResolvedValue({ error: null });
     const client = { from: vi.fn(() => ({ upsert })) };

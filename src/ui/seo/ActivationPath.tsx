@@ -1,5 +1,6 @@
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+import type { AcquisitionCtaLocation } from "../../shared/acquisition";
 import type { SupportedLocale } from "../../shared/i18n";
 import { localePrefixFor } from "../../shared/seo";
 import { getPublicAppEntryHref } from "../../shared/urls";
@@ -7,6 +8,13 @@ import { SectionHeader, TechBorder } from "../landing/primitives";
 import MarketingLink from "../shared/MarketingLink";
 
 type ActivationPathSource = "landing" | "mcp" | "openclaw" | "comparison";
+
+const ACTIVATION_CTA_BY_SOURCE: Record<ActivationPathSource, AcquisitionCtaLocation> = {
+  landing: "landing_activation",
+  mcp: "mcp_activation",
+  openclaw: "openclaw_activation",
+  comparison: "comparison_activation"
+};
 
 type ActivationPathCopy = {
   title: string;
@@ -144,7 +152,7 @@ export default function ActivationPath({
       <div className="mt-6 flex flex-wrap gap-3">
         <MarketingLink
           href={getPublicAppEntryHref(localePrefix)}
-          data-acquisition-cta={`${source}_activation`}
+          data-acquisition-cta={ACTIVATION_CTA_BY_SOURCE[source]}
           className="inline-flex items-center gap-2 px-6 py-3 border border-primary bg-primary text-bg font-bold uppercase tracking-wider text-xs hover:bg-text hover:border-text transition-colors"
         >
           {copy.primaryCta}
