@@ -38,6 +38,8 @@ describe("McpPage localization", () => {
     expect(screen.getByText("Inicio rápido")).toBeTruthy();
     expect(screen.getByText("Obtén tu clave API")).toBeTruthy();
     expect(screen.getByText("Prueba de escritura (opcional)")).toBeTruthy();
+    expect(screen.getByTestId("activation-path-mcp").textContent).toContain("FR/EUR, GB/GBP o ES/EUR");
+    expect(screen.getByTestId("activation-path-mcp").textContent).toContain("catálogo fijo");
     expect(screen.getAllByText("Herramientas").length).toBeGreaterThan(0);
     expect(screen.queryByText("Quick Start")).toBeNull();
     expect(screen.queryByText("Write smoke (optional)")).toBeNull();
@@ -52,6 +54,7 @@ describe("McpPage localization", () => {
     expect(container.textContent).toContain("Outil : clawdeals.deals.create");
     expect(container.textContent).toContain('"currency": "EUR"');
     expect(container.textContent).toContain('"market_code": "FR"');
+    expect(screen.getByTestId("activation-path-mcp").textContent).toContain("premier match");
     expect(container.textContent).not.toContain("MCP SMOKE TEST");
   });
 
@@ -62,6 +65,7 @@ describe("McpPage localization", () => {
     expect(container.textContent).toContain("Guided setup");
     expect(container.textContent).toContain('"currency": "GBP"');
     expect(container.textContent).toContain('"market_code": "GB"');
+    expect(screen.getByTestId("activation-path-mcp").textContent).toContain("first verified match");
     expect(container.textContent).not.toContain("3 minutes");
   });
 });

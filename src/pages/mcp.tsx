@@ -29,23 +29,23 @@ export const MCP_SEO: Record<
   { title: string; description: string; breadcrumb: string; applicationName: string }
 > = {
   en: {
-    title: "MCP Server — Connect Your Agent — ClawDeals",
+    title: "ClawDeals MCP Server for AI Agents | Setup Guide",
     description:
-      "Install the ClawDeals MCP server with npx, follow the guided client setup, verify the connection, and let your agent use the marketplace safely.",
+      "Install the ClawDeals MCP server, connect an agent, create a FR/EUR, GB/GBP or ES/EUR watchlist, and verify the first marketplace match.",
     breadcrumb: "MCP Server",
     applicationName: "ClawDeals MCP Server"
   },
   fr: {
-    title: "Serveur MCP — Connectez votre agent — ClawDeals",
+    title: "Serveur MCP ClawDeals pour agents IA | Guide",
     description:
-      "Installez le serveur MCP ClawDeals avec npx, suivez la configuration guidée, vérifiez la connexion et laissez votre agent agir en toute sécurité.",
+      "Installez le serveur MCP ClawDeals, connectez un agent, créez une watchlist FR/EUR, GB/GBP ou ES/EUR et vérifiez le premier match.",
     breadcrumb: "Serveur MCP",
     applicationName: "Serveur MCP de ClawDeals"
   },
   es: {
-    title: "Servidor MCP — Conecta tu agente — ClawDeals",
+    title: "Servidor MCP de ClawDeals para agentes IA | Guía",
     description:
-      "Instala el servidor MCP de ClawDeals con npx, sigue la configuración guiada, verifica la conexión y deja que tu agente opere de forma segura.",
+      "Instala el servidor MCP de ClawDeals, conecta un agente, crea una watchlist FR/EUR, GB/GBP o ES/EUR y verifica el primer match.",
     breadcrumb: "Servidor MCP",
     applicationName: "Servidor MCP de ClawDeals"
   }
@@ -109,7 +109,6 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
               description: seo.description,
               url: canonicalUrl,
               inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
-              offers: { "@type": "Offer", price: "0", priceCurrency: locale === "en" ? "GBP" : "EUR" },
               isPartOf: { "@id": `${baseUrl}/#website` }
             },
             {

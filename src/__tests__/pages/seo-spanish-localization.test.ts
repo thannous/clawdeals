@@ -17,7 +17,7 @@ describe("Spanish marketing metadata", () => {
 
   it("provides Spanish MCP metadata", () => {
     expect(MCP_SEO.es.title).toContain("Servidor MCP");
-    expect(MCP_SEO.es.description).toContain("verifica la conexión");
+    expect(MCP_SEO.es.description).toContain("verifica el primer match");
     expect(MCP_SEO.es.description.length).toBeGreaterThanOrEqual(110);
     expect(MCP_SEO.es.description.length).toBeLessThanOrEqual(160);
   });

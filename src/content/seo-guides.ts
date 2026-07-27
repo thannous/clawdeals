@@ -66,7 +66,7 @@ const openClawInstallGuide: SeoGuideDefinition = {
   slug: "openclaw-skill-vs-mcp-vs-clawhub",
   locales: SUPPORTED_LOCALES,
   publishedAt: "2026-07-18",
-  updatedAt: "2026-07-18",
+  updatedAt: "2026-07-27",
   author: "ClawDeals Editorial Team",
   category: "openclaw",
   relatedGuides: ["/integrations/openclaw", "/guides/openclaw-dealwatch", "/guides/mcp-security-checklist", "/guides/ai-agent-marketplace"],
@@ -76,9 +76,9 @@ const openClawInstallGuide: SeoGuideDefinition = {
     fr: {
       title: "OpenClaw : Skill URL, MCP ou ClawHub, quelle installation choisir ?",
       metaTitle: "OpenClaw : Skill URL vs MCP vs ClawHub | ClawDeals",
-      metaDescription: "Comparez Skill URL, serveur MCP et ClawHub pour connecter OpenClaw à ClawDeals selon votre niveau de contrôle, maintenance et sécurité.",
+      metaDescription: "Comparez Skill URL, serveur MCP et ClawHub, puis testez connexion, watchlist par marché et premier match dans ClawDeals.",
       eyebrow: "GUIDE OPENCLAW",
-      introduction: "Les trois méthodes donnent accès à ClawDeals, mais elles ne répondent pas au même besoin. Ce guide distingue le démarrage rapide, l'intégration outillée et l'installation gérée pour choisir sans surdimensionner votre environnement.",
+      introduction: "Les trois méthodes connectent OpenClaw à ClawDeals, mais elles ne répondent pas au même besoin. Ce guide compare le démarrage rapide, les outils structurés et la distribution gérée, puis ramène chaque choix au même test produit : connecter un agent, créer une watchlist par marché et vérifier un premier match.",
       tableOfContentsLabel: "Dans ce guide",
       publishedLabel: "Publié",
       updatedLabel: "Mis à jour",
@@ -102,7 +102,7 @@ const openClawInstallGuide: SeoGuideDefinition = {
           id: "skill-url",
           title: "Skill URL : démarrer avec peu de maintenance",
           paragraphs: [
-            "Une Skill URL fournit à OpenClaw des instructions distantes. Elle convient quand vous voulez valider les cas d'usage avant d'ajouter un processus local. L'installation est courte et les instructions peuvent évoluer sans réinstaller un paquet sur chaque machine.",
+            "Une Skill URL fournit à OpenClaw des instructions distantes. Le point d'entrée ClawDeals publié est https://clawdeals.com/skill.md. Cette méthode convient pour valider les cas d'usage avant d'ajouter un processus local, et les instructions peuvent évoluer sans réinstaller un paquet sur chaque machine.",
             "Cette simplicité implique de gouverner la source distante : limitez les domaines autorisés, relisez les permissions demandées et testez les actions sensibles avec un compte de démonstration. Pour un environnement verrouillé ou reproductible hors ligne, un artefact versionné sera généralement plus approprié."
           ]
         },
@@ -110,7 +110,7 @@ const openClawInstallGuide: SeoGuideDefinition = {
           id: "serveur-mcp",
           title: "Serveur MCP : des outils structurés pour la production",
           paragraphs: [
-            "Le serveur MCP expose les opérations ClawDeals comme des outils nommés. Votre client peut examiner leur schéma, transmettre des paramètres structurés et traiter des erreurs connues. Ce contrat réduit l'ambiguïté par rapport à des instructions purement textuelles.",
+            "Le serveur MCP expose les opérations ClawDeals comme des outils nommés. La commande d'installation publiée est npx -y clawdeals-mcp install. Votre client peut examiner les schémas, transmettre des paramètres structurés et traiter des erreurs connues, ce qui réduit l'ambiguïté par rapport à des instructions seules.",
             "MCP devient le meilleur choix quand vous devez épingler une version, journaliser les appels, isoler les secrets et intégrer le connecteur à votre supervision. Exécutez-le avec le minimum de droits, séparez test et production, puis exigez une validation humaine pour les actions financières ou irréversibles."
           ],
           bullets: ["Épinglez la version du paquet.", "Injectez les secrets à l'exécution, jamais dans le dépôt.", "Conservez les identifiants de requête pour rapprocher outils et audit trail."]
@@ -119,33 +119,34 @@ const openClawInstallGuide: SeoGuideDefinition = {
           id: "clawhub",
           title: "ClawHub : privilégier un cycle d'installation géré",
           paragraphs: [
-            "ClawHub est pertinent si votre équipe s'appuie déjà sur son catalogue et son cycle de mises à jour. Le bénéfice principal n'est pas une capacité ClawDeals supplémentaire, mais une distribution homogène entre plusieurs agents ou postes.",
+            "ClawHub est pertinent si votre équipe s'appuie déjà sur son catalogue et son cycle de mises à jour. La commande publiée est clawhub install clawdeals. Le bénéfice principal n'est pas une capacité ClawDeals supplémentaire, mais une distribution homogène entre plusieurs agents ou postes.",
             "Vérifiez toutefois l'éditeur, la version et les changements avant mise à jour. Un registre simplifie la livraison, pas l'évaluation du risque. Gardez une procédure de retour arrière et testez une nouvelle version sur un agent non critique."
           ]
         },
         {
           id: "checklist",
           title: "Checklist avant de connecter votre agent",
-          paragraphs: ["Quel que soit le chemin, la qualité du déploiement dépend des garde-fous autour du connecteur."],
+          paragraphs: ["Quel que soit le chemin, validez le même parcours observable avant d'élargir l'autonomie. Une installation réussie ou un premier match ne prouve pas encore une activation durable."],
           bullets: [
-            "Définir le marché ciblé : FR, GB ou ES, ainsi que la devise attendue.",
+            "Créer une watchlist avec FR/EUR, GB/GBP ou ES/EUR ; le matching vérifie le marché avant la devise.",
+            "Lorsqu'un match est retourné, contrôler prix, devise, marchand ou source et trace de requête.",
+            "Relire les alertes et matchs utiles suivants avant d'élargir critères, permissions ou budgets.",
+            "Ne pas supposer un catalogue marchand fixe : la disponibilité dépend des deals et annonces présents.",
             "Créer une identité d'agent dédiée et révocable.",
-            "Commencer avec les permissions de lecture, puis élargir au besoin.",
-            "Configurer budget, seuils d'approbation et personnes autorisées à valider.",
             "Tester un refus, une expiration et une révocation avant la mise en production."
           ]
         }
       ],
       ctaTitle: "Connecter OpenClaw à ClawDeals",
-      ctaBody: "Consultez les trois parcours d'installation et choisissez celui qui correspond à votre environnement.",
+      ctaBody: "Choisissez un parcours, connectez un agent et validez une première watchlist rattachée à son marché.",
       ctaLabel: "Voir l'intégration OpenClaw"
     },
     en: {
       title: "OpenClaw: Skill URL, MCP, or ClawHub, which install should you choose?",
       metaTitle: "OpenClaw: Skill URL vs MCP vs ClawHub | ClawDeals",
-      metaDescription: "Compare Skill URL, MCP server, and ClawHub for connecting OpenClaw to ClawDeals based on control, maintenance, and security needs.",
+      metaDescription: "Compare Skill URL, MCP server, and ClawHub, then test connection, a market-aware watchlist, and the first ClawDeals match.",
       eyebrow: "OPENCLAW GUIDE",
-      introduction: "All three methods connect OpenClaw to ClawDeals, but they solve different operational problems. This guide separates the fastest trial path from structured tooling and managed distribution so you can choose without overbuilding.",
+      introduction: "All three methods connect OpenClaw to ClawDeals, but they solve different operational problems. This guide compares the fastest trial path, structured tooling, and managed distribution, then applies the same product test to each choice: connect an agent, create a market-aware watchlist, and verify a first match.",
       tableOfContentsLabel: "In this guide",
       publishedLabel: "Published",
       updatedLabel: "Updated",
@@ -163,7 +164,7 @@ const openClawInstallGuide: SeoGuideDefinition = {
           id: "skill-url",
           title: "Skill URL: start with little maintenance",
           paragraphs: [
-            "A Skill URL gives OpenClaw remotely hosted instructions. It is useful when you want to validate use cases before adding a local runtime process. Setup is short, and instructions can improve without reinstalling a package on every machine.",
+            "A Skill URL gives OpenClaw remotely hosted instructions. The published ClawDeals entry point is https://clawdeals.com/skill.md. It is useful for validating use cases before adding a local runtime, and the instructions can improve without reinstalling a package on every machine.",
             "That convenience means the remote source still needs governance. Restrict allowed domains, review requested permissions, and test sensitive actions with a demo account. A versioned artifact is usually a better fit for locked-down or offline-reproducible environments."
           ]
         },
@@ -171,7 +172,7 @@ const openClawInstallGuide: SeoGuideDefinition = {
           id: "mcp-server",
           title: "MCP server: structured tools for production",
           paragraphs: [
-            "The MCP server exposes ClawDeals operations as named tools. A client can inspect their schemas, send structured arguments, and handle known errors. This contract reduces ambiguity compared with instructions alone.",
+            "The MCP server exposes ClawDeals operations as named tools. The published install command is npx -y clawdeals-mcp install. A client can inspect schemas, send structured arguments, and handle known errors, reducing ambiguity compared with instructions alone.",
             "MCP is the stronger option when you need to pin a version, log calls, isolate secrets, and connect the integration to monitoring. Run it with least privilege, separate test from production, and require human approval for financial or irreversible actions."
           ],
           bullets: ["Pin the package version.", "Inject secrets at runtime, never into the repository.", "Keep request identifiers so tool calls can be reconciled with the audit trail."]
@@ -180,27 +181,27 @@ const openClawInstallGuide: SeoGuideDefinition = {
           id: "clawhub",
           title: "ClawHub: favour a managed install lifecycle",
           paragraphs: [
-            "ClawHub makes sense when your team already relies on its catalogue and update lifecycle. The primary benefit is not an extra ClawDeals capability, but consistent distribution across multiple agents or workstations.",
+            "ClawHub makes sense when your team already relies on its catalogue and update lifecycle. The published command is clawhub install clawdeals. The primary benefit is not an extra ClawDeals capability, but consistent distribution across multiple agents or workstations.",
             "Still verify the publisher, version, and changes before an update. A registry simplifies delivery, not risk assessment. Keep a rollback procedure and test new versions on a non-critical agent first."
           ]
         },
         {
           id: "checklist",
           title: "Checklist before connecting your agent",
-          paragraphs: ["Whatever the path, deployment quality depends on the guardrails around the connector."],
-          bullets: ["Define the target market: FR, GB, or ES, and its expected currency.", "Create a dedicated, revocable agent identity.", "Start with read permissions and expand only when needed.", "Configure budgets, approval thresholds, and authorised approvers.", "Test denial, expiration, and revocation before production."]
+          paragraphs: ["Whatever the path, validate the same observable workflow before expanding autonomy. A successful install or first match does not yet prove durable activation."],
+          bullets: ["Create one watchlist with FR/EUR, GB/GBP, or ES/EUR; matching checks market before currency.", "When a match is returned, verify price, currency, merchant or source, and request trace.", "Review later alerts and useful matches before widening criteria, permissions, or budgets.", "Do not assume a fixed merchant catalogue; availability depends on current deals and listings.", "Create a dedicated, revocable agent identity.", "Test denial, expiration, and revocation before production."]
         }
       ],
       ctaTitle: "Connect OpenClaw to ClawDeals",
-      ctaBody: "Review the three installation paths and choose the one that fits your environment.",
+      ctaBody: "Choose one path, connect an agent, and validate a first market-aware watchlist.",
       ctaLabel: "View the OpenClaw integration"
     },
     es: {
       title: "OpenClaw: Skill URL, MCP o ClawHub, ¿qué instalación elegir?",
       metaTitle: "OpenClaw: Skill URL, MCP o ClawHub | ClawDeals",
-      metaDescription: "Compara Skill URL, servidor MCP y ClawHub para conectar OpenClaw con ClawDeals según el control, mantenimiento y seguridad necesarios.",
+      metaDescription: "Compara Skill URL, servidor MCP y ClawHub y prueba conexión, watchlist por mercado y primer match en ClawDeals.",
       eyebrow: "GUÍA OPENCLAW",
-      introduction: "Los tres métodos conectan OpenClaw con ClawDeals, pero resuelven necesidades operativas distintas. Esta guía separa la prueba rápida, las herramientas estructuradas y la distribución gestionada para evitar una instalación sobredimensionada.",
+      introduction: "Los tres métodos conectan OpenClaw con ClawDeals, pero resuelven necesidades operativas distintas. Esta guía compara la prueba rápida, las herramientas estructuradas y la distribución gestionada, y aplica a cada opción el mismo test de producto: conectar un agente, crear una watchlist por mercado y verificar un primer match.",
       tableOfContentsLabel: "En esta guía",
       publishedLabel: "Publicado",
       updatedLabel: "Actualizado",
@@ -217,28 +218,28 @@ const openClawInstallGuide: SeoGuideDefinition = {
         {
           id: "skill-url",
           title: "Skill URL: empezar con poco mantenimiento",
-          paragraphs: ["Una Skill URL proporciona a OpenClaw instrucciones alojadas de forma remota. Es útil para validar casos de uso antes de añadir un proceso local. La instalación es breve y las instrucciones pueden mejorar sin reinstalar un paquete en cada equipo.", "Esa comodidad exige gobernar la fuente remota: limita los dominios permitidos, revisa los permisos y prueba las acciones sensibles con una cuenta de demostración. Un artefacto versionado suele encajar mejor en entornos cerrados o reproducibles sin conexión."]
+          paragraphs: ["Una Skill URL proporciona a OpenClaw instrucciones alojadas de forma remota. El punto de entrada publicado de ClawDeals es https://clawdeals.com/skill.md. Es útil para validar casos de uso antes de añadir un proceso local y puede mejorar sin reinstalar un paquete en cada equipo.", "Esa comodidad exige gobernar la fuente remota: limita los dominios permitidos, revisa los permisos y prueba las acciones sensibles con una cuenta de demostración. Un artefacto versionado suele encajar mejor en entornos cerrados o reproducibles sin conexión."]
         },
         {
           id: "servidor-mcp",
           title: "Servidor MCP: herramientas estructuradas para producción",
-          paragraphs: ["El servidor MCP expone las operaciones de ClawDeals como herramientas con nombre. El cliente puede inspeccionar sus esquemas, enviar parámetros estructurados y manejar errores conocidos. Este contrato reduce la ambigüedad frente a unas instrucciones únicamente textuales.", "MCP es la opción más sólida si necesitas fijar una versión, registrar llamadas, aislar secretos y conectar la integración con la supervisión. Usa privilegios mínimos, separa pruebas y producción y exige aprobación humana para acciones financieras o irreversibles."],
+          paragraphs: ["El servidor MCP expone las operaciones de ClawDeals como herramientas con nombre. El comando publicado es npx -y clawdeals-mcp install. El cliente puede inspeccionar esquemas, enviar parámetros estructurados y manejar errores conocidos, reduciendo la ambigüedad frente a instrucciones únicamente textuales.", "MCP es la opción más sólida si necesitas fijar una versión, registrar llamadas, aislar secretos y conectar la integración con la supervisión. Usa privilegios mínimos, separa pruebas y producción y exige aprobación humana para acciones financieras o irreversibles."],
           bullets: ["Fija la versión del paquete.", "Inyecta los secretos en ejecución, nunca en el repositorio.", "Conserva los identificadores de solicitud para relacionar herramientas y auditoría."]
         },
         {
           id: "clawhub",
           title: "ClawHub: un ciclo de instalación gestionado",
-          paragraphs: ["ClawHub es relevante si tu equipo ya depende de su catálogo y ciclo de actualizaciones. El beneficio principal no es una capacidad extra de ClawDeals, sino una distribución coherente entre varios agentes o equipos.", "Comprueba el editor, la versión y los cambios antes de actualizar. Un registro simplifica la entrega, no la evaluación del riesgo. Mantén un procedimiento de reversión y prueba cada versión con un agente no crítico."]
+          paragraphs: ["ClawHub es relevante si tu equipo ya depende de su catálogo y ciclo de actualizaciones. El comando publicado es clawhub install clawdeals. El beneficio principal no es una capacidad extra de ClawDeals, sino una distribución coherente entre varios agentes o equipos.", "Comprueba el editor, la versión y los cambios antes de actualizar. Un registro simplifica la entrega, no la evaluación del riesgo. Mantén un procedimiento de reversión y prueba cada versión con un agente no crítico."]
         },
         {
           id: "checklist",
           title: "Checklist antes de conectar el agente",
-          paragraphs: ["Sea cual sea el camino, la calidad del despliegue depende de los controles alrededor del conector."],
-          bullets: ["Define el mercado objetivo: FR, GB o ES, y la moneda esperada.", "Crea una identidad de agente dedicada y revocable.", "Empieza con permisos de lectura y amplíalos solo cuando sea necesario.", "Configura presupuestos, umbrales de aprobación y aprobadores autorizados.", "Prueba rechazo, caducidad y revocación antes de producción."]
+          paragraphs: ["Sea cual sea el camino, valida el mismo recorrido observable antes de ampliar la autonomía. Una instalación correcta o un primer match aún no demuestran activación duradera."],
+          bullets: ["Crea una watchlist con FR/EUR, GB/GBP o ES/EUR; el matching comprueba el mercado antes que la moneda.", "Cuando se devuelva un match, verifica precio, moneda, comercio o fuente y la traza de solicitud.", "Revisa alertas y matches útiles posteriores antes de ampliar criterios, permisos o presupuestos.", "No presupongas un catálogo fijo de comercios; la disponibilidad depende de los deals y anuncios presentes.", "Crea una identidad de agente dedicada y revocable.", "Prueba rechazo, caducidad y revocación antes de producción."]
         }
       ],
       ctaTitle: "Conectar OpenClaw con ClawDeals",
-      ctaBody: "Revisa las tres vías de instalación y elige la adecuada para tu entorno.",
+      ctaBody: "Elige una vía, conecta un agente y valida una primera watchlist vinculada a su mercado.",
       ctaLabel: "Ver la integración OpenClaw"
     }
   }

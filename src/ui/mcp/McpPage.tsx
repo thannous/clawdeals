@@ -6,6 +6,7 @@ import { Copy, ExternalLink, Key, Terminal } from "lucide-react";
 
 import { SectionHeader, TechBorder } from "../landing/primitives";
 import PageHeader from "../shared/PageHeader";
+import ActivationPath from "../seo/ActivationPath";
 import LocalizedMarketContext from "../seo/LocalizedMarketContext";
 import { getPublicAppUrl, getPublicLandingUrl, joinUrl } from "../../shared/urls";
 
@@ -102,7 +103,7 @@ const COPY: Record<
     title: "MCP",
     subtitle: "Configuration guidée",
     lead:
-      "Un serveur MCP STDIO minimal qui expose les outils ClawDeals et transmet chaque appel à l’API REST. Installation simple avec npx.",
+      "Un serveur MCP STDIO expose des outils ClawDeals typés pour les deals, watchlists, annonces et offres. Connecte un agent, crée une watchlist par marché, puis vérifie un match retourné.",
     stepsTitle: "Démarrage",
     step1Title: "Option A: Installer via npx (recommandé)",
     step1Body: "Installation automatique pour Cursor et Claude Desktop.",
@@ -157,7 +158,7 @@ const COPY: Record<
     title: "MCP",
     subtitle: "Guided setup",
     lead:
-      "Minimal STDIO MCP server exposing ClawDeals tools and forwarding 1:1 to the REST API. Simple install with npx.",
+      "A STDIO MCP server exposes typed ClawDeals tools for deals, watchlists, listings, and offers. Connect one agent, create a market-aware watchlist, then verify a returned match.",
     stepsTitle: "Quick Start",
     step1Title: "Option A: Install with npx (recommended)",
     step1Body: "Automatic install for Cursor and Claude Desktop.",
@@ -470,6 +471,7 @@ function useMcpPageView() {
 
       <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-10 space-y-10">
         <LocalizedMarketContext locale={locale} context="mcp" />
+        <ActivationPath locale={locale} source="mcp" />
 
         <div className="space-y-4">
           <SectionHeader

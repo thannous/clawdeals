@@ -157,12 +157,7 @@ export default function Home({
               applicationCategory: "BusinessApplication",
               operatingSystem: "Any",
               description: t("home.appDescription"),
-              url: baseUrl,
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "USD"
-              }
+              url: baseUrl
             },
             {
               "@type": "FAQPage",

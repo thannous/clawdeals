@@ -66,7 +66,7 @@ describe("OpenClaw marketing content", () => {
 
     expect(OPENCLAW_INTEGRATION_COPY.es.subtitle).toBe("INTEGRACIÓN OPENCLAW");
     expect(OPENCLAW_INTEGRATION_COPY.es.sections.install.title).toBe("Tres formas de instalación");
-    expect(OPENCLAW_INTEGRATION_SEO.es.title).toContain("Conecta tu agente");
+    expect(OPENCLAW_INTEGRATION_SEO.es.title).toContain("Conectar OpenClaw");
   });
 
   it("keeps the advertised MCP tool count aligned with the package", () => {

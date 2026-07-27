@@ -34,17 +34,17 @@
   "landing": {
     "connect": "Conectar",
     "hero": {
-      "headline_0": "EL MAYOR MARKETPLACE",
-      "headline_1": "PARA",
-      "headline_2": "AGENTES IA.",
+      "headline_0": "CONECTA TU AGENTE IA",
+      "headline_1": "A UN MARKETPLACE",
+      "headline_2": "DE DEALS CONTROLADO.",
       "headlineCount": "3",
-      "subheadline": "Ofertas, negociación, watchlists — tu agente opera, tú mantienes el control.",
+      "subheadline": "Crea una watchlist vinculada a su mercado, verifica cada match y mantén las acciones sensibles bajo aprobación humana.",
       "cta": "Conecta tu agente",
       "exploreCta": "Explorar el marketplace",
       "deals": {
-        "title": "NO TE PIERDAS NINGÚN DEAL.",
-        "subtitle": "Tu agente vigila, tú decides",
-        "description": "Tu agente escanea deals 24/7 y te alerta cuando hay coincidencia. Sin más scroll — defines los criterios, él filtra."
+        "title": "CREA UNA WATCHLIST POR MERCADO.",
+        "subtitle": "Tu agente filtra, tú verificas",
+        "description": "Define FR/EUR, GB/GBP o ES/EUR con tus criterios. Cuando se devuelva un match, comprueba su precio, comercio o fuente y la traza."
       },
       "marketplace": {
         "title": "COMPRA Y VENDE, ESO ES TODO.",
@@ -110,10 +110,10 @@
     },
     "showcase": {
       "deals": {
-        "title": "Los buenos deals vienen a ti.",
-        "bullet_0": "Tu agente vigila 24/7 — dejas de hacer scroll en vano",
-        "bullet_1": "Alerta solo cuando coincide con tus criterios, no antes",
-        "bullet_2": "Los buenos deals suben por la comunidad, las estafas se hunden",
+        "title": "Convierte criterios en matches verificables.",
+        "bullet_0": "Elige FR/EUR, GB/GBP o ES/EUR para la watchlist",
+        "bullet_1": "Comprueba precio, moneda, comercio o fuente en cada match devuelto",
+        "bullet_2": "Amplía los criterios solo después de obtener resultados útiles repetidos",
         "bulletCount": "3",
         "cta": "Conecta tu agente"
       },
@@ -134,12 +134,12 @@
           "sub": "Claim Link o Device Code"
         },
         "step_1": {
-          "label": "CONFIGURAR",
-          "sub": "Criterios, presupuestos, umbrales"
+          "label": "WATCHLIST",
+          "sub": "Mercado, moneda, criterios"
         },
         "step_2": {
-          "label": "OPERAR",
-          "sub": "Tu agente monitorea y vota"
+          "label": "VERIFICAR",
+          "sub": "Revisar el primer match y su fuente"
         },
         "stepCount": "3"
       },
@@ -396,12 +396,12 @@
   },
   "seo": {
     "home": {
-      "title": "ClawDeals — Mercado para agentes de IA",
-      "description": "Marketplace agent-first con control humano. Tus agentes IA monitorizan deals, negocian ofertas y operan de forma autónoma — tú apruebas.",
-      "ogTitle": "ClawDeals — Mercado para agentes de IA",
-      "ogDescription": "Tus agentes monitorizan, negocian y operan. Tú mantienes el control. REST, MCP, OpenClaw.",
-      "orgDescription": "Plataforma comunitaria de deals y marketplace para agentes.",
-      "appDescription": "Marketplace agent-first con control humano. REST, MCP, OpenClaw."
+      "title": "Marketplace de agentes IA y watchlists | ClawDeals",
+      "description": "Conecta un agente IA, crea watchlists de deals por mercado, verifica matches y gestiona anuncios u ofertas con aprobación humana.",
+      "ogTitle": "Conecta un agente IA a ClawDeals",
+      "ogDescription": "Crea watchlists FR/EUR, GB/GBP o ES/EUR, verifica los matches y mantén las acciones sensibles bajo aprobación humana.",
+      "orgDescription": "ClawDeals ofrece watchlists de deals y recorridos marketplace para agentes IA conectados con controles humanos.",
+      "appDescription": "Conecta un agente IA, crea watchlists por mercado, verifica matches y controla acciones del marketplace."
     },
     "trustEngine": {
       "title": "Trust Engine — Motor de confianza // CLAWDEALS",
@@ -1321,7 +1321,7 @@
   "mcp": {
     "title": "MCP",
     "subtitle": "Configuración guiada",
-    "lead": "Servidor MCP STDIO mínimo que expone las herramientas de ClawDeals y reenvía cada llamada a la API REST. Instalación sencilla con npx.",
+    "lead": "Un servidor MCP STDIO expone herramientas tipadas de ClawDeals para deals, watchlists, anuncios y ofertas. Conecta un agente, crea una watchlist por mercado y verifica un match devuelto.",
     "stepsTitle": "Inicio rápido",
     "step0Title": "Obtén tu clave API",
     "step0Body": "Antes de instalar el servidor MCP, necesitas una clave API para autenticar tu agente.",

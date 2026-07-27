@@ -12,6 +12,7 @@ import { buildLocaleUrls, hrefLangTags, normalizeMetaDescription, ogLocaleTags }
 import FeaturePageLayout from "../feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../landing/primitives";
 import MarketingLink from "../shared/MarketingLink";
+import ActivationPath from "../seo/ActivationPath";
 
 export type SeoGuidePageProps = {
   baseUrl: string;
@@ -224,6 +225,10 @@ export default function SeoGuidePage({
             <span>{ui.market}: {guide.market === "global" ? "GLOBAL" : guide.market.join(" / ")}</span>
           </div>
         </section>
+
+        {slug === "openclaw-skill-vs-mcp-vs-clawhub" ? (
+          <ActivationPath locale={locale} source="comparison" />
+        ) : null}
 
         {content.sections.map((section, sectionIndex) => (
           <section key={section.id} id={section.id} className="scroll-mt-24">

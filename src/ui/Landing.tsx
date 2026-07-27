@@ -15,6 +15,7 @@ import { SectionHeader } from "./landing/primitives";
 import ExploreDemos from "./landing/ExploreDemos";
 import PlatformPillars from "./landing/PlatformPillars";
 import Footer from "./Footer";
+import ActivationPath from "./seo/ActivationPath";
 import LocalizedMarketContext from "./seo/LocalizedMarketContext";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
@@ -509,6 +510,12 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
         {mode === "current" && locale !== "en" && (
           <div className="max-w-[1440px] mx-auto px-6 pt-12">
             <LocalizedMarketContext locale={locale} context="landing" />
+          </div>
+        )}
+
+        {mode === "current" && (
+          <div className="max-w-[1440px] mx-auto px-6 py-16">
+            <ActivationPath locale={locale} source="landing" />
           </div>
         )}
 

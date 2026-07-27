@@ -16,6 +16,7 @@ import {
   Zap
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
+import ActivationPath from "../../ui/seo/ActivationPath";
 import LocalizedMarketContext from "../../ui/seo/LocalizedMarketContext";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
@@ -33,7 +34,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
   fr: {
     subtitle: "INTÉGRATION OPENCLAW",
     description:
-      "Installe ClawDeals comme skill, serveur MCP ou connecteur ClawHub. Un parcours guidé connecte ensuite ton agent au marketplace.",
+      "Installe ClawDeals comme Skill URL, serveur MCP ou via ClawHub, connecte ton agent, puis crée une watchlist par marché et vérifie son premier match.",
     imageAlt: "Les trois méthodes pour connecter OpenClaw à ClawDeals",
     meta: {
       authorLabel: "Auteur",
@@ -49,7 +50,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
         title: "Trois chemins d'installation",
         subtitle: "INSTALL_PATHS",
         intro:
-          "Choisis la méthode qui correspond à ton environnement. Chaque chemin mène au même résultat : ton agent connecté à ClawDeals.",
+          "Choisis la méthode qui correspond à ton environnement. Chaque chemin connecte ton agent à ClawDeals ; la watchlist, le marché et la devise se configurent ensuite.",
         paths: [
           {
             num: "01",
@@ -132,7 +133,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
   en: {
     subtitle: "OPENCLAW INTEGRATION",
     description:
-      "Install ClawDeals as a skill, MCP server, or ClawHub connector, then follow the guided connection flow for marketplace access.",
+      "Install ClawDeals with a Skill URL, MCP server, or ClawHub, connect your agent, then create a market-aware watchlist and verify its first match.",
     imageAlt: "Three ways to connect OpenClaw to ClawDeals",
     meta: {
       authorLabel: "Author",
@@ -148,7 +149,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
         title: "Three install paths",
         subtitle: "INSTALL_PATHS",
         intro:
-          "Pick the method that fits your environment. Every path leads to the same result: your agent connected to ClawDeals.",
+          "Pick the method that fits your environment. Each path connects your agent to ClawDeals; you then configure the watchlist, market, and currency.",
         paths: [
           {
             num: "01",
@@ -231,7 +232,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
   es: {
     subtitle: "INTEGRACIÓN OPENCLAW",
     description:
-      "Instala ClawDeals como skill, servidor MCP o conector de ClawHub y sigue el flujo guiado para conectar tu agente al marketplace.",
+      "Instala ClawDeals mediante Skill URL, servidor MCP o ClawHub, conecta tu agente y crea una watchlist por mercado para verificar el primer match.",
     imageAlt: "Tres formas de conectar OpenClaw con ClawDeals",
     meta: {
       authorLabel: "Autor",
@@ -247,7 +248,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
         title: "Tres formas de instalación",
         subtitle: "INSTALL_PATHS",
         intro:
-          "Elige el método que encaje con tu entorno. Los tres conectan tu agente OpenClaw con ClawDeals.",
+          "Elige el método que encaje con tu entorno. Los tres conectan el agente con ClawDeals; después configuras la watchlist, el mercado y la moneda.",
         paths: [
           {
             num: "01",
@@ -342,28 +343,28 @@ const ICON_MAP: Record<string, typeof Zap> = {
 
 export const SEO = {
   fr: {
-    title: "Intégration OpenClaw — Connecter votre agent // CLAWDEALS",
+    title: "Connecter OpenClaw à ClawDeals : Skill, MCP ou ClawHub",
     description:
-      "Installez ClawDeals comme skill OpenClaw, serveur MCP ou connecteur ClawHub, puis suivez le parcours de connexion guidé.",
+      "Comparez Skill URL, MCP et ClawHub, connectez OpenClaw, créez une watchlist FR/EUR, GB/GBP ou ES/EUR et vérifiez son premier match.",
     ogTitle: "Intégration OpenClaw — ClawDeals",
     ogDescription:
-      "Skill URL, serveur MCP ou ClawHub. Connectez votre agent au marketplace en quelques étapes guidées."
+      "Connectez OpenClaw, créez une watchlist par marché et vérifiez le premier match avant d’élargir l’autonomie."
   },
   en: {
-    title: "OpenClaw Integration — Connect Your Agent // CLAWDEALS",
+    title: "Connect OpenClaw to ClawDeals: Skill, MCP or ClawHub",
     description:
-      "Install ClawDeals as an OpenClaw skill, MCP server, or ClawHub connector, then follow the guided connection flow.",
+      "Compare Skill URL, MCP, and ClawHub, connect OpenClaw, create a FR/EUR, GB/GBP, or ES/EUR watchlist, and verify its first match.",
     ogTitle: "OpenClaw Integration — ClawDeals",
     ogDescription:
-      "Skill URL, MCP server, or ClawHub. Connect your agent to the marketplace in a few guided steps."
+      "Connect OpenClaw, create a market-aware watchlist, and verify the first match before expanding autonomy."
   },
   es: {
-    title: "Integración OpenClaw — Conecta tu agente // CLAWDEALS",
+    title: "Conectar OpenClaw con ClawDeals: Skill, MCP o ClawHub",
     description:
-      "Instala ClawDeals como skill de OpenClaw, servidor MCP o conector de ClawHub y sigue el flujo de conexión guiado.",
+      "Compara Skill URL, MCP y ClawHub, conecta OpenClaw, crea una watchlist FR/EUR, GB/GBP o ES/EUR y verifica el primer match.",
     ogTitle: "Integración OpenClaw — ClawDeals",
     ogDescription:
-      "URL del skill, servidor MCP o ClawHub. Conecta tu agente al marketplace en unos pasos guiados."
+      "Conecta OpenClaw, crea una watchlist por mercado y verifica el primer match antes de ampliar la autonomía."
   }
 };
 
@@ -487,6 +488,7 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
         accentBg="bg-secondary"
       >
         <LocalizedMarketContext locale={locale} context="openclaw" />
+        <ActivationPath locale={locale} source="openclaw" />
 
         <figure className="border border-border bg-bg overflow-hidden">
           <Image
