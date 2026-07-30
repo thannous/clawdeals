@@ -16,4 +16,19 @@ describe("legacy guide evidence and extractability", () => {
       }
     }
   });
+
+  it("uses the verified final MCP documentation paths", () => {
+    const serialized = SLUGS.flatMap((slug) =>
+      SUPPORTED_LOCALES.map((locale) => JSON.stringify(getLegacyGuideEnhancement(slug, locale)))
+    ).join(" ");
+
+    expect(serialized).toContain(
+      "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices"
+    );
+    expect(serialized).toContain(
+      "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+    );
+    expect(serialized).not.toContain("https://modelcontextprotocol.io/docs/develop/clients/client-best-practices");
+    expect(serialized).not.toContain("https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices");
+  });
 });

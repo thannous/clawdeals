@@ -45,7 +45,7 @@ describe("SEO guide registry", () => {
     const dealWatch = SEO_GUIDE_REGISTRY.find((guide) => guide.slug === "openclaw-dealwatch");
     const mcpSafety = SEO_GUIDE_REGISTRY.find((guide) => guide.slug === "mcp-marketplace-safety");
 
-    expect(dealWatch).toMatchObject({ publishedAt: "2026-02-13", updatedAt: "2026-07-18" });
-    expect(mcpSafety).toMatchObject({ publishedAt: "2026-02-13", updatedAt: "2026-07-18" });
+    expect(dealWatch).toMatchObject({ publishedAt: "2026-02-13", updatedAt: "2026-07-29" });
+    expect(mcpSafety).toMatchObject({ publishedAt: "2026-02-13", updatedAt: "2026-07-29" });
   });
 });

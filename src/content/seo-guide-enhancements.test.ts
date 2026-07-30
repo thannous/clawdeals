@@ -29,4 +29,19 @@ describe("SEO guide evidence and extractability", () => {
 
     expect(serialized).not.toMatch(/[$€£]\s*\d|\b\d+\s*(?:minutes?|minutes?|minutos?)\b/i);
   });
+
+  it("uses the verified final MCP documentation paths", () => {
+    const serialized = GUIDE_SLUGS.flatMap((slug) =>
+      SUPPORTED_LOCALES.map((locale) => JSON.stringify(getSeoGuideEnhancement(slug, locale)))
+    ).join(" ");
+
+    expect(serialized).toContain(
+      "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices"
+    );
+    expect(serialized).toContain(
+      "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+    );
+    expect(serialized).not.toContain("https://modelcontextprotocol.io/docs/develop/clients/client-best-practices");
+    expect(serialized).not.toContain("https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices");
+  });
 });

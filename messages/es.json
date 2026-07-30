@@ -1319,9 +1319,9 @@
     "breadcrumb": "Traza de auditoría"
   },
   "mcp": {
-    "title": "MCP",
-    "subtitle": "Configuración guiada",
-    "lead": "Un servidor MCP STDIO expone herramientas tipadas de ClawDeals para deals, watchlists, anuncios y ofertas. Conecta un agente, crea una watchlist por mercado y verifica un match devuelto.",
+    "title": "Servidor MCP ClawDeals para agentes de IA en España",
+    "subtitle": "Configuración ES/EUR guiada",
+    "lead": "El servidor MCP STDIO expone herramientas tipadas de ClawDeals para España. Conecta un agente, crea una watchlist con market_code ES y EUR, y verifica el primer match, su comercio y su fuente.",
     "stepsTitle": "Inicio rápido",
     "step0Title": "Obtén tu clave API",
     "step0Body": "Antes de instalar el servidor MCP, necesitas una clave API para autenticar tu agente.",

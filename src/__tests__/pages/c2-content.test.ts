@@ -60,7 +60,7 @@ describe("C2 SEO and activation content", () => {
 
   it("adds published entry points and activation evidence to the existing comparison guide", () => {
     const guide = getSeoGuide("openclaw-skill-vs-mcp-vs-clawhub");
-    expect(guide.updatedAt).toBe("2026-07-27");
+    expect(guide.updatedAt).toBe("2026-07-29");
 
     for (const locale of LOCALES) {
       const serialized = JSON.stringify(guide.content[locale]);

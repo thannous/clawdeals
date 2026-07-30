@@ -29,25 +29,25 @@ export const MCP_SEO: Record<
   { title: string; description: string; breadcrumb: string; applicationName: string }
 > = {
   en: {
-    title: "ClawDeals MCP Server for AI Agents | Setup Guide",
+    title: "ClawDeals MCP Server for UK AI Agents | Setup",
     description:
-      "Install the ClawDeals MCP server, connect an agent, create a FR/EUR, GB/GBP or ES/EUR watchlist, and verify the first marketplace match.",
-    breadcrumb: "MCP Server",
-    applicationName: "ClawDeals MCP Server"
+      "Install the ClawDeals MCP server for a GB/GBP watchlist, connect one AI agent, verify the first UK marketplace match, and keep every action auditable.",
+    breadcrumb: "MCP Server for the UK",
+    applicationName: "ClawDeals MCP Server for UK AI Agents"
   },
   fr: {
-    title: "Serveur MCP ClawDeals pour agents IA | Guide",
+    title: "Serveur MCP ClawDeals pour agents IA en France",
     description:
-      "Installez le serveur MCP ClawDeals, connectez un agent, créez une watchlist FR/EUR, GB/GBP ou ES/EUR et vérifiez le premier match.",
-    breadcrumb: "Serveur MCP",
-    applicationName: "Serveur MCP de ClawDeals"
+      "Installez le serveur MCP ClawDeals pour une watchlist FR/EUR, connectez un agent IA, puis vérifiez le premier match et sa source en France.",
+    breadcrumb: "Serveur MCP France",
+    applicationName: "Serveur MCP ClawDeals pour agents IA en France"
   },
   es: {
-    title: "Servidor MCP de ClawDeals para agentes IA | Guía",
+    title: "Servidor MCP ClawDeals para agentes de IA en España",
     description:
-      "Instala el servidor MCP de ClawDeals, conecta un agente, crea una watchlist FR/EUR, GB/GBP o ES/EUR y verifica el primer match.",
-    breadcrumb: "Servidor MCP",
-    applicationName: "Servidor MCP de ClawDeals"
+      "Instala el servidor MCP de ClawDeals para una watchlist ES/EUR, conecta un agente de IA y verifica el primer match y su comercio de origen en España.",
+    breadcrumb: "Servidor MCP España",
+    applicationName: "Servidor MCP ClawDeals para agentes de IA en España"
   }
 };
 

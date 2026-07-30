@@ -22,7 +22,7 @@ const DEALWATCH_SOURCES = [
   {
     label: "Client security best practices",
     publisher: "Model Context Protocol",
-    url: "https://modelcontextprotocol.io/docs/develop/clients/client-best-practices"
+    url: "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices"
   }
 ] as const;
 
@@ -30,12 +30,12 @@ const MCP_SAFETY_SOURCES = [
   {
     label: "Security best practices",
     publisher: "Model Context Protocol",
-    url: "https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices"
+    url: "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
   },
   {
     label: "Client security best practices",
     publisher: "Model Context Protocol",
-    url: "https://modelcontextprotocol.io/docs/develop/clients/client-best-practices"
+    url: "https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices"
   },
   {
     label: "OAuth 2.0 Security Best Current Practice (RFC 9700)",

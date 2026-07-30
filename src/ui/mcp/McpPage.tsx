@@ -100,10 +100,10 @@ const COPY: Record<
   }
 > = {
   fr: {
-    title: "MCP",
-    subtitle: "Configuration guidée",
+    title: "Serveur MCP ClawDeals pour agents IA en France",
+    subtitle: "Configuration FR/EUR guidée",
     lead:
-      "Un serveur MCP STDIO expose des outils ClawDeals typés pour les deals, watchlists, annonces et offres. Connecte un agent, crée une watchlist par marché, puis vérifie un match retourné.",
+      "Le serveur MCP STDIO expose des outils ClawDeals typés pour la France. Connecte un agent, crée une watchlist avec market_code FR et EUR, puis vérifie le premier match, son marchand et sa source.",
     stepsTitle: "Démarrage",
     step1Title: "Option A: Installer via npx (recommandé)",
     step1Body: "Installation automatique pour Cursor et Claude Desktop.",
@@ -155,10 +155,10 @@ const COPY: Record<
     step0AltOr: "ou"
   },
   en: {
-    title: "MCP",
-    subtitle: "Guided setup",
+    title: "ClawDeals MCP server for UK AI agents",
+    subtitle: "GB/GBP guided setup",
     lead:
-      "A STDIO MCP server exposes typed ClawDeals tools for deals, watchlists, listings, and offers. Connect one agent, create a market-aware watchlist, then verify a returned match.",
+      "The STDIO MCP server exposes typed ClawDeals tools for the UK market. Connect one agent, create a watchlist with market_code GB and GBP, then verify the first match, merchant, and source.",
     stepsTitle: "Quick Start",
     step1Title: "Option A: Install with npx (recommended)",
     step1Body: "Automatic install for Cursor and Claude Desktop.",

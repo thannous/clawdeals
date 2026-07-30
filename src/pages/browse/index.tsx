@@ -1,5 +1,4 @@
 import Head from "next/head";
-import Script from "next/script";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import BrowseListingsPage from "../../ui/browse/BrowseListingsPage";
@@ -7,6 +6,7 @@ import { listPublicListings } from "../../server/services/public-listings";
 import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
+import { JsonLd } from "../../ui/guides/SeoGuidePage";
 
 export const META = {
   en: {
@@ -86,7 +86,9 @@ export default function BrowsePage({
   const currentLocale: SupportedLocale = resolveSupportedLocale(router.locale || locale || "en");
   const meta = META[currentLocale] || META.en;
   const urls = buildLocaleUrls(baseUrl, "browse");
+  const homeUrls = buildLocaleUrls(baseUrl, "");
   const canonicalUrl = urls[currentLocale];
+  const homeUrl = homeUrls[currentLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(currentLocale);
   const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
@@ -126,8 +128,9 @@ export default function BrowsePage({
         <meta name="twitter:image" content={ogImageUrl} />
 
       </Head>
-      <Script id="browse-listings-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="browse-listings-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -137,18 +140,18 @@ export default function BrowsePage({
               name: meta.title,
               description: meta.description,
               isPartOf: { "@id": `${baseUrl}/#website` },
-              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-US",
+              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-GB",
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: homeUrl },
                 { "@type": "ListItem", position: 2, name: meta.title.split(" -- ")[0], item: canonicalUrl },
               ],
             },
           ],
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
       <BrowseListingsPage
         initialListings={initialListings}
         initialNextCursor={initialNextCursor}

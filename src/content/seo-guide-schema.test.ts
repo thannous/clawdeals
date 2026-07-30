@@ -20,7 +20,7 @@ describe("SEO guide structured data", () => {
       url: "https://clawdeals.com/fr/about/editorial"
     });
     expect(article.datePublished).toBe("2026-07-18");
-    expect(article.dateModified).toBe("2026-07-18");
+    expect(article.dateModified).toBe("2026-07-29");
     expect(article.image).toBe("https://clawdeals.com/og/fr.png");
     expect(article.step).toHaveLength(5);
     expect(article.step[0].url).toContain("#inventorier");

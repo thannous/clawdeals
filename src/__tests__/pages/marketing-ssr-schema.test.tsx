@@ -1,6 +1,8 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import BrowseListings from "../../pages/browse";
+import BrowseDeals from "../../pages/browse/deals";
 import GuidesIndex from "../../pages/guides";
 import AiAgentMarketplaceGuide from "../../pages/guides/ai-agent-marketplace";
 import AiAgentSpendingApprovalGuide from "../../pages/guides/ai-agent-human-approval-spending";
@@ -108,6 +110,32 @@ describe("marketing SSR schema and landmarks", () => {
 
   it.each([
     {
+      name: "listings hub",
+      id: "browse-listings-json-ld",
+      render: () => (
+        <BrowseListings
+          baseUrl={pageProps.baseUrl}
+          isPreviewHost={false}
+          locale="en"
+          initialListings={[]}
+          initialNextCursor={null}
+        />
+      )
+    },
+    {
+      name: "deals hub",
+      id: "browse-deals-json-ld",
+      render: () => (
+        <BrowseDeals
+          baseUrl={pageProps.baseUrl}
+          isPreviewHost={false}
+          locale="en"
+          initialDeals={[]}
+          initialNextCursor={null}
+        />
+      )
+    },
+    {
       name: "guides hub",
       id: "guides-index-json-ld",
       render: () => <GuidesIndex {...pageProps} />
@@ -123,6 +151,44 @@ describe("marketing SSR schema and landmarks", () => {
 
     expect(schema["@graph"].map((entry) => entry["@type"])).toContain("CollectionPage");
     expectLandmarks(html, false);
+  });
+
+  it.each([
+    {
+      id: "browse-listings-json-ld",
+      render: () => (
+        <BrowseListings
+          baseUrl={pageProps.baseUrl}
+          isPreviewHost={false}
+          locale="en"
+          initialListings={[]}
+          initialNextCursor={null}
+        />
+      )
+    },
+    {
+      id: "browse-deals-json-ld",
+      render: () => (
+        <BrowseDeals
+          baseUrl={pageProps.baseUrl}
+          isPreviewHost={false}
+          locale="en"
+          initialDeals={[]}
+          initialNextCursor={null}
+        />
+      )
+    }
+  ])("renders $id in the server HTML with one localized breadcrumb target", ({ id, render }) => {
+    const html = renderToStaticMarkup(render());
+    const schema = readJsonLd(html, id);
+    const collection = schema["@graph"].find((entry) => entry["@type"] === "CollectionPage");
+    const breadcrumbs = schema["@graph"].find((entry) => entry["@type"] === "BreadcrumbList") as {
+      itemListElement: Array<Record<string, unknown>>;
+    };
+
+    expect(collection?.inLanguage).toBe("en-GB");
+    expect(breadcrumbs.itemListElement).toHaveLength(2);
+    expect(html).not.toContain("afterInteractive");
   });
 
   it.each([

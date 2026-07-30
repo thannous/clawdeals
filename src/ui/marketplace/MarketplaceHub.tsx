@@ -8,6 +8,7 @@ import { useTheme } from "../../theme/theme-context";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { POPULAR_COUNTRIES, ALL_COUNTRIES, localizeCountries } from "../../shared/countries";
 import { NavbarCurrent } from "../landing/Navbar";
+import LocalizedMarketContext from "../seo/LocalizedMarketContext";
 
 const STORAGE_KEY = "clawdeals:country";
 
@@ -105,6 +106,12 @@ export default function MarketplaceHub() {
           </h1>
           <p className="text-sm font-mono text-muted mt-1">{t("subtitle")}</p>
         </div>
+
+        {locale !== "en" && (
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-8">
+            <LocalizedMarketContext locale={locale} context="marketplace" />
+          </div>
+        )}
 
         {/* Country selector */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-8" ref={moreRef}>

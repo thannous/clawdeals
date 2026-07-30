@@ -80,8 +80,8 @@ describe("sitemap.xml", () => {
     const homeEntry = xml.match(/<loc>https:\/\/clawdeals\.com\/<\/loc>\s+<lastmod>([^<]+)<\/lastmod>/);
     const newGuideEntry = xml.match(/<loc>https:\/\/clawdeals\.com\/guides\/mcp-security-checklist<\/loc>\s+<lastmod>([^<]+)<\/lastmod>/);
 
-    expect(homeEntry?.[1]).toBe("2026-07-27");
-    expect(newGuideEntry?.[1]).toBe("2026-07-18");
+    expect(homeEntry?.[1]).toBe("2026-07-29");
+    expect(newGuideEntry?.[1]).toBe("2026-07-29");
     expect(xml).not.toContain("2025-01-01");
   });
 });

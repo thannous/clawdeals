@@ -1,5 +1,4 @@
 import Head from "next/head";
-import Script from "next/script";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 import BrowseDealsPage from "../../../ui/browse/BrowseDealsPage";
@@ -7,6 +6,7 @@ import { listDeals } from "../../../server/services/deals-list";
 import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../../shared/marketing-request";
+import { JsonLd } from "../../../ui/guides/SeoGuidePage";
 
 export const META = {
   en: {
@@ -90,7 +90,9 @@ export default function BrowseDeals({
   const currentLocale: SupportedLocale = resolveSupportedLocale(router.locale || locale || "en");
   const meta = META[currentLocale] || META.en;
   const urls = buildLocaleUrls(baseUrl, "browse/deals");
+  const homeUrls = buildLocaleUrls(baseUrl, "");
   const canonicalUrl = urls[currentLocale];
+  const homeUrl = homeUrls[currentLocale];
   const hrefLangs = hrefLangTags(urls);
   const ogLocales = ogLocaleTags(currentLocale);
   const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
@@ -130,8 +132,9 @@ export default function BrowseDeals({
         <meta name="twitter:image" content={ogImageUrl} />
 
       </Head>
-      <Script id="browse-deals-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="browse-deals-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -141,19 +144,18 @@ export default function BrowseDeals({
               name: meta.title,
               description: meta.description,
               isPartOf: { "@id": `${baseUrl}/#website` },
-              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-US",
+              inLanguage: currentLocale === "fr" ? "fr-FR" : currentLocale === "es" ? "es-ES" : "en-GB",
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                { "@type": "ListItem", position: 2, name: "Browse Deals", item: `${baseUrl}/browse/deals` },
-                { "@type": "ListItem", position: 3, name: meta.title.split(" -- ")[0], item: canonicalUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: homeUrl },
+                { "@type": "ListItem", position: 2, name: meta.title.split(" -- ")[0], item: canonicalUrl },
               ],
             },
           ],
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
       <BrowseDealsPage
         initialDeals={initialDeals}
         initialNextCursor={initialNextCursor}

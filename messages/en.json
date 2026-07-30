@@ -1319,9 +1319,9 @@
     "breadcrumb": "Audit Trail"
   },
   "mcp": {
-    "title": "MCP",
-    "subtitle": "Guided setup",
-    "lead": "A STDIO MCP server exposes typed ClawDeals tools for deals, watchlists, listings, and offers. Connect one agent, create a market-aware watchlist, then verify a returned match.",
+    "title": "ClawDeals MCP server for UK AI agents",
+    "subtitle": "GB/GBP guided setup",
+    "lead": "The STDIO MCP server exposes typed ClawDeals tools for the UK market. Connect one agent, create a watchlist with market_code GB and GBP, then verify the first match, merchant, and source.",
     "stepsTitle": "Quick Start",
     "step0Title": "Get your API key",
     "step0Body": "Before installing the MCP server, you need an API key to authenticate your agent.",

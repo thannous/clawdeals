@@ -3,6 +3,7 @@ import type { SupportedLocale } from "../../shared/i18n";
 
 export type LocalizedMarketContextKey =
   | "landing"
+  | "marketplace"
   | "trust"
   | "policy"
   | "audit"
@@ -24,6 +25,47 @@ type MarketContextCopy = {
 
 type LocalizedMarketCopy = Record<Exclude<SupportedLocale, "en">, Record<LocalizedMarketContextKey, MarketContextCopy>>;
 
+type LocalizedPathLinkKey = "mcp" | "openclaw" | "guides" | "deals";
+
+const RELATED_LINK_KEYS_BY_CONTEXT: Record<
+  LocalizedMarketContextKey,
+  readonly LocalizedPathLinkKey[]
+> = {
+  landing: ["mcp", "openclaw", "guides"],
+  marketplace: ["mcp", "guides", "deals"],
+  trust: ["mcp", "guides", "deals"],
+  policy: ["mcp", "guides", "deals"],
+  audit: ["mcp", "guides", "deals"],
+  mcp: ["openclaw", "guides", "deals"],
+  openclaw: ["mcp", "guides", "deals"],
+  "explore-agents": ["mcp", "openclaw", "guides"],
+  "explore-skills": ["mcp", "openclaw", "guides"],
+  "explore-data": ["mcp", "openclaw", "guides"]
+};
+
+const LOCALIZED_PATH_LINKS: Record<
+  Exclude<SupportedLocale, "en">,
+  Record<LocalizedPathLinkKey, { href: string; label: string }>
+> = {
+  fr: {
+    mcp: { href: "/fr/mcp", label: "Configurer le serveur MCP France" },
+    openclaw: { href: "/fr/integrations/openclaw", label: "Installer OpenClaw en France" },
+    guides: { href: "/fr/guides", label: "Consulter les guides en français" },
+    deals: { href: "/fr/browse/deals", label: "Explorer les deals du marché FR" }
+  },
+  es: {
+    mcp: { href: "/es/mcp", label: "Configurar el servidor MCP España" },
+    openclaw: { href: "/es/integrations/openclaw", label: "Instalar OpenClaw en España" },
+    guides: { href: "/es/guides", label: "Consultar las guías en español" },
+    deals: { href: "/es/browse/deals", label: "Explorar deals del mercado ES" }
+  }
+};
+
+const RELATED_NAV_LABEL: Record<Exclude<SupportedLocale, "en">, string> = {
+  fr: "Parcours liés pour le marché français",
+  es: "Rutas relacionadas para el mercado español"
+};
+
 export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
   fr: {
     landing: {
@@ -35,6 +77,20 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
         "Connecte l’agent, puis crée sa première watchlist avec market_code FR.",
         "EUR ne suffit pas à distinguer la France de l’Espagne : le code marché reste explicite.",
         "Un premier match valide le fonctionnement du parcours, pas encore sa rétention."
+      ],
+      guideLabel: "Suivre le guide DealWatch France",
+      marketCode: "FR",
+      currency: "EUR"
+    },
+    marketplace: {
+      eyebrow: "MARKETPLACE · FRANCE",
+      title: "Commencer par des ressources rattachées au marché FR",
+      intro:
+        "La marketplace reste commune, mais une sélection utile en France doit conserver son marché, sa devise et sa source. Le filtre pays aide à explorer ; market_code FR reste le contrat opérationnel.",
+      points: [
+        "Sélectionne la France et vérifie le pays affiché sur chaque annonce ou deal.",
+        "Contrôle EUR, le marchand ou vendeur et la fraîcheur de la source.",
+        "Crée ensuite une watchlist FR étroite avant de valider le premier match."
       ],
       guideLabel: "Suivre le guide DealWatch France",
       marketCode: "FR",
@@ -168,6 +224,20 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
       marketCode: "ES",
       currency: "EUR"
     },
+    marketplace: {
+      eyebrow: "MARKETPLACE · ESPAÑA",
+      title: "Empezar por recursos vinculados al mercado ES",
+      intro:
+        "El marketplace es común, pero una selección útil en España debe conservar mercado, moneda y fuente. El filtro por país ayuda a explorar; market_code ES sigue siendo el contrato operativo.",
+      points: [
+        "Selecciona España y comprueba el país de cada anuncio o deal.",
+        "Verifica EUR, el comercio o vendedor y la actualidad de la fuente.",
+        "Crea después una watchlist ES limitada antes de validar el primer match."
+      ],
+      guideLabel: "Seguir la guía DealWatch España",
+      marketCode: "ES",
+      currency: "EUR"
+    },
     trust: {
       eyebrow: "CONFIANZA · ESPAÑA",
       title: "Interpretar la confianza dentro del mercado ES",
@@ -294,6 +364,9 @@ export default function LocalizedMarketContext({
 
   const copy = LOCALIZED_MARKET_CONTEXT[locale][context];
   const guideHref = `/${locale}/guides/openclaw-dealwatch`;
+  const relatedLinks = RELATED_LINK_KEYS_BY_CONTEXT[context].map(
+    (linkKey) => LOCALIZED_PATH_LINKS[locale][linkKey]
+  );
 
   return (
     <section
@@ -322,6 +395,20 @@ export default function LocalizedMarketContext({
           market_code={copy.marketCode} · currency={copy.currency}
         </span>
       </div>
+      <nav
+        aria-label={RELATED_NAV_LABEL[locale]}
+        className="mt-6 pt-5 border-t border-border flex flex-wrap gap-x-5 gap-y-3"
+      >
+        {relatedLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="text-xs font-mono text-muted underline underline-offset-4 decoration-border-strong hover:text-primary hover:decoration-primary transition-colors"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </section>
   );
 }

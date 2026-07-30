@@ -9,6 +9,7 @@ import LocalizedMarketContext, {
 
 const CONTEXTS: LocalizedMarketContextKey[] = [
   "landing",
+  "marketplace",
   "trust",
   "policy",
   "audit",
@@ -34,12 +35,24 @@ describe("LocalizedMarketContext", () => {
     }
   });
 
-  it("renders localized market proof and a localized DealWatch link", () => {
+  it("renders localized market proof and contextual Spanish paths without a self-link", () => {
     render(<LocalizedMarketContext locale="es" context="mcp" />);
 
     expect(screen.getByText("Crear recursos MCP vinculados explícitamente a España")).toBeTruthy();
     expect(screen.getByText("market_code=ES · currency=EUR")).toBeTruthy();
-    expect(screen.getByRole("link").getAttribute("href")).toBe("/es/guides/openclaw-dealwatch");
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toContain("/es/guides/openclaw-dealwatch");
+    expect(hrefs).toContain("/es/integrations/openclaw");
+    expect(hrefs).toContain("/es/guides");
+    expect(hrefs).toContain("/es/browse/deals");
+    expect(hrefs).not.toContain("/es/mcp");
+  });
+
+  it("links other French market contexts back to the localized MCP page", () => {
+    render(<LocalizedMarketContext locale="fr" context="trust" />);
+
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toContain("/fr/mcp");
   });
 
   it("does not add a generic market block to the English page", () => {
