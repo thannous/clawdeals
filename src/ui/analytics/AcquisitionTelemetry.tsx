@@ -112,19 +112,19 @@ export default function AcquisitionTelemetry() {
   }, [router.asPath, router.isReady, router.locale]);
 
   useEffect(() => {
-    function onClick(event: MouseEvent) {
+    function trackAppEntry(event: MouseEvent) {
       const element = event.target instanceof Element ? event.target : null;
       const anchor = element?.closest("a[href]") as HTMLAnchorElement | null;
       const context = contextRef.current;
-      if (!anchor || !context) return;
+      if (!anchor || !context) return null;
 
       let targetUrl: URL;
       try {
         targetUrl = new URL(anchor.href, window.location.href);
       } catch {
-        return;
+        return null;
       }
-      if (!isAppEntryUrl(targetUrl)) return;
+      if (!isAppEntryUrl(targetUrl)) return null;
 
       targetUrl.searchParams.set(ACQUISITION_QUERY_PARAM, context.acquisitionId);
       anchor.href = targetUrl.toString();
@@ -145,9 +145,19 @@ export default function AcquisitionTelemetry() {
         cta_location: ctaLocation
       });
 
+      return { anchor, targetUrl };
+    }
+
+    function onClick(event: MouseEvent) {
+      if (event.button !== 0) return;
+
+      const trackedEntry = trackAppEntry(event);
+      if (!trackedEntry) return;
+
+      const { anchor, targetUrl } = trackedEntry;
+
       if (
         event.defaultPrevented ||
-        event.button !== 0 ||
         event.metaKey ||
         event.ctrlKey ||
         event.shiftKey ||
@@ -161,8 +171,17 @@ export default function AcquisitionTelemetry() {
       window.location.assign(targetUrl.toString());
     }
 
+    function onAuxClick(event: MouseEvent) {
+      if (event.button !== 1) return;
+      trackAppEntry(event);
+    }
+
     document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
+    document.addEventListener("auxclick", onAuxClick, true);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("auxclick", onAuxClick, true);
+    };
   }, []);
 
   return null;

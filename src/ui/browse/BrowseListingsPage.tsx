@@ -115,6 +115,7 @@ export default function BrowseListingsPage({
             </p>
             <Link
               href={getPublicAppEntryHref(localePrefix)}
+              data-acquisition-cta="browse"
               className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
             >
               {t("cta.button")}

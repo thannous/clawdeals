@@ -74,7 +74,8 @@ describe("BrowseDealDetailPage", () => {
     expect(screen.getAllByText("Open source deal").length).toBeGreaterThan(0);
     expect(screen.getByText("Example")).toBeTruthy();
     expect(screen.getByText("ratelimit")).toBeTruthy();
-    expect(screen.getByText("Connect Your Agent")).toBeTruthy();
+    const connectLink = screen.getByText("Connect Your Agent").closest("a");
+    expect(connectLink?.dataset.acquisitionCta).toBe("browse");
   });
 
   it("renders a not-found state when deal is missing", () => {

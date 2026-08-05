@@ -167,6 +167,7 @@ export default function BrowseDealDetailPage({ deal }: BrowseDealDetailPageProps
                 <p className="text-sm font-mono text-muted">{t("detail.ctaText")}</p>
                 <Link
                   href={getPublicAppEntryHref(localePrefix)}
+                  data-acquisition-cta="browse"
                   className="inline-block px-6 py-2.5 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
                 >
                   {t("detail.ctaButton")}
