@@ -90,12 +90,15 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
+    const sellerEmail = `itest+seller-${ownerId.split("-")[0]}@example.com`;
+    const sellerPhone = "+33600001234";
+    const buyerEmail = `itest+buyer-${buyerOwnerId.split("-")[0]}@example.com`;
     await setVerifiedOwnerContact(supabase, ownerId, {
-      email: `itest+seller-${ownerId.split("-")[0]}@example.com`,
-      phoneE164: "+33600001234"
+      email: sellerEmail,
+      phoneE164: sellerPhone
     });
     await setVerifiedOwnerContact(supabase, buyerOwnerId, {
-      email: `itest+buyer-${buyerOwnerId.split("-")[0]}@example.com`,
+      email: buyerEmail,
       phoneE164: "+33612345678"
     });
 
@@ -251,6 +254,16 @@ test.describe.serial("Integration: Contact reveal (TI-202/TI-203)", () => {
       expect(getBody?.data?.contact_reveal_state).toBe("APPROVED");
       expect(getBody?.data?.buyer_contact?.email_masked).toMatch(emailMaskedRe);
       expect(getBody?.data?.seller_contact?.phone_masked).toMatch(phoneMaskedRe);
+      // After approval, a party receives the counterparty's unmasked contact — never its own.
+      expect(getBody?.data?.seller_contact?.email).toBe(sellerEmail);
+      expect(getBody?.data?.seller_contact?.phone).toBe(sellerPhone);
+      expect(getBody?.data?.buyer_contact?.email).toBeUndefined();
+      expect(getBody?.data?.buyer_contact?.phone).toBeUndefined();
+      expect(JSON.stringify(getBody)).not.toContain(buyerEmail);
+
+      // The ops approve response must stay masked-only (no PII to console surfaces).
+      expect(JSON.stringify(approveBody)).not.toContain(sellerEmail);
+      expect(JSON.stringify(approveBody)).not.toContain(buyerEmail);
     } finally {
       buyerSse.controller.abort();
       sellerSse.controller.abort();

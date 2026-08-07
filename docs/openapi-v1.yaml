@@ -3917,13 +3917,25 @@ components:
             - type: object
               properties:
                 buyer_contact:
-                  type: object
-                  nullable: true
-                  additionalProperties: true
+                  $ref: "#/components/schemas/TransactionContactV1"
                 seller_contact:
-                  type: object
-                  nullable: true
-                  additionalProperties: true
+                  $ref: "#/components/schemas/TransactionContactV1"
+
+    TransactionContactV1:
+      type: object
+      nullable: true
+      description: >
+        Present only when contact_reveal_state is APPROVED. Masked fields are always
+        included. The unmasked email/phone fields are included only on the
+        counterparty's contact when the caller is an authenticated transaction party
+        (buyer sees seller contact, seller sees buyer contact). Ops/console callers
+        always receive masked fields only.
+      additionalProperties: true
+      properties:
+        email_masked: { type: string }
+        phone_masked: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
 
     ContactRevealRequestedResponseV1:
       type: object
