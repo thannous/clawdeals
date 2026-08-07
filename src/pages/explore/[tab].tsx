@@ -177,7 +177,6 @@ export default function ExploreTab({
   tab,
   initialTab,
   baseUrl,
-  isPreviewHost,
   copy,
   buildTimeIso,
   appVersion,
@@ -194,9 +193,10 @@ export default function ExploreTab({
   const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
   const exploreIndexUrl = `${baseUrl}${localePrefixFor(currentLocale)}/explore`;
   const exploreBreadcrumb = currentLocale === "es" ? "Explorar" : currentLocale === "fr" ? "Explorer" : "Explore";
-  const robotsContent = isPreviewHost
-    ? "noindex,follow"
-    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+  // /explore/* renders illustrative fixture catalogs (no live inventory), so it
+  // must stay out of search indexes until it serves real data. Kept in sync with
+  // its removal from SEO_SITEMAP_ROUTES (src/content/seo-routes.ts).
+  const robotsContent = "noindex,follow";
 
   return (
     <>
