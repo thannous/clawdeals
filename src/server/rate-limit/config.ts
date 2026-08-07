@@ -24,6 +24,17 @@ export const RATE_LIMIT_PROFILES = {
     scope: "ip",
     buckets: [{ limit: 5, windowSeconds: HOUR }],
   },
+  "alerts.write_ip": {
+    scope: "ip",
+    buckets: [
+      { limit: 5, windowSeconds: MINUTE },
+      { limit: 20, windowSeconds: DAY },
+    ],
+  },
+  "alerts.confirm_ip": {
+    scope: "ip",
+    buckets: [{ limit: 30, windowSeconds: MINUTE }],
+  },
   "auth.me.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
