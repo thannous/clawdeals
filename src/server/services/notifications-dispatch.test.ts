@@ -15,12 +15,14 @@ import { runNotificationsDispatch } from "./notifications-dispatch";
 function makeClient({
   outboxRows,
   identity,
+  owner = null,
   deals = [],
   listings = [],
   agents = []
 }: {
   outboxRows: any[];
   identity: any | null;
+  owner?: any | null;
   deals?: any[];
   listings?: any[];
   agents?: any[];
@@ -98,6 +100,22 @@ function makeClient({
               },
               maybeSingle() {
                 return Promise.resolve({ data: identity, error: null });
+              }
+            };
+            return chain;
+          }
+        };
+      }
+
+      if (table === "owners") {
+        return {
+          select() {
+            const chain: any = {
+              eq() {
+                return chain;
+              },
+              maybeSingle() {
+                return Promise.resolve({ data: owner, error: null });
               }
             };
             return chain;
@@ -332,6 +350,122 @@ describe("notifications-dispatch", () => {
     expect(outboxRows.find((r) => r.notification_outbox_id === "n1")?.attempt_count).toBe(1);
     expect(outboxRows.find((r) => r.notification_outbox_id === "n2")?.attempt_count).toBe(4);
     expect(outboxRows.find((r) => r.notification_outbox_id === "n2")?.last_error).toBe("missing_channel");
+  });
+
+  it("falls back to email delivery when Telegram is absent but owner email is verified", async () => {
+    vi.mocked(getNotificationPreferences).mockResolvedValue({
+      owner_id: "o1",
+      mode: "DIGEST_HOURLY",
+      timezone: "UTC",
+      quiet_enabled: false,
+      quiet_start_min: null,
+      quiet_end_min: null,
+      event_types: ["watchlist_match"],
+      filters: {},
+      daily_digest_hour: 9,
+      last_hourly_digest_at: null,
+      last_daily_digest_at: null
+    } as any);
+
+    const outboxRows: any[] = [
+      {
+        notification_outbox_id: "n1",
+        owner_id: "o1",
+        channel_type: "telegram",
+        event_type: "watchlist_match",
+        entity_type: "deal",
+        entity_id: "d1",
+        payload: {},
+        occurred_at: "2026-02-10T00:00:00.000Z",
+        status: "PENDING",
+        attempt_count: 0
+      }
+    ];
+
+    const client = makeClient({
+      outboxRows,
+      identity: null,
+      owner: { email: "owner@example.test", email_verified_at: "2026-02-01T00:00:00.000Z" },
+      deals: [{ deal_id: "d1", title: "Deal <1>", price: 99.5, currency: "EUR" }]
+    });
+
+    const sendTelegram = vi.fn(async () => ({ ok: true }));
+    const sendEmail = vi.fn(async () => ({ ok: true }));
+
+    const res = await runNotificationsDispatch({
+      client,
+      sendTelegram,
+      sendEmail,
+      dryRun: false,
+      now: new Date("2026-02-10T10:00:00.000Z"),
+      limitOwners: 1,
+      maxItemsPerOwner: 10,
+      maxItemsPerDigest: 10
+    });
+
+    expect(res.ok).toBe(true);
+    expect(sendTelegram).not.toHaveBeenCalled();
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const [mail] = sendEmail.mock.calls[0] as any[];
+    expect(mail.toEmail).toBe("owner@example.test");
+    expect(mail.subject).toContain("watchlist match");
+    expect(mail.text).toContain("Deal <1>");
+    expect(mail.text).toContain("/deals/d1");
+    expect(mail.html).toContain("Deal &lt;1&gt;");
+    expect(outboxRows[0].status).toBe("DELIVERED");
+  });
+
+  it("still marks missing_channel when neither Telegram nor a verified email exists", async () => {
+    vi.mocked(getNotificationPreferences).mockResolvedValue({
+      owner_id: "o1",
+      mode: "DIGEST_HOURLY",
+      timezone: "UTC",
+      quiet_enabled: false,
+      quiet_start_min: null,
+      quiet_end_min: null,
+      event_types: ["watchlist_match"],
+      filters: {},
+      daily_digest_hour: 9,
+      last_hourly_digest_at: null,
+      last_daily_digest_at: null
+    } as any);
+
+    const outboxRows: any[] = [
+      {
+        notification_outbox_id: "n1",
+        owner_id: "o1",
+        channel_type: "telegram",
+        event_type: "watchlist_match",
+        entity_type: "deal",
+        entity_id: "d1",
+        payload: {},
+        occurred_at: "2026-02-10T00:00:00.000Z",
+        status: "PENDING",
+        attempt_count: 0
+      }
+    ];
+
+    const client = makeClient({
+      outboxRows,
+      identity: null,
+      owner: { email: "owner@example.test", email_verified_at: null },
+      deals: [{ deal_id: "d1", title: "Deal 1", price: 10, currency: "EUR" }]
+    });
+
+    const sendEmail = vi.fn(async () => ({ ok: true }));
+
+    const res = await runNotificationsDispatch({
+      client,
+      sendTelegram: vi.fn(async () => ({ ok: true })),
+      sendEmail,
+      dryRun: false,
+      now: new Date("2026-02-10T10:00:00.000Z")
+    });
+
+    expect(res.ok).toBe(true);
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(outboxRows[0].attempt_count).toBe(1);
+    expect(outboxRows[0].last_error).toBe("missing_channel");
   });
 
   it("skips during quiet hours and keeps outbox pending", async () => {

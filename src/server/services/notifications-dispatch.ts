@@ -3,6 +3,7 @@ import { safeAuditLog } from "../audit/singleton";
 import { isQuietNow, getLocalMinuteOfDay } from "../utils/quiet-hours";
 import { mapSupabaseError } from "./supabase-errors";
 import { sendTelegramMessage } from "../channels/telegram/client";
+import { sendEmailMessage } from "../channels/email/client";
 import { getNotificationPreferences, NOTIFICATION_EVENT_TYPES } from "./notification-preferences";
 
 const DEFAULT_MAX_ITEMS_PER_DIGEST = 10;
@@ -122,6 +123,20 @@ async function auditEvent({
     idempotency: null,
     outcome
   });
+}
+
+async function findVerifiedOwnerEmail({ client, ownerId }: { client: any; ownerId: string }) {
+  const { data, error } = await client
+    .from("owners")
+    .select("email,email_verified_at")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  if (error) {
+    const mapped = mapSupabaseError(error);
+    throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+  }
+  if (!data?.email || !data?.email_verified_at) return null;
+  return String(data.email);
 }
 
 async function findActiveTelegramIdentity({ client, ownerId }: { client: any; ownerId: string }) {
@@ -336,6 +351,57 @@ function buildDigestMessage({
   };
 }
 
+function escapeHtml(value: any) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function buildEmailMessage({
+  items,
+  dealsById,
+  listingsById
+}: {
+  items: any[];
+  dealsById: Map<string, any>;
+  listingsById: Map<string, any>;
+}) {
+  const base = resolveAppBaseUrl();
+  const count = items.length;
+  const subject = count === 1 ? "ClawDeals: new watchlist match" : `ClawDeals: ${count} new watchlist matches`;
+  const textLines = ["Your watchlist matched new items on ClawDeals:", ""];
+  const htmlItems: string[] = [];
+
+  for (const item of items) {
+    if (item.entity_type === "deal") {
+      const deal = dealsById.get(item.entity_id) || null;
+      const title = deal?.title ? String(deal.title).slice(0, 80) : item.entity_id;
+      const price = deal ? `${deal.price} ${deal.currency}` : "";
+      const url = joinUrl(base, `/deals/${item.entity_id}`);
+      textLines.push(`- Deal: ${title}${price ? ` (${price})` : ""}`, `  ${url}`);
+      htmlItems.push(`<li><a href="${url}">${escapeHtml(title)}</a>${price ? ` — ${escapeHtml(price)}` : ""}</li>`);
+    } else if (item.entity_type === "listing") {
+      const listing = listingsById.get(item.entity_id) || null;
+      const title = listing?.title ? String(listing.title).slice(0, 80) : item.entity_id;
+      const price = listing ? `${listing.price_amount} ${listing.currency}` : "";
+      const url = joinUrl(base, `/browse/${item.entity_id}`);
+      textLines.push(`- Listing: ${title}${price ? ` (${price})` : ""}`, `  ${url}`);
+      htmlItems.push(`<li><a href="${url}">${escapeHtml(title)}</a>${price ? ` — ${escapeHtml(price)}` : ""}</li>`);
+    }
+  }
+
+  textLines.push("", "Manage your notification preferences in your ClawDeals settings.");
+  const html = [
+    "<p>Your watchlist matched new items on <strong>ClawDeals</strong>:</p>",
+    `<ul>${htmlItems.join("")}</ul>`,
+    "<p><small>Manage your notification preferences in your ClawDeals settings.</small></p>"
+  ].join("");
+
+  return { subject, text: textLines.join("\n").slice(0, 10000), html };
+}
+
 export async function runNotificationsDispatch({
   now = new Date(),
   limitOwners = DEFAULT_LIMIT_OWNERS,
@@ -343,7 +409,8 @@ export async function runNotificationsDispatch({
   maxItemsPerDigest = DEFAULT_MAX_ITEMS_PER_DIGEST,
   dryRun = false,
   client,
-  sendTelegram = sendTelegramMessage
+  sendTelegram = sendTelegramMessage,
+  sendEmail = sendEmailMessage
 }: any = {}) {
   const supabase = client || getSupabaseServiceClient();
 
@@ -423,7 +490,11 @@ export async function runNotificationsDispatch({
 
     const identity = await findActiveTelegramIdentity({ client: supabase, ownerId });
     const chatId = identity?.channel_context_id ? String(identity.channel_context_id) : null;
-    if (!chatId) {
+    // Email is the fallback transport for owners without an active Telegram
+    // pairing but with a verified email address.
+    const emailTo = chatId ? null : await findVerifiedOwnerEmail({ client: supabase, ownerId });
+    const channel = chatId ? "telegram" : "email";
+    if (!chatId && !emailTo) {
       await auditEvent({ name: "notifications.skipped", ownerId, payload: { reason: "missing_channel", mode }, now, outcome: "BLOCKED" });
       await incrementOutboxAttempts({
         client: supabase,
@@ -460,6 +531,16 @@ export async function runNotificationsDispatch({
       .filter(Boolean);
     const sellersById = await fetchAgentsById({ client: supabase, ids: sellerAgentIds });
 
+    const deliverItems = async (items: any[]) => {
+      if (dryRun) return { ok: true };
+      if (chatId) {
+        const msg = buildDigestMessage({ items, dealsById, listingsById });
+        return sendTelegram({ chatId, text: msg.text, replyMarkup: msg.replyMarkup });
+      }
+      const mail = buildEmailMessage({ items, dealsById, listingsById });
+      return sendEmail({ toEmail: emailTo, subject: mail.subject, text: mail.text, html: mail.html });
+    };
+
     const eligible = ownerRows.filter((r) => eventTypes.includes(String(r.event_type || "").toLowerCase()));
     const strongEligible: any[] = [];
     const suppressedByFilter: any[] = [];
@@ -491,13 +572,12 @@ export async function runNotificationsDispatch({
     if (mode === "REALTIME") {
       let ownerDelivered = 0;
       for (const item of strongEligible.slice(0, cappedPerOwner)) {
-        const msg = buildDigestMessage({ items: [item], dealsById, listingsById });
-        const ok = dryRun ? { ok: true } : await sendTelegram({ chatId, text: msg.text, replyMarkup: msg.replyMarkup });
+        const ok = await deliverItems([item]);
         if (!ok?.ok) {
           await auditEvent({
             name: "notifications.skipped",
             ownerId,
-            payload: { reason: "send_failed", status: ok?.status || null },
+            payload: { reason: "send_failed", status: ok?.status || null, channel },
             now,
             outcome: "FAILURE"
           });
@@ -524,7 +604,7 @@ export async function runNotificationsDispatch({
       await auditEvent({
         name: "notifications.sent",
         ownerId,
-        payload: { event_type: "watchlist_match", count: ownerDelivered, dry_run: Boolean(dryRun), mode },
+        payload: { event_type: "watchlist_match", count: ownerDelivered, dry_run: Boolean(dryRun), mode, channel },
         now
       });
       continue;
@@ -548,14 +628,13 @@ export async function runNotificationsDispatch({
     }
 
     const digestItems = strongEligible.slice(0, cappedPerDigest);
-    const msg = buildDigestMessage({ items: digestItems, dealsById, listingsById });
-    const ok = dryRun ? { ok: true } : await sendTelegram({ chatId, text: msg.text, replyMarkup: msg.replyMarkup });
+    const ok = await deliverItems(digestItems);
 
     if (!ok?.ok) {
       await auditEvent({
         name: "notifications.skipped",
         ownerId,
-        payload: { reason: "send_failed", status: ok?.status || null },
+        payload: { reason: "send_failed", status: ok?.status || null, channel },
         now,
         outcome: "FAILURE"
       });
@@ -585,7 +664,7 @@ export async function runNotificationsDispatch({
     await auditEvent({
       name: "notifications.sent",
       ownerId,
-      payload: { event_type: "watchlist_match", count: digestItems.length, dry_run: Boolean(dryRun), mode },
+      payload: { event_type: "watchlist_match", count: digestItems.length, dry_run: Boolean(dryRun), mode, channel },
       now
     });
   }
