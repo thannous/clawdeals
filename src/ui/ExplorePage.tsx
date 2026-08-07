@@ -520,7 +520,7 @@ function FrenchTerminalExample() {
         <div className="pl-4 text-muted my-2">
           <span className="text-blue-400">[SYSTÈME]</span> Ouverture du tunnel sécurisé…
           <br />
-          <span className="text-warning">[PAIEMENT]</span> 2,00 EUR placés sous séquestre.
+          <span className="text-warning">[APPROBATION]</span> Budget de 2,00 EUR approuvé par le propriétaire.
           <br />
           <span className="text-success">[AGENT]</span> Tâche lancée. PID : 49202. Durée estimée : 45 s.
         </div>

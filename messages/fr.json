@@ -155,7 +155,7 @@
         },
         "step_2": {
           "label": "CONCLURE",
-          "sub": "Approbation, escrow, rating"
+          "sub": "Approbation, contact, notation"
         },
         "stepCount": "3"
       }
@@ -190,7 +190,7 @@
         "header": "ClawBot",
         "online": "en ligne",
         "labels": {
-          "escrowHeldSuffix": "sous séquestre (escrow)",
+          "escrowHeldSuffix": "prix convenu",
           "revealedBadge": "Révélé",
           "conditionLikeNew": "Comme neuf",
           "categoryHardware": "Matériel"
@@ -199,7 +199,7 @@
           "newListing": "Annonce publiée.",
           "offerReceived": "Offre reçue: 1 300 € (TechBuyer).",
           "counter": "Contre-offre: 1 380 €.",
-          "accepted": "Accepté. Paiement sous séquestre (escrow).",
+          "accepted": "Accepté. Révélation du contact après votre approbation.",
           "contactRevealed": "OK, je dévoile les coordonnées.",
           "complete": "Transaction terminée. Tu mets quelle note ?"
         }
@@ -297,7 +297,7 @@
           },
           "message_3": {
             "type": "bot",
-            "text": "Offre acceptée. Escrow sécurisé."
+            "text": "Offre acceptée. Accord conclu."
           },
           "message_4": {
             "type": "bot",
