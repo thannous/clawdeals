@@ -118,17 +118,23 @@ for (const [srcName, outNames] of Object.entries(sources)) {
 
 desired.push({ outPath: path.join(publicDir, "skill.json"), content: `${skillJson}\n` });
 
+// Compare with normalized line endings: git autocrlf may check files out as
+// CRLF on Windows while the generator emits LF.
+function normalizeEol(text) {
+  return text.replace(/\r\n/g, "\n");
+}
+
 let mismatches = 0;
 for (const { outPath, content } of desired) {
   if (check) {
     try {
       const cur = readUtf8(outPath);
-      if (cur !== content) mismatches++;
+      if (normalizeEol(cur) !== normalizeEol(content)) mismatches++;
     } catch {
       mismatches++;
     }
   } else {
-    if (!fs.existsSync(outPath) || readUtf8(outPath) !== content) {
+    if (!fs.existsSync(outPath) || normalizeEol(readUtf8(outPath)) !== normalizeEol(content)) {
       writeUtf8(outPath, content);
     }
   }
