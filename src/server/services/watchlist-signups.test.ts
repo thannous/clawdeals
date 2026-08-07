@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dependencyMocks = vi.hoisted(() => ({
-  getSupabaseServiceClient: vi.fn()
+  getSupabaseServiceClient: vi.fn(),
+  getNeonSql: vi.fn(),
+  neonQuery: vi.fn()
 }));
 
 vi.mock("../db/supabase", () => ({
   getSupabaseServiceClient: dependencyMocks.getSupabaseServiceClient
+}));
+
+vi.mock("../db/neon", () => ({
+  getNeonSql: dependencyMocks.getNeonSql
 }));
 
 import { createWatchlistSignup } from "./watchlist-signups";
@@ -21,6 +27,8 @@ function makeClient(result: any) {
 describe("createWatchlistSignup", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.CLAWDEALS_DATABASE_BACKEND;
+    dependencyMocks.getNeonSql.mockReturnValue(dependencyMocks.neonQuery);
   });
 
   it("sends a localized confirmation email after a successful signup", async () => {
@@ -69,5 +77,44 @@ describe("createWatchlistSignup", () => {
     await expect(
       createWatchlistSignup({ email: "b@example.test", sendEmail: throwing })
     ).resolves.toMatchObject({ status: "created" });
+  });
+
+  it("uses a parameterized Neon query only when explicitly enabled", async () => {
+    process.env.CLAWDEALS_DATABASE_BACKEND = "neon";
+    dependencyMocks.neonQuery.mockResolvedValue([
+      { watchlist_signup_id: "s-neon", email: "neon@example.test" }
+    ]);
+    const sendEmail = vi.fn(async () => ({ ok: true }));
+
+    const result = await createWatchlistSignup({
+      email: "neon@example.test",
+      locale: " fr ",
+      source: " landing ",
+      sendEmail
+    });
+
+    expect(result).toEqual({
+      status: "created",
+      data: { watchlist_signup_id: "s-neon", email: "neon@example.test" }
+    });
+    expect(dependencyMocks.neonQuery).toHaveBeenCalledOnce();
+    expect(dependencyMocks.neonQuery.mock.calls[0].slice(1)).toEqual([
+      "neon@example.test",
+      "fr",
+      "landing"
+    ]);
+    expect(dependencyMocks.getSupabaseServiceClient).not.toHaveBeenCalled();
+    expect(sendEmail).toHaveBeenCalledOnce();
+  });
+
+  it("preserves duplicate signup semantics on Neon", async () => {
+    process.env.CLAWDEALS_DATABASE_BACKEND = "neon";
+    dependencyMocks.neonQuery.mockRejectedValue(
+      Object.assign(new Error("duplicate key value"), { code: "23505" })
+    );
+
+    await expect(
+      createWatchlistSignup({ email: "duplicate@example.test" })
+    ).resolves.toEqual({ status: "already_registered", data: null });
   });
 });

@@ -1,3 +1,5 @@
+import { getDatabaseBackend } from "../config/backends";
+import { getNeonSql } from "../db/neon";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { sendEmailMessage } from "../channels/email/client";
@@ -40,12 +42,33 @@ function resolveConfirmationCopy(locale: string | null) {
 }
 
 export async function createWatchlistSignup({ email, locale, source, sendEmail = sendEmailMessage }: any) {
-  const client = getSupabaseServiceClient();
   const payload = {
     email,
     locale: typeof locale === "string" && locale.trim() ? locale.trim() : null,
     source: typeof source === "string" && source.trim() ? source.trim() : null
   };
+
+  if (getDatabaseBackend() === "neon") {
+    try {
+      const sql = getNeonSql();
+      const rows = await sql`
+        insert into public.watchlist_signups (email, locale, source)
+        values (${payload.email}, ${payload.locale}, ${payload.source})
+        returning *
+      `;
+      const data = rows[0] || null;
+      await sendConfirmationEmail({ email, locale: payload.locale, sendEmail });
+      return { status: "created", data };
+    } catch (error: any) {
+      if (error?.code === "23505" || DUPLICATE_KEY_REGEX.test(error?.message || "")) {
+        return { status: "already_registered", data: null };
+      }
+      const mapped = mapSupabaseError(error);
+      throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+    }
+  }
+
+  const client = getSupabaseServiceClient();
 
   const { data, error } = await client.from("watchlist_signups").insert(payload).select().single();
   if (error) {
@@ -56,10 +79,16 @@ export async function createWatchlistSignup({ email, locale, source, sendEmail =
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
 
+  await sendConfirmationEmail({ email, locale: payload.locale, sendEmail });
+
+  return { status: "created", data };
+}
+
+async function sendConfirmationEmail({ email, locale, sendEmail }: any) {
   // Best-effort confirmation: signup must succeed even when no email provider
   // is configured or the send fails.
   try {
-    const copy = resolveConfirmationCopy(payload.locale);
+    const copy = resolveConfirmationCopy(locale);
     const result = await sendEmail({
       toEmail: email,
       subject: copy.subject,
@@ -77,6 +106,4 @@ export async function createWatchlistSignup({ email, locale, source, sendEmail =
       error: sendError?.message || String(sendError)
     });
   }
-
-  return { status: "created", data };
 }

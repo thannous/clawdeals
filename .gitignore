@@ -29,6 +29,7 @@ coverage/
 .wrangler/
 playwright-report/
 test-results/
+migration-artifacts/
 
 # Editors
 .vscode/

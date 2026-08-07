@@ -14,9 +14,9 @@ vi.mock("../../../../server/db/supabase", () => ({
 }));
 
 vi.mock("../../../../server/services/owner-auth-links", () => ({
-  getOwnerLinkBySupabaseUserId: vi.fn(),
-  createOwnerLink: vi.fn(),
-  touchOwnerLinkLogin: vi.fn()
+  getOwnerLinkByAuthIdentity: vi.fn(),
+  createOwnerAuthLink: vi.fn(),
+  touchOwnerAuthLinkLogin: vi.fn()
 }));
 
 vi.mock("../../../../server/services/owner-session-issue", () => ({
@@ -39,9 +39,9 @@ import { getSupabaseServiceClient } from "../../../../server/db/supabase";
 import { confirmOwnerLogin, startOwnerLogin } from "../../../../server/services/owner-login";
 import { sendOwnerLoginMagicLinkEmail } from "../../../../server/services/owner-login-email";
 import {
-  createOwnerLink,
-  getOwnerLinkBySupabaseUserId,
-  touchOwnerLinkLogin
+  createOwnerAuthLink as createOwnerLink,
+  getOwnerLinkByAuthIdentity as getOwnerLinkBySupabaseUserId,
+  touchOwnerAuthLinkLogin as touchOwnerLinkLogin
 } from "../../../../server/services/owner-auth-links";
 import { issueTrustedOwnerSession } from "../../../../server/services/owner-session-issue";
 import { getOwner, getOwnerByEmail, upsertOwner } from "../../../../server/services/owners";
@@ -389,7 +389,8 @@ describe("POST /v1/auth/[action]", () => {
     );
     expect(touchOwnerLinkLogin).toHaveBeenCalledWith(
       expect.objectContaining({
-        supabaseUserId,
+        authProvider: "supabase",
+        authSubject: supabaseUserId,
         emailVerifiedAt: verifiedAt
       })
     );
@@ -416,6 +417,8 @@ describe("POST /v1/auth/[action]", () => {
     expect(createOwnerLink).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId,
+        authProvider: "supabase",
+        authSubject: supabaseUserId,
         supabaseUserId,
         email: "owner@example.com",
         emailVerifiedAt: expect.stringContaining("2026-02-12T00:00:00")
