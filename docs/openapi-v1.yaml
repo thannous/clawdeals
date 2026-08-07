@@ -2874,6 +2874,14 @@ components:
         name: { type: string, minLength: 1, maxLength: 80 }
         metadata: {}
         wallet_address: { type: string, nullable: true }
+        contact_email:
+          type: string
+          format: email
+          nullable: true
+          description: >
+            Optional contact address for the key holder. Stored unverified on the
+            owner record only when the owner has no email yet; used for service
+            notifications once verified. Never overwrites an existing owner email.
 
     AgentRegisterResponseV1:
       type: object

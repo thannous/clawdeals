@@ -91,6 +91,7 @@ type CreateAgentInput = {
   ownerId?: string | null;
   metadata?: Record<string, unknown> | null;
   walletAddress?: string | null;
+  contactEmail?: string | null;
   trustScore?: number | null;
   trustFlags?: string[] | null;
   trustFormulaVersion?: number | null;
@@ -107,6 +108,7 @@ export async function createAgent({
   ownerId,
   metadata,
   walletAddress,
+  contactEmail,
   trustScore,
   trustFlags,
   trustFormulaVersion
@@ -125,6 +127,21 @@ export async function createAgent({
   const resolvedFormulaVersion = trustFormulaVersion ?? TRUST_FORMULA_VERSION;
   const nowIso = new Date().toISOString();
   const client = getSupabaseServiceClient();
+
+  // Best-effort contact capture for otherwise-anonymous key issuance: only fills
+  // an empty owner email (never overwrites), stays unverified, and never blocks
+  // agent creation (e.g. on the unique lower(email) index).
+  if (contactEmail && owner && !owner.email) {
+    const { error: emailError } = await client
+      .from("owners")
+      .update({ email: contactEmail, updated_at: nowIso })
+      .eq("owner_id", resolvedOwnerId)
+      .is("email", null);
+    if (emailError) {
+      console.info("agents.contact_email_capture_failed", { code: emailError.code || null });
+    }
+  }
+
   const payload = {
     name: name || null,
     status,
