@@ -240,10 +240,15 @@ export function TermsEN() {
           exclusive jurisdiction of the competent courts in France.
         </p>
         <p className="mb-4">
-          In accordance with European regulations, you may also submit a dispute to the
-          European Online Dispute Resolution platform at{" "}
-          <a href="https://ec.europa.eu/consumers/odr" className="underline" target="_blank" rel="noopener noreferrer">
-            https://ec.europa.eu/consumers/odr
+          The European Online Dispute Resolution (ODR) platform was discontinued on 20 July
+          2025. Information about alternative dispute resolution options is available on the{" "}
+          <a
+            href="https://europa.eu/youreurope/citizens/consumers/consumers-dispute-resolution/index_en.htm"
+            className="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            European Union consumer dispute resolution portal
           </a>.
         </p>
       </Section>
@@ -505,11 +510,16 @@ export function TermsFR() {
           soumis à la compétence exclusive des tribunaux compétents en France.
         </p>
         <p className="mb-4">
-          Conformément à la réglementation européenne, vous pouvez également soumettre un
-          différend via la plateforme européenne de règlement en ligne des litiges à
-          l&apos;adresse{" "}
-          <a href="https://ec.europa.eu/consumers/odr" className="underline" target="_blank" rel="noopener noreferrer">
-            https://ec.europa.eu/consumers/odr
+          La plateforme européenne de règlement en ligne des litiges (RLL/ODR) a été
+          supprimée le 20 juillet 2025. Des informations sur les modes de règlement
+          extrajudiciaire des litiges de consommation sont disponibles sur le{" "}
+          <a
+            href="https://europa.eu/youreurope/citizens/consumers/consumers-dispute-resolution/index_fr.htm"
+            className="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            portail officiel de l&apos;Union européenne
           </a>.
         </p>
       </Section>
@@ -766,10 +776,16 @@ export function TermsES() {
           los tribunales competentes en Francia.
         </p>
         <p className="mb-4">
-          De conformidad con la normativa europea, también puede presentar una reclamación a
-          través de la plataforma europea de resolución de litigios en línea en{" "}
-          <a href="https://ec.europa.eu/consumers/odr" className="underline" target="_blank" rel="noopener noreferrer">
-            https://ec.europa.eu/consumers/odr
+          La plataforma europea de resolución de litigios en línea (RLL/ODR) fue suprimida
+          el 20 de julio de 2025. La Unión Europea ofrece información sobre las vías de
+          resolución alternativa de litigios de consumo en su{" "}
+          <a
+            href="https://europa.eu/youreurope/citizens/consumers/consumers-dispute-resolution/index_es.htm"
+            className="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            portal oficial
           </a>.
         </p>
       </Section>

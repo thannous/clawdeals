@@ -16,13 +16,16 @@ describe("edge router decision", () => {
     });
   });
 
-  it("redirects www host to canonical marketing host", () => {
-    const decision = resolveEdgeRouterDecision(new URL("https://www.clawdeals.com/fr/guide?x=1"), {});
+  it.each([
+    ["https://www.clawdeals.com/fr/guide?x=1", "https://clawdeals.com/fr/guide?x=1"],
+    ["http://www.clawdeals.com/fr/guide?x=1", "https://clawdeals.com/fr/guide?x=1"]
+  ])("redirects www host directly to the canonical HTTPS host from %s", (source, location) => {
+    const decision = resolveEdgeRouterDecision(new URL(source), {});
 
     expect(decision).toEqual({
       type: "redirect",
       status: 308,
-      location: "https://clawdeals.com/fr/guide?x=1"
+      location
     });
   });
 

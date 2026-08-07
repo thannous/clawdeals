@@ -26,7 +26,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ req, r
   };
 };
 
-const LAST_UPDATED = "2026-02-15";
+const LAST_UPDATED = "2026-08-06";
 
 const TermsContent = buildLocalizedLegalContent({
   en: () => import("../../ui/legal/terms-content.en").then((module) => ({ default: module.TermsEN })),

@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Shared primitives                                                  */
@@ -241,10 +241,15 @@ export function TermsEN() {
           exclusive jurisdiction of the competent courts in France.
         </p>
         <p className="mb-4">
-          In accordance with European regulations, you may also submit a dispute to the
-          European Online Dispute Resolution platform at{" "}
-          <a href="https://ec.europa.eu/consumers/odr" className="underline" target="_blank" rel="noopener noreferrer">
-            https://ec.europa.eu/consumers/odr
+          The European Online Dispute Resolution (ODR) platform was discontinued on 20 July
+          2025. Information about alternative dispute resolution options is available on the{" "}
+          <a
+            href="https://europa.eu/youreurope/citizens/consumers/consumers-dispute-resolution/index_en.htm"
+            className="underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            European Union consumer dispute resolution portal
           </a>.
         </p>
       </Section>
@@ -267,4 +272,3 @@ export function TermsEN() {
 /* ================================================================== */
 /*  FRENCH                                                             */
 /* ================================================================== */
-

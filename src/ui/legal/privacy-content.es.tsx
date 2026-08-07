@@ -1,11 +1,11 @@
-﻿/* ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * Privacy Policy content for ClawDeals
  * Languages: English (EN), French (FR), Spanish (ES)
- * GDPR-compliant (Articles 13 / 14) â€” includes Cookie section
+ * GDPR-compliant (Articles 13 / 14) — includes Cookie section
  * Last updated: 2026-02-15
  * -------------------------------------------------------------------------*/
 
-/* â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Shared helpers ──────────────────────────────────────────────────────── */
 
 function Section({
   id,
@@ -26,22 +26,22 @@ function Section({
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═════════════════════════════════════════════════════════════════════════
  *  ENGLISH
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+ * ═══════════════════════════════════════════════════════════════════════ */
 
 
 export function PrivacyES() {
   return (
     <>
-      {/* 1 â€” Responsable del tratamiento */}
+      {/* 1 — Responsable del tratamiento */}
       <Section id="responsable" title="1. Responsable del tratamiento y DPD">
         <p className="mb-4">
           El responsable del tratamiento de los datos personales recogidos a trav&eacute;s de{" "}
           <strong>www.clawdeals.com</strong> es:
         </p>
         <p className="mb-4">
-          <strong>TiMax</strong> â€” Empresa individual (<em>entreprise individuelle</em>)<br />
+          <strong>TiMax</strong> — Empresa individual (<em>entreprise individuelle</em>)<br />
           Orleans, Francia (SIRET: 995 316 981 00019)<br />
           Contacto:{" "}
           <a href="mailto:contact@clawdeals.com" className="underline">contact@clawdeals.com</a>
@@ -53,7 +53,7 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 2 â€” Datos recogidos */}
+      {/* 2 — Datos recogidos */}
       <Section id="datos-recogidos" title="2. Datos que recopilamos">
         <p className="mb-4">
           Recopilamos diferentes categor&iacute;as de datos seg&uacute;n interact&uacute;e con la
@@ -146,7 +146,7 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 3 â€” Bases legales */}
+      {/* 3 — Bases legales */}
       <Section id="bases-legales" title="3. Bases legales del tratamiento">
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>
@@ -170,7 +170,7 @@ export function PrivacyES() {
         </ul>
       </Section>
 
-      {/* 4 â€” Finalidades */}
+      {/* 4 — Finalidades */}
       <Section id="finalidades" title="4. Finalidades del tratamiento">
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>Provisi&oacute;n y operaci&oacute;n del marketplace ClawDeals</li>
@@ -186,7 +186,7 @@ export function PrivacyES() {
         </ul>
       </Section>
 
-      {/* 5 â€” ConservaciÃ³n */}
+      {/* 5 — Conservación */}
       <Section id="conservacion" title="5. Plazos de conservaci&oacute;n">
         <p className="mb-4">
           Solo conservamos los datos personales durante el tiempo necesario para las finalidades
@@ -259,7 +259,7 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 6 â€” Destinatarios */}
+      {/* 6 — Destinatarios */}
       <Section id="destinatarios" title="6. Destinatarios de datos y subencargados">
         <p className="mb-4">
           Solo compartimos datos personales con los subencargados estrictamente necesarios para
@@ -304,7 +304,7 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 7 â€” Transferencias internacionales */}
+      {/* 7 — Transferencias internacionales */}
       <Section id="transferencias" title="7. Transferencias internacionales de datos">
         <p className="mb-4">
           Todos los datos personales se almacenan y tratan exclusivamente dentro de la Uni&oacute;n
@@ -313,7 +313,7 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 8 â€” Sus derechos */}
+      {/* 8 — Sus derechos */}
       <Section id="derechos" title="8. Sus derechos bajo el RGPD">
         <p className="mb-4">
           En virtud del Reglamento General de Protecci&oacute;n de Datos, usted tiene los
@@ -331,7 +331,7 @@ export function PrivacyES() {
             <strong>Derecho a presentar una reclamaci&oacute;n (Art. 77):</strong> Puede presentar
             una reclamaci&oacute;n ante la autoridad francesa de protecci&oacute;n de datos:
             <br />
-            <strong>CNIL</strong> â€” Commission Nationale de l&apos;Informatique et des
+            <strong>CNIL</strong> — Commission Nationale de l&apos;Informatique et des
             Libert&eacute;s<br />
             3 Place de Fontenoy, TSA 80715, 75334 Par&iacute;s Cedex 07, Francia<br />
             <a href="https://www.cnil.fr/fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
@@ -339,7 +339,7 @@ export function PrivacyES() {
         </ul>
       </Section>
 
-      {/* 9 â€” Ejercer sus derechos */}
+      {/* 9 — Ejercer sus derechos */}
       <Section id="ejercer-derechos" title="9. C&oacute;mo ejercer sus derechos">
         <p className="mb-4">
           Para ejercer cualquiera de los derechos enumerados anteriormente, p&oacute;ngase en
@@ -347,7 +347,7 @@ export function PrivacyES() {
         </p>
         <p className="mb-4">
           Email: <a href="mailto:contact@clawdeals.com" className="underline">contact@clawdeals.com</a><br />
-          Direcci&oacute;n postal: TiMax â€” Orleans, Francia
+          Direcci&oacute;n postal: TiMax — Orleans, Francia
         </p>
         <p className="mb-4">
           Responderemos a su solicitud en un plazo de <strong>un mes</strong> a partir de la
@@ -361,7 +361,7 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 10 â€” Cookies */}
+      {/* 10 — Cookies */}
       <Section id="cookies" title="10. Cookies y tecnolog&iacute;as de seguimiento">
         <p className="mb-4">
           ClawDeals utiliza un conjunto m&iacute;nimo de cookies. <strong>No</strong> utilizamos
@@ -418,14 +418,14 @@ export function PrivacyES() {
         </p>
       </Section>
 
-      {/* 11 â€” Seguridad */}
+      {/* 11 — Seguridad */}
       <Section id="seguridad" title="11. Medidas de seguridad de datos">
         <p className="mb-4">
           Implementamos medidas t&eacute;cnicas y organizativas apropiadas para proteger sus datos
           personales, incluyendo:
         </p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
-          <li>Claves API almacenadas exclusivamente como hashes criptogr&aacute;ficos (Argon2id / bcrypt) â€” nunca en texto plano</li>
+          <li>Claves API almacenadas exclusivamente como hashes criptogr&aacute;ficos (Argon2id / bcrypt) — nunca en texto plano</li>
           <li>C&oacute;digos OTP, tokens de verificaci&oacute;n, direcciones de email y n&uacute;meros de tel&eacute;fono nunca registrados en texto plano</li>
           <li>Registros de auditor&iacute;a de solo adici&oacute;n (append-only) asegurados con huellas HMAC-SHA256</li>
           <li>Limitaci&oacute;n de tasa mediante algoritmo de cubo de tokens en todas las rutas API</li>
@@ -437,7 +437,7 @@ export function PrivacyES() {
         </ul>
       </Section>
 
-      {/* 12 â€” Cambios */}
+      {/* 12 — Cambios */}
       <Section id="cambios" title="12. Cambios en esta pol&iacute;tica">
         <p className="mb-4">
           Podemos actualizar esta Pol&iacute;tica de Privacidad peri&oacute;dicamente. Cuando

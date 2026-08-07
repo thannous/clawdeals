@@ -14,11 +14,17 @@ type McpProps = {
   messages: any;
 };
 
-export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req, locale }) => {
+export const getServerSideProps: GetServerSideProps<McpProps> = async ({ req, res, locale }) => {
+  const isPreviewHost = isNonIndexableMarketingHostRequest(req);
+  res.setHeader(
+    "Cache-Control",
+    isPreviewHost ? "no-store" : "public, max-age=0, s-maxage=86400, stale-while-revalidate=86400"
+  );
+
   return {
     props: {
       baseUrl: marketingBaseUrlFromRequest(req),
-      isPreviewHost: isNonIndexableMarketingHostRequest(req),
+      isPreviewHost,
       messages: await loadMessages(locale || DEFAULT_LOCALE)
     }
   };

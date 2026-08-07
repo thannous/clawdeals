@@ -1,11 +1,11 @@
-﻿/* ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * Privacy Policy content for ClawDeals
  * Languages: English (EN), French (FR), Spanish (ES)
- * GDPR-compliant (Articles 13 / 14) â€” includes Cookie section
+ * GDPR-compliant (Articles 13 / 14) — includes Cookie section
  * Last updated: 2026-02-15
  * -------------------------------------------------------------------------*/
 
-/* â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Shared helpers ──────────────────────────────────────────────────────── */
 
 function Section({
   id,
@@ -26,22 +26,22 @@ function Section({
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═════════════════════════════════════════════════════════════════════════
  *  ENGLISH
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+ * ═══════════════════════════════════════════════════════════════════════ */
 
 
 export function PrivacyFR() {
   return (
     <>
-      {/* 1 â€” Responsable du traitement */}
+      {/* 1 — Responsable du traitement */}
       <Section id="responsable" title="1. Responsable du traitement et DPO">
         <p className="mb-4">
           Le responsable du traitement des donn&eacute;es personnelles collect&eacute;es via{" "}
           <strong>www.clawdeals.com</strong> est&nbsp;:
         </p>
         <p className="mb-4">
-          <strong>TiMax</strong> â€” Entreprise individuelle<br />
+          <strong>TiMax</strong> — Entreprise individuelle<br />
           Orl&eacute;ans, France (SIRET&nbsp;: 995 316 981 00019)<br />
           Contact&nbsp;:{" "}
           <a href="mailto:contact@clawdeals.com" className="underline">contact@clawdeals.com</a>
@@ -54,7 +54,7 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 2 â€” DonnÃ©es collectÃ©es */}
+      {/* 2 — Données collectées */}
       <Section id="donnees-collectees" title="2. Donn&eacute;es que nous collectons">
         <p className="mb-4">
           Nous collectons diff&eacute;rentes cat&eacute;gories de donn&eacute;es selon que vous
@@ -147,7 +147,7 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 3 â€” Bases lÃ©gales */}
+      {/* 3 — Bases légales */}
       <Section id="bases-legales" title="3. Bases l&eacute;gales du traitement">
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>
@@ -172,7 +172,7 @@ export function PrivacyFR() {
         </ul>
       </Section>
 
-      {/* 4 â€” FinalitÃ©s */}
+      {/* 4 — Finalités */}
       <Section id="finalites" title="4. Finalit&eacute;s du traitement">
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>Fourniture et exploitation de la place de march&eacute; ClawDeals</li>
@@ -188,7 +188,7 @@ export function PrivacyFR() {
         </ul>
       </Section>
 
-      {/* 5 â€” Conservation */}
+      {/* 5 — Conservation */}
       <Section id="conservation" title="5. Dur&eacute;es de conservation">
         <p className="mb-4">
           Nous ne conservons les donn&eacute;es personnelles que le temps n&eacute;cessaire aux
@@ -263,7 +263,7 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 6 â€” Destinataires */}
+      {/* 6 — Destinataires */}
       <Section id="destinataires" title="6. Destinataires des donn&eacute;es et sous-traitants">
         <p className="mb-4">
           Nous ne partageons les donn&eacute;es personnelles qu&apos;avec les sous-traitants
@@ -308,7 +308,7 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 7 â€” Transferts internationaux */}
+      {/* 7 — Transferts internationaux */}
       <Section id="transferts" title="7. Transferts internationaux de donn&eacute;es">
         <p className="mb-4">
           Toutes les donn&eacute;es personnelles sont stock&eacute;es et trait&eacute;es
@@ -319,7 +319,7 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 8 â€” Vos droits */}
+      {/* 8 — Vos droits */}
       <Section id="droits" title="8. Vos droits en vertu du RGPD">
         <p className="mb-4">
           En vertu du R&egrave;glement G&eacute;n&eacute;ral sur la Protection des Donn&eacute;es,
@@ -338,7 +338,7 @@ export function PrivacyFR() {
             pouvez d&eacute;poser une r&eacute;clamation aupr&egrave;s de l&apos;autorit&eacute;
             fran&ccedil;aise de protection des donn&eacute;es&nbsp;:
             <br />
-            <strong>CNIL</strong> â€” Commission Nationale de l&apos;Informatique et des
+            <strong>CNIL</strong> — Commission Nationale de l&apos;Informatique et des
             Libert&eacute;s<br />
             3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France<br />
             <a href="https://www.cnil.fr/fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
@@ -346,7 +346,7 @@ export function PrivacyFR() {
         </ul>
       </Section>
 
-      {/* 9 â€” Exercer vos droits */}
+      {/* 9 — Exercer vos droits */}
       <Section id="exercer-droits" title="9. Comment exercer vos droits">
         <p className="mb-4">
           Pour exercer l&apos;un des droits &eacute;num&eacute;r&eacute;s ci-dessus, veuillez
@@ -355,7 +355,7 @@ export function PrivacyFR() {
         </p>
         <p className="mb-4">
           Email&nbsp;: <a href="mailto:contact@clawdeals.com" className="underline">contact@clawdeals.com</a><br />
-          Adresse postale&nbsp;: TiMax â€” Orl&eacute;ans, France
+          Adresse postale&nbsp;: TiMax — Orl&eacute;ans, France
         </p>
         <p className="mb-4">
           Nous r&eacute;pondrons &agrave; votre demande dans un d&eacute;lai d&apos;<strong>un
@@ -370,7 +370,7 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 10 â€” Cookies */}
+      {/* 10 — Cookies */}
       <Section id="cookies" title="10. Cookies et technologies de tra&ccedil;age">
         <p className="mb-4">
           ClawDeals utilise un ensemble minimal de cookies. Nous n&apos;utilisons <strong>pas</strong>{" "}
@@ -427,14 +427,14 @@ export function PrivacyFR() {
         </p>
       </Section>
 
-      {/* 11 â€” SÃ©curitÃ© */}
+      {/* 11 — Sécurité */}
       <Section id="securite" title="11. Mesures de s&eacute;curit&eacute; des donn&eacute;es">
         <p className="mb-4">
           Nous mettons en &oelig;uvre des mesures techniques et organisationnelles
           appropri&eacute;es pour prot&eacute;ger vos donn&eacute;es personnelles, notamment&nbsp;:
         </p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
-          <li>Cl&eacute;s API stock&eacute;es sous forme d&apos;empreintes cryptographiques uniquement (Argon2id / bcrypt) â€” jamais en clair</li>
+          <li>Cl&eacute;s API stock&eacute;es sous forme d&apos;empreintes cryptographiques uniquement (Argon2id / bcrypt) — jamais en clair</li>
           <li>Codes OTP, jetons de v&eacute;rification, adresses email et num&eacute;ros de t&eacute;l&eacute;phone jamais journalis&eacute;s en clair</li>
           <li>Journaux d&apos;audit en ajout seul (append-only), s&eacute;curis&eacute;s par des empreintes HMAC-SHA256</li>
           <li>Limitation de d&eacute;bit par algorithme de seau &agrave; jetons sur toutes les routes API</li>
@@ -446,7 +446,7 @@ export function PrivacyFR() {
         </ul>
       </Section>
 
-      {/* 12 â€” Modifications */}
+      {/* 12 — Modifications */}
       <Section id="modifications" title="12. Modifications de la pr&eacute;sente politique">
         <p className="mb-4">
           Nous pouvons mettre &agrave; jour la pr&eacute;sente Politique de Confidentialit&eacute;
@@ -468,7 +468,7 @@ export function PrivacyFR() {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═════════════════════════════════════════════════════════════════════════
  *  SPANISH
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+ * ═══════════════════════════════════════════════════════════════════════ */
 

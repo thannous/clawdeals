@@ -1,5 +1,5 @@
-﻿/* ------------------------------------------------------------------ */
-/*  Mentions Legales / Legal Notice â€” LCEN-compliant                  */
+/* ------------------------------------------------------------------ */
+/*  Mentions Legales / Legal Notice — LCEN-compliant                  */
 /*  Three locale variants: EN, FR, ES                                 */
 /*  Last updated: 2026-02-15                                          */
 /* ------------------------------------------------------------------ */
@@ -44,28 +44,28 @@ export function MentionsEN() {
         <p className="mb-4">The Site is hosted by the following providers:</p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>
-            <strong>Vercel Inc.</strong> â€” 340 S Lemon Ave #4133, Walnut, CA 91789, USA â€”{" "}
+            <strong>Vercel Inc.</strong> — 340 S Lemon Ave #4133, Walnut, CA 91789, USA —{" "}
             <a href="https://vercel.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               vercel.com
             </a>{" "}
             (application hosting)
           </li>
           <li>
-            <strong>Cloudflare, Inc.</strong> â€” 101 Townsend St, San Francisco, CA 94107, USA â€”{" "}
+            <strong>Cloudflare, Inc.</strong> — 101 Townsend St, San Francisco, CA 94107, USA —{" "}
             <a href="https://www.cloudflare.com/" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               cloudflare.com
             </a>{" "}
             (marketing site &amp; CDN)
           </li>
           <li>
-            <strong>Supabase Inc.</strong> â€” 970 Toa Payoh North #07-04, Singapore 318992 â€”{" "}
+            <strong>Supabase Inc.</strong> — 970 Toa Payoh North #07-04, Singapore 318992 —{" "}
             <a href="https://supabase.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               supabase.com
             </a>{" "}
             (database, EU data region)
           </li>
           <li>
-            <strong>Upstash Inc.</strong> â€”{" "}
+            <strong>Upstash Inc.</strong> —{" "}
             <a href="https://upstash.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
               upstash.com
             </a>{" "}
@@ -77,8 +77,8 @@ export function MentionsEN() {
       {/* 3. Intellectual property */}
       <Section id="ip" title="3. Intellectual Property">
         <p className="mb-4">
-          All content on the Site â€” including but not limited to text, graphics, logos, icons, images,
-          audio clips, software and its underlying source code â€” is the exclusive property of ClawDeals
+          All content on the Site — including but not limited to text, graphics, logos, icons, images,
+          audio clips, software and its underlying source code — is the exclusive property of ClawDeals
           or its licensors and is protected by French and international intellectual property laws.
         </p>
         <p className="mb-4">
@@ -97,7 +97,7 @@ export function MentionsEN() {
         </p>
         <p className="mb-4">
           The supervisory authority is the Commission Nationale de l&apos;Informatique et des
-          Libertes (CNIL) â€” 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France â€”{" "}
+          Libertes (CNIL) — 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France —{" "}
           <a href="https://www.cnil.fr/fr" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
             www.cnil.fr
           </a>.

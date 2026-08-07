@@ -1,11 +1,11 @@
-﻿/* ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
  * Privacy Policy content for ClawDeals
  * Languages: English (EN), French (FR), Spanish (ES)
- * GDPR-compliant (Articles 13 / 14) â€” includes Cookie section
+ * GDPR-compliant (Articles 13 / 14) — includes Cookie section
  * Last updated: 2026-02-15
  * -------------------------------------------------------------------------*/
 
-/* â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Shared helpers ──────────────────────────────────────────────────────── */
 
 function Section({
   id,
@@ -26,21 +26,21 @@ function Section({
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═════════════════════════════════════════════════════════════════════════
  *  ENGLISH
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+ * ═══════════════════════════════════════════════════════════════════════ */
 
 
 export function PrivacyEN() {
   return (
     <>
-      {/* 1 â€” Data controller */}
+      {/* 1 — Data controller */}
       <Section id="controller" title="1. Data Controller &amp; Data Protection Officer">
         <p className="mb-4">
           The data controller for the personal data processed through <strong>www.clawdeals.com</strong> is:
         </p>
         <p className="mb-4">
-          <strong>TiMax</strong> â€” Sole proprietorship (<em>entreprise individuelle</em>)<br />
+          <strong>TiMax</strong> — Sole proprietorship (<em>entreprise individuelle</em>)<br />
           Orleans, France (SIRET: 995 316 981 00019)<br />
           Contact: <a href="mailto:contact@clawdeals.com" className="underline">contact@clawdeals.com</a>
         </p>
@@ -50,7 +50,7 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 2 â€” Data collected */}
+      {/* 2 — Data collected */}
       <Section id="data-collected" title="2. Data We Collect">
         <p className="mb-4">
           We collect different categories of data depending on whether you interact with the platform
@@ -142,7 +142,7 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 3 â€” Legal bases */}
+      {/* 3 — Legal bases */}
       <Section id="legal-bases" title="3. Legal Bases for Processing">
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>
@@ -163,7 +163,7 @@ export function PrivacyEN() {
         </ul>
       </Section>
 
-      {/* 4 â€” Purposes */}
+      {/* 4 — Purposes */}
       <Section id="purposes" title="4. Purposes of Processing">
         <ul className="list-disc pl-6 mb-4 space-y-1">
           <li>Providing and operating the ClawDeals marketplace</li>
@@ -179,7 +179,7 @@ export function PrivacyEN() {
         </ul>
       </Section>
 
-      {/* 5 â€” Retention */}
+      {/* 5 — Retention */}
       <Section id="retention" title="5. Data Retention Periods">
         <p className="mb-4">
           We retain personal data only for as long as necessary for the purposes described above.
@@ -252,7 +252,7 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 6 â€” Recipients */}
+      {/* 6 — Recipients */}
       <Section id="recipients" title="6. Data Recipients &amp; Sub-Processors">
         <p className="mb-4">
           We share personal data only with the sub-processors strictly necessary to operate the
@@ -295,7 +295,7 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 7 â€” International transfers */}
+      {/* 7 — International transfers */}
       <Section id="transfers" title="7. International Data Transfers">
         <p className="mb-4">
           All personal data is stored and processed exclusively within the European Union.
@@ -304,7 +304,7 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 8 â€” Your rights */}
+      {/* 8 — Your rights */}
       <Section id="rights" title="8. Your Rights Under GDPR">
         <p className="mb-4">
           Under the General Data Protection Regulation, you have the following rights:
@@ -321,7 +321,7 @@ export function PrivacyEN() {
             <strong>Right to lodge a complaint (Art. 77):</strong> You may file a complaint with the
             French data protection authority:
             <br />
-            <strong>CNIL</strong> â€” Commission Nationale de l&apos;Informatique et des
+            <strong>CNIL</strong> — Commission Nationale de l&apos;Informatique et des
             Libert&eacute;s<br />
             3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07, France<br />
             <a href="https://www.cnil.fr/fr" className="underline" target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
@@ -329,14 +329,14 @@ export function PrivacyEN() {
         </ul>
       </Section>
 
-      {/* 9 â€” Exercise your rights */}
+      {/* 9 — Exercise your rights */}
       <Section id="exercise-rights" title="9. How to Exercise Your Rights">
         <p className="mb-4">
           To exercise any of the rights listed above, please contact our Data Protection Officer:
         </p>
         <p className="mb-4">
           Email: <a href="mailto:contact@clawdeals.com" className="underline">contact@clawdeals.com</a><br />
-          Postal address: TiMax â€” Orleans, France
+          Postal address: TiMax — Orleans, France
         </p>
         <p className="mb-4">
           We will respond to your request within <strong>one month</strong> of receipt. If the
@@ -349,7 +349,7 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 10 â€” Cookies */}
+      {/* 10 — Cookies */}
       <Section id="cookies" title="10. Cookies &amp; Tracking Technologies">
         <p className="mb-4">
           ClawDeals uses a minimal set of cookies. We do <strong>not</strong> use advertising or
@@ -404,14 +404,14 @@ export function PrivacyEN() {
         </p>
       </Section>
 
-      {/* 11 â€” Security */}
+      {/* 11 — Security */}
       <Section id="security" title="11. Data Security Measures">
         <p className="mb-4">
           We implement appropriate technical and organizational measures to protect your personal
           data, including:
         </p>
         <ul className="list-disc pl-6 mb-4 space-y-1">
-          <li>API keys stored as cryptographic hashes only (Argon2id / bcrypt) â€” never in plain text</li>
+          <li>API keys stored as cryptographic hashes only (Argon2id / bcrypt) — never in plain text</li>
           <li>OTP codes, verification tokens, email addresses, and phone numbers are never logged in plain text</li>
           <li>Append-only audit logs secured with HMAC-SHA256 fingerprints</li>
           <li>Rate limiting via token bucket algorithm on all API routes</li>
@@ -423,7 +423,7 @@ export function PrivacyEN() {
         </ul>
       </Section>
 
-      {/* 12 â€” Changes */}
+      {/* 12 — Changes */}
       <Section id="changes" title="12. Changes to This Policy">
         <p className="mb-4">
           We may update this Privacy Policy from time to time. When we make material changes, we
@@ -442,7 +442,7 @@ export function PrivacyEN() {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═════════════════════════════════════════════════════════════════════════
  *  FRENCH
- * â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+ * ═══════════════════════════════════════════════════════════════════════ */
 
