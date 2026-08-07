@@ -96,9 +96,16 @@ do not add replicas merely for launch: <https://upstash.com/docs/redis/features/
 ## Crons and plans
 
 Keep the PostgreSQL queues and current cron endpoints. Vercel runs the daily
-trust-score recalculation, which is compatible with Hobby. The existing
-Cloudflare Worker contains a tested scheduled handler for the watchlist match
-queue, but `wrangler.jsonc` intentionally does not activate a Cron Trigger yet.
+trust-score recalculation, which is compatible with Hobby. The Cloudflare Worker
+(`workers/edge-router.ts`) is the scheduler for every other internal cron
+endpoint via three triggers in `wrangler.jsonc` (kept in sync with `CRON_JOBS`):
+
+- `*/5 * * * *`: watchlist match/backfill queues, notifications dispatch,
+  offers expiration, trust-score recalc queue.
+- `17 * * * *`: deals lifecycle, transactions auto-close, risk rules,
+  observability alerts.
+- `10 2 * * *`: watchlist digest, audit/reports/idempotency retention,
+  partition maintenance.
 
 `CRON_SECRET` must contain the same random value in Vercel Production and as an
 encrypted secret on the Cloudflare Worker. Never put the value in
@@ -107,11 +114,12 @@ Cloudflare dashboard or `npx wrangler secret put CRON_SECRET`. The scheduled
 handler calls `app.clawdeals.com` directly and does not place normal app or SSE
 traffic behind the Cloudflare proxy.
 
-Activation is blocked while the connected Upstash Redis resource remains on
-Pay As You Go: matched rows can emit rate-limit and SSE commands, and that plan
-bills commands from the first request. To keep incremental cost at exactly zero,
-do not add `"triggers": { "crons": ["*/5 * * * *"] }` until the Redis resource
-can be moved safely to Free or paid command usage is explicitly approved.
+Cost note: the five-minute trigger was originally held back while the Upstash
+Redis resource was on Pay As You Go (matched rows can emit rate-limit and SSE
+commands billed from the first request). That guardrail was lifted when the
+watchlist queue trigger shipped; the hourly and daily lanes add a negligible
+number of invocations on top of it. If Redis command cost ever becomes a
+concern, thin out the fast lane first.
 
 Do not use a five-minute GitHub Actions schedule for this private repository:
 hosted-runner minutes are billable after the account allowance. Do not subscribe
