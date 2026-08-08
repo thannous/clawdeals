@@ -16,6 +16,12 @@ const EXPLORE_I18N_NAMESPACES = ["landing", "nav", "footer"] as const;
 
 const VALID_TABS = new Set<string>(Object.keys(TAB_SLUGS));
 
+export function resolveExploreRobotsContent(isPreviewHost: boolean): string {
+  return isPreviewHost
+    ? "noindex,follow"
+    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+}
+
 export const TAB_META: Record<TabSlug, {
   fr: { title: string; description: string; ogTitle: string; ogDescription: string };
   en: { title: string; description: string; ogTitle: string; ogDescription: string };
@@ -194,9 +200,7 @@ export default function ExploreTab({
   const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
   const exploreIndexUrl = `${baseUrl}${localePrefixFor(currentLocale)}/explore`;
   const exploreBreadcrumb = currentLocale === "es" ? "Explorar" : currentLocale === "fr" ? "Explorer" : "Explore";
-  const robotsContent = isPreviewHost
-    ? "noindex,follow"
-    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+  const robotsContent = resolveExploreRobotsContent(isPreviewHost);
 
   return (
     <>
