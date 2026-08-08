@@ -5,15 +5,94 @@ on:
   push:
     branches: ["main"]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test-ci:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run test:ci
+      - name: Restore ESLint cache
+        uses: actions/cache@v6
+        with:
+          path: .eslintcache
+          key: ${{ runner.os }}-node-20-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint -- --cache --cache-location .eslintcache --cache-strategy content
+
+  contracts:
+    name: Typecheck and contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Validate i18n page contract
+        run: npm run test:i18n:contract
+      - name: Validate i18n messages
+        run: npm run test:i18n:messages
+      - name: Lint OpenAPI contract
+        run: npm run openapi:lint
+      - name: Validate skill pack
+        run: npm run test:skill:pack
+      - name: Validate public skill files
+        run: npm run test:skill:public
+
+  unit_tests:
+    name: Unit tests (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run unit-test shard
+        run: npm run test:unit -- --shard=${{ matrix.shard }}/2
+
+  test-ci:
+    name: test-ci
+    if: ${{ always() }}
+    needs: [lint, contracts, unit_tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every CI job to pass
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          CONTRACTS_RESULT: ${{ needs.contracts.result }}
+          UNIT_TESTS_RESULT: ${{ needs.unit_tests.result }}
+        run: |
+          if [[ "$LINT_RESULT" != "success" || "$CONTRACTS_RESULT" != "success" || "$UNIT_TESTS_RESULT" != "success" ]]; then
+            echo "CI failed: lint=$LINT_RESULT contracts=$CONTRACTS_RESULT unit-tests=$UNIT_TESTS_RESULT"
+            exit 1
+          fi

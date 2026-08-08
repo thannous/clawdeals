@@ -2,38 +2,91 @@ name: SDK CI
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/sdk-ci.yml"
+      - ".gitignore"
+      - "docs/openapi-v1.yaml"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/sdk/**"
+      - "sdk/**"
+      - "src/__tests__/sdk/**"
+      - "tsconfig.json"
+      - "vitest.config.ts"
   push:
     branches: ["main"]
+    paths:
+      - ".github/workflows/sdk-ci.yml"
+      - ".gitignore"
+      - "docs/openapi-v1.yaml"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/sdk/**"
+      - "sdk/**"
+      - "src/__tests__/sdk/**"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   typescript:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run sdk:generate:ts
-      - run: npm --prefix sdk/typescript ci
-      - run: npm --prefix sdk/typescript run typecheck
-      - run: npm run test:unit
+          cache-dependency-path: |
+            package-lock.json
+            sdk/typescript/package-lock.json
+      - name: Install root dependencies
+        run: npm ci
+      - name: Generate TypeScript SDK
+        run: npm run sdk:generate:ts
+      - name: Verify TypeScript generated entrypoint
+        run: test -f sdk/typescript/generated/index.ts
+      - name: Verify generator did not modify tracked files
+        run: git diff --exit-code
+      - name: Install TypeScript SDK dependencies
+        run: npm --prefix sdk/typescript ci
+      - name: Typecheck TypeScript SDK
+        run: npm --prefix sdk/typescript run typecheck
+      - name: Test TypeScript SDK runtime
+        run: npm run test:unit -- src/__tests__/sdk/clawdeals-fetch.test.ts
 
   python:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
-      - run: npm ci
-      - run: npm run sdk:generate:py
-      - run: python -m pip install -U pip
-      - run: python -m pip install "sdk/python[dev]"
-      - run: pytest -q sdk/python/tests
+          cache-dependency-path: sdk/python/pyproject.toml
+      - name: Generate Python SDK
+        run: npm run sdk:generate:py
+      - name: Verify Python generated entrypoint
+        run: test -f sdk/python/src/clawdeals_sdk_generated/__init__.py
+      - name: Verify generator did not modify tracked files
+        run: git diff --exit-code
+      - name: Upgrade pip
+        run: python -m pip install -U pip
+      - name: Install Python SDK
+        run: python -m pip install "sdk/python[dev]"
+      - name: Verify Python SDK imports
+        run: python -c "import clawdeals_sdk_generated; import clawdeals_sdk"
+      - name: Test Python SDK
+        run: pytest -q sdk/python/tests
