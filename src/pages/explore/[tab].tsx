@@ -16,6 +16,10 @@ const EXPLORE_I18N_NAMESPACES = ["landing", "nav", "footer"] as const;
 
 const VALID_TABS = new Set<string>(Object.keys(TAB_SLUGS));
 
+export function resolveExploreRobotsContent(): string {
+  return "noindex,follow";
+}
+
 export const TAB_META: Record<TabSlug, {
   fr: { title: string; description: string; ogTitle: string; ogDescription: string };
   en: { title: string; description: string; ogTitle: string; ogDescription: string };
@@ -196,7 +200,7 @@ export default function ExploreTab({
   // /explore/* renders illustrative fixture catalogs (no live inventory), so it
   // must stay out of search indexes until it serves real data. Kept in sync with
   // its removal from SEO_SITEMAP_ROUTES (src/content/seo-routes.ts).
-  const robotsContent = "noindex,follow";
+  const robotsContent = resolveExploreRobotsContent();
 
   return (
     <>
