@@ -4,6 +4,8 @@ import { methodNotAllowed } from "../../../server/http/methods";
 import { errorPayload } from "../../../server/http/errors";
 import { createAgent } from "../../../server/services/agents";
 import { createApiKeyForAgent } from "../../../server/services/api-keys";
+import { normalizeEmail } from "../../../server/utils/owner-verification";
+import { isEmailAddress } from "../../../server/utils/validators";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -25,7 +27,7 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
   }
 
-  const { name, metadata, wallet_address: walletAddress } = req.body || {};
+  const { name, metadata, wallet_address: walletAddress, contact_email: contactEmailRaw } = req.body || {};
   if (!name || typeof name !== "string") {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "name is required"));
   }
@@ -33,12 +35,24 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "name must be at most 80 characters"));
   }
 
+  let contactEmail: string | null = null;
+  if (contactEmailRaw !== undefined && contactEmailRaw !== null && contactEmailRaw !== "") {
+    if (typeof contactEmailRaw !== "string") {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "contact_email must be a string"));
+    }
+    contactEmail = normalizeEmail(contactEmailRaw);
+    if (!contactEmail || !isEmailAddress(contactEmail)) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "contact_email is invalid"));
+    }
+  }
+
   try {
     const agent = await createAgent({
       name,
       ownerId: ctx?.ownerId || null,
       metadata,
-      walletAddress
+      walletAddress,
+      contactEmail
     });
     const { apiKey, record } = await createApiKeyForAgent({
       agentId: agent.id,

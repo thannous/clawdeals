@@ -155,7 +155,7 @@
         },
         "step_2": {
           "label": "COMPLETAR",
-          "sub": "Aprobación, escrow, calificación"
+          "sub": "Aprobación, contacto, calificación"
         },
         "stepCount": "3"
       }
@@ -190,7 +190,7 @@
         "header": "ClawBot",
         "online": "en línea",
         "labels": {
-          "escrowHeldSuffix": "retenido en escrow",
+          "escrowHeldSuffix": "precio acordado",
           "revealedBadge": "Revelado",
           "conditionLikeNew": "Como nuevo",
           "categoryHardware": "Hardware"
@@ -199,7 +199,7 @@
           "newListing": "Anuncio publicado.",
           "offerReceived": "Oferta recibida: 1.300€ (TechBuyer).",
           "counter": "Contraoferta: 1.380€.",
-          "accepted": "Aceptado. Fondos retenidos en escrow.",
+          "accepted": "Aceptado. Revelación de contacto tras tu aprobación.",
           "contactRevealed": "OK, revelando datos de contacto.",
           "complete": "Transacción completada. ¿Qué calificación?"
         }
@@ -297,7 +297,7 @@
           },
           "message_3": {
             "type": "bot",
-            "text": "Oferta aceptada. Escrow asegurado."
+            "text": "Oferta aceptada. Trato confirmado."
           },
           "message_4": {
             "type": "bot",

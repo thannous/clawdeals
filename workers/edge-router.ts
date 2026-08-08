@@ -5,14 +5,39 @@ type EdgeRouterWorkerEnv = EdgeRouterEnv & {
   CRON_SECRET?: string;
 };
 
-const WATCHLIST_MATCH_QUEUE_PATH = "/api/internal/cron/watchlist-match-queue";
+// Every internal cron endpoint must be reachable from a scheduler; this worker is
+// the only always-on one. Trigger expressions must match wrangler.jsonc `triggers.crons`.
+// The daily full trustscore sweep stays on Vercel cron (vercel.json, 03:00 UTC).
+const FAST_LANE_CRON = "*/5 * * * *";
 
-async function runWatchlistMatchQueueCron(env: EdgeRouterWorkerEnv) {
-  if (!env.CRON_SECRET) {
-    throw new Error("Missing CRON_SECRET for watchlist match queue cron");
-  }
+const CRON_JOBS: Record<string, readonly string[]> = {
+  // Queue drains and time-sensitive expirations.
+  [FAST_LANE_CRON]: [
+    "/api/internal/cron/watchlist-match-queue",
+    "/api/internal/cron/watchlist-backfill-queue",
+    "/api/internal/cron/notifications-dispatch",
+    "/api/internal/cron/offers-expiration",
+    "/api/internal/cron/trustscore-recalc-queue"
+  ],
+  // Hourly lifecycle + monitoring.
+  "17 * * * *": [
+    "/api/internal/cron/deals-lifecycle",
+    "/api/internal/cron/transactions-auto-close",
+    "/api/internal/cron/risk-rules",
+    "/api/internal/cron/observability-alerts"
+  ],
+  // Daily digest + retention, before the 03:00 UTC Vercel trustscore sweep.
+  "10 2 * * *": [
+    "/api/internal/cron/watchlist-digest",
+    "/api/internal/cron/audit-retention",
+    "/api/internal/cron/reports-retention",
+    "/api/internal/cron/idempotency-retention",
+    "/api/internal/cron/partition-maintenance"
+  ]
+};
 
-  const target = new URL(WATCHLIST_MATCH_QUEUE_PATH, env.APP_ORIGIN);
+async function runCronEndpoint(env: EdgeRouterWorkerEnv, path: string) {
+  const target = new URL(path, env.APP_ORIGIN);
   const response = await fetch(target, {
     method: "POST",
     headers: {
@@ -22,13 +47,35 @@ async function runWatchlistMatchQueueCron(env: EdgeRouterWorkerEnv) {
   });
 
   if (!response.ok) {
-    throw new Error(`Watchlist match queue cron failed with status ${response.status}`);
+    throw new Error(`Cron ${path} failed with status ${response.status}`);
   }
 
   console.log(JSON.stringify({
-    event: "watchlist.match_queue_cron_succeeded",
+    event: "cron.dispatch_succeeded",
+    path,
     status: response.status
   }));
+}
+
+async function runScheduledCrons(cron: string, env: EdgeRouterWorkerEnv) {
+  if (!env.CRON_SECRET) {
+    throw new Error("Missing CRON_SECRET for internal cron dispatch");
+  }
+
+  const paths = CRON_JOBS[cron] ?? CRON_JOBS[FAST_LANE_CRON];
+  if (!CRON_JOBS[cron]) {
+    console.log(JSON.stringify({ event: "cron.unknown_trigger", cron }));
+  }
+
+  const results = await Promise.allSettled(paths.map((path) => runCronEndpoint(env, path)));
+  const failures = results
+    .map((result, index) => (result.status === "rejected" ? { path: paths[index], reason: String(result.reason) } : null))
+    .filter((entry): entry is { path: string; reason: string } => entry !== null);
+
+  if (failures.length > 0) {
+    console.log(JSON.stringify({ event: "cron.dispatch_failed", cron, failures }));
+    throw new Error(`Cron dispatch failed for ${failures.map((f) => f.path).join(", ")}`);
+  }
 }
 
 function withForwardHeaders(request: Request, target: string): Request {
@@ -83,10 +130,10 @@ const edgeRouterWorker = {
   },
 
   async scheduled(
-    _controller: { cron: string; scheduledTime: number },
+    controller: { cron: string; scheduledTime: number },
     env: EdgeRouterWorkerEnv
   ): Promise<void> {
-    await runWatchlistMatchQueueCron(env);
+    await runScheduledCrons(controller.cron, env);
   }
 };
 

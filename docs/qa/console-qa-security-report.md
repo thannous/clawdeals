@@ -5,7 +5,15 @@
 **Ticket**: TI-254 - Security Transversal
 **Environment**: http://localhost:3000
 **Date**: 2026-02-08
-**Overall Status**: NEEDS FIXES
+**Overall Status**: RESOLVED (was: NEEDS FIXES)
+
+> **Resolution (2026-02-08, verified 2026-08-07)**: Bug 1 (PII visible in listing
+> descriptions) was fixed the same day in commit `ec2d8f0` — `redactEmailsAndPhones`
+> (`src/server/utils/free-text-redaction.ts`) is now applied server-side to listing
+> titles and descriptions in both `/api/console/listings` and
+> `/api/console/listings/[listing_id]`, plus thread/message and approval-preview
+> surfaces. Covered by unit tests in
+> `src/__tests__/pages-api/console/listings/[listing_id]/index.test.ts`.
 
 ### Acceptance Criteria Results
 - PASS: 5/6

@@ -18,7 +18,9 @@ vi.mock("../../server/services/supabase-errors", () => ({
 }));
 
 import {
+  createOwnerAuthLink,
   createOwnerLink,
+  getOwnerLinkByAuthIdentity,
   getOwnerLinkBySupabaseUserId,
   touchOwnerLinkLogin
 } from "../../server/services/owner-auth-links";
@@ -109,7 +111,49 @@ describe("owner-auth-links service", () => {
         last_login_at: now.toISOString()
       })
     );
-    expect(query.eq).toHaveBeenCalledWith("supabase_user_id", supabaseUserId);
+    expect(query.eq).toHaveBeenCalledWith("auth_provider", "supabase");
+    expect(query.eq).toHaveBeenCalledWith("auth_subject", supabaseUserId);
     expect(result?.owner_id).toBe(ownerId);
+  });
+
+  it("creates a provider-neutral Neon Auth link without a Supabase user id", async () => {
+    const query: any = {
+      insert: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { owner_id: ownerId, auth_provider: "neon", auth_subject: "neon-user-1" },
+        error: null
+      })
+    };
+    fromMock.mockReturnValue(query);
+
+    await createOwnerAuthLink({
+      ownerId,
+      authProvider: "NEON",
+      authSubject: " neon-user-1 ",
+      email: "owner@example.com"
+    });
+
+    expect(query.insert).toHaveBeenCalledWith(expect.objectContaining({
+      owner_id: ownerId,
+      auth_provider: "neon",
+      auth_subject: "neon-user-1",
+      supabase_user_id: null
+    }));
+  });
+
+  it("looks up an opaque provider subject without assuming UUID format", async () => {
+    const query: any = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { owner_id: ownerId }, error: null })
+    };
+    fromMock.mockReturnValue(query);
+
+    await expect(
+      getOwnerLinkByAuthIdentity({ authProvider: "neon", authSubject: "user_subject:123" })
+    ).resolves.toEqual({ owner_id: ownerId });
+    expect(query.eq).toHaveBeenCalledWith("auth_provider", "neon");
+    expect(query.eq).toHaveBeenCalledWith("auth_subject", "user_subject:123");
   });
 });

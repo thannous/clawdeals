@@ -1943,6 +1943,59 @@ paths:
         "400": { $ref: "#/components/responses/Error400" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/alerts:
+    post:
+      tags: [Watchlists]
+      operationId: v1AlertsCreate
+      summary: Create an email alert without an agent (public, double opt-in)
+      description: |-
+        Creates an inactive watchlist bound to an email address and sends a
+        confirmation email. The alert only activates (and only then starts
+        emailing matches) once the recipient opens the confirmation link,
+        which also verifies the email address.
+      x-clawdeals-public: true
+      x-clawdeals-rate-limit-group: alerts.write_ip
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AlertCreateRequestV1" }
+      responses:
+        "202":
+          description: Confirmation email sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlertCreateResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/alerts/confirm:
+    get:
+      tags: [Watchlists]
+      operationId: v1AlertsConfirm
+      summary: Confirm an email alert (link target)
+      description: |-
+        Activates the alert referenced by the signed token and marks the owner
+        email as verified. Intended to be opened from the confirmation email;
+        redirects to the marketing site on success.
+      x-clawdeals-public: true
+      x-clawdeals-rate-limit-group: alerts.confirm_ip
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "302":
+          description: Confirmed; redirects to the marketing site
+        "400": { $ref: "#/components/responses/Error400" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "410": { $ref: "#/components/responses/Error410" }
+        "500": { $ref: "#/components/responses/Error500" }
+
   /v1/owner:
     get:
       tags: [Owner]
@@ -2874,6 +2927,14 @@ components:
         name: { type: string, minLength: 1, maxLength: 80 }
         metadata: {}
         wallet_address: { type: string, nullable: true }
+        contact_email:
+          type: string
+          format: email
+          nullable: true
+          description: >
+            Optional contact address for the key holder. Stored unverified on the
+            owner record only when the owner has no email yet; used for service
+            notifications once verified. Never overwrites an existing owner email.
 
     AgentRegisterResponseV1:
       type: object
@@ -3917,13 +3978,25 @@ components:
             - type: object
               properties:
                 buyer_contact:
-                  type: object
-                  nullable: true
-                  additionalProperties: true
+                  $ref: "#/components/schemas/TransactionContactV1"
                 seller_contact:
-                  type: object
-                  nullable: true
-                  additionalProperties: true
+                  $ref: "#/components/schemas/TransactionContactV1"
+
+    TransactionContactV1:
+      type: object
+      nullable: true
+      description: >
+        Present only when contact_reveal_state is APPROVED. Masked fields are always
+        included. The unmasked email/phone fields are included only on the
+        counterparty's contact when the caller is an authenticated transaction party
+        (buyer sees seller contact, seller sees buyer contact). Ops/console callers
+        always receive masked fields only.
+      additionalProperties: true
+      properties:
+        email_masked: { type: string }
+        phone_masked: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
 
     ContactRevealRequestedResponseV1:
       type: object
@@ -4069,6 +4142,29 @@ components:
           required: [status]
           properties:
             status: { type: string, enum: [created, already_registered] }
+
+    AlertCreateRequestV1:
+      type: object
+      additionalProperties: false
+      required: [email, criteria]
+      properties:
+        email: { type: string, format: email, minLength: 3, maxLength: 320 }
+        locale: { type: string, nullable: true }
+        name: { type: string, nullable: true, maxLength: 80 }
+        market_code: { type: string, enum: [FR, GB, ES], nullable: true }
+        criteria: { $ref: "#/components/schemas/WatchlistCriteriaV1" }
+
+    AlertCreateResponseV1:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [status, watchlist_id]
+          properties:
+            status: { type: string, enum: [pending_confirmation] }
+            watchlist_id: { type: string, format: uuid }
+            email_delivery: { type: string, enum: [sent, skipped] }
 
     OwnerGetResponseV1:
       type: object

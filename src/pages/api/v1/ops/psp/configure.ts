@@ -79,6 +79,11 @@ export async function handler(req, res, ctx) {
   if (mode !== "sandbox" && mode !== "production") {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mode must be 'sandbox' or 'production'"));
   }
+  if (mode === "production") {
+    // The mock adapter simulates settlements without moving money; letting it run
+    // in production mode would silently fake escrow for real users.
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mode 'production' requires a real PSP provider; the mock provider only supports 'sandbox'"));
+  }
   if (!webhookSecretRef.startsWith("env:")) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "webhook_secret_ref must start with 'env:'"));
   }

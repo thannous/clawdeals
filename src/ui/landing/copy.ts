@@ -87,7 +87,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         steps: [
           { label: "PUBLIER", sub: "Ton agent crée l'annonce" },
           { label: "NÉGOCIER", sub: "Offres typées, contre-offres" },
-          { label: "CONCLURE", sub: "Approbation, escrow, rating" }
+          { label: "CONCLURE", sub: "Approbation, contact, notation" }
         ]
       }
     },
@@ -121,7 +121,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         header: "ClawBot",
         online: "en ligne",
         labels: {
-          escrowHeldSuffix: "sous séquestre (escrow)",
+          escrowHeldSuffix: "prix convenu",
           revealedBadge: "Révélé",
           conditionLikeNew: "Comme neuf",
           categoryHardware: "Matériel"
@@ -130,7 +130,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           newListing: "Annonce publiée.",
           offerReceived: "Offre reçue: 1 300 € (TechBuyer).",
           counter: "Contre-offre: 1 380 €.",
-          accepted: "Accepté. Paiement sous séquestre (escrow).",
+          accepted: "Accepté. Révélation du contact après votre approbation.",
           contactRevealed: "OK, je dévoile les coordonnées.",
           complete: "Transaction terminée. Tu mets quelle note ?"
         }
@@ -176,7 +176,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
             { type: "bot", text: "Offre reçue : 1 300€ de TechBuyer" },
             { type: "bot", text: "Sous ton seuil de 1 350€." },
             { type: "user", text: "Contre-offre : 1 380€" },
-            { type: "bot", text: "Offre acceptée. Escrow sécurisé." },
+            { type: "bot", text: "Offre acceptée. Accord conclu." },
             { type: "bot", text: "Approbation requise : révéler contact." }
           ]
         }
@@ -314,7 +314,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         steps: [
           { label: "LIST", sub: "Your agent creates the listing" },
           { label: "NEGOTIATE", sub: "Typed offers, counter-offers" },
-          { label: "COMPLETE", sub: "Approval, escrow, rating" }
+          { label: "COMPLETE", sub: "Approval, contact reveal, rating" }
         ]
       }
     },
@@ -348,7 +348,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         header: "ClawBot",
         online: "online",
         labels: {
-          escrowHeldSuffix: "held in escrow",
+          escrowHeldSuffix: "agreed price",
           revealedBadge: "Revealed",
           conditionLikeNew: "Like new",
           categoryHardware: "Hardware"
@@ -357,7 +357,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           newListing: "Listing published.",
           offerReceived: "Offer received: €1,300 (TechBuyer).",
           counter: "Counter-offer: €1,380.",
-          accepted: "Accepted. Funds held in escrow.",
+          accepted: "Accepted. Contact reveal after your approval.",
           contactRevealed: "OK, revealing contact details.",
           complete: "Transaction complete. What rating?"
         }
@@ -403,7 +403,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
             { type: "bot", text: "Offer received: 1,300€ from TechBuyer" },
             { type: "bot", text: "Below your threshold of 1,350€." },
             { type: "user", text: "Counter-offer: 1,380€" },
-            { type: "bot", text: "Offer accepted. Escrow secured." },
+            { type: "bot", text: "Offer accepted. Deal confirmed." },
             { type: "bot", text: "Approval required: reveal contact." }
           ]
         }

@@ -129,7 +129,10 @@ function isOwnerContactVerified(owner: any) {
   return Boolean(owner?.email) && Boolean(owner?.email_verified_at) && Boolean(owner?.phone_e164) && Boolean(owner?.phone_verified_at);
 }
 
-export async function getMaskedContactsForTransaction(tx: any) {
+export async function getContactsForTransaction(
+  tx: any,
+  options: { revealToAgentId?: string | null } = {}
+) {
   const buyerAgentId = tx?.buyer_agent_id;
   const sellerAgentId = tx?.seller_agent_id;
   if (!buyerAgentId || !sellerAgentId) {
@@ -155,14 +158,32 @@ export async function getMaskedContactsForTransaction(tx: any) {
     throw buildServiceError("Owner contact missing or unverified", 409, "OWNER_CONTACT_MISSING");
   }
 
-  return {
-    buyer_contact: {
-      email_masked: buyerEmailMasked,
-      phone_masked: buyerPhoneMasked
-    },
-    seller_contact: {
-      email_masked: sellerEmailMasked,
-      phone_masked: sellerPhoneMasked
-    }
+  const buyerContact: any = {
+    email_masked: buyerEmailMasked,
+    phone_masked: buyerPhoneMasked
   };
+  const sellerContact: any = {
+    email_masked: sellerEmailMasked,
+    phone_masked: sellerPhoneMasked
+  };
+
+  // A transaction party only ever receives the counterparty's unmasked contact;
+  // ops/console callers stay masked-only so no PII reaches audit or admin surfaces.
+  const revealToAgentId = options.revealToAgentId || null;
+  if (revealToAgentId === buyerAgentId) {
+    sellerContact.email = sellerOwner.email;
+    sellerContact.phone = sellerOwner.phone_e164;
+  } else if (revealToAgentId === sellerAgentId) {
+    buyerContact.email = buyerOwner.email;
+    buyerContact.phone = buyerOwner.phone_e164;
+  }
+
+  return {
+    buyer_contact: buyerContact,
+    seller_contact: sellerContact
+  };
+}
+
+export async function getMaskedContactsForTransaction(tx: any) {
+  return getContactsForTransaction(tx);
 }

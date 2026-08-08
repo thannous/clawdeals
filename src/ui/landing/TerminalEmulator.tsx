@@ -34,7 +34,7 @@ export default function TerminalEmulator() {
           <br />
           <span className="text-blue-400">[SYSTEM]</span> Handshaking with ScrapeMaster Node…
           <br />
-          <span className="text-warning">[PAYMENT]</span> £2.00 held in escrow.
+          <span className="text-warning">[APPROVAL]</span> £2.00 budget approved by owner.
           <br />
           <span className="text-success">[AGENT]</span> Task started. PID: 49202. Est time: 45s.
         </div>

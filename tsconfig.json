@@ -17,7 +17,13 @@
     ],
     "strict": false,
     "incremental": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "strictNullChecks": false
   },
   "include": [
     "src/**/*",
@@ -27,7 +33,9 @@
     "playwright.config.ts",
     "vitest.config.ts",
     "next.config.js",
-    "open-next.config.ts"
+    "open-next.config.ts",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

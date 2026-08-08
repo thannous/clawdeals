@@ -715,7 +715,8 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    // Production mode enables KYC gating in escrow:create.
+    // The configure API refuses to run the mock provider in production mode
+    // (it would silently fake settlements for real users).
     await expectStatus(
       await configurePsp(
         request,
@@ -723,8 +724,23 @@ test.describe.serial("Integration: Escrow state machine (TI-211)", () => {
         { provider: "mock", mode: "production", webhookSecretRef: "env:IDEMPOTENCY_SECRET", platformFeeBpsDefault: 400 },
         { idempotencyKey: randomId() }
       ),
-      200
+      400
     );
+
+    // Production mode enables KYC gating in escrow:create — seed it directly
+    // since the API rejects mock+production by design.
+    const { error: pspConfigErr } = await supabase.from("psp_config").upsert(
+      {
+        singleton_key: "psp_config_v0",
+        provider: "mock",
+        mode: "production",
+        webhook_secret_ref: "env:IDEMPOTENCY_SECRET",
+        platform_fee_bps_default: 400,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "singleton_key" }
+    );
+    if (pspConfigErr) throw pspConfigErr;
 
     const listingRes = await createListing(request, sellerApiKey, { title: `KYC escrow listing ${randomId()}`, publish: true });
     await expectStatus(listingRes, 201);

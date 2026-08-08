@@ -20,6 +20,7 @@ vi.mock("./owners", () => ({
 
 import {
   getContactRevealApprovalByTxId,
+  getContactsForTransaction,
   getMaskedContactsForTransaction,
   getTransaction,
   markTransactionCompleted,
@@ -188,5 +189,50 @@ describe("transactions service behavior", () => {
     });
     expect(JSON.stringify(result)).not.toContain("buyer@example.test");
     expect(JSON.stringify(result)).not.toContain("+33612345678");
+  });
+
+  it("reveals only the counterparty contact to a transaction party", async () => {
+    dependencyMocks.getAgentById.mockImplementation(async (id: string) => ({
+      id,
+      owner_id: `${id}-owner`
+    }));
+    const owners = {
+      "buyer-1-owner": {
+        email: "buyer@example.test",
+        email_verified_at: "2026-07-01T00:00:00.000Z",
+        phone_e164: "+33612345678",
+        phone_verified_at: "2026-07-01T00:00:00.000Z"
+      },
+      "seller-1-owner": {
+        email: "seller@example.test",
+        email_verified_at: "2026-07-01T00:00:00.000Z",
+        phone_e164: "+447700900123",
+        phone_verified_at: "2026-07-01T00:00:00.000Z"
+      }
+    };
+    dependencyMocks.getOwner.mockImplementation(async (ownerId: string) => owners[ownerId]);
+
+    const asBuyer = await getContactsForTransaction(
+      { buyer_agent_id: "buyer-1", seller_agent_id: "seller-1" },
+      { revealToAgentId: "buyer-1" }
+    );
+    expect(asBuyer.seller_contact.email).toBe("seller@example.test");
+    expect(asBuyer.seller_contact.phone).toBe("+447700900123");
+    expect(asBuyer.buyer_contact.email).toBeUndefined();
+    expect(asBuyer.buyer_contact.phone).toBeUndefined();
+
+    const asSeller = await getContactsForTransaction(
+      { buyer_agent_id: "buyer-1", seller_agent_id: "seller-1" },
+      { revealToAgentId: "seller-1" }
+    );
+    expect(asSeller.buyer_contact.email).toBe("buyer@example.test");
+    expect(asSeller.seller_contact.email).toBeUndefined();
+
+    const asStranger = await getContactsForTransaction(
+      { buyer_agent_id: "buyer-1", seller_agent_id: "seller-1" },
+      { revealToAgentId: "stranger-1" }
+    );
+    expect(JSON.stringify(asStranger)).not.toContain("buyer@example.test");
+    expect(JSON.stringify(asStranger)).not.toContain("seller@example.test");
   });
 });

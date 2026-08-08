@@ -40,7 +40,7 @@ describe("worker edge router", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("dispatches the watchlist queue cron with bearer authentication", async () => {
+  it("dispatches the fast-lane cron endpoints with bearer authentication", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ processed: 0 }), { status: 200 })
@@ -56,21 +56,58 @@ describe("worker edge router", () => {
       }
     );
 
-    expect(fetchSpy).toHaveBeenCalledOnce();
-    const [target, init] = fetchSpy.mock.calls[0];
-    expect(target.toString()).toBe(
-      "https://app.clawdeals.com/api/internal/cron/watchlist-match-queue"
-    );
-    expect(init).toMatchObject({
-      method: "POST",
-      headers: {
-        authorization: "Bearer cron-secret",
-        "user-agent": "clawdeals-cloudflare-cron/1.0"
-      }
-    });
+    const targets = fetchSpy.mock.calls.map(([target]) => target.toString());
+    expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/watchlist-match-queue");
+    expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/watchlist-backfill-queue");
+    expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/notifications-dispatch");
+    expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/offers-expiration");
+    expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/trustscore-recalc-queue");
+
+    for (const [, init] of fetchSpy.mock.calls) {
+      expect(init).toMatchObject({
+        method: "POST",
+        headers: {
+          authorization: "Bearer cron-secret",
+          "user-agent": "clawdeals-cloudflare-cron/1.0"
+        }
+      });
+    }
     expect(logSpy).toHaveBeenCalledWith(
-      JSON.stringify({ event: "watchlist.match_queue_cron_succeeded", status: 200 })
+      JSON.stringify({
+        event: "cron.dispatch_succeeded",
+        path: "/api/internal/cron/watchlist-match-queue",
+        status: 200
+      })
     );
+  });
+
+  it("dispatches hourly and daily cron lanes to their own endpoint sets", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ processed: 0 }), { status: 200 })
+    );
+    const env = {
+      APP_ORIGIN: "https://app.clawdeals.com",
+      MARKETING_ORIGIN: "https://app.clawdeals.com",
+      MARKETING_HOST: "clawdeals.com",
+      CRON_SECRET: "cron-secret"
+    };
+
+    await edgeRouterWorker.scheduled({ cron: "17 * * * *", scheduledTime: 0 }, env);
+    const hourlyTargets = fetchSpy.mock.calls.map(([target]) => target.toString());
+    expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/deals-lifecycle");
+    expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/transactions-auto-close");
+    expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/risk-rules");
+    expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/observability-alerts");
+
+    fetchSpy.mockClear();
+    await edgeRouterWorker.scheduled({ cron: "10 2 * * *", scheduledTime: 0 }, env);
+    const dailyTargets = fetchSpy.mock.calls.map(([target]) => target.toString());
+    expect(dailyTargets).toContain("https://app.clawdeals.com/api/internal/cron/watchlist-digest");
+    expect(dailyTargets).toContain("https://app.clawdeals.com/api/internal/cron/audit-retention");
+    expect(dailyTargets).toContain("https://app.clawdeals.com/api/internal/cron/reports-retention");
+    expect(dailyTargets).toContain("https://app.clawdeals.com/api/internal/cron/idempotency-retention");
+    expect(dailyTargets).toContain("https://app.clawdeals.com/api/internal/cron/partition-maintenance");
   });
 
   it("fails closed when the Cloudflare cron secret is missing", async () => {
@@ -86,7 +123,8 @@ describe("worker edge router", () => {
     ).rejects.toThrow("Missing CRON_SECRET");
   });
 
-  it("reports a failed watchlist queue invocation without logging a response body", async () => {
+  it("reports failed cron invocations without logging a response body", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("sensitive upstream error", { status: 500 })
     );
@@ -101,6 +139,10 @@ describe("worker edge router", () => {
           CRON_SECRET: "cron-secret"
         }
       )
-    ).rejects.toThrow("status 500");
+    ).rejects.toThrow("Cron dispatch failed");
+
+    for (const [logged] of logSpy.mock.calls) {
+      expect(String(logged)).not.toContain("sensitive upstream error");
+    }
   });
 });

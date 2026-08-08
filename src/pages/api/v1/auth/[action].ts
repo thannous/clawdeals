@@ -3,7 +3,7 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import crypto from "node:crypto";
-import { getSupabaseServiceClient } from "../../../../server/db/supabase";
+import { verifyExternalAuthIdentity } from "../../../../server/auth/external-identity";
 
 import { buildOwnerSessionClearCookies, isSecureRequest, readOwnerSessionCookie } from "../../../../server/auth/session-cookie";
 import { confirmOwnerLogin, startOwnerLogin } from "../../../../server/services/owner-login";
@@ -11,9 +11,9 @@ import { sendOwnerLoginMagicLinkEmail } from "../../../../server/services/owner-
 import { issueTrustedOwnerSession } from "../../../../server/services/owner-session-issue";
 import { getOwnerSessionByTokenHash, markOwnerSessionRevoked } from "../../../../server/services/owner-sessions";
 import {
-  createOwnerLink,
-  getOwnerLinkBySupabaseUserId,
-  touchOwnerLinkLogin
+  createOwnerAuthLink,
+  getOwnerLinkByAuthIdentity,
+  touchOwnerAuthLinkLogin
 } from "../../../../server/services/owner-auth-links";
 import { getOwner, getOwnerByEmail, upsertOwner } from "../../../../server/services/owners";
 import { normalizeEmail } from "../../../../server/utils/owner-verification";
@@ -52,14 +52,6 @@ function parseBearerToken(value: any) {
   return parts[1];
 }
 
-function parseIsoDate(value: any) {
-  const raw = normalizeNonEmptyString(value);
-  if (!raw) return null;
-  const dt = new Date(raw);
-  if (!Number.isFinite(dt.getTime())) return null;
-  return dt.toISOString();
-}
-
 function resolveRequestOrigin(req: any) {
   const forwardedProto = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-proto"));
   const forwardedHost = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-host"));
@@ -69,34 +61,6 @@ function resolveRequestOrigin(req: any) {
   const host = (forwardedHost ? forwardedHost.split(",")[0] : hostHeader || "").trim();
   if (!host) return null;
   return `${proto}://${host}`;
-}
-
-function resolveSupabaseEmailVerifiedAt(user: any): string | null {
-  const direct = parseIsoDate(user?.email_confirmed_at) || parseIsoDate(user?.confirmed_at);
-  if (direct) return direct;
-
-  if (user?.user_metadata?.email_verified === true) {
-    return new Date().toISOString();
-  }
-
-  const identities = Array.isArray(user?.identities) ? user.identities : [];
-  const identityVerified = identities.some((identity: any) => identity?.identity_data?.email_verified === true);
-  if (identityVerified) {
-    return new Date().toISOString();
-  }
-
-  return null;
-}
-
-function resolveSupabaseProvider(user: any): string | null {
-  const fromAppMetadata = normalizeNonEmptyString(user?.app_metadata?.provider);
-  if (fromAppMetadata) return fromAppMetadata;
-  const identities = Array.isArray(user?.identities) ? user.identities : [];
-  for (const identity of identities) {
-    const provider = normalizeNonEmptyString(identity?.provider);
-    if (provider) return provider;
-  }
-  return null;
 }
 
 function shouldEchoToken() {
@@ -307,25 +271,30 @@ export async function handler(req: any, _res: any, ctx: any) {
 
     try {
       const now = new Date();
-      const supabase = getSupabaseServiceClient();
-      const { data, error } = await supabase.auth.getUser(accessToken);
-      if (error || !data?.user) {
-        return jsonResponse(401, errorPayload("UNAUTHORIZED", "Invalid Supabase access token"));
+      const identity = await verifyExternalAuthIdentity({
+        accessToken,
+        cookieHeader: normalizeNonEmptyString(getHeaderValue(req, "cookie"))
+      });
+      if (!identity) {
+        return jsonResponse(401, errorPayload("UNAUTHORIZED", "Invalid external auth session"));
       }
 
-      const supabaseUserId = normalizeNonEmptyString(data.user.id);
-      if (!supabaseUserId || !isUuid(supabaseUserId)) {
-        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "supabase user id must be a UUID"));
+      const authSubject = normalizeNonEmptyString(identity.subject);
+      if (!authSubject) {
+        return jsonResponse(400, errorPayload("VALIDATION_ERROR", "auth subject is required"));
       }
 
-      const email = normalizeEmail(data.user.email);
-      const emailVerifiedAt = resolveSupabaseEmailVerifiedAt(data.user);
-      const provider = resolveSupabaseProvider(data.user);
+      const email = normalizeEmail(identity.email);
+      const emailVerifiedAt = identity.emailVerifiedAt;
+      const provider = identity.upstreamProvider;
 
       let linkCreated = false;
       let linkedByVerifiedEmail = false;
 
-      let ownerLink = await getOwnerLinkBySupabaseUserId(supabaseUserId);
+      let ownerLink = await getOwnerLinkByAuthIdentity({
+        authProvider: identity.provider,
+        authSubject
+      });
       let owner: any = null;
 
       if (ownerLink) {
@@ -347,8 +316,9 @@ export async function handler(req: any, _res: any, ctx: any) {
           updatedAt: now
         });
 
-        await touchOwnerLinkLogin({
-          supabaseUserId,
+        await touchOwnerAuthLinkLogin({
+          authProvider: identity.provider,
+          authSubject,
           email: email ?? null,
           emailVerifiedAt: resolvedOwnerEmailVerifiedAt,
           now
@@ -386,9 +356,11 @@ export async function handler(req: any, _res: any, ctx: any) {
           });
         }
 
-        ownerLink = await createOwnerLink({
+        ownerLink = await createOwnerAuthLink({
           ownerId: owner.owner_id,
-          supabaseUserId,
+          authProvider: identity.provider,
+          authSubject,
+          supabaseUserId: identity.provider === "supabase" ? authSubject : null,
           email: email ?? null,
           emailVerifiedAt: emailVerifiedAt ?? null,
           now
@@ -423,7 +395,8 @@ export async function handler(req: any, _res: any, ctx: any) {
         ctx.security = {
           ...(ctx.security || {}),
           owner_auth_link_id: ownerLink?.link_id || null,
-          supabase_user_id: supabaseUserId,
+          auth_subject: authSubject,
+          identity_provider: identity.provider,
           auth_provider: provider || null
         };
       }

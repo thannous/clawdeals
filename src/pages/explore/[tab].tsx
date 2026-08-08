@@ -16,10 +16,8 @@ const EXPLORE_I18N_NAMESPACES = ["landing", "nav", "footer"] as const;
 
 const VALID_TABS = new Set<string>(Object.keys(TAB_SLUGS));
 
-export function resolveExploreRobotsContent(isPreviewHost: boolean): string {
-  return isPreviewHost
-    ? "noindex,follow"
-    : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+export function resolveExploreRobotsContent(): string {
+  return "noindex,follow";
 }
 
 export const TAB_META: Record<TabSlug, {
@@ -183,7 +181,6 @@ export default function ExploreTab({
   tab,
   initialTab,
   baseUrl,
-  isPreviewHost,
   copy,
   buildTimeIso,
   appVersion,
@@ -200,7 +197,10 @@ export default function ExploreTab({
   const ogImageUrl = `${baseUrl}/og/${currentLocale}.png`;
   const exploreIndexUrl = `${baseUrl}${localePrefixFor(currentLocale)}/explore`;
   const exploreBreadcrumb = currentLocale === "es" ? "Explorar" : currentLocale === "fr" ? "Explorer" : "Explore";
-  const robotsContent = resolveExploreRobotsContent(isPreviewHost);
+  // /explore/* renders illustrative fixture catalogs (no live inventory), so it
+  // must stay out of search indexes until it serves real data. Kept in sync with
+  // its removal from SEO_SITEMAP_ROUTES (src/content/seo-routes.ts).
+  const robotsContent = resolveExploreRobotsContent();
 
   return (
     <>

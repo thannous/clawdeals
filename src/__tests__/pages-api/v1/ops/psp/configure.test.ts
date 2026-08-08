@@ -83,6 +83,25 @@ suite("POST /v1/ops/psp/configure", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("rejects the mock provider in production mode", async () => {
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-1" },
+      query: {},
+      body: {
+        provider: "mock",
+        mode: "production",
+        webhook_secret_ref: "env:PSP_WEBHOOK_SECRET",
+        platform_fee_bps_default: 100
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(upsertPspConfigMock).not.toHaveBeenCalled();
+  });
+
   it("preserves non-validation errors from upsertPspConfig", async () => {
     const err: any = new Error("db down");
     err.status = 503;

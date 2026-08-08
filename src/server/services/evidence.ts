@@ -1,8 +1,16 @@
 import crypto from "crypto";
 import { getSupabaseServiceClient } from "../db/supabase";
+import {
+  assertEvidenceStoragePolicy,
+  createEvidenceUploadUrl,
+  deleteEvidenceObject,
+  downloadEvidenceObjectBytes,
+  getEvidenceObjectInfo,
+  getEvidenceWriteBucket,
+  isSupportedEvidenceBucket
+} from "../storage/evidence-storage";
 import { mapSupabaseError } from "./supabase-errors";
 
-const EVIDENCE_BUCKET = "evidence";
 const MAX_FILES_PER_DISPUTE = 10;
 const MAX_TOTAL_BYTES_PER_DISPUTE = 50 * 1024 * 1024;
 const SIGNED_UPLOAD_EXPIRES_SECONDS = 2 * 60 * 60;
@@ -130,33 +138,10 @@ type EvidenceActor = {
   id: string;
 };
 
-function normalizeAllowedMimeTypes(value: any) {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => String(item).trim().toLowerCase()).sort();
-}
-
-async function requireHardenedEvidenceBucket() {
-  const client = getSupabaseServiceClient();
-  const { data, error } = await client.storage.getBucket(EVIDENCE_BUCKET);
-  if (error || !data) {
-    throw buildServiceError(error?.message || "Evidence bucket not found", 500, "STORAGE_ERROR");
-  }
-
-  const configuredTypes = normalizeAllowedMimeTypes((data as any).allowed_mime_types);
-  const expectedTypes = [...ALLOWED_CONTENT_TYPES].sort();
-  const fileSizeLimit = Number((data as any).file_size_limit);
-  const hasExpectedTypes =
-    configuredTypes.length === expectedTypes.length &&
-    configuredTypes.every((value, index) => value === expectedTypes[index]);
-
-  if ((data as any).public === true || fileSizeLimit !== MAX_TOTAL_BYTES_PER_DISPUTE || !hasExpectedTypes) {
-    throw buildServiceError(
-      "Evidence bucket security policy is not configured",
-      503,
-      "EVIDENCE_BUCKET_POLICY_INVALID"
-    );
-  }
-}
+const EVIDENCE_STORAGE_POLICY = {
+  allowedContentTypes: [...ALLOWED_CONTENT_TYPES],
+  maximumSizeInBytes: MAX_TOTAL_BYTES_PER_DISPUTE
+};
 
 async function rejectEvidenceReservation(reservationId: string) {
   const client = getSupabaseServiceClient();
@@ -186,8 +171,9 @@ async function cleanupExpiredEvidenceUploads(evidencePackId: string) {
       continue;
     }
 
-    const { error: removeError } = await client.storage.from(bucket).remove([key]);
-    if (removeError) {
+    try {
+      await deleteEvidenceObject(bucket, key);
+    } catch {
       // CLEANING remains quota-accounted and is retried by the next init/confirm.
       continue;
     }
@@ -212,7 +198,8 @@ export async function initEvidenceUpload({
 }) {
   const pack = await ensureEvidencePack(disputeId);
   await cleanupExpiredEvidenceUploads(pack.evidence_pack_id);
-  await requireHardenedEvidenceBucket();
+  const bucket = getEvidenceWriteBucket();
+  await assertEvidenceStoragePolicy(bucket, EVIDENCE_STORAGE_POLICY);
 
   const key = `disputes/${disputeId}/${crypto.randomUUID()}`;
   const client = getSupabaseServiceClient();
@@ -222,7 +209,7 @@ export async function initEvidenceUpload({
   const { data: reservation, error: reservationError } = await client
     .rpc("reserve_evidence_upload_v1", {
       p_evidence_pack_id: pack.evidence_pack_id,
-      p_storage_bucket: EVIDENCE_BUCKET,
+      p_storage_bucket: bucket,
       p_storage_key: key,
       p_submitted_by: submittedBy,
       p_issued_to_type: actor.type,
@@ -234,21 +221,23 @@ export async function initEvidenceUpload({
     throwEvidenceRpcError(reservationError || new Error("Evidence reservation failed"));
   }
 
-  const { data, error } = await client.storage.from(EVIDENCE_BUCKET).createSignedUploadUrl(key, { upsert: false });
-  if (error) {
+  let signedUrl: string;
+  try {
+    signedUrl = await createEvidenceUploadUrl({
+      bucket,
+      key,
+      expiresInSeconds: SIGNED_UPLOAD_EXPIRES_SECONDS,
+      policy: EVIDENCE_STORAGE_POLICY
+    });
+  } catch (error: any) {
     await rejectEvidenceReservation(String((reservation as any).reservation_id));
-    throw buildServiceError(error.message || "Storage error", 500, "STORAGE_ERROR");
-  }
-  const signedUrl = (data as any)?.signedUrl;
-  if (!signedUrl) {
-    await rejectEvidenceReservation(String((reservation as any).reservation_id));
-    throw buildServiceError("Failed to create signed upload URL", 500, "STORAGE_ERROR");
+    throw buildServiceError(error?.message || "Storage error", error?.status || 500, error?.code || "STORAGE_ERROR");
   }
 
   return {
     pack,
     upload: {
-      bucket: EVIDENCE_BUCKET,
+      bucket,
       key,
       url: signedUrl,
       expires_in_seconds: SIGNED_UPLOAD_EXPIRES_SECONDS
@@ -260,30 +249,6 @@ function requireKeyInDispute(disputeId: string, key: string) {
   if (!key.startsWith(`disputes/${disputeId}/`)) {
     throw buildServiceError("Invalid evidence key", 400, "VALIDATION_ERROR");
   }
-}
-
-async function downloadObjectBytes(bucket: string, key: string) {
-  const client = getSupabaseServiceClient();
-  const { data, error } = await client.storage.from(bucket).download(key);
-  if (error) {
-    throw buildServiceError(error.message || "Storage error", 500, "STORAGE_ERROR");
-  }
-  if (!data) {
-    throw buildServiceError("Evidence file not found", 404, "EVIDENCE_NOT_FOUND");
-  }
-
-  // supabase-js returns a Blob.
-  const arrayBuffer = await (data as any).arrayBuffer();
-  return Buffer.from(arrayBuffer);
-}
-
-async function getObjectInfo(bucket: string, key: string) {
-  const client = getSupabaseServiceClient();
-  const { data, error } = await client.storage.from(bucket).info(key);
-  if (error || !data) {
-    throw buildServiceError(error?.message || "Evidence file not found", 404, "EVIDENCE_NOT_FOUND");
-  }
-  return data as any;
 }
 
 function sha256Hex(buffer: Buffer) {
@@ -309,7 +274,7 @@ export async function confirmEvidenceUpload({
   bytes: number;
   actor: EvidenceActor;
 }) {
-  if (bucket !== EVIDENCE_BUCKET) {
+  if (!isSupportedEvidenceBucket(bucket)) {
     throw buildServiceError("Invalid evidence bucket", 400, "VALIDATION_ERROR");
   }
   if (typeof key !== "string" || !key.trim()) {
@@ -353,7 +318,7 @@ export async function confirmEvidenceUpload({
   const reservationId = String((reservation as any).reservation_id);
   let finalizeStarted = false;
   try {
-    const objectInfo = await getObjectInfo(bucket, key);
+    const objectInfo = await getEvidenceObjectInfo(bucket, key);
     const actualBytes = Number(objectInfo.size);
     const reservedBytes = Number((reservation as any).reserved_bytes);
     if (!Number.isSafeInteger(actualBytes) || actualBytes <= 0) {
@@ -381,7 +346,7 @@ export async function confirmEvidenceUpload({
     }
 
     // The trusted metadata bound is checked before the body is materialized.
-    const fileBytes = await downloadObjectBytes(bucket, key);
+    const fileBytes = await downloadEvidenceObjectBytes(bucket, key);
     if (fileBytes.byteLength !== actualBytes) {
       throw buildServiceError("bytes mismatch", 400, "VALIDATION_ERROR", {
         expected: actualBytes,
@@ -411,8 +376,9 @@ export async function confirmEvidenceUpload({
     return { pack, item };
   } catch (error) {
     if (!finalizeStarted) {
-      const { error: removeError } = await client.storage.from(bucket).remove([key]);
-      if (removeError) {
+      try {
+        await deleteEvidenceObject(bucket, key);
+      } catch {
         throw buildServiceError(
           "Evidence cleanup failed; reservation remains quota-accounted",
           500,

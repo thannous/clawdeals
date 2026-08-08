@@ -3,7 +3,7 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
-import { getTransaction, getMaskedContactsForTransaction } from "../../../../server/services/transactions";
+import { getTransaction, getContactsForTransaction } from "../../../../server/services/transactions";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -85,7 +85,9 @@ export async function handler(req, res, ctx) {
     }
 
     if (tx.contact_reveal_state === "APPROVED") {
-      const contacts = await getMaskedContactsForTransaction(tx);
+      const contacts = await getContactsForTransaction(tx, {
+        revealToAgentId: ops ? null : agentId
+      });
       return jsonResponse(200, {
         data: mapTransactionRow(tx, contacts)
       });

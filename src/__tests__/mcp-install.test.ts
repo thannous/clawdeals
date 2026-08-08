@@ -16,6 +16,51 @@ function repoRootFromImportMetaUrl(url: string) {
   return path.resolve(here, "../..");
 }
 
+// Note: when Node's stdout is a pipe, `console.log()` can be dropped at process exit.
+// Redirecting to real file descriptors makes output deterministic for assertions.
+// Spawning node directly (no bash) keeps Windows paths intact.
+function runNodeScriptToFiles({
+  repoRoot,
+  scriptArgs,
+  ioDir,
+  env = {}
+}: {
+  repoRoot: string;
+  scriptArgs: string[];
+  ioDir: string;
+  env?: Record<string, string | undefined>;
+}) {
+  const installScript = path.join(repoRoot, "scripts", "mcp", "install.mjs");
+  const outPath = path.join(ioDir, "stdout.txt");
+  const errPath = path.join(ioDir, "stderr.txt");
+  const outFd = fs.openSync(outPath, "w");
+  const errFd = fs.openSync(errPath, "w");
+
+  try {
+    const res = spawnSync(process.execPath, [installScript, ...scriptArgs], {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        // Required by the installer.
+        CLAWDEALS_API_KEY: "test_api_key",
+        CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
+        ...env
+      },
+      stdio: ["ignore", outFd, errFd],
+      encoding: "utf8"
+    });
+
+    return {
+      code: res.status ?? -1,
+      stdout: existsTextFile(outPath),
+      stderr: existsTextFile(errPath)
+    };
+  } finally {
+    fs.closeSync(outFd);
+    fs.closeSync(errFd);
+  }
+}
+
 function runInstaller({
   repoRoot,
   filePath,
@@ -29,33 +74,7 @@ function runInstaller({
   extraArgs?: string[];
   env?: Record<string, string | undefined>;
 }) {
-  const installScript = path.join(repoRoot, "scripts", "mcp", "install.mjs");
-  const outPath = path.join(ioDir, "stdout.txt");
-  const errPath = path.join(ioDir, "stderr.txt");
-
-  // Note: when Node's stdout is a pipe, `console.log()` can be dropped at process exit.
-  // Redirecting to real files makes output deterministic for assertions.
-  const cmd =
-    `node ${shq(installScript)} --file ${shq(filePath)} ${extraArgs.map(shq).join(" ")}` +
-    ` > ${shq(outPath)} 2> ${shq(errPath)}`;
-
-  const res = spawnSync("bash", ["-lc", cmd], {
-    cwd: repoRoot,
-    env: {
-      ...process.env,
-      // Required by the installer.
-      CLAWDEALS_API_KEY: "test_api_key",
-      CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
-      ...env
-    },
-    encoding: "utf8"
-  });
-
-  return {
-    code: res.status ?? -1,
-    stdout: existsTextFile(outPath),
-    stderr: existsTextFile(errPath)
-  };
+  return runNodeScriptToFiles({ repoRoot, scriptArgs: ["--file", filePath, ...extraArgs], ioDir, env });
 }
 
 function runInstallerRaw({
@@ -69,30 +88,7 @@ function runInstallerRaw({
   args?: string[];
   env?: Record<string, string | undefined>;
 }) {
-  const installScript = path.join(repoRoot, "scripts", "mcp", "install.mjs");
-  const outPath = path.join(ioDir, "stdout.txt");
-  const errPath = path.join(ioDir, "stderr.txt");
-
-  const cmd =
-    `node ${shq(installScript)} ${args.map(shq).join(" ")}` +
-    ` > ${shq(outPath)} 2> ${shq(errPath)}`;
-
-  const res = spawnSync("bash", ["-lc", cmd], {
-    cwd: repoRoot,
-    env: {
-      ...process.env,
-      CLAWDEALS_API_KEY: "test_api_key",
-      CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
-      ...env
-    },
-    encoding: "utf8"
-  });
-
-  return {
-    code: res.status ?? -1,
-    stdout: existsTextFile(outPath),
-    stderr: existsTextFile(errPath)
-  };
+  return runNodeScriptToFiles({ repoRoot, scriptArgs: args, ioDir, env });
 }
 
 function hasScriptPty() {

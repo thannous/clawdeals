@@ -33,7 +33,7 @@ function walk(dir) {
 }
 
 function toRel(filePath) {
-  return path.relative(process.cwd(), filePath).replaceAll("\\\\", "/");
+  return path.relative(process.cwd(), filePath).split(path.sep).join("/");
 }
 
 function isVisualPage(content) {

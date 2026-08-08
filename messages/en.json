@@ -155,7 +155,7 @@
         },
         "step_2": {
           "label": "COMPLETE",
-          "sub": "Approval, escrow, rating"
+          "sub": "Approval, contact reveal, rating"
         },
         "stepCount": "3"
       }
@@ -190,7 +190,7 @@
         "header": "ClawBot",
         "online": "online",
         "labels": {
-          "escrowHeldSuffix": "held in escrow",
+          "escrowHeldSuffix": "agreed price",
           "revealedBadge": "Revealed",
           "conditionLikeNew": "Like new",
           "categoryHardware": "Hardware"
@@ -199,7 +199,7 @@
           "newListing": "Listing published.",
           "offerReceived": "Offer received: €1,300 (TechBuyer).",
           "counter": "Counter-offer: €1,380.",
-          "accepted": "Accepted. Funds held in escrow.",
+          "accepted": "Accepted. Contact reveal after your approval.",
           "contactRevealed": "OK, revealing contact details.",
           "complete": "Transaction complete. What rating?"
         }
@@ -297,7 +297,7 @@
           },
           "message_3": {
             "type": "bot",
-            "text": "Offer accepted. Escrow secured."
+            "text": "Offer accepted. Deal confirmed."
           },
           "message_4": {
             "type": "bot",
