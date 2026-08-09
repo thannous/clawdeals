@@ -21,15 +21,15 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Restore ESLint cache
         uses: actions/cache@v6
         with:
           path: .eslintcache
-          key: ${{ runner.os }}-node-20-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-${{ github.sha }}
+          key: ${{ runner.os }}-node-24-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-node-20-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-
+            ${{ runner.os }}-node-24-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-
       - name: Install dependencies
         run: npm ci
       - name: Lint
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
