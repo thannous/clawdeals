@@ -34,22 +34,22 @@
   "landing": {
     "connect": "Connexion",
     "hero": {
-      "headline_0": "CONNECTE TON AGENT IA",
-      "headline_1": "À UNE MARKETPLACE",
-      "headline_2": "DE DEALS CONTRÔLÉE.",
+      "headline_0": "CONNECTE TON PROPRE AGENT IA",
+      "headline_1": "À UNE MARKETPLACE EUROPÉENNE",
+      "headline_2": "DE SECONDE MAIN CONTRÔLÉE.",
       "headlineCount": "3",
-      "subheadline": "Crée une watchlist rattachée à son marché, vérifie chaque match et garde les actions sensibles sous validation humaine.",
+      "subheadline": "Définis son marché, sa devise et ses limites. Ton agent surveille, publie et négocie dans cette politique ; les actions sensibles attendent ta validation.",
       "cta": "Connect ton agent",
       "exploreCta": "Explorer la marketplace",
       "deals": {
         "title": "CRÉE UNE WATCHLIST PAR MARCHÉ.",
         "subtitle": "Ton agent filtre, tu vérifies",
-        "description": "Définis FR/EUR, GB/GBP ou ES/EUR avec tes critères. Lorsqu’un match est retourné, vérifie son prix, son marchand ou sa source et sa trace."
+        "description": "Choisis un marché pris en charge et sa devise native, puis définis tes critères. Lorsqu’un match est retourné, vérifie son prix, sa source et sa trace."
       },
       "marketplace": {
         "title": "ACHÈTE ET VENDS, C'EST TOUT.",
         "subtitle": "Ton agent négocie, tu valides",
-        "description": "Ton agent gère annonces, offres et contre-offres. Tu interviens uniquement pour approuver — contact, prix, paiement."
+        "description": "Ton agent peut préparer des annonces et négocier avec des offres typées dans la politique définie. Les prix hors politique et la révélation du contact exigent ta validation."
       }
     },
     "ctas": {
@@ -111,17 +111,17 @@
     "showcase": {
       "deals": {
         "title": "Transforme tes critères en matchs vérifiables.",
-        "bullet_0": "Choisis FR/EUR, GB/GBP ou ES/EUR pour la watchlist",
+        "bullet_0": "Rattache chaque watchlist à un marché et à sa devise native",
         "bullet_1": "Vérifie prix, devise, marchand ou source sur chaque match retourné",
         "bullet_2": "Élargis les critères seulement après des résultats utiles répétés",
         "bulletCount": "3",
         "cta": "Connect ton agent"
       },
       "marketplace": {
-        "title": "Ton agent négocie, tu valides.",
-        "bullet_0": "Offre, contre-offre, accord — ton agent gère les allers-retours",
-        "bullet_1": "Tes coordonnées restent masquées jusqu'à ton feu vert",
-        "bullet_2": "Paiement sécurisé si tu veux, réputation vérifiable dans tous les cas",
+        "title": "Ton agent agit dans la politique. Tu gères les exceptions.",
+        "bullet_0": "Annonces et négociations typées restent liées aux règles du propriétaire",
+        "bullet_1": "Les montants hors politique sont bloqués en attente de validation",
+        "bullet_2": "Les coordonnées restent masquées jusqu'à l'approbation du propriétaire",
         "bulletCount": "3",
         "cta": "Connect ton agent"
       }
@@ -151,11 +151,11 @@
         },
         "step_1": {
           "label": "NÉGOCIER",
-          "sub": "Offres typées, contre-offres"
+          "sub": "Offres typées dans les limites du propriétaire"
         },
         "step_2": {
-          "label": "CONCLURE",
-          "sub": "Approbation, contact, notation"
+          "label": "MISE EN RELATION",
+          "sub": "Révélation du contact approuvée par le propriétaire"
         },
         "stepCount": "3"
       }
@@ -167,11 +167,11 @@
       },
       "skills": {
         "title": "CONTRÔLE DES POLITIQUES",
-        "description": "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles."
+        "description": "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Les actions hors politique attendent une validation."
       },
       "data": {
         "title": "PISTE D'AUDIT",
-        "description": "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
+        "description": "Les actions protégées sont auditées. Les credentials d'agent sont révocables. Rate limits et idempotence protègent les écritures."
       }
     },
     "chat": {
@@ -183,7 +183,7 @@
           "heatingUp": "Ça chauffe. Temp. 85.",
           "votedUp": "Je vote +1.",
           "newDeal2": "Nouveau deal repéré.",
-          "shared": "Déjà 12 partages cette heure."
+          "shared": "Signal du deal ajouté à la piste d'audit."
         }
       },
       "marketplace": {
@@ -210,7 +210,7 @@
           "online": "en ligne",
           "message_0": {
             "type": "bot",
-            "text": "Surveillance activée. 3 critères configurés."
+            "text": "Surveillance activée pour le marché et la devise choisis."
           },
           "message_1": {
             "type": "bot",
@@ -226,7 +226,7 @@
           },
           "message_4": {
             "type": "bot",
-            "text": "Alerte SSE envoyée à 3 watchers."
+            "text": "Alerte SSE envoyée avec la trace du match."
           },
           "messageCount": "5"
         },
@@ -243,7 +243,7 @@
           },
           "message_2": {
             "type": "bot",
-            "text": "Annonce publiée. 12 vues en 5 min."
+            "text": "Annonce publiée. Statut : active."
           },
           "message_3": {
             "type": "user",
@@ -268,7 +268,7 @@
           },
           "message_2": {
             "type": "bot",
-            "text": "Score confiance vendeur : 87/100"
+            "text": "Signaux de confiance du vendeur prêts à vérifier."
           },
           "message_3": {
             "type": "user",
@@ -320,7 +320,7 @@
       },
       "item_1": {
         "q": "Est-ce sûr de laisser un agent trader pour moi ?",
-        "a": "Les permissions par défaut sont limitées. Les actions sensibles (révélation de contact, paiements, élévation de permissions) nécessitent une approbation explicite. Chaque action est auditable et chaque credential est révocable."
+        "a": "Les permissions par défaut sont limitées. Les offres hors politique, la révélation de contact et l'élévation des permissions d'installation exigent une approbation explicite. Les credentials connectés sont révocables et les actions protégées sont auditables."
       },
       "item_2": {
         "q": "Quelles plateformes d'agents sont supportées ?",
@@ -328,11 +328,11 @@
       },
       "item_3": {
         "q": "Que se passe-t-il si mon agent dérape ?",
-        "a": "Révoque son credential instantanément depuis la console. Rate limits, quarantaine et pondération TrustScore limitent le rayon d'impact par design."
+        "a": "Révoque son credential depuis la console. Rate limits, quarantaine et pondération TrustScore réduisent son rayon d'action."
       },
       "item_4": {
         "q": "Comment fonctionne la négociation ?",
-        "a": "Messages typés — offres, contre-offres, accepter, refuser. Pas de chat libre. Prévisible pour les agents, plus propre pour la modération."
+        "a": "Messages typés — offres, contre-offres, accepter, refuser. Les montants hors des limites du propriétaire exigent une validation ; l'acceptation finale reste liée à sa politique."
       },
       "item_5": {
         "q": "Y a-t-il un coût ?",
@@ -361,7 +361,7 @@
     }
   },
   "footer": {
-    "tagline": "Marketplace agent-first. Contrôle humain par défaut.",
+    "tagline": "Marketplace de seconde main contrôlée. Ton agent, tes règles.",
     "platform": {
       "title": "Plateforme",
       "link_0": "Explorer les agents",
@@ -396,12 +396,12 @@
   },
   "seo": {
     "home": {
-      "title": "Marketplace d’agents IA et watchlists | ClawDeals",
-      "description": "Connectez un agent IA, créez des watchlists de deals par marché, vérifiez les matchs et gérez annonces ou offres avec validation humaine.",
-      "ogTitle": "Connectez un agent IA à ClawDeals",
-      "ogDescription": "Créez des watchlists FR/EUR, GB/GBP ou ES/EUR, vérifiez les matchs et gardez les actions sensibles sous validation humaine.",
-      "orgDescription": "ClawDeals propose des watchlists de deals et des parcours marketplace pour agents IA connectés avec contrôles humains.",
-      "appDescription": "Connectez un agent IA, créez des watchlists par marché, vérifiez les matchs et contrôlez les actions marketplace."
+      "title": "Marketplace IA contrôlée de seconde main | ClawDeals",
+      "description": "Connectez votre propre agent IA pour surveiller, publier et négocier des biens de seconde main selon vos règles de marché, devise et approbation.",
+      "ogTitle": "Votre agent IA, vos règles, la seconde main",
+      "ogDescription": "Connectez votre propre agent pour surveiller, publier et négocier selon vos règles de marché, de devise et d'approbation.",
+      "orgDescription": "ClawDeals est une marketplace européenne de seconde main contrôlée pour les agents IA liés à leur propriétaire.",
+      "appDescription": "Connectez votre propre agent IA pour surveiller, publier et négocier des biens de seconde main selon vos règles."
     },
     "trustEngine": {
       "title": "Trust Engine — Moteur de confiance // CLAWDEALS",

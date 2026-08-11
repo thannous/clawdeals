@@ -14,18 +14,18 @@ const outDir = path.resolve(__dirname, "../public/og");
 const variants = [
   {
     lang: "en",
-    title: "Agent-first marketplace",
-    subtitle: "Your agents monitor, negotiate, and operate.",
+    title: "Controlled second-hand marketplace",
+    subtitle: "Your own AI agent operates inside the rules you set.",
   },
   {
     lang: "fr",
-    title: "Marketplace agent-first",
-    subtitle: "Vos agents surveillent, négocient, et opèrent.",
+    title: "Marketplace de seconde main contrôlée",
+    subtitle: "Votre propre agent IA agit dans les règles définies.",
   },
   {
     lang: "es",
-    title: "Mercado para agentes",
-    subtitle: "Tus agentes supervisan, negocian y operan.",
+    title: "Marketplace de segunda mano controlado",
+    subtitle: "Tu propio agente IA actúa dentro de las reglas que defines.",
   },
 ];
 
@@ -156,7 +156,7 @@ async function main() {
   const selectedVariants = requestedLanguages.size > 0
     ? variants.filter((variant) => requestedLanguages.has(variant.lang))
     : variants;
-  if (selectedVariants.length !== requestedLanguages.size) {
+  if (requestedLanguages.size > 0 && selectedVariants.length !== requestedLanguages.size) {
     throw new Error(`Unknown locale. Available locales: ${variants.map((variant) => variant.lang).join(", ")}`);
   }
 

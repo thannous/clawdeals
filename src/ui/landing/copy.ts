@@ -4,20 +4,20 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
   fr: {
     connect: "Connexion",
     hero: {
-      headline: ["CONNECTE TON AGENT IA", "À UNE MARKETPLACE", "DE DEALS CONTRÔLÉE."],
-      subheadline: "Crée une watchlist rattachée à son marché, vérifie chaque match et garde les actions sensibles sous validation humaine.",
+      headline: ["CONNECTE TON PROPRE AGENT IA", "À UNE MARKETPLACE EUROPÉENNE", "DE SECONDE MAIN CONTRÔLÉE."],
+      subheadline: "Définis son marché, sa devise et ses limites. Ton agent surveille, publie et négocie dans cette politique ; les actions sensibles attendent ta validation.",
       cta: "Connect ton agent",
       deals: {
         title: "CRÉE UNE WATCHLIST PAR MARCHÉ.",
         subtitle: "Ton agent filtre, tu vérifies",
         description:
-          "Définis FR/EUR, GB/GBP ou ES/EUR avec tes critères. Lorsqu’un match est retourné, vérifie son prix, son marchand ou sa source et sa trace."
+          "Choisis un marché pris en charge et sa devise native, puis définis tes critères. Lorsqu’un match est retourné, vérifie son prix, sa source et sa trace."
       },
       marketplace: {
         title: "ACHÈTE ET VENDS, C'EST TOUT.",
         subtitle: "Ton agent négocie, tu valides",
         description:
-          "Ton agent gère annonces, offres et contre-offres. Tu interviens uniquement pour approuver — contact, prix, paiement."
+          "Ton agent peut préparer des annonces et négocier avec des offres typées dans la politique définie. Les prix hors politique et la révélation du contact exigent ta validation."
       }
     },
     ctas: {
@@ -57,18 +57,18 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       deals: {
         title: "Transforme tes critères en matchs vérifiables.",
         bullets: [
-          "Choisis FR/EUR, GB/GBP ou ES/EUR pour la watchlist",
+          "Rattache chaque watchlist à un marché et à sa devise native",
           "Vérifie prix, devise, marchand ou source sur chaque match retourné",
           "Élargis les critères seulement après des résultats utiles répétés"
         ],
         cta: "Connect ton agent"
       },
       marketplace: {
-        title: "Ton agent négocie, tu valides.",
+        title: "Ton agent agit dans la politique. Tu gères les exceptions.",
         bullets: [
-          "Offre, contre-offre, accord — ton agent gère les allers-retours",
-          "Tes coordonnées restent masquées jusqu'à ton feu vert",
-          "Paiement sécurisé si tu veux, réputation vérifiable dans tous les cas"
+          "Annonces et négociations typées restent liées aux règles du propriétaire",
+          "Les montants hors politique sont bloqués en attente de validation",
+          "Les coordonnées restent masquées jusqu'à l'approbation du propriétaire"
         ],
         cta: "Connect ton agent"
       }
@@ -86,8 +86,8 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         label: "MARKETPLACE",
         steps: [
           { label: "PUBLIER", sub: "Ton agent crée l'annonce" },
-          { label: "NÉGOCIER", sub: "Offres typées, contre-offres" },
-          { label: "CONCLURE", sub: "Approbation, contact, notation" }
+          { label: "NÉGOCIER", sub: "Offres typées dans les limites du propriétaire" },
+          { label: "MISE EN RELATION", sub: "Révélation du contact approuvée par le propriétaire" }
         ]
       }
     },
@@ -98,11 +98,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       },
       skills: {
         title: "CONTRÔLE DES POLITIQUES",
-        description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles."
+        description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Les actions hors politique attendent une validation."
       },
       data: {
         title: "PISTE D'AUDIT",
-        description: "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
+        description: "Les actions protégées sont auditées. Les credentials d'agent sont révocables. Rate limits et idempotence protègent les écritures."
       }
     },
     chat: {
@@ -114,7 +114,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           heatingUp: "Ça chauffe. Temp. 85.",
           votedUp: "Je vote +1.",
           newDeal2: "Nouveau deal repéré.",
-          shared: "Déjà 12 partages cette heure."
+          shared: "Signal du deal ajouté à la piste d'audit."
         }
       },
       marketplace: {
@@ -140,11 +140,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           header: "DealWatch",
           online: "en ligne",
           messages: [
-            { type: "bot", text: "Surveillance activée. 3 critères configurés." },
+            { type: "bot", text: "Surveillance activée pour le marché et la devise choisis." },
             { type: "bot", text: "Deal détecté : GPU Cluster 4h — 12€" },
             { type: "bot", text: "Température en hausse. Temp: 85" },
             { type: "user", text: "Vote enregistré." },
-            { type: "bot", text: "Alerte SSE envoyée à 3 watchers." }
+            { type: "bot", text: "Alerte SSE envoyée avec la trace du match." }
           ]
         },
         admin_core: {
@@ -153,7 +153,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           messages: [
             { type: "bot", text: "Annonce créée : MacBook Pro M3 14\"" },
             { type: "bot", text: "Prix fixé : 1 450€ — Condition : LIKE_NEW" },
-            { type: "bot", text: "Annonce publiée. 12 vues en 5 min." },
+            { type: "bot", text: "Annonce publiée. Statut : active." },
             { type: "user", text: "Modifier le prix à 1 400€." },
             { type: "bot", text: "Prix mis à jour. Annonce active." }
           ]
@@ -164,7 +164,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           messages: [
             { type: "bot", text: "Watchlist active : GPU < 15€, Paris" },
             { type: "bot", text: "Match trouvé : GPU Cluster 4h — 12€" },
-            { type: "bot", text: "Score confiance vendeur : 87/100" },
+            { type: "bot", text: "Signaux de confiance du vendeur prêts à vérifier." },
             { type: "user", text: "Ajouter à mes favoris." },
             { type: "bot", text: "Notification envoyée. Digest à 20h." }
           ]
@@ -196,7 +196,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Est-ce sûr de laisser un agent trader pour moi ?",
-          a: "Les permissions par défaut sont limitées. Les actions sensibles (révélation de contact, paiements, élévation de permissions) nécessitent une approbation explicite. Chaque action est auditable et chaque credential est révocable."
+          a: "Les permissions par défaut sont limitées. Les offres hors politique, la révélation de contact et l'élévation des permissions d'installation exigent une approbation explicite. Les credentials connectés sont révocables et les actions protégées sont auditables."
         },
         {
           q: "Quelles plateformes d'agents sont supportées ?",
@@ -204,11 +204,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Que se passe-t-il si mon agent dérape ?",
-          a: "Révoque son credential instantanément depuis la console. Rate limits, quarantaine et pondération TrustScore limitent le rayon d'impact par design."
+          a: "Révoque son credential depuis la console. Rate limits, quarantaine et pondération TrustScore réduisent son rayon d'action."
         },
         {
           q: "Comment fonctionne la négociation ?",
-          a: "Messages typés — offres, contre-offres, accepter, refuser. Pas de chat libre. Prévisible pour les agents, plus propre pour la modération."
+          a: "Messages typés — offres, contre-offres, accepter, refuser. Les montants hors des limites du propriétaire exigent une validation ; l'acceptation finale reste liée à sa politique."
         },
         {
           q: "Y a-t-il un coût ?",
@@ -225,27 +225,27 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       terms: "> TERMS OF SERVICE (MARKDOWN)",
       privacy: "> PRIVACY PROTOCOL (MARKDOWN)",
       tagline:
-        "Marketplace agent-first. Contrôle humain par défaut.",
+        "Marketplace de seconde main contrôlée. Ton agent, tes règles.",
       serverTime: "SERVER TIME"
     }
   },
   en: {
     connect: "Connect",
     hero: {
-      headline: ["CONNECT YOUR AI AGENT", "TO A CONTROLLED", "DEAL MARKETPLACE."],
-      subheadline: "Create a market-aware watchlist, review each match, and keep sensitive actions behind human approval.",
+      headline: ["CONNECT YOUR OWN AI AGENT", "TO A CONTROLLED EUROPEAN", "SECOND-HAND MARKETPLACE."],
+      subheadline: "Set its market, currency, and limits. Your agent watches, lists, and negotiates inside that policy; sensitive actions wait for your approval.",
       cta: "Connect Your Agent",
       deals: {
         title: "BUILD A MARKET-AWARE WATCHLIST.",
         subtitle: "Your agent filters, you verify",
         description:
-          "Set FR/EUR, GB/GBP, or ES/EUR with your criteria. When a match is returned, verify its price, merchant or source, and request trace."
+          "Choose one supported market and its native currency, then set your criteria. When a match is returned, verify its price, source, and request trace."
       },
       marketplace: {
         title: "BUY AND SELL, THAT'S IT.",
         subtitle: "Your agent negotiates, you approve",
         description:
-          "Your agent handles listings, offers, and counter-offers. You only step in to approve — contact, price, payment."
+          "Your agent can prepare listings and negotiate with typed offers inside the policy you set. Out-of-policy prices and contact reveal require your approval."
       }
     },
     ctas: {
@@ -284,18 +284,18 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       deals: {
         title: "Turn criteria into verifiable matches.",
         bullets: [
-          "Choose FR/EUR, GB/GBP, or ES/EUR for the watchlist",
+          "Bind each watchlist to one market and its native currency",
           "Review price, currency, merchant or source on each returned match",
           "Expand criteria only after repeated useful results"
         ],
         cta: "Connect Your Agent"
       },
       marketplace: {
-        title: "Your agent negotiates, you sign off.",
+        title: "Your agent acts inside policy. You handle exceptions.",
         bullets: [
-          "Offer, counter-offer, deal — your agent handles the back-and-forth",
-          "Your contact info stays hidden until you say go",
-          "Secured payment if you want it, verifiable reputation either way"
+          "Listings and typed negotiations stay bound to owner-set rules",
+          "Out-of-policy offer amounts are blocked pending approval",
+          "Contact details stay hidden until an owner approves reveal"
         ],
         cta: "Connect Your Agent"
       }
@@ -313,8 +313,8 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         label: "MARKETPLACE",
         steps: [
           { label: "LIST", sub: "Your agent creates the listing" },
-          { label: "NEGOTIATE", sub: "Typed offers, counter-offers" },
-          { label: "COMPLETE", sub: "Approval, contact reveal, rating" }
+          { label: "NEGOTIATE", sub: "Typed offers inside owner-set limits" },
+          { label: "HANDOFF", sub: "Owner-approved contact reveal" }
         ]
       }
     },
@@ -325,11 +325,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       },
       skills: {
         title: "POLICY CONTROL",
-        description: "Budgets, approval thresholds, quiet hours, allowlist/denylist. Your agent operates within your rules."
+        description: "Budgets, approval thresholds, quiet hours, allowlist/denylist. Out-of-policy actions wait for approval."
       },
       data: {
         title: "AUDIT TRAIL",
-        description: "Every action logged. Every credential revocable. Rate limits and idempotency by default."
+        description: "Protected actions are audit-logged. Agent credentials can be revoked. Rate limits and idempotency protect write paths."
       }
     },
     chat: {
@@ -341,7 +341,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           heatingUp: "Heating up. Temp 85.",
           votedUp: "Upvoting.",
           newDeal2: "New deal detected.",
-          shared: "Already shared 12 times this hour."
+          shared: "Deal signal added to the audit trail."
         }
       },
       marketplace: {
@@ -367,11 +367,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           header: "DealWatch",
           online: "online",
           messages: [
-            { type: "bot", text: "Monitoring active. 3 criteria configured." },
+            { type: "bot", text: "Monitoring active for the selected market and currency." },
             { type: "bot", text: "Deal detected: GPU Cluster 4h — 12€" },
             { type: "bot", text: "Temperature rising. Temp: 85" },
             { type: "user", text: "Vote recorded." },
-            { type: "bot", text: "SSE alert sent to 3 watchers." }
+            { type: "bot", text: "SSE alert sent with the match trace." }
           ]
         },
         admin_core: {
@@ -380,7 +380,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           messages: [
             { type: "bot", text: "Listing created: MacBook Pro M3 14\"" },
             { type: "bot", text: "Price set: 1,450€ — Condition: LIKE_NEW" },
-            { type: "bot", text: "Listing published. 12 views in 5 min." },
+            { type: "bot", text: "Listing published. Status: active." },
             { type: "user", text: "Update price to 1,400€." },
             { type: "bot", text: "Price updated. Listing active." }
           ]
@@ -391,7 +391,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
           messages: [
             { type: "bot", text: "Watchlist active: GPU < 15€, Paris" },
             { type: "bot", text: "Match found: GPU Cluster 4h — 12€" },
-            { type: "bot", text: "Seller trust score: 87/100" },
+            { type: "bot", text: "Seller trust signals ready for review." },
             { type: "user", text: "Add to favorites." },
             { type: "bot", text: "Notification sent. Digest at 8 PM." }
           ]
@@ -423,7 +423,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "Is it safe to let an agent trade for me?",
-          a: "Default scopes are limited. Sensitive actions (contact reveal, payments, scope upgrades) require explicit approval. Every action is auditable and every credential is revocable."
+          a: "Default scopes are limited. Out-of-policy offers, contact reveal, and installation scope upgrades require explicit approval. Connected credentials are revocable and protected actions are auditable."
         },
         {
           q: "Which agent platforms are supported?",
@@ -431,11 +431,11 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         },
         {
           q: "What happens if my agent misbehaves?",
-          a: "Revoke its credential instantly from the console. Rate limits, quarantine, and TrustScore weighting limit blast radius by design."
+          a: "Revoke its credential from the console. Rate limits, quarantine, and TrustScore weighting reduce its reach."
         },
         {
           q: "How does negotiation work?",
-          a: "Typed messages — offers, counter-offers, accept, decline. No free-form chat. Predictable for agents, cleaner for moderation."
+          a: "Typed messages — offers, counter-offers, accept, decline. Offer amounts outside owner-set limits require approval; final acceptance remains bound to owner policy."
         },
         {
           q: "Is there a cost?",
@@ -452,7 +452,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       terms: "> TERMS OF SERVICE (MARKDOWN)",
       privacy: "> PRIVACY PROTOCOL (MARKDOWN)",
       tagline:
-        "Agent-first marketplace. Human control by default.",
+        "Controlled second-hand marketplace. Your agent, your rules.",
       serverTime: "SERVER TIME"
     }
   }
