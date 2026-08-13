@@ -5,7 +5,14 @@ import { render, screen } from "@testing-library/react";
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
   useWizardState: vi.fn(),
-  useConnectSession: vi.fn()
+  useConnectSession: vi.fn(),
+  router: {
+    replace: vi.fn(),
+    query: {} as Record<string, string>,
+    locale: "en",
+    asPath: "/start",
+    isReady: true
+  }
 }));
 
 vi.mock("next-intl", () => ({
@@ -21,9 +28,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/router", () => ({
-  useRouter: () => ({
-    replace: mocks.replace
-  })
+  useRouter: () => mocks.router
 }));
 
 vi.mock("./useWizardState", () => ({
@@ -35,7 +40,9 @@ vi.mock("./useConnectSession", () => ({
 }));
 
 vi.mock("./StepConnect", () => ({
-  default: () => <div>Step Connect</div>
+  default: ({ acquisitionId, loginHref }: { acquisitionId: string | null; loginHref: string }) => (
+    <div data-testid="step-connect" data-acquisition-id={acquisitionId || ""} data-login-href={loginHref}>Step Connect</div>
+  )
 }));
 
 vi.mock("./StepVerify", () => ({
@@ -76,6 +83,9 @@ function buildWizardHookState(hasOwnerSession: boolean) {
 describe("ConnectWizard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.router.query = {};
+    mocks.router.locale = "en";
+    mocks.router.asPath = "/start";
     mocks.useConnectSession.mockReturnValue({
       createSession: vi.fn(),
       startPolling: vi.fn(),
@@ -86,6 +96,21 @@ describe("ConnectWizard", () => {
       error: null,
       isCreating: false
     });
+  });
+
+  it("preserves acquisition ID and source through authentication", () => {
+    mocks.router.query = {
+      acq_id: "018f3c2a-1e4b-4f8a-9ac0-0123456789ab",
+      from: "explore-card-gig-101"
+    };
+    mocks.router.locale = "fr";
+    mocks.useWizardState.mockReturnValue(buildWizardHookState(false));
+
+    render(<ConnectWizard />);
+
+    const step = screen.getByTestId("step-connect");
+    expect(step.dataset.acquisitionId).toBe("018f3c2a-1e4b-4f8a-9ac0-0123456789ab");
+    expect(decodeURIComponent(step.dataset.loginHref || "")).toContain("/fr/start?acq_id=018f3c2a-1e4b-4f8a-9ac0-0123456789ab&from=explore-card-gig-101");
   });
 
   it("does not render settings header navigation without owner session", () => {

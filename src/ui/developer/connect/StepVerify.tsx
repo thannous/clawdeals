@@ -15,6 +15,7 @@ type Props = {
   onApiKeySet: (key: string, agentId?: string) => void;
   onExchangeForApiKey: (session: ConnectSessionData) => Promise<ExchangeResult>;
   onBack: () => void;
+  acquisitionId: string | null;
 };
 
 type StepVerifyState = {
@@ -102,7 +103,8 @@ export default function StepVerify({
   onVerified,
   onApiKeySet,
   onExchangeForApiKey,
-  onBack
+  onBack,
+  acquisitionId
 }: Props) {
   const t = useTranslations("connect");
   const tRef = useRef(t);
@@ -129,7 +131,7 @@ export default function StepVerify({
     let cancelled = false;
 
     apiRequest<{ data: AgentMeResponse }>({
-      path: "/v1/agents/me",
+      path: `/v1/agents/me${acquisitionId ? `?acquisition_id=${encodeURIComponent(acquisitionId)}` : ""}`,
       method: "GET",
       apiKey
     })
@@ -152,7 +154,7 @@ export default function StepVerify({
       cancelled = true;
       verifyStartedRef.current = false;
     };
-  }, [method, apiKey, onVerified]);
+  }, [method, apiKey, acquisitionId, onVerified]);
 
   // Auto-exchange when claim is successful
   useEffect(() => {
@@ -214,7 +216,7 @@ export default function StepVerify({
 
     try {
       const res = await apiRequest<{ data: AgentMeResponse }>({
-        path: "/v1/agents/me",
+        path: `/v1/agents/me${acquisitionId ? `?acquisition_id=${encodeURIComponent(acquisitionId)}` : ""}`,
         method: "GET",
         apiKey: key
       });
@@ -229,7 +231,7 @@ export default function StepVerify({
     } catch (err: any) {
       dispatch({ type: "verifyFailure", error: err?.message || t("step.verify.mcp.failed") });
     }
-  }, [state.mcpPastedKey, apiKey, t, onApiKeySet, onVerified]);
+  }, [state.mcpPastedKey, apiKey, acquisitionId, t, onApiKeySet, onVerified]);
 
   const handleCopyVerifyPrompt = useCallback(async () => {
     try {

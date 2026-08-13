@@ -6,6 +6,7 @@ export const ACQUISITION_EVENT_NAMES = [
   "landing_view",
   "organic_entry",
   "connect_cta_clicked",
+  "activation_started",
   "agent_connected",
   "watchlist_created",
   "first_match",
@@ -43,6 +44,24 @@ export const ACQUISITION_CTA_LOCATIONS = [
 
 export type AcquisitionCtaLocation = (typeof ACQUISITION_CTA_LOCATIONS)[number];
 
+export const ACQUISITION_CHANNELS = [
+  "direct",
+  "organic_search",
+  "paid_search",
+  "organic_social",
+  "paid_social",
+  "email",
+  "affiliate",
+  "referral",
+  "internal",
+  "other"
+] as const;
+
+export type AcquisitionChannel = (typeof ACQUISITION_CHANNELS)[number];
+
+export const ACQUISITION_INTERACTION_TYPES = ["primary_click", "auxclick"] as const;
+export type AcquisitionInteractionType = (typeof ACQUISITION_INTERACTION_TYPES)[number];
+
 const SEARCH_HOST_PATTERNS = [
   /(^|\.)google\./,
   /(^|\.)bing\.com$/,
@@ -59,10 +78,30 @@ const MARKETING_HOSTS = new Set(["clawdeals.com", "www.clawdeals.com"]);
 export type AcquisitionAttribution = {
   source: string;
   medium: string;
+  channel: AcquisitionChannel;
   campaign: string | null;
   referrerHost: string | null;
   isOrganic: boolean;
 };
+
+export function resolveAcquisitionChannel({
+  source,
+  medium
+}: {
+  source: string;
+  medium: string;
+}): AcquisitionChannel {
+  if (source === "direct" || medium === "none") return "direct";
+  if (source === "internal" || medium === "navigation") return "internal";
+  if (medium === "organic") return "organic_search";
+  if (["cpc", "ppc", "paid_search", "paidsearch"].includes(medium)) return "paid_search";
+  if (["paid_social", "paidsocial"].includes(medium)) return "paid_social";
+  if (["social", "organic_social"].includes(medium)) return "organic_social";
+  if (medium === "email") return "email";
+  if (medium === "affiliate") return "affiliate";
+  if (medium === "referral") return "referral";
+  return "other";
+}
 
 export function localeToMarketCode(locale: unknown): "FR" | "GB" | "ES" {
   const resolved = resolveSupportedLocale(locale);
@@ -120,6 +159,7 @@ export function resolveAcquisitionAttribution(
     return {
       source,
       medium,
+      channel: resolveAcquisitionChannel({ source, medium }),
       campaign,
       referrerHost,
       isOrganic: medium === "organic"
@@ -130,6 +170,7 @@ export function resolveAcquisitionAttribution(
     return {
       source: "direct",
       medium: "none",
+      channel: "direct",
       campaign: null,
       referrerHost: null,
       isOrganic: false
@@ -141,6 +182,7 @@ export function resolveAcquisitionAttribution(
     return {
       source: referrerHost,
       medium: "organic",
+      channel: "organic_search",
       campaign: null,
       referrerHost,
       isOrganic: true
@@ -152,6 +194,7 @@ export function resolveAcquisitionAttribution(
     return {
       source: "internal",
       medium: "navigation",
+      channel: "internal",
       campaign: null,
       referrerHost,
       isOrganic: false
@@ -161,6 +204,7 @@ export function resolveAcquisitionAttribution(
   return {
     source: referrerHost,
     medium: "referral",
+    channel: "referral",
     campaign: null,
     referrerHost,
     isOrganic: false

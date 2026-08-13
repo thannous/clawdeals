@@ -3,6 +3,8 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { getAgentById, updateAgentName } from "../../../../server/services/agents";
+import { safeRecordAgentConnected } from "../../../../server/services/acquisition";
+import { normalizeAcquisitionId } from "../../../../shared/acquisition";
 
 const MAX_NAME_LENGTH = 80;
 
@@ -17,6 +19,12 @@ export async function handler(req: any, _res: any, ctx: any) {
 
   if (!ctx?.agentId) {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
+  }
+
+  const rawAcquisitionId = req.query?.acquisition_id;
+  const acquisitionId = normalizeAcquisitionId(rawAcquisitionId);
+  if (rawAcquisitionId !== undefined && rawAcquisitionId !== null && !acquisitionId) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "acquisition_id must be a UUID"));
   }
 
   if (req.method === "PATCH") {
@@ -59,6 +67,9 @@ export async function handler(req: any, _res: any, ctx: any) {
     ctx.auditEvent = "agent.me_viewed";
     ctx.auditEntityType = "agent";
     ctx.auditEntityId = ctx.agentId;
+  }
+  if (acquisitionId) {
+    await safeRecordAgentConnected({ acquisitionId, agentId: ctx.agentId });
   }
 
   return jsonResponse(200, {

@@ -7,6 +7,7 @@ import {
   normalizeAcquisitionId,
   normalizeLandingPath,
   resolveAcquisitionAttribution,
+  resolveAcquisitionChannel,
   sanitizeAttributionValue
 } from "./acquisition";
 
@@ -20,11 +21,20 @@ describe("acquisition attribution", () => {
     expect(result).toEqual({
       source: "google.es",
       medium: "organic",
+      channel: "organic_search",
       campaign: null,
       referrerHost: "google.es",
       isOrganic: true
     });
     expect(JSON.stringify(result)).not.toContain("private");
+  });
+
+  it("maps normalized source and medium values to stable reporting channels", () => {
+    expect(resolveAcquisitionChannel({ source: "google", medium: "cpc" })).toBe("paid_search");
+    expect(resolveAcquisitionChannel({ source: "newsletter", medium: "email" })).toBe("email");
+    expect(resolveAcquisitionChannel({ source: "partner", medium: "referral" })).toBe("referral");
+    expect(resolveAcquisitionChannel({ source: "direct", medium: "none" })).toBe("direct");
+    expect(resolveAcquisitionChannel({ source: "launch", medium: "campaign" })).toBe("other");
   });
 
   it("allows only bounded attribution labels and strips query strings from paths", () => {

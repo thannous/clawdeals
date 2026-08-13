@@ -4,6 +4,7 @@ import {
   parsePublicAcquisitionEvent,
   recordAgentConnected,
   recordAgentMilestone,
+  recordActivationStarted,
   recordFirstMatches,
   recordPublicAcquisitionEvent
 } from "./acquisition";
@@ -23,6 +24,7 @@ describe("acquisition funnel service", () => {
       campaign: null,
       referrer_host: "google.es",
       cta_location: "hero",
+      interaction_type: "auxclick",
       email: "ignored@example.com"
     })).toEqual({
       acquisition_id: acquisitionId,
@@ -32,9 +34,11 @@ describe("acquisition funnel service", () => {
       market_code: "ES",
       source: "google.es",
       medium: "organic",
+      channel: "organic_search",
       campaign: null,
       referrer_host: "google.es",
-      cta_location: null
+      cta_location: null,
+      interaction_type: null
     });
 
     expect(() => parsePublicAcquisitionEvent({
@@ -61,10 +65,12 @@ describe("acquisition funnel service", () => {
       locale: "fr",
       source: "google.fr",
       medium: "organic",
-      cta_location: ctaLocation
+      cta_location: ctaLocation,
+      interaction_type: "auxclick"
     })).toEqual(expect.objectContaining({
       event_name: "connect_cta_clicked",
-      cta_location: ctaLocation
+      cta_location: ctaLocation,
+      interaction_type: "auxclick"
     }));
   });
 
@@ -119,20 +125,66 @@ describe("acquisition funnel service", () => {
     );
   });
 
+  it("records session creation and direct API-key activation milestones", async () => {
+    const upsert = vi.fn().mockResolvedValue({ error: null });
+    const sessionLookup: any = {
+      select: vi.fn(() => sessionLookup),
+      eq: vi.fn(() => sessionLookup),
+      maybeSingle: vi.fn().mockResolvedValue({ data: { event_id: "event-1" }, error: null })
+    };
+    let lookupPending = false;
+    const client = {
+      from: vi.fn(() => {
+        if (lookupPending) {
+          lookupPending = false;
+          return sessionLookup;
+        }
+        return { upsert };
+      })
+    };
+
+    await expect(recordActivationStarted({
+      acquisitionId,
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      occurredAt: new Date("2026-07-27T10:00:00.000Z"),
+      client
+    })).resolves.toEqual({ recorded: true });
+    lookupPending = true;
+    await expect(recordAgentConnected({
+      acquisitionId,
+      agentId: "22222222-2222-4222-8222-222222222222",
+      occurredAt: new Date("2026-07-27T10:01:00.000Z"),
+      client
+    })).resolves.toEqual({ recorded: true });
+
+    expect(upsert).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      event_name: "activation_started",
+      connect_session_id: "11111111-1111-4111-8111-111111111111"
+    }), expect.any(Object));
+    expect(upsert).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      event_name: "agent_connected",
+      connect_session_id: null
+    }), expect.any(Object));
+  });
+
   it("records only the first acquired watchlist and match per agent", async () => {
     const upsert = vi.fn().mockResolvedValue({ error: null });
     const latestQuery: any = {
       select: vi.fn(() => latestQuery),
       eq: vi.fn(() => latestQuery),
-      not: vi.fn(() => latestQuery),
       order: vi.fn(() => latestQuery),
       limit: vi.fn(() => latestQuery),
       maybeSingle: vi.fn().mockResolvedValue({ data: { acquisition_id: acquisitionId }, error: null })
     };
+    let milestoneReadPending = true;
     const milestoneClient = {
-      from: vi.fn((table: string) => (
-        table === "connect_sessions" ? latestQuery : { upsert }
-      ))
+      from: vi.fn(() => {
+        if (milestoneReadPending) {
+          milestoneReadPending = false;
+          return latestQuery;
+        }
+        return { upsert };
+      })
     };
 
     await recordAgentMilestone({
@@ -146,19 +198,24 @@ describe("acquisition funnel service", () => {
     const sessionsQuery: any = {
       select: vi.fn(() => sessionsQuery),
       in: vi.fn(() => sessionsQuery),
-      not: vi.fn(() => sessionsQuery),
+      eq: vi.fn(() => sessionsQuery),
       order: vi.fn().mockResolvedValue({
         data: [
-          { acquisition_id: acquisitionId, agent_id: "agent-1", delivered_at: "2026-07-27T10:00:00Z" }
+          { acquisition_id: acquisitionId, agent_id: "agent-1", occurred_at: "2026-07-27T10:00:00Z" }
         ],
         error: null
       })
     };
     const batchUpsert = vi.fn().mockResolvedValue({ error: null });
+    let batchReadPending = true;
     const batchClient = {
-      from: vi.fn((table: string) => (
-        table === "connect_sessions" ? sessionsQuery : { upsert: batchUpsert }
-      ))
+      from: vi.fn(() => {
+        if (batchReadPending) {
+          batchReadPending = false;
+          return sessionsQuery;
+        }
+        return { upsert: batchUpsert };
+      })
     };
 
     await expect(recordFirstMatches({

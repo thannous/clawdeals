@@ -65,7 +65,8 @@ describe("AcquisitionTelemetry", () => {
     expect(latestPayload()).toMatchObject({
       event_name: "connect_cta_clicked",
       landing_path: "/fr/mcp",
-      cta_location: "mcp"
+      cta_location: "mcp",
+      interaction_type: "primary_click"
     });
     expect(view.getByRole("link").getAttribute("href")).toMatch(
       /[?&]acq_id=[^&]+/
@@ -88,7 +89,8 @@ describe("AcquisitionTelemetry", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(latestPayload()).toMatchObject({
       event_name: "connect_cta_clicked",
-      cta_location: "mcp"
+      cta_location: "mcp",
+      interaction_type: "auxclick"
     });
     expect(view.getByRole("link").getAttribute("href")).toMatch(
       /[?&]acq_id=[^&]+/

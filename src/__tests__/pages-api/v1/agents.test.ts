@@ -8,12 +8,18 @@ vi.mock("../../../server/services/api-keys", () => ({
   createApiKeyForAgent: vi.fn()
 }));
 
+vi.mock("../../../server/services/acquisition", () => ({
+  safeRecordActivationStarted: vi.fn().mockResolvedValue({ recorded: true })
+}));
+
 import { handler } from "../../../pages/api/v1/agents";
 import { createAgent } from "../../../server/services/agents";
 import { createApiKeyForAgent } from "../../../server/services/api-keys";
+import { safeRecordActivationStarted } from "../../../server/services/acquisition";
 
 const createAgentMock = vi.mocked(createAgent);
 const createApiKeyForAgentMock = vi.mocked(createApiKeyForAgent);
+const safeRecordActivationStartedMock = vi.mocked(safeRecordActivationStarted);
 
 const baseCtx: any = { ownerId: "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7", authError: null };
 
@@ -100,6 +106,35 @@ describe("POST /v1/agents", () => {
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
     expect(createAgentMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts a valid acquisition ID and rejects a malformed one", async () => {
+    createAgentMock.mockResolvedValue({
+      id: "c16baf67-7d52-4e2d-8f52-0b6daedb4d4b",
+      trust_score: 10,
+      trust_flags: [],
+      created_at: "2026-02-05T12:00:00.000Z"
+    });
+    createApiKeyForAgentMock.mockResolvedValue({ apiKey: "cd_live_test.secret", record: {} as any });
+    const acquisitionId = "018f3c2a-1e4b-4f8a-9ac0-0123456789ab";
+
+    const valid: any = await handler({
+      method: "POST",
+      headers: { "idempotency-key": "acq-valid" },
+      body: { name: "Agent", acquisition_id: acquisitionId }
+    }, null, baseCtx);
+    const invalid: any = await handler({
+      method: "POST",
+      headers: { "idempotency-key": "acq-invalid" },
+      body: { name: "Agent", acquisition_id: "bad" }
+    }, null, baseCtx);
+
+    expect(valid.status).toBe(201);
+    expect(safeRecordActivationStartedMock).toHaveBeenCalledWith({
+      acquisitionId,
+      agentId: "c16baf67-7d52-4e2d-8f52-0b6daedb4d4b"
+    });
+    expect(invalid.status).toBe(400);
   });
 
   it("returns auth error when provided", async () => {

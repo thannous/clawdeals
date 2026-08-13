@@ -46,6 +46,7 @@ function renderStepVerify(overrides: Record<string, unknown> = {}) {
     onApiKeySet: vi.fn(),
     onExchangeForApiKey: vi.fn(),
     onBack: vi.fn(),
+    acquisitionId: null,
     ...overrides
   };
 
@@ -100,6 +101,22 @@ describe("StepVerify", () => {
     expect(screen.getByText("agent_1")).toBeDefined();
     expect(screen.getByText("agent:read, deals:read")).toBeDefined();
     expect(screen.getByText("cd_liv…7890")).toBeDefined();
+  });
+
+  it("attributes API-key verification to the current acquisition", async () => {
+    const acquisitionId = "018f3c2a-1e4b-4f8a-9ac0-0123456789ab";
+    apiRequestMock.mockResolvedValueOnce({
+      data: { data: { agent_id: "agent_1", name: null, owner_id: null, installation_id: null, oauth_scopes: [] } }
+    });
+
+    renderStepVerify({ acquisitionId });
+
+    await waitFor(() => expect(apiRequestMock).toHaveBeenCalled());
+    expect(apiRequestMock).toHaveBeenCalledWith({
+      path: `/v1/agents/me?acquisition_id=${acquisitionId}`,
+      method: "GET",
+      apiKey: "cd_live_1234567890"
+    });
   });
 
   it("rejects missing identity data and surfaces API failures", async () => {

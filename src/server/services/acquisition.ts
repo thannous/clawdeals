@@ -1,13 +1,16 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
   ACQUISITION_CTA_LOCATIONS,
+  ACQUISITION_INTERACTION_TYPES,
   PUBLIC_ACQUISITION_EVENT_NAMES,
   localeToMarketCode,
   normalizeAcquisitionId,
   normalizeLandingPath,
   resolveEventLocale,
+  resolveAcquisitionChannel,
   sanitizeAttributionValue,
   type AcquisitionCtaLocation,
+  type AcquisitionInteractionType,
   type PublicAcquisitionEventName
 } from "../../shared/acquisition";
 
@@ -31,6 +34,13 @@ function normalizeCtaLocation(value: unknown): AcquisitionCtaLocation | null {
   if (typeof value !== "string") return null;
   return ACQUISITION_CTA_LOCATIONS.includes(value as AcquisitionCtaLocation)
     ? (value as AcquisitionCtaLocation)
+    : null;
+}
+
+function normalizeInteractionType(value: unknown): AcquisitionInteractionType | null {
+  if (typeof value !== "string") return null;
+  return ACQUISITION_INTERACTION_TYPES.includes(value as AcquisitionInteractionType)
+    ? (value as AcquisitionInteractionType)
     : null;
 }
 
@@ -63,6 +73,10 @@ export function parsePublicAcquisitionEvent(body: any) {
     eventName === "connect_cta_clicked"
       ? normalizeCtaLocation(body?.cta_location) || "other"
       : null;
+  const interactionType =
+    eventName === "connect_cta_clicked"
+      ? normalizeInteractionType(body?.interaction_type) || "primary_click"
+      : null;
 
   return {
     acquisition_id: acquisitionId,
@@ -72,9 +86,11 @@ export function parsePublicAcquisitionEvent(body: any) {
     market_code: localeToMarketCode(locale),
     source,
     medium,
+    channel: resolveAcquisitionChannel({ source, medium }),
     campaign,
     referrer_host: referrerHost,
-    cta_location: ctaLocation
+    cta_location: ctaLocation,
+    interaction_type: interactionType
   };
 }
 
@@ -94,16 +110,16 @@ export async function recordPublicAcquisitionEvent(event: ReturnType<typeof pars
 
 async function resolveAcquisitionForAgent(agentId: string, client: any) {
   const { data, error } = await client
-    .from("connect_sessions")
+    .from(TABLE)
     .select("acquisition_id")
     .eq("agent_id", agentId)
-    .not("acquisition_id", "is", null)
-    .order("delivered_at", { ascending: false, nullsFirst: false })
+    .eq("event_name", "agent_connected")
+    .order("occurred_at", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
 
   if (error) {
-    throw buildServiceError(`Failed to resolve acquisition session: ${error.message}`);
+    throw buildServiceError(`Failed to resolve acquisition activation: ${error.message}`);
   }
   return normalizeAcquisitionId(data?.acquisition_id);
 }
@@ -120,34 +136,107 @@ async function insertMilestone(row: Record<string, any>, client: any) {
   }
 }
 
+async function ensureActivationStartedMilestone({
+  acquisitionId,
+  agentId,
+  occurredAt,
+  client
+}: {
+  acquisitionId: string;
+  agentId?: string | null;
+  occurredAt: Date;
+  client: any;
+}) {
+  const { data, error } = await client
+    .from(TABLE)
+    .select("event_id")
+    .eq("acquisition_id", acquisitionId)
+    .eq("event_name", "activation_started")
+    .maybeSingle();
+  if (error) {
+    throw buildServiceError(`Failed to resolve acquisition activation-start milestone: ${error.message}`);
+  }
+  if (data?.event_id) return;
+
+  await insertMilestone({
+    acquisition_id: acquisitionId,
+    event_name: "activation_started",
+    occurred_at: occurredAt.toISOString(),
+    agent_id: agentId || null
+  }, client);
+}
+
 export async function recordAgentConnected({
-  sessionId,
+  sessionId = null,
+  acquisitionId = null,
   agentId,
   occurredAt = new Date(),
   client
 }: {
-  sessionId: string;
+  sessionId?: string | null;
+  acquisitionId?: string | null;
   agentId: string;
   occurredAt?: Date;
   client?: any;
 }) {
   const supabase = client || getSupabaseServiceClient();
-  const { data, error } = await supabase
-    .from("connect_sessions")
-    .select("acquisition_id")
-    .eq("session_id", sessionId)
-    .maybeSingle();
-  if (error) {
-    throw buildServiceError(`Failed to resolve connect acquisition: ${error.message}`);
+  let resolvedAcquisitionId = normalizeAcquisitionId(acquisitionId);
+
+  if (!resolvedAcquisitionId && sessionId) {
+    const { data, error } = await supabase
+      .from("connect_sessions")
+      .select("acquisition_id")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+    if (error) {
+      throw buildServiceError(`Failed to resolve connect acquisition: ${error.message}`);
+    }
+    resolvedAcquisitionId = normalizeAcquisitionId(data?.acquisition_id);
   }
-  const acquisitionId = normalizeAcquisitionId(data?.acquisition_id);
-  if (!acquisitionId) return { recorded: false };
+
+  if (!resolvedAcquisitionId) return { recorded: false };
+
+  if (!sessionId) {
+    await ensureActivationStartedMilestone({
+      acquisitionId: resolvedAcquisitionId,
+      agentId,
+      occurredAt,
+      client: supabase
+    });
+  }
 
   await insertMilestone({
-    acquisition_id: acquisitionId,
+    acquisition_id: resolvedAcquisitionId,
     event_name: "agent_connected",
     occurred_at: occurredAt.toISOString(),
     connect_session_id: sessionId,
+    agent_id: agentId
+  }, supabase);
+  return { recorded: true };
+}
+
+export async function recordActivationStarted({
+  acquisitionId,
+  sessionId,
+  agentId = null,
+  occurredAt = new Date(),
+  client
+}: {
+  acquisitionId?: string | null;
+  sessionId?: string | null;
+  agentId?: string | null;
+  occurredAt?: Date;
+  client?: any;
+}) {
+  const resolvedAcquisitionId = normalizeAcquisitionId(acquisitionId);
+  if (!resolvedAcquisitionId) return { recorded: false };
+
+  const supabase = client || getSupabaseServiceClient();
+  await insertMilestone({
+    acquisition_id: resolvedAcquisitionId,
+    event_name: "activation_started",
+    occurred_at: occurredAt.toISOString(),
+    connect_session_id: sessionId || null,
     agent_id: agentId
   }, supabase);
   return { recorded: true };
@@ -216,13 +305,13 @@ export async function recordFirstMatches({
   if (byAgent.size === 0) return { recorded: 0 };
 
   const { data, error } = await supabase
-    .from("connect_sessions")
-    .select("acquisition_id,agent_id,delivered_at")
+    .from(TABLE)
+    .select("acquisition_id,agent_id,occurred_at")
     .in("agent_id", Array.from(byAgent.keys()))
-    .not("acquisition_id", "is", null)
-    .order("delivered_at", { ascending: false, nullsFirst: false });
+    .eq("event_name", "agent_connected")
+    .order("occurred_at", { ascending: false, nullsFirst: false });
   if (error) {
-    throw buildServiceError(`Failed to resolve acquisition sessions: ${error.message}`);
+    throw buildServiceError(`Failed to resolve acquisition activations: ${error.message}`);
   }
 
   const acquisitionByAgent = new Map<string, string>();
@@ -264,6 +353,18 @@ export async function safeRecordAgentConnected(params: Parameters<typeof recordA
     return await recordAgentConnected(params);
   } catch (error: any) {
     console.info("acquisition.agent_connected_tracking_failed", {
+      session_id: params.sessionId || null,
+      error: error?.message || String(error)
+    });
+    return { recorded: false };
+  }
+}
+
+export async function safeRecordActivationStarted(params: Parameters<typeof recordActivationStarted>[0]) {
+  try {
+    return await recordActivationStarted(params);
+  } catch (error: any) {
+    console.info("acquisition.activation_started_tracking_failed", {
       session_id: params.sessionId,
       error: error?.message || String(error)
     });

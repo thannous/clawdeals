@@ -55,6 +55,9 @@ function renderStepConnect(overrides: Record<string, unknown> = {}) {
       expires_at: new Date(Date.now() + 600000).toISOString()
     })),
     hasOwnerSession: false,
+    acquisitionId: null,
+    loginHref: "/auth/login?next=%2Fstart",
+    signupHref: "/auth/login?next=%2Fstart&mode=signup",
     ...overrides
   };
 
@@ -134,6 +137,32 @@ describe("StepConnect", () => {
     expect(apiRequestMock).toHaveBeenCalledWith(expect.objectContaining({
       body: { name: "my-custom-bot" }
     }));
+  });
+
+  it("forwards acquisition ID when generating API and MCP keys", async () => {
+    apiRequestMock
+      .mockResolvedValueOnce({ data: { data: { agent_id: "agt_api", api_key: "cd_live_api_123456" } } })
+      .mockResolvedValueOnce({ data: { data: { agent_id: "agt_mcp", api_key: "cd_live_mcp_123456" } } });
+    const acquisitionId = "018f3c2a-1e4b-4f8a-9ac0-0123456789ab";
+
+    renderStepConnect({ acquisitionId });
+    fireEvent.click(screen.getByTestId("generate-key"));
+    await waitFor(() => expect(apiRequestMock).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByTestId("mcp-generate-key"));
+    await waitFor(() => expect(apiRequestMock).toHaveBeenCalledTimes(2));
+
+    expect(apiRequestMock.mock.calls[0][0].body).toEqual(expect.objectContaining({ acquisition_id: acquisitionId }));
+    expect(apiRequestMock.mock.calls[1][0].body).toEqual(expect.objectContaining({ acquisition_id: acquisitionId }));
+  });
+
+  it("uses acquisition-preserving authentication links", () => {
+    renderStepConnect({
+      loginHref: "/auth/login?next=%2Ffr%2Fstart%3Facq_id%3Dtracked",
+      signupHref: "/auth/login?next=%2Ffr%2Fstart%3Facq_id%3Dtracked&mode=signup"
+    });
+
+    expect(screen.getByText("step.connect.logIn").closest("a")?.getAttribute("href")).toContain("acq_id%3Dtracked");
+    expect(screen.getByText("step.connect.createAccount").closest("a")?.getAttribute("href")).toContain("acq_id%3Dtracked");
   });
 
   describe("MCP / IDE card", () => {

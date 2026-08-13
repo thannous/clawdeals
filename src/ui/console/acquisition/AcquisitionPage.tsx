@@ -12,13 +12,70 @@ type FunnelRow = {
 
 type MarketRow = Record<string, any> & { market_code: string };
 
+type ChannelRow = {
+  channel: string;
+  source: string;
+  medium: string;
+  landing_views: number;
+  agent_connected: number;
+  first_match: number;
+};
+
+type RevenueRow = {
+  currency: string;
+  released_escrows: number;
+  attributed_released_escrows?: number;
+  channel?: string;
+  source?: string;
+  medium?: string;
+  gross_volume_minor: string;
+  platform_revenue_minor: string;
+};
+
 type AcquisitionResponse = {
   window: { days: number; from: string; to: string };
   sample: { acquisitions: number; truncated: boolean; max_rows: number };
   funnel: FunnelRow[];
   by_market: MarketRow[];
   by_source: Array<{ source: string; landing_views: number }>;
-  by_cta: Array<{ cta_location: string; clicks: number }>;
+  by_channel: ChannelRow[];
+  by_cta: Array<{ cta_location: string; interaction_type: string; clicks: number }>;
+  attribution: {
+    id: string;
+    label: string;
+    rule: string;
+    conversion_owner: string;
+    revenue_event: string;
+    gross_value: string;
+    revenue: string;
+  };
+  revenue: {
+    source_of_truth: string;
+    sample: {
+      released_escrows: number;
+      attributed_released_escrows: number;
+      unattributed_released_escrows: number;
+      truncated: boolean;
+      max_rows: number;
+    };
+    by_currency: RevenueRow[];
+    by_channel_currency: RevenueRow[];
+  };
+  reconciliation: {
+    browser_events: { landing_views: number; connect_cta_clicks: number };
+    backend_activations: {
+      activation_started: number;
+      agent_connected: number;
+      watchlist_created: number;
+      first_match: number;
+      d7_retained: number;
+    };
+    backend_revenue: {
+      released_escrows: number;
+      attributed_released_escrows: number;
+      unattributed_released_escrows: number;
+    };
+  };
 };
 
 const WINDOW_OPTIONS = [
@@ -31,6 +88,7 @@ const STEP_LABELS: Record<string, string> = {
   landing_view: "Landing view",
   organic_entry: "Organic entry",
   connect_cta_clicked: "Connect CTA clicked",
+  activation_started: "Activation started",
   agent_connected: "Agent connected",
   watchlist_created: "Watchlist created",
   first_match: "First match",
@@ -81,6 +139,7 @@ export default function AcquisitionPage() {
     { key: "market_code", label: "Market" },
     { key: "landing_view", label: "Landing" },
     { key: "connect_cta_clicked", label: "CTA" },
+    { key: "activation_started", label: "Started" },
     { key: "agent_connected", label: "Connected" },
     { key: "watchlist_created", label: "Watchlist" },
     { key: "first_match", label: "Match" },
@@ -93,7 +152,7 @@ export default function AcquisitionPage() {
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
       <p className="text-xs font-mono text-subtle">
-        landing_view → d7_retained, by market, source, and CTA location
+        First-party touch → activation → released escrow, with revenue separated from gross volume
       </p>
 
       <div className="flex items-center gap-2 mb-6">
@@ -125,6 +184,21 @@ export default function AcquisitionPage() {
 
       {data ? (
         <div className="space-y-8">
+          <section className="border border-border bg-surface/40 p-4 space-y-2">
+            <h2 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider">
+              Attribution contract — {data.attribution.label}
+            </h2>
+            <p className="text-xs font-mono text-text">{data.attribution.rule}.</p>
+            <p className="text-xs font-mono text-subtle">
+              One revenue conversion per released escrow, owned by the buyer touch. Gross volume is not revenue;
+              platform revenue is the released platform fee. This model is deterministic, not causal.
+            </p>
+            <p className="text-xs font-mono text-subtle">
+              Instrumentation in code, deployment, persisted events, measured conversion, and business outcome are
+              separate states.
+            </p>
+          </section>
+
           <section>
             <h2 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-2">
               Funnel — {data.sample.acquisitions} acquisitions in {data.window.days}d
@@ -160,18 +234,22 @@ export default function AcquisitionPage() {
 
           <section>
             <h2 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-2">
-              Landing views by source
+              Acquisition and activation by channel
             </h2>
-            {data.by_source.length === 0 ? (
-              <p className="text-xs font-mono text-subtle">No landing views in this window.</p>
+            {data.by_channel.length === 0 ? (
+              <p className="text-xs font-mono text-subtle">No attributed landing views in this window.</p>
             ) : (
               <ConsoleTable
                 columns={[
+                  { key: "channel", label: "Channel" },
                   { key: "source", label: "Source" },
-                  { key: "landing_views", label: "Landing views" }
+                  { key: "medium", label: "Medium" },
+                  { key: "landing_views", label: "Landing" },
+                  { key: "agent_connected", label: "Connected" },
+                  { key: "first_match", label: "First match" }
                 ]}
-                rows={data.by_source}
-                getRowKey={(row: any) => row.source}
+                rows={data.by_channel}
+                getRowKey={(row: ChannelRow) => `${row.channel}:${row.source}:${row.medium}`}
               />
             )}
           </section>
@@ -186,12 +264,121 @@ export default function AcquisitionPage() {
               <ConsoleTable
                 columns={[
                   { key: "cta_location", label: "CTA location" },
+                  { key: "interaction_type", label: "Interaction" },
                   { key: "clicks", label: "Clicks" }
                 ]}
                 rows={data.by_cta}
-                getRowKey={(row: any) => row.cta_location}
+                getRowKey={(row: any) => `${row.cta_location}:${row.interaction_type}`}
               />
             )}
+          </section>
+
+          <section>
+            <h2 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-2">
+              Released escrow value by currency
+            </h2>
+            <p className="text-xs font-mono text-subtle mb-2">
+              {data.revenue.sample.attributed_released_escrows}/{data.revenue.sample.released_escrows} released escrows
+              attributed; {data.revenue.sample.unattributed_released_escrows} unattributed
+              {data.revenue.sample.truncated ? " (sample truncated)" : ""}.
+            </p>
+            {data.revenue.by_currency.length === 0 ? (
+              <p className="text-xs font-mono text-subtle">No released escrow in this window.</p>
+            ) : (
+              <ConsoleTable
+                columns={[
+                  { key: "currency", label: "Currency" },
+                  { key: "released_escrows", label: "Released" },
+                  { key: "attributed_released_escrows", label: "Attributed" },
+                  { key: "gross_volume_minor", label: "Gross volume (minor)" },
+                  { key: "platform_revenue_minor", label: "Platform revenue (minor)" }
+                ]}
+                rows={data.revenue.by_currency}
+                getRowKey={(row: RevenueRow) => row.currency}
+              />
+            )}
+          </section>
+
+          <section>
+            <h2 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-2">
+              Released escrow value by attributed channel and currency
+            </h2>
+            {data.revenue.by_channel_currency.length === 0 ? (
+              <p className="text-xs font-mono text-subtle">No released escrow in this window.</p>
+            ) : (
+              <ConsoleTable
+                columns={[
+                  { key: "channel", label: "Channel" },
+                  { key: "source", label: "Source" },
+                  { key: "medium", label: "Medium" },
+                  { key: "currency", label: "Currency" },
+                  { key: "released_escrows", label: "Released" },
+                  { key: "gross_volume_minor", label: "Gross volume (minor)" },
+                  { key: "platform_revenue_minor", label: "Platform revenue (minor)" }
+                ]}
+                rows={data.revenue.by_channel_currency}
+                getRowKey={(row: RevenueRow) => `${row.channel}:${row.source}:${row.medium}:${row.currency}`}
+              />
+            )}
+          </section>
+
+          <section>
+            <h2 className="text-xs font-mono font-bold text-subtle uppercase tracking-wider mb-2">
+              Measurement reconciliation
+            </h2>
+            <ConsoleTable
+              columns={[
+                { key: "layer", label: "Layer" },
+                { key: "metric", label: "Metric" },
+                { key: "count", label: "Count" },
+                { key: "source", label: "Source of truth" }
+              ]}
+              rows={[
+                {
+                  layer: "Browser instrumentation",
+                  metric: "landing_view",
+                  count: data.reconciliation.browser_events.landing_views,
+                  source: "Persisted acquisition event"
+                },
+                {
+                  layer: "Browser instrumentation",
+                  metric: "connect_cta_clicked",
+                  count: data.reconciliation.browser_events.connect_cta_clicks,
+                  source: "Persisted acquisition event"
+                },
+                {
+                  layer: "Backend activation",
+                  metric: "activation_started",
+                  count: data.reconciliation.backend_activations.activation_started,
+                  source: "Agent or connect session created"
+                },
+                {
+                  layer: "Backend activation",
+                  metric: "agent_connected",
+                  count: data.reconciliation.backend_activations.agent_connected,
+                  source: "Authenticated API use or delivered connect session"
+                },
+                {
+                  layer: "Backend activation",
+                  metric: "first_match",
+                  count: data.reconciliation.backend_activations.first_match,
+                  source: "Product milestone"
+                },
+                {
+                  layer: "Backend revenue conversion",
+                  metric: "escrow_released",
+                  count: data.reconciliation.backend_revenue.released_escrows,
+                  source: "Escrow state RELEASED"
+                },
+                {
+                  layer: "Attributed revenue conversion",
+                  metric: "escrow_released + acq_id",
+                  count: data.reconciliation.backend_revenue.attributed_released_escrows,
+                  source: data.attribution.id
+                }
+              ]}
+              getRowKey={(row: any) => `${row.layer}:${row.metric}`}
+            />
           </section>
         </div>
       ) : null}

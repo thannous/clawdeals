@@ -8,6 +8,7 @@ import { errorPayload } from "../../../../../server/http/errors";
 import { getPublicAppUrl, joinUrl } from "../../../../../shared/urls";
 import { normalizeAcquisitionId } from "../../../../../shared/acquisition";
 import { createConnectSession } from "../../../../../server/services/connect-sessions";
+import { safeRecordActivationStarted } from "../../../../../server/services/acquisition";
 
 function getHeaderValue(req: any, name: string) {
   const value = req?.headers?.[name] ?? req?.headers?.[name.toLowerCase()];
@@ -165,6 +166,13 @@ export async function handler(req: any, res: any, ctx: any) {
       uaHash: hashUserAgent(ctx?.userAgent),
       now: new Date()
     });
+    if (acquisitionId) {
+      await safeRecordActivationStarted({
+        acquisitionId,
+        sessionId: created.session.session_id,
+        occurredAt: new Date(created.session.created_at)
+      });
+    }
 
     const appBaseUrl = resolveRequestOrigin(req) || getPublicAppUrl();
     const claimUrl = joinUrl(appBaseUrl, `/claim/${encodeURIComponent(created.claim_token)}`);

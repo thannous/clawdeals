@@ -156,7 +156,15 @@ function HeaderLogo() {
   );
 }
 
-function HeaderActions({ extraActions, showLogin }: { extraActions?: React.ReactNode; showLogin?: boolean }) {
+function HeaderActions({
+  extraActions,
+  showLogin,
+  loginHref
+}: {
+  extraActions?: React.ReactNode;
+  showLogin?: boolean;
+  loginHref: string;
+}) {
   const router = useRouter();
   const t = useTranslations("connect");
   const { themeId, setTheme, themes } = useTheme();
@@ -241,7 +249,7 @@ function HeaderActions({ extraActions, showLogin }: { extraActions?: React.React
       {/* Login button — desktop, shown when not logged in */}
       {showLogin && (
         <Link
-          href="/auth/login"
+          href={loginHref}
           className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
         >
           <Terminal className="w-4 h-4" />
@@ -303,7 +311,7 @@ function HeaderActions({ extraActions, showLogin }: { extraActions?: React.React
               <>
                 <div className="border-t border-border" />
                 <Link
-                  href="/auth/login"
+                  href={loginHref}
                   onClick={() => setMobileSettingsOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
                 >
@@ -397,12 +405,25 @@ export default function ConnectWizard() {
     </>
   ) : null;
 
+  const acquisitionId = normalizeAcquisitionId(router.query?.[ACQUISITION_QUERY_PARAM]);
+  const resolvedLocale: SupportedLocale = (router.locale === "fr" || router.locale === "es") ? router.locale : "en";
+  const returnParams = new URLSearchParams();
+  if (acquisitionId) returnParams.set(ACQUISITION_QUERY_PARAM, acquisitionId);
+  const from = normalizeFromParam(router.query?.from);
+  if (from) returnParams.set("from", from);
+  const returnQuery = returnParams.toString();
+  const returnPath = `${localePrefixFor(resolvedLocale)}/start${returnQuery ? `?${returnQuery}` : ""}`;
+  const loginHref = `/auth/login?next=${encodeURIComponent(returnPath)}`;
+  const signupHref = `${loginHref}&mode=signup`;
+
   const headerLeft = <HeaderLogo />;
   const headerActions = (
-    <HeaderActions extraActions={headerExtraActions} showLogin={!state.hasOwnerSession} />
+    <HeaderActions
+      extraActions={headerExtraActions}
+      showLogin={!state.hasOwnerSession}
+      loginHref={loginHref}
+    />
   );
-
-  const acquisitionId = normalizeAcquisitionId(router.query?.[ACQUISITION_QUERY_PARAM]);
 
   const handleCreateSession = useCallback(async (agentName?: string) => {
     const session = await createSession(agentName, acquisitionId);
@@ -474,6 +495,9 @@ export default function ConnectWizard() {
             isCreatingSession={isCreating}
             onCreateSession={handleCreateSession}
             hasOwnerSession={state.hasOwnerSession}
+            acquisitionId={acquisitionId}
+            loginHref={loginHref}
+            signupHref={signupHref}
           />
         )}
 
@@ -488,6 +512,7 @@ export default function ConnectWizard() {
             onApiKeySet={setApiKey}
             onExchangeForApiKey={exchangeForApiKey}
             onBack={handleBack}
+            acquisitionId={acquisitionId}
           />
         )}
 

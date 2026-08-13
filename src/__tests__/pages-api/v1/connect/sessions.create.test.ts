@@ -6,10 +6,16 @@ vi.mock("../../../../server/services/connect-sessions", () => ({
   createConnectSession: vi.fn()
 }));
 
+vi.mock("../../../../server/services/acquisition", () => ({
+  safeRecordActivationStarted: vi.fn().mockResolvedValue({ recorded: true })
+}));
+
 import { handler } from "../../../../pages/api/v1/connect/sessions/index";
 import { createConnectSession } from "../../../../server/services/connect-sessions";
+import { safeRecordActivationStarted } from "../../../../server/services/acquisition";
 
 const createConnectSessionMock = vi.mocked(createConnectSession);
+const safeRecordActivationStartedMock = vi.mocked(safeRecordActivationStarted);
 
 const baseCtx: any = {
   authError: null,
@@ -38,6 +44,7 @@ describe("POST /v1/connect/sessions", () => {
       session: {
         session_id: "11111111-1111-1111-1111-111111111111",
         status: "PENDING_CLAIM",
+        created_at: "2026-02-10T11:50:00.000Z",
         expires_at: "2026-02-10T12:00:00.000Z",
         poll_token_hash: "pollhash",
         claim_token_hash: "claimhash"
@@ -178,6 +185,7 @@ describe("POST /v1/connect/sessions", () => {
       session: {
         session_id: "11111111-1111-1111-1111-111111111111",
         status: "PENDING_CLAIM",
+        created_at: "2026-02-10T11:50:00.000Z",
         expires_at: "2026-02-10T12:00:00.000Z",
         poll_token_hash: "pollhash",
         claim_token_hash: "claimhash"
@@ -203,6 +211,11 @@ describe("POST /v1/connect/sessions", () => {
     expect(createConnectSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({ acquisitionId })
     );
+    expect(safeRecordActivationStartedMock).toHaveBeenCalledWith({
+      acquisitionId,
+      sessionId: "11111111-1111-1111-1111-111111111111",
+      occurredAt: new Date("2026-02-10T11:50:00.000Z")
+    });
     expect(invalidResult.status).toBe(400);
     expect(invalidResult.body.error.code).toBe("VALIDATION_ERROR");
   });

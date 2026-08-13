@@ -38,6 +38,9 @@ type Props = {
   isCreatingSession: boolean;
   onCreateSession: (agentName?: string) => Promise<ConnectSessionData>;
   hasOwnerSession: boolean;
+  acquisitionId: string | null;
+  loginHref: string;
+  signupHref: string;
 };
 
 type KeyMode = "generate" | "paste";
@@ -104,7 +107,10 @@ function useStepConnectView({
   pollError,
   isCreatingSession,
   onCreateSession,
-  hasOwnerSession
+  hasOwnerSession,
+  acquisitionId,
+  loginHref,
+  signupHref
 }: Props) {
   const t = useTranslations("connect");
   // --- Claim Link state ---
@@ -236,7 +242,7 @@ function useStepConnectView({
         path: "/v1/agents",
         method: "POST",
         idempotencyKey: randomIdempotencyKey(),
-        body: { name }
+        body: { name, ...(acquisitionId ? { acquisition_id: acquisitionId } : {}) }
       });
       const apiKey = result.data?.data?.api_key;
       const agent_id = result.data?.data?.agent_id;
@@ -253,7 +259,7 @@ function useStepConnectView({
       setKeyStatus("error");
       setKeyMessage(error?.message || t("common.generateFailed"));
     }
-  }, [agentName, t, onApiKeySet]);
+  }, [acquisitionId, agentName, t, onApiKeySet]);
 
   const handleCopyGeneratedKey = useCallback(async () => {
     if (!generatedKey) return;
@@ -333,7 +339,7 @@ function useStepConnectView({
         path: "/v1/agents",
         method: "POST",
         idempotencyKey: randomIdempotencyKey(),
-        body: { name }
+        body: { name, ...(acquisitionId ? { acquisition_id: acquisitionId } : {}) }
       });
       const apiKey = result.data?.data?.api_key;
       const agent_id = result.data?.data?.agent_id;
@@ -350,7 +356,7 @@ function useStepConnectView({
       setMcpKeyStatus("error");
       setMcpKeyMessage(error?.message || t("common.generateFailed"));
     }
-  }, [mcpAgentName, t, onApiKeySet]);
+  }, [acquisitionId, mcpAgentName, t, onApiKeySet]);
 
   const handleMcpValidate = useCallback(async () => {
     const key = mcpPastedKey.trim();
@@ -530,13 +536,13 @@ function useStepConnectView({
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/auth/login?next=/start"
+                href={loginHref}
                 className="border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
               >
                 {t("step.connect.logIn")}
               </Link>
               <Link
-                href="/auth/login?next=/start&mode=signup"
+                href={signupHref}
                 className="border border-border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
               >
                 {t("step.connect.createAccount")}

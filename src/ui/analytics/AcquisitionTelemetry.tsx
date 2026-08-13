@@ -9,6 +9,7 @@ import {
   resolveAcquisitionAttribution,
   resolveEventLocale,
   type AcquisitionCtaLocation,
+  type AcquisitionInteractionType,
   type PublicAcquisitionEventName
 } from "../../shared/acquisition";
 
@@ -23,6 +24,7 @@ type PublicEventPayload = {
   campaign: string | null;
   referrer_host: string | null;
   cta_location: AcquisitionCtaLocation | null;
+  interaction_type: AcquisitionInteractionType | null;
 };
 
 let pageAcquisitionId: string | null = null;
@@ -103,7 +105,8 @@ export default function AcquisitionTelemetry() {
       medium: attribution.medium,
       campaign: attribution.campaign,
       referrer_host: attribution.referrerHost,
-      cta_location: null
+      cta_location: null,
+      interaction_type: null
     };
     sendEvent({ ...basePayload, event_name: "landing_view" });
     if (attribution.isOrganic) {
@@ -112,7 +115,7 @@ export default function AcquisitionTelemetry() {
   }, [router.asPath, router.isReady, router.locale]);
 
   useEffect(() => {
-    function trackAppEntry(event: MouseEvent) {
+    function trackAppEntry(event: MouseEvent, interactionType: AcquisitionInteractionType) {
       const element = event.target instanceof Element ? event.target : null;
       const anchor = element?.closest("a[href]") as HTMLAnchorElement | null;
       const context = contextRef.current;
@@ -142,7 +145,8 @@ export default function AcquisitionTelemetry() {
         medium: context.medium,
         campaign: context.campaign,
         referrer_host: context.referrerHost,
-        cta_location: ctaLocation
+        cta_location: ctaLocation,
+        interaction_type: interactionType
       });
 
       return { anchor, targetUrl };
@@ -151,7 +155,7 @@ export default function AcquisitionTelemetry() {
     function onClick(event: MouseEvent) {
       if (event.button !== 0) return;
 
-      const trackedEntry = trackAppEntry(event);
+      const trackedEntry = trackAppEntry(event, "primary_click");
       if (!trackedEntry) return;
 
       const { anchor, targetUrl } = trackedEntry;
@@ -173,7 +177,7 @@ export default function AcquisitionTelemetry() {
 
     function onAuxClick(event: MouseEvent) {
       if (event.button !== 1) return;
-      trackAppEntry(event);
+      trackAppEntry(event, "auxclick");
     }
 
     document.addEventListener("click", onClick, true);

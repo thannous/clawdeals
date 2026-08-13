@@ -6,6 +6,8 @@ import { createAgent } from "../../../server/services/agents";
 import { createApiKeyForAgent } from "../../../server/services/api-keys";
 import { normalizeEmail } from "../../../server/utils/owner-verification";
 import { isEmailAddress } from "../../../server/utils/validators";
+import { normalizeAcquisitionId } from "../../../shared/acquisition";
+import { safeRecordActivationStarted } from "../../../server/services/acquisition";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -27,12 +29,22 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
   }
 
-  const { name, metadata, wallet_address: walletAddress, contact_email: contactEmailRaw } = req.body || {};
+  const {
+    name,
+    metadata,
+    wallet_address: walletAddress,
+    contact_email: contactEmailRaw,
+    acquisition_id: rawAcquisitionId
+  } = req.body || {};
+  const acquisitionId = normalizeAcquisitionId(rawAcquisitionId);
   if (!name || typeof name !== "string") {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "name is required"));
   }
   if (name.length > 80) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "name must be at most 80 characters"));
+  }
+  if (rawAcquisitionId !== undefined && rawAcquisitionId !== null && !acquisitionId) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "acquisition_id must be a UUID"));
   }
 
   let contactEmail: string | null = null;
@@ -59,7 +71,9 @@ export async function handler(req, res, ctx) {
       keyState: "ACTIVE",
       scope: "full"
     });
-
+    if (acquisitionId) {
+      await safeRecordActivationStarted({ acquisitionId, agentId: agent.id });
+    }
     if (ctx) {
       ctx.auditEvent = "agent.registered";
       ctx.security = { api_key_id: record?.api_key_id || null };
