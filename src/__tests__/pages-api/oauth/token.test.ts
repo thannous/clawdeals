@@ -187,7 +187,8 @@ describe("POST /oauth/token", () => {
       expect.objectContaining({
         ownerId: "22222222-2222-2222-2222-222222222222",
         agentId: "33333333-3333-4333-8333-333333333333",
-        clientType: "openclaw"
+        clientType: "openclaw",
+        oauthScopes: V1_SCOPES_DEFAULT
       })
     );
     expect(issueRefreshMock).toHaveBeenCalledWith(
@@ -259,8 +260,40 @@ describe("POST /oauth/token", () => {
     const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1", body: req.body });
     expect(result.status).toBe(200);
     expect(result.body.scope).toBe("watchlists:read threads:read");
+    expect(createInstallationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ oauthScopes: ["watchlists:read", "threads:read"] })
+    );
     expect(issueRefreshMock).toHaveBeenCalledWith(expect.objectContaining({ scopes: ["watchlists:read", "threads:read"] }));
     expect(issueAccessMock).toHaveBeenCalledWith(expect.objectContaining({ scopes: ["watchlists:read", "threads:read"] }));
+  });
+
+  it("rejects unsupported scopes stored on a device authorization", async () => {
+    getByDeviceCodeMock.mockResolvedValue({
+      authorization_id: "11111111-1111-1111-1111-111111111111",
+      status: "AUTHORIZED",
+      client_id: "openclaw",
+      owner_id: "22222222-2222-2222-2222-222222222222",
+      agent_id: "33333333-3333-4333-8333-333333333333",
+      requested_scopes: ["deals:read", "admin:everything"],
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+      exchanged_at: null
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: {
+        client_id: "openclaw",
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+        device_code: "cd_dev_test"
+      }
+    };
+
+    const result: any = await handler(req, null, { authError: null, ip: "203.0.113.1", body: req.body });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("invalid_scope");
+    expect(createInstallationMock).not.toHaveBeenCalled();
+    expect(issueAccessMock).not.toHaveBeenCalled();
   });
 
   it("returns invalid_grant for revoked refresh token", async () => {

@@ -84,6 +84,7 @@ describe("agent-installations service", () => {
         clientVersion: ` 1.2.3-${"x".repeat(50)}`,
         deviceName: ` MacBook ${"x".repeat(100)}`,
         fingerprint: " device-secret ",
+        oauthScopes: ["watchlists:read", "deals:read"],
         now
       })
     ).toEqual(persisted);
@@ -94,6 +95,7 @@ describe("agent-installations service", () => {
       agent_id: "agent-1",
       status: "ACTIVE",
       fingerprint_hash: crypto.createHash("sha256").update("device-secret").digest("hex"),
+      oauth_scopes: ["watchlists:read", "deals:read"],
       created_at: "2026-07-23T10:00:00.000Z",
       last_seen_at: "2026-07-23T10:00:00.000Z",
       revoked_at: null

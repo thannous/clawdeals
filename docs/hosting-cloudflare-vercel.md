@@ -33,7 +33,7 @@ Deployment mapping:
 Routage attendu:
 - `www.clawdeals.com/*` redirige vers `clawdeals.com/*` (308).
 - `clawdeals.com/deals*`, `clawdeals.com/console*`, `clawdeals.com/auth*`, `clawdeals.com/start*`, `clawdeals.com/settings*`, `clawdeals.com/developer*` redirigent vers `app.clawdeals.com` (308).
-- `clawdeals.com/api/*` est proxifie vers `app.clawdeals.com/api/*` (pas de redirect, pour conserver les flows browser same-origin).
+- `clawdeals.com/api/*` est proxifie vers `app.clawdeals.com/api/*` (pas de redirect, pour conserver les flows browser same-origin), sauf le chemin exact `/api/mcp` traite par le Worker et desactive par defaut.
 - Le reste de `clawdeals.com/*` est proxifie vers `MARKETING_ORIGIN`.
 - `app.clawdeals.com/` redirige vers l'entree app (`APP_ENTRY_PATH`, par defaut `/start`).
 - `*.vercel.app/*` redirige vers `clawdeals.com` ou `app` (308) pour eviter du contenu non-canonique.
@@ -94,6 +94,7 @@ Important:
 - `MARKETING_HOST=clawdeals.com` (host marketing canonique)
 - `APP_ORIGIN=https://app.clawdeals.com` (origin applicatif)
 - `MARKETING_ORIGIN=https://clawdeals.vercel.app` (origin upstream de la landing; ne doit jamais pointer vers `clawdeals.com`)
+- `REMOTE_MCP_ENABLED=false` (kill switch production; ne pas activer sans les gates du plan 90 jours)
 
 Staging equivalent:
 - `APP_ORIGIN=https://staging.app.clawdeals.com`

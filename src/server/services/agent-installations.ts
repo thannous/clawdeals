@@ -4,6 +4,7 @@ import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { deleteCachedApiKeyAuthRecord } from "./api-key-auth-cache";
 import { deleteOauthAccessTokensForInstallation } from "./oauth-access-tokens";
+import { normalizeRequestedScopes, sortScopesStable } from "../../shared/scopes/v1";
 
 export const INSTALLATIONS_DEFAULT_LIMIT = 50;
 export const INSTALLATIONS_MAX_LIMIT = 100;
@@ -40,6 +41,7 @@ export async function createAgentInstallation({
   clientVersion = null,
   deviceName = null,
   fingerprint = null,
+  oauthScopes,
   now = new Date()
 }: {
   ownerId: string;
@@ -48,6 +50,7 @@ export async function createAgentInstallation({
   clientVersion?: string | null;
   deviceName?: string | null;
   fingerprint?: string | null;
+  oauthScopes: string[];
   now?: Date;
 }): Promise<AgentInstallationRow> {
   const resolvedOwnerId = normalizeNonEmptyString(ownerId);
@@ -59,6 +62,13 @@ export async function createAgentInstallation({
   const resolvedClientVersion = normalizeNonEmptyString(clientVersion)?.slice(0, 40) || null;
   const resolvedDeviceName = normalizeNonEmptyString(deviceName)?.slice(0, 80) || null;
   const resolvedFingerprint = normalizeNonEmptyString(fingerprint);
+  const normalizedScopes = normalizeRequestedScopes(oauthScopes);
+  if (normalizedScopes.unknown.length > 0) {
+    throw buildServiceError("oauthScopes contains unsupported scopes", 400, "INVALID_SCOPE", {
+      unknown_scopes: normalizedScopes.unknown
+    });
+  }
+  const resolvedOauthScopes = sortScopesStable(normalizedScopes.normalized);
   const fingerprintHash = resolvedFingerprint ? hashFingerprint(resolvedFingerprint) : null;
   const nowIso = now.toISOString();
 
@@ -72,6 +82,7 @@ export async function createAgentInstallation({
       client_version: resolvedClientVersion,
       device_name: resolvedDeviceName,
       fingerprint_hash: fingerprintHash,
+      oauth_scopes: resolvedOauthScopes,
       status: "ACTIVE",
       created_at: nowIso,
       last_seen_at: nowIso,

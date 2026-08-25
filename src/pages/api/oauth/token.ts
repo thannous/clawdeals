@@ -37,7 +37,13 @@ function normalizeNonEmptyString(value: any) {
 
 function normalizeGrantedScopes(value: any): string[] {
   const normalized = normalizeRequestedScopes(value);
-  if (normalized.normalized.length === 0) {
+  if (normalized.unknown.length > 0) {
+    throw Object.assign(new Error("Unsupported OAuth scope"), {
+      code: "invalid_scope",
+      unknownScopes: normalized.unknown
+    });
+  }
+  if (normalized.requested.length === 0) {
     return [...V1_SCOPES_DEFAULT];
   }
   return sortScopesStable(normalized.normalized);
@@ -292,7 +298,12 @@ export async function handler(req: any, res: any, ctx: any) {
     }
 
     const requestedScopes = authorization?.requested_scopes;
-    const grantedScopes = normalizeGrantedScopes(requestedScopes);
+    let grantedScopes: string[];
+    try {
+      grantedScopes = normalizeGrantedScopes(requestedScopes);
+    } catch (error: any) {
+      return oauthError("invalid_scope", "Device authorization contains unsupported scopes", 400);
+    }
 
     let installation: any = null;
     let accessToken: any = null;
@@ -304,6 +315,7 @@ export async function handler(req: any, res: any, ctx: any) {
         clientVersion: null,
         deviceName: normalizeNonEmptyString(authorization.requested_agent_name),
         fingerprint: null,
+        oauthScopes: grantedScopes,
         now
       });
 

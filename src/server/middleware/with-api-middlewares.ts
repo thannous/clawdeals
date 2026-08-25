@@ -340,9 +340,9 @@ export async function enforceInstallationScopesForRouteGroup(ctx: any, routeGrou
   const requiredScopes = resolveRequiredScopesForRouteGroup(routeGroup);
   if (!requiredScopes) return null;
 
-  let grantedScopes: string[] = [];
+  let installationScopes: string[] = [];
   try {
-    grantedScopes = await getInstallationOauthScopes(String(ctx.installationId));
+    installationScopes = await getInstallationOauthScopes(String(ctx.installationId));
   } catch (error: any) {
     const status = error?.status || 503;
     const code = error?.code || "AUTH_UNAVAILABLE";
@@ -350,7 +350,11 @@ export async function enforceInstallationScopesForRouteGroup(ctx: any, routeGrou
     return jsonResponse(status, errorPayload(code, message));
   }
 
-  const granted = new Set(Array.isArray(grantedScopes) ? grantedScopes : []);
+  const installationGranted = new Set(Array.isArray(installationScopes) ? installationScopes : []);
+  const tokenScopes = Array.isArray(ctx.oauthScopes) ? new Set(sortScopesStable(ctx.oauthScopes)) : null;
+  const granted = tokenScopes
+    ? new Set(Array.from(installationGranted).filter((scope) => tokenScopes.has(scope)))
+    : installationGranted;
 
   const missing = requiredScopes.filter((scope) => !granted.has(scope));
   if (missing.length === 0) return null;

@@ -6,6 +6,7 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { getPublicAppUrl, joinUrl } from "../../../../shared/urls";
+import { V1_SCOPES_DEFAULT, normalizeRequestedScopes } from "../../../../shared/scopes/v1";
 import { createOauthDeviceAuthorization } from "../../../../server/services/oauth-device-authorizations";
 
 const OAUTH_DEVICE_EXPIRES_IN_SECONDS = 10 * 60;
@@ -21,15 +22,6 @@ function normalizeNonEmptyString(value: any) {
   if (value === null || value === undefined) return null;
   const str = String(value).trim();
   return str ? str : null;
-}
-
-function normalizeScope(scope: any): string[] {
-  const raw = normalizeNonEmptyString(scope);
-  if (!raw) return [];
-  return raw
-    .split(/\s+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
 }
 
 function expandIpv6(ip: string) {
@@ -150,6 +142,17 @@ export async function handler(req: any, res: any, ctx: any) {
   }
 
   const scope = body.scope ?? null;
+  const normalizedScope = normalizeRequestedScopes(scope);
+  if (normalizedScope.unknown.length > 0) {
+    return jsonResponse(
+      400,
+      errorPayload("INVALID_SCOPE", "One or more requested scopes are not supported", {
+        unknown_scopes: normalizedScope.unknown
+      })
+    );
+  }
+  const requestedScopes =
+    normalizedScope.requested.length === 0 ? [...V1_SCOPES_DEFAULT] : normalizedScope.normalized;
   const requestedAgentNameRaw = body.requested_agent_name ?? body.requestedAgentName ?? null;
   const requestedAgentName =
     typeof requestedAgentNameRaw === "string" ? requestedAgentNameRaw.trim() : "";
@@ -164,7 +167,7 @@ export async function handler(req: any, res: any, ctx: any) {
 
     const created = await createOauthDeviceAuthorization({
       clientId,
-      requestedScopes: normalizeScope(scope),
+      requestedScopes,
       requestedAgentName: requestedAgentName || null,
       ipTruncated: truncateIp(ctx?.ip),
       uaHash: hashUserAgent(ctx?.userAgent),

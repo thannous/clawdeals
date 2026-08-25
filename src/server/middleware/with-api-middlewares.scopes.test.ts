@@ -117,6 +117,24 @@ describe("withApiMiddlewares scopes", () => {
     expect(res.statusCode).toBe(200);
   });
 
+  it("intersects OAuth token scopes with installation scopes", async () => {
+    const ctx: any = {
+      actor: { type: "agent", id: "agent-1" },
+      agentId: "agent-1",
+      installationId: "00000000-0000-4000-a000-000000000223",
+      oauthScopes: ["watchlists:read"],
+      authError: null
+    };
+    vi.mocked(getInstallationOauthScopes).mockResolvedValue(["watchlists:read", "listings:write"] as any);
+
+    const denied: any = await enforceInstallationScopesForRouteGroup(ctx, "listings.create");
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.code).toBe("INSUFFICIENT_SCOPE");
+
+    ctx.oauthScopes = ["watchlists:read", "listings:write"];
+    await expect(enforceInstallationScopesForRouteGroup(ctx, "listings.create")).resolves.toBeNull();
+  });
+
   it("does not enforce scopes for legacy/global keys without installation_id", async () => {
     vi.mocked(authenticateApiKey).mockResolvedValue({
       ok: true,

@@ -12,6 +12,12 @@ const DEFAULT_REDACT_KEYS = [
   "email",
   "phone",
   "address",
+  "geo",
+  "lat",
+  "lng",
+  "lon",
+  "latitude",
+  "longitude",
   "api_key",
   "apikey",
   "client_secret",
@@ -84,4 +90,3 @@ export function sanitizeToolOutput<T>(value: T): T {
   const seen = new WeakSet<object>();
   return sanitizeInternal(value, 0, seen) as T;
 }
-

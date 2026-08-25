@@ -133,8 +133,6 @@ export async function callClawdeals({
       signal: controller.signal
     });
 
-    clearTimeout(timeout);
-
     const retryAfterSeconds = parseRetryAfterSeconds(response.headers.get("retry-after"));
     const text = await response.text();
     const parsed = safeJsonParse(text);
@@ -183,12 +181,13 @@ export async function callClawdeals({
       retryAfterSeconds
     });
   } catch (error) {
-    clearTimeout(timeout);
     const isAbort = error && typeof error === "object" && error.name === "AbortError";
     return buildStableError({
       code: isAbort ? "TIMEOUT" : "NETWORK_ERROR",
       message: isAbort ? "Request timed out" : "Network error",
       requestId: resolvedRequestId
     });
+  } finally {
+    clearTimeout(timeout);
   }
 }

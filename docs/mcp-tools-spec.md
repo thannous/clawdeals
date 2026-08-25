@@ -70,11 +70,11 @@ Each tool MUST declare a rate limit group that matches server route groups (Phas
 - `clawdeals.deals.vote` -> `deals.vote`
 - `clawdeals.watchlists.create` -> `watchlists.write`
 
-## Tool catalog v0 (17 tools)
+## Tool catalog v0 (19 tools)
 
 Domains: `deals`, `watchlists`, `listings`, `offers`.
 
-### Deals (4)
+### Deals (6)
 
 #### `clawdeals.deals.list`
 - REST: `GET /v1/deals`
@@ -163,6 +163,49 @@ Domains: `deals`, `watchlists`, `listings`, `offers`.
 }
 ```
 - Possible errors: 400, 401, 409 (duplicate/idempotency), 429, 5xx
+
+#### `clawdeals.deals.update`
+- REST: `PATCH /v1/deals/{deal_id}`
+- Rate limit group: `deals.update`
+- Idempotency: required (`idempotency_key` -> `Idempotency-Key`)
+- Input JSON schema:
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["idempotency_key", "deal_id"],
+  "properties": {
+    "idempotency_key": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "deal_id": { "type": "string", "format": "uuid" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 140 },
+    "price": { "type": "number", "exclusiveMinimum": 0 },
+    "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "tags": { "type": "array", "items": { "type": "string" }, "maxItems": 20 },
+    "dry_run": { "type": "boolean" }
+  }
+}
+```
+- Possible errors: 400, 401, 403, 404, 409, 429, 5xx
+
+#### `clawdeals.deals.delete`
+- REST: `DELETE /v1/deals/{deal_id}`
+- Rate limit group: `deals.delete`
+- Idempotency: required (`idempotency_key` -> `Idempotency-Key`)
+- Input JSON schema:
+```json
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["idempotency_key", "deal_id"],
+  "properties": {
+    "idempotency_key": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "deal_id": { "type": "string", "format": "uuid" },
+    "dry_run": { "type": "boolean" }
+  }
+}
+```
+- Possible errors: 400, 401, 403, 404, 409, 429, 5xx
 
 #### `clawdeals.deals.vote`
 - REST: `POST /v1/deals/{deal_id}/vote`
@@ -587,4 +630,3 @@ Tool result (policy may force `PENDING_APPROVAL`):
 
 - Contract tests (golden files): lock tool names + JSON schemas and detect drift.
 - Integration tests: one tool call == one REST call; audit log must contain `origin=mcp` and idempotency key for writes.
-

@@ -20,6 +20,33 @@ function getHeaderValue(req, name) {
   return value;
 }
 
+function requireSameOriginForOwnerSession(req: any, ctx: any) {
+  if (!ctx?.ownerSessionId) return null;
+  const origin = getHeaderValue(req, "origin");
+  const referer = getHeaderValue(req, "referer");
+  const source = origin || referer;
+  if (!source) {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  const forwardedHost = getHeaderValue(req, "x-forwarded-host");
+  const hostHeader = forwardedHost ? String(forwardedHost).split(",")[0].trim() : getHeaderValue(req, "host");
+  if (!hostHeader) {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  try {
+    const sourceHost = new URL(String(source)).host;
+    if (!sourceHost || sourceHost !== String(hostHeader)) {
+      return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+    }
+  } catch {
+    return jsonResponse(403, errorPayload("CSRF_BLOCKED", "Cross-site request blocked"));
+  }
+
+  return null;
+}
+
 export async function handler(req, res, ctx) {
   if (req.method !== "GET" && req.method !== "POST") {
     return methodNotAllowed(["GET", "POST"]);
@@ -29,7 +56,8 @@ export async function handler(req, res, ctx) {
     return jsonResponse(ctx.authError.status || 401, errorPayload(ctx.authError.code, ctx.authError.message));
   }
 
-  // v0 WebMCP uses agent API keys in-browser; allow agent actor if it carries an owner_id in ctx.
+  // Agents may inspect their owner's approval queue, but resolving an approval
+  // is a human act and must be bound to an authenticated owner session.
   const actorType = ctx?.actor?.type;
   if (actorType !== "owner" && actorType !== "agent") {
     return jsonResponse(401, errorPayload("UNAUTHORIZED", "Owner authentication required"));
@@ -41,6 +69,17 @@ export async function handler(req, res, ctx) {
   }
   if (!isUuid(ownerId)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "owner_id must be a UUID"));
+  }
+
+  if (req.method === "POST" && (actorType !== "owner" || !ctx?.ownerSessionId)) {
+    return jsonResponse(
+      403,
+      errorPayload("HUMAN_APPROVAL_REQUIRED", "An authenticated owner session is required to resolve approvals")
+    );
+  }
+  if (req.method === "POST") {
+    const csrfBlocked = requireSameOriginForOwnerSession(req, ctx);
+    if (csrfBlocked) return csrfBlocked;
   }
 
   const idParam = Array.isArray(req.query?.id) ? req.query.id[0] : req.query?.id;

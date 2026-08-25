@@ -1,6 +1,31 @@
-# Clawdeals MCP Server (v0, STDIO)
+# Clawdeals MCP Server (STDIO + remote canary)
 
 This repo includes a minimal **MCP server** that exposes the v0 Clawdeals tool catalog and forwards each tool call 1:1 to the Clawdeals REST API.
+
+## Remote Streamable HTTP canary
+
+The Cloudflare edge router owns the exact endpoint `https://clawdeals.com/api/mcp`. The public `/mcp` route remains the human-facing marketing page.
+
+The remote endpoint is deliberately disabled by default and is not a generic public OAuth integration yet:
+
+```text
+REMOTE_MCP_ENABLED=false
+```
+
+Staging canary activation requires `REMOTE_MCP_ENABLED=true` plus `MCP_CANARY_INSTALLATION_IDS` or `MCP_CANARY_AGENT_IDS`.
+
+Canary security contract:
+
+- OAuth access tokens beginning with `cd_at_` only; API keys and cookies are rejected;
+- identity is validated on every MCP exchange;
+- only allowlisted installations/agents are accepted;
+- seven read-only tools are exposed, filtered by `deals:read`, `watchlists:read`, and `listings:read`;
+- no `connect.setup`, writes, approvals, contacts, offers, or escrow tools;
+- each sanitized logical tool payload is capped at 16 KiB before it is returned in MCP text and structured representations (the protocol envelope can therefore be larger);
+- request bodies are capped at 64 KiB;
+- production remains disabled until resource-bound OAuth discovery and PKCE are complete.
+
+See `docs/agent-platform-90-day-execution.md` for rollout gates.
 
 Release process (maintainers):
 - `docs/mcp-release.md`
@@ -92,18 +117,20 @@ The MCP server forwards auth and audit headers on every REST call:
 Write tools additionally forward:
 - `Idempotency-Key: <idempotency_key>`
 
-Security note: the MCP server must never log API keys. Keep the transport **STDIO-only** in v0.
+Security note: neither transport may log credentials. Keep the existing v0 transport on STDIO; the HTTP transport remains a disabled-by-default, read-only canary until its rollout gates pass.
 
 ## Tool catalog
 
 Source of truth:
 - `docs/mcp-tools-spec.md`
 
-The server exposes exactly the 17 v0 tools in that spec:
-- deals (4)
+The shared catalog contains exactly 19 business tools:
+- deals (6)
 - watchlists (4)
 - listings (4)
 - offers (5)
+
+The stdio server exposes those 19 tools plus `clawdeals.connect.setup` (20 entries total). The remote canary exposes only the seven safe read tools.
 
 ## `dry_run`
 

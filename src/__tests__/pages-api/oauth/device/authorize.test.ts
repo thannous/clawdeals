@@ -8,6 +8,7 @@ vi.mock("../../../../server/services/oauth-device-authorizations", () => ({
 
 import { handler } from "../../../../pages/api/oauth/device/authorize";
 import { createOauthDeviceAuthorization } from "../../../../server/services/oauth-device-authorizations";
+import { V1_SCOPES_DEFAULT } from "../../../../shared/scopes/v1";
 
 const createMock = vi.mocked(createOauthDeviceAuthorization);
 
@@ -53,6 +54,20 @@ describe("POST /oauth/device/authorize", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("rejects unknown scopes before creating a device authorization", async () => {
+    const req: any = {
+      method: "POST",
+      headers: {},
+      body: { client_id: "openclaw", scope: "deals:read admin:everything" }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("INVALID_SCOPE");
+    expect(result.body.error.details.unknown_scopes).toEqual(["admin:everything"]);
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
   it("creates device authorization and returns RFC-shaped response", async () => {
     createMock.mockResolvedValue({
       authorization: {
@@ -85,7 +100,7 @@ describe("POST /oauth/device/authorize", () => {
     expect(createOauthDeviceAuthorization).toHaveBeenCalledWith(
       expect.objectContaining({
         clientId: "openclaw",
-        requestedScopes: ["agent:read", "agent:write"],
+        requestedScopes: V1_SCOPES_DEFAULT,
         requestedAgentName: "OpenClaw",
         ipTruncated: "203.0.113.0",
         uaHash: expectedUaHash,
@@ -106,4 +121,3 @@ describe("POST /oauth/device/authorize", () => {
     );
   });
 });
-

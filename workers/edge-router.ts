@@ -1,7 +1,12 @@
 import { resolveEdgeRouterDecision, type EdgeRouterEnv } from "../src/shared/edge-router";
 import { buildMarketingRobotsTxt } from "../src/shared/robots";
+import {
+  REMOTE_MCP_PATH,
+  handleRemoteMcpRequest,
+  type RemoteMcpEnv
+} from "./remote-mcp";
 
-type EdgeRouterWorkerEnv = EdgeRouterEnv & {
+type EdgeRouterWorkerEnv = EdgeRouterEnv & RemoteMcpEnv & {
   CRON_SECRET?: string;
 };
 
@@ -96,6 +101,15 @@ function withForwardHeaders(request: Request, target: string): Request {
 const edgeRouterWorker = {
   async fetch(request: Request, env: EdgeRouterWorkerEnv): Promise<Response> {
     const url = new URL(request.url);
+
+    // `/mcp` remains the human-facing marketing page. The exact `/api/mcp`
+    // path is the authenticated Streamable HTTP canary and must be dispatched
+    // before generic `/api/*` traffic is proxied to Vercel.
+    const marketingHost = String(env.MARKETING_HOST || "clawdeals.com").trim().toLowerCase();
+    if (url.hostname.toLowerCase() === marketingHost && url.pathname === REMOTE_MCP_PATH) {
+      return handleRemoteMcpRequest(request, env);
+    }
+
     const decision = resolveEdgeRouterDecision(url, env);
 
     // Serve marketing robots.txt at the edge to avoid upstream cache poisoning

@@ -23,19 +23,30 @@ const mockedSafeAuditLog = vi.mocked(safeAuditLog);
 type OwnerCtx = {
   ownerId: string | null;
   actor: { type: "owner" };
+  ownerSessionId: string;
   authError: null;
   auditEvent?: string;
   policy?: { approval_id: string };
 };
 
 function ownerCtx() {
-  return { ownerId, actor: { type: "owner" }, authError: null } as OwnerCtx;
+  return {
+    ownerId,
+    actor: { type: "owner" },
+    ownerSessionId: "d1cb3c39-7e2f-4c2d-9d0b-53b77339b8de",
+    authError: null
+  } as OwnerCtx;
 }
 
 function makeReq(idAction, body = {}, headers = {}) {
   return {
     method: "POST",
-    headers: { "idempotency-key": "idem-1", ...headers },
+    headers: {
+      host: "app.clawdeals.com",
+      origin: "https://app.clawdeals.com",
+      "idempotency-key": "idem-1",
+      ...headers
+    },
     query: { id: idAction },
     body
   };
@@ -61,13 +72,58 @@ describe("POST /v1/approvals/[id]", () => {
     expect(result.status).toBe(401);
   });
 
-  it("allows agent actor when ownerId is present (WebMCP in-browser)", async () => {
-    mockedGetApprovalForOwner.mockResolvedValue({ approval_id: approvalId, state: "PENDING" } as any);
-    mockedResolveApproval.mockResolvedValue({ approval_id: approvalId, state: "APPROVED" } as any);
-
+  it("blocks agent actors even when an ownerId is present", async () => {
     const ctx: any = { ownerId, actor: { type: "agent" }, authError: null };
     const result: any = await handler(makeReq(`${approvalId}:approve`), null, ctx);
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("HUMAN_APPROVAL_REQUIRED");
+    expect(mockedGetApprovalForOwner).not.toHaveBeenCalled();
+    expect(mockedResolveApproval).not.toHaveBeenCalled();
+  });
+
+  it("blocks owner actors without an authenticated owner session", async () => {
+    const ctx: any = { ownerId, actor: { type: "owner" }, ownerSessionId: null, authError: null };
+    const result: any = await handler(makeReq(`${approvalId}:deny`), null, ctx);
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("HUMAN_APPROVAL_REQUIRED");
+    expect(mockedResolveApproval).not.toHaveBeenCalled();
+  });
+
+  it("blocks an owner-session mutation without Origin or Referer", async () => {
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, {}, { origin: undefined }),
+      null,
+      ownerCtx()
+    );
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("CSRF_BLOCKED");
+    expect(mockedGetApprovalForOwner).not.toHaveBeenCalled();
+  });
+
+  it("blocks an owner-session mutation from a foreign Origin", async () => {
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, {}, { origin: "https://evil.example" }),
+      null,
+      ownerCtx()
+    );
+    expect(result.status).toBe(403);
+    expect(result.body.error.code).toBe("CSRF_BLOCKED");
+    expect(mockedGetApprovalForOwner).not.toHaveBeenCalled();
+  });
+
+  it("accepts a same-origin Referer when Origin is absent", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({ approval_id: approvalId, state: "PENDING" } as any);
+    mockedResolveApproval.mockResolvedValue({ approval_id: approvalId, state: "APPROVED" } as any);
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, {}, {
+        origin: undefined,
+        referer: "https://app.clawdeals.com/my/approvals"
+      }),
+      null,
+      ownerCtx()
+    );
     expect(result.status).toBe(200);
+    expect(mockedResolveApproval).toHaveBeenCalledTimes(1);
   });
 
   it("returns 400 when approval_id is not a UUID", async () => {
@@ -79,7 +135,7 @@ describe("POST /v1/approvals/[id]", () => {
   it("returns 400 without Idempotency-Key", async () => {
     const req = {
       method: "POST",
-      headers: {},
+      headers: { host: "app.clawdeals.com", origin: "https://app.clawdeals.com" },
       query: { id: `${approvalId}:approve` },
       body: {}
     };

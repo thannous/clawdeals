@@ -130,4 +130,50 @@ describe("callClawdeals", () => {
     expect(result.error.code).toBe("NETWORK_ERROR");
     expect(result.meta.request_id).toBe("req-1");
   });
+
+  it("keeps the timeout active while reading the upstream response body", async () => {
+    const { callClawdeals } = await import("../../../scripts/mcp/clawdeals-api.mjs");
+
+    const fetchImpl = async (_url: any, init: any) => {
+      const body = new ReadableStream({
+        start(controller) {
+          const timer = setTimeout(() => {
+            controller.enqueue(new TextEncoder().encode(JSON.stringify({ deals: [] })));
+            controller.close();
+          }, 100);
+          init.signal.addEventListener("abort", () => {
+            clearTimeout(timer);
+            controller.error(new DOMException("Aborted", "AbortError"));
+          }, { once: true });
+        }
+      });
+      return new Response(body, {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    };
+
+    const result: any = await callClawdeals({
+      method: "GET",
+      path: "/v1/deals",
+      query: {},
+      body: null,
+      idempotencyKey: null,
+      requestId: "req-slow-body",
+      env: {
+        NODE_ENV: "test",
+        CLAWDEALS_API_KEY: "dummy",
+        CLAWDEALS_API_BASE: "http://example.test/api",
+        CLAWDEALS_ORIGIN: "mcp",
+        CLAWDEALS_TIMEOUT_MS: "10"
+      },
+      fetchImpl
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      error: { code: "TIMEOUT" },
+      meta: { request_id: "req-slow-body" }
+    });
+  });
 });

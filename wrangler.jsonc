@@ -4,10 +4,12 @@
   "account_id": "412fc919ce706e002b751da5daaa0076",
   "main": "workers/edge-router.ts",
   "compatibility_date": "2026-02-02",
+  "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "MARKETING_HOST": "clawdeals.com",
     "APP_ORIGIN": "https://app.clawdeals.com",
-    "MARKETING_ORIGIN": "https://app.clawdeals.com"
+    "MARKETING_ORIGIN": "https://app.clawdeals.com",
+    "REMOTE_MCP_ENABLED": "false"
   },
   "routes": [
     { "pattern": "clawdeals.com", "zone_name": "clawdeals.com", "custom_domain": true },
@@ -16,5 +18,17 @@
   "triggers": {
     // Must stay in sync with CRON_JOBS in workers/edge-router.ts.
     "crons": ["*/5 * * * *", "17 * * * *", "10 2 * * *"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1
+    }
   }
 }

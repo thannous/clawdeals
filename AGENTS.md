@@ -1,48 +1,38 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- `src/pages/`: Next.js Pages Router (UI routes). API routes live in `src/pages/api/`.
-- `src/server/`: server-side modules (DB/services/middleware, SSE, rate limiting, etc.).
-- `src/ui/`, `src/theme/`, `src/styles/`: shared UI components, theming, and styling (Tailwind CSS).
-- `src/__tests__/` and `src/**/*.test.{ts,tsx}`: unit/API tests (Vitest).
-- `e2e/ui/`, `e2e/integration/`: Playwright end-to-end suites (`*.spec.ts`).
-- `public/`: static assets.
-- `supabase/migrations/`: database migrations.
-- `scripts/`: operational scripts (cron jobs, smoke checks).
-- `docs/`: product/spec documents and test coverage notes.
+## Operating Principles
 
-## Build, Test, and Development Commands
-- `npm ci`: install dependencies from `package-lock.json`.
-- `npm run dev`: run Next.js locally.
-- `npm run build` / `npm run start`: production build + serve.
-- `npm run lint`: ESLint (fails on warnings).
-- `npm run typecheck`: TypeScript check (`tsc --noEmit`).
-- `npm run test:unit`: run Vitest suite.
-- `npm run test:e2e`: run all Playwright projects.
-- `npm run test:ui` / `npm run test:integration`: run a specific Playwright project.
-- Feature-scoped integration runs (faster than full integration suite):
-  - `npm run test:integration:deals`
-  - `npm run test:integration:listings`
-  - `npm run test:integration:transactions`
-  - `npm run test:integration:escrow`
-  - `npm run test:integration:dispute`
-- `npm run preview` / `npm run deploy`: OpenNext Cloudflare build + preview/deploy.
-- Vercel deploys are expected to run via Git integration (see `docs/hosting-cloudflare-vercel.md` for the `app.clawdeals.com` setup).
+- When explaining something to the user, use the Visualize skill
+- Be concise, direct, and candid. Challenge weak assumptions and distinguish verified facts from uncertainty
+- Ground research in authoritative, current sources and link important evidence
+- Preserve the original goal and constraints; finish authorized work end to end and verify the actual result before claiming completion
+- Ask questions only when a decision is materially ambiguous, risky, or requires approval
+- Use relevant skills; spawn subagents only for genuinely independent work and synthesize their findings
+- Keep changes focused and simple. Avoid unrelated edits, unnecessary abstractions, and low-signal tests
+- Test observable behavior, review substantial changes, and validate user-facing work in the real interface when applicable
+- Preserve unrelated work and never take destructive, production, or external actions beyond what the user authorized
+- Report meaningful blockers, outcomes, and evidence without noisy progress
 
-## Coding Style & Naming Conventions
-- TypeScript + React/Next.js; keep changes consistent with existing patterns.
-- Lint rules are defined in `eslint.config.mjs` (Next Core Web Vitals).
-- Prefer 2-space indentation, semicolons, and double quotes (matches current codebase).
-- Naming: React components `PascalCase.tsx`; utilities `camelCase.ts`; tests `*.test.ts(x)`; e2e specs `*.spec.ts`.
-- Don’t commit generated output (gitignored): `.next/`, `.open-next/`, `coverage/`, `test-results/`.
+## Project Map
 
-## Testing Guidelines
-- Vitest runs Node tests by default; UI tests under `src/ui/**` use `jsdom` (see `vitest.config.ts`).
-- Playwright starts `npm run dev` automatically unless `E2E_BASE_URL` is set; useful vars: `E2E_DEV_PORT`, `API_BASE_URL`.
-- Add/adjust tests when changing API behavior, matching logic, or UI flows.
+- Next.js Pages Router: UI in `src/pages/`, APIs in `src/pages/api/`; server code in `src/server/`.
+- Shared UI/theme/styles: `src/ui/`, `src/theme/`, `src/styles/` (Tailwind CSS).
+- Tests: Vitest in `src/__tests__/` and `src/**/*.test.{ts,tsx}`; Playwright in `e2e/ui/` and `e2e/integration/`.
+- Operations: assets in `public/`, migrations in `supabase/migrations/`, scripts in `scripts/`, runbooks/specs in `docs/`.
+- Production topology: `clawdeals.com` is routed by `workers/edge-router.ts`; `app.clawdeals.com` is deployed through Vercel Git integration. See `docs/hosting-cloudflare-vercel.md`.
 
-## Commit & Pull Request Guidelines
-- Follow the existing commit style: `feat(scope): ...`, `fix: ...`, `refactor(ts): ...`, `test: ...`, `chore: ...`.
-- Include ticket references when applicable (e.g., `TI-192`) in the commit.
-- Don't create a branch, always work on the main branch.
-- Don't create a PR, commit directly to the branch.
+## Essential Commands
+
+- Install/run: `npm ci`, `npm run dev`, `npm run build`, `npm run start`.
+- Validate: `npm run lint`, `npm run typecheck`, `npm run test:unit`, or the full `npm run test:ci`.
+- Browser tests: `npm run test:ui`, `npm run test:integration`, `npm run test:e2e`.
+- Scoped integration: `npm run test:integration:{deals,listings,transactions,escrow,dispute}`.
+- Cloudflare: `npm run preview:cloudflare`; `npm run deploy:cloudflare` only when production deployment is explicitly authorized.
+
+## Code, Tests, and Release
+
+- Use TypeScript/React patterns already present: 2-space indentation, semicolons, double quotes; components `PascalCase.tsx`, utilities `camelCase.ts`, tests `*.test.ts(x)`, E2E `*.spec.ts`.
+- Vitest uses Node by default and `jsdom` for `src/ui/**`. Playwright starts the app unless `E2E_BASE_URL` is set; useful overrides include `E2E_DEV_PORT` and `API_BASE_URL`.
+- Remote integration, smoke, and E2E tests must use isolated staging with synthetic data, never production data or production secrets.
+- Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
+- Work directly on `main`: do not create branches or PRs. When a commit is authorized, use the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and include ticket IDs when applicable.
