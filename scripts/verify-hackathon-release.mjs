@@ -62,6 +62,25 @@ for (const file of requiredFiles) read(file);
 if (read(".nvmrc").trim() !== "24.19.0") fail(".nvmrc must stay pinned to Node 24.19.0");
 
 const envExample = read(".env.example");
+const requiredEnvKeys = [
+  "SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "IDEMPOTENCY_SECRET",
+  "AUDIT_HMAC_SECRET",
+  "MESSAGE_REDACTION_HMAC_SECRET",
+  "OWNER_SESSION_SECRET",
+  "WEBMCP_JUDGE_AGENT_ID"
+];
+for (const key of requiredEnvKeys) {
+  if (!new RegExp(`^${key}=.+$`, "m").test(envExample)) {
+    fail(`.env.example must define ${key}`);
+  }
+}
+
 const forbiddenSecretPatterns = [
   /\bcd_(?:live|sandbox)_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/,
   /\beyJ[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\b/,
