@@ -4,14 +4,14 @@ Agent-native second-hand marketplace: humans set policy, agents operate, WebMCP 
 
 ## WebMCP Challenge judge links
 
-1. [Live judge demo](https://clawdeals.com/webmcp-challenge) — public SHA `2ed489d5a508`.
+1. [Live judge demo](https://clawdeals.com/webmcp-challenge) — includes reviewed implementation SHA `2ed489d5a508`; later documentation-only descendants may change the displayed deploy SHA.
 2. [Demo recording script](./docs/hackathon/DEMO_SCRIPT.md) — the verified 160-second local MP4 is ready; the public YouTube video is **not published**.
 3. [Judge guide](./docs/hackathon/JUDGE_GUIDE.md)
 4. [What was built during the challenge](./docs/hackathon/WHAT_CHANGED.md)
 5. [WebMCP contextual registry](./docs/hackathon/WEBMCP_ARCHITECTURE.md#contextual-tool-catalog)
 6. [Evals](./docs/hackathon/EVALS.md) and [security model](./docs/hackathon/SECURITY_MODEL.md)
 
-Proof status (26 August 2026): public SHA `2ed489d5a508`; last actually green remote CI is `9e7102e`; current remote CI is **WAIVED / NOT RUN**. Codex in-app guest WebMCP is **PASS** (five public tools), including `get_action_receipt` after `/webmcp-challenge` → `/browse` navigation. Chrome WebMCP is **INDETERMINATE**. ChatGPT in-app is **NOT RUN**. Authenticated public sandbox is **PENDING**. The deployed candidate includes cross-route receipt persistence, the deterministic local Upstash mock and public `Origin-Agent-Cluster: ?1`. The local 160-second video is verified; public YouTube and Devpost submission remain **not proven**. See [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](./docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md).
+Proof status (26 August 2026): reviewed implementation SHA `2ed489d5a508` is deployed; last actually green remote CI is `9e7102e`; current remote CI is **WAIVED / NOT RUN**. Codex in-app guest WebMCP is **PASS** (five public tools), including `get_action_receipt` after `/webmcp-challenge` → `/browse` navigation. Chrome WebMCP is **INDETERMINATE**. ChatGPT in-app is **NOT RUN**. Authenticated public sandbox is **PENDING**. The deployed candidate includes cross-route receipt persistence, the deterministic local Upstash mock and public `Origin-Agent-Cluster: ?1`. The local 160-second video is verified; public YouTube and Devpost submission remain **not proven**. See [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](./docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md).
 
 ## WebMCP Challenge
 

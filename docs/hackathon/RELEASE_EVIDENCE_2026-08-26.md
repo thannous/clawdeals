@@ -8,7 +8,7 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 - Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
 - Clean-clone candidate SHA: `3f1057541ac3fd523fbc89f0ea4b367e52077026`
 - Latest functional hardening SHA: `3739c7c96f574251af5d778adae4edeb2a2ba078`
-- Reviewed release candidate and current observed public HEAD: `2ed489d5a5086f449c9985d9627f2d024032e3a3`
+- Reviewed implementation SHA: `2ed489d5a5086f449c9985d9627f2d024032e3a3`. Later documentation-only descendants may change the public deploy SHA without changing this runtime implementation.
 - Pre-challenge baseline: `webmcp-challenge-baseline` → `00880457964929c0773237a9c724704f5da651f0`
 
 ## Evidence matrix

@@ -32,7 +32,7 @@ Official contest samples already cover catalogues and carts. The judged differen
 | --- | --- | --- |
 | Judge hub | `/webmcp-challenge` | Compatibility, exact registered tools, copyable mission, isolated reset |
 | Live marketplace | `/webmcp` | Real product surface, not a simulator. The hub launch button opens this page |
-| Production hub | https://clawdeals.com/webmcp-challenge | Public SHA `2ed489d5a508`. Codex guest WebMCP PASS, including cross-route receipt retrieval. Authenticated sandbox journey PENDING. |
+| Production hub | https://clawdeals.com/webmcp-challenge | Contains reviewed implementation `2ed489d5a508`; a later documentation-only descendant may be the displayed deploy SHA. Codex guest WebMCP PASS, including cross-route receipt retrieval. Authenticated sandbox journey PENDING. |
 | Eligibility ledger | `HACKATHON.md` | Baseline SHA, challenge-period commits, registry |
 
 The hub reports the browser's real `document.modelContext` support, the tools that actually registered, and a sanitized deploy SHA when the host provides one. Missing native WebMCP is `INDETERMINATE`, not a product fail.
