@@ -7,9 +7,10 @@ dotenv.config();
 
 const baseUrl = process.env.SMOKE_BASE_URL || "http://localhost:3000";
 const ownerId = process.env.SMOKE_OWNER_ID || crypto.randomUUID();
-const shouldCreateOwner = !process.env.SMOKE_OWNER_ID;
+const ownerEmail = process.env.SMOKE_OWNER_EMAIL || `smoke+${ownerId}@example.com`;
 let sellerApiKey = process.env.SMOKE_AGENT_API_KEY || "";
 let buyerApiKey = process.env.SMOKE_BUYER_API_KEY || "";
+let ownerCookie = "";
 
 function isLocalBaseTarget(value) {
   try {
@@ -59,7 +60,10 @@ function buildHeaders(extra = {}, options = {}) {
     "Content-Type": "application/json",
     ...extra
   };
-  if (useOwner && ownerId) headers["x-owner-id"] = ownerId;
+  if (useOwner && ownerId) {
+    headers["x-owner-id"] = ownerId;
+    if (ownerCookie) headers.Cookie = ownerCookie;
+  }
   if (useAgent && agentApiKey) headers["Authorization"] = `Bearer ${agentApiKey}`;
   return headers;
 }
@@ -123,6 +127,37 @@ async function getJson(path, extraHeaders = {}, options = {}) {
   return response;
 }
 
+async function loginOwner() {
+  const start = await postJson(
+    "/api/v1/auth/login:start",
+    { email: ownerEmail },
+    {},
+    { useOwner: false, useAgent: false }
+  );
+  await expectStatus(start, [201]);
+  const started = await start.json();
+  if (!started.data?.session_id || !started.data?.session_token) {
+    throw new Error("Owner login start did not return a local session token");
+  }
+
+  const confirm = await postJson(
+    "/api/v1/auth/login:confirm",
+    {
+      session_id: started.data.session_id,
+      token: started.data.session_token
+    },
+    {},
+    { useOwner: false, useAgent: false }
+  );
+  await expectStatus(confirm, [200]);
+  const setCookie = confirm.headers.get("set-cookie") || "";
+  const sessionCookie = setCookie.match(/(?:^|,\s*)(cd_owner_session=[^;,]+)/)?.[1];
+  if (!sessionCookie) {
+    throw new Error("Owner login confirmation did not set cd_owner_session");
+  }
+  ownerCookie = sessionCookie;
+}
+
 async function ensureListingIsLiveForThreading(listingId, listingStatus) {
   if (listingStatus === "LIVE") return;
   if (listingStatus !== "PENDING_APPROVAL") {
@@ -144,7 +179,10 @@ async function ensureListingIsLiveForThreading(listingId, listingStatus) {
   const approveRes = await postJson(
     `/api/v1/approvals/${listingApproval.approval_id}:approve`,
     {},
-    { "Idempotency-Key": crypto.randomUUID() },
+    {
+      Origin: new URL(baseUrl).origin,
+      "Idempotency-Key": crypto.randomUUID()
+    },
     { useAgent: false }
   );
   await expectStatus(approveRes, [200]);
@@ -176,13 +214,12 @@ async function run() {
   const runNonce = crypto.randomUUID().slice(0, 8);
   const idempotencyKey = crypto.randomUUID();
 
-  if (shouldCreateOwner) {
-    const email = `smoke+${ownerId}@example.com`;
-    const ownerRes = await patchJson("/api/v1/owner", { email }, {}, { useAgent: false });
-    await expectStatus(ownerRes, [200]);
-    const owner = await ownerRes.json();
-    console.log("Owner upserted", owner.data?.owner_id);
-  }
+  const ownerRes = await patchJson("/api/v1/owner", { email: ownerEmail }, {}, { useAgent: false });
+  await expectStatus(ownerRes, [200]);
+  const owner = await ownerRes.json();
+  console.log("Owner upserted", owner.data?.owner_id);
+  await loginOwner();
+  console.log("Owner session authenticated");
 
   const agentRes = await createAgentWithFallback("Smoke Agent", idempotencyKey);
   if (agentRes.status === 429) {
