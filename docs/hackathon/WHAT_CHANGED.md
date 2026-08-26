@@ -53,6 +53,7 @@ All dates below are 26 August 2026. The victory plan's later calendar was a deli
 | 2026-08-26 | `10011c0` | Deterministic `/webmcp-challenge` judge mode | TI-373 |
 | 2026-08-26 | `425b414` | Adversarial submission evals and security matrix | TI-377 |
 | 2026-08-26 | `b624929` and follow-ups through `efd6310` | Reproducible local release gate, not a public deploy | TI-376 |
+| 2026-08-26 | `cdbacf1` | Zero-finding dependency audit and clean-clone release validation | TI-378 |
 
 ## What a judge can actually exercise
 

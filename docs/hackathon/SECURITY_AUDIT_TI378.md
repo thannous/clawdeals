@@ -91,11 +91,12 @@ No `npm audit fix`, `npm audit fix --force`, or unreviewed major fixer was used.
 | OpenAPI lint | PASS — existing warnings, no error |
 | `npm run build` | PASS — Next 16.3.3, 109 generated Pages routes plus App routes |
 | Wrangler deploy dry-run | PASS — edge router bundle generated, no deployment |
+| Fresh clone of `cdbacf19c1b45b0811331e35899762d6661fb444` + `npm ci` | PASS — 1,030 packages installed, 0 vulnerabilities |
+| Local Supabase reset + deterministic sandbox seed | PASS — 126 migrations replayed; 3 deals, 7 listings, 3 watchlists |
+| `npm run release:hackathon:local` on the clean clone | PASS — preflight; 373 files / 2,616 passed / 1 skipped; build; selection 24 x 3; contracts 79/79; UI 5/5; journey 2/2; security 10/10 |
 
 ## Remaining release gates
 
-- Fresh clone and `npm ci` against the committed lockfile.
-- Local database reset, migrations, deterministic sandbox seed, and full `release:hackathon:local` gate.
 - Remote CI on the exact candidate SHA.
 - Push and deployed-SHA verification.
 - Private-window, real Chrome WebMCP, ChatGPT in-app, and public smoke evidence.
