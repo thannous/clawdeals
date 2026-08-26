@@ -9,6 +9,12 @@ export type ToolExecutionContext = {
   idempotencyKey: string | null;
 };
 
+export type ToolAnnotations = {
+  readOnlyHint?: boolean;
+  destructiveHint?: boolean;
+  openWorldHint?: boolean;
+};
+
 export type ToolDef<TArgs = unknown, TOut = unknown> = {
   name: string;
   description: string;
@@ -17,6 +23,7 @@ export type ToolDef<TArgs = unknown, TOut = unknown> = {
   inputJsonSchema: Record<string, unknown>;
   zodSchema: z.ZodType<TArgs>;
   outputHint: string;
+  annotations?: ToolAnnotations;
   execute: (args: TArgs, ctx: ToolExecutionContext) => Promise<StableToolResult<TOut>>;
 };
 

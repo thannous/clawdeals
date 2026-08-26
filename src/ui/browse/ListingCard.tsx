@@ -76,7 +76,7 @@ function resolveAvatarSrc(value: unknown): string {
   return "/avatars/default-1.svg";
 }
 
-function ListingCard({ listing }: { listing: any }) {
+function ListingCard({ listing, highlighted }: { listing: any; highlighted?: boolean }) {
   const t = useTranslations("browse");
   const { locale } = useRouter();
   const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
@@ -86,7 +86,12 @@ function ListingCard({ listing }: { listing: any }) {
 
   return (
     <Link href={`/browse/${listing.listing_id}`} className="block h-full">
-      <article className="group bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full">
+      <article
+        data-highlighted={highlighted ? "true" : "false"}
+        className={`group bg-surface border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full ${
+          highlighted ? "border-primary ring-2 ring-primary/40" : "border-border"
+        }`}
+      >
 
         {/* Image zone — only rendered when image is available */}
         {coverImageSrc ? (

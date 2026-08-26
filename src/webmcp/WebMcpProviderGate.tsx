@@ -2,16 +2,16 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import type { PropsWithChildren } from "react";
 
-import { isWebMcpEnabled, shouldRegisterOnRoute } from "./config";
+import { isWebMcpRuntimeEnabled, shouldRegisterOnRoute } from "./config";
 
 const WebMcpProviderLazy = dynamic(() => import("./WebMcpProvider"), { loading: () => null });
 
 export default function WebMcpProviderGate({ children }: PropsWithChildren) {
   const router = useRouter();
+  const pathname = router.pathname || "";
 
-  if (!isWebMcpEnabled()) return <>{children}</>;
-  if (!shouldRegisterOnRoute(router.pathname || "")) return <>{children}</>;
+  if (!isWebMcpRuntimeEnabled(pathname)) return <>{children}</>;
+  if (!shouldRegisterOnRoute(pathname)) return <>{children}</>;
 
   return <WebMcpProviderLazy>{children}</WebMcpProviderLazy>;
 }
-

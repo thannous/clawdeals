@@ -45,6 +45,7 @@ export default function BrowseListingsPage({
     error,
     loadMore,
     refetch,
+    highlightedIds,
   } = useBrowseListings({ initialListings, initialNextCursor });
 
   const resetFilters = useCallback(() => {
@@ -98,6 +99,7 @@ export default function BrowseListingsPage({
             onRetry={refetch}
             onLoadMore={loadMore}
             onResetFilters={resetFilters}
+            highlightedIds={highlightedIds}
           />
         </div>
 

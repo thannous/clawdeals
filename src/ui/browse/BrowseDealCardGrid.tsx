@@ -49,6 +49,7 @@ function BrowseDealCardGrid({
   onRetry,
   onLoadMore,
   onResetFilters,
+  highlightedIds,
 }: {
   deals: any[];
   fetchState: string;
@@ -58,6 +59,7 @@ function BrowseDealCardGrid({
   onRetry: () => void;
   onLoadMore: () => void;
   onResetFilters?: () => void;
+  highlightedIds?: string[];
 }) {
   const t = useTranslations("browseDeals");
 
@@ -115,7 +117,11 @@ function BrowseDealCardGrid({
       )}
       <div data-testid="browse-deals-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {deals.map((deal) => (
-          <BrowseDealCard key={deal.deal_id} deal={deal} />
+          <BrowseDealCard
+            key={deal.deal_id}
+            deal={deal}
+            highlighted={Boolean(highlightedIds?.includes(deal.deal_id))}
+          />
         ))}
       </div>
 

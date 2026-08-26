@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { callClawdealsWebmcp } from "../http";
+import { callClawdealsWebmcp, callPublicWebmcp } from "../http";
+import { applyDealsSearchUi, applyListingsSearchUi, applyOpenDealUi, applyOpenListingUi } from "../ui-bridge";
 import type { ToolDef } from "./defs";
 import type { StableToolResult } from "../types";
 
@@ -19,9 +20,10 @@ function joinCsv(values: unknown): string | null {
 export const readTools: ToolDef[] = [
   {
     name: "clawdeals.deals_search",
-    description: "REST: GET /v1/deals (read-only).",
+    description: "Search deals and update the deals grid the human is viewing. REST: GET /v1/deals or public feed.",
     scope: "read",
     requiresConfirmation: false,
+    annotations: { readOnlyHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -62,19 +64,40 @@ export const readTools: ToolDef[] = [
       const status = joinCsv(args.status);
       if (status) query.status = status;
 
-      return callClawdealsWebmcp({
+      const publicQuery: any = {
+        sort: args.sort || "new",
+        limit: args.limit ?? 12
+      };
+      if (args.q) publicQuery.q = args.q;
+      if (args.status?.length === 1) publicQuery.status = args.status[0];
+
+      const publicResult = await callPublicWebmcp({
+        method: "GET",
+        path: "/v1/public/deals",
+        query: publicQuery,
+        requestId: ctx.requestId
+      });
+      if (publicResult.ok) {
+        applyDealsSearchUi({ q: args.q, sort: args.sort, status: args.status?.[0] });
+        return publicResult;
+      }
+
+      const authed = await callClawdealsWebmcp({
         method: "GET",
         path: "/v1/deals",
         query,
         requestId: ctx.requestId
       });
+      if (authed.ok) applyDealsSearchUi({ q: args.q, sort: args.sort, status: args.status?.[0] });
+      return authed;
     }
   },
   {
     name: "clawdeals.deals_get",
-    description: "REST: GET /v1/deals/{deal_id} (read-only).",
+    description: "Fetch one deal and open it in the shared UI. REST: GET /v1/deals/{deal_id}.",
     scope: "read",
     requiresConfirmation: false,
+    annotations: { readOnlyHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -86,6 +109,7 @@ export const readTools: ToolDef[] = [
     zodSchema: z.object({ deal_id: uuid }).strict(),
     outputHint: "Deal detail (minimal fields).",
     execute: async (args: any, ctx) => {
+      applyOpenDealUi(args.deal_id);
       return callClawdealsWebmcp({
         method: "GET",
         path: `/v1/deals/${encodeURIComponent(args.deal_id)}`,
@@ -95,9 +119,10 @@ export const readTools: ToolDef[] = [
   },
   {
     name: "clawdeals.listings_search",
-    description: "REST: GET /v1/listings (read-only, LIVE-only by API).",
+    description: "Search live listings and update the marketplace grid the human is viewing.",
     scope: "read",
     requiresConfirmation: false,
+    annotations: { readOnlyHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -132,19 +157,57 @@ export const readTools: ToolDef[] = [
       .strict(),
     outputHint: "Listings list (minimal summary rows + next_cursor).",
     execute: async (args: any, ctx) => {
-      return callClawdealsWebmcp({
+      const publicResult = await callPublicWebmcp({
+        method: "GET",
+        path: "/v1/public/listings",
+        query: {
+          q: args.q,
+          category: args.category,
+          condition: args.condition,
+          price_min: args.price_min,
+          price_max: args.price_max,
+          sort: args.sort && args.sort !== "distance" ? args.sort : "recent",
+          limit: args.limit ?? 12,
+          cursor: args.cursor
+        },
+        requestId: ctx.requestId
+      });
+      if (publicResult.ok) {
+        applyListingsSearchUi({
+          q: args.q,
+          category: args.category,
+          condition: args.condition,
+          price_min: args.price_min,
+          price_max: args.price_max,
+          sort: args.sort
+        });
+        return publicResult;
+      }
+      const authed = await callClawdealsWebmcp({
         method: "GET",
         path: "/v1/listings",
         query: args,
         requestId: ctx.requestId
       });
+      if (authed.ok) {
+        applyListingsSearchUi({
+          q: args.q,
+          category: args.category,
+          condition: args.condition,
+          price_min: args.price_min,
+          price_max: args.price_max,
+          sort: args.sort
+        });
+      }
+      return authed;
     }
   },
   {
     name: "clawdeals.listings_get",
-    description: "REST: GET /v1/listings/{listing_id} (read-only).",
+    description: "Fetch one listing and open it in the shared UI.",
     scope: "read",
     requiresConfirmation: false,
+    annotations: { readOnlyHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -156,6 +219,7 @@ export const readTools: ToolDef[] = [
     zodSchema: z.object({ listing_id: uuid }).strict(),
     outputHint: "Listing detail (minimal fields).",
     execute: async (args: any, ctx) => {
+      applyOpenListingUi(args.listing_id);
       return callClawdealsWebmcp({
         method: "GET",
         path: `/v1/listings/${encodeURIComponent(args.listing_id)}`,
@@ -165,9 +229,10 @@ export const readTools: ToolDef[] = [
   },
   {
     name: "clawdeals.approvals_list",
-    description: "REST: GET /v1/approvals?state=PENDING (read-only).",
+    description: "List pending human approvals for the signed-in agent owner.",
     scope: "read",
     requiresConfirmation: false,
+    annotations: { readOnlyHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -198,9 +263,10 @@ export const readTools: ToolDef[] = [
   },
   {
     name: "clawdeals.approvals_get",
-    description: "REST: GET /v1/approvals/{approval_id} (read-only).",
+    description: "Fetch one pending approval so the human can review it.",
     scope: "read",
     requiresConfirmation: false,
+    annotations: { readOnlyHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,

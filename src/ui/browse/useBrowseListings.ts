@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { getPublicApiBaseUrl, joinUrl } from "../../shared/urls";
+import { subscribeWebMcpUi, type ListingsFilter } from "../../webmcp/ui-bridge";
 
 const DEFAULT_SORT = "recent";
 const PAGE_SIZE = 24;
@@ -85,6 +86,7 @@ export function useBrowseListings({
   const [fetchState, setFetchState] = useState<string>("done");
   const [loadMoreState, setLoadMoreState] = useState<string>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [highlightedIds, setHighlightedIds] = useState<string[]>([]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const categoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -372,6 +374,43 @@ export function useBrowseListings({
     fetchListings({ sort, q: debouncedQ, category: debouncedCategory, condition, priceMin: debouncedPriceMin, priceMax: debouncedPriceMax });
   }, [routerReady, isInitializedFromQuery, sort, debouncedQ, debouncedCategory, condition, debouncedPriceMin, debouncedPriceMax, fetchListings]);
 
+  const applyAgentFilter = useCallback(
+    (filter: ListingsFilter) => {
+      const nextQ = filter.q || "";
+      const nextCategory = filter.category || "";
+      const nextCondition = filter.condition || "";
+      const nextPriceMin = filter.price_min != null ? String(filter.price_min) : "";
+      const nextPriceMax = filter.price_max != null ? String(filter.price_max) : "";
+      const nextSort =
+        filter.sort === "recent" || filter.sort === "price_asc" || filter.sort === "price_desc"
+          ? filter.sort
+          : sortRef.current;
+
+      setSortState(nextSort);
+      setQState(nextQ);
+      setDebouncedQ(nextQ);
+      setCategoryState(nextCategory);
+      setDebouncedCategory(nextCategory);
+      setConditionState(nextCondition);
+      setPriceMinState(nextPriceMin);
+      setDebouncedPriceMin(nextPriceMin);
+      setPriceMaxState(nextPriceMax);
+      setDebouncedPriceMax(nextPriceMax);
+      if (filter.highlight_ids) setHighlightedIds(filter.highlight_ids);
+      setListings([]);
+      setNextCursor(null);
+      syncUrl(nextSort, nextQ, nextCategory, nextCondition, nextPriceMin, nextPriceMax);
+    },
+    [syncUrl]
+  );
+
+  useEffect(() => {
+    return subscribeWebMcpUi((command) => {
+      if (command.type === "filter_listings") applyAgentFilter(command.filter);
+      if (command.type === "highlight_listings") setHighlightedIds(command.ids);
+    });
+  }, [applyAgentFilter]);
+
   return {
     listings,
     sort,
@@ -392,5 +431,6 @@ export function useBrowseListings({
     error,
     loadMore,
     refetch,
+    highlightedIds,
   };
 }

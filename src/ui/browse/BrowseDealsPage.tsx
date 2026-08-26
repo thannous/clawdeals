@@ -39,6 +39,7 @@ export default function BrowseDealsPage({
     error,
     loadMore,
     refetch,
+    highlightedIds,
   } = useBrowseDeals({ initialDeals, initialNextCursor });
 
   return (
@@ -78,6 +79,7 @@ export default function BrowseDealsPage({
             onRetry={refetch}
             onLoadMore={loadMore}
             onResetFilters={resetFilters}
+            highlightedIds={highlightedIds}
           />
         </div>
 

@@ -2470,5 +2470,32 @@
       "more": "Plus…",
       "search": "Rechercher un pays…"
     }
+  },
+  "webmcp": {
+    "eyebrow": "Copilote WebMCP",
+    "title": "MARKETPLACE HUMAIN + AGENT",
+    "subtitle": "Cette page enregistre des tools structurés sur document.modelContext. Un agent in-browser peut chercher des annonces, les mettre en avant et ouvrir le détail pendant que vous voyez la même grille. Les écritures attendent votre confirmation.",
+    "yes": "OUI",
+    "no": "NON",
+    "status": {
+      "title": "Support navigateur",
+      "supported": "SUPPORTÉ",
+      "registered": "ENREGISTRÉ",
+      "hint": "Ouvrez cette URL dans le navigateur intégré de ChatGPT, ou Chrome 149+ avec chrome://flags/#enable-webmcp-testing."
+    },
+    "test": {
+      "title": "Comment tester",
+      "step1": "Activez WebMCP dans le navigateur ChatGPT ou le flag expérimental Chrome.",
+      "step2": "Demandez : « Trouve de l’électronique d’occasion sous 200 EUR et montre-la sur cette page. »",
+      "step3": "La grille se filtre et se met en avant, sans clics DOM.",
+      "step4": "Pour une écriture, demandez un brouillon d’annonce. Approuvez ou refusez la modale.",
+      "writeHint": "Les tools d’écriture nécessitent une clé agent via /start. Les lectures fonctionnent sans compte.",
+      "getKey": "Créer une clé agent"
+    },
+    "tools": {
+      "title": "Tools enregistrés",
+      "confirm": "confirm"
+    },
+    "gridHint": "Les appels agent mettent à jour cette même grille. Les cartes mises en avant sont celles choisies par l’agent."
   }
 }

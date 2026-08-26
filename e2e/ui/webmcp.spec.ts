@@ -17,21 +17,25 @@ test.describe("Dev WebMCP demo", () => {
       const tools: string[] = [];
       (window as any).__webmcp_tools = tools;
 
+      const modelContext = {
+        registerTool: (arg1: any, arg2: any, arg3: any) => {
+          const name =
+            typeof arg1 === "string"
+              ? arg1
+              : arg1 && typeof arg1 === "object"
+                ? arg1.name
+                : null;
+          if (name) tools.push(String(name));
+          (window as any).__webmcp_last_register_args = [arg1, arg2, arg3];
+        }
+      };
+      Object.defineProperty(document as any, "modelContext", {
+        configurable: true,
+        value: modelContext
+      });
       Object.defineProperty(navigator as any, "modelContext", {
         configurable: true,
-        value: {
-          registerTool: (arg1: any, arg2: any, arg3: any) => {
-            const name =
-              typeof arg1 === "string"
-                ? arg1
-                : arg1 && typeof arg1 === "object"
-                  ? arg1.name
-                  : null;
-            if (name) tools.push(String(name));
-            // Keep a reference to the handler so the page can call it if needed.
-            (window as any).__webmcp_last_register_args = [arg1, arg2, arg3];
-          }
-        }
+        value: modelContext
       });
     });
 
@@ -64,7 +68,7 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
-    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("8");
+    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("14");
 
     // Select a write tool and run it: Deny first.
     const createDraftButton = page

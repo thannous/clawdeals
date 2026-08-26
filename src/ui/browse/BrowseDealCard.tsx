@@ -41,7 +41,7 @@ function extractHostname(url: string): string {
 
 const imageLoader = ({ src }: ImageLoaderProps) => src;
 
-function BrowseDealCard({ deal }: { deal: any }) {
+function BrowseDealCard({ deal, highlighted }: { deal: any; highlighted?: boolean }) {
   const t = useTranslations("browseDeals");
   const router = useRouter();
   const { locale } = router;
@@ -75,7 +75,10 @@ function BrowseDealCard({ deal }: { deal: any }) {
       onKeyDown={handleCardKeyDown}
       role="link"
       tabIndex={0}
-      className="group cursor-pointer bg-surface border border-border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      data-highlighted={highlighted ? "true" : "false"}
+      className={`group cursor-pointer bg-surface border rounded clip-corner overflow-hidden hover:border-primary/50 hover:shadow-[0_0_12px_var(--theme-primary-20)] transition-all flex flex-col h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg ${
+        highlighted ? "border-primary ring-2 ring-primary/40" : "border-border"
+      }`}
     >
       {/* Image zone — only rendered when image is available */}
       {coverImageSrc && (

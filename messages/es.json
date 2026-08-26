@@ -2470,5 +2470,32 @@
       "more": "Más…",
       "search": "Buscar país…"
     }
+  },
+  "webmcp": {
+    "eyebrow": "Copiloto WebMCP",
+    "title": "MARKETPLACE HUMANO + AGENTE",
+    "subtitle": "Esta página registra tools estructurados en document.modelContext. Un agente in-browser puede buscar anuncios, destacar tarjetas y abrir el detalle mientras ves la misma parrilla. Las escrituras esperan tu confirmación.",
+    "yes": "SÍ",
+    "no": "NO",
+    "status": {
+      "title": "Soporte del navegador",
+      "supported": "SOPORTADO",
+      "registered": "REGISTRADO",
+      "hint": "Abre esta URL en el navegador de ChatGPT, o Chrome 149+ con chrome://flags/#enable-webmcp-testing."
+    },
+    "test": {
+      "title": "Cómo probar",
+      "step1": "Activa WebMCP en el navegador de ChatGPT o en el flag experimental de Chrome.",
+      "step2": "Pide: “Encuentra electrónica de segunda mano por menos de 200 EUR y muéstrala en esta página.”",
+      "step3": "La parrilla se filtra y se destaca, sin clics en el DOM.",
+      "step4": "Para escribir, pide un borrador de anuncio. Aprueba o deniega el modal.",
+      "writeHint": "Las tools de escritura necesitan una clave de agente en /start. Las lecturas funcionan sin cuenta.",
+      "getKey": "Crear una clave de agente"
+    },
+    "tools": {
+      "title": "Tools registradas",
+      "confirm": "confirm"
+    },
+    "gridHint": "Las llamadas del agente actualizan esta misma parrilla. Las tarjetas destacadas son las que eligió el agente."
   }
 }

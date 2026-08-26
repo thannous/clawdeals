@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { getPublicApiBaseUrl, joinUrl } from "../../shared/urls";
+import { subscribeWebMcpUi, type DealsFilter } from "../../webmcp/ui-bridge";
 
 const DEFAULT_SORT = "new";
 const PAGE_SIZE = 24;
@@ -56,6 +57,7 @@ export function useBrowseDeals({
   const [fetchState, setFetchState] = useState<string>("done");
   const [loadMoreState, setLoadMoreState] = useState<string>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [highlightedIds, setHighlightedIds] = useState<string[]>([]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -224,6 +226,31 @@ export function useBrowseDeals({
     fetchDeals({ sort, q: debouncedQ, status });
   }, [routerReady, isInitializedFromQuery, sort, debouncedQ, status, fetchDeals]);
 
+  const applyAgentFilter = useCallback(
+    (filter: DealsFilter) => {
+      const nextQ = filter.q || "";
+      const nextStatus = filter.status || "";
+      const nextSort =
+        filter.sort === "new" || filter.sort === "temp" || filter.sort === "trend" ? filter.sort : DEFAULT_SORT;
+      setSortState(nextSort);
+      setQState(nextQ);
+      setDebouncedQ(nextQ);
+      setStatusState(nextStatus);
+      if (filter.highlight_ids) setHighlightedIds(filter.highlight_ids);
+      setDeals([]);
+      setNextCursor(null);
+      syncUrl(nextSort, nextQ, nextStatus);
+    },
+    [syncUrl]
+  );
+
+  useEffect(() => {
+    return subscribeWebMcpUi((command) => {
+      if (command.type === "filter_deals") applyAgentFilter(command.filter);
+      if (command.type === "highlight_deals") setHighlightedIds(command.ids);
+    });
+  }, [applyAgentFilter]);
+
   return {
     deals,
     sort,
@@ -239,5 +266,6 @@ export function useBrowseDeals({
     error,
     loadMore,
     refetch,
+    highlightedIds,
   };
 }

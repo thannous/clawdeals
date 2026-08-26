@@ -2500,5 +2500,32 @@
       "more": "More…",
       "search": "Search country…"
     }
+  },
+  "webmcp": {
+    "eyebrow": "WebMCP copilot",
+    "title": "HUMAN + AGENT MARKETPLACE",
+    "subtitle": "This page registers structured tools on document.modelContext. An in-browser agent can search listings, highlight cards, and open details while you watch the same grid. Writes still wait for your confirmation.",
+    "yes": "YES",
+    "no": "NO",
+    "status": {
+      "title": "Browser support",
+      "supported": "SUPPORTED",
+      "registered": "REGISTERED",
+      "hint": "Open this URL in ChatGPT’s in-app browser, or Chrome 149+ with chrome://flags/#enable-webmcp-testing."
+    },
+    "test": {
+      "title": "How judges can test",
+      "step1": "Enable WebMCP in ChatGPT’s browser or Chrome’s experimental flag.",
+      "step2": "Ask: “Find used electronics under 200 EUR and show them on this page.”",
+      "step3": "Watch the grid filter and highlight without DOM clicking.",
+      "step4": "For writes, ask to create a draft listing. Approve or deny the modal.",
+      "writeHint": "Write tools need an agent API key from /start. Reads work for guests.",
+      "getKey": "Issue an agent key"
+    },
+    "tools": {
+      "title": "Registered tools",
+      "confirm": "confirm"
+    },
+    "gridHint": "Agent tool calls update this same grid. Highlighted cards are the ones the agent selected."
   }
 }

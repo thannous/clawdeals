@@ -1,54 +1,36 @@
-# WebMCP (In-Browser Tools) — Clawdeals v0
+# WebMCP (In-Browser Tools) — Clawdeals
 
-## Overview
+Clawdeals registers in-page tools on `document.modelContext` so an agent can act on the **same live marketplace UI** a human is looking at.
 
-Clawdeals exposes a minimal set of **in-browser tools** via WebMCP (`navigator.modelContext`) so an agent can call structured functions instead of clicking UI.
+## Surfaces
 
-Key properties:
-- Read tools are safe by default.
-- Write/admin tools always require explicit human confirmation (modal).
-- Outputs are sanitized (PII/secrets redaction) and capped (16KB).
-- Requests are tagged with `X-Client-Channel: webmcp`.
+| Route | Registers tools | Notes |
+|---|---|---|
+| `/webmcp` | always | Judge / demo copilot |
+| `/browse`, `/browse/deals`, `/marketplace` | always | Product UI updates |
+| `/dev/webmcp` | `NEXT_PUBLIC_WEBMCP_ENABLED=1` | Local invoke playground |
 
-## Enable
+## Tools
 
-Set:
+Collaboration (guest-readable, update UI):
 
-```bash
-NEXT_PUBLIC_WEBMCP_ENABLED=1
-```
+- `get_page_context`
+- `search_listings` / `search_deals`
+- `show_listings`
+- `open_listing` / `open_deal`
 
-## Demo Page
+REST-compatible (same confirm/redaction path as v0):
 
-`/dev/webmcp` (only available when enabled) provides:
-- support/registration status
-- tool list + schemas
-- local simulation of tool invocation (read + write via confirm)
-
-## Tool List (v0)
-
-Read-only:
-- `clawdeals.deals_search`
-- `clawdeals.deals_get`
-- `clawdeals.listings_search`
-- `clawdeals.listings_get`
-- `clawdeals.approvals_list` (PENDING only)
-- `clawdeals.approvals_get`
-
-Write/admin (confirmation required):
-- `clawdeals.listings_create_draft` (creates DRAFT only, never LIVE)
-- `clawdeals.approvals_resolve` (approve/deny)
-
-## Auth Model (v0)
-
-WebMCP tools authenticate using the existing **agent API key** stored in localStorage (generated via `/start`).
-
-If no key exists, tool calls fail with `UNAUTHORIZED` and instruct the user to go to `/start`.
+- `clawdeals.deals_search` / `clawdeals.deals_get`
+- `clawdeals.listings_search` / `clawdeals.listings_get`
+- `clawdeals.approvals_list` / `clawdeals.approvals_get`
+- `clawdeals.listings_create_draft` (confirm, DRAFT only)
+- `clawdeals.approvals_resolve` (confirm)
 
 ## Safety
 
-- Confirmation gate blocks any tool marked `requiresConfirmation`.
-- Cooldown denies bursts (>10 requests/30s).
-- Outputs are sanitized and size-capped.
-- Server adds an extra rate limit bucket `webmcp.tool_invoke` (120/min/agent) when `X-Client-Channel=webmcp`.
-
+- Write/admin tools require the confirmation modal.
+- Outputs are sanitized and capped at 16KB.
+- Requests send `X-Client-Channel: webmcp`.
+- Public search tools do not require an API key.
+- Authenticated writes still require the key from `/start`.

@@ -1,8 +1,8 @@
 import { useRouter } from "next/router";
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useSyncExternalStore } from "react";
 
 import { registerTools, isWebMCPSupported } from "./adapter";
-import { isWebMcpEnabled, shouldRegisterOnRoute } from "./config";
+import { isWebMcpRuntimeEnabled, shouldRegisterOnRoute } from "./config";
 import { WEBMCP_TOOLS, getToolByName } from "./tools";
 import type { StableToolResult } from "./types";
 import { capToolOutputBytes } from "./security/output-cap";
@@ -11,6 +11,8 @@ import { randomUuid } from "./utils";
 import { confirmAndExecute } from "./confirm/gate";
 import { WebMcpConfirmProvider, useWebMcpConfirm } from "./confirm/context";
 import ConfirmModalHost from "./confirm/ConfirmModalHost";
+import ActivityHud from "./ActivityHud";
+import { recordWebMcpActivity, subscribeWebMcpUi } from "./ui-bridge";
 
 type WebMcpContextValue = {
   enabled: boolean;
@@ -67,12 +69,14 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { requestConfirmation } = useWebMcpConfirm();
 
-  const enabled = isWebMcpEnabled();
-  const supported = typeof window !== "undefined" ? isWebMCPSupported() : false;
+  const enabled = isWebMcpRuntimeEnabled(router.pathname || "");
+  const supported = useSyncExternalStore(
+    () => () => undefined,
+    () => isWebMCPSupported(),
+    () => false
+  );
 
   const [registration, dispatchRegistration] = useReducer(registrationReducer, INITIAL_REGISTRATION_STATE);
-
-  const didRegisterRef = useRef(false);
 
   const executeTool = useCallback(
     async (name: string, args: unknown): Promise<StableToolResult> => {
@@ -90,69 +94,88 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
         idempotencyKey: tool.scope === "read" ? null : requestId
       });
 
-      if (!stable.ok) {
+      if (stable.ok === false) {
+        recordWebMcpActivity({
+          toolName: name,
+          summary: stable.error.message || "Failed",
+          ok: false
+        });
         return stable;
       }
 
       const sanitized = sanitizeToolOutput(stable.data);
       const capped = capToolOutputBytes(sanitized, { maxBytes: 16 * 1024 });
-      return {
-        ok: true,
+      const out = {
+        ok: true as const,
         data: capped.value,
         meta: {
           request_id: stable.meta.request_id || requestId,
           ...(capped.truncated ? { truncated: true, max_bytes: capped.maxBytes } : {})
         }
       };
+      recordWebMcpActivity({
+        toolName: name,
+        summary: tool.outputHint || "Completed",
+        ok: true
+      });
+      return out;
     },
     [requestConfirmation]
   );
 
   useEffect(() => {
+    return subscribeWebMcpUi((command) => {
+      if (command.type === "navigate" && command.href) {
+        void router.push(command.href);
+      }
+    });
+  }, [router]);
+
+  useEffect(() => {
     let alive = true;
-    if (didRegisterRef.current) return;
     if (!enabled) return;
     if (!supported) return;
 
     const pathname = router.pathname || "";
     if (!shouldRegisterOnRoute(pathname)) return;
 
+    const controller = new AbortController();
+
     const registerable = WEBMCP_TOOLS.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputJsonSchema,
-      execute: async (toolArgs: any) => {
+      annotations: t.annotations || {
+        readOnlyHint: t.scope === "read" && !t.requiresConfirmation,
+        destructiveHint: t.scope === "admin"
+      },
+      execute: async (toolArgs: any, options?: { signal?: AbortSignal }) => {
+        if (options?.signal?.aborted) {
+          return { ok: false, error: { code: "ABORTED", message: "Cancelled", details: {} }, meta: { request_id: randomUuid() } };
+        }
         const result = await executeTool(t.name, toolArgs || {});
         return result;
       }
     }));
 
-    function applySuccess(result: { registered: number; errors: number }) {
-      didRegisterRef.current = true;
-      if (!alive) return;
-      dispatchRegistration({
-        type: "register/success",
-        registeredCount: result.registered,
-        errorCount: result.errors,
-        // Registration might partially fail depending on API shape; keep the full attempted list for visibility.
-        toolNames: registerable.map((tool) => tool.name)
+    registerTools(registerable, { signal: controller.signal })
+      .then((result) => {
+        if (!alive) return;
+        dispatchRegistration({
+          type: "register/success",
+          registeredCount: result.registered,
+          errorCount: result.errors,
+          toolNames: registerable.map((tool) => tool.name)
+        });
+      })
+      .catch((error: any) => {
+        if (!alive) return;
+        dispatchRegistration({ type: "register/failure", message: error?.message || "Tool registration failed" });
       });
-    }
-
-    function applyFailure(error: any) {
-      if (!alive) return;
-      dispatchRegistration({ type: "register/failure", message: error?.message || "Tool registration failed" });
-    }
-
-    try {
-      const result = registerTools(registerable);
-      applySuccess(result);
-    } catch (error: any) {
-      applyFailure(error);
-    }
 
     return () => {
       alive = false;
+      controller.abort();
     };
   }, [router.pathname, enabled, supported, executeTool]);
 
@@ -172,6 +195,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     <WebMcpContext.Provider value={value}>
       {children}
       <ConfirmModalHost />
+      <ActivityHud />
     </WebMcpContext.Provider>
   );
 }

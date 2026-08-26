@@ -6,6 +6,12 @@ import { useWebMcp } from "../../webmcp/WebMcpProvider";
 import PageHeader from "../shared/PageHeader";
 
 const SAMPLE_ARGS: Record<string, any> = {
+  get_page_context: {},
+  show_listings: { listing_ids: ["00000000-0000-4000-a000-000000000123"] },
+  open_listing: { listing_id: "00000000-0000-4000-a000-000000000123" },
+  open_deal: { deal_id: "00000000-0000-4000-a000-000000000123" },
+  search_listings: { q: "gpu", price_max: 20000, limit: 6 },
+  search_deals: { q: "ssd", limit: 6 },
   "clawdeals.deals_search": { limit: 1 },
   "clawdeals.deals_get": { deal_id: "00000000-0000-4000-a000-000000000123" },
   "clawdeals.listings_search": { limit: 1, sort: "recent" },

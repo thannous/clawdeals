@@ -43,6 +43,7 @@ import { META_DESCRIPTION as NOT_FOUND } from "../pages/404";
 import { META_DESCRIPTION as PAIR_PAGE } from "../pages/pair";
 import { META_DESCRIPTION as START_PAGE } from "../pages/start";
 import { META_DESCRIPTION as WEBMCP_PAGE } from "../pages/dev/webmcp";
+import { META as WEBMCP_DEMO_META, META_DESCRIPTION as WEBMCP_DEMO_PAGE } from "../pages/webmcp";
 import { META_DESCRIPTION as DEVICE_PAGE } from "../pages/device";
 import { META_DESCRIPTION as MCP_PAGE } from "../pages/mcp";
 
@@ -137,6 +138,7 @@ const staticDescriptions: DescEntry[] = [
   { page: "pair", locale: "en", desc: PAIR_PAGE },
   { page: "start", locale: "en", desc: START_PAGE },
   { page: "dev/webmcp", locale: "en", desc: WEBMCP_PAGE },
+  { page: "webmcp", locale: "en", desc: WEBMCP_DEMO_PAGE },
   { page: "device", locale: "en", desc: DEVICE_PAGE },
   { page: "mcp", locale: "en", desc: MCP_PAGE },
 ];
@@ -144,6 +146,9 @@ const staticDescriptions: DescEntry[] = [
 // Multilingual META objects
 const multilingualDescriptions: DescEntry[] = [
   // marketplace
+  { page: "webmcp", locale: "en", desc: WEBMCP_DEMO_META.en.description },
+  { page: "webmcp", locale: "fr", desc: WEBMCP_DEMO_META.fr.description },
+  { page: "webmcp", locale: "es", desc: WEBMCP_DEMO_META.es.description },
   { page: "marketplace", locale: "en", desc: MARKETPLACE_META.en.description },
   { page: "marketplace", locale: "fr", desc: MARKETPLACE_META.fr.description },
   { page: "marketplace", locale: "es", desc: MARKETPLACE_META.es.description },

@@ -5,7 +5,7 @@ vi.mock("../ui/developer/storage", () => ({
 }));
 
 import { getStoredApiKey } from "../ui/developer/storage";
-import { callClawdealsWebmcp } from "./http";
+import { callClawdealsWebmcp, callPublicWebmcp } from "./http";
 
 describe("callClawdealsWebmcp", () => {
   beforeEach(() => {
@@ -15,6 +15,22 @@ describe("callClawdealsWebmcp", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+  });
+
+  it("allows public reads without an API key", async () => {
+    vi.mocked(getStoredApiKey).mockReturnValue(null);
+    const fetchSpy = vi.spyOn(globalThis, "fetch" as any).mockResolvedValue(
+      new Response(JSON.stringify({ data: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      }) as any
+    );
+
+    await expect(
+      callPublicWebmcp({ method: "GET", path: "/v1/public/listings", requestId: "req-public" })
+    ).resolves.toMatchObject({ ok: true });
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as any).authorization).toBeUndefined();
   });
 
   it("fails before fetch when no API key is stored", async () => {

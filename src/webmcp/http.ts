@@ -9,7 +9,10 @@ type CallOptions = {
   body?: any;
   requestId?: string;
   idempotencyKey?: string | null;
+  signal?: AbortSignal;
 };
+
+type AuthMode = "required" | "none";
 
 function getHeaderValue(headers: Headers, name: string): string | null {
   try {
@@ -43,10 +46,10 @@ function stableError<T = any>(
   };
 }
 
-export async function callClawdealsWebmcp<T = any>(options: CallOptions): Promise<StableToolResult<T>> {
+async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }): Promise<StableToolResult<T>> {
   const requestId = options.requestId || randomUuid();
-  const apiKey = getStoredApiKey();
-  if (!apiKey) {
+  const apiKey = options.auth === "none" ? null : getStoredApiKey();
+  if (options.auth === "required" && !apiKey) {
     return stableError(requestId, "UNAUTHORIZED", "API key required; go to /start");
   }
 
@@ -56,11 +59,13 @@ export async function callClawdealsWebmcp<T = any>(options: CallOptions): Promis
   const headers: Record<string, string> = {
     accept: "application/json",
     "content-type": "application/json",
-    authorization: `Bearer ${apiKey}`,
     "x-request-id": requestId,
     "x-client-channel": "webmcp",
     "x-clawdeals-origin": "webmcp"
   };
+  if (apiKey) {
+    headers.authorization = `Bearer ${apiKey}`;
+  }
   if (options.idempotencyKey) {
     headers["idempotency-key"] = String(options.idempotencyKey);
   }
@@ -69,6 +74,7 @@ export async function callClawdealsWebmcp<T = any>(options: CallOptions): Promis
     const res = await fetch(url, {
       method: options.method,
       headers,
+      signal: options.signal,
       body: options.method === "GET" ? undefined : JSON.stringify(options.body ?? {})
     });
 
@@ -101,6 +107,17 @@ export async function callClawdealsWebmcp<T = any>(options: CallOptions): Promis
 
     return stableError(resRequestId, "ERROR", typeof payload === "string" && payload ? payload : `Request failed (${res.status})`);
   } catch (error: any) {
+    if (error?.name === "AbortError") {
+      return stableError(requestId, "ABORTED", "Tool execution was cancelled");
+    }
     return stableError(requestId, "NETWORK_ERROR", error?.message || "Network error");
   }
+}
+
+export async function callClawdealsWebmcp<T = any>(options: CallOptions): Promise<StableToolResult<T>> {
+  return callWebmcpHttp({ ...options, auth: "required" });
+}
+
+export async function callPublicWebmcp<T = any>(options: CallOptions): Promise<StableToolResult<T>> {
+  return callWebmcpHttp({ ...options, auth: "none" });
 }

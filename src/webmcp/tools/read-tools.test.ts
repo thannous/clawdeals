@@ -5,10 +5,15 @@ vi.mock("../http", () => ({
     ok: true,
     data: { opts },
     meta: { request_id: opts.requestId || "req-1" }
+  })),
+  callPublicWebmcp: vi.fn(async (opts: any) => ({
+    ok: true,
+    data: { data: [], next_cursor: null, opts },
+    meta: { request_id: opts.requestId || "req-1" }
   }))
 }));
 
-import { callClawdealsWebmcp } from "../http";
+import { callPublicWebmcp } from "../http";
 import { readTools } from "./read-tools";
 import { confirmAndExecute } from "../confirm/gate";
 
@@ -29,14 +34,13 @@ describe("webmcp read tools", () => {
     );
     expect(result.ok).toBe(true);
 
-    expect(callClawdealsWebmcp).toHaveBeenCalledWith(
+    expect(callPublicWebmcp).toHaveBeenCalledWith(
       expect.objectContaining({
         method: "GET",
-        path: "/v1/deals",
+        path: "/v1/public/deals",
         query: expect.objectContaining({
-          tags: "gpu,nvidia",
-          status: "NEW,ACTIVE",
-          limit: 10
+          limit: 10,
+          sort: "new"
         }),
         requestId: "req-1"
       })

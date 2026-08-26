@@ -16,9 +16,10 @@ const mediaImageSchema = z
 export const writeTools: ToolDef[] = [
   {
     name: "clawdeals.listings_create_draft",
-    description: "REST: POST /v1/listings (publish=false) to create a DRAFT listing.",
+    description: "Create a DRAFT listing. Never publishes live. The human must approve the payload in the confirmation dialog first.",
     scope: "write",
     requiresConfirmation: true,
+    annotations: { readOnlyHint: false, destructiveHint: false },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -123,9 +124,10 @@ export const writeTools: ToolDef[] = [
   },
   {
     name: "clawdeals.approvals_resolve",
-    description: "REST: POST /v1/approvals/{approval_id}:(approve|deny).",
+    description: "Approve or deny a pending owner approval. Requires an explicit human confirmation in the page UI.",
     scope: "admin",
     requiresConfirmation: true,
+    annotations: { readOnlyHint: false, destructiveHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,

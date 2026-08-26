@@ -44,6 +44,7 @@ function ListingCardGrid({
   onRetry,
   onLoadMore,
   onResetFilters,
+  highlightedIds,
 }: {
   listings: any[];
   fetchState: string;
@@ -53,6 +54,7 @@ function ListingCardGrid({
   onRetry: () => void;
   onLoadMore: () => void;
   onResetFilters?: () => void;
+  highlightedIds?: string[];
 }) {
   const t = useTranslations("browse");
 
@@ -110,7 +112,11 @@ function ListingCardGrid({
       )}
       <div data-testid="browse-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {listings.map((listing) => (
-          <ListingCard key={listing.listing_id} listing={listing} />
+          <ListingCard
+            key={listing.listing_id}
+            listing={listing}
+            highlighted={Boolean(highlightedIds?.includes(listing.listing_id))}
+          />
         ))}
       </div>
 
