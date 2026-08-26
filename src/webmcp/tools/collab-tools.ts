@@ -19,7 +19,7 @@ function ok<T>(requestId: string, data: T): StableToolResult<T> {
 
 function summarizeListings(payload: any): Array<{ listing_id: string; title?: string; price?: unknown; condition?: string; category?: string }> {
   const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : [];
-  return items.slice(0, 24).map((item: any) => ({
+  return items.slice(0, 5).map((item: any) => ({
     listing_id: String(item.listing_id || ""),
     title: item.title,
     price: item.price,
@@ -30,7 +30,7 @@ function summarizeListings(payload: any): Array<{ listing_id: string; title?: st
 
 function summarizeDeals(payload: any): Array<{ deal_id: string; title?: string; price?: unknown; status?: string }> {
   const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : [];
-  return items.slice(0, 24).map((item: any) => ({
+  return items.slice(0, 5).map((item: any) => ({
     deal_id: String(item.deal_id || ""),
     title: item.title,
     price: item.price,
@@ -45,7 +45,7 @@ export const collabTools: ToolDef[] = [
       "Read the current Clawdeals page: path, title, query params, and what the human currently sees. Use this before searching or navigating.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: false },
     inputJsonSchema: { type: "object", additionalProperties: false, properties: {} },
     zodSchema: z.object({}).strict(),
     outputHint: "Current page path, title, and query.",
@@ -57,7 +57,7 @@ export const collabTools: ToolDef[] = [
       "Update the visible marketplace grid to highlight specific listing IDs so the human can review the same items. Call after search_listings / clawdeals.listings_search.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: false },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -83,7 +83,7 @@ export const collabTools: ToolDef[] = [
     description: "Open a listing detail page in this browser tab so the human and the agent look at the same listing.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: false },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -102,7 +102,7 @@ export const collabTools: ToolDef[] = [
     description: "Open a deal detail page in this browser tab so the human and the agent look at the same deal.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: false },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -122,7 +122,7 @@ export const collabTools: ToolDef[] = [
       "Search the public marketplace and update the listings grid the human is looking at. Prefer this over clicking filters. Price fields are minor units (cents).",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -133,7 +133,7 @@ export const collabTools: ToolDef[] = [
         price_min: { type: "integer", minimum: 0 },
         price_max: { type: "integer", minimum: 0 },
         sort: { type: "string", enum: ["recent", "price_asc", "price_desc"] },
-        limit: { type: "integer", minimum: 1, maximum: 30 }
+        limit: { type: "integer", minimum: 1, maximum: 5 }
       }
     },
     zodSchema: z
@@ -144,7 +144,7 @@ export const collabTools: ToolDef[] = [
         price_min: z.number().int().min(0).optional(),
         price_max: z.number().int().min(0).optional(),
         sort: z.enum(["recent", "price_asc", "price_desc"]).optional(),
-        limit: z.number().int().min(1).max(30).optional()
+        limit: z.number().int().min(1).max(5).optional()
       })
       .strict(),
     outputHint: "Matching listings plus a UI update on the marketplace grid.",
@@ -159,7 +159,7 @@ export const collabTools: ToolDef[] = [
           price_min: args.price_min,
           price_max: args.price_max,
           sort: args.sort || "recent",
-          limit: args.limit ?? 12
+          limit: args.limit ?? 5
         },
         requestId: ctx.requestId,
         signal: ctx.signal
@@ -185,7 +185,7 @@ export const collabTools: ToolDef[] = [
     description: "Search the public deal feed and update the deals grid the human is looking at.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -193,7 +193,7 @@ export const collabTools: ToolDef[] = [
         q: { type: "string", maxLength: 80 },
         sort: { type: "string", enum: ["new", "temp", "trend"] },
         status: { type: "string", enum: ["NEW", "ACTIVE", "EXPIRED"] },
-        limit: { type: "integer", minimum: 1, maximum: 30 }
+        limit: { type: "integer", minimum: 1, maximum: 5 }
       }
     },
     zodSchema: z
@@ -201,7 +201,7 @@ export const collabTools: ToolDef[] = [
         q: z.string().max(80).optional(),
         sort: z.enum(["new", "temp", "trend"]).optional(),
         status: z.enum(["NEW", "ACTIVE", "EXPIRED"]).optional(),
-        limit: z.number().int().min(1).max(30).optional()
+        limit: z.number().int().min(1).max(5).optional()
       })
       .strict(),
     outputHint: "Matching deals plus a UI update on the deals grid.",
@@ -213,7 +213,7 @@ export const collabTools: ToolDef[] = [
           q: args.q,
           sort: args.sort || "new",
           status: args.status,
-          limit: args.limit ?? 12
+          limit: args.limit ?? 5
         },
         requestId: ctx.requestId,
         signal: ctx.signal

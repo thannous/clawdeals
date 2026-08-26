@@ -57,4 +57,23 @@ describe("contextual WebMCP tool registry", () => {
     expect(getToolByName("search_listings", publicTools)?.name).toBe("search_listings");
     expect(getToolByName("clawdeals.approvals_resolve", publicTools)).toBeNull();
   });
+
+  it("uses only official annotation fields and marks marketplace content untrusted", () => {
+    for (const tool of WEBMCP_TOOLS) {
+      expect(Object.keys(tool.annotations || {}).sort()).toEqual(
+        expect.arrayContaining(["readOnlyHint", "untrustedContentHint"])
+      );
+      expect(tool.annotations).not.toHaveProperty("destructiveHint");
+      expect(tool.annotations).not.toHaveProperty("openWorldHint");
+    }
+
+    expect(getToolByName("search_listings", getToolsForRoute("/browse"))?.annotations).toEqual({
+      readOnlyHint: true,
+      untrustedContentHint: true
+    });
+    expect(getToolByName("search_deals", getToolsForRoute("/deals"))?.annotations).toEqual({
+      readOnlyHint: true,
+      untrustedContentHint: true
+    });
+  });
 });

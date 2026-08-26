@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
@@ -9,7 +9,7 @@ import { NavbarCurrent } from "../landing/Navbar";
 import BrowseToolbar from "../browse/BrowseToolbar";
 import ListingCardGrid from "../browse/ListingCardGrid";
 import { useBrowseListings } from "../browse/useBrowseListings";
-import { WEBMCP_TOOLS } from "../../webmcp/tools";
+import { getToolsForRoute } from "../../webmcp/tools";
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
 
 type WebMcpDemoPageProps = {
@@ -25,6 +25,10 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
   const localePrefix = locale === "en" ? "" : `/${locale}`;
   const { themeId, setTheme, themes } = useTheme();
   const { supported, registered, registeredToolNames, lastRegisterError } = useWebMcp();
+  const contextualTools = useMemo(
+    () => getToolsForRoute(router.pathname || "/webmcp"),
+    [router.pathname]
+  );
 
   const {
     listings,
@@ -102,7 +106,7 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10">
           <h2 className="text-xs font-mono uppercase tracking-widest text-subtle mb-3">{t("tools.title")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {WEBMCP_TOOLS.map((tool) => (
+            {contextualTools.map((tool) => (
               <div key={tool.name} className="border border-border bg-surface rounded clip-corner p-3">
                 <div className="text-xs font-mono font-bold text-text">{tool.name}</div>
                 <div className="text-[10px] font-mono uppercase tracking-widest text-subtle mt-1">

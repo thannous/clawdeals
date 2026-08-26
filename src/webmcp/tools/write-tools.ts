@@ -19,7 +19,7 @@ export const writeTools: ToolDef[] = [
     description: "Create a DRAFT listing. Never publishes live. The human must approve the payload in the confirmation dialog first.",
     scope: "write",
     requiresConfirmation: true,
-    annotations: { readOnlyHint: false, destructiveHint: false },
+    annotations: { readOnlyHint: false, untrustedContentHint: false },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -128,7 +128,7 @@ export const writeTools: ToolDef[] = [
     description: "Approve or deny a pending owner approval. Requires an explicit human confirmation in the page UI.",
     scope: "admin",
     requiresConfirmation: true,
-    annotations: { readOnlyHint: false, destructiveHint: true },
+    annotations: { readOnlyHint: false, untrustedContentHint: false },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,

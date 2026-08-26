@@ -7,6 +7,8 @@ function utf8ByteLength(value: string): number {
   }
 }
 
+export const WEBMCP_TOOL_OUTPUT_MAX_BYTES = 1500;
+
 function isPlainObject(value: any): boolean {
   if (!value || typeof value !== "object") return false;
   const proto = Object.getPrototypeOf(value);
@@ -39,7 +41,7 @@ function tryTruncateArrays(value: any): { value: any; truncated: boolean } {
 
 export function capToolOutputBytes<T>(
   value: T,
-  { maxBytes = 16 * 1024 }: { maxBytes?: number } = {}
+  { maxBytes = WEBMCP_TOOL_OUTPUT_MAX_BYTES }: { maxBytes?: number } = {}
 ): { value: T; truncated: boolean; maxBytes: number } {
   const initialJson = JSON.stringify(value);
   const initialBytes = utf8ByteLength(initialJson);
@@ -60,4 +62,3 @@ export function capToolOutputBytes<T>(
   };
   return { value: minimal as T, truncated: true, maxBytes };
 }
-

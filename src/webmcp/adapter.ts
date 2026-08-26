@@ -2,8 +2,7 @@ const OFFICIAL_KIND = "document.modelContext.registerTool";
 
 export type WebMcpToolAnnotations = {
   readOnlyHint?: boolean;
-  destructiveHint?: boolean;
-  openWorldHint?: boolean;
+  untrustedContentHint?: boolean;
 };
 
 export type WebMcpToolExecuteOptions = {

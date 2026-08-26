@@ -12,8 +12,7 @@ export type ToolExecutionContext = {
 
 export type ToolAnnotations = {
   readOnlyHint?: boolean;
-  destructiveHint?: boolean;
-  openWorldHint?: boolean;
+  untrustedContentHint?: boolean;
 };
 
 export type ToolDef<TArgs = unknown, TOut = unknown> = {
@@ -27,4 +26,3 @@ export type ToolDef<TArgs = unknown, TOut = unknown> = {
   annotations?: ToolAnnotations;
   execute: (args: TArgs, ctx: ToolExecutionContext) => Promise<StableToolResult<TOut>>;
 };
-

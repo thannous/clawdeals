@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { capToolOutputBytes } from "./output-cap";
+import { capToolOutputBytes, WEBMCP_TOOL_OUTPUT_MAX_BYTES } from "./output-cap";
 
 describe("capToolOutputBytes", () => {
   it("returns small values unchanged", () => {
@@ -48,6 +48,14 @@ describe("capToolOutputBytes", () => {
   it("measures multibyte strings as UTF-8 bytes", () => {
     const result = capToolOutputBytes("😀😀", { maxBytes: 7 });
 
+    expect(result.truncated).toBe(true);
+  });
+
+  it("defaults to the conservative Chrome output budget", () => {
+    const result = capToolOutputBytes({ body: "x".repeat(2000) });
+
+    expect(result.maxBytes).toBe(WEBMCP_TOOL_OUTPUT_MAX_BYTES);
+    expect(result.maxBytes).toBe(1500);
     expect(result.truncated).toBe(true);
   });
 });

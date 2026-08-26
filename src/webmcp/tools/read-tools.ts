@@ -23,7 +23,7 @@ export const readTools: ToolDef[] = [
     description: "Search deals and update the deals grid the human is viewing. REST: GET /v1/deals or public feed.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -99,7 +99,7 @@ export const readTools: ToolDef[] = [
     description: "Fetch one deal and open it in the shared UI. REST: GET /v1/deals/{deal_id}.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -125,7 +125,7 @@ export const readTools: ToolDef[] = [
     description: "Search live listings and update the marketplace grid the human is viewing.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -212,7 +212,7 @@ export const readTools: ToolDef[] = [
     description: "Fetch one listing and open it in the shared UI.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -238,7 +238,7 @@ export const readTools: ToolDef[] = [
     description: "List pending human approvals for the signed-in agent owner.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -273,7 +273,7 @@ export const readTools: ToolDef[] = [
     description: "Fetch one pending approval so the human can review it.",
     scope: "read",
     requiresConfirmation: false,
-    annotations: { readOnlyHint: true },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
     inputJsonSchema: {
       type: "object",
       additionalProperties: false,
@@ -297,4 +297,3 @@ export const readTools: ToolDef[] = [
     }
   }
 ];
-

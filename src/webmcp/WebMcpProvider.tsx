@@ -5,7 +5,7 @@ import { registerTools, isWebMCPSupported } from "./adapter";
 import { isWebMcpRuntimeEnabled, shouldRegisterOnRoute } from "./config";
 import { getToolByName, getToolsForRoute } from "./tools";
 import type { StableToolResult } from "./types";
-import { capToolOutputBytes } from "./security/output-cap";
+import { capToolOutputBytes, WEBMCP_TOOL_OUTPUT_MAX_BYTES } from "./security/output-cap";
 import { sanitizeToolOutput } from "./security/sanitize";
 import { randomUuid } from "./utils";
 import { confirmAndExecute } from "./confirm/gate";
@@ -113,7 +113,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       }
 
       const sanitized = sanitizeToolOutput(stable.data);
-      const capped = capToolOutputBytes(sanitized, { maxBytes: 16 * 1024 });
+      const capped = capToolOutputBytes(sanitized, { maxBytes: WEBMCP_TOOL_OUTPUT_MAX_BYTES });
       const out = {
         ok: true as const,
         data: capped.value,
@@ -161,7 +161,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       inputSchema: t.inputJsonSchema,
       annotations: t.annotations || {
         readOnlyHint: t.scope === "read" && !t.requiresConfirmation,
-        destructiveHint: t.scope === "admin"
+        untrustedContentHint: false
       },
       execute: async (toolArgs: any, options?: { signal?: AbortSignal }) => {
         if (options?.signal?.aborted) {
