@@ -17,7 +17,7 @@ const FORBIDDEN_PUBLIC_TOOLS = [
 describe("contextual WebMCP tool registry", () => {
   it("exposes only listing collaboration tools on listing surfaces", () => {
     const expected = ["get_page_context", "show_listings", "open_listing", "search_listings"];
-    expect(namesFor("/webmcp")).toEqual(expected);
+    expect(namesFor("/webmcp")).toEqual([...expected, "get_action_receipt"]);
     expect(namesFor("/browse")).toEqual(expected);
     expect(namesFor("/browse/00000000-0000-4000-8000-000000000001")).toEqual(expected);
     expect(namesFor("/marketplace")).toEqual(expected);
@@ -34,7 +34,8 @@ describe("contextual WebMCP tool registry", () => {
       "send_message",
       "make_offer",
       "respond_to_offer",
-      "request_contact_reveal"
+      "request_contact_reveal",
+      "get_action_receipt"
     ];
     expect(getToolsForRoute("/webmcp", { hasAgentKey: true }).map((tool) => tool.name)).toEqual(
       expected
@@ -72,7 +73,8 @@ describe("contextual WebMCP tool registry", () => {
     expect(namesFor("/my/approvals")).toEqual(["get_page_context"]);
     expect(namesFor("/my/approvals/00000000-0000-4000-8000-000000000001")).toEqual([
       "get_page_context",
-      "resolve_approval"
+      "resolve_approval",
+      "get_action_receipt"
     ]);
     expect(namesFor("/browse")).not.toContain("resolve_approval");
   });

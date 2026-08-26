@@ -1,3 +1,5 @@
+import { ActionReceiptStore, type ActionReceipt } from "./activity/action-receipts";
+
 export type ListingsFilter = {
   q?: string;
   category?: string;
@@ -13,14 +15,6 @@ export type DealsFilter = {
   sort?: string;
   status?: string;
   highlight_ids?: string[];
-};
-
-export type WebMcpActivityEntry = {
-  id: string;
-  at: number;
-  toolName: string;
-  summary: string;
-  ok?: boolean;
 };
 
 export type BuyMissionView = {
@@ -49,12 +43,13 @@ export type WebMcpUiCommand =
   | { type: "highlight_deals"; ids: string[] }
   | { type: "navigate"; href: string }
   | { type: "mission_created"; mission: BuyMissionView }
-  | { type: "activity"; entry: WebMcpActivityEntry };
+  | { type: "activity"; receipt: ActionReceipt };
 
 const EVENT = "clawdeals:webmcp-ui";
 
 const activityListeners = new Set<() => void>();
-let activities: WebMcpActivityEntry[] = [];
+let actionReceiptStore: ActionReceiptStore | null = null;
+let actionReceipts: ActionReceipt[] = [];
 const missionListeners = new Set<() => void>();
 let activeBuyMission: BuyMissionView | null = null;
 
@@ -62,11 +57,32 @@ function emitActivity() {
   for (const listener of activityListeners) listener();
 }
 
-export function getWebMcpActivities(): WebMcpActivityEntry[] {
-  return activities;
+function ensureActionReceiptStore(): ActionReceiptStore {
+  if (actionReceiptStore) return actionReceiptStore;
+  let storage: Storage | null = null;
+  if (typeof window !== "undefined") {
+    try {
+      storage = window.localStorage;
+    } catch {
+      storage = null;
+    }
+  }
+  actionReceiptStore = new ActionReceiptStore({ storage });
+  actionReceipts = actionReceiptStore.list();
+  return actionReceiptStore;
 }
 
-export function subscribeWebMcpActivities(listener: () => void): () => void {
+export function hydrateWebMcpActionReceipts() {
+  const previous = actionReceipts;
+  ensureActionReceiptStore();
+  if (actionReceipts !== previous) emitActivity();
+}
+
+export function getWebMcpActionReceipts(): ActionReceipt[] {
+  return actionReceipts;
+}
+
+export function subscribeWebMcpActionReceipts(listener: () => void): () => void {
   activityListeners.add(listener);
   return () => {
     activityListeners.delete(listener);
@@ -96,17 +112,22 @@ export function clearActiveBuyMission() {
   for (const listener of missionListeners) listener();
 }
 
-export function recordWebMcpActivity(entry: Omit<WebMcpActivityEntry, "id" | "at"> & { id?: string; at?: number }) {
-  const full: WebMcpActivityEntry = {
-    id: entry.id || `act-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    at: entry.at || Date.now(),
-    toolName: entry.toolName,
-    summary: entry.summary,
-    ok: entry.ok
-  };
-  activities = [full, ...activities].slice(0, 12);
+export function recordWebMcpActionReceipt(receipt: ActionReceipt): ActionReceipt {
+  const stored = ensureActionReceiptStore().upsert(receipt);
+  actionReceipts = actionReceiptStore?.list() || [stored];
   emitActivity();
-  publishWebMcpUi({ type: "activity", entry: full });
+  publishWebMcpUi({ type: "activity", receipt: stored });
+  return stored;
+}
+
+export function getWebMcpActionReceipt(query: {
+  receiptId?: string;
+  requestId?: string;
+}): ActionReceipt | null {
+  const store = ensureActionReceiptStore();
+  if (query.receiptId) return store.getByReceiptId(query.receiptId);
+  if (query.requestId) return store.getByRequestId(query.requestId);
+  return null;
 }
 
 export function publishWebMcpUi(command: WebMcpUiCommand) {

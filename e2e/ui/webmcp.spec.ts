@@ -15,7 +15,9 @@ test.describe("Dev WebMCP demo", () => {
 
       // Stub WebMCP capability in Playwright.
       const tools: string[] = [];
+      const registrations: Array<{ tool: any; signal?: AbortSignal }> = [];
       (window as any).__webmcp_tools = tools;
+      (window as any).__webmcp_tool_defs = registrations;
 
       const modelContext = {
         registerTool: (arg1: any, arg2: any) => {
@@ -26,6 +28,9 @@ test.describe("Dev WebMCP demo", () => {
                 ? arg1.name
                 : null;
           if (name) tools.push(String(name));
+          if (arg1 && typeof arg1 === "object") {
+            registrations.push({ tool: arg1, signal: arg2?.signal });
+          }
           (window as any).__webmcp_last_register_args = [arg1, arg2];
         }
       };
@@ -64,7 +69,7 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
-    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("19");
+    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("20");
 
     // Select a write tool and run it: Deny first.
     const createDraftButton = page
@@ -84,7 +89,9 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
     await page.getByRole("button", { name: "Deny" }).evaluate((el) => (el as HTMLButtonElement).click());
 
-    await expect(page.getByText("\"USER_DENIED\"")).toBeVisible();
+    await expect(page.getByText("\"USER_DENIED\"").first()).toBeVisible();
+    await expect(page.getByTestId("webmcp-activity-hud")).toBeVisible();
+    await expect(page.getByTestId("webmcp-receipt-outcome")).toHaveText("denied");
 
     // Run again: Approve this time and ensure idempotency header is present.
     const reqPromise = page.waitForRequest((req) => req.method() === "POST" && req.url().includes("/api/v1/listings"));
@@ -97,6 +104,45 @@ test.describe("Dev WebMCP demo", () => {
 
     await expect(page.getByText("\"ok\": true")).toBeVisible();
     await expect(page.getByText("\"status\": \"DRAFT\"")).toBeVisible();
+
+    const persisted = await page.evaluate(() => {
+      const raw = window.localStorage.getItem("clawdeals:webmcp:action-receipts:v1") || "[]";
+      return { raw, receipts: JSON.parse(raw) };
+    });
+    expect(persisted.raw).not.toContain("cd_test_dummy");
+    expect(persisted.receipts).toHaveLength(2);
+    expect(persisted.receipts.map((receipt: any) => receipt.outcome).sort()).toEqual([
+      "denied",
+      "success"
+    ]);
+    expect(persisted.receipts.every((receipt: any) => /^sha256:[a-f0-9]{64}$/.test(receipt.input_hash))).toBe(true);
+
+    const successReceipt = persisted.receipts.find((receipt: any) => receipt.outcome === "success");
+    const lookup = await page.evaluate(async (requestId) => {
+      const registrations = ((window as any).__webmcp_tool_defs || []) as Array<{
+        tool: any;
+        signal?: AbortSignal;
+      }>;
+      const row = registrations
+        .slice()
+        .reverse()
+        .find((entry) => entry.tool?.name === "get_action_receipt" && !entry.signal?.aborted);
+      return row?.tool?.execute(
+        { request_id: requestId },
+        { signal: new AbortController().signal }
+      );
+    }, successReceipt.request_id);
+    expect(lookup).toMatchObject({
+      ok: true,
+      data: {
+        receipt_version: "1",
+        request_id: successReceipt.request_id,
+        outcome: "success"
+      }
+    });
+
+    await page.reload();
+    await expect(page.getByTestId("webmcp-activity-hud")).toContainText("3 redacted receipts");
   });
 
   test("re-registers contextual tools and aborts stale agent sessions", async ({ page }) => {
@@ -116,7 +162,7 @@ test.describe("Dev WebMCP demo", () => {
 
     await page.goto("/webmcp");
     await expect(page.getByTestId("webmcp-demo-page")).toBeVisible();
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(4)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
 
     const registrationState = () =>
       page.evaluate(() => {
@@ -131,7 +177,10 @@ test.describe("Dev WebMCP demo", () => {
         };
       });
 
-    await expect.poll(registrationState).toMatchObject({ active: expect.not.arrayContaining(["create_buy_mission"]), total: 4 });
+    await expect.poll(registrationState).toMatchObject({
+      active: expect.arrayContaining(["get_action_receipt"]),
+      total: 5
+    });
 
     await page.evaluate(() => {
       window.localStorage.setItem("clawdeals_api_key", "cd_test_agent_a");
@@ -139,16 +188,16 @@ test.describe("Dev WebMCP demo", () => {
     });
     await expect.poll(registrationState).toMatchObject({
       active: expect.arrayContaining(["create_buy_mission", "request_contact_reveal"]),
-      aborted: 4,
-      total: 14
+      aborted: 5,
+      total: 16
     });
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(10)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(11)");
 
     await page.evaluate(() => {
       window.localStorage.setItem("clawdeals_api_key", "cd_test_agent_b");
       window.dispatchEvent(new Event("clawdeals:api-key-change"));
     });
-    await expect.poll(registrationState).toMatchObject({ aborted: 14, total: 24 });
+    await expect.poll(registrationState).toMatchObject({ aborted: 16, total: 27 });
 
     await page.evaluate(() => {
       window.localStorage.removeItem("clawdeals_api_key");
@@ -156,10 +205,10 @@ test.describe("Dev WebMCP demo", () => {
     });
     await expect.poll(registrationState).toMatchObject({
       active: expect.not.arrayContaining(["create_buy_mission"]),
-      aborted: 24,
-      total: 28
+      aborted: 27,
+      total: 32
     });
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(4)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
   });
 
   test("binds owner approval resolution to the visible page and owner cookies", async ({ page }) => {
@@ -222,7 +271,11 @@ test.describe("Dev WebMCP demo", () => {
           .filter((row: any) => !row.signal?.aborted)
           .map((row: any) => row.tool?.name)
       );
-    await expect.poll(activeToolNames).toEqual(["get_page_context", "resolve_approval"]);
+    await expect.poll(activeToolNames).toEqual([
+      "get_page_context",
+      "resolve_approval",
+      "get_action_receipt"
+    ]);
 
     const requestPromise = page.waitForRequest(
       (request) =>

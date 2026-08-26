@@ -12,8 +12,26 @@ import { confirmAndExecute } from "./confirm/gate";
 import { WebMcpConfirmProvider, useWebMcpConfirm } from "./confirm/context";
 import ConfirmModalHost from "./confirm/ConfirmModalHost";
 import ActivityHud from "./ActivityHud";
-import { clearActiveBuyMission, recordWebMcpActivity, subscribeWebMcpUi } from "./ui-bridge";
+import {
+  clearActiveBuyMission,
+  hydrateWebMcpActionReceipts,
+  recordWebMcpActionReceipt,
+  subscribeWebMcpUi
+} from "./ui-bridge";
+import {
+  ACTION_RECEIPT_TOOL_VERSION,
+  createPendingActionReceipt,
+  extractApprovalIds,
+  finalizeActionReceipt,
+  redactAndHashInput,
+  safeReceiptLink,
+  sanitizeActionReceipt,
+  type ActionReceipt,
+  type ActionReceiptActor,
+  type ActionReceiptOutcome
+} from "./activity/action-receipts";
 import { getStoredApiKey, subscribeStoredApiKey } from "../ui/developer/storage";
+import type { ToolDef } from "./tools/defs";
 
 type WebMcpContextValue = {
   enabled: boolean;
@@ -42,6 +60,107 @@ const INITIAL_REGISTRATION_STATE: RegistrationState = {
   registeredToolNames: [],
   lastRegisterError: null
 };
+
+const UNKNOWN_OUTCOME_CODES = new Set([
+  "ABORTED",
+  "ERROR",
+  "FETCH_FAILED",
+  "NETWORK_ERROR",
+  "OUTCOME_UNKNOWN",
+  "TIMEOUT"
+]);
+
+function receiptActor(tool: ToolDef, hasAgentKey: boolean): ActionReceiptActor {
+  if (tool.scope === "admin") return "owner";
+  if (hasAgentKey || tool.scope === "write") return "agent";
+  return "public";
+}
+
+function policyEnforcement(tool: ToolDef): "client_read_boundary" | "server" {
+  return tool.scope === "read" ? "client_read_boundary" : "server";
+}
+
+function receiptOutcome(result: StableToolResult): ActionReceiptOutcome {
+  if (result.ok === true) return "success";
+  if (result.error.code === "USER_DENIED") return "denied";
+  return UNKNOWN_OUTCOME_CODES.has(result.error.code) ? "unknown" : "denied";
+}
+
+function currentReceiptLink(): string | null {
+  if (typeof window === "undefined") return null;
+  return safeReceiptLink(window.location.pathname);
+}
+
+function resultReceiptLink(value: unknown, fallback: string | null): string | null {
+  const seen = new WeakSet<object>();
+  const visit = (entry: unknown, depth: number): string | null => {
+    if (depth > 5 || entry === null || entry === undefined) return null;
+    if (typeof entry !== "object") return null;
+    if (seen.has(entry as object)) return null;
+    seen.add(entry as object);
+    if (Array.isArray(entry)) {
+      for (const child of entry.slice(0, 20)) {
+        const found = visit(child, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    }
+    for (const [key, child] of Object.entries(entry as Record<string, unknown>)) {
+      if (["href", "link", "url"].includes(key) && typeof child === "string") {
+        const safe = safeReceiptLink(child);
+        if (safe) return safe;
+      }
+      const found = visit(child, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  };
+  return visit(value, 0) || fallback;
+}
+
+async function pendingReceiptForInvocation(input: {
+  requestId: string;
+  tool: ToolDef;
+  actor: ActionReceiptActor;
+  args: unknown;
+}): Promise<ActionReceipt> {
+  const link = currentReceiptLink();
+  const policy = {
+    enforcement: policyEnforcement(input.tool),
+    scope: input.tool.scope,
+    decision: input.tool.requiresConfirmation ? "awaiting_human_confirmation" : "allowed"
+  };
+  try {
+    return await createPendingActionReceipt({
+      requestId: input.requestId,
+      toolName: input.tool.name,
+      toolVersion: ACTION_RECEIPT_TOOL_VERSION,
+      actor: input.actor,
+      args: input.args,
+      policy,
+      confirmation: input.tool.requiresConfirmation ? "pending" : "not_required",
+      link
+    });
+  } catch {
+    return sanitizeActionReceipt({
+      receipt_version: "1",
+      receipt_id: `rcpt_${input.requestId}`,
+      request_id: input.requestId,
+      tool: { name: input.tool.name, version: ACTION_RECEIPT_TOOL_VERSION },
+      actor: input.actor,
+      arguments_summary: {},
+      input_hash: "sha256:unavailable",
+      policy,
+      confirmation: input.tool.requiresConfirmation ? "pending" : "not_required",
+      approval_ids: [],
+      outcome: "pending",
+      best_effort_error: "receipt_input_hash_failed",
+      result: { status: "pending" },
+      timestamp: new Date().toISOString(),
+      link
+    });
+  }
+}
 
 function registrationReducer(state: RegistrationState, action: RegistrationAction): RegistrationState {
   switch (action.type) {
@@ -95,6 +214,10 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     clearActiveBuyMission();
   }, [agentKey]);
 
+  useEffect(() => {
+    hydrateWebMcpActionReceipts();
+  }, []);
+
   const executeTool = useCallback(
     async (name: string, args: unknown, options?: { signal?: AbortSignal }): Promise<StableToolResult> => {
       const tool = getToolByName(name, routeTools);
@@ -107,21 +230,107 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
         return { ok: false, error: { code: "ABORTED", message: "Cancelled", details: {} }, meta: { request_id: requestId } };
       }
 
-      const stable = await confirmAndExecute(tool as any, args, {
-        confirm: requestConfirmation,
-        requestId,
-        timeoutMs: 60_000,
-        // Stable per tool invocation; allows server-side dedup for write/admin calls.
-        idempotencyKey: tool.scope === "read" ? null : requestId,
-        signal
-      });
+      let receipt = recordWebMcpActionReceipt(
+        await pendingReceiptForInvocation({
+          requestId,
+          tool,
+          actor: receiptActor(tool, Boolean(agentKey)),
+          args
+        })
+      );
+
+      const confirmWithReceipt = async (request: Parameters<typeof requestConfirmation>[0]) => {
+        const decision = await requestConfirmation(request);
+        if (decision.kind === "approve") {
+          try {
+            const hashed = await redactAndHashInput(decision.args);
+            receipt = recordWebMcpActionReceipt(
+              sanitizeActionReceipt({
+                ...receipt,
+                arguments_summary: hashed.argumentsSummary,
+                input_hash: hashed.inputHash,
+                confirmation: "approved",
+                policy: {
+                  enforcement: policyEnforcement(tool),
+                  scope: tool.scope,
+                  decision: "human_approved"
+                },
+                result: { status: "executing" },
+                timestamp: new Date().toISOString()
+              })
+            );
+          } catch {
+            receipt = recordWebMcpActionReceipt(
+              sanitizeActionReceipt({
+                ...receipt,
+                confirmation: "approved",
+                best_effort_error: "receipt_edited_input_hash_failed",
+                timestamp: new Date().toISOString()
+              })
+            );
+          }
+        }
+        return decision;
+      };
+
+      let stable: StableToolResult;
+      try {
+        stable = await confirmAndExecute(tool as any, args, {
+          confirm: confirmWithReceipt,
+          requestId,
+          timeoutMs: 60_000,
+          // Stable per tool invocation; allows server-side dedup for write/admin calls.
+          idempotencyKey: tool.scope === "read" ? null : requestId,
+          signal
+        });
+      } catch {
+        stable = {
+          ok: false,
+          error: {
+            code: "OUTCOME_UNKNOWN",
+            message: "The action may have completed. Reconcile before retrying.",
+            details: { safe_to_retry: false }
+          },
+          meta: { request_id: requestId }
+        };
+      }
 
       if (stable.ok === false) {
-        recordWebMcpActivity({
-          toolName: name,
-          summary: stable.error.message || "Failed",
-          ok: false
-        });
+        const outcome = receiptOutcome(stable);
+        const confirmation =
+          tool.requiresConfirmation && stable.error.code === "USER_DENIED"
+            ? "denied"
+            : receipt.confirmation;
+        const policyDecision =
+          stable.error.code === "USER_DENIED"
+            ? "human_denied"
+            : outcome === "unknown"
+              ? "outcome_unknown"
+              : "server_rejected";
+        receipt = recordWebMcpActionReceipt(
+          finalizeActionReceipt(
+            sanitizeActionReceipt({
+              ...receipt,
+              policy: {
+                enforcement: policyEnforcement(tool),
+                scope: tool.scope,
+                decision: policyDecision,
+                error_code: stable.error.code
+              }
+            }),
+            {
+              outcome: outcome === "pending" ? "unknown" : outcome,
+              confirmation,
+              approvalIds: extractApprovalIds(stable.error.details),
+              result: {
+                code: stable.error.code,
+                message: stable.error.message,
+                details: stable.error.details
+              },
+              link: resultReceiptLink(stable.error.details, receipt.link)
+            }
+          )
+        );
         return stable;
       }
 
@@ -135,14 +344,32 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
           ...(capped.truncated ? { truncated: true, max_bytes: capped.maxBytes } : {})
         }
       };
-      recordWebMcpActivity({
-        toolName: name,
-        summary: tool.outputHint || "Completed",
-        ok: true
-      });
+      receipt = recordWebMcpActionReceipt(
+        finalizeActionReceipt(
+          sanitizeActionReceipt({
+            ...receipt,
+            policy: {
+              enforcement: policyEnforcement(tool),
+              scope: tool.scope,
+              decision: tool.requiresConfirmation
+                ? "human_approved_and_server_accepted"
+                : tool.scope === "read"
+                  ? "read_completed"
+                  : "server_accepted"
+            }
+          }),
+          {
+            outcome: "success",
+            confirmation: tool.requiresConfirmation ? "approved" : "not_required",
+            approvalIds: extractApprovalIds(capped.value),
+            result: capped.value,
+            link: resultReceiptLink(capped.value, receipt.link)
+          }
+        )
+      );
       return out;
     },
-    [requestConfirmation, routeTools]
+    [agentKey, requestConfirmation, routeTools]
   );
 
   useEffect(() => {
