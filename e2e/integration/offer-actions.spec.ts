@@ -211,7 +211,7 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     }
   });
 
-  test("accept permission => 404 OFFER_NOT_FOUND", async ({ request }) => {
+  test("buyer cannot accept its own proposal", async ({ request }) => {
     const supabase = createSupabaseAdmin();
 
     const ownerId = randomId();
@@ -245,9 +245,10 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const offerId = offerBody.offer_id;
 
     const acceptRes = await acceptOffer(request, buyerApiKey, offerId, { idempotencyKey: randomId() });
-    await expectStatus(acceptRes, 404);
+    await expectStatus(acceptRes, 409);
     const acceptBody = await acceptRes.json();
-    expect(acceptBody?.error?.code).toBe("OFFER_NOT_FOUND");
+    expect(acceptBody?.error?.code).toBe("OFFER_NOT_ACTIONABLE");
+    expect(acceptBody?.error?.details?.status).toBe("SELF_PROPOSED");
   });
 
   test("decline + cancel => 200 and SSE + audit", async ({ request }) => {
@@ -477,7 +478,8 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const failBody = await failRes.json();
 
     expect(okBody?.transaction?.tx_id).toBeTruthy();
-    expect(failBody?.error?.code).toBe("LISTING_LOCKED");
+    expect(failBody?.error?.code).toBe("OFFER_NOT_ACTIONABLE");
+    expect(failBody?.error?.details?.status).toBe("DECLINED");
 
     const { data: txRows, error: txErr } = await supabase
       .from("transactions")
@@ -493,7 +495,7 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
       .in("offer_id", [offerAId, offerBId]);
     if (offersErr) throw offersErr;
     const byId = new Map((offers || []).map((o: any) => [o.offer_id, o.status]));
-    expect(new Set([byId.get(offerAId), byId.get(offerBId)])).toEqual(new Set(["ACCEPTED", "CREATED"]));
+    expect(new Set([byId.get(offerAId), byId.get(offerBId)])).toEqual(new Set(["ACCEPTED", "DECLINED"]));
   });
 
   test("expiration job => offer EXPIRED + system info message + audit; idempotent on 2nd run", async ({ request }) => {

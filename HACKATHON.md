@@ -45,6 +45,7 @@ The disabled remote server-MCP canary in `de77c26` is not presented as WebMCP ch
 | Bilateral consent | Contact reveal remains redacted until both transaction owners consent; retries are idempotent | `6f81d98` |
 | Verifiable activity | Persistent redacted action receipts with request IDs, canonical input hashes, policy decisions, approvals and explicit outcomes | `7bfc9e7` |
 | Judge mode | Dedicated `/webmcp-challenge`, exact registry display, copyable mission, judge-only isolated reset and two-reset reproducibility | TI-373 change containing this document |
+| Submission evals | 24 natural-language cases × 3 deterministic runs, adversarial contracts, isolated mission-to-agreement journey and explicit live-browser evidence boundary | TI-377 change containing this document |
 
 ## Exact contextual registry
 
@@ -97,6 +98,21 @@ Reset access is server-side allowlisted through `WEBMCP_JUDGE_AGENT_ID`. It is u
 - Network or timeout ambiguity is recorded as `outcome: unknown` with `safe_to_retry: false` so the agent reconciles before retrying.
 - Fixture reset is restricted to a dedicated synthetic seller on an isolated sandbox host; production returns `404`.
 
+## Reproducible evaluation
+
+The archived reference planner result is intentionally labeled
+`chatgptSelection: unproven`. It records 24 natural-language cases across three
+deterministic runs (72 plans), while the application tests separately prove
+authorization, idempotence, atomic acceptance, bilateral consent, prompt
+injection handling, cancellation, ambiguous outcomes, redaction and the 1,500
+UTF-8-byte output cap.
+
+The isolated submission journey invokes the actual registered tool handlers for
+mission creation, offer creation, seller acceptance and receipt lookup against
+synthetic Supabase data. `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` keeps real
+ChatGPT in-app and Chrome WebMCP verification separate; both remain `NOT RUN`
+until the reviewed build is deployed.
+
 ## Local verification
 
 ```bash
@@ -105,13 +121,20 @@ npm run typecheck
 npm run lint
 npm run test:unit
 npm run build
-npx playwright test e2e/ui/webmcp-challenge.spec.ts --project=ui --workers=1
+npm run eval:webmcp:selection
+npm run eval:webmcp:contracts
+npm run eval:webmcp:ui
 ```
 
 Database integration tests must target isolated local/staging Supabase data, never production:
 
 ```bash
-npx playwright test e2e/integration/sandbox-ebike-fixtures.spec.ts --project=integration --workers=1
+npm run eval:webmcp:journey
+npm run eval:webmcp:security
 ```
+
+The complete local submission gate is `npm run eval:webmcp:gate`. Its journey
+and security stages require the non-production environment described in
+`docs/sandbox-getting-started.md`.
 
 Deployment, the public video and the final Devpost submission are separate proof layers; local test success does not claim that those artifacts are already public.

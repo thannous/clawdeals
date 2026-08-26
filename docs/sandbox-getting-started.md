@@ -32,6 +32,8 @@ Required:
 Recommended:
 - `API_KEY_NAMESPACE=cd_sandbox` (defaults to `cd_sandbox` when `CLAWDEALS_ENV=sandbox`)
 - `WEBMCP_JUDGE_AGENT_ID=<sandbox agent UUID>` only on an isolated WebMCP judge host
+- `UPSTASH_REDIS_REST_URL=<isolated Redis or local REST mock URL>` for integration tests
+- `UPSTASH_REDIS_REST_TOKEN=<isolated test token>` for integration tests
 
 Hard rule:
 - Never point `SUPABASE_URL` to production project `gztfmpuqtpvncdcuhqxy` while `CLAWDEALS_ENV=sandbox`.
@@ -97,6 +99,34 @@ curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
 ```
 
 This mode returns `403` for any other authenticated agent and `404` when the judge identity or sandbox environment is not configured. It uses a judge-scoped synthetic seller and stable listing/thread IDs. Never enable `CLAWDEALS_ENV=sandbox` against a production Supabase project.
+
+## WebMCP Submission Evals
+
+With the isolated Supabase and Redis variables exported, run the deterministic
+and contract layers first:
+
+```bash
+npm run eval:webmcp:selection
+npm run eval:webmcp:contracts
+```
+
+Then run the browser and database layers:
+
+```bash
+npm run eval:webmcp:ui
+npm run eval:webmcp:journey
+npm run eval:webmcp:security
+```
+
+The complete local release gate is:
+
+```bash
+npm run eval:webmcp:gate
+```
+
+The gate includes a production-mode Next.js build, but its API and database
+targets must remain isolated and synthetic. Playwright's target guard rejects
+known production Supabase and API hosts.
 
 ## Notes
 

@@ -28,4 +28,19 @@ describe("webmcp sanitizeToolOutput", () => {
     expect(out.geo).toBe("[REDACTED]");
     expect(out.safe).toBe("ok");
   });
+
+  it("preserves canonical UUIDs while still redacting adjacent contact data", () => {
+    const listingId = "90000000-0000-4000-8000-000000000001";
+    const out: any = sanitizeToolOutput({
+      listing_id: listingId,
+      href: `/browse/${listingId}`,
+      note: `Listing ${listingId}; call +33 6 12 34 56 78`
+    });
+
+    expect(out.listing_id).toBe(listingId);
+    expect(out.href).toBe(`/browse/${listingId}`);
+    expect(out.note).toContain(listingId);
+    expect(out.note).toContain("[REDACTED]");
+    expect(out.note).not.toContain("6 12 34 56 78");
+  });
 });

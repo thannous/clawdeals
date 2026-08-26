@@ -11,6 +11,7 @@ type Options = {
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,24}\b/gi;
 const MAILTO_REGEX = /\bmailto:[^\s]+/gi;
 const PHONE_CANDIDATE_REGEX = /(?:\+|00)?\d[\d\s().-]{8,}\d/g;
+const UUID_REGEX = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
 
 function countDigits(value: string) {
   let count = 0;
@@ -27,7 +28,11 @@ export function redactEmailsAndPhones(text: string, options: Options = {}): Free
     return { text: "", redacted: false, matchCount: 0 };
   }
 
-  let out = text;
+  const preservedUuids: string[] = [];
+  let out = text.replace(UUID_REGEX, (uuid) => {
+    const index = preservedUuids.push(uuid) - 1;
+    return `__CLAWDEALS_UUID_${index}__`;
+  });
   let matchCount = 0;
 
   out = out.replace(MAILTO_REGEX, () => {
@@ -48,6 +53,10 @@ export function redactEmailsAndPhones(text: string, options: Options = {}): Free
     return replaceWith;
   });
 
+  out = out.replace(/__CLAWDEALS_UUID_(\d+)__/g, (marker, indexText) => {
+    const uuid = preservedUuids[Number(indexText)];
+    return uuid || marker;
+  });
+
   return { text: out, redacted: matchCount > 0, matchCount };
 }
-

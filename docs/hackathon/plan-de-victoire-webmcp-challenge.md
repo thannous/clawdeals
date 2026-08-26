@@ -1049,6 +1049,43 @@ Ces seuils ne sont pas officiels, mais constituent de bons objectifs :
 - aucune fuite de secret ou de PII ;
 - un parcours complet reproductible sur une session vierge.
 
+### 14.3 État d’implémentation TI-377 — 26 août 2026
+
+Les artefacts reproductibles sont maintenant indexés dans `evals/webmcp/` :
+
+- `reference-selection.cases.json` contient 24 formulations naturelles couvrant
+  la sélection initiale, les séquences multi-étapes, les rôles, le refus d’une
+  approbation non autorisée, le consentement de contact, l’annulation,
+  l’ambiguïté et l’injection contenue dans une annonce ;
+- chaque cas est exécuté trois fois par un planificateur de référence
+  déterministe, soit 72 plans archivés dans
+  `evals/webmcp/results/reference-selection.json` ;
+- le résultat local archivé est de 100 % au premier outil, mais porte
+  explicitement `chatgptSelection: unproven` : ce runner n’est pas ChatGPT et
+  ne constitue pas une preuve de sélection par un modèle externe ;
+- `SECURITY-MATRIX.md` relie chaque invariant aux contrats WebMCP ou aux tests
+  serveur qui le réappliquent ;
+- `e2e/integration/webmcp-submission-journey.spec.ts` exécute les handlers
+  enregistrés pour créer une mission, faire une offre, basculer vers le vendeur,
+  accepter atomiquement, relire le reçu et rejouer la même écriture de manière
+  idempotente sur une base Supabase isolée ;
+- la matrice sécurité exécute dix scénarios serveur. Elle a révélé puis couvert
+  un deadlock PostgreSQL réel entre deux acceptations concurrentes ; la migration
+  forward-only `20260826170000_ti_377_offer_accept_lock_order.sql` verrouille
+  désormais l’annonce partagée avant l’offre individuelle, et cinq courses
+  répétées ont toutes produit une seule transaction sans erreur 500 ;
+- la limite de sortie est de 1 500 octets UTF-8, donc plus stricte que la cible
+  de 1,5 K caractère ;
+- `LIVE-BROWSER-EVIDENCE.md` sépare les validations ChatGPT in-app et Chrome
+  WebMCP. Elles restent `NOT RUN` tant que le build revu n’est pas déployé.
+
+Le release gate local explicite est `npm run eval:webmcp:gate`. Il enchaîne
+typecheck, lint, toute la suite Vitest, un build de production, le corpus 24 × 3,
+les contrats WebMCP, les E2E UI, le parcours isolé et les intégrations sécurité.
+Les étapes base de données refusent les cibles de production connues et doivent
+utiliser uniquement les données synthétiques décrites dans
+`docs/sandbox-getting-started.md`.
+
 ---
 
 ## 15. Vidéo de démonstration
