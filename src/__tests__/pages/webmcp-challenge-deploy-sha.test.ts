@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveDeploySha } from "./webmcp-challenge";
+import { resolveDeploySha } from "../../pages/webmcp-challenge";
 
 describe("resolveDeploySha", () => {
   it("uses the documented deployment precedence and normalizes case", () => {
