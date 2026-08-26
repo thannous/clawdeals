@@ -114,5 +114,6 @@ Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool sel
 - [JUDGE_GUIDE.md](./JUDGE_GUIDE.md)
 - [WEBMCP_ARCHITECTURE.md](./WEBMCP_ARCHITECTURE.md)
 - [SECURITY_MODEL.md](./SECURITY_MODEL.md)
+- [SECURITY_AUDIT_TI378.md](./SECURITY_AUDIT_TI378.md)
 - [EVALS.md](./EVALS.md)
 - [DEMO_SCRIPT.md](./DEMO_SCRIPT.md)

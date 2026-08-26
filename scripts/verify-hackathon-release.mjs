@@ -55,6 +55,7 @@ const requiredFiles = [
   "docs/hackathon/EVALS.md",
   "docs/hackathon/JUDGE_GUIDE.md",
   "docs/hackathon/SECURITY_MODEL.md",
+  "docs/hackathon/SECURITY_AUDIT_TI378.md",
   "docs/hackathon/WEBMCP_ARCHITECTURE.md",
   "docs/hackathon/WHAT_CHANGED.md",
   "docs/hackathon/plan-de-victoire-webmcp-challenge.md",

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const Redis = vi.hoisted(() =>
-  vi.fn().mockImplementation((config: any) => ({
-    eval: vi.fn(),
-    __config: config
-  }))
+  vi.fn().mockImplementation(function RedisMock(this: any, config: any) {
+    this.eval = vi.fn();
+    this.__config = config;
+  })
 );
 
 vi.mock("@upstash/redis", () => ({

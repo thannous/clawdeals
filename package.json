@@ -23,7 +23,7 @@
     "sdk:generate:ts": "node scripts/sdk/generate-typescript-sdk.mjs",
     "sdk:generate:py": "node scripts/sdk/generate-python-sdk.mjs",
     "test:unit": "vitest run",
-    "test:coverage": "vitest run --coverage --maxWorkers=2 --minWorkers=1",
+    "test:coverage": "vitest run --coverage --maxWorkers=2",
     "test:smoke": "node scripts/smoke-api.mjs",
     "test:smoke:skill": "node scripts/smoke-skill-examples.mjs",
     "test:skill:pack": "node scripts/validate-skill-pack.mjs",
@@ -72,15 +72,16 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
     "@modelcontextprotocol/server": "2.0.0",
-    "@neondatabase/auth": "0.4.2-beta",
+    "@neondatabase/auth": "0.5.0-beta",
     "@neondatabase/serverless": "^1.1.0",
-    "@supabase/supabase-js": "^2.49.1",
+    "@supabase/supabase-js": "2.112.4",
     "@upstash/redis": "^1.34.0",
     "@vercel/blob": "^2.7.0",
+    "ajv": "8.18.0",
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.541.0",
-    "next": "^16.1.6",
-    "next-intl": "^4.8.2",
+    "next": "16.3.3",
+    "next-intl": "4.9.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-qr-code": "^2.0.18",
@@ -88,8 +89,8 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "2.0.0",
-    "@next/bundle-analyzer": "16.1.6",
-    "@opennextjs/cloudflare": "1.16.2",
+    "@next/bundle-analyzer": "16.3.3",
+    "@opennextjs/cloudflare": "1.17.1",
     "@playwright/test": "^1.58.1",
     "@redocly/cli": "^2.17.0",
     "@tailwindcss/postcss": "^4.1.0",
@@ -97,16 +98,27 @@
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.2.1",
     "@types/react": "19.2.13",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "4.1.11",
     "autoprefixer": "^10.4.21",
     "dotenv": "^16.6.1",
     "eslint": "^9.0.0",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "16.3.3",
     "jsdom": "^28.0.0",
-    "postcss": "^8.5.3",
+    "postcss": "^8.5.26",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.3",
-    "vitest": "^2.1.9",
+    "vitest": "4.1.11",
     "wrangler": "^4.5.0"
+  },
+  "overrides": {
+    "hono": "4.12.34",
+    "@hono/node-server": "1.19.17",
+    "@better-auth/core": "1.6.23",
+    "@modelcontextprotocol/sdk": {
+      "ajv": "8.18.0"
+    },
+    "@neondatabase/auth-ui": {
+      "@daveyplate/better-auth-ui": "3.3.9"
+    }
   }
 }

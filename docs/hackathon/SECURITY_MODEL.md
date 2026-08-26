@@ -8,6 +8,7 @@ Security is a judged product feature: the agent can act, and it cannot outrun th
 - Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
 - Ticket: TI-375
 - Companion: `HACKATHON.md`, `docs/hackathon/release-candidate-runbook.md`, `evals/webmcp/`
+- Dependency audit: [`SECURITY_AUDIT_TI378.md`](./SECURITY_AUDIT_TI378.md) — local audits are zero; CI, deployed, and public proof remain pending
 
 
 ## Boundary
