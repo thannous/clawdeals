@@ -22,6 +22,31 @@ describe("contextual WebMCP tool registry", () => {
     expect(namesFor("/marketplace")).toEqual(expected);
   });
 
+  it("adds only the agent-authenticated mission write when a key is present", () => {
+    const expected = [
+      "get_page_context",
+      "show_listings",
+      "open_listing",
+      "search_listings",
+      "create_buy_mission"
+    ];
+    expect(getToolsForRoute("/webmcp", { hasAgentKey: true }).map((tool) => tool.name)).toEqual(
+      expected
+    );
+    expect(
+      getToolByName(
+        "clawdeals.listings_create_draft",
+        getToolsForRoute("/webmcp", { hasAgentKey: true })
+      )
+    ).toBeNull();
+    expect(
+      getToolByName(
+        "clawdeals.approvals_resolve",
+        getToolsForRoute("/webmcp", { hasAgentKey: true })
+      )
+    ).toBeNull();
+  });
+
   it("exposes only deal collaboration tools on deal surfaces", () => {
     const expected = ["get_page_context", "open_deal", "search_deals"];
     expect(namesFor("/browse/deals")).toEqual(expected);

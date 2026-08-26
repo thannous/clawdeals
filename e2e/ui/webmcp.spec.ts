@@ -18,7 +18,7 @@ test.describe("Dev WebMCP demo", () => {
       (window as any).__webmcp_tools = tools;
 
       const modelContext = {
-        registerTool: (arg1: any, arg2: any, arg3: any) => {
+        registerTool: (arg1: any, arg2: any) => {
           const name =
             typeof arg1 === "string"
               ? arg1
@@ -26,14 +26,10 @@ test.describe("Dev WebMCP demo", () => {
                 ? arg1.name
                 : null;
           if (name) tools.push(String(name));
-          (window as any).__webmcp_last_register_args = [arg1, arg2, arg3];
+          (window as any).__webmcp_last_register_args = [arg1, arg2];
         }
       };
       Object.defineProperty(document as any, "modelContext", {
-        configurable: true,
-        value: modelContext
-      });
-      Object.defineProperty(navigator as any, "modelContext", {
         configurable: true,
         value: modelContext
       });
@@ -68,7 +64,7 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
-    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("14");
+    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("15");
 
     // Select a write tool and run it: Deny first.
     const createDraftButton = page
@@ -101,5 +97,68 @@ test.describe("Dev WebMCP demo", () => {
 
     await expect(page.getByText("\"ok\": true")).toBeVisible();
     await expect(page.getByText("\"status\": \"DRAFT\"")).toBeVisible();
+  });
+
+  test("re-registers contextual tools and aborts stale agent sessions", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.removeItem("clawdeals_api_key");
+      const registrations: Array<{ name: string; signal?: AbortSignal }> = [];
+      (window as any).__webmcp_registrations = registrations;
+      Object.defineProperty(document as any, "modelContext", {
+        configurable: true,
+        value: {
+          registerTool: (tool: { name?: string }, options?: { signal?: AbortSignal }) => {
+            registrations.push({ name: String(tool?.name || ""), signal: options?.signal });
+          }
+        }
+      });
+    });
+
+    await page.goto("/webmcp");
+    await expect(page.getByTestId("webmcp-demo-page")).toBeVisible();
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(4)");
+
+    const registrationState = () =>
+      page.evaluate(() => {
+        const rows = ((window as any).__webmcp_registrations || []) as Array<{
+          name: string;
+          signal?: AbortSignal;
+        }>;
+        return {
+          active: rows.filter((row) => !row.signal?.aborted).map((row) => row.name),
+          aborted: rows.filter((row) => row.signal?.aborted).length,
+          total: rows.length
+        };
+      });
+
+    await expect.poll(registrationState).toMatchObject({ active: expect.not.arrayContaining(["create_buy_mission"]), total: 4 });
+
+    await page.evaluate(() => {
+      window.localStorage.setItem("clawdeals_api_key", "cd_test_agent_a");
+      window.dispatchEvent(new Event("clawdeals:api-key-change"));
+    });
+    await expect.poll(registrationState).toMatchObject({
+      active: expect.arrayContaining(["create_buy_mission"]),
+      aborted: 4,
+      total: 9
+    });
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
+
+    await page.evaluate(() => {
+      window.localStorage.setItem("clawdeals_api_key", "cd_test_agent_b");
+      window.dispatchEvent(new Event("clawdeals:api-key-change"));
+    });
+    await expect.poll(registrationState).toMatchObject({ aborted: 9, total: 14 });
+
+    await page.evaluate(() => {
+      window.localStorage.removeItem("clawdeals_api_key");
+      window.dispatchEvent(new Event("clawdeals:api-key-change"));
+    });
+    await expect.poll(registrationState).toMatchObject({
+      active: expect.not.arrayContaining(["create_buy_mission"]),
+      aborted: 14,
+      total: 18
+    });
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(4)");
   });
 });

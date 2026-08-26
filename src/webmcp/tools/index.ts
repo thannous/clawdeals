@@ -2,9 +2,10 @@ import type { ToolDef } from "./defs";
 import { collabTools } from "./collab-tools";
 import { readTools } from "./read-tools";
 import { writeTools } from "./write-tools";
+import { missionTools } from "./mission-tools";
 import { isDealsSurface, isDemoRoute, isDevPlaygroundRoute, isListingsSurface } from "../config";
 
-export const WEBMCP_TOOLS: ToolDef[] = [...collabTools, ...readTools, ...writeTools];
+export const WEBMCP_TOOLS: ToolDef[] = [...collabTools, ...missionTools, ...readTools, ...writeTools];
 
 const LISTINGS_TOOL_NAMES = new Set([
   "get_page_context",
@@ -21,18 +22,26 @@ const DEALS_TOOL_NAMES = new Set([
 
 const OWNER_APPROVAL_TOOL_NAMES = new Set(["get_page_context"]);
 
-function selectCollabTools(names: ReadonlySet<string>): ToolDef[] {
-  return collabTools.filter((tool) => names.has(tool.name));
+type ToolRouteContext = {
+  hasAgentKey?: boolean;
+};
+
+function selectTools(names: ReadonlySet<string>): ToolDef[] {
+  return WEBMCP_TOOLS.filter((tool) => names.has(tool.name));
 }
 
-export function getToolsForRoute(pathname: string): ToolDef[] {
+export function getToolsForRoute(pathname: string, context: ToolRouteContext = {}): ToolDef[] {
   const path = String(pathname || "");
   if (isDevPlaygroundRoute(path)) return [...WEBMCP_TOOLS];
   if (path === "/my/approvals" || path.startsWith("/my/approvals/")) {
-    return selectCollabTools(OWNER_APPROVAL_TOOL_NAMES);
+    return selectTools(OWNER_APPROVAL_TOOL_NAMES);
   }
-  if (isDealsSurface(path)) return selectCollabTools(DEALS_TOOL_NAMES);
-  if (isDemoRoute(path) || isListingsSurface(path)) return selectCollabTools(LISTINGS_TOOL_NAMES);
+  if (isDealsSurface(path)) return selectTools(DEALS_TOOL_NAMES);
+  if (isDemoRoute(path) || isListingsSurface(path)) {
+    const names = new Set(LISTINGS_TOOL_NAMES);
+    if (context.hasAgentKey) names.add("create_buy_mission");
+    return selectTools(names);
+  }
   return [];
 }
 

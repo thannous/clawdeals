@@ -1,5 +1,6 @@
 const API_KEY_STORAGE_KEY = "clawdeals_api_key";
 const SSE_LAST_EVENT_ID_KEY = "clawdeals_sse_last_event_id";
+const API_KEY_CHANGE_EVENT = "clawdeals:api-key-change";
 
 function safeStorage(): Storage | null {
   try {
@@ -22,12 +23,27 @@ export function setStoredApiKey(apiKey: string) {
   if (!storage) return;
   if (!apiKey) return;
   storage.setItem(API_KEY_STORAGE_KEY, String(apiKey));
+  window.dispatchEvent(new Event(API_KEY_CHANGE_EVENT));
 }
 
 export function clearStoredApiKey() {
   const storage = safeStorage();
   if (!storage) return;
   storage.removeItem(API_KEY_STORAGE_KEY);
+  window.dispatchEvent(new Event(API_KEY_CHANGE_EVENT));
+}
+
+export function subscribeStoredApiKey(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === API_KEY_STORAGE_KEY) listener();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(API_KEY_CHANGE_EVENT, listener);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(API_KEY_CHANGE_EVENT, listener);
+  };
 }
 
 export function getStoredLastEventId(): string | null {
@@ -49,4 +65,3 @@ export function clearStoredLastEventId() {
   if (!storage) return;
   storage.removeItem(SSE_LAST_EVENT_ID_KEY);
 }
-

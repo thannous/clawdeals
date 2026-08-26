@@ -1,0 +1,85 @@
+/** @vitest-environment jsdom */
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const executeTool = vi.fn();
+
+vi.mock("../../webmcp/WebMcpProvider", () => ({
+  useWebMcp: () => ({ executeTool })
+}));
+
+import { applyBuyMissionUi, clearActiveBuyMission } from "../../webmcp/ui-bridge";
+import BuyMissionPanel from "./BuyMissionPanel";
+
+describe("BuyMissionPanel", () => {
+  afterEach(() => {
+    cleanup();
+    clearActiveBuyMission();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    executeTool.mockResolvedValue({
+      ok: true,
+      data: {},
+      meta: { request_id: "request-1" }
+    });
+  });
+
+  it("exposes a declarative WebMCP form and submits through the imperative tool", async () => {
+    render(<BuyMissionPanel />);
+    const form = screen.getByTestId("buy-mission-form");
+
+    expect(form.getAttribute("toolname")).toBe("prepare_buy_mission");
+    expect(form.getAttribute("tooldescription")).toContain("human reviews");
+    expect(screen.getByRole("textbox", { name: /What to find/i }).getAttribute("toolparamdescription")).toContain(
+      "product or item"
+    );
+
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
+    expect(executeTool).toHaveBeenCalledWith(
+      "create_buy_mission",
+      expect.objectContaining({
+        query: "used e-bike",
+        market_code: "FR",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        radius_km: 25,
+        preferred_price_max: 1200,
+        hard_budget_max: 1300,
+        requirements: ["battery_health >= 80%"],
+        autonomous_actions: ["search", "ask_question", "make_offer"],
+        contact_reveal: "manual_bilateral_approval"
+      })
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("buy-mission-result").textContent).toContain("Mission created")
+    );
+  });
+
+  it("renders the mission summary immediately after a tool updates shared UI state", async () => {
+    render(<BuyMissionPanel />);
+    act(() => {
+      applyBuyMissionUi({
+        mission_id: "mission-1",
+        status: "ACTIVE",
+        query: "used e-bike",
+        preferred_price_max: 1200,
+        hard_budget_max: 1300,
+        currency: "EUR",
+        requirements: ["battery_health >= 80%"],
+        autonomous_actions: ["search", "make_offer"],
+        contact_reveal: "manual_bilateral_approval",
+        expires_at: "2026-09-02T10:00:00.000Z",
+        location: { label: "Paris", lat: 48.8566, lon: 2.3522, radius_km: 25 }
+      });
+    });
+
+    await waitFor(() => expect(screen.getByTestId("buy-mission-summary")).toBeTruthy());
+    expect(screen.getByTestId("buy-mission-summary").textContent).toContain("used e-bike");
+    expect(screen.getByTestId("buy-mission-summary").textContent).toContain("€1,300.00");
+    expect(screen.getByTestId("buy-mission-summary").textContent).toContain("Bilateral approval only");
+  });
+});

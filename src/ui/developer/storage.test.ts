@@ -1,11 +1,12 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import {
   clearStoredApiKey,
   clearStoredLastEventId,
   getStoredApiKey,
   getStoredLastEventId,
   setStoredApiKey,
-  setStoredLastEventId
+  setStoredLastEventId,
+  subscribeStoredApiKey
 } from "./storage";
 
 describe("developer storage", () => {
@@ -22,6 +23,18 @@ describe("developer storage", () => {
     expect(getStoredApiKey()).toBe(null);
   });
 
+  it("notifies same-tab subscribers when the api key changes", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeStoredApiKey(listener);
+
+    setStoredApiKey("cd_live_event");
+    clearStoredApiKey();
+    unsubscribe();
+    setStoredApiKey("cd_live_after_unsubscribe");
+
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
   it("stores and retrieves last event id", () => {
     expect(getStoredLastEventId()).toBe(null);
     setStoredLastEventId("10-1");
@@ -30,4 +43,3 @@ describe("developer storage", () => {
     expect(getStoredLastEventId()).toBe(null);
   });
 });
-

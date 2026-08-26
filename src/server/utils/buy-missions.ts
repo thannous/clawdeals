@@ -37,7 +37,7 @@ function normalizeMoney(value: unknown, field: string, { required }: { required:
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > 1_000_000_000) {
     fail(`${field} must be a positive number`);
   }
-  if (Math.round(value * 100) !== value * 100) {
+  if (Math.abs(Math.round(value * 100) - value * 100) > 1e-8) {
     fail(`${field} must have at most two decimal places`);
   }
   return value;

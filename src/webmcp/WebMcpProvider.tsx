@@ -12,7 +12,8 @@ import { confirmAndExecute } from "./confirm/gate";
 import { WebMcpConfirmProvider, useWebMcpConfirm } from "./confirm/context";
 import ConfirmModalHost from "./confirm/ConfirmModalHost";
 import ActivityHud from "./ActivityHud";
-import { recordWebMcpActivity, subscribeWebMcpUi } from "./ui-bridge";
+import { clearActiveBuyMission, recordWebMcpActivity, subscribeWebMcpUi } from "./ui-bridge";
+import { getStoredApiKey, subscribeStoredApiKey } from "../ui/developer/storage";
 
 type WebMcpContextValue = {
   enabled: boolean;
@@ -78,9 +79,21 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     () => isWebMCPSupported(),
     () => false
   );
+  const agentKey = useSyncExternalStore(
+    subscribeStoredApiKey,
+    getStoredApiKey,
+    () => null
+  );
 
   const [registration, dispatchRegistration] = useReducer(registrationReducer, INITIAL_REGISTRATION_STATE);
-  const routeTools = useMemo(() => getToolsForRoute(router.pathname || ""), [router.pathname]);
+  const routeTools = useMemo(
+    () => getToolsForRoute(router.pathname || "", { hasAgentKey: Boolean(agentKey) }),
+    [router.pathname, agentKey]
+  );
+
+  useEffect(() => {
+    clearActiveBuyMission();
+  }, [agentKey]);
 
   const executeTool = useCallback(
     async (name: string, args: unknown, options?: { signal?: AbortSignal }): Promise<StableToolResult> => {

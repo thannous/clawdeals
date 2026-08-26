@@ -9,8 +9,9 @@ import { NavbarCurrent } from "../landing/Navbar";
 import BrowseToolbar from "../browse/BrowseToolbar";
 import ListingCardGrid from "../browse/ListingCardGrid";
 import { useBrowseListings } from "../browse/useBrowseListings";
-import { getToolsForRoute } from "../../webmcp/tools";
+import { getToolsForRoute, WEBMCP_TOOLS } from "../../webmcp/tools";
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
+import BuyMissionPanel from "./BuyMissionPanel";
 
 type WebMcpDemoPageProps = {
   initialListings: any[];
@@ -26,8 +27,14 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
   const { themeId, setTheme, themes } = useTheme();
   const { supported, registered, registeredToolNames, lastRegisterError } = useWebMcp();
   const contextualTools = useMemo(
-    () => getToolsForRoute(router.pathname || "/webmcp"),
-    [router.pathname]
+    () => {
+      if (registeredToolNames.length === 0) {
+        return getToolsForRoute(router.pathname || "/webmcp");
+      }
+      const registered = new Set(registeredToolNames);
+      return WEBMCP_TOOLS.filter((tool) => registered.has(tool.name));
+    },
+    [registeredToolNames, router.pathname]
   );
 
   const {
@@ -102,6 +109,8 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
             </Link>
           </section>
         </div>
+
+        <BuyMissionPanel />
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10">
           <h2 className="text-xs font-mono uppercase tracking-widest text-subtle mb-3">{t("tools.title")}</h2>

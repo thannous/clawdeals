@@ -23,18 +23,40 @@ export type WebMcpActivityEntry = {
   ok?: boolean;
 };
 
+export type BuyMissionView = {
+  mission_id: string;
+  status: "ACTIVE";
+  query: string;
+  preferred_price_max: number | null;
+  hard_budget_max: number;
+  currency: string;
+  requirements: string[];
+  autonomous_actions: string[];
+  contact_reveal: "manual_bilateral_approval";
+  expires_at: string;
+  location: {
+    label: string | null;
+    lat: number;
+    lon: number;
+    radius_km: number;
+  };
+};
+
 export type WebMcpUiCommand =
   | { type: "filter_listings"; filter: ListingsFilter }
   | { type: "highlight_listings"; ids: string[] }
   | { type: "filter_deals"; filter: DealsFilter }
   | { type: "highlight_deals"; ids: string[] }
   | { type: "navigate"; href: string }
+  | { type: "mission_created"; mission: BuyMissionView }
   | { type: "activity"; entry: WebMcpActivityEntry };
 
 const EVENT = "clawdeals:webmcp-ui";
 
 const activityListeners = new Set<() => void>();
 let activities: WebMcpActivityEntry[] = [];
+const missionListeners = new Set<() => void>();
+let activeBuyMission: BuyMissionView | null = null;
 
 function emitActivity() {
   for (const listener of activityListeners) listener();
@@ -49,6 +71,29 @@ export function subscribeWebMcpActivities(listener: () => void): () => void {
   return () => {
     activityListeners.delete(listener);
   };
+}
+
+export function getActiveBuyMission(): BuyMissionView | null {
+  return activeBuyMission;
+}
+
+export function subscribeActiveBuyMission(listener: () => void): () => void {
+  missionListeners.add(listener);
+  return () => {
+    missionListeners.delete(listener);
+  };
+}
+
+export function applyBuyMissionUi(mission: BuyMissionView) {
+  activeBuyMission = mission;
+  for (const listener of missionListeners) listener();
+  publishWebMcpUi({ type: "mission_created", mission });
+}
+
+export function clearActiveBuyMission() {
+  if (activeBuyMission === null) return;
+  activeBuyMission = null;
+  for (const listener of missionListeners) listener();
 }
 
 export function recordWebMcpActivity(entry: Omit<WebMcpActivityEntry, "id" | "at"> & { id?: string; at?: number }) {

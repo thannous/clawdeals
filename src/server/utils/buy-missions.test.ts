@@ -51,6 +51,15 @@ describe("normalizeBuyMission", () => {
     ).toThrow("preferred_price_max must not exceed hard_budget_max");
   });
 
+  it("accepts valid two-decimal prices despite floating-point representation", () => {
+    expect(
+      normalizeBuyMission(
+        validMission({ preferred_price_max: 0.29, hard_budget_max: 0.3 }),
+        { now: NOW }
+      )
+    ).toMatchObject({ preferred_price_max: 0.29, hard_budget_max: 0.3 });
+  });
+
   it("rejects missing search authority and non-bilateral contact rules", () => {
     expect(() =>
       normalizeBuyMission(validMission({ autonomous_actions: ["make_offer"] }), { now: NOW })
