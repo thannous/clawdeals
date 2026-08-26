@@ -5,9 +5,9 @@ and from mocked browser wiring. No production mutation was performed.
 
 ## Codex in-app browser — PASS for the public read path
 
-At `2026-08-26T14:37:58.831Z`, the Codex in-app browser opened
+At `2026-08-26T17:21Z`, the Codex in-app browser opened
 `https://clawdeals.com/webmcp-challenge` on deployed build
-`b9fc2e346ab59b5c626f42532b6b8c7b781def38`.
+`2ed489d5a5086f449c9985d9627f2d024032e3a3`.
 
 The browser's native WebMCP capability discovered exactly these five tools from
 the live document:
@@ -21,20 +21,20 @@ the live document:
 The observed native tool sequence was:
 
 1. `get_page_context` returned `/webmcp-challenge` with request ID
-   `52c27d83-989c-4020-89da-c3e7d7463f38`.
+   `8d6975ba-279d-4c42-aaad-914225764fd0`.
 2. `search_listings` received the Paris e-bike read criteria, returned `ok: true`,
    and updated the shared UI to `/browse?q=e-bike`. Production contained no
    matching public listing, so the result set was empty. Request ID:
-   `2fea2f5a-a2c2-47ab-b495-8a992452bcd5`.
+   `ec572532-5994-4145-96e9-2095d592e666`.
 3. The Agent Activity UI showed the successful call, redacted latitude and
    longitude, the policy decision `read_completed`, an input hash, and receipt
-   `rcpt_2fea2f5a-a2c2-47ab-b495-8a992452bcd5`.
-4. Public `b9fc2e3` dropped `get_action_receipt` after navigation to `/browse`,
-   so the session returned to `/webmcp-challenge` and retrieved the receipt
-   through WebMCP there. It preserved the redactions and returned no API key,
-   cookie, token, email address, phone number or raw contact data. Receipt-read
-   request ID: `195c279c-2af5-4a76-8479-b2d6ed05e528`. The current local
-   candidate fixes this cross-route gap and has a dedicated UI regression test.
+   derived from request `ec572532-5994-4145-96e9-2095d592e666`.
+4. On `/browse`, native discovery still returned the exact same five tools,
+   including `get_action_receipt`. The browser retrieved the search receipt
+   there without returning to the challenge hub. It preserved the redactions
+   and returned no API key, cookie, token, email address, phone number or raw
+   contact data. Receipt-read request ID:
+   `df16a0fb-2cc6-4619-9989-12fcb652a802`.
 
 This is real in-app tool discovery and execution. It is not a Playwright mock.
 It proves the deployed public five-tool read path, contextual registry change,
@@ -50,15 +50,16 @@ shared UI update and redacted receipt retrieval.
 - No screenshot was retained: the browser capture command timed out. The native
   discovery, tool return payloads, page transition and receipt were observed
   directly in the connected browser session.
-- Public HEAD `b9fc2e346ab5` still does **not** include the uncommitted local
-  worktree that keeps `get_action_receipt` registered on `/browse`, adds a local
-  Upstash mock, and emits `Origin-Agent-Cluster: ?1`. That work remains
-  **LOCAL PENDING COMMIT / DEPLOY**.
+- Public HEAD `2ed489d5a508` includes the cross-route receipt fix. Independent
+  HTTP probes also observed `Origin-Agent-Cluster: ?1` on both
+  `/webmcp-challenge` and `/browse`.
+- Historical build `b9fc2e3` required returning to the hub to read the receipt;
+  the current native sequence proves that gap is closed.
 
 ## Connected Chrome — INDETERMINATE
 
-The connected external browser reported `Chrome/151.0.0.0` and successfully
-loaded the same deployed build. Its page exposed neither `document.modelContext`
+The previously connected external browser reported `Chrome/151.0.0.0` and
+loaded the then-current reviewed deployment. Its page exposed neither `document.modelContext`
 nor `document.modelContext.registerTool`; the challenge UI reported `Browser API
 Not detected` and `No active registration`.
 

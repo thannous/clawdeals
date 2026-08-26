@@ -123,10 +123,10 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 
 | Couche | Statut |
 |---|---|
-| LOCAL current candidate | PASS, pending commit/deploy |
+| LOCAL current candidate | PASS sur commit propre `2ed489d` |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN |
-| DEPLOYED / PUBLIC HTTP | PASS sur `b9fc2e3` |
-| WebMCP natif invité | PASS dans Codex in-app sur `b9fc2e3` |
+| DEPLOYED / PUBLIC HTTP | PASS sur `2ed489d` |
+| WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
 | Chrome WebMCP | INDETERMINATE |
 | Parcours authentifié public | PENDING |
 | ChatGPT in-app | NOT RUN |
@@ -918,17 +918,17 @@ Le compte de démonstration doit posséder :
 - **PASS** : dépôt actuel `thannous/clawdeals` public ; pas d’édition dédiée ;
 - **PASS** : licence MIT détectée par GitHub ;
 - **PASS** : dernière CI GitHub Actions verte sur `9e7102e`; CI du candidat courant **WAIVED / NOT RUN** ;
-- **PASS** : HTTP public et WebMCP natif invité dans Codex sur `b9fc2e3` ;
+- **PASS** : HTTP public et WebMCP natif invité dans Codex sur `2ed489d`, y compris la persistance du reçu après navigation ;
 - **PASS LOCAL** : gate complet du candidat courant et vidéo 160 secondes en 1080p avec audio ;
 - **INDETERMINATE** : Chrome WebMCP sans runtime actif dans le profil testé ;
-- **PENDING** : déploiement du candidat local, sandbox authentifié public, vidéo YouTube, soumission Devpost et ChatGPT in-app.
+- **PENDING** : sandbox authentifié public, vidéo YouTube, soumission Devpost et ChatGPT in-app.
 
 Reste à faire le 26 août (si non clos ailleurs) :
 
 - **PASS** : audit des secrets documenté ;
 - **PASS** : scénario du vélo électrique figé ;
 - **PASS** : `document.modelContext`, enregistrement asynchrone et `AbortSignal` officiels ;
-- **PASS LOCAL / PENDING PUBLIC** : header `Origin-Agent-Cluster: ?1` et test de configuration ;
+- **PASS LOCAL / PUBLIC** : header `Origin-Agent-Cluster: ?1` sur `/webmcp-challenge` et `/browse`, avec test de configuration ;
 - **PENDING** : activation Origin Trial ou flag Chrome sur le runtime réellement testé.
 
 ### Jeudi 27 août — registre contextuel

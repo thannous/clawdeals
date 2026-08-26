@@ -123,9 +123,9 @@ production data or production secrets.
 - Concurrent acceptance regression: 5/5 repeated races passed after `20260826170000_ti_377_offer_accept_lock_order.sql` serialized acceptance on the shared listing row.
 - UUID redaction regression: fixed and covered so workflow IDs remain usable while emails and phone numbers stay redacted.
 - Real ChatGPT in-app browser: `NOT RUN`.
-- Real Codex in-app WebMCP guest path: `PASS` on public `b9fc2e346ab5`.
+- Real Codex in-app WebMCP guest path: `PASS` on public `2ed489d5a508`, including receipt retrieval after navigation to `/browse`.
 - Real Chrome WebMCP: `INDETERMINATE` in the tested Chrome 151 profile.
 
 The gate counts above are local proof. The Codex row is separate public native
-evidence on `b9fc2e3`; it does not prove the pending local delta was pushed,
-Chrome or ChatGPT support, an authenticated public sandbox, or Devpost acceptance.
+evidence on deployed `2ed489d`; it does not prove Chrome or ChatGPT support, an
+authenticated public sandbox, public video publication, or Devpost acceptance.

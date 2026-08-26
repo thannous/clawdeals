@@ -84,7 +84,7 @@ This runner is not ChatGPT and does not prove in-app tool selection.
 
 ## Documented LOCAL results (26 August 2026)
 
-Root validation reran the complete gate on the current worktree based on public HEAD `b9fc2e346ab5`. The worktree contains the cross-route receipt fix, deterministic Upstash mock and `Origin-Agent-Cluster` header and remains pending commit/deploy.
+Root validation ran the official `npm run release:hackathon:local` gate to exit 0 on clean commit `2ed489d5a5086f449c9985d9627f2d024032e3a3`, using only the isolated local Supabase stack. That commit contains the cross-route receipt fix, deterministic Upstash mock and `Origin-Agent-Cluster` header.
 
 - Typecheck, ESLint (zero warnings), production Next.js build: pass.
 - `npm run eval:webmcp:gate`: exit 0 on the isolated local stack.
@@ -96,16 +96,16 @@ Root validation reran the complete gate on the current worktree based on public 
 - Concurrent accept races: 5/5 after listing-row lock ordering.
 - Production build: 109 pages generated.
 
-This current-worktree gate is local proof. It is neither remote CI nor proof that the pending changes are deployed publicly.
+This clean-commit gate is local proof. Remote CI, deployment and public behavior remain separately evidenced below.
 
 ## Proof layers
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on current worktree | 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. Pending commit/deploy. |
+| LOCAL | PASS on clean `2ed489d` | 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
-| DEPLOYED / PUBLIC HTTP | PASS on `b9fc2e346ab5` | The live challenge route is 200, public listings are 200 and production sandbox reset remains 404. Pending local changes are not included. |
-| PUBLIC native guest | PASS on `b9fc2e346ab5` | Codex in-app discovered five tools and executed context → search → redacted receipt. |
+| DEPLOYED / PUBLIC HTTP | PASS on `2ed489d5a508` | Vercel completed, the live challenge and browse routes are 200 with `Origin-Agent-Cluster: ?1`, public listings are 200 and production sandbox reset remains 404. |
+| PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |
 | PUBLIC authenticated sandbox | PENDING | Eleven-tool reset and mutation journey are not proven on a public isolated sandbox. |
 | CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |

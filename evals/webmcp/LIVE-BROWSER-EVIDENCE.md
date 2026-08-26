@@ -36,17 +36,19 @@ below. Full evidence: `docs/hackathon/PUBLIC_SMOKE_2026-08-26.md`.
 ## Codex in-app browser
 
 Status: **PASS for native public discovery and read-only execution on
-`b9fc2e346ab5`; authenticated journey PENDING.**
+`2ed489d5a508`; authenticated journey PENDING.**
 
-At `2026-08-26T14:37:58.831Z`, the connected Codex in-app browser discovered the
+At `2026-08-26T17:21Z`, the connected Codex in-app browser discovered the
 five public tools directly from `https://clawdeals.com/webmcp-challenge`. It
 executed `get_page_context`, `search_listings` and `get_action_receipt`. The
 search updated the shared UI to `/browse?q=e-bike`; Agent Activity recorded the
-successful policy decision and redacted coordinates. Request IDs were
-`52c27d83-989c-4020-89da-c3e7d7463f38` for context and
-`2fea2f5a-a2c2-47ab-b495-8a992452bcd5` for search. Receipt
-`rcpt_2fea2f5a-a2c2-47ab-b495-8a992452bcd5` was retrieved with request ID
-`195c279c-2af5-4a76-8479-b2d6ed05e528` and contained no keys, tokens or contact data.
+successful policy decision and redacted coordinates. Native discovery on
+`/browse` still returned the same five tools, so the receipt was read without
+returning to the hub. Request IDs were
+`8d6975ba-279d-4c42-aaad-914225764fd0` for context,
+`ec572532-5994-4145-96e9-2095d592e666` for search and
+`df16a0fb-2cc6-4619-9989-12fcb652a802` for receipt retrieval. The receipt
+contained no keys, tokens or contact data.
 
 This is native in-app WebMCP evidence, but the selected runtime identified
 itself as **Codex In-app Browser**. Keep the ChatGPT row below separate. Full

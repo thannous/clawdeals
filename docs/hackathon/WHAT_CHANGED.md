@@ -58,8 +58,9 @@ All dates below are 26 August 2026. The victory plan's later calendar was a deli
 | 2026-08-26 | `3739c7c` | Sandbox production-target guard, optional Origin Trial hook, native-browser evidence and public sandbox plan | TI-376 |
 | 2026-08-26 | `7b52d94` | Manual CI dispatch support; deployed publicly, with the current remote rerun explicitly waived before jobs were created | TI-376 |
 | 2026-08-26 | `b9fc2e3` | Current public proof docs and explicit GitHub Actions waiver | TI-376 |
+| 2026-08-26 | `2ed489d` | Cross-route receipt persistence, deterministic loopback Upstash test mock, global origin-agent-cluster header, refreshed judge proof | TI-376 |
 
-The next local candidate adds receipt persistence across `/webmcp-challenge` → `/browse`, a deterministic loopback Upstash REST mock for the full isolated gate, and a global `Origin-Agent-Cluster: ?1` response header. It passed the full local gate and is pending commit/deploy; it is not attributed to `b9fc2e3`.
+Commit `2ed489d` passed the official clean-commit local gate, was pushed to `main`, completed its Vercel deployment and was verified publicly. Native Codex WebMCP retained `get_action_receipt` across `/webmcp-challenge` → `/browse` and read the redacted receipt there.
 
 ## What a judge can actually exercise
 
@@ -106,10 +107,10 @@ request_contact_reveal
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on current worktree | Full gate: 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. Pending commit/deploy. |
+| LOCAL | PASS on clean `2ed489d` | Full gate: 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. |
 | CI | PASS through `9e7102e`; current HEAD WAIVED / NOT RUN | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32980551636) passed every job on `9e7102e`. The two `7b52d94` dispatch records created no jobs, and the owner waived a fresh remote rerun; they are not cited as green. |
-| DEPLOYED | PASS on `b9fc2e3` | The public challenge page displayed `b9fc2e346ab5`. |
-| PUBLIC | Native guest read and HTTP PASS on `b9fc2e3`; authenticated journey PENDING | Codex in-app discovered five live tools and executed context → search → redacted receipt. Public routing/reset closure passed. The isolated eleven-tool sandbox journey remains pending. |
+| DEPLOYED | PASS on `2ed489d` | Vercel completed and the public challenge page displayed `2ed489d5a508`. |
+| PUBLIC | Native guest read and HTTP PASS on `2ed489d`; authenticated journey PENDING | Codex in-app discovered five live tools, executed context → search, retained the five-tool registry on `/browse` and read the redacted receipt there. Public challenge/browse headers and production reset closure passed. The isolated eleven-tool sandbox journey remains pending. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
 

@@ -18,8 +18,8 @@ Current video proof for the WebMCP Challenge submission.
 | Duration | `160.000000` seconds |
 | Video | H.264, 1920×1080 |
 | Audio | AAC, 48 kHz, stereo |
-| Size | `7,096,414` bytes |
-| SHA-256 | `ba72db547683adc7f43e9079a23b1fba50fc74b078c3f7f17b0a0cf09534f9b3` |
+| Size | `7,102,105` bytes |
+| SHA-256 | `929d74fa5aada1c4da18044f91f649b2788aeb9a10492a5f375dfbd9d1b80fd3` |
 | YouTube URL | None |
 | Devpost attachment | None |
 
