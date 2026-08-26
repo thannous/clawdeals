@@ -104,11 +104,12 @@ Auth modes in `src/webmcp/http.ts`:
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on the pre-doc candidate | Root validation ran a clean clone of `efd6310fd8e875b08d00aa0519386db83e8a474f`: migrations + seed, 373 Vitest files / 2,616 passed / 1 skipped, build 110 pages, selector 24 x 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. The final reviewed SHA must rerun the gate after these docs are committed; its exact result belongs in TI-376 because embedding that SHA here would change it. |
-| CI | NOT PROVEN | GitHub Actions on the judged SHA is pending in the TI-376 runbook. |
-| DEPLOYED | NOT PROVEN | `https://clawdeals.com/webmcp-challenge` is the intended route. README states deployment of the reviewed SHA is still pending. |
-| PUBLIC | NOT PROVEN | Private-window / incognito smoke is pending. |
+| LOCAL | PASS on the reviewed implementation | The clean committed `2ed489d` gate passed typecheck, lint, 377 Vitest files / 2,634 passed / 1 skipped, a 109-page build, selector 24 x 3, contracts 82/82, UI 6/6, journey 2/2 and security 10/10. See [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). |
+| CI | WAIVED / NOT RUN on the reviewed implementation | The owner waived a fresh GitHub Actions run. Historical green CI and the current local gate remain separate evidence. |
+| DEPLOYED / PUBLIC HTTP | PASS | The reviewed implementation was deployed; the public challenge and browse routes return 200 with `Origin-Agent-Cluster: ?1`, public listings return 200 and the production sandbox reset remains 404. Later documentation-only descendants may display a newer deploy SHA without changing the reviewed runtime. |
+| PUBLIC native guest | PASS in Codex; authenticated sandbox PENDING | Codex in-app discovered and executed the five guest tools, retained the registry across challenge to browse navigation and read a redacted receipt. The eleven-tool authenticated journey still requires an isolated public sandbox. |
+| CHROME | INDETERMINATE | The tested Chrome profile exposed no `document.modelContext`; this is neither a product pass nor a fail. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
+| VIDEO / DEVPOST | LOCAL VIDEO PASS; PUBLIC PENDING | The 160-second 1080p video exists locally. YouTube publication, Devpost submission and post-submission freeze remain pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.

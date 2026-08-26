@@ -6,6 +6,53 @@ Observed Devpost project: `Clawdeals Copilot`, draft `3/5`, submission ID
 `1153777`. The current remote story is stale and must be replaced only after the
 remaining public links are ready.
 
+Live dashboard recheck on 26 August 2026 confirmed:
+
+- project overview currently says `Clawdeals Copilot` with the pitch
+  `A human and an AI agent share the same live marketplace page via WebMCP.`;
+- project details still claim a `navigator` fallback and only a draft-listing
+  write path;
+- the demo URL still points to `https://clawdeals.com/webmcp`;
+- the public repository URL is correct;
+- the YouTube field is empty;
+- submitter `Individual`, country `France`, app status `Existing`, learning
+  `Significant` and career value `Yes` are already selected;
+- no Devpost field was changed during this recheck.
+
+## Action-time update package — prepared, not saved
+
+Project overview:
+
+- name: `ClawDeals`;
+- elevator pitch: `Your agent negotiates. You stay in control.`
+
+Project details:
+
+- replace the remote story with **Project story** below;
+- built-with tags: `webmcp`, `next.js`, `typescript`, `react`, `supabase`,
+  `postgresql`, `vercel`, `cloudflare`, `vitest`, `playwright`;
+- replace the demo URL with `https://clawdeals.com/webmcp-challenge`;
+- keep `https://github.com/thannous/clawdeals`;
+- add the challenge ledger and `HACKATHON.md` links listed under **Try it out**;
+- add the public YouTube URL only after signed-out verification.
+
+Additional information:
+
+- keep `Individual`, `France` and `Existing`;
+- describe the challenge-period delta using **What we built during the
+  challenge** below;
+- live URL: `https://clawdeals.com/webmcp-challenge`;
+- public repo: `https://github.com/thannous/clawdeals`;
+- tested clients: `Codex in-app browser — native guest WebMCP PASS; Chrome 151
+  — runtime unavailable, recorded as INDETERMINATE; ChatGPT in-app — NOT RUN`;
+- AI tools used: `OpenAI Codex, ChatGPT and Grok 4.6`;
+- keep learning `Significant` and career value `Yes`.
+
+Judge credentials and private testing instructions remain blank until the
+isolated public sandbox exists. Saving these fields, uploading the video,
+accepting the rules and submitting are external actions that require action-time
+confirmation.
+
 ## Project story
 
 ### Inspiration

@@ -1,11 +1,12 @@
 # Release candidate runbook (TI-376)
 
-Scope: document how to turn baseline input `425b414` into a later TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. The implementation candidate `3f10575` passed the clean-clone release gate, GitHub CI, SDK CI, Vercel deployment, and public HTTP route checks. Full private-window journey, candidate/final tags, and Devpost remain pending. See `RELEASE_EVIDENCE_2026-08-26.md`.
+Scope: document how to turn the challenge baseline into the final TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. The first candidate `3f10575` passed the clean-clone release gate and historical CI. Reviewed runtime implementation `2ed489d` passed the expanded local gate, Vercel deployment, public HTTP and native Codex guest WebMCP proof; current GitHub Actions was explicitly waived. The authenticated public sandbox, candidate/final tags, public video and Devpost remain pending. See `RELEASE_EVIDENCE_2026-08-26.md`.
 
 SHA roles:
 
 - Challenge eligibility baseline (already tagged): `webmcp-challenge-baseline` = `00880457964929c0773237a9c724704f5da651f0`
 - TI-376 input SHA (current `HEAD` at runbook authoring): `425b4140d82daa709dd205e348cb82caa8f23a28` (`425b414`, TI-377 evals). This is **not** the TI-376 release candidate.
+- Reviewed runtime implementation: `2ed489d5a5086f449c9985d9627f2d024032e3a3`. Later documentation-only descendants do not change that runtime proof.
 - TI-376 release candidate SHA: resolve it from the clean reviewed HEAD with `CANDIDATE_SHA=$(git rev-parse HEAD)` after this runbook and the release files are committed. `<TI376_CANDIDATE_SHA>` is an operator placeholder only; record the exact value in Linear and the candidate tag without editing this file after validation.
 - Repo: `https://github.com/thannous/clawdeals`
 - Ticket: [TI-376](https://linear.app/ti-max/issue/TI-376/hackathon-produire-un-build-reproductible-et-une-preuve-live-stable)
@@ -178,7 +179,7 @@ Judge-facing local pages after `npm run dev:sandbox`: `/webmcp-challenge` and `/
 
 | Check | Command / artifact | Result |
 | --- | --- | --- |
-| Clean clone SHA | `git rev-parse HEAD` | PASS on `3f1057541ac3fd523fbc89f0ea4b367e52077026` |
+| Historical first clean-clone SHA | `git rev-parse HEAD` | PASS on `3f1057541ac3fd523fbc89f0ea4b367e52077026` |
 | Input ancestor | `425b414` is ancestor of HEAD | PASS on `3f10575` |
 | `cp .env.example .env.local` then local placeholders replaced | file exists locally, not committed | PASS on `3f10575` |
 | `npm ci` | install log | PASS: 1,030 packages, 0 vulnerabilities |
@@ -190,6 +191,8 @@ Judge-facing local pages after `npm run dev:sandbox`: `/webmcp-challenge` and `/
 | `npm run release:hackathon:preflight` | JSON `status=PASS`, `proof_layer=LOCAL_PREFLIGHT` | PASS on `3f10575` |
 | `npm run release:hackathon:local` | includes `eval:webmcp:gate` | PASS on `3f10575` |
 | `npm run eval:webmcp:gate` | 373 Vitest files; selector, contracts, UI, journey, security | PASS on `3f10575` |
+| Reviewed implementation preflight | `npm run release:hackathon:preflight` on clean `2ed489d` | PASS |
+| Reviewed implementation full gate | `npm run release:hackathon:local` on clean `2ed489d` | PASS: 377 Vitest files / 2,634 passed / 1 skipped, 109-page build, selector 24 x 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10 |
 
 A prior local eval index in `evals/webmcp/README.md` is not this runbook's evidence.
 
@@ -224,6 +227,7 @@ Inspect:
 | `unit_tests` | both shards | PASS |
 | `worker_contracts` | job result | PASS |
 | `test-ci` aggregator | job result | PASS |
+| Current reviewed implementation | GitHub checks on `2ed489d` | WAIVED / NOT RUN by owner; neither PASS nor FAIL |
 
 Do not claim CI green unless the run for this SHA is open and successful.
 
@@ -270,12 +274,12 @@ Existing tag `webmcp-challenge-baseline` marks pre-challenge commit `0088045` an
 
 | Check | Artifact | Result |
 | --- | --- | --- |
-| Vercel production deployment SHA | GitHub commit status + public hub | PASS on `3f10575` |
+| Vercel production deployment SHA | GitHub commit status + public hub | PASS on reviewed implementation `2ed489d`; later documentation-only descendants may be the displayed SHA |
 | Cloudflare worker version | wrangler/dashboard version vs SHA | PENDING |
 | Staging SHA (if used) | `clawdeals-staging` deployment | PENDING |
 | Candidate tag created and pushed | `git ls-remote --tags origin` | PENDING |
 | Final tag created and pushed | `git ls-remote --tags origin` | PENDING |
-| Production sandbox reset returns 404 | `curl -i https://clawdeals.com/api/v1/sandbox/reset` | PENDING |
+| Production sandbox reset returns 404 | `curl -i https://clawdeals.com/api/v1/sandbox/reset` | PASS |
 
 ---
 
@@ -310,15 +314,15 @@ Chrome path, if used: Chrome 149+ with `chrome://flags/#enable-webmcp-testing`. 
 
 | Check | Artifact | Result |
 | --- | --- | --- |
-| Hub HTTP 200, commit/build identity if shown | HTTP headers + rendered HTML | PASS: 200, `/en/webmcp-challenge`, `3f10575` |
-| Public tool registry (5 tools) | hub inspector | PENDING |
+| Hub HTTP 200, commit/build identity if shown | HTTP headers + rendered HTML | PASS on reviewed implementation `2ed489d`; later documentation-only descendants may be displayed |
+| Public tool registry (5 tools) | Codex in-app native discovery | PASS — exact five guest tools retained across challenge to browse navigation |
 | Authenticated registry (11 tools) | hub inspector, sandbox only | PENDING |
-| Public listings/API read | network/status | PENDING |
-| Judge reset | sandbox 2xx / production 404 | PENDING |
+| Public listings/API read | network/status | PASS — public listings HTTP 200 |
+| Judge reset | sandbox 2xx / production 404 | Production 404 PASS; sandbox 2xx PENDING |
 | Critical path mission → confirmation → receipt | receipt id | PENDING |
 | ChatGPT in-app WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | PENDING — NOT RUN |
-| Chrome WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | PENDING — NOT RUN |
-| PII/secret scan | none found / found | PENDING |
+| Chrome WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | INDETERMINATE — tested Chrome profile exposed no `document.modelContext` |
+| PII/secret scan | none found / found | Guest receipt PASS; full authenticated path PENDING |
 
 Lack of WebMCP in a given browser is `INDETERMINATE`, not a pass or fail.
 
@@ -346,11 +350,11 @@ Freeze decision: PENDING
 
 | Acceptance | Layer | Status in this runbook |
 | --- | --- | --- |
-| Clean clone + install + migrations + demo seed + build documented | LOCAL | PASS on `3f10575` |
+| Clean clone + install + migrations + demo seed + build documented | LOCAL | PASS on historical clean-clone `3f10575`; expanded reviewed-runtime gate PASS on `2ed489d` |
 | `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | LOCAL PASS; full private-window verification pending |
-| `release:hackathon:local` | LOCAL | PASS on `3f10575` |
-| Vercel/Cloudflare attached to candidate commit | DEPLOYED | PASS on `3f10575`; Vercel status success and public route displays SHA |
-| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | HTTP route/SHA PASS; full private-window journey PENDING |
+| `release:hackathon:local` | LOCAL | PASS on clean reviewed implementation `2ed489d` |
+| Vercel/Cloudflare attached to candidate commit | DEPLOYED | Vercel and public Cloudflare-routed HTTP PASS on reviewed implementation `2ed489d`; exact Cloudflare worker-version mapping remains pending |
+| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | Page, five guest tools, APIs and production reset closure PASS; authenticated sandbox critical path PENDING |
 | Candidate tag then final tag created and pushed | DEPLOYED | Commands listed; not executed |
 | LOCAL / CI / DEPLOYED / PUBLIC reported separately | all | Tables above |
 | No post-submission change without explicit decision | freeze | PENDING |

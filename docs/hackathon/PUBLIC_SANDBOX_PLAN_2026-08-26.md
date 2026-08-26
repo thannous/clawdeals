@@ -10,7 +10,9 @@ It must never run against ClawDeals production or the production Supabase projec
 | `staging.app.clawdeals.com` DNS | NOT PROVISIONED — no DNS answer |
 | Public sandbox hostname | NOT PROVISIONED |
 | GitHub deployment environments | `Preview` and `Production` only |
-| Shell access to Vercel/Supabase management tokens | NOT AVAILABLE |
+| Vercel dashboard | PASS — authenticated Chrome sees production project `clawdeals`; no `clawdeals-staging` project exists |
+| Supabase dashboard | PASS — production `clawdeals` is in the Vercel-linked Pro organization; branching is enabled and no persistent branch exists |
+| GitHub staging variables/secrets | NOT PROVISIONED — repository exposes only `NPM_TOKEN`; no staging variables |
 | Production reset | PASS — `/api/v1/sandbox/reset` returns 404 |
 | Local isolated journey | PASS — recorded by the release gate |
 | Public authenticated eleven-tool journey | PENDING |
@@ -20,15 +22,19 @@ target topology, not a currently proven deployment.
 
 ## Required topology
 
-Use a dedicated Vercel project, dedicated Supabase project, dedicated Redis and
-a custom host such as `sandbox.clawdeals.com`:
+Use a dedicated Vercel project, dedicated Redis and a custom host such as
+`sandbox.clawdeals.com`. Prefer a persistent Supabase branch of the existing Pro
+project over a second project: Supabase documents persistent branches as the
+long-lived staging option, with a separate instance, endpoints and credentials,
+and new branches start without production data. A separate Supabase project is
+the fallback if branching cannot replay the ClawDeals migrations.
 
 ```text
 browser
   -> https://sandbox.clawdeals.com/webmcp-challenge
   -> same-origin API and localStorage agent key
   -> Vercel clawdeals-staging
-  -> synthetic-only Supabase staging
+  -> synthetic-only persistent Supabase branch
   -> isolated Redis staging
 ```
 
@@ -53,8 +59,9 @@ host nor a marketing host is served directly by `middleware.ts`.
 - `WEBMCP_JUDGE_AGENT_ID=93000000-0000-4000-8000-000000000001`
 - `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` unset
 
-The production Supabase project ref `gztfmpuqtpvncdcuhqxy`, production secrets
-and `cd_live_*` keys are forbidden in this environment.
+The production Supabase project ref `gztfmpuqtpvncdcuhqxy`, production endpoints,
+production secrets and `cd_live_*` keys are forbidden in this environment. The
+staging deployment must use the branch-specific project ref, URL and credentials.
 
 The sandbox reset endpoint and fixture service enforce this boundary at runtime:
 both Supabase URL variables must be present and must resolve to local Supabase or
@@ -93,15 +100,26 @@ that cannot equal `WEBMCP_JUDGE_AGENT_ID`.
    data or credentials in output.
 9. Confirm no request touched the production Supabase project.
 
+Read-only HTTP acceptance for steps 1-3 is `npm run verify:public-sandbox`. It
+is GET-only, never posts a reset, never targets production mutations, and
+redacts any supplied judge key. Optional `PUBLIC_SANDBOX_JUDGE_KEY` only
+authenticates the sandbox reset GET.
+
 Seller acceptance and bilateral contact reveal need the deterministic seller
 key as a separate actor. They remain required for the full critical-path proof,
 even though a buyer key is sufficient to expose the eleven-tool registry.
 
 ## External setup gate
 
-Creating the Vercel staging project, Supabase project, DNS record and staging
-secrets changes external infrastructure and requires the account owner at
-action time. No such resource was created during this audit.
+Creating the Vercel staging project, persistent Supabase branch, Redis database,
+DNS record and staging secrets changes external infrastructure and requires the
+account owner at action time. No such resource was created during this audit.
+
+The dashboard and current Supabase billing documentation show that the branch
+starts on Micro compute at `USD 0.01344/hour` (about `USD 0.32/day` or
+`USD 10/month` if kept continuously). Branching compute is billed separately
+from the organization's compute credit and is not covered by the Spend Cap.
+Confirm that cost immediately before creating the persistent branch.
 
 References:
 
@@ -109,3 +127,5 @@ References:
 - [Release candidate runbook](./release-candidate-runbook.md)
 - [Environment policy](../release-environments.md)
 - [Native browser evidence](./NATIVE_WEBMCP_EVIDENCE_2026-08-26.md)
+- [Supabase branching](https://supabase.com/docs/guides/deployment/branching)
+- [Supabase branching usage](https://supabase.com/docs/guides/platform/manage-your-usage/branching)

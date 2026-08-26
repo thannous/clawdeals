@@ -161,7 +161,7 @@ For a clean release candidate, follow
 `npm run release:hackathon:local`; it includes the preflight. The preflight deliberately reports deploy,
 public smoke and Devpost as unchecked local-external layers.
 
-The final clean-clone gate passed on implementation SHA `3f1057541ac3fd523fbc89f0ea4b367e52077026`:
+The first clean-clone gate passed on implementation SHA `3f1057541ac3fd523fbc89f0ea4b367e52077026`:
 373 Vitest files / 2,616 tests passed / 1 skipped, build 110 pages, selector 24 × 3,
 contracts 79/79, UI 5/5, journey 2/2 and security 10/10. GitHub `CI` and `SDK CI`,
 Vercel deployment, and public HTTP route checks also passed for that SHA; the exact links and
@@ -173,6 +173,13 @@ WebMCP UI tests. Vercel and public HTTP checks passed on `7b52d94`. A fresh
 GitHub Actions rerun for that HEAD was explicitly waived before any job was
 created; the last green remote CI remains `9e7102e` and is not misrepresented as
 current-HEAD CI.
+
+The final reviewed runtime implementation is `2ed489d5a5086f449c9985d9627f2d024032e3a3`.
+Its clean committed `npm run release:hackathon:local` gate passed 377 Vitest files /
+2,634 tests passed / 1 skipped, a 109-page build, selector 24 x 3, contracts 82/82,
+UI 6/6, journey 2/2 and security 10/10. Vercel, public HTTP and native Codex guest
+WebMCP proof also pass for that implementation. Later documentation-only
+descendants may be the SHA displayed by the public hub.
 
 The full private-window journey, real ChatGPT execution on the candidate, the public video,
 and the final Devpost submission remain separate pending proof layers.

@@ -28,3 +28,39 @@ The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md`
 ## Boundary
 
 The local artifact is current proof of the produced demo only. It is not public video proof. Do not treat the MP4, a Devpost draft, or the script as YouTube publication or final submission.
+
+## Public upload package — prepared, not sent
+
+Suggested title:
+
+> ClawDeals — Your Agent Negotiates. You Stay in Control. | WebMCP Challenge
+
+Suggested description:
+
+```text
+ClawDeals is the trust layer for delegated commerce: agents search and negotiate while humans define the limits and keep the final say.
+
+This 160-second WebMCP Challenge demo shows a deterministic synthetic journey: Deal Mission, policy-fit search, structured negotiation, server-enforced budget protection, editable owner approval, atomic reservation, bilateral contact consent and a redacted action receipt.
+
+Live judge hub: https://clawdeals.com/webmcp-challenge
+Public repository: https://github.com/thannous/clawdeals
+Challenge-period changes: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/WHAT_CHANGED.md
+Reproduction and evidence: https://github.com/thannous/clawdeals/blob/main/HACKATHON.md
+
+ClawDeals existed before the challenge. The repository baseline tag and dated ledger separate prior work from the WebMCP extension built during the competition.
+
+The full mutation sequence shown in the video runs only against isolated synthetic sandbox data. Production keeps the judge reset disabled.
+```
+
+Upload settings:
+
+- visibility: `Public`;
+- audience: `No, it is not made for kids`;
+- category: `Science & Technology`;
+- language: English;
+- tags: `WebMCP`, `AI agents`, `agentic commerce`, `Next.js`, `OpenAI`,
+  `hackathon`, `human in the loop`.
+
+Uploading the file, saving metadata and publishing are external actions. Confirm
+them at action time, then verify the final URL in a signed-out window before
+changing `Publication status` or attaching it to Devpost.
