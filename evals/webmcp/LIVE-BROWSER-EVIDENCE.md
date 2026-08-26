@@ -18,6 +18,21 @@ mock of `document.modelContext` cannot satisfy either layer.
 
 Do not enter real contact data. Use only the deterministic judge fixture.
 
+## Public incognito smoke (stock Chromium)
+
+Status: **PASS for read-only production smoke; native WebMCP INDETERMINATE.**
+
+At `2026-08-26T14:20:20.016Z`, a fresh Playwright Chromium context opened
+`https://clawdeals.com/webmcp-challenge` with no cookies, storage state or agent
+key. The page returned 200 and displayed deployed SHA `1b52e64799fd`; public
+listings returned 200 and `GET /api/v1/sandbox/reset` returned 404. Stock
+Chromium exposed no `document.modelContext`, so it registered no native tools.
+
+A separate clean context with an explicit test `document.modelContext`
+injection observed the exact five guest tools on the deployed JavaScript. That
+is registration-wiring evidence only and does not complete either native table
+below. Full evidence: `docs/hackathon/PUBLIC_SMOKE_2026-08-26.md`.
+
 ## ChatGPT in-app browser
 
 Status: **NOT RUN — requires a deployed build and authenticated in-app browser.**

@@ -18,10 +18,14 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 | CI | PASS | [`CI` run 32959645029](https://github.com/thannous/clawdeals/actions/runs/32959645029) and [`SDK CI` run 32959645020](https://github.com/thannous/clawdeals/actions/runs/32959645020) completed successfully on `3f10575`. |
 | DEPLOYED | PASS | GitHub's Vercel commit status for `3f10575` reported `Deployment has completed`. |
 | PUBLIC HTTP | PASS | `https://clawdeals.com/webmcp-challenge` returned HTTP 200 with `x-matched-path: /en/webmcp-challenge` and displayed deploy SHA `3f10575`; `https://clawdeals.com/webmcp` also returned HTTP 200. |
-| PUBLIC private-window journey | PENDING | Full page → tools → API/reset → critical-path smoke has not yet been rerun in a private browser on this deployed SHA. |
+| PUBLIC incognito read-only | PASS on `1b52e64` | Fresh Chromium context: challenge page 200, displayed SHA `1b52e64799fd`, no stored key, public listings 200, production sandbox GET 404. See [`PUBLIC_SMOKE_2026-08-26.md`](./PUBLIC_SMOKE_2026-08-26.md). |
+| PUBLIC deployed registry wiring | PASS on `1b52e64` with explicit mock boundary | A separate clean context injected `document.modelContext` and observed the exact five guest tools. This is deployed wiring proof, not native Chrome/ChatGPT proof. |
+| PUBLIC native/authenticated journey | PENDING | Real Chrome/ChatGPT WebMCP, the eleven-tool authenticated registry, sandbox reset and critical mutation path have not been proved on a final public sandbox host. Production stays non-sandbox. |
 | CHATGPT | NOT RUN on candidate | Real ChatGPT in-app selection and execution on `3f10575` remains separate from HTTP and CI proof. |
-| VIDEO / DEVPOST | PENDING | The final public video, final Devpost fields, submission, and post-submission freeze are not proven. |
+| SECRET AUDIT | PASS | GitHub Secret Scanning: 0 alerts. Gitleaks 8.30.1: 492 commits and candidate tree reviewed; 0 confirmed secrets after false-positive triage. See [`SECRET_AUDIT_2026-08-26.md`](./SECRET_AUDIT_2026-08-26.md). |
+| VIDEO LOCAL | PASS | 160-second 1080p H.264/AAC artifact, SHA-256 recorded in [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
+| VIDEO PUBLIC / DEVPOST | PENDING | Public YouTube URL, final Devpost fields, submission, and post-submission freeze are not proven. |
 
 ## Boundary
 
-The HTTP checks prove public routing and deployed-SHA visibility. They do not prove native browser WebMCP selection, authenticated sandbox reset, the complete negotiation journey, or Devpost acceptance.
+The HTTP and incognito checks prove public routing, deployed-SHA visibility, production reset closure and guest registration wiring under an explicit compatibility injection. They do not prove native browser WebMCP selection, an authenticated public sandbox journey, a public video, or Devpost acceptance.

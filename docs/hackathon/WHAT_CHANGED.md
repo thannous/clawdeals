@@ -37,7 +37,7 @@ All dates below are 26 August 2026. The victory plan's later calendar was a deli
 
 | Date | Commit | WebMCP / challenge feature | Ticket |
 | --- | --- | --- | --- |
-| 2026-08-26 | `3f0afb4` | Official `document.modelContext.registerTool` runtime, shared human+agent copilot UI | challenge runtime |
+| 2026-08-26 | `3f0afb4` | Official `document.modelContext.registerTool` runtime, shared human+agent copilot UI. Session journal: [`SESSION_2026-08-26_ENTRY.md`](./SESSION_2026-08-26_ENTRY.md) | challenge runtime |
 | 2026-08-26 | `64a30e9` | Registration and execution `AbortSignal` cancellation | lifecycle |
 | 2026-08-26 | `adb58f8` | Page-scoped contextual registry and cleanup | contextual tools |
 | 2026-08-26 | `4b9a37f` | Conservative tool output budgets | output cap |

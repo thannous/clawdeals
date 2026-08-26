@@ -13,11 +13,15 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - Strategy and acceptance plan: [`docs/hackathon/plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md)
 - Judge guide: [`docs/hackathon/JUDGE_GUIDE.md`](docs/hackathon/JUDGE_GUIDE.md)
 - Challenge-period ledger: [`docs/hackathon/WHAT_CHANGED.md`](docs/hackathon/WHAT_CHANGED.md)
+- Entry session (first copilot commit + Devpost/credits): [`docs/hackathon/SESSION_2026-08-26_ENTRY.md`](docs/hackathon/SESSION_2026-08-26_ENTRY.md)
 - WebMCP architecture and tool catalog: [`docs/hackathon/WEBMCP_ARCHITECTURE.md`](docs/hackathon/WEBMCP_ARCHITECTURE.md)
 - Evals and security: [`docs/hackathon/EVALS.md`](docs/hackathon/EVALS.md), [`docs/hackathon/SECURITY_MODEL.md`](docs/hackathon/SECURITY_MODEL.md)
+- Secret audit: [`docs/hackathon/SECRET_AUDIT_2026-08-26.md`](docs/hackathon/SECRET_AUDIT_2026-08-26.md)
 - Video recording script: [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — public upload pending
+- Local video evidence: [`docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md) — public upload pending
 - Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
 - Release evidence: [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md)
+- Public smoke evidence: [`docs/hackathon/PUBLIC_SMOKE_2026-08-26.md`](docs/hackathon/PUBLIC_SMOKE_2026-08-26.md)
 - WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
 
 The judge hub reports the browser's real `document.modelContext` support, the exact tools that successfully registered, and the sanitized deployed commit SHA when the host provides one. Its launch button opens the product marketplace, not a simulator.

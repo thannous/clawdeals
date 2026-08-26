@@ -83,40 +83,29 @@ En cas d’égalité, l’utilisation de WebMCP est le premier critère de dépa
 
 ### 3.1 État administratif
 
-L’inscription au **WebMCP Challenge** est active, mais il faut créer rapidement le brouillon de soumission ClawDeals et ne pas attendre la fin du développement.
+**PASS** : l’inscription au **WebMCP Challenge** est active. Le brouillon de soumission ClawDeals existe déjà.
 
-### 3.2 Blocage : dépôt privé et licence absente
+**PENDING** : ce brouillon n’est pas soumis. La vidéo YouTube publique, les champs finaux Devpost, la soumission officielle et le gel post-soumission restent ouverts. Un brouillon n’est pas une preuve de publication.
 
-Le dépôt `thannous/clawdeals` est actuellement privé et GitHub ne détecte aucune licence open source.
+### 3.2 Dépôt public et licence MIT
 
-Ce sont deux conditions obligatoires de la soumission.
+**PASS** : le dépôt `thannous/clawdeals` est public. GitHub détecte la licence MIT (`LICENSE`).
 
-Deux solutions sont possibles :
+Ces deux conditions obligatoires d’admissibilité sont remplies. Il n’est plus nécessaire de créer un dépôt séparé `clawdeals-webmcp-challenge`. Le dépôt public doit rester une édition exécutable (code, migrations, données de démonstration, `.env.example`), pas une coquille, un SDK isolé ou une maquette.
 
-1. **Rendre le dépôt actuel public**, après audit complet des secrets, fichiers privés et données.
-2. Créer un dépôt public `clawdeals-webmcp-challenge`, contenant une édition entièrement exécutable du projet, ses migrations, ses données de démonstration, son `.env.example` et tout le code nécessaire.
+**PASS** : l’audit des secrets est documenté dans [`SECRET_AUDIT_2026-08-26.md`](./SECRET_AUDIT_2026-08-26.md) : GitHub Secret Scanning ne remonte aucune alerte et les candidats Gitleaks de l’historique et de l’arbre soumis ont été triés sans secret confirmé.
 
-La seconde solution est préférable si certains éléments commerciaux doivent rester privés. Le dépôt public ne doit cependant pas être une coquille, un simple SDK ou une maquette : il doit contenir le code nécessaire au fonctionnement réel du projet.
+### 3.3 Distinguer le travail antérieur du travail réalisé pendant le concours
 
-Le dépôt doit contenir un fichier `LICENSE` standard reconnu par GitHub.
-
-### 3.3 Blocage : distinguer le travail antérieur du travail réalisé pendant le concours
-
-ClawDeals existait avant le concours et certains éléments WebMCP étaient déjà présents.
-
-La ligne de base recommandée est le commit :
+**PASS** : le tag `webmcp-challenge-baseline` pointe vers
 
 ```text
 00880457964929c0773237a9c724704f5da651f0
 ```
 
-Créer un tag :
+et est poussé sur `origin` (`refs/tags/webmcp-challenge-baseline`).
 
-```bash
-git tag webmcp-challenge-baseline 00880457964929c0773237a9c724704f5da651f0
-```
-
-Puis documenter clairement dans le README :
+ClawDeals existait avant le concours et certains éléments WebMCP étaient déjà présents. Documenter clairement dans le README :
 
 ```text
 Pre-existing ClawDeals baseline:
@@ -130,17 +119,30 @@ La fiche Devpost devra être déclarée comme **Existing**, avec une section tr�
 
 > **What we built during the WebMCP Challenge**
 
+Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo : [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md).
+
+| Couche | Statut |
+|---|---|
+| LOCAL | PASS |
+| CI | PASS |
+| DEPLOYED | PASS |
+| PUBLIC HTTP | PASS |
+| Navigation privée read-only | PASS sur `1b52e64` |
+| WebMCP natif / parcours authentifié | PENDING |
+| ChatGPT in-app | NOT RUN |
+| Vidéo publique / Devpost soumis | PENDING |
+
 ### 3.4 Livrables obligatoires
 
 Il faut fournir :
 
-- une URL de production utilisable dans le navigateur intégré de ChatGPT ou dans Chrome avec WebMCP activé ;
-- un dépôt public avec licence open source ;
+- une URL de production utilisable dans le navigateur intégré de ChatGPT ou dans Chrome avec WebMCP activé (**PASS** HTTP public et navigation privée read-only ; **PENDING** WebMCP natif, parcours authentifié et ChatGPT in-app) ;
+- un dépôt public avec licence open source (**PASS** : `thannous/clawdeals`, MIT) ;
 - une description en anglais ;
-- une vidéo YouTube publique de moins de trois minutes, avec audio ;
+- une vidéo YouTube publique de moins de trois minutes, avec audio (**PENDING** : non publiée) ;
 - des instructions et des identifiants de test si l’application est authentifiée.
 
-Les juges ne sont pas obligés de construire le dépôt ni de tester longtemps l’application. La vidéo, la page de projet et le README doivent suffire à comprendre la valeur.
+Les juges ne sont pas obligés de construire le dépôt ni de tester longtemps l’application. La vidéo, la page de projet et le README doivent suffire à comprendre la valeur. La vidéo publique et la soumission Devpost restent **PENDING**.
 
 ### 3.5 Références officielles
 
@@ -910,11 +912,19 @@ Le compte de démonstration doit posséder :
 
 ### Mercredi 26 août — conformité et socle
 
-- créer le brouillon Devpost ClawDeals ;
-- taguer `0088045` comme baseline ;
-- décider entre dépôt actuel public et édition publique dédiée ;
-- réaliser un audit des secrets ;
-- ajouter la licence ;
+État vérifié, distinct de la soumission :
+
+- **PASS** : brouillon Devpost ClawDeals existant, non soumis ;
+- **PASS** : tag `webmcp-challenge-baseline` (`0088045`) présent et poussé ;
+- **PASS** : dépôt actuel `thannous/clawdeals` public ; pas d’édition dédiée ;
+- **PASS** : licence MIT détectée par GitHub ;
+- **PASS** : CI GitHub Actions et HTTP public prouvés pour le candidat `3f10575` — voir [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md) ;
+- **PASS** : navigation privée read-only sur `1b52e64` ;
+- **PENDING** : vidéo YouTube publique, soumission Devpost, WebMCP natif, parcours authentifié et ChatGPT in-app.
+
+Reste à faire le 26 août (si non clos ailleurs) :
+
+- **PASS** : audit des secrets documenté ;
 - figer le scénario du vélo électrique ;
 - remplacer `navigator.modelContext` par `document.modelContext` ;
 - ajouter `await`, `AbortController` et propagation du signal ;
@@ -1292,7 +1302,7 @@ Il ne faut pas inventer une nouvelle application : il faut **exposer intelligemm
 7. consentement bilatéral ;
 8. Agent Activity et reçu ;
 9. evals ;
-10. dépôt public, vidéo et soumission.
+10. vidéo YouTube publique et soumission Devpost (dépôt public et licence MIT déjà **PASS**).
 
 Le choix qui maximise les chances n’est pas de « terminer ClawDeals ».
 
