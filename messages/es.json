@@ -1891,7 +1891,19 @@
       "reason": "Razón",
       "approvalId": "ID aprobación",
       "approve": "Aprobar",
-      "deny": "Rechazar"
+      "deny": "Rechazar",
+      "missionOffer": {
+        "requestedActionLabel": "Acción solicitada",
+        "requestedAction": "Enviar una contraoferta",
+        "whyLabel": "Por qué se requiere aprobación",
+        "limitReason": "El importe propuesto supera el límite de la misión de {limit} {currency}.",
+        "limitReasonUnknown": "El importe propuesto supera el límite de la misión.",
+        "reviewReason": "La misión de compra no autoriza esta acción sin revisión humana.",
+        "amountLabel": "Importe de la contraoferta",
+        "amountError": "Introduce un importe entero no negativo.",
+        "consequencesLabel": "Consecuencias",
+        "consequences": "Esto envía una contraoferta vinculante. No se compartirá información de contacto."
+      }
     }
   },
   "myThreads": {

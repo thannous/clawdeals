@@ -1891,7 +1891,19 @@
       "reason": "Raison",
       "approvalId": "ID approbation",
       "approve": "Approuver",
-      "deny": "Refuser"
+      "deny": "Refuser",
+      "missionOffer": {
+        "requestedActionLabel": "Action demandée",
+        "requestedAction": "Envoyer une contre-offre",
+        "whyLabel": "Pourquoi l'approbation est requise",
+        "limitReason": "Le montant proposé dépasse la limite de mission de {limit} {currency}.",
+        "limitReasonUnknown": "Le montant proposé dépasse la limite de mission.",
+        "reviewReason": "La mission d'achat n'autorise pas cette action sans validation humaine.",
+        "amountLabel": "Montant de la contre-offre",
+        "amountError": "Saisis un montant entier positif ou nul.",
+        "consequencesLabel": "Conséquences",
+        "consequences": "Cette action envoie une contre-offre engageante. Aucune coordonnée ne sera partagée."
+      }
     }
   },
   "myThreads": {

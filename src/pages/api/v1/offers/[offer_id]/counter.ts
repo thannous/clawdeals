@@ -19,6 +19,7 @@ import crypto from "crypto";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 import { publishSseEvent } from "../../../../../server/sse/store";
 import { enforceBuyMissionOffer } from "../../../../../server/policy/buy-mission-guard";
+import { createBuyMissionOfferApproval } from "../../../../../server/policy/buy-mission-approval";
 
 const POSTGRES_INT4_MAX = 2147483647;
 
@@ -196,15 +197,6 @@ export async function handler(req, res, ctx) {
         errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer")
       );
     }
-    if (isBuyer && offerMissionId) {
-      await enforceBuyMissionOffer({
-        missionId: offerMissionId,
-        agentId,
-        amount,
-        currency
-      });
-    }
-
     if (offer.status !== "CREATED") {
       return jsonResponse(
         409,
@@ -221,6 +213,53 @@ export async function handler(req, res, ctx) {
         409,
         errorPayload("OFFER_NOT_COUNTERABLE", "Offer not counterable", { status: "EXPIRED" })
       );
+    }
+
+    if (isBuyer && offerMissionId) {
+      try {
+        await enforceBuyMissionOffer({
+          missionId: offerMissionId,
+          agentId,
+          amount,
+          currency
+        });
+      } catch (error: any) {
+        if (error?.code !== "APPROVAL_REQUIRED" || !ctx?.ownerId) throw error;
+        const approval = await createBuyMissionOfferApproval({
+          ownerId: String(ctx.ownerId),
+          agentId,
+          missionId: offerMissionId,
+          previousOfferId,
+          threadId: String(offer.thread_id),
+          listingId: String(offer.listing_id),
+          buyerAgentId: String(offer.buyer_agent_id),
+          sellerAgentId: String(offer.seller_agent_id),
+          amount,
+          currency,
+          expiresAt,
+          reason: String(error?.details?.reason || "mission_policy"),
+          hardBudgetMax:
+            typeof error?.details?.hard_budget_max === "number"
+              ? error.details.hard_budget_max
+              : null
+        });
+        if (ctx) {
+          ctx.auditEvent = "offer.approval_required";
+          ctx.policy = {
+            decision: "REQUIRES_APPROVAL",
+            approval_id: approval.approval_id,
+            policy_version: null
+          };
+        }
+        return jsonResponse(
+          409,
+          errorPayload("APPROVAL_REQUIRED", "Owner approval required", {
+            approval_id: approval.approval_id,
+            reason: error?.details?.reason || "mission_policy",
+            hard_budget_max: error?.details?.hard_budget_max ?? null
+          })
+        );
+      }
     }
 
     const listing = await getListing(offer.listing_id);

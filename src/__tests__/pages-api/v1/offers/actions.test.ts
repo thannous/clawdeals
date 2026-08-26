@@ -11,6 +11,10 @@ vi.mock("../../../../server/policy/buy-mission-guard", () => ({
   enforceBuyMissionOffer: vi.fn()
 }));
 
+vi.mock("../../../../server/policy/buy-mission-approval", () => ({
+  createBuyMissionOfferApproval: vi.fn()
+}));
+
 vi.mock("../../../../server/sse/store", () => ({
   publishSseEvent: vi.fn().mockResolvedValue({ ok: true })
 }));
@@ -29,6 +33,7 @@ import {
   getOffer
 } from "../../../../server/services/offers";
 import { enforceBuyMissionOffer } from "../../../../server/policy/buy-mission-guard";
+import { createBuyMissionOfferApproval } from "../../../../server/policy/buy-mission-approval";
 import { publishSseEvent } from "../../../../server/sse/store";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 
@@ -37,6 +42,7 @@ const cancelOfferMock = vi.mocked(cancelOffer);
 const declineOfferMock = vi.mocked(declineOffer);
 const getOfferMock = vi.mocked(getOffer);
 const enforceBuyMissionOfferMock = vi.mocked(enforceBuyMissionOffer);
+const createBuyMissionOfferApprovalMock = vi.mocked(createBuyMissionOfferApproval);
 const publishSseEventMock = vi.mocked(publishSseEvent);
 const safeAuditLogMock = vi.mocked(safeAuditLog);
 
@@ -71,6 +77,22 @@ describe("offer action API contracts", () => {
     publishSseEventMock.mockResolvedValue({ ok: true } as any);
     safeAuditLogMock.mockResolvedValue({ ok: true } as any);
     enforceBuyMissionOfferMock.mockResolvedValue({ mission: { hard_budget_max: 1300 } } as any);
+    createBuyMissionOfferApprovalMock.mockResolvedValue({
+      approval_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+    } as any);
+    getOfferMock.mockResolvedValue({
+      offer_id: OFFER_ID,
+      buyer_agent_id: BUYER_ID,
+      seller_agent_id: SELLER_ID,
+      proposed_by_agent_id: BUYER_ID,
+      buy_mission_id: null,
+      thread_id: "thread-1",
+      listing_id: "listing-1",
+      amount: 1250,
+      currency: "EUR",
+      expires_at: "2026-08-27T10:00:00.000Z",
+      status: "CREATED"
+    } as any);
   });
 
   it.each([
@@ -155,6 +177,9 @@ describe("offer action API contracts", () => {
       buy_mission_id: MISSION_ID,
       amount: 1250,
       currency: "EUR",
+      thread_id: "thread-1",
+      listing_id: "listing-1",
+      expires_at: "2026-08-27T10:00:00.000Z",
       status: "CREATED"
     } as any);
     acceptOfferMock.mockResolvedValue({
@@ -206,8 +231,22 @@ describe("offer action API contracts", () => {
     expect(blocked.status).toBe(409);
     expect(blocked.body.error).toMatchObject({
       code: "APPROVAL_REQUIRED",
-      details: { reason: "hard_budget_exceeded" }
+      details: {
+        approval_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        reason: "hard_budget_exceeded"
+      }
     });
+    expect(createBuyMissionOfferApprovalMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ownerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        agentId: BUYER_ID,
+        missionId: MISSION_ID,
+        previousOfferId: OFFER_ID,
+        amount: 1250,
+        currency: "EUR"
+      })
+    );
+    expect(acceptOfferMock).toHaveBeenCalledTimes(1);
   });
 
   it.each([

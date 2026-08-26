@@ -64,7 +64,7 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
-    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("19");
+    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("18");
 
     // Select a write tool and run it: Deny first.
     const createDraftButton = page
@@ -160,5 +160,102 @@ test.describe("Dev WebMCP demo", () => {
       total: 26
     });
     await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(4)");
+  });
+
+  test("binds owner approval resolution to the visible page and owner cookies", async ({ page }) => {
+    const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
+    await page.addInitScript(() => {
+      const registrations: Array<{ tool: any; signal?: AbortSignal }> = [];
+      (window as any).__webmcp_owner_registrations = registrations;
+      Object.defineProperty(document as any, "modelContext", {
+        configurable: true,
+        value: {
+          registerTool: (tool: any, options?: { signal?: AbortSignal }) => {
+            registrations.push({ tool, signal: options?.signal });
+          }
+        }
+      });
+    });
+
+    await page.route(`**/api/v1/approvals/${approvalId}`, async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            approval_id: approvalId,
+            state: "PENDING",
+            action_type: "offer_over_budget",
+            action_ref: { mission_id: "b2cb3c39-7e2f-4c2d-9d0b-53b77339b8de" },
+            action_payload_redacted: {
+              offer: { amount: 1350, currency: "EUR" },
+              policy: { reason: "hard_budget_exceeded", hard_budget_max: 1300 }
+            },
+            created_at: "2026-08-26T10:00:00.000Z"
+          }
+        })
+      });
+    });
+
+    await page.route(`**/api/v1/approvals/${approvalId}:approve`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            approval_id: approvalId,
+            action_type: "offer_over_budget",
+            state: "APPROVED",
+            resolved_at: "2026-08-26T10:01:00.000Z"
+          }
+        })
+      });
+    });
+
+    await page.goto(`/my/approvals/${approvalId}`);
+    await expect(page.getByTestId("editable-offer-approval-sheet")).toBeVisible();
+
+    const activeToolNames = () =>
+      page.evaluate(() =>
+        ((window as any).__webmcp_owner_registrations || [])
+          .filter((row: any) => !row.signal?.aborted)
+          .map((row: any) => row.tool?.name)
+      );
+    await expect.poll(activeToolNames).toEqual(["get_page_context", "resolve_approval"]);
+
+    const requestPromise = page.waitForRequest(
+      (request) =>
+        request.method() === "POST" &&
+        request.url().includes(`/api/v1/approvals/${approvalId}:approve`)
+    );
+    await page.evaluate(() => {
+      const row = ((window as any).__webmcp_owner_registrations || []).find(
+        (entry: any) => entry.tool?.name === "resolve_approval" && !entry.signal?.aborted
+      );
+      (window as any).__webmcp_owner_result = row.tool.execute(
+        { decision: "approve", amount: 1290 },
+        { signal: new AbortController().signal }
+      );
+    });
+    await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible();
+    await page
+      .getByTestId("webmcp-confirm-modal")
+      .getByRole("button", { name: "Approve" })
+      .click();
+
+    const request = await requestPromise;
+    expect(request.headers()["authorization"]).toBeUndefined();
+    expect(request.headers()["idempotency-key"]).toBeTruthy();
+    expect(request.postDataJSON()).toEqual({ amount: 1290 });
+
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          const result = await (window as any).__webmcp_owner_result;
+          return result?.data?.state;
+        })
+      )
+      .toBe("APPROVED");
   });
 });

@@ -1907,7 +1907,19 @@
       "reason": "Reason",
       "approvalId": "Approval ID",
       "approve": "Approve",
-      "deny": "Deny"
+      "deny": "Deny",
+      "missionOffer": {
+        "requestedActionLabel": "Requested action",
+        "requestedAction": "Send a counteroffer",
+        "whyLabel": "Why approval is required",
+        "limitReason": "The proposed amount exceeds the mission limit of {limit} {currency}.",
+        "limitReasonUnknown": "The proposed amount exceeds the mission limit.",
+        "reviewReason": "The Deal Mission does not authorize this action without human review.",
+        "amountLabel": "Counteroffer amount",
+        "amountError": "Enter a whole, non-negative amount.",
+        "consequencesLabel": "Consequences",
+        "consequences": "This sends a binding counteroffer. No contact information will be shared."
+      }
     }
   },
   "myThreads": {

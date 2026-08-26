@@ -4,12 +4,21 @@ interface UseMyApprovalActionOptions {
   onSuccess?: () => void;
 }
 
+type ApprovalActionInput = {
+  note?: string;
+  amount?: number;
+};
+
 export function useMyApprovalAction({ onSuccess }: UseMyApprovalActionOptions = {}) {
   const [submitState, setSubmitState] = useState("idle");
   const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(
-    async (approvalId: string, action: "approve" | "deny", note?: string) => {
+    async (
+      approvalId: string,
+      action: "approve" | "deny",
+      input: ApprovalActionInput = {}
+    ) => {
       if (!approvalId || submitState === "loading") return;
 
       setSubmitState("loading");
@@ -19,7 +28,8 @@ export function useMyApprovalAction({ onSuccess }: UseMyApprovalActionOptions = 
 
       try {
         const bodyPayload: any = {};
-        if (note) bodyPayload.note = note;
+        if (input.note) bodyPayload.note = input.note;
+        if (input.amount !== undefined) bodyPayload.amount = input.amount;
 
         const resp = await fetch(`/api/v1/approvals/${approvalId}:${action}`, {
           method: "POST",

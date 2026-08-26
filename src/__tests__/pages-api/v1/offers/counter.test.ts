@@ -41,6 +41,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
   let resolveTrustContextMock: any;
   let publishSseEventMock: any;
   let enforceBuyMissionOfferMock: any;
+  let createBuyMissionOfferApprovalMock: any;
 
   beforeAll(async () => {
     vi.resetModules();
@@ -79,6 +80,10 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
       enforceBuyMissionOffer: vi.fn()
     }));
 
+    vi.doMock("../../../../server/policy/buy-mission-approval", () => ({
+      createBuyMissionOfferApproval: vi.fn()
+    }));
+
     ({ handler } = await import("../../../../pages/api/v1/offers/[offer_id]/counter"));
 
     const offersMod = await import("../../../../server/services/offers");
@@ -106,6 +111,11 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
 
     const missionGuardMod = await import("../../../../server/policy/buy-mission-guard");
     enforceBuyMissionOfferMock = vi.mocked(missionGuardMod.enforceBuyMissionOffer);
+
+    const missionApprovalMod = await import("../../../../server/policy/buy-mission-approval");
+    createBuyMissionOfferApprovalMock = vi.mocked(
+      missionApprovalMod.createBuyMissionOfferApproval
+    );
   }, 30_000);
 
   beforeEach(() => {
@@ -115,6 +125,9 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
     enforceAllowlistMock.mockResolvedValue(null);
     enforceBuyMissionOfferMock.mockResolvedValue({ mission: { hard_budget_max: 1300 } } as any);
+    createBuyMissionOfferApprovalMock.mockResolvedValue({
+      approval_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+    } as any);
 
     getOfferMock.mockResolvedValue({
       offer_id: offerId,
@@ -277,8 +290,22 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     expect(blocked.status).toBe(409);
     expect(blocked.body.error).toMatchObject({
       code: "APPROVAL_REQUIRED",
-      details: { reason: "hard_budget_exceeded" }
+      details: {
+        approval_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        reason: "hard_budget_exceeded"
+      }
     });
+    expect(createBuyMissionOfferApprovalMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ownerId,
+        agentId: buyerAgentId,
+        missionId,
+        previousOfferId: offerId,
+        amount: 360,
+        currency: "EUR"
+      })
+    );
+    expect(counterOfferMock).toHaveBeenCalledTimes(1);
   });
 
   it("returns 404 OFFER_NOT_FOUND when offer does not exist", async () => {

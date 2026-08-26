@@ -12,7 +12,7 @@ type CallOptions = {
   signal?: AbortSignal;
 };
 
-type AuthMode = "required" | "none";
+type AuthMode = "required" | "owner_session" | "none";
 
 function getHeaderValue(headers: Headers, name: string): string | null {
   try {
@@ -51,7 +51,7 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
   if (options.signal?.aborted) {
     return stableError(requestId, "ABORTED", "Tool execution was cancelled");
   }
-  const apiKey = options.auth === "none" ? null : getStoredApiKey();
+  const apiKey = options.auth === "required" ? getStoredApiKey() : null;
   if (options.auth === "required" && !apiKey) {
     return stableError(requestId, "UNAUTHORIZED", "API key required; go to /start");
   }
@@ -77,6 +77,7 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
     const res = await fetch(url, {
       method: options.method,
       headers,
+      credentials: "same-origin",
       signal: options.signal,
       body: options.method === "GET" ? undefined : JSON.stringify(options.body ?? {})
     });
@@ -131,4 +132,8 @@ export async function callClawdealsWebmcp<T = any>(options: CallOptions): Promis
 
 export async function callPublicWebmcp<T = any>(options: CallOptions): Promise<StableToolResult<T>> {
   return callWebmcpHttp({ ...options, auth: "none" });
+}
+
+export async function callOwnerSessionWebmcp<T = any>(options: CallOptions): Promise<StableToolResult<T>> {
+  return callWebmcpHttp({ ...options, auth: "owner_session" });
 }

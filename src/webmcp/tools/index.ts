@@ -4,12 +4,14 @@ import { readTools } from "./read-tools";
 import { writeTools } from "./write-tools";
 import { missionTools } from "./mission-tools";
 import { negotiationTools } from "./negotiation-tools";
+import { approvalTools } from "./approval-tools";
 import { isDealsSurface, isDemoRoute, isDevPlaygroundRoute, isListingsSurface } from "../config";
 
 export const WEBMCP_TOOLS: ToolDef[] = [
   ...collabTools,
   ...missionTools,
   ...negotiationTools,
+  ...approvalTools,
   ...readTools,
   ...writeTools
 ];
@@ -27,7 +29,9 @@ const DEALS_TOOL_NAMES = new Set([
   "open_deal"
 ]);
 
-const OWNER_APPROVAL_TOOL_NAMES = new Set(["get_page_context"]);
+const OWNER_APPROVAL_LIST_TOOL_NAMES = new Set(["get_page_context"]);
+const OWNER_APPROVAL_DETAIL_TOOL_NAMES = new Set(["get_page_context", "resolve_approval"]);
+const OWNER_ONLY_TOOL_NAMES = new Set(approvalTools.map((tool) => tool.name));
 
 const LISTING_NEGOTIATION_TOOL_NAMES = ["start_thread", "make_offer"];
 const DEMO_NEGOTIATION_TOOL_NAMES = negotiationTools.map((tool) => tool.name);
@@ -42,10 +46,11 @@ function selectTools(names: ReadonlySet<string>): ToolDef[] {
 
 export function getToolsForRoute(pathname: string, context: ToolRouteContext = {}): ToolDef[] {
   const path = String(pathname || "");
-  if (isDevPlaygroundRoute(path)) return [...WEBMCP_TOOLS];
-  if (path === "/my/approvals" || path.startsWith("/my/approvals/")) {
-    return selectTools(OWNER_APPROVAL_TOOL_NAMES);
+  if (isDevPlaygroundRoute(path)) {
+    return WEBMCP_TOOLS.filter((tool) => !OWNER_ONLY_TOOL_NAMES.has(tool.name));
   }
+  if (path === "/my/approvals") return selectTools(OWNER_APPROVAL_LIST_TOOL_NAMES);
+  if (path.startsWith("/my/approvals/")) return selectTools(OWNER_APPROVAL_DETAIL_TOOL_NAMES);
   if (isDealsSurface(path)) return selectTools(DEALS_TOOL_NAMES);
   if (isDemoRoute(path) || isListingsSurface(path)) {
     const names = new Set(LISTINGS_TOOL_NAMES);

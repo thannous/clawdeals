@@ -229,6 +229,37 @@ describe("approvals service behavior", () => {
     });
   });
 
+  it("maps a changed offer during approval resolution to a stable conflict", async () => {
+    const existingQuery = createQuery({
+      data: {
+        approval_id: "approval-1",
+        owner_id: "owner-1",
+        action_type: "offer_over_budget",
+        state: "PENDING"
+      },
+      error: null
+    });
+    const rpc = vi.fn().mockReturnValue({
+      single: vi.fn(async () => ({
+        data: null,
+        error: { message: "offer not counterable" }
+      }))
+    });
+    dependencyMocks.getSupabaseServiceClient.mockReturnValue({
+      from: vi.fn(() => existingQuery),
+      rpc
+    });
+
+    await expect(
+      resolveApproval({
+        approvalId: "approval-1",
+        ownerId: "owner-1",
+        decision: "APPROVED",
+        resolvedBy: "human-1"
+      })
+    ).rejects.toMatchObject({ status: 409, code: "APPROVAL_STALE" });
+  });
+
   it("invalidates cached scopes after a direct approved scopes.upgrade resolution", async () => {
     const existingQuery = createQuery({
       data: {

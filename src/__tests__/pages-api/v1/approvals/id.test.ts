@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("../../../../server/services/approvals", () => ({
+  editPendingMissionOfferApproval: vi.fn(),
   getApprovalForOwner: vi.fn(),
   resolveApproval: vi.fn()
 }));
@@ -10,7 +11,11 @@ vi.mock("../../../../server/audit/singleton", () => ({
 }));
 
 import { handler } from "../../../../pages/api/v1/approvals/[id]";
-import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
+import {
+  editPendingMissionOfferApproval,
+  getApprovalForOwner,
+  resolveApproval
+} from "../../../../server/services/approvals";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
@@ -18,6 +23,7 @@ const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 
 const mockedGetApprovalForOwner = vi.mocked(getApprovalForOwner);
 const mockedResolveApproval = vi.mocked(resolveApproval);
+const mockedEditPendingMissionOfferApproval = vi.mocked(editPendingMissionOfferApproval);
 const mockedSafeAuditLog = vi.mocked(safeAuditLog);
 
 type OwnerCtx = {
@@ -221,6 +227,131 @@ describe("POST /v1/approvals/[id]", () => {
     const result: any = await handler(makeReq(`${approvalId}:approve`, { note: "looks good" }), null, ownerCtx());
     expect(result.status).toBe(200);
     expect(resolveApproval).toHaveBeenCalledWith(expect.objectContaining({ reason: "looks good" }));
+  });
+
+  it("rejects invalid edited amounts before loading the approval", async () => {
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, { amount: 12.5 }),
+      null,
+      ownerCtx()
+    );
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(mockedGetApprovalForOwner).not.toHaveBeenCalled();
+  });
+
+  it("rejects amount edits on approvals that are not mission-bound offers", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({
+      approval_id: approvalId,
+      owner_id: ownerId,
+      state: "PENDING",
+      action_type: "thread.create",
+      action_ref: {}
+    } as any);
+
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, { amount: 1290 }),
+      null,
+      ownerCtx()
+    );
+    expect(result.status).toBe(400);
+    expect(result.body.error.code).toBe("VALIDATION_ERROR");
+    expect(mockedResolveApproval).not.toHaveBeenCalled();
+  });
+
+  it("revalidates and resolves an edited mission-bound counteroffer", async () => {
+    const existing: any = {
+      approval_id: approvalId,
+      owner_id: ownerId,
+      state: "PENDING",
+      action_type: "offer_over_budget",
+      action_ref: { mission_id: "b2cb3c39-7e2f-4c2d-9d0b-53b77339b8de", amount: 1350 },
+      action_payload_redacted: { offer: { amount: 1350, currency: "EUR" } }
+    };
+    const edited = {
+      ...existing,
+      action_ref: { ...existing.action_ref, amount: 1290 },
+      action_payload_redacted: { offer: { amount: 1290, currency: "EUR" } }
+    };
+    mockedGetApprovalForOwner.mockResolvedValue(existing);
+    mockedEditPendingMissionOfferApproval.mockResolvedValue({
+      approval: edited,
+      mission: { hard_budget_max: 1300 },
+      policyDecision: { decision: "ALLOW", policy_version: 3 }
+    } as any);
+    mockedResolveApproval.mockResolvedValue({ ...edited, state: "APPROVED" } as any);
+    const ctx: any = ownerCtx();
+
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, { amount: 1290 }),
+      null,
+      ctx
+    );
+
+    expect(result.status).toBe(200);
+    expect(mockedEditPendingMissionOfferApproval).toHaveBeenCalledWith({
+      approval: existing,
+      ownerId,
+      amount: 1290
+    });
+    expect(mockedResolveApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ approvalId, ownerId, decision: "APPROVED" })
+    );
+    expect(ctx.policy).toMatchObject({ decision: "ALLOW", policy_version: 3 });
+  });
+
+  it("allows the owner to explicitly approve an unchanged amount above the agent cap", async () => {
+    const existing: any = {
+      approval_id: approvalId,
+      owner_id: ownerId,
+      state: "PENDING",
+      action_type: "offer_over_budget",
+      action_ref: { mission_id: "b2cb3c39-7e2f-4c2d-9d0b-53b77339b8de", amount: 1350 },
+      action_payload_redacted: { offer: { amount: 1350, currency: "EUR" } }
+    };
+    mockedGetApprovalForOwner.mockResolvedValue(existing);
+    mockedEditPendingMissionOfferApproval.mockResolvedValue({
+      approval: existing,
+      mission: { hard_budget_max: 1300 },
+      policyDecision: { decision: "REQUIRES_APPROVAL", policy_version: 3 }
+    } as any);
+    mockedResolveApproval.mockResolvedValue({ ...existing, state: "APPROVED" } as any);
+
+    const result: any = await handler(makeReq(`${approvalId}:approve`), null, ownerCtx());
+    expect(result.status).toBe(200);
+    expect(mockedEditPendingMissionOfferApproval).toHaveBeenCalledWith({
+      approval: existing,
+      ownerId,
+      amount: 1350
+    });
+    expect(mockedResolveApproval).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a stable conflict when the pending approval changes before resolution", async () => {
+    const existing: any = {
+      approval_id: approvalId,
+      owner_id: ownerId,
+      state: "PENDING",
+      action_type: "offer_over_budget",
+      action_ref: { mission_id: "b2cb3c39-7e2f-4c2d-9d0b-53b77339b8de", amount: 1350 },
+      action_payload_redacted: { offer: { amount: 1350, currency: "EUR" } }
+    };
+    mockedGetApprovalForOwner.mockResolvedValue(existing);
+    mockedEditPendingMissionOfferApproval.mockRejectedValue(
+      Object.assign(new Error("Approval changed while it was being edited"), {
+        status: 409,
+        code: "APPROVAL_STALE"
+      })
+    );
+
+    const result: any = await handler(
+      makeReq(`${approvalId}:approve`, { amount: 1290 }),
+      null,
+      ownerCtx()
+    );
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("APPROVAL_STALE");
+    expect(mockedResolveApproval).not.toHaveBeenCalled();
   });
 
   it("sets ctx.auditEvent and ctx.policy on resolve", async () => {

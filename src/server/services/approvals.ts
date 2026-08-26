@@ -3,6 +3,10 @@ import { mapSupabaseError } from "./supabase-errors";
 import { redactValue } from "../audit/redaction";
 import { processApprovalJobByApprovalId } from "./approval-jobs";
 import { deleteCachedInstallationOauthScopes } from "./installation-scopes-cache";
+import { enforceBuyMissionOffer } from "../policy/buy-mission-guard";
+import { getPolicyOrDefault } from "./policies";
+import { evaluatePolicyAction } from "../policy/evaluate";
+import { ALLOWED_CURRENCIES } from "../config/deals";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -52,6 +56,16 @@ function formatFilterValue(value) {
 function mapError(error) {
   const mapped = mapSupabaseError(error);
   throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
+}
+
+function throwIfStaleOfferApproval(error: any, approval: any) {
+  if (approval?.action_type !== "offer_over_budget") return;
+  const message = String(error?.message || "");
+  if (!/offer (?:not found|not counterable)|OFFER_NOT_COUNTERABLE/i.test(message)) return;
+  throw Object.assign(new Error("The offer changed before approval could be applied"), {
+    status: 409,
+    code: "APPROVAL_STALE"
+  });
 }
 
 const DIRECT_RESOLVE_ACTION_TYPES = new Set(["scopes.upgrade", "escrow.create", "escrow.confirm_received"]);
@@ -210,6 +224,151 @@ export async function getApprovalForOwner(approvalId, ownerId) {
   return data || null;
 }
 
+const POSTGRES_INT4_MAX = 2_147_483_647;
+
+function missionOfferFields(approval: any) {
+  const payload = approval?.action_payload_redacted || {};
+  const offer = payload?.offer || payload?.payload || payload;
+  const ref = approval?.action_ref || {};
+  return {
+    missionId: ref.mission_id ? String(ref.mission_id) : null,
+    agentId: ref.agent_id ? String(ref.agent_id) : null,
+    amount: offer?.amount ?? ref.amount,
+    currency: offer?.currency ?? ref.currency,
+    expiresAt: offer?.expires_at ?? ref.expires_at
+  };
+}
+
+export async function editPendingMissionOfferApproval({
+  approval,
+  ownerId,
+  amount,
+  now = new Date()
+}: {
+  approval: any;
+  ownerId: string;
+  amount: number;
+  now?: Date;
+}) {
+  if (!approval || approval.owner_id !== ownerId) {
+    throw Object.assign(new Error("Approval not found"), { status: 404, code: "NOT_FOUND" });
+  }
+  if (approval.state !== "PENDING") {
+    throw Object.assign(new Error("Approval already resolved"), {
+      status: 409,
+      code: "APPROVAL_ALREADY_RESOLVED"
+    });
+  }
+  if (approval.action_type !== "offer_over_budget") {
+    throw Object.assign(new Error("Amount editing is not supported for this approval"), {
+      status: 400,
+      code: "VALIDATION_ERROR"
+    });
+  }
+  if (!Number.isSafeInteger(amount) || amount < 0 || amount > POSTGRES_INT4_MAX) {
+    throw Object.assign(new Error(`amount must be an integer between 0 and ${POSTGRES_INT4_MAX}`), {
+      status: 400,
+      code: "VALIDATION_ERROR"
+    });
+  }
+
+  const fields = missionOfferFields(approval);
+  if (!fields.missionId || !fields.agentId) {
+    throw Object.assign(new Error("Amount editing requires a mission-bound approval"), {
+      status: 400,
+      code: "VALIDATION_ERROR"
+    });
+  }
+  const currency = String(fields.currency || "").trim().toUpperCase();
+  if (!ALLOWED_CURRENCIES.has(currency)) {
+    throw Object.assign(new Error("Approval currency is invalid"), {
+      status: 409,
+      code: "APPROVAL_INVALID"
+    });
+  }
+  const expiresAt = new Date(String(fields.expiresAt || ""));
+  if (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= now.getTime()) {
+    throw Object.assign(new Error("Approval has expired"), {
+      status: 409,
+      code: "APPROVAL_EXPIRED"
+    });
+  }
+
+  let mission: any = null;
+  let missionDecision = "ALLOW";
+  let missionReason: string | null = null;
+  try {
+    ({ mission } = await enforceBuyMissionOffer({
+      missionId: fields.missionId,
+      agentId: fields.agentId,
+      amount,
+      currency,
+      now
+    }));
+  } catch (error: any) {
+    // An authenticated owner may explicitly override a mission delegation or
+    // budget rule. Missing, inactive, invalid, or expired missions still fail
+    // closed because those are stale context rather than approval decisions.
+    if (error?.code !== "APPROVAL_REQUIRED") throw error;
+    missionDecision = "OWNER_OVERRIDE";
+    missionReason = String(error?.details?.reason || "mission_policy");
+    mission = {
+      hard_budget_max: error?.details?.hard_budget_max ?? null,
+      currency: error?.details?.currency ?? currency
+    };
+  }
+  const policyRecord = await getPolicyOrDefault(ownerId);
+  const policyDecision = evaluatePolicyAction({
+    policy: policyRecord?.policy_json || {},
+    action: "offer.create",
+    offerAmount: amount,
+    offerCurrency: currency
+  });
+  const currentPayload = approval.action_payload_redacted || {};
+  const nextPayload = redactValue({
+    ...currentPayload,
+    offer: {
+      ...(currentPayload.offer || {}),
+      amount,
+      currency,
+      expires_at: expiresAt.toISOString()
+    },
+    owner_edit: {
+      amount,
+      mission_decision: missionDecision,
+      mission_reason: missionReason,
+      policy_decision: policyDecision.decision,
+      policy_version: policyDecision.policy_version || null,
+      edited_at: now.toISOString()
+    }
+  }).value;
+  const nextRef = {
+    ...(approval.action_ref || {}),
+    amount,
+    currency,
+    expires_at: expiresAt.toISOString()
+  };
+
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client
+    .from("approvals")
+    .update({ action_ref: nextRef, action_payload_redacted: nextPayload })
+    .eq("approval_id", approval.approval_id)
+    .eq("owner_id", ownerId)
+    .eq("state", "PENDING")
+    .select("*")
+    .maybeSingle();
+  if (error) mapError(error);
+  if (!data) {
+    throw Object.assign(new Error("Approval changed while it was being edited"), {
+      status: 409,
+      code: "APPROVAL_STALE"
+    });
+  }
+
+  return { approval: data, mission, policyDecision };
+}
+
 export async function resolveApproval({ approvalId, ownerId, decision, resolvedBy, reason }: any) {
   const existing = await getApprovalForOwner(approvalId, ownerId);
   if (!existing) {
@@ -258,11 +417,13 @@ export async function resolveApproval({ approvalId, ownerId, decision, resolvedB
     };
     const legacy = await client.rpc("resolve_approval", rpcArgsLegacy).single();
     if (legacy.error) {
+      throwIfStaleOfferApproval(legacy.error, existing);
       mapError(legacy.error);
     }
     return legacy.data;
   }
 
+  throwIfStaleOfferApproval(error, existing);
   mapError(error);
 }
 

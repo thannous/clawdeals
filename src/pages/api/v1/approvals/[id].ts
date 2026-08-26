@@ -3,7 +3,11 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
-import { getApprovalForOwner, resolveApproval } from "../../../../server/services/approvals";
+import {
+  editPendingMissionOfferApproval,
+  getApprovalForOwner,
+  resolveApproval
+} from "../../../../server/services/approvals";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 
 function shouldReplayApprovalSideEffects(approval: any, decision: "APPROVED" | "DENIED"): boolean {
@@ -139,11 +143,31 @@ export async function handler(req, res, ctx) {
     note = trimmed || null;
   }
 
+  const rawAmount = body?.amount;
+  let amount: number | null = null;
+  if (rawAmount !== undefined && rawAmount !== null && rawAmount !== "") {
+    if (
+      typeof rawAmount !== "number" ||
+      !Number.isSafeInteger(rawAmount) ||
+      rawAmount < 0 ||
+      rawAmount > 2_147_483_647
+    ) {
+      return jsonResponse(
+        400,
+        errorPayload("VALIDATION_ERROR", "amount must be an integer between 0 and 2147483647")
+      );
+    }
+    amount = rawAmount;
+  }
+
   if (action !== "approve" && action !== "deny") {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown approval action"));
   }
 
   const decision = action === "approve" ? "APPROVED" : "DENIED";
+  if (decision === "DENIED" && amount !== null) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "amount is only valid when approving"));
+  }
 
   try {
     const existing = await getApprovalForOwner(approvalId, ownerId);
@@ -176,6 +200,35 @@ export async function handler(req, res, ctx) {
       return jsonResponse(409, errorPayload("APPROVAL_ALREADY_RESOLVED", "Approval already resolved"));
     }
 
+    let approvalToResolve = existing;
+    const missionBoundOfferApproval =
+      existing.action_type === "offer_over_budget" && Boolean(existing.action_ref?.mission_id);
+    if (decision === "APPROVED" && missionBoundOfferApproval) {
+      const payloadAmount = existing.action_payload_redacted?.offer?.amount ?? existing.action_ref?.amount;
+      const amountToApply = amount ?? payloadAmount;
+      const edited = await editPendingMissionOfferApproval({
+        approval: existing,
+        ownerId,
+        amount: amountToApply
+      });
+      approvalToResolve = edited.approval;
+      if (ctx) {
+        ctx.policy = {
+          decision: edited.policyDecision.decision,
+          approval_id: approvalId,
+          policy_version: edited.policyDecision.policy_version || null
+        };
+        if (ctx.body && typeof ctx.body === "object") {
+          ctx.body.amount = amountToApply;
+        }
+      }
+    } else if (amount !== null) {
+      return jsonResponse(
+        400,
+        errorPayload("VALIDATION_ERROR", "amount is only supported for mission-bound offer approvals")
+      );
+    }
+
     const resolved = await resolveApproval({
       approvalId,
       ownerId,
@@ -190,7 +243,7 @@ export async function handler(req, res, ctx) {
 
     if (ctx) {
       ctx.auditEvent = "approval.resolved";
-      ctx.policy = {
+      ctx.policy = ctx.policy || {
         decision: "N_A",
         approval_id: approvalId,
         policy_version: null
@@ -199,8 +252,8 @@ export async function handler(req, res, ctx) {
 
     // If this approval executes a redacted message, write an additional audit event
     // `message.redacted` without storing any plaintext message body.
-    if (decision === "APPROVED" && existing.action_type === "message.send") {
-      const ref: any = existing.action_ref || {};
+    if (decision === "APPROVED" && approvalToResolve.action_type === "message.send") {
+      const ref: any = approvalToResolve.action_ref || {};
       const messageRedacted = ref.message_redacted === true;
       if (messageRedacted) {
         await safeAuditLog({

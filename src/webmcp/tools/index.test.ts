@@ -9,6 +9,7 @@ function namesFor(pathname: string): string[] {
 const FORBIDDEN_PUBLIC_TOOLS = [
   "clawdeals.listings_create_draft",
   "clawdeals.approvals_resolve",
+  "resolve_approval",
   "clawdeals.approvals_list",
   "clawdeals.approvals_get"
 ];
@@ -66,11 +67,13 @@ describe("contextual WebMCP tool registry", () => {
     expect(namesFor("/deals/00000000-0000-4000-8000-000000000001")).toEqual(expected);
   });
 
-  it("does not expose agent-key approval tools to the owner approvals surface", () => {
+  it("exposes owner-session resolution only on a specific approval page", () => {
     expect(namesFor("/my/approvals")).toEqual(["get_page_context"]);
     expect(namesFor("/my/approvals/00000000-0000-4000-8000-000000000001")).toEqual([
-      "get_page_context"
+      "get_page_context",
+      "resolve_approval"
     ]);
+    expect(namesFor("/browse")).not.toContain("resolve_approval");
   });
 
   it("never exposes authenticated, write, or admin tools on public surfaces", () => {
@@ -83,9 +86,12 @@ describe("contextual WebMCP tool registry", () => {
     }
   });
 
-  it("exposes the complete registry only on developer routes", () => {
-    expect(namesFor("/dev/webmcp")).toEqual(WEBMCP_TOOLS.map((tool) => tool.name));
-    expect(namesFor("/developer/tools")).toEqual(WEBMCP_TOOLS.map((tool) => tool.name));
+  it("keeps owner-only tools out of developer routes", () => {
+    const developerNames = WEBMCP_TOOLS
+      .filter((tool) => tool.name !== "resolve_approval")
+      .map((tool) => tool.name);
+    expect(namesFor("/dev/webmcp")).toEqual(developerNames);
+    expect(namesFor("/developer/tools")).toEqual(developerNames);
     expect(namesFor("/")).toEqual([]);
     expect(namesFor("/my/listings")).toEqual([]);
   });

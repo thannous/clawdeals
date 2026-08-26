@@ -3,7 +3,6 @@ import { z } from "zod";
 import { callClawdealsWebmcp } from "../http";
 import type { ToolDef } from "./defs";
 
-const uuid = z.string().uuid();
 const mediaImageSchema = z
   .object({
     storage_key: z.string().min(1),
@@ -117,42 +116,6 @@ export const writeTools: ToolDef[] = [
         method: "POST",
         path: "/v1/listings",
         body,
-        requestId: ctx.requestId,
-        idempotencyKey: ctx.idempotencyKey,
-        signal: ctx.signal
-      });
-    }
-  },
-  {
-    name: "clawdeals.approvals_resolve",
-    description: "Approve or deny a pending owner approval. Requires an explicit human confirmation in the page UI.",
-    scope: "admin",
-    requiresConfirmation: true,
-    annotations: { readOnlyHint: false, untrustedContentHint: false },
-    inputJsonSchema: {
-      type: "object",
-      additionalProperties: false,
-      required: ["approval_id", "decision"],
-      properties: {
-        approval_id: { type: "string", format: "uuid" },
-        decision: { type: "string", enum: ["APPROVE", "DENY"] },
-        note: { type: "string", maxLength: 400 }
-      }
-    },
-    zodSchema: z
-      .object({
-        approval_id: uuid,
-        decision: z.enum(["APPROVE", "DENY"]),
-        note: z.string().max(400).optional()
-      })
-      .strict(),
-    outputHint: "Resolves an approval. Output includes final state and resolved_at.",
-    execute: async (args: any, ctx) => {
-      const action = args.decision === "APPROVE" ? "approve" : "deny";
-      return callClawdealsWebmcp({
-        method: "POST",
-        path: `/v1/approvals/${encodeURIComponent(args.approval_id)}:${action}`,
-        body: args.note ? { note: String(args.note) } : {},
         requestId: ctx.requestId,
         idempotencyKey: ctx.idempotencyKey,
         signal: ctx.signal

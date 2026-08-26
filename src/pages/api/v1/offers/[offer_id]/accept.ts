@@ -7,6 +7,7 @@ import { acceptOffer, getOffer } from "../../../../../server/services/offers";
 import { publishSseEvent } from "../../../../../server/sse/store";
 import { safeAuditLog } from "../../../../../server/audit/singleton";
 import { enforceBuyMissionOffer } from "../../../../../server/policy/buy-mission-guard";
+import { createBuyMissionOfferApproval } from "../../../../../server/policy/buy-mission-approval";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -73,31 +74,76 @@ export async function handler(req, res, ctx) {
   }
 
   try {
-    if (missionId) {
-      const offer = await getOffer(offerId);
-      const isBuyer = offer?.buyer_agent_id === agentId;
-      const isSeller = offer?.seller_agent_id === agentId;
-      if (!offer || (!isBuyer && !isSeller)) {
-        return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
-      }
-      if (!isBuyer) {
-        return jsonResponse(
-          400,
-          errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer")
-        );
-      }
-      if (String(offer.buy_mission_id || "") !== missionId) {
+    const offer = await getOffer(offerId);
+    const isBuyer = offer?.buyer_agent_id === agentId;
+    const isSeller = offer?.seller_agent_id === agentId;
+    if (!offer || (!isBuyer && !isSeller)) {
+      return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
+    }
+
+    const linkedMissionId = offer.buy_mission_id ? String(offer.buy_mission_id) : null;
+    if (missionId && !isBuyer) {
+      return jsonResponse(
+        400,
+        errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer")
+      );
+    }
+    if (missionId && missionId !== linkedMissionId) {
+      return jsonResponse(
+        409,
+        errorPayload("MISSION_MISMATCH", "Mission does not match the offer chain")
+      );
+    }
+
+    if (
+      isBuyer &&
+      linkedMissionId &&
+      offer.proposed_by_agent_id !== agentId
+    ) {
+      try {
+        await enforceBuyMissionOffer({
+          missionId: linkedMissionId,
+          agentId,
+          amount: Number(offer.amount),
+          currency: String(offer.currency || "")
+        });
+      } catch (error: any) {
+        if (error?.code !== "APPROVAL_REQUIRED" || !ctx?.ownerId) throw error;
+        const approval = await createBuyMissionOfferApproval({
+          ownerId: String(ctx.ownerId),
+          agentId,
+          missionId: linkedMissionId,
+          previousOfferId: offerId,
+          threadId: String(offer.thread_id),
+          listingId: String(offer.listing_id),
+          buyerAgentId: String(offer.buyer_agent_id),
+          sellerAgentId: String(offer.seller_agent_id),
+          amount: Number(offer.amount),
+          currency: String(offer.currency || "").toUpperCase(),
+          expiresAt: String(offer.expires_at),
+          reason: String(error?.details?.reason || "mission_policy"),
+          hardBudgetMax:
+            typeof error?.details?.hard_budget_max === "number"
+              ? error.details.hard_budget_max
+              : null
+        });
+        if (ctx) {
+          ctx.auditEvent = "offer.approval_required";
+          ctx.policy = {
+            decision: "REQUIRES_APPROVAL",
+            approval_id: approval.approval_id,
+            policy_version: null
+          };
+        }
         return jsonResponse(
           409,
-          errorPayload("MISSION_MISMATCH", "Mission does not match the offer chain")
+          errorPayload("APPROVAL_REQUIRED", "Owner approval required", {
+            approval_id: approval.approval_id,
+            reason: error?.details?.reason || "mission_policy",
+            hard_budget_max: error?.details?.hard_budget_max ?? null
+          })
         );
       }
-      await enforceBuyMissionOffer({
-        missionId,
-        agentId,
-        amount: Number(offer.amount),
-        currency: String(offer.currency || "")
-      });
     }
 
     const result = await acceptOffer({ offerId, actorAgentId: agentId });
