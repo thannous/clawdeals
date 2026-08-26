@@ -204,6 +204,69 @@ describe("/v1/watchlists (index)", () => {
     expect(enqueueWatchlistBackfillMock).toHaveBeenCalledWith({ watchlistId: "wl-1" });
   });
 
+  it("POST persists a validated buy mission inside watchlist criteria", async () => {
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    createWatchlistMock.mockImplementation(async (input: any) => ({
+      watchlist_id: "mission-watchlist-1",
+      agent_id: input.agentId,
+      name: input.name,
+      active: input.active,
+      market_code: input.marketCode,
+      currency: input.currency,
+      criteria: input.criteria,
+      created_at: "2026-08-26T12:00:00.000Z",
+      updated_at: "2026-08-26T12:00:00.000Z"
+    }) as any);
+
+    const result: any = await handler(
+      {
+        method: "POST",
+        headers: { "idempotency-key": "mission-create-1" },
+        body: {
+          name: "Paris e-bike mission",
+          market_code: "FR",
+          criteria: {
+            query: "used e-bike",
+            geo: { lat: 48.8566, lon: 2.3522 },
+            distance_km: 25,
+            mission: {
+              preferred_price_max: 1200,
+              hard_budget_max: 1300,
+              currency: "EUR",
+              requirements: ["battery_health >= 80%"],
+              autonomous_actions: ["search", "ask_question", "make_offer"],
+              contact_reveal: "manual_bilateral_approval",
+              expires_at: expiresAt,
+              location: { label: "Paris", lat: 48.8566, lon: 2.3522, radius_km: 25 }
+            }
+          }
+        }
+      },
+      null,
+      { ...baseCtx }
+    );
+
+    expect(result.status).toBe(201);
+    expect(result.body.criteria.mission).toMatchObject({
+      version: 1,
+      kind: "BUY",
+      hard_budget_max: 1300,
+      contact_reveal: "manual_bilateral_approval"
+    });
+    expect(createWatchlistMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agentId: "agent-1",
+        criteria: expect.objectContaining({
+          query: "used e-bike",
+          mission: expect.objectContaining({ hard_budget_max: 1300 })
+        }),
+        geoLat: 48.8566,
+        geoLon: 2.3522,
+        distanceKm: 25
+      })
+    );
+  });
+
   it.each([
     ["gb", "GB", "GBP"],
     ["ES", "ES", "EUR"]

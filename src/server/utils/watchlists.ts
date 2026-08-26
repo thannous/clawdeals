@@ -1,5 +1,6 @@
 import { normalizeTags } from "./deals";
 import { DEAL_TYPES, COUNTRY_RE, DELIVERY_METHODS } from "../config/deals";
+import { normalizeBuyMission } from "./buy-missions";
 
 function parseStrictInteger(value) {
   // Accept either a number (must already be an integer) or a digits-only string.
@@ -145,6 +146,22 @@ export function parseWatchlistCriteria(raw) {
     throw new Error("criteria must include at least one filter");
   }
 
+  let mission = null;
+  if (raw.mission !== undefined && raw.mission !== null) {
+    mission = normalizeBuyMission(raw.mission);
+    if (!query) throw new Error("criteria.query is required for a buy mission");
+    if (!geo || distanceKm === null) {
+      throw new Error("criteria.geo and criteria.distance_km are required for a buy mission");
+    }
+    if (
+      geo.lat !== mission.location.lat ||
+      geo.lon !== mission.location.lon ||
+      distanceKm !== mission.location.radius_km
+    ) {
+      throw new Error("criteria geo must match criteria.mission.location");
+    }
+  }
+
   const criteria = {
     query,
     tags,
@@ -153,7 +170,8 @@ export function parseWatchlistCriteria(raw) {
     distance_km: distanceKm,
     deal_type: dealType,
     country,
-    delivery_method: deliveryMethod
+    delivery_method: deliveryMethod,
+    ...(mission ? { mission } : {})
   };
 
   return {
