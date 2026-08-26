@@ -1,35 +1,4 @@
-type RegisterToolFn = (...args: any[]) => any;
-
-function getModelContext(): { mc: any; source: "document" | "navigator" } | null {
-  if (typeof document !== "undefined" && (document as any).modelContext) {
-    return { mc: (document as any).modelContext, source: "document" };
-  }
-  if (typeof navigator !== "undefined" && (navigator as any).modelContext) {
-    return { mc: (navigator as any).modelContext, source: "navigator" };
-  }
-  return null;
-}
-
-function resolveRegisterFn(): { fn: RegisterToolFn | null; kind: string } {
-  const resolved = getModelContext();
-  if (!resolved) return { fn: null, kind: "none" };
-
-  const mc = resolved.mc;
-  if (typeof mc.registerTool === "function") {
-    return { fn: mc.registerTool.bind(mc), kind: `${resolved.source}.modelContext.registerTool` };
-  }
-
-  const tools = mc.tools;
-  if (tools && typeof tools.register === "function") {
-    return { fn: tools.register.bind(tools), kind: `${resolved.source}.modelContext.tools.register` };
-  }
-
-  return { fn: null, kind: "none" };
-}
-
-export function isWebMCPSupported(): boolean {
-  return Boolean(resolveRegisterFn().fn);
-}
+const OFFICIAL_KIND = "document.modelContext.registerTool";
 
 export type WebMcpToolAnnotations = {
   readOnlyHint?: boolean;
@@ -37,11 +6,42 @@ export type WebMcpToolAnnotations = {
   openWorldHint?: boolean;
 };
 
+export type WebMcpToolExecuteOptions = {
+  signal: AbortSignal;
+};
+
+export type WebMcpToolExecuteCallback = (
+  args: any,
+  options: WebMcpToolExecuteOptions
+) => Promise<any>;
+
+type OfficialRegisterTool = (
+  tool: {
+    name: string;
+    description: string;
+    inputSchema: Record<string, unknown>;
+    annotations?: WebMcpToolAnnotations;
+    execute: WebMcpToolExecuteCallback;
+  },
+  options?: { signal?: AbortSignal }
+) => Promise<undefined>;
+
+function getDocumentRegisterTool(): OfficialRegisterTool | null {
+  if (typeof document === "undefined") return null;
+  const mc = (document as Document & { modelContext?: { registerTool?: unknown } }).modelContext;
+  if (!mc || typeof mc.registerTool !== "function") return null;
+  return mc.registerTool.bind(mc) as OfficialRegisterTool;
+}
+
+export function isWebMCPSupported(): boolean {
+  return Boolean(getDocumentRegisterTool());
+}
+
 export type WebMcpRegisterableTool = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  execute: (args: any, options?: { signal?: AbortSignal }) => Promise<any>;
+  execute: WebMcpToolExecuteCallback;
   annotations?: WebMcpToolAnnotations;
 };
 
@@ -49,9 +49,8 @@ export async function registerTools(
   tools: WebMcpRegisterableTool[],
   options?: { signal?: AbortSignal }
 ): Promise<{ registered: number; errors: number; kind: string }> {
-  const resolved = resolveRegisterFn();
-  const registerFn = resolved.fn;
-  if (!registerFn) return { registered: 0, errors: 0, kind: resolved.kind };
+  const registerTool = getDocumentRegisterTool();
+  if (!registerTool) return { registered: 0, errors: 0, kind: "none" };
 
   let registered = 0;
   let errors = 0;
@@ -60,53 +59,22 @@ export async function registerTools(
   for (const tool of tools) {
     if (options?.signal?.aborted) break;
 
-    const payload = {
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-      annotations: tool.annotations,
-      execute: tool.execute
-    };
-
     try {
-      const result = registerFn(payload, registerOptions);
-      if (result && typeof result.then === "function") await result;
-      registered += 1;
-      continue;
-    } catch {
-      // fallthrough to older call shapes
-    }
-
-    try {
-      const result = registerFn(
-        tool.name,
+      await registerTool(
         {
+          name: tool.name,
           description: tool.description,
           inputSchema: tool.inputSchema,
-          annotations: tool.annotations
+          annotations: tool.annotations,
+          execute: tool.execute
         },
-        tool.execute
+        registerOptions
       );
-      if (result && typeof result.then === "function") await result;
-      registered += 1;
-      continue;
-    } catch {
-      // fallthrough
-    }
-
-    try {
-      const result = registerFn(tool.name, {
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-        annotations: tool.annotations,
-        execute: tool.execute
-      });
-      if (result && typeof result.then === "function") await result;
       registered += 1;
     } catch {
       errors += 1;
     }
   }
 
-  return { registered, errors, kind: resolved.kind };
+  return { registered, errors, kind: OFFICIAL_KIND };
 }

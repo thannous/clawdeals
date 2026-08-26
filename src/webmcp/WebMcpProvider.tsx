@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 
 import { registerTools, isWebMCPSupported } from "./adapter";
 import { isWebMcpRuntimeEnabled, shouldRegisterOnRoute } from "./config";
-import { WEBMCP_TOOLS, getToolByName } from "./tools";
+import { getToolByName, getToolsForRoute } from "./tools";
 import type { StableToolResult } from "./types";
 import { capToolOutputBytes } from "./security/output-cap";
 import { sanitizeToolOutput } from "./security/sanitize";
@@ -33,7 +33,8 @@ type RegistrationState = {
 
 type RegistrationAction =
   | { type: "register/success"; registeredCount: number; errorCount: number; toolNames: string[] }
-  | { type: "register/failure"; message: string };
+  | { type: "register/failure"; message: string }
+  | { type: "register/reset" };
 
 const INITIAL_REGISTRATION_STATE: RegistrationState = {
   registered: false,
@@ -54,6 +55,8 @@ function registrationReducer(state: RegistrationState, action: RegistrationActio
         ...state,
         lastRegisterError: action.message
       };
+    case "register/reset":
+      return INITIAL_REGISTRATION_STATE;
     default:
       return state;
   }
@@ -77,10 +80,11 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
   );
 
   const [registration, dispatchRegistration] = useReducer(registrationReducer, INITIAL_REGISTRATION_STATE);
+  const routeTools = useMemo(() => getToolsForRoute(router.pathname || ""), [router.pathname]);
 
   const executeTool = useCallback(
     async (name: string, args: unknown, options?: { signal?: AbortSignal }): Promise<StableToolResult> => {
-      const tool = getToolByName(name);
+      const tool = getToolByName(name, routeTools);
       const requestId = randomUuid();
       const signal = options?.signal;
       if (!tool) {
@@ -125,7 +129,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       });
       return out;
     },
-    [requestConfirmation]
+    [requestConfirmation, routeTools]
   );
 
   useEffect(() => {
@@ -138,15 +142,20 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let alive = true;
-    if (!enabled) return;
-    if (!supported) return;
+    if (!enabled || !supported) {
+      dispatchRegistration({ type: "register/reset" });
+      return;
+    }
 
     const pathname = router.pathname || "";
-    if (!shouldRegisterOnRoute(pathname)) return;
+    if (!shouldRegisterOnRoute(pathname) || routeTools.length === 0) {
+      dispatchRegistration({ type: "register/reset" });
+      return;
+    }
 
     const controller = new AbortController();
 
-    const registerable = WEBMCP_TOOLS.map((t) => ({
+    const registerable = routeTools.map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputJsonSchema,
@@ -182,7 +191,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       alive = false;
       controller.abort();
     };
-  }, [router.pathname, enabled, supported, executeTool]);
+  }, [router.pathname, enabled, supported, executeTool, routeTools]);
 
   const value = useMemo<WebMcpContextValue>(
     () => ({

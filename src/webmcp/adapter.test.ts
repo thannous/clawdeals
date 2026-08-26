@@ -2,13 +2,12 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { isWebMCPSupported, registerTools } from "./adapter";
 
+function makeTool(name: string, execute: (args: any, options: { signal: AbortSignal }) => Promise<any> = async () => ({ ok: true })) {
+  return { name, description: `d-${name}`, inputSchema: {}, execute };
+}
+
 describe("webmcp adapter", () => {
-  const originalNavigator = (globalThis as any).navigator;
   const originalDocument = (globalThis as any).document;
-  const originalNavDescriptor =
-    originalNavigator && typeof originalNavigator === "object"
-      ? Object.getOwnPropertyDescriptor(originalNavigator, "modelContext")
-      : undefined;
   const originalDocDescriptor =
     originalDocument && typeof originalDocument === "object"
       ? Object.getOwnPropertyDescriptor(originalDocument, "modelContext")
@@ -19,14 +18,6 @@ describe("webmcp adapter", () => {
   });
 
   afterEach(() => {
-    const nav = (globalThis as any).navigator;
-    if (nav && typeof nav === "object") {
-      if (originalNavDescriptor) {
-        Object.defineProperty(nav, "modelContext", originalNavDescriptor);
-      } else {
-        delete (nav as any).modelContext;
-      }
-    }
     const doc = (globalThis as any).document;
     if (doc && typeof doc === "object") {
       if (originalDocDescriptor) {
@@ -37,12 +28,7 @@ describe("webmcp adapter", () => {
     }
   });
 
-  it("returns false when modelContext is missing", () => {
-    const nav = (globalThis as any).navigator ?? {};
-    if (!(globalThis as any).navigator) {
-      Object.defineProperty(globalThis, "navigator", { value: nav, configurable: true });
-    }
-    delete (nav as any).modelContext;
+  it("returns false when document.modelContext is missing", () => {
     const doc = (globalThis as any).document ?? {};
     if (!(globalThis as any).document) {
       Object.defineProperty(globalThis, "document", { value: doc, configurable: true });
@@ -51,31 +37,7 @@ describe("webmcp adapter", () => {
     expect(isWebMCPSupported()).toBe(false);
   });
 
-  it("registers tools via document.modelContext.registerTool", async () => {
-    const registerTool = vi.fn();
-    const doc = (globalThis as any).document ?? {};
-    if (!(globalThis as any).document) {
-      Object.defineProperty(globalThis, "document", { value: doc, configurable: true });
-    }
-    Object.defineProperty(doc, "modelContext", {
-      value: { registerTool },
-      configurable: true
-    });
-
-    const result = await registerTools([
-      { name: "t1", description: "d1", inputSchema: {}, execute: async () => ({ ok: true }) },
-      { name: "t2", description: "d2", inputSchema: {}, execute: async () => ({ ok: true }) }
-    ]);
-
-    expect(isWebMCPSupported()).toBe(true);
-    expect(result.registered).toBe(2);
-    expect(result.errors).toBe(0);
-    expect(result.kind).toBe("document.modelContext.registerTool");
-    expect(registerTool).toHaveBeenCalledTimes(2);
-    expect(registerTool.mock.calls[0][0].name).toBe("t1");
-  });
-
-  it("falls back to navigator.modelContext when document has none", async () => {
+  it("does not fall back to navigator.modelContext", async () => {
     const registerTool = vi.fn();
     const doc = (globalThis as any).document ?? {};
     if (!(globalThis as any).document) {
@@ -92,15 +54,38 @@ describe("webmcp adapter", () => {
       configurable: true
     });
 
-    const result = await registerTools([
-      { name: "t1", description: "d1", inputSchema: {}, execute: async () => ({ ok: true }) }
-    ]);
-
-    expect(result.registered).toBe(1);
-    expect(result.kind).toBe("navigator.modelContext.registerTool");
+    expect(isWebMCPSupported()).toBe(false);
+    const result = await registerTools([makeTool("t1")]);
+    expect(result.registered).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(result.kind).toBe("none");
+    expect(registerTool).not.toHaveBeenCalled();
+    delete (nav as any).modelContext;
   });
 
-  it("preserves the invocation execute function so AbortSignal can reach tools", async () => {
+  it("registers tools via document.modelContext.registerTool", async () => {
+    const registerTool = vi.fn();
+    const doc = (globalThis as any).document ?? {};
+    if (!(globalThis as any).document) {
+      Object.defineProperty(globalThis, "document", { value: doc, configurable: true });
+    }
+    Object.defineProperty(doc, "modelContext", {
+      value: { registerTool },
+      configurable: true
+    });
+
+    const result = await registerTools([makeTool("t1"), makeTool("t2")]);
+
+    expect(isWebMCPSupported()).toBe(true);
+    expect(result.registered).toBe(2);
+    expect(result.errors).toBe(0);
+    expect(result.kind).toBe("document.modelContext.registerTool");
+    expect(registerTool).toHaveBeenCalledTimes(2);
+    expect(registerTool.mock.calls[0][0].name).toBe("t1");
+    expect(registerTool.mock.calls[0]).toHaveLength(2);
+  });
+
+  it("passes the official register option signal without wrapping execute", async () => {
     const registerTool = vi.fn();
     const execute = vi.fn(async () => ({ ok: true }));
     const doc = (globalThis as any).document ?? {};
@@ -113,14 +98,53 @@ describe("webmcp adapter", () => {
     });
 
     const controller = new AbortController();
-    await registerTools(
-      [{ name: "t1", description: "d1", inputSchema: {}, execute }],
-      { signal: controller.signal }
-    );
+    await registerTools([makeTool("t1", execute)], { signal: controller.signal });
 
     expect(registerTool).toHaveBeenCalledWith(
       expect.objectContaining({ name: "t1", execute }),
       { signal: controller.signal }
     );
+  });
+
+  it("counts a single tool failure as errors=1 without retrying other signatures", async () => {
+    const registerTool = vi.fn(() => {
+      throw new Error("register failed");
+    });
+    const doc = (globalThis as any).document ?? {};
+    if (!(globalThis as any).document) {
+      Object.defineProperty(globalThis, "document", { value: doc, configurable: true });
+    }
+    Object.defineProperty(doc, "modelContext", {
+      value: { registerTool },
+      configurable: true
+    });
+
+    const result = await registerTools([makeTool("t1")]);
+
+    expect(result.registered).toBe(0);
+    expect(result.errors).toBe(1);
+    expect(result.kind).toBe("document.modelContext.registerTool");
+    expect(registerTool).toHaveBeenCalledTimes(1);
+  });
+
+  it("continues registering remaining tools after one failure", async () => {
+    const registerTool = vi.fn((tool: { name: string }) => {
+      if (tool.name === "t2") throw new Error("boom");
+    });
+    const doc = (globalThis as any).document ?? {};
+    if (!(globalThis as any).document) {
+      Object.defineProperty(globalThis, "document", { value: doc, configurable: true });
+    }
+    Object.defineProperty(doc, "modelContext", {
+      value: { registerTool },
+      configurable: true
+    });
+
+    const result = await registerTools([makeTool("t1"), makeTool("t2"), makeTool("t3")]);
+
+    expect(result.registered).toBe(2);
+    expect(result.errors).toBe(1);
+    expect(registerTool).toHaveBeenCalledTimes(3);
+    expect(registerTool.mock.calls.map((call) => call[0].name)).toEqual(["t1", "t2", "t3"]);
   });
 });

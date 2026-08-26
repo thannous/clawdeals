@@ -44,6 +44,7 @@ export function isListingsSurface(pathname: string): boolean {
   const path = String(pathname || "");
   if (isDemoRoute(path)) return true;
   if (path === "/browse") return true;
+  if (path === "/marketplace") return true;
   if (path.startsWith("/browse/") && !path.startsWith("/browse/deals")) return true;
   return false;
 }
