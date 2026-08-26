@@ -51,11 +51,15 @@ Additional checks passed:
 - the copied mission requires bilateral approval;
 - the page still renders deployed SHA `1b52e64799fd`.
 
-This injected context proves deployed registration wiring only. It is **not** native Chrome or ChatGPT WebMCP evidence.
+This injected context proves deployed registration wiring only. It is **not**
+native Chrome or ChatGPT WebMCP evidence. A later connected Codex in-app browser
+run did execute the live public tools natively; see
+[`NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](./NATIVE_WEBMCP_EVIDENCE_2026-08-26.md).
 
 ## Remaining public proof
 
-- Real Chrome WebMCP with the supported profile/flag: **NOT RUN**.
+- Codex in-app native public read path: **PASS on `9e7102e`**.
+- Real Chrome WebMCP with the supported profile/flag: **INDETERMINATE on Chrome 151; runtime not active**.
 - ChatGPT in-app tool selection and execution: **NOT RUN**.
 - Authenticated eleven-tool registry and the mutation journey: sandbox only; **NOT RUN on a final public sandbox host**.
 - Production remains intentionally non-sandbox and must never run the synthetic reset or critical mutation journey.

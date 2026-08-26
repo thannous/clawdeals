@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { resetSandboxFixtures } from "../../../../server/services/sandbox-fixtures";
 import { isSandboxEnv } from "../../../../server/config/runtime";
+import { assertSandboxNotProductionTarget } from "../../../../server/config/sandbox-target";
 
 export async function handler(req, res, ctx) {
   if (req.method !== "GET" && req.method !== "POST") {
@@ -13,6 +14,15 @@ export async function handler(req, res, ctx) {
   if (!isSandboxEnv()) {
     // Do not leak sandbox capabilities in non-sandbox environments.
     return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
+  }
+
+  try {
+    assertSandboxNotProductionTarget();
+  } catch (error) {
+    return jsonResponse(
+      error.status || 403,
+      errorPayload(error.code || "PRODUCTION_TARGET_FORBIDDEN", error.message || "Production target forbidden", error.details)
+    );
   }
 
   const judgeAgentId = String(process.env.WEBMCP_JUDGE_AGENT_ID || "").trim();

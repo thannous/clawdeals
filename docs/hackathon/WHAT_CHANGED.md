@@ -54,6 +54,7 @@ All dates below are 26 August 2026. The victory plan's later calendar was a deli
 | 2026-08-26 | `425b414` | Adversarial submission evals and security matrix | TI-377 |
 | 2026-08-26 | `b624929` and follow-ups through `efd6310` | Reproducible local release gate, not a public deploy | TI-376 |
 | 2026-08-26 | `cdbacf1` | Zero-finding dependency audit and clean-clone release validation | TI-378 |
+| 2026-08-26 | `9e7102e` | Final proof bundle deployed publicly; CI run `32980551636` passed | TI-372 / TI-376 / TI-378 |
 
 ## What a judge can actually exercise
 
@@ -101,13 +102,15 @@ request_contact_reveal
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
 | LOCAL | PASS | Clean-clone release gate passed on implementation SHA `3f10575`: migrations + seed, 373 Vitest files / 2,616 passed / 1 skipped, build 110 pages, selector 24 × 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. |
-| CI | PASS | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32959645029) and [`SDK CI`](https://github.com/thannous/clawdeals/actions/runs/32959645020) passed on `3f10575`. |
-| DEPLOYED | PASS | Vercel commit status completed successfully for `3f10575`. |
-| PUBLIC | HTTP PASS; journey PENDING | `https://clawdeals.com/webmcp-challenge` returned 200 and displayed `3f10575`; full private-window tools/API/reset/critical-path smoke remains pending. |
+| CI | PASS | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32980551636) passed every job on `9e7102e`; the earlier full SDK and release gates remain recorded separately. |
+| DEPLOYED | PASS | Vercel commit status completed successfully for `9e7102e`, and the public challenge page displayed the same SHA. |
+| PUBLIC | Native guest read PASS; authenticated journey PENDING | The Codex in-app browser discovered five live tools and executed context → search → redacted receipt on `9e7102e`. The isolated eleven-tool sandbox journey remains pending. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
 
-See [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP proof as native WebMCP selection, authenticated journey, or Devpost acceptance.
+See [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md)
+and [`NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](./NATIVE_WEBMCP_EVIDENCE_2026-08-26.md).
+Do not treat the guest read path as authenticated sandbox proof or Devpost acceptance.
 
 
 ## Related judge docs

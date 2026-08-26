@@ -1,6 +1,7 @@
 import Document, { Head, Html, Main, NextScript } from "next/document";
 import Script from "next/script";
 import { DEFAULT_THEME_ID, THEMES } from "../theme/themes";
+import { getWebMcpOriginTrialMeta } from "../webmcp/origin-trial";
 
 const THEME_COLOR_MAP = THEMES.reduce<Record<string, string>>((acc, theme) => {
   acc[theme.id] = theme.meta.themeColor || "";
@@ -24,6 +25,7 @@ export default class MyDocument extends Document {
     return (
       <Html lang={locale} data-theme={DEFAULT_THEME_ID} data-testid="root-html">
         <Head>
+          {getWebMcpOriginTrialMeta()}
           <meta name="theme-color" content={DEFAULT_THEME_COLOR} data-testid="theme-color" />
           <meta name="color-scheme" content="dark" />
           <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

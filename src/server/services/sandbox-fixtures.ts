@@ -2,6 +2,7 @@ import crypto from "crypto";
 
 import { getSupabaseServiceClient } from "../db/supabase";
 import { isSandboxEnv } from "../config/runtime";
+import { assertSandboxNotProductionTarget } from "../config/sandbox-target";
 import { fingerprintUrl, normalizeDealUrl } from "../utils/deals";
 import { mapSupabaseError } from "./supabase-errors";
 
@@ -553,6 +554,7 @@ export async function resetSandboxFixtures({
   if (!isSandboxEnv()) {
     throw buildServiceError("Sandbox fixtures are only available in sandbox environments", 404, "NOT_FOUND");
   }
+  assertSandboxNotProductionTarget();
   if (!agentId || typeof agentId !== "string") {
     throw buildServiceError("agentId is required", 400, "VALIDATION_ERROR");
   }

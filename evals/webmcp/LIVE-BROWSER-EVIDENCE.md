@@ -33,9 +33,28 @@ injection observed the exact five guest tools on the deployed JavaScript. That
 is registration-wiring evidence only and does not complete either native table
 below. Full evidence: `docs/hackathon/PUBLIC_SMOKE_2026-08-26.md`.
 
+## Codex in-app browser
+
+Status: **PASS for native public discovery and read-only execution on
+`9e7102ea4dcc`; authenticated journey PENDING.**
+
+At `2026-08-26T14:37:58.831Z`, the connected Codex in-app browser discovered the
+five public tools directly from `https://clawdeals.com/webmcp-challenge`. It
+executed `get_page_context`, `search_listings` and `get_action_receipt`. The
+search updated the shared UI to `/browse?q=e-bike`; Agent Activity recorded the
+successful policy decision and redacted coordinates; receipt
+`rcpt_385f3cfc-4ffd-478e-a01b-04c677ecc000` was then retrieved without keys,
+tokens or contact data.
+
+This is native in-app WebMCP evidence, but the selected runtime identified
+itself as **Codex In-app Browser**. Keep the ChatGPT row below separate. Full
+payload evidence and boundaries:
+`docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`.
+
 ## ChatGPT in-app browser
 
-Status: **NOT RUN — requires a deployed build and authenticated in-app browser.**
+Status: **NOT RUN — the Codex in-app proof above does not establish ChatGPT's
+separate in-app runtime.**
 
 | Evidence | Value |
 | --- | --- |
@@ -56,27 +75,27 @@ observed capability result. Do not convert lack of access into a pass or fail.
 
 ## Chrome WebMCP
 
-Status: **NOT RUN — requires a deployed build and a Chrome profile with WebMCP
-testing enabled.**
+Status: **INDETERMINATE — Chrome 151 loaded the deployed build, but its WebMCP
+runtime was not active.**
 
 Use a supported Chrome build and enable `chrome://flags/#enable-webmcp-testing`
 when the runtime still requires the experimental flag.
 
 | Evidence | Value |
 | --- | --- |
-| Chrome version | Pending |
-| Flag state | Pending |
-| Tested URL | Pending |
-| Build commit | Pending |
-| Test date/time (UTC) | Pending |
-| Native WebMCP supported | Pending |
+| Chrome version | `151.0.0.0` |
+| Flag state | Not inspectable through the managed browser; no setting changed |
+| Tested URL | `https://clawdeals.com/webmcp-challenge` |
+| Build commit | `9e7102ea4dcc879aa1f5ffb4e68bb712cf11c96e` |
+| Test date/time (UTC) | `2026-08-26T14:39Z` |
+| Native WebMCP supported | INDETERMINATE — `document.modelContext` absent in this profile |
 | Public/authenticated registry | Pending |
 | First selected tool | Pending |
 | Full sequence | Pending |
 | Confirmation approve/deny | Pending |
 | Receipt ID | Pending |
 | PII/secret scan | Pending |
-| Video/screenshot artifact | Pending |
+| Video/screenshot artifact | None retained; textual browser state recorded |
 
 ## Evidence boundary
 

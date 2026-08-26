@@ -1,4 +1,4 @@
-const PRODUCTION_SUPABASE_REF = "gztfmpuqtpvncdcuhqxy";
+export const PRODUCTION_SUPABASE_REF = "gztfmpuqtpvncdcuhqxy";
 const PRODUCTION_API_HOSTS = new Set(["app.clawdeals.com"]);
 const DEFAULT_SUPABASE_KEYS = ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"];
 const DEFAULT_API_KEYS = ["API_BASE_URL", "E2E_BASE_URL", "SMOKE_BASE_URL", "CLAWDEALS_API_BASE"];

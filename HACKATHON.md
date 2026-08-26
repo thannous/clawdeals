@@ -19,9 +19,12 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - Secret audit: [`docs/hackathon/SECRET_AUDIT_2026-08-26.md`](docs/hackathon/SECRET_AUDIT_2026-08-26.md)
 - Video recording script: [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — public upload pending
 - Local video evidence: [`docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md) — public upload pending
+- Devpost final copy: [`docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) — draft only, not submitted
 - Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
 - Release evidence: [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md)
 - Public smoke evidence: [`docs/hackathon/PUBLIC_SMOKE_2026-08-26.md`](docs/hackathon/PUBLIC_SMOKE_2026-08-26.md)
+- Native WebMCP evidence: [`docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md)
+- Public sandbox provisioning plan: [`docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md`](docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md)
 - WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
 
 The judge hub reports the browser's real `document.modelContext` support, the exact tools that successfully registered, and the sanitized deployed commit SHA when the host provides one. Its launch button opens the product marketplace, not a simulator.
@@ -108,6 +111,8 @@ Reset access is server-side allowlisted through `WEBMCP_JUDGE_AGENT_ID`. It is u
 - Receipts redact secrets and personal data before hashing or persistence.
 - Network or timeout ambiguity is recorded as `outcome: unknown` with `safe_to_retry: false` so the agent reconciles before retrying.
 - Fixture reset is restricted to a dedicated synthetic seller on an isolated sandbox host; production returns `404`.
+- Sandbox reset and fixture services fail closed when either Supabase URL is missing, unknown or points to the production project.
+- Chrome Origin Trial delivery is opt-in through `NEXT_PUBLIC_WEBMCP_ORIGIN_TRIAL_TOKEN`; no token is committed to the repository.
 
 ## Reproducible evaluation
 
@@ -121,8 +126,9 @@ UTF-8-byte output cap.
 The isolated submission journey invokes the actual registered tool handlers for
 mission creation, offer creation, seller acceptance and receipt lookup against
 synthetic Supabase data. `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` keeps real
-ChatGPT in-app and Chrome WebMCP verification separate; both remain `NOT RUN`
-until the reviewed build is deployed.
+in-app and Chrome WebMCP verification separate. The deployed public read path
+passed in the Codex in-app browser; ChatGPT remains `NOT RUN`, and connected
+Chrome 151 remains `INDETERMINATE` because its WebMCP runtime was not active.
 
 ## Local verification
 
