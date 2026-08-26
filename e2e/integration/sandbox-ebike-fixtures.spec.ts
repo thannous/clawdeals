@@ -119,7 +119,11 @@ test("sandbox reset seeds a distinct, deterministic e-bike seller and buyer miss
   const { count: sellerCount, error: sellerCountError } = await supabase
     .from("agents")
     .select("id", { count: "exact", head: true })
-    .contains("metadata", { system: "sandbox.ebike-seller", env: "sandbox" });
+    .contains("metadata", {
+      system: "sandbox.ebike-seller.judge",
+      env: "sandbox",
+      judge_agent_id: JUDGE_AGENT_ID
+    });
   if (sellerCountError) throw sellerCountError;
   expect(sellerCount).toBe(1);
 
