@@ -11,6 +11,11 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - Judge hub: [`/webmcp-challenge`](https://clawdeals.com/webmcp-challenge)
 - Real marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)
 - Strategy and acceptance plan: [`docs/hackathon/plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md)
+- Judge guide: [`docs/hackathon/JUDGE_GUIDE.md`](docs/hackathon/JUDGE_GUIDE.md)
+- Challenge-period ledger: [`docs/hackathon/WHAT_CHANGED.md`](docs/hackathon/WHAT_CHANGED.md)
+- WebMCP architecture and tool catalog: [`docs/hackathon/WEBMCP_ARCHITECTURE.md`](docs/hackathon/WEBMCP_ARCHITECTURE.md)
+- Evals and security: [`docs/hackathon/EVALS.md`](docs/hackathon/EVALS.md), [`docs/hackathon/SECURITY_MODEL.md`](docs/hackathon/SECURITY_MODEL.md)
+- Video recording script: [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — public upload pending
 - Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
 - WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
 
@@ -142,8 +147,13 @@ and security stages require the non-production environment described in
 
 For a clean release candidate, follow
 `docs/hackathon/release-candidate-runbook.md` and run
-`npm run release:hackathon:preflight` followed by
-`npm run release:hackathon:local`. The preflight deliberately reports deploy,
+`npm run release:hackathon:local`; it includes the preflight. The preflight deliberately reports deploy,
 public smoke and Devpost as unchecked local-external layers.
+
+The last clean-clone gate before the judge-document refresh passed on
+`efd6310fd8e875b08d00aa0519386db83e8a474f`: 373 Vitest files / 2,616 tests
+passed / 1 skipped, build 110 pages, selector 24 x 3, contracts 79/79, UI 5/5,
+journey 2/2 and security 10/10. The final reviewed SHA must rerun the same gate;
+the exact final log is recorded in TI-376 rather than embedded in the commit it identifies.
 
 Deployment, the public video and the final Devpost submission are separate proof layers; local test success does not claim that those artifacts are already public.

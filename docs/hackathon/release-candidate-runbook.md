@@ -1,6 +1,6 @@
 # Release candidate runbook (TI-376)
 
-Scope: document how to turn baseline input `425b414` into a later TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. This file records the procedure. It does not execute clone, install, eval, deploy, tag, or public smoke.
+Scope: document how to turn baseline input `425b414` into a later TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. Root validation executed the local procedure on `efd6310` and recorded the exact log in Linear; the final reviewed SHA must rerun it after the judge-doc and smoke-script refresh. This file does not claim CI, deploy, tag, public smoke, or Devpost execution.
 
 SHA roles:
 
@@ -118,6 +118,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=replace-with-local-anon-key
 IDEMPOTENCY_SECRET=replace-with-local-idempotency-secret
 AUDIT_HMAC_SECRET=replace-with-local-audit-secret
 MESSAGE_REDACTION_HMAC_SECRET=replace-with-local-redaction-secret
+OWNER_SESSION_SECRET=replace-with-local-owner-session-secret
 UPSTASH_REDIS_REST_URL=http://127.0.0.1:55400
 UPSTASH_REDIS_REST_TOKEN=replace-with-local-redis-token
 WEBMCP_JUDGE_AGENT_ID=93000000-0000-4000-8000-000000000001
@@ -164,7 +165,6 @@ npm run test:smoke
 ### Build and local submission gate
 
 ```bash
-npm run release:hackathon:preflight
 npm run release:hackathon:local
 ```
 
@@ -178,18 +178,18 @@ Judge-facing local pages after `npm run dev:sandbox`: `/webmcp-challenge` and `/
 
 | Check | Command / artifact | Result |
 | --- | --- | --- |
-| Clean clone SHA | `git rev-parse HEAD` equals `<TI376_CANDIDATE_SHA>` | PENDING |
-| Input ancestor | `425b414` is ancestor of HEAD | PENDING |
-| `cp .env.example .env.local` then local placeholders replaced | file exists locally, not committed | PENDING |
-| `npm ci` | install log | PENDING |
-| `supabase start` / `supabase db reset` | local migrations applied | PENDING |
-| `npm run seed:dev:sandbox` | seed JSON with masked key | PENDING |
-| `POST /api/v1/sandbox/reset` `mode=webmcp_challenge` | HTTP status + fixture IDs | PENDING |
-| `npm run test:smoke` | exit code | PENDING |
-| `npm run build` | exit code | PENDING |
-| `npm run release:hackathon:preflight` | JSON `status=PASS`, `proof_layer=LOCAL_PREFLIGHT` | PENDING |
-| `npm run release:hackathon:local` | includes `eval:webmcp:gate` | PENDING |
-| `npm run eval:webmcp:gate` | exit code | PENDING |
+| Clean clone SHA | `git rev-parse HEAD` | PASS on `efd6310fd8e875b08d00aa0519386db83e8a474f`; rerun required on final reviewed SHA |
+| Input ancestor | `425b414` is ancestor of HEAD | PASS on `efd6310` |
+| `cp .env.example .env.local` then local placeholders replaced | file exists locally, not committed | PASS on `efd6310` |
+| `npm ci` | install log | PASS: 1,714 packages; audit risk tracked separately in TI-378 |
+| `supabase start` / `supabase db reset` | all migrations + `supabase/seed.sql` | PASS on `efd6310` |
+| `npm run seed:dev:sandbox` | masked synthetic seed JSON | PASS: 3 deals, 7 listings, 3 watchlists |
+| `POST /api/v1/sandbox/reset` `mode=webmcp_challenge` | isolated journey and two-reset specs | PASS: 2/2 journey gate |
+| `npm run test:smoke` | owner session + CSRF + API workflow | PASS after the smoke-script session/CSRF refresh; rerun required in final clean clone |
+| `npm run build` | production build | PASS: 110 pages |
+| `npm run release:hackathon:preflight` | JSON `status=PASS`, `proof_layer=LOCAL_PREFLIGHT` | PASS on `efd6310` |
+| `npm run release:hackathon:local` | includes `eval:webmcp:gate` | PASS on `efd6310` |
+| `npm run eval:webmcp:gate` | 373 Vitest files; selector, contracts, UI, journey, security | PASS on `efd6310` |
 
 A prior local eval index in `evals/webmcp/README.md` is not this runbook's evidence.
 
@@ -346,13 +346,13 @@ Freeze decision: PENDING
 
 | Acceptance | Layer | Status in this runbook |
 | --- | --- | --- |
-| Clean clone + install + migrations + demo seed + build documented | LOCAL | Documented; execution PENDING |
-| `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | Copy `.env.example` → `.env.local`; execution PENDING |
-| `release:hackathon:preflight` then `release:hackathon:local` | LOCAL | Documented; execution PENDING |
+| Clean clone + install + migrations + demo seed + build documented | LOCAL | PASS on `efd6310`; final reviewed SHA rerun pending |
+| `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | LOCAL PASS; public judge verification pending |
+| `release:hackathon:local` | LOCAL | PASS on `efd6310`; final reviewed SHA rerun pending |
 | Vercel/Cloudflare attached to candidate commit | DEPLOYED | Procedure documented; proof PENDING |
 | Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | Procedure documented; proof PENDING |
 | Candidate tag then final tag created and pushed | DEPLOYED | Commands listed; not executed |
 | LOCAL / CI / DEPLOYED / PUBLIC reported separately | all | Tables above |
 | No post-submission change without explicit decision | freeze | PENDING |
 
-This file is the TI-376 artifact. Filling PENDING cells requires later authorized runs against `<TI376_CANDIDATE_SHA>`, not against `425b414`.
+This file is the TI-376 artifact. External PENDING cells and the final clean-clone rerun require later authorized work against `<TI376_CANDIDATE_SHA>`, not against `425b414`.
