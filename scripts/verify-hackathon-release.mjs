@@ -81,7 +81,7 @@ for (const line of envExample.split(/\r?\n/)) {
 }
 
 const selection = JSON.parse(read("evals/webmcp/results/reference-selection.json"));
-if (selection.passed !== true || selection.chatgptSelection !== "unproven") {
+if (selection.report?.passed !== true || selection.chatgptSelection !== "unproven") {
   fail("reference selection archive must pass while keeping ChatGPT selection explicitly unproven");
 }
 
