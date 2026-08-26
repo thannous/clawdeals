@@ -64,7 +64,7 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
-    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("15");
+    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("19");
 
     // Select a write tool and run it: Deny first.
     const createDraftButton = page
@@ -140,15 +140,15 @@ test.describe("Dev WebMCP demo", () => {
     await expect.poll(registrationState).toMatchObject({
       active: expect.arrayContaining(["create_buy_mission"]),
       aborted: 4,
-      total: 9
+      total: 13
     });
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(9)");
 
     await page.evaluate(() => {
       window.localStorage.setItem("clawdeals_api_key", "cd_test_agent_b");
       window.dispatchEvent(new Event("clawdeals:api-key-change"));
     });
-    await expect.poll(registrationState).toMatchObject({ aborted: 9, total: 14 });
+    await expect.poll(registrationState).toMatchObject({ aborted: 13, total: 22 });
 
     await page.evaluate(() => {
       window.localStorage.removeItem("clawdeals_api_key");
@@ -156,8 +156,8 @@ test.describe("Dev WebMCP demo", () => {
     });
     await expect.poll(registrationState).toMatchObject({
       active: expect.not.arrayContaining(["create_buy_mission"]),
-      aborted: 14,
-      total: 18
+      aborted: 22,
+      total: 26
     });
     await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(4)");
   });

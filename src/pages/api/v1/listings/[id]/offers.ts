@@ -19,6 +19,7 @@ import {
 import crypto from "crypto";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 import { publishSseEvent } from "../../../../../server/sse/store";
+import { enforceBuyMissionOffer } from "../../../../../server/policy/buy-mission-guard";
 
 const POSTGRES_INT4_MAX = 2147483647;
 
@@ -44,6 +45,7 @@ function mapOfferResponse(offer: any) {
     currency: offer.currency,
     expires_at: offer.expires_at,
     status: offer.status,
+    mission_id: offer.buy_mission_id || null,
     created_at: offer.created_at
   };
 }
@@ -107,6 +109,19 @@ export async function handler(req, res, ctx) {
   }
 
   const body = req.body || {};
+  const rawMissionId = body.mission_id;
+  const missionId =
+    rawMissionId === undefined || rawMissionId === null || rawMissionId === ""
+      ? null
+      : typeof rawMissionId === "string"
+        ? rawMissionId
+        : null;
+  if (rawMissionId !== undefined && rawMissionId !== null && rawMissionId !== "" && !missionId) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mission_id must be a UUID"));
+  }
+  if (missionId && !isUuid(missionId)) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mission_id must be a UUID"));
+  }
   const rawThreadId = body.thread_id;
   const threadId =
     rawThreadId === undefined || rawThreadId === null || rawThreadId === ""
@@ -157,6 +172,7 @@ export async function handler(req, res, ctx) {
   if (ctx) {
     ctx.body = {
       listing_id: listingId,
+      mission_id: missionId,
       thread_id: threadId,
       amount,
       currency,
@@ -184,6 +200,15 @@ export async function handler(req, res, ctx) {
 
     if (listing.status !== "LIVE") {
       return jsonResponse(409, errorPayload("LISTING_NOT_LIVE", "Listing not live"));
+    }
+
+    if (missionId) {
+      await enforceBuyMissionOffer({
+        missionId,
+        agentId: buyerAgentId,
+        amount,
+        currency
+      });
     }
 
     const flags = Array.isArray(trustContext?.trust_flags) ? trustContext.trust_flags : [];
@@ -346,6 +371,7 @@ export async function handler(req, res, ctx) {
       buyerAgentId,
       sellerAgentId,
       previousOfferId: null,
+      buyMissionId: missionId,
       amount,
       currency,
       expiresAt

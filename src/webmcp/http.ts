@@ -113,6 +113,14 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
     if (error?.name === "AbortError") {
       return stableError(requestId, "ABORTED", "Tool execution was cancelled");
     }
+    if (options.method === "POST") {
+      return stableError(
+        requestId,
+        "OUTCOME_UNKNOWN",
+        "The write may have reached the server, so its outcome is unknown",
+        { safe_to_retry: false }
+      );
+    }
     return stableError(requestId, "NETWORK_ERROR", error?.message || "Network error");
   }
 }

@@ -18,6 +18,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
   const buyerAgentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
   const sellerAgentId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   const ownerId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const missionId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
   const validExpiresAt = () => new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
@@ -39,6 +40,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
   let createApprovalMock: any;
   let resolveTrustContextMock: any;
   let publishSseEventMock: any;
+  let enforceBuyMissionOfferMock: any;
 
   beforeAll(async () => {
     vi.resetModules();
@@ -73,6 +75,10 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
       publishSseEvent: vi.fn().mockResolvedValue({ ok: true })
     }));
 
+    vi.doMock("../../../../server/policy/buy-mission-guard", () => ({
+      enforceBuyMissionOffer: vi.fn()
+    }));
+
     ({ handler } = await import("../../../../pages/api/v1/offers/[offer_id]/counter"));
 
     const offersMod = await import("../../../../server/services/offers");
@@ -97,6 +103,9 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
 
     const sseMod = await import("../../../../server/sse/store");
     publishSseEventMock = vi.mocked(sseMod.publishSseEvent);
+
+    const missionGuardMod = await import("../../../../server/policy/buy-mission-guard");
+    enforceBuyMissionOfferMock = vi.mocked(missionGuardMod.enforceBuyMissionOffer);
   }, 30_000);
 
   beforeEach(() => {
@@ -105,6 +114,7 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
 
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
     enforceAllowlistMock.mockResolvedValue(null);
+    enforceBuyMissionOfferMock.mockResolvedValue({ mission: { hard_budget_max: 1300 } } as any);
 
     getOfferMock.mockResolvedValue({
       offer_id: offerId,
@@ -217,6 +227,58 @@ suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
     expect(result.body.error.message).toBe("amount must be <= 2147483647");
     expect(counterOfferMock).not.toHaveBeenCalled();
+  });
+
+  it("enforces the mission carried by the offer chain for buyer counters", async () => {
+    getOfferMock.mockResolvedValue({
+      offer_id: offerId,
+      thread_id: threadId,
+      listing_id: listingId,
+      buyer_agent_id: buyerAgentId,
+      seller_agent_id: sellerAgentId,
+      proposed_by_agent_id: sellerAgentId,
+      buy_mission_id: missionId,
+      amount: 350,
+      currency: "EUR",
+      expires_at: validExpiresAt(),
+      status: "CREATED"
+    } as any);
+
+    const req: any = {
+      method: "POST",
+      headers: { "idempotency-key": "idem-mission" },
+      query: { offer_id: offerId },
+      body: {
+        mission_id: missionId,
+        amount: 360,
+        currency: "EUR",
+        expires_at: validExpiresAt()
+      }
+    };
+
+    const result: any = await handler(req, null, { ...baseCtx });
+
+    expect(result.status).toBe(201);
+    expect(enforceBuyMissionOfferMock).toHaveBeenCalledWith({
+      missionId,
+      agentId: buyerAgentId,
+      amount: 360,
+      currency: "EUR"
+    });
+
+    enforceBuyMissionOfferMock.mockRejectedValueOnce(
+      Object.assign(new Error("Owner approval required"), {
+        status: 409,
+        code: "APPROVAL_REQUIRED",
+        details: { mission_id: missionId, reason: "hard_budget_exceeded" }
+      })
+    );
+    const blocked: any = await handler(req, null, { ...baseCtx });
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.error).toMatchObject({
+      code: "APPROVAL_REQUIRED",
+      details: { reason: "hard_budget_exceeded" }
+    });
   });
 
   it("returns 404 OFFER_NOT_FOUND when offer does not exist", async () => {

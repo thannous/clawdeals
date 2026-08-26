@@ -208,7 +208,9 @@ describe("offers service behavior", () => {
       }
     });
 
-    expect(query.in).toHaveBeenCalledWith("buyer_agent_id", ["agent-1", "agent-2"]);
+    expect(query.or).toHaveBeenCalledWith(
+      'buyer_agent_id.in.("agent-1","agent-2"),seller_agent_id.in.("agent-1","agent-2")'
+    );
     expect(query.eq).toHaveBeenCalledWith("status", "CREATED");
     expect(query.limit).toHaveBeenCalledWith(3);
     expect(query.or).toHaveBeenCalledWith(

@@ -18,7 +18,10 @@ import {
 
 assertIntegrationEnv();
 
-async function setupNegotiation(request: any, { allowAccept }: { allowAccept: boolean }) {
+async function setupNegotiation(
+  request: any,
+  { allowAccept, offerLimit = 500 }: { allowAccept: boolean; offerLimit?: number }
+) {
   const supabase = createSupabaseAdmin();
   const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -42,8 +45,8 @@ async function setupNegotiation(request: any, { allowAccept }: { allowAccept: bo
   const policyRes = await request.put("/api/v1/policies", {
     headers: { "x-owner-id": sellerOwnerId },
     data: {
-      budgets: { max_offer: 500, currency: "EUR" },
-      approval_thresholds: { offer_amount_gt: 500, contact_reveal: "always" },
+      budgets: { max_offer: offerLimit, currency: "EUR" },
+      approval_thresholds: { offer_amount_gt: offerLimit, contact_reveal: "always" },
       auto_approve: { message_types: [], actions },
       allowlist_agent_ids: [],
       denylist_agent_ids: []
@@ -72,6 +75,7 @@ async function setupNegotiation(request: any, { allowAccept }: { allowAccept: bo
 
   return {
     supabase,
+    sellerOwnerId,
     seller,
     sellerApiKey,
     buyer,
@@ -133,7 +137,10 @@ test.describe.serial("Security: offer authorization and state invariants", () =>
 
     const { error: expireError } = await fixture.supabase
       .from("offers")
-      .update({ expires_at: new Date(Date.now() - 1_000).toISOString() })
+      .update({
+        created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() - 1_000).toISOString()
+      })
       .eq("offer_id", sellerCounter.offer_id);
     if (expireError) throw expireError;
 
@@ -176,5 +183,144 @@ test.describe.serial("Security: offer authorization and state invariants", () =>
     expect(accepted.status).toBe("ACCEPTED");
     expect(accepted.transaction.buyer_agent_id).toBe(fixture.buyer.id);
     expect(accepted.transaction.seller_agent_id).toBe(fixture.seller.id);
+  });
+
+  test("lets the buyer accept a seller counter only inside its mission and declines competing listing offers", async ({ request }) => {
+    const fixture = await setupNegotiation(request, { allowAccept: true, offerLimit: 600 });
+    const missionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const { data: mission, error: missionError } = await fixture.supabase
+      .from("watchlists")
+      .insert({
+        agent_id: fixture.buyer.id,
+        name: `Security mission ${randomId()}`,
+        active: true,
+        market_code: "FR",
+        currency: "EUR",
+        criteria: {
+          query: "used e-bike",
+          mission: {
+            version: 1,
+            kind: "BUY",
+            preferred_price_max: 450,
+            hard_budget_max: 500,
+            currency: "EUR",
+            requirements: ["battery_health >= 80%"],
+            autonomous_actions: ["search", "ask_question", "make_offer"],
+            contact_reveal: "manual_bilateral_approval",
+            expires_at: missionExpiresAt,
+            location: { label: "Paris", lat: 48.8566, lon: 2.3522, radius_km: 25 }
+          }
+        },
+        query_text: "used e-bike",
+        tags: ["mobility", "e-bike"],
+        price_max: 500,
+        geo_lat: 48.8566,
+        geo_lon: 2.3522,
+        distance_km: 25
+      })
+      .select("watchlist_id")
+      .single();
+    if (missionError) throw missionError;
+
+    const { error: bindMissionError } = await fixture.supabase
+      .from("offers")
+      .update({ buy_mission_id: mission.watchlist_id })
+      .eq("offer_id", fixture.initialOffer.offer_id);
+    if (bindMissionError) throw bindMissionError;
+
+    const competitorOwnerId = randomId();
+    await ensureOwnerDb(fixture.supabase, competitorOwnerId);
+    const competitor = await createAgentDbWithOverrides(fixture.supabase, competitorOwnerId, {
+      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    const { apiKey: competitorApiKey } = await createActiveApiKeyDb(
+      fixture.supabase,
+      competitor.id
+    );
+    const competitorOfferRes = await createOffer(
+      request,
+      competitorApiKey,
+      fixture.initialOffer.listing_id,
+      { amount: 360, currency: "EUR", expiresAt: fixture.expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(competitorOfferRes, 201);
+    const competitorOffer = await competitorOfferRes.json();
+
+    const overBudgetCounterRes = await createCounterOffer(
+      request,
+      fixture.sellerApiKey,
+      fixture.initialOffer.offer_id,
+      { amount: 550, currency: "EUR", expiresAt: fixture.expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(overBudgetCounterRes, 201);
+    const overBudgetCounter = await overBudgetCounterRes.json();
+
+    const blockedAcceptRes = await acceptOffer(
+      request,
+      fixture.buyerApiKey,
+      overBudgetCounter.offer_id,
+      { idempotencyKey: randomId(), missionId: mission.watchlist_id }
+    );
+    await expectStatus(blockedAcceptRes, 409);
+    const blockedAccept = await blockedAcceptRes.json();
+    expect(blockedAccept.error.code).toBe("APPROVAL_REQUIRED");
+    expect(blockedAccept.error.details?.reason).toBe("hard_budget_exceeded");
+
+    const buyerCounterRes = await createCounterOffer(
+      request,
+      fixture.buyerApiKey,
+      overBudgetCounter.offer_id,
+      {
+        missionId: mission.watchlist_id,
+        amount: 490,
+        currency: "EUR",
+        expiresAt: fixture.expiresAt
+      },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(buyerCounterRes, 201);
+    const buyerCounter = await buyerCounterRes.json();
+
+    const sellerCounterRes = await createCounterOffer(
+      request,
+      fixture.sellerApiKey,
+      buyerCounter.offer_id,
+      { amount: 495, currency: "EUR", expiresAt: fixture.expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(sellerCounterRes, 201);
+    const sellerCounter = await sellerCounterRes.json();
+
+    const acceptRes = await acceptOffer(
+      request,
+      fixture.buyerApiKey,
+      sellerCounter.offer_id,
+      { idempotencyKey: randomId(), missionId: mission.watchlist_id }
+    );
+    await expectStatus(acceptRes, 200);
+    const accepted = await acceptRes.json();
+    expect(accepted.status).toBe("ACCEPTED");
+    expect(accepted.listing_status).toBe("RESERVED");
+    expect(accepted.transaction.accepted_offer_id).toBe(sellerCounter.offer_id);
+
+    const { data: competingRow, error: competingError } = await fixture.supabase
+      .from("offers")
+      .select("status, thread_id")
+      .eq("offer_id", competitorOffer.offer_id)
+      .single();
+    if (competingError) throw competingError;
+    expect(competingRow.status).toBe("DECLINED");
+
+    const { data: declineMessage, error: declineMessageError } = await fixture.supabase
+      .from("messages")
+      .select("thread_id, type, payload")
+      .eq("thread_id", competingRow.thread_id)
+      .eq("type", "decline")
+      .contains("payload", { offer_id: competitorOffer.offer_id })
+      .single();
+    if (declineMessageError) throw declineMessageError;
+    expect(declineMessage.thread_id).toBe(competingRow.thread_id);
   });
 });

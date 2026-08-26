@@ -24,6 +24,17 @@ describe("mapOfferActionError (TI-201)", () => {
     });
   });
 
+  it("maps a mission hard-budget block to a stable approval result", () => {
+    expect(
+      mapOfferActionError({ message: "MISSION_APPROVAL_REQUIRED:HARD_BUDGET_EXCEEDED" })
+    ).toEqual({
+      status: 409,
+      code: "APPROVAL_REQUIRED",
+      message: "Owner approval required",
+      details: { action: "offer.accept", reason: "hard_budget_exceeded" }
+    });
+  });
+
   it("maps OFFER_NOT_ACTIONABLE:<STATUS> to 409 with details", () => {
     const mapped = mapOfferActionError({ message: "OFFER_NOT_ACTIONABLE:ACCEPTED" });
     expect(mapped.status).toBe(409);

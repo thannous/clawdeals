@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../../../server/services/offers", () => ({
   acceptOffer: vi.fn(),
   cancelOffer: vi.fn(),
-  declineOffer: vi.fn()
+  declineOffer: vi.fn(),
+  getOffer: vi.fn()
+}));
+
+vi.mock("../../../../server/policy/buy-mission-guard", () => ({
+  enforceBuyMissionOffer: vi.fn()
 }));
 
 vi.mock("../../../../server/sse/store", () => ({
@@ -20,20 +25,25 @@ import { handler as declineHandler } from "../../../../pages/api/v1/offers/[offe
 import {
   acceptOffer,
   cancelOffer,
-  declineOffer
+  declineOffer,
+  getOffer
 } from "../../../../server/services/offers";
+import { enforceBuyMissionOffer } from "../../../../server/policy/buy-mission-guard";
 import { publishSseEvent } from "../../../../server/sse/store";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 
 const acceptOfferMock = vi.mocked(acceptOffer);
 const cancelOfferMock = vi.mocked(cancelOffer);
 const declineOfferMock = vi.mocked(declineOffer);
+const getOfferMock = vi.mocked(getOffer);
+const enforceBuyMissionOfferMock = vi.mocked(enforceBuyMissionOffer);
 const publishSseEventMock = vi.mocked(publishSseEvent);
 const safeAuditLogMock = vi.mocked(safeAuditLog);
 
 const OFFER_ID = "11111111-1111-4111-8111-111111111111";
 const BUYER_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const SELLER_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const MISSION_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 function request(headers: any = { "idempotency-key": "idem-1" }) {
   return {
@@ -60,6 +70,7 @@ describe("offer action API contracts", () => {
     vi.clearAllMocks();
     publishSseEventMock.mockResolvedValue({ ok: true } as any);
     safeAuditLogMock.mockResolvedValue({ ok: true } as any);
+    enforceBuyMissionOfferMock.mockResolvedValue({ mission: { hard_budget_max: 1300 } } as any);
   });
 
   it.each([
@@ -132,6 +143,70 @@ describe("offer action API contracts", () => {
       listing_id: "listing-1",
       thread_id: "thread-1",
       tx_id: "tx-1"
+    });
+  });
+
+  it("allows the buyer to accept a seller counter only through its bound mission", async () => {
+    getOfferMock.mockResolvedValue({
+      offer_id: OFFER_ID,
+      buyer_agent_id: BUYER_ID,
+      seller_agent_id: SELLER_ID,
+      proposed_by_agent_id: SELLER_ID,
+      buy_mission_id: MISSION_ID,
+      amount: 1250,
+      currency: "EUR",
+      status: "CREATED"
+    } as any);
+    acceptOfferMock.mockResolvedValue({
+      offer_id: OFFER_ID,
+      offer_status: "ACCEPTED",
+      listing_id: "listing-1",
+      listing_status: "RESERVED",
+      thread_id: "thread-1",
+      tx_id: "tx-1",
+      accepted_offer_id: OFFER_ID,
+      buyer_agent_id: BUYER_ID,
+      seller_agent_id: SELLER_ID,
+      tx_status: "ACCEPTED",
+      contact_reveal_state: "NOT_REQUESTED",
+      tx_created_at: "2026-07-23T12:00:00.000Z"
+    } as any);
+    const req: any = { ...request(), body: { mission_id: MISSION_ID } };
+
+    const result: any = await acceptHandler(
+      req,
+      null,
+      context({ agentId: BUYER_ID, actor: { type: "agent", id: BUYER_ID } })
+    );
+
+    expect(result.status).toBe(200);
+    expect(enforceBuyMissionOfferMock).toHaveBeenCalledWith({
+      missionId: MISSION_ID,
+      agentId: BUYER_ID,
+      amount: 1250,
+      currency: "EUR"
+    });
+    expect(acceptOfferMock).toHaveBeenCalledWith({
+      offerId: OFFER_ID,
+      actorAgentId: BUYER_ID
+    });
+
+    enforceBuyMissionOfferMock.mockRejectedValueOnce(
+      Object.assign(new Error("Owner approval required"), {
+        status: 409,
+        code: "APPROVAL_REQUIRED",
+        details: { mission_id: MISSION_ID, reason: "hard_budget_exceeded" }
+      })
+    );
+    const blocked: any = await acceptHandler(
+      req,
+      null,
+      context({ agentId: BUYER_ID, actor: { type: "agent", id: BUYER_ID } })
+    );
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.error).toMatchObject({
+      code: "APPROVAL_REQUIRED",
+      details: { reason: "hard_budget_exceeded" }
     });
   });
 

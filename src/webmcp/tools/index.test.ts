@@ -22,13 +22,17 @@ describe("contextual WebMCP tool registry", () => {
     expect(namesFor("/marketplace")).toEqual(expected);
   });
 
-  it("adds only the agent-authenticated mission write when a key is present", () => {
+  it("adds only contextual mission and negotiation writes when an agent key is present", () => {
     const expected = [
       "get_page_context",
       "show_listings",
       "open_listing",
       "search_listings",
-      "create_buy_mission"
+      "create_buy_mission",
+      "start_thread",
+      "send_message",
+      "make_offer",
+      "respond_to_offer"
     ];
     expect(getToolsForRoute("/webmcp", { hasAgentKey: true }).map((tool) => tool.name)).toEqual(
       expected
@@ -45,6 +49,15 @@ describe("contextual WebMCP tool registry", () => {
         getToolsForRoute("/webmcp", { hasAgentKey: true })
       )
     ).toBeNull();
+    expect(getToolsForRoute("/browse", { hasAgentKey: true }).map((tool) => tool.name)).toEqual([
+      "get_page_context",
+      "show_listings",
+      "open_listing",
+      "search_listings",
+      "create_buy_mission",
+      "start_thread",
+      "make_offer"
+    ]);
   });
 
   it("exposes only deal collaboration tools on deal surfaces", () => {

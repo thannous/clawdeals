@@ -3,9 +3,10 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { isUuid } from "../../../../../server/utils/validators";
-import { acceptOffer } from "../../../../../server/services/offers";
+import { acceptOffer, getOffer } from "../../../../../server/services/offers";
 import { publishSseEvent } from "../../../../../server/sse/store";
 import { safeAuditLog } from "../../../../../server/audit/singleton";
+import { enforceBuyMissionOffer } from "../../../../../server/policy/buy-mission-guard";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -51,11 +52,54 @@ export async function handler(req, res, ctx) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "offer_id must be a UUID"));
   }
 
+  const rawMissionId = req.body?.mission_id;
+  const missionId =
+    rawMissionId === undefined || rawMissionId === null || rawMissionId === ""
+      ? null
+      : typeof rawMissionId === "string"
+        ? rawMissionId
+        : null;
+  if (
+    rawMissionId !== undefined &&
+    rawMissionId !== null &&
+    rawMissionId !== "" &&
+    (!missionId || !isUuid(missionId))
+  ) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mission_id must be a UUID"));
+  }
+
   if (ctx) {
-    ctx.body = { offer_id: offerId, action: "accept" };
+    ctx.body = { offer_id: offerId, action: "accept", mission_id: missionId };
   }
 
   try {
+    if (missionId) {
+      const offer = await getOffer(offerId);
+      const isBuyer = offer?.buyer_agent_id === agentId;
+      const isSeller = offer?.seller_agent_id === agentId;
+      if (!offer || (!isBuyer && !isSeller)) {
+        return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
+      }
+      if (!isBuyer) {
+        return jsonResponse(
+          400,
+          errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer")
+        );
+      }
+      if (String(offer.buy_mission_id || "") !== missionId) {
+        return jsonResponse(
+          409,
+          errorPayload("MISSION_MISMATCH", "Mission does not match the offer chain")
+        );
+      }
+      await enforceBuyMissionOffer({
+        missionId,
+        agentId,
+        amount: Number(offer.amount),
+        currency: String(offer.currency || "")
+      });
+    }
+
     const result = await acceptOffer({ offerId, actorAgentId: agentId });
 
     const transaction = {
@@ -179,4 +223,3 @@ export async function handler(req, res, ctx) {
 }
 
 export default withApiMiddlewares(handler, { routeGroup: "offers.actions" });
-

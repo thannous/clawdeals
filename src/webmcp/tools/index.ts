@@ -3,9 +3,16 @@ import { collabTools } from "./collab-tools";
 import { readTools } from "./read-tools";
 import { writeTools } from "./write-tools";
 import { missionTools } from "./mission-tools";
+import { negotiationTools } from "./negotiation-tools";
 import { isDealsSurface, isDemoRoute, isDevPlaygroundRoute, isListingsSurface } from "../config";
 
-export const WEBMCP_TOOLS: ToolDef[] = [...collabTools, ...missionTools, ...readTools, ...writeTools];
+export const WEBMCP_TOOLS: ToolDef[] = [
+  ...collabTools,
+  ...missionTools,
+  ...negotiationTools,
+  ...readTools,
+  ...writeTools
+];
 
 const LISTINGS_TOOL_NAMES = new Set([
   "get_page_context",
@@ -21,6 +28,9 @@ const DEALS_TOOL_NAMES = new Set([
 ]);
 
 const OWNER_APPROVAL_TOOL_NAMES = new Set(["get_page_context"]);
+
+const LISTING_NEGOTIATION_TOOL_NAMES = ["start_thread", "make_offer"];
+const DEMO_NEGOTIATION_TOOL_NAMES = negotiationTools.map((tool) => tool.name);
 
 type ToolRouteContext = {
   hasAgentKey?: boolean;
@@ -39,7 +49,13 @@ export function getToolsForRoute(pathname: string, context: ToolRouteContext = {
   if (isDealsSurface(path)) return selectTools(DEALS_TOOL_NAMES);
   if (isDemoRoute(path) || isListingsSurface(path)) {
     const names = new Set(LISTINGS_TOOL_NAMES);
-    if (context.hasAgentKey) names.add("create_buy_mission");
+    if (context.hasAgentKey) {
+      names.add("create_buy_mission");
+      const contextualWrites = isDemoRoute(path)
+        ? DEMO_NEGOTIATION_TOOL_NAMES
+        : LISTING_NEGOTIATION_TOOL_NAMES;
+      for (const name of contextualWrites) names.add(name);
+    }
     return selectTools(names);
   }
   return [];

@@ -65,6 +65,7 @@ export async function createOffer({
   buyerAgentId,
   sellerAgentId,
   previousOfferId,
+  buyMissionId,
   amount,
   currency,
   expiresAt
@@ -77,6 +78,7 @@ export async function createOffer({
     seller_agent_id: sellerAgentId,
     proposed_by_agent_id: buyerAgentId,
     previous_offer_id: previousOfferId || null,
+    buy_mission_id: buyMissionId || null,
     amount,
     currency,
     expires_at: expiresAt,
@@ -178,6 +180,19 @@ export function mapOfferActionError(error: any) {
     };
   }
 
+  const missionApprovalMatch = /MISSION_APPROVAL_REQUIRED(?::([A-Z_]+))?/i.exec(message);
+  if (missionApprovalMatch) {
+    return {
+      status: 409,
+      code: "APPROVAL_REQUIRED",
+      message: "Owner approval required",
+      details: {
+        action: "offer.accept",
+        reason: missionApprovalMatch[1]?.toLowerCase() || "mission_policy"
+      }
+    };
+  }
+
   const notActionableMatch = /OFFER_NOT_ACTIONABLE:([A-Z_]+)/i.exec(message);
   if (notActionableMatch) {
     return {
@@ -260,11 +275,15 @@ export async function listOffersByAgent({ agentIds, status, limit = 50, cursor }
 
   let query = client
     .from("offers")
-    .select("offer_id,thread_id,listing_id,buyer_agent_id,seller_agent_id,amount,currency,status,created_at,expires_at")
-    .in("buyer_agent_id", ids)
+    .select("offer_id,thread_id,listing_id,buyer_agent_id,seller_agent_id,buy_mission_id,amount,currency,status,created_at,expires_at")
     .order("created_at", { ascending: false })
     .order("offer_id", { ascending: false })
     .limit(fetchLimit);
+
+  const participantIds = ids.map((id) => `"${id.replace(/"/g, "\\\"")}"`).join(",");
+  query = query.or(
+    `buyer_agent_id.in.(${participantIds}),seller_agent_id.in.(${participantIds})`
+  );
 
   if (status) {
     query = query.eq("status", status);

@@ -219,4 +219,26 @@ describe("callClawdealsWebmcp", () => {
       meta: { request_id: "req-network" }
     });
   });
+
+  it("marks a transport failure after a write as an unsafe ambiguous outcome", async () => {
+    vi.spyOn(globalThis, "fetch" as any).mockRejectedValue(new Error("connection reset"));
+
+    await expect(
+      callClawdealsWebmcp({
+        method: "POST",
+        path: "/v1/listings",
+        body: { title: "Desk" },
+        idempotencyKey: "idem-write",
+        requestId: "req-write-network"
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "OUTCOME_UNKNOWN",
+        message: "The write may have reached the server, so its outcome is unknown",
+        details: { safe_to_retry: false }
+      },
+      meta: { request_id: "req-write-network" }
+    });
+  });
 });

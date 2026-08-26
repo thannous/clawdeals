@@ -18,6 +18,7 @@ import {
 import crypto from "crypto";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 import { publishSseEvent } from "../../../../../server/sse/store";
+import { enforceBuyMissionOffer } from "../../../../../server/policy/buy-mission-guard";
 
 const POSTGRES_INT4_MAX = 2147483647;
 
@@ -44,6 +45,7 @@ function mapOfferResponse(offer: any) {
     currency: offer.currency,
     expires_at: offer.expires_at,
     status: offer.status,
+    mission_id: offer.buy_mission_id || null,
     created_at: offer.created_at
   };
 }
@@ -107,6 +109,21 @@ export async function handler(req, res, ctx) {
   }
 
   const body = req.body || {};
+  const rawMissionId = body.mission_id;
+  const requestedMissionId =
+    rawMissionId === undefined || rawMissionId === null || rawMissionId === ""
+      ? null
+      : typeof rawMissionId === "string"
+        ? rawMissionId
+        : null;
+  if (
+    rawMissionId !== undefined &&
+    rawMissionId !== null &&
+    rawMissionId !== "" &&
+    (!requestedMissionId || !isUuid(requestedMissionId))
+  ) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mission_id must be a UUID"));
+  }
 
   const amount = body.amount;
   if (typeof amount !== "number" || !Number.isFinite(amount) || !Number.isSafeInteger(amount) || amount < 0) {
@@ -164,6 +181,28 @@ export async function handler(req, res, ctx) {
     if (!isBuyer && !isSeller) {
       // Anti-enumeration: pretend it doesn't exist.
       return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
+    }
+
+    const offerMissionId = offer.buy_mission_id ? String(offer.buy_mission_id) : null;
+    if (requestedMissionId && requestedMissionId !== offerMissionId) {
+      return jsonResponse(
+        409,
+        errorPayload("MISSION_MISMATCH", "Mission does not match the offer chain")
+      );
+    }
+    if (isSeller && requestedMissionId) {
+      return jsonResponse(
+        400,
+        errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer")
+      );
+    }
+    if (isBuyer && offerMissionId) {
+      await enforceBuyMissionOffer({
+        missionId: offerMissionId,
+        agentId,
+        amount,
+        currency
+      });
     }
 
     if (offer.status !== "CREATED") {
@@ -239,6 +278,7 @@ export async function handler(req, res, ctx) {
     if (ctx?.body && typeof ctx.body === "object") {
       ctx.body.thread_id = offer.thread_id;
       ctx.body.listing_id = offer.listing_id;
+      ctx.body.mission_id = offerMissionId;
     }
 
     const openOffer = await getOpenOfferForThread({ threadId: offer.thread_id });

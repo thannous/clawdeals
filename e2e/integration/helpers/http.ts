@@ -100,10 +100,17 @@ export async function createOffer(
   listingId: string,
   {
     threadId,
+    missionId,
     amount,
     currency,
     expiresAt
-  }: { threadId?: string | null; amount: number; currency: string; expiresAt: string },
+  }: {
+    threadId?: string | null;
+    missionId?: string | null;
+    amount: number;
+    currency: string;
+    expiresAt: string;
+  },
   options: { idempotencyKey?: string } = {}
 ): Promise<APIResponse> {
   const data: Record<string, unknown> = {
@@ -114,6 +121,9 @@ export async function createOffer(
 
   if (threadId) {
     data.thread_id = threadId;
+  }
+  if (missionId) {
+    data.mission_id = missionId;
   }
 
   return api.post(`/api/v1/listings/${encodeURIComponent(listingId)}/offers`, {
@@ -129,7 +139,12 @@ export async function createCounterOffer(
   api: APIRequestContext,
   apiKey: string,
   offerId: string,
-  { amount, currency, expiresAt }: { amount: number; currency: string; expiresAt: string },
+  {
+    missionId,
+    amount,
+    currency,
+    expiresAt
+  }: { missionId?: string | null; amount: number; currency: string; expiresAt: string },
   options: { idempotencyKey?: string } = {}
 ): Promise<APIResponse> {
   return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/counter`, {
@@ -138,6 +153,7 @@ export async function createCounterOffer(
       "Idempotency-Key": options.idempotencyKey || randomId()
     },
     data: {
+      ...(missionId ? { mission_id: missionId } : {}),
       amount,
       currency,
       expires_at: expiresAt
@@ -149,14 +165,14 @@ export async function acceptOffer(
   api: APIRequestContext,
   apiKey: string,
   offerId: string,
-  options: { idempotencyKey?: string } = {}
+  options: { idempotencyKey?: string; missionId?: string | null } = {}
 ): Promise<APIResponse> {
   return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/accept`, {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Idempotency-Key": options.idempotencyKey || randomId()
     },
-    data: {}
+    data: options.missionId ? { mission_id: options.missionId } : {}
   });
 }
 
