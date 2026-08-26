@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 
 vi.mock("next-intl", () => ({
@@ -53,10 +53,11 @@ import Landing from "./Landing";
 
 describe("Landing", () => {
   beforeEach(() => {
-    cleanup();
     vi.clearAllMocks();
     localStorage.clear();
   });
+
+  afterEach(cleanup);
 
   it("renders current variant CTAs by default", () => {
     const { container } = render(
