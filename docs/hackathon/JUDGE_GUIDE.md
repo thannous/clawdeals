@@ -32,7 +32,7 @@ Official contest samples already cover catalogues and carts. The judged differen
 | --- | --- | --- |
 | Judge hub | `/webmcp-challenge` | Compatibility, exact registered tools, copyable mission, isolated reset |
 | Live marketplace | `/webmcp` | Real product surface, not a simulator. The hub launch button opens this page |
-| Production hub | https://clawdeals.com/webmcp-challenge | HTTP 200 and deploy SHA `3f10575` verified; full private-window journey remains pending |
+| Production hub | https://clawdeals.com/webmcp-challenge | Public SHA `b9fc2e346ab5`. Codex guest WebMCP PASS. Authenticated sandbox journey PENDING. |
 | Eligibility ledger | `HACKATHON.md` | Baseline SHA, challenge-period commits, registry |
 
 The hub reports the browser's real `document.modelContext` support, the tools that actually registered, and a sanitized deploy SHA when the host provides one. Missing native WebMCP is `INDETERMINATE`, not a product fail.
@@ -75,7 +75,7 @@ Judges are not required to build the repo. If a live WebMCP browser is available
 12. `request_contact_reveal` creates two independent owner consents. One consent reveals nothing.
 13. `get_action_receipt` shows a redacted receipt. Agent Activity on the page should match that receipt.
 
-If the browser has no WebMCP, watch the [demo script](./DEMO_SCRIPT.md). The public YouTube file is **not published** in this workspace.
+If the browser has no WebMCP, follow the [demo script](./DEMO_SCRIPT.md). The verified local MP4 is `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` (160 seconds, 1080p H.264/AAC). The public YouTube file is **not published**, so the local artifact is not public submission proof.
 
 ## What must not happen
 
@@ -105,11 +105,14 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS | Clean-clone release gate passed on implementation SHA `3f10575`: migrations + seed, 373 Vitest files / 2,616 passed / 1 skipped, build 110 pages, selector 24 × 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. |
-| CI | PASS | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32959645029) and [`SDK CI`](https://github.com/thannous/clawdeals/actions/runs/32959645020) passed on `3f10575`. |
-| DEPLOYED | PASS | Vercel commit status completed successfully for `3f10575`. |
-| PUBLIC | HTTP PASS; journey PENDING | The production hub returned 200 and displayed `3f10575`; full private-window tools/API/reset/critical-path smoke remains pending. |
+| LOCAL current candidate | PASS, pending commit | The current worktree passed typecheck, lint, 377 Vitest files / 2,634 passed / 1 skipped, build, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2 and security 10/10. Cross-route receipt persistence, the deterministic Upstash mock and `Origin-Agent-Cluster: ?1` are not yet on public `b9fc2e346ab5`. |
+| CI | Last green `9e7102e`; current **WAIVED / NOT RUN** | Last actually green remote CI is [`CI` run 32980551636](https://github.com/thannous/clawdeals/actions/runs/32980551636) on `9e7102e`. Current HEAD remote CI is waived / not run. |
+| DEPLOYED / PUBLIC HTTP | PASS on `b9fc2e346ab5` | Live judge hub is `https://clawdeals.com/webmcp-challenge` on public SHA `b9fc2e346ab5`. Production reset remains closed. |
+| PUBLIC native guest | PASS | Codex in-app browser discovered the five public tools and executed context → search → redacted receipt. Request IDs: `52c27d83-989c-4020-89da-c3e7d7463f38`, `2fea2f5a-a2c2-47ab-b495-8a992452bcd5`; receipt `rcpt_2fea2f5a-a2c2-47ab-b495-8a992452bcd5`; receipt-read `195c279c-2af5-4a76-8479-b2d6ed05e528`. |
+| PUBLIC authenticated sandbox | PENDING | Eleven-tool judge reset and mutation path are not proven on a public isolated sandbox. |
+| CHROME | INDETERMINATE | Connected Chrome loaded the deployed build without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
+| VIDEO LOCAL | PASS | 160-second 1920×1080 H.264/AAC artifact, SHA-256 `ba72db547683adc7f43e9079a23b1fba50fc74b078c3f7f17b0a0cf09534f9b3`. |
+| VIDEO PUBLIC / DEVPOST | NOT PROVEN | Public YouTube and Devpost submission are not proven. |
 
 Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP proof as native WebMCP selection, authenticated journey, or Devpost acceptance.

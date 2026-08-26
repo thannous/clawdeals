@@ -112,7 +112,7 @@ Pre-existing ClawDeals baseline:
 00880457964929c0773237a9c724704f5da651f0
 
 WebMCP Challenge work:
-git diff webmcp-challenge-baseline..webmcp-challenge-submission
+git diff webmcp-challenge-baseline..HEAD
 ```
 
 La fiche Devpost devra être déclarée comme **Existing**, avec une section très visible :
@@ -123,20 +123,21 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 
 | Couche | Statut |
 |---|---|
-| LOCAL | PASS |
-| CI | PASS |
-| DEPLOYED | PASS |
-| PUBLIC HTTP | PASS |
-| Navigation privée read-only | PASS sur `1b52e64` |
-| WebMCP natif / parcours authentifié | PENDING |
+| LOCAL current candidate | PASS, pending commit/deploy |
+| CI | Last green `9e7102e`; current WAIVED / NOT RUN |
+| DEPLOYED / PUBLIC HTTP | PASS sur `b9fc2e3` |
+| WebMCP natif invité | PASS dans Codex in-app sur `b9fc2e3` |
+| Chrome WebMCP | INDETERMINATE |
+| Parcours authentifié public | PENDING |
 | ChatGPT in-app | NOT RUN |
+| Vidéo locale | PASS, 160 s en 1080p avec audio |
 | Vidéo publique / Devpost soumis | PENDING |
 
 ### 3.4 Livrables obligatoires
 
 Il faut fournir :
 
-- une URL de production utilisable dans le navigateur intégré de ChatGPT ou dans Chrome avec WebMCP activé (**PASS** HTTP public et navigation privée read-only ; **PENDING** WebMCP natif, parcours authentifié et ChatGPT in-app) ;
+- une URL de production utilisable dans un navigateur WebMCP (**PASS** HTTP public et WebMCP natif invité dans Codex ; **INDETERMINATE** dans Chrome ; **PENDING** parcours authentifié et ChatGPT in-app) ;
 - un dépôt public avec licence open source (**PASS** : `thannous/clawdeals`, MIT) ;
 - une description en anglais ;
 - une vidéo YouTube publique de moins de trois minutes, avec audio (**PENDING** : non publiée) ;
@@ -166,7 +167,7 @@ Le socle possède plusieurs qualités rares pour un projet de hackathon :
 - possibilité de modifier les arguments avant validation ;
 - clés d’idempotence ;
 - désinfection et limitation de la sortie ;
-- six outils de lecture et deux outils d’écriture ;
+- un registre contextuel de cinq outils invités, onze outils authentifiés et trois outils strictement limités à la page d’approbation propriétaire ;
 - architecture séparant définitions, transport, confirmation et enregistrement.
 
 Le provider centralise correctement :
@@ -308,7 +309,7 @@ Exemple recommandé :
 
 ### 4.8 Résolu, avec optimisation restante : sorties et annotations
 
-Le plafond interne reste défensif, mais les tools du challenge appliquent les annotations officielles `readOnlyHint` et `untrustedContentHint`, la redaction des contenus non fiables et des sorties compactes. Les evals TI-377 doivent encore vérifier systématiquement la cible recommandée d’environ 1,5 K caractère par résultat exposé au modèle.
+Le plafond interne reste défensif, mais les tools du challenge appliquent les annotations officielles `readOnlyHint` et `untrustedContentHint`, la redaction des contenus non fiables et des sorties compactes. Les evals TI-377 vérifient une limite de 1 500 octets UTF-8, plus stricte que la cible recommandée d’environ 1,5 K caractère.
 
 Les outils devraient renvoyer uniquement les informations utiles à la décision et utiliser notamment :
 
@@ -575,18 +576,16 @@ Le reçu doit être :
 
 ## 7. Catalogue WebMCP recommandé
 
-Il ne faut pas exposer quinze outils partout. Chaque page doit exposer seulement trois à six outils, selon son état.
+Il ne faut pas exposer tous les outils partout. Le registre réel dépend de la route, de la clé agent et de l’entité affichée.
 
 | Contexte | Outils exposés |
 |---|---|
-| Browse public | `search_listings`, `get_listing`, `create_buy_mission` |
-| Mission | `get_mission_matches`, `update_mission`, `pause_mission` |
-| Fiche annonce | `get_listing`, `start_thread`, `make_offer` |
-| Côté vendeur | `create_listing_draft`, `request_publish` |
-| Négociation | `get_thread`, `send_message`, `make_offer`, `respond_to_offer` |
-| Approbations | `list_approvals`, `resolve_approval` |
-| Transaction | `get_transaction`, `request_contact_reveal` |
-| Audit | `get_action_receipt` |
+| `/webmcp`, `/webmcp-challenge` invité | `get_page_context`, `show_listings`, `open_listing`, `search_listings`, `get_action_receipt` |
+| `/webmcp`, `/webmcp-challenge` avec clé agent | les cinq précédents + `create_buy_mission`, `start_thread`, `send_message`, `make_offer`, `respond_to_offer`, `request_contact_reveal` |
+| `/browse`, `/marketplace` invité | `get_page_context`, `show_listings`, `open_listing`, `search_listings`, `get_action_receipt` |
+| `/browse`, `/marketplace` avec clé agent | les cinq précédents + `create_buy_mission`, `start_thread`, `make_offer` |
+| `/my/approvals/:id` | `get_page_context`, `resolve_approval`, `get_action_receipt` |
+| `/deals`, `/browse/deals` | `get_page_context`, `search_deals`, `open_deal` |
 
 ### 7.1 `search_listings`
 
@@ -918,18 +917,19 @@ Le compte de démonstration doit posséder :
 - **PASS** : tag `webmcp-challenge-baseline` (`0088045`) présent et poussé ;
 - **PASS** : dépôt actuel `thannous/clawdeals` public ; pas d’édition dédiée ;
 - **PASS** : licence MIT détectée par GitHub ;
-- **PASS** : CI GitHub Actions et HTTP public prouvés pour le candidat `3f10575` — voir [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md) ;
-- **PASS** : navigation privée read-only sur `1b52e64` ;
-- **PENDING** : vidéo YouTube publique, soumission Devpost, WebMCP natif, parcours authentifié et ChatGPT in-app.
+- **PASS** : dernière CI GitHub Actions verte sur `9e7102e`; CI du candidat courant **WAIVED / NOT RUN** ;
+- **PASS** : HTTP public et WebMCP natif invité dans Codex sur `b9fc2e3` ;
+- **PASS LOCAL** : gate complet du candidat courant et vidéo 160 secondes en 1080p avec audio ;
+- **INDETERMINATE** : Chrome WebMCP sans runtime actif dans le profil testé ;
+- **PENDING** : déploiement du candidat local, sandbox authentifié public, vidéo YouTube, soumission Devpost et ChatGPT in-app.
 
 Reste à faire le 26 août (si non clos ailleurs) :
 
 - **PASS** : audit des secrets documenté ;
-- figer le scénario du vélo électrique ;
-- remplacer `navigator.modelContext` par `document.modelContext` ;
-- ajouter `await`, `AbortController` et propagation du signal ;
-- vérifier `window.originAgentCluster === true` ;
-- vérifier le feature flag de production.
+- **PASS** : scénario du vélo électrique figé ;
+- **PASS** : `document.modelContext`, enregistrement asynchrone et `AbortSignal` officiels ;
+- **PASS LOCAL / PENDING PUBLIC** : header `Origin-Agent-Cluster: ?1` et test de configuration ;
+- **PENDING** : activation Origin Trial ou flag Chrome sur le runtime réellement testé.
 
 ### Jeudi 27 août — registre contextuel
 
@@ -1086,8 +1086,9 @@ Les artefacts reproductibles sont maintenant indexés dans `evals/webmcp/` :
   répétées ont toutes produit une seule transaction sans erreur 500 ;
 - la limite de sortie est de 1 500 octets UTF-8, donc plus stricte que la cible
   de 1,5 K caractère ;
-- `LIVE-BROWSER-EVIDENCE.md` sépare les validations ChatGPT in-app et Chrome
-  WebMCP. Elles restent `NOT RUN` tant que le build revu n’est pas déployé.
+- `LIVE-BROWSER-EVIDENCE.md` sépare les runtimes : Codex in-app invité est
+  `PASS`, Chrome est `INDETERMINATE`, ChatGPT est `NOT RUN` et le parcours
+  authentifié public reste `PENDING`.
 
 Le release gate local explicite est `npm run eval:webmcp:gate`. Il enchaîne
 typecheck, lint, toute la suite Vitest, un build de production, le corpus 24 × 3,
@@ -1270,20 +1271,20 @@ Estimation interne, pas prédiction du jury :
 
 | Critère | État actuel estimé | Cible |
 |---|---:|---:|
-| WebMCP Leverage | 1,5/5 | 5/5 |
-| Execution | 3/5 | 4,5/5 |
+| WebMCP Leverage | 4,5/5 | 5/5 |
+| Execution | 4/5 | 4,5/5 |
 | Potential Impact | 4/5 | 4,5/5 |
 | Creativity & Ambition | 4/5 | 5/5 |
 
 La faiblesse actuelle n’est pas l’idée.
 
-C’est l’intégration browser WebMCP :
+C’est désormais la dernière couche de preuve et de publication :
 
-- probablement incompatible avec l’objet officiel ;
-- limitée aux pages développeur ;
-- incapable de traiter correctement les approbations ;
-- sans parcours de négociation complet ;
-- sans preuve visible pour le juge.
+- déployer le candidat local validé ;
+- fournir un sandbox public isolé pour les onze outils authentifiés ;
+- activer et vérifier Chrome WebMCP ou l’Origin Trial ;
+- tester séparément ChatGPT in-app ;
+- publier la vidéo et soumettre Devpost.
 
 La force est que presque tout le domaine métier nécessaire existe déjà.
 

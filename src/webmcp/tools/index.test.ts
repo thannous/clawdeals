@@ -16,12 +16,34 @@ const FORBIDDEN_PUBLIC_TOOLS = [
 
 describe("contextual WebMCP tool registry", () => {
   it("exposes only listing collaboration tools on listing surfaces", () => {
-    const expected = ["get_page_context", "show_listings", "open_listing", "search_listings"];
-    expect(namesFor("/webmcp")).toEqual([...expected, "get_action_receipt"]);
-    expect(namesFor("/webmcp-challenge")).toEqual([...expected, "get_action_receipt"]);
+    const expected = [
+      "get_page_context",
+      "show_listings",
+      "open_listing",
+      "search_listings",
+      "get_action_receipt"
+    ];
+    expect(namesFor("/webmcp")).toEqual(expected);
+    expect(namesFor("/webmcp-challenge")).toEqual(expected);
     expect(namesFor("/browse")).toEqual(expected);
     expect(namesFor("/browse/00000000-0000-4000-8000-000000000001")).toEqual(expected);
     expect(namesFor("/marketplace")).toEqual(expected);
+  });
+
+  it("keeps get_action_receipt available after search_listings navigates to /browse", () => {
+    const hub = namesFor("/webmcp-challenge");
+    const browse = namesFor("/browse");
+    expect(hub).toContain("get_action_receipt");
+    expect(browse).toContain("get_action_receipt");
+    expect(browse).toEqual(hub);
+    expect(browse).not.toContain("create_buy_mission");
+    expect(browse).not.toContain("make_offer");
+    expect(browse).not.toContain("resolve_approval");
+    expect(getToolByName("get_action_receipt", getToolsForRoute("/browse"))?.scope).toBe("read");
+    expect(getToolByName("get_action_receipt", getToolsForRoute("/browse"))?.annotations).toEqual({
+      readOnlyHint: true,
+      untrustedContentHint: false
+    });
   });
 
   it("adds only contextual mission and negotiation writes when an agent key is present", () => {
@@ -63,7 +85,8 @@ describe("contextual WebMCP tool registry", () => {
       "search_listings",
       "create_buy_mission",
       "start_thread",
-      "make_offer"
+      "make_offer",
+      "get_action_receipt"
     ]);
   });
 

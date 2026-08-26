@@ -211,6 +211,103 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
   });
 
+  test("keeps get_action_receipt registered after search_listings navigates to /browse", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.removeItem("clawdeals_api_key");
+      const registrations: Array<{ tool: any; signal?: AbortSignal }> = [];
+      (window as any).__webmcp_registrations = registrations;
+      Object.defineProperty(document as any, "modelContext", {
+        configurable: true,
+        value: {
+          registerTool: (tool: any, options?: { signal?: AbortSignal }) => {
+            registrations.push({ tool, signal: options?.signal });
+          }
+        }
+      });
+    });
+    await page.route("**/api/v1/public/listings**", async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: [
+            {
+              listing_id: "90000000-0000-4000-8000-000000000001",
+              title: "Used e-bike",
+              price: { amount: 1150, currency: "EUR" },
+              seller: { verified: true }
+            }
+          ],
+          next_cursor: null
+        })
+      });
+    });
+
+    await page.goto("/webmcp-challenge");
+    await expect(page.getByTestId("webmcp-challenge-page")).toBeVisible();
+    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("5 tools registered");
+
+    const registrationState = () =>
+      page.evaluate(() => {
+        const rows = ((window as any).__webmcp_registrations || []) as Array<{
+          tool?: { name?: string };
+          signal?: AbortSignal;
+        }>;
+        const active = rows
+          .filter((row) => !row.signal?.aborted)
+          .map((row) => String(row.tool?.name || ""));
+        return {
+          active,
+          aborted: rows.filter((row) => row.signal?.aborted).length,
+          total: rows.length
+        };
+      });
+
+    await expect.poll(registrationState).toMatchObject({
+      active: [
+        "get_page_context",
+        "show_listings",
+        "open_listing",
+        "search_listings",
+        "get_action_receipt"
+      ],
+      aborted: 0,
+      total: 5
+    });
+
+    const searchResult: any = await page.evaluate(async () => {
+      const rows = ((window as any).__webmcp_registrations || []) as Array<{
+        tool?: { name?: string; execute?: (args: unknown, options?: unknown) => Promise<unknown> };
+        signal?: AbortSignal;
+      }>;
+      const search = rows
+        .slice()
+        .reverse()
+        .find((row) => row.tool?.name === "search_listings" && !row.signal?.aborted);
+      if (!search?.tool?.execute) throw new Error("search_listings is not registered");
+      return search.tool.execute({ q: "e-bike" }, { signal: new AbortController().signal });
+    });
+    expect(searchResult).toMatchObject({ ok: true });
+
+    await expect(page).toHaveURL(/\/browse\?q=e-bike/, { timeout: 20_000 });
+    await expect.poll(registrationState).toMatchObject({
+      active: [
+        "get_page_context",
+        "show_listings",
+        "open_listing",
+        "search_listings",
+        "get_action_receipt"
+      ]
+    });
+    const afterNav = await registrationState();
+    expect(afterNav.active).not.toContain("create_buy_mission");
+    expect(afterNav.active).not.toContain("make_offer");
+    expect(afterNav.active).not.toContain("resolve_approval");
+    expect(afterNav.aborted).toBeGreaterThan(0);
+    expect(afterNav.total).toBeGreaterThan(5);
+  });
+
   test("binds owner approval resolution to the visible page and owner cookies", async ({ page }) => {
     const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
     await page.addInitScript(() => {

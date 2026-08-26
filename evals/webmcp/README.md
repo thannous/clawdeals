@@ -60,8 +60,9 @@ The evidence deliberately keeps four layers separate:
 3. Playwright against synthetic, isolated Supabase data. The browser capability
    is mocked, but the registered `tool.execute` handlers, HTTP APIs, policies,
    database transitions and receipts are real.
-4. Real ChatGPT in-app and Chrome WebMCP checks. These remain `NOT RUN` until a
-   reviewed build is deployed; see [`LIVE-BROWSER-EVIDENCE.md`](LIVE-BROWSER-EVIDENCE.md).
+4. Real browser checks, kept separate by runtime: Codex in-app guest execution
+   is `PASS`, ChatGPT in-app is `NOT RUN`, and Chrome is `INDETERMINATE`; see
+   [`LIVE-BROWSER-EVIDENCE.md`](LIVE-BROWSER-EVIDENCE.md).
 
 The executable invariant map is in [`SECURITY-MATRIX.md`](SECURITY-MATRIX.md).
 
@@ -112,16 +113,19 @@ production data or production secrets.
 - ESLint: pass with zero warnings.
 - Production Next.js build: pass.
 - Complete `npm run eval:webmcp:gate`: pass with exit code 0 on the isolated local stack.
-- Vitest: 372 files passed; 2,612 tests passed; 1 skipped.
-- WebMCP Chromium UI E2E: 5/5 passed in production-server mode, including the public registry, authenticated two-reset flow, confirmation gate and contextual re-registration.
+- Vitest: 377 files passed; 2,634 tests passed; 1 skipped.
+- WebMCP Chromium UI E2E: 6/6 passed in production-server mode, including the public registry, confirmation gate, contextual re-registration and cross-route receipt persistence.
 - Isolated Supabase integration: 1/1 passed; the test performs two resets and verifies stable actors, five e-bike IDs, one thread, one message and no contact PII.
 - Deterministic reference selector: 24/24 cases passed across three runs each (72 plans); archived result labels ChatGPT selection `unproven`.
-- Scoped WebMCP contracts: 13 files, 79 tests passed.
+- Scoped WebMCP contracts: 13 files, 82 tests passed.
 - Isolated reset plus mission → agreement → receipt suite: 2/2 passed through registered WebMCP handlers; idempotent replay and persisted reservation verified.
 - Server security integrations: 10/10 passed for owner authorization, self-proposal refusal, idempotence, SSE, atomic acceptance, cancellation, expiration, bilateral consent and message redaction.
 - Concurrent acceptance regression: 5/5 repeated races passed after `20260826170000_ti_377_offer_accept_lock_order.sql` serialized acceptance on the shared listing row.
 - UUID redaction regression: fixed and covered so workflow IDs remain usable while emails and phone numbers stay redacted.
 - Real ChatGPT in-app browser: `NOT RUN`.
-- Real Chrome WebMCP: `NOT RUN`.
+- Real Codex in-app WebMCP guest path: `PASS` on public `b9fc2e346ab5`.
+- Real Chrome WebMCP: `INDETERMINATE` in the tested Chrome 151 profile.
 
-These are local proofs only. They do not prove the GitHub delta was pushed, a deployment succeeded, the public URL is live, or Devpost accepted the submission.
+The gate counts above are local proof. The Codex row is separate public native
+evidence on `b9fc2e3`; it does not prove the pending local delta was pushed,
+Chrome or ChatGPT support, an authenticated public sandbox, or Devpost acceptance.

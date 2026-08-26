@@ -1,6 +1,6 @@
 # Demo video evidence — 26 August 2026
 
-Local candidate video produced from the deterministic WebMCP Challenge capture pipeline.
+Current video proof for the WebMCP Challenge submission.
 
 ## References
 
@@ -8,24 +8,23 @@ Local candidate video produced from the deterministic WebMCP Challenge capture p
 - Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
 - Submission ticket: [TI-375](https://linear.app/ti-max/issue/TI-375/hackathon-finaliser-readme-video-et-soumission-devpost)
 
-## Local artifact
+## Current status
 
 | Property | Value |
 | --- | --- |
-| Path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
-| Publication status | **NOT PUBLISHED** |
-| Duration | 160 seconds (2:40), below the 3-minute limit |
-| Video | H.264, 1920 × 1080, 30 fps |
+| Local path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
+| Local file | **PASS — present and independently probed** |
+| Publication status | **NOT_PUBLISHED** |
+| Duration | `160.000000` seconds |
+| Video | H.264, 1920×1080 |
 | Audio | AAC, 48 kHz, stereo |
-| Size | 7,082,243 bytes |
-| SHA-256 | `8daeaa7746312b7f76cfc5fc36554f9ed3a34041c822a0e2255973a0f9d54f31` |
-| Captured shots | 17 |
-| Voiceover cues | 16 |
+| Size | `7,096,414` bytes |
+| SHA-256 | `ba72db547683adc7f43e9079a23b1fba50fc74b078c3f7f17b0a0cf09534f9b3` |
+| YouTube URL | None |
+| Devpost attachment | None |
 
-`ffprobe` confirmed one H.264 video stream and one AAC audio stream. The reviewed frames cover the challenge hero, policy-fit search, editable owner approval, bilateral consent boundary, redacted action receipt and closing tagline.
-
-The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The generated video stays outside Git because `test-results/` is intentionally ignored.
+The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The final artifact was regenerated from the deterministic 17-shot capture, the 16-cue Daniel voiceover at 155 WPM, and the current subtitle file. Representative frames at 20 and 130 seconds were inspected for readable confirmation and receipt overlays.
 
 ## Boundary
 
-This is **LOCAL video proof only**. It does not prove a public YouTube URL, Devpost attachment, publication visibility or final submission. Those remain pending until the user authorizes the public upload and the resulting URL is verified without authentication.
+The local artifact is current proof of the produced demo only. It is not public video proof. Do not treat the MP4, a Devpost draft, or the script as YouTube publication or final submission.

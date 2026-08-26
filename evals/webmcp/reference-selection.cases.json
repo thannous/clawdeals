@@ -141,7 +141,7 @@
       "expected": {
         "firstTool": "search_listings",
         "toolSequence": ["search_listings"],
-        "registryContains": ["search_listings"],
+        "registryContains": ["search_listings", "get_action_receipt"],
         "registryAbsent": ["make_offer", "resolve_approval"]
       }
     },

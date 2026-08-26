@@ -19,7 +19,7 @@ Reproducible evaluation index for the WebMCP Challenge submission. Deterministic
 | Would a reference planner pick the first tool we expect? | 24 x 3 deterministic plans | ChatGPT tool selection |
 | Do registered handlers create a mission, reserve a listing, and persist a receipt? | isolated Playwright + Supabase | production data |
 | Do authz, consent, races, and redaction hold on the server? | `eval:webmcp:security` | a public URL |
-| Does ChatGPT in-app or Chrome WebMCP actually call the tools? | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | currently `NOT RUN` |
+| Does a real in-app runtime call the tools? | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | Codex guest path PASS; ChatGPT NOT RUN; Chrome INDETERMINATE |
 
 ## Commands
 
@@ -71,7 +71,7 @@ Archive: `evals/webmcp/results/reference-selection.json`
 
 | Field | Value |
 | --- | --- |
-| generatedAt | `2026-08-26T06:09:01.387Z` |
+| generatedAt | `2026-08-26T16:12:33.726Z` |
 | evidenceKind | `deterministic_reference_planner` |
 | caseCount | 24 |
 | repeats | 3 (72 plans) |
@@ -84,34 +84,37 @@ This runner is not ChatGPT and does not prove in-app tool selection.
 
 ## Documented LOCAL results (26 August 2026)
 
-Root validation reran the complete clean-clone gate on `efd6310fd8e875b08d00aa0519386db83e8a474f`. This SHA predates the judge-document refresh, so the final reviewed SHA must rerun the same gate before release.
+Root validation reran the complete gate on the current worktree based on public HEAD `b9fc2e346ab5`. The worktree contains the cross-route receipt fix, deterministic Upstash mock and `Origin-Agent-Cluster` header and remains pending commit/deploy.
 
-- Typecheck, ESLint (zero warnings), production Next.js build: documented pass.
-- `npm run eval:webmcp:gate`: documented exit 0 on the isolated local stack.
-- Vitest: 373 files, 2,616 passed, 1 skipped.
-- WebMCP Chromium UI: 5/5, including public registry, authenticated two-reset flow, confirmation gate, contextual re-registration.
+- Typecheck, ESLint (zero warnings), production Next.js build: pass.
+- `npm run eval:webmcp:gate`: exit 0 on the isolated local stack.
+- Vitest: 377 files, 2,634 passed, 1 skipped.
+- WebMCP Chromium UI: 6/6, including public registry, confirmation gate, contextual re-registration and cross-route receipt persistence.
 - Isolated sandbox fixtures: two resets, stable actors, five e-bike IDs, one thread, no contact PII.
 - Isolated journey: mission -> agreement -> receipt through registered handlers; idempotent replay; listing `RESERVED`.
 - Security integrations: owner authorization, self-proposal refusal, idempotence, SSE, atomic acceptance, cancellation, expiration, bilateral consent, message redaction.
 - Concurrent accept races: 5/5 after listing-row lock ordering.
-- Production build: 110 pages generated.
+- Production build: 109 pages generated.
 
-Later TI-376 commits after the original eval README snapshot exist (`b624929` through `efd6310`). The counts above are the newer clean-clone gate, while `evals/webmcp/README.md` retains the earlier TI-377 snapshot. Neither is CI or public proof.
+This current-worktree gate is local proof. It is neither remote CI nor proof that the pending changes are deployed publicly.
 
 ## Proof layers
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on the pre-doc candidate | Root validation ran a clean clone of `efd6310fd8e875b08d00aa0519386db83e8a474f`: migrations + seed, 373 Vitest files / 2,616 passed / 1 skipped, build 110 pages, selector 24 x 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. The final reviewed SHA must rerun the gate after these docs are committed; its exact result belongs in TI-376 because embedding that SHA here would change it. |
-| CI | NOT PROVEN | GitHub Actions on the judged SHA is pending in the TI-376 runbook. |
-| DEPLOYED | NOT PROVEN | `https://clawdeals.com/webmcp-challenge` is the intended route. README states deployment of the reviewed SHA is still pending. |
-| PUBLIC | NOT PROVEN | Private-window / incognito smoke is pending. |
+| LOCAL | PASS on current worktree | 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. Pending commit/deploy. |
+| CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
+| DEPLOYED / PUBLIC HTTP | PASS on `b9fc2e346ab5` | The live challenge route is 200, public listings are 200 and production sandbox reset remains 404. Pending local changes are not included. |
+| PUBLIC native guest | PASS on `b9fc2e346ab5` | Codex in-app discovered five tools and executed context → search → redacted receipt. |
+| PUBLIC authenticated sandbox | PENDING | Eleven-tool reset and mutation journey are not proven on a public isolated sandbox. |
+| CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
+| VIDEO LOCAL | PASS | Verified 160-second 1080p H.264/AAC artifact. |
+| VIDEO PUBLIC / DEVPOST | NOT PROVEN | YouTube publication, submission, and freeze are pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.
 
 
 ## Live browser template
 
-Complete `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` only after a reviewed SHA is deployed. Until then both ChatGPT in-app and Chrome WebMCP rows stay `NOT RUN`. Lack of the API in a given browser is `INDETERMINATE`.
+Update `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` after every reviewed deployment. ChatGPT remains `NOT RUN`; Chrome remains `INDETERMINATE` because the tested profile did not expose the API. Lack of the API in a given browser is not a product pass or fail.

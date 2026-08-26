@@ -30,6 +30,19 @@ const authLegacyBridgeEnv = "AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=1";
 const consoleOpsOwnerEnv = "CONSOLE_OPS_OWNER_ID=00000000-0000-4000-a000-000000000000";
 const ownerLoginEmailPort = Number(process.env.E2E_OWNER_LOGIN_EMAIL_PORT || 4399);
 const ownerLoginEmailEnv = `OWNER_LOGIN_EMAIL_PROVIDER=resend OWNER_LOGIN_EMAIL_FROM=e2e@clawdeals.local RESEND_API_KEY=e2e-resend-key OWNER_LOGIN_RESEND_API_URL=http://127.0.0.1:${ownerLoginEmailPort}/emails`;
+const useLocalUpstashMock = process.env.E2E_USE_LOCAL_UPSTASH_MOCK === "1";
+const localUpstashPort = Number(process.env.E2E_UPSTASH_REDIS_PORT || 4413);
+if (
+  useLocalUpstashMock &&
+  (!Number.isInteger(localUpstashPort) || localUpstashPort < 1 || localUpstashPort > 65_535)
+) {
+  throw new Error("E2E_UPSTASH_REDIS_PORT must be a valid TCP port.");
+}
+const localUpstashToken = process.env.E2E_UPSTASH_REDIS_TOKEN || "clawdeals-e2e-upstash-token";
+if (useLocalUpstashMock) {
+  process.env.UPSTASH_REDIS_REST_URL = `http://127.0.0.1:${localUpstashPort}`;
+  process.env.UPSTASH_REDIS_REST_TOKEN = localUpstashToken;
+}
 const webServerCommand =
   webServerMode === "prod"
     ? `${webmcpEnv} ${webmcpJudgeEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} ${webmcpJudgeEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
@@ -53,6 +66,14 @@ export default defineConfig({
   webServer: useExistingServer
     ? undefined
     : [
+        ...(useLocalUpstashMock
+          ? [{
+              command: `E2E_UPSTASH_REDIS_PORT=${localUpstashPort} node scripts/mock-upstash-redis-rest.mjs`,
+              url: `http://127.0.0.1:${localUpstashPort}/health`,
+              timeout: 30 * 1000,
+              reuseExistingServer: false
+            }]
+          : []),
         ...(webServerMode === "prod"
           ? [{
               command: `E2E_OWNER_LOGIN_EMAIL_PORT=${ownerLoginEmailPort} node scripts/mock-owner-login-email.mjs`,

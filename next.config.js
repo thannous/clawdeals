@@ -14,6 +14,15 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [
+      {
+        // Origin-keying is consistent only when every document on an origin opts in.
+        source: "/(.*)",
+        headers: [{ key: "Origin-Agent-Cluster", value: "?1" }]
+      }
+    ];
+  },
   // Cloudflare/OpenNext can intermittently fail to resolve Turbopack externalized
   // packages (e.g. "zod-<hash>"). Bundle Pages Router deps to avoid runtime 500s.
   bundlePagesRouterDependencies: true,

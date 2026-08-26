@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-26T06:09:01.387Z",
+  "generatedAt": "2026-08-26T16:12:33.726Z",
   "chatgptSelection": "unproven",
   "evidenceKind": "deterministic_reference_planner",
   "corpusPath": "evals/webmcp/reference-selection.cases.json",
@@ -281,7 +281,8 @@
           "search_listings",
           "create_buy_mission",
           "start_thread",
-          "make_offer"
+          "make_offer",
+          "get_action_receipt"
         ],
         "plan": {
           "firstTool": null,
@@ -350,7 +351,8 @@
           "get_page_context",
           "show_listings",
           "open_listing",
-          "search_listings"
+          "search_listings",
+          "get_action_receipt"
         ],
         "plan": {
           "firstTool": "search_listings",
@@ -541,7 +543,8 @@
           "get_page_context",
           "show_listings",
           "open_listing",
-          "search_listings"
+          "search_listings",
+          "get_action_receipt"
         ],
         "plan": {
           "firstTool": "open_listing",
@@ -685,7 +688,8 @@
           "search_listings",
           "create_buy_mission",
           "start_thread",
-          "make_offer"
+          "make_offer",
+          "get_action_receipt"
         ],
         "plan": {
           "firstTool": null,

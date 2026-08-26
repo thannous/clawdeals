@@ -22,7 +22,8 @@ const LISTINGS_TOOL_NAMES = new Set([
   "get_page_context",
   "search_listings",
   "show_listings",
-  "open_listing"
+  "open_listing",
+  "get_action_receipt"
 ]);
 
 const DEALS_TOOL_NAMES = new Set([
@@ -60,7 +61,6 @@ export function getToolsForRoute(pathname: string, context: ToolRouteContext = {
   if (isDealsSurface(path)) return selectTools(DEALS_TOOL_NAMES);
   if (isDemoRoute(path) || isListingsSurface(path)) {
     const names = new Set(LISTINGS_TOOL_NAMES);
-    if (isDemoRoute(path)) names.add("get_action_receipt");
     if (context.hasAgentKey) {
       names.add("create_buy_mission");
       const contextualWrites = isDemoRoute(path)

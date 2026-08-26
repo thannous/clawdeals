@@ -59,8 +59,7 @@ export function listAvailableTools(pathname, auth = {}) {
   }
   if (isDealsSurface(path)) return ordered(["get_page_context", "search_deals", "open_deal"]);
   if (isDemoRoute(path) || isListingsSurface(path)) {
-    const names = ["get_page_context", "search_listings", "show_listings", "open_listing"];
-    if (isDemoRoute(path)) names.push("get_action_receipt");
+    const names = ["get_page_context", "search_listings", "show_listings", "open_listing", "get_action_receipt"];
     if (agent) {
       names.push("create_buy_mission", "start_thread", "make_offer");
       if (isDemoRoute(path)) names.push("send_message", "respond_to_offer", "request_contact_reveal");
