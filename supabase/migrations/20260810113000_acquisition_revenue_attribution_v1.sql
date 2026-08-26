@@ -65,7 +65,13 @@ where channel is null
   and source is not null
   and medium is not null;
 
-create or replace view public.acquisition_funnel_summary
+-- Replay safety: this revision inserts activation_started_at before columns
+-- already exposed by the earlier view. PostgreSQL cannot rename/reorder view
+-- columns through CREATE OR REPLACE, so a clean migration replay must recreate
+-- the reporting view explicitly.
+drop view if exists public.acquisition_funnel_summary;
+
+create view public.acquisition_funnel_summary
 with (security_invoker = true)
 as
 select

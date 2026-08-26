@@ -17,6 +17,15 @@ describe("acquisition revenue attribution migration", () => {
     expect(sql).toContain("revoke all on table public.acquisition_revenue_attributions from anon, authenticated");
   });
 
+  it("recreates the summary view when its ordered column contract changes", () => {
+    const dropIndex = sql.indexOf("drop view if exists public.acquisition_funnel_summary");
+    const createIndex = sql.indexOf("create view public.acquisition_funnel_summary");
+
+    expect(dropIndex).toBeGreaterThanOrEqual(0);
+    expect(createIndex).toBeGreaterThan(dropIndex);
+    expect(sql).not.toContain("create or replace view public.acquisition_funnel_summary");
+  });
+
   it("attributes released revenue to the latest backend activation without generated IDs", () => {
     expect(sql).toContain("activation.event_name = 'agent_connected'");
     expect(sql).toContain("activation.occurred_at <= revenue_occurred_at");
