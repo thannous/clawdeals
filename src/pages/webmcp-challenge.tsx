@@ -32,7 +32,24 @@ type ChallengePageProps = {
   locale: string;
   baseUrl: string;
   isPreviewHost: boolean;
+  deploySha: string | null;
 };
+
+const DEPLOY_SHA_KEYS = [
+  "NEXT_PUBLIC_DEPLOY_SHA",
+  "VERCEL_GIT_COMMIT_SHA",
+  "CF_PAGES_COMMIT_SHA",
+  "CF_PAGES_COMMIT_HASH",
+  "GIT_COMMIT_SHA"
+] as const;
+
+export function resolveDeploySha(env: Record<string, string | undefined>): string | null {
+  for (const key of DEPLOY_SHA_KEYS) {
+    const candidate = String(env[key] || "").trim();
+    if (/^[0-9a-f]{7,40}$/i.test(candidate)) return candidate.toLowerCase();
+  }
+  return null;
+}
 
 export const getServerSideProps: GetServerSideProps<ChallengePageProps> = async ({ locale, req, res }) => {
   const resolvedLocale = locale || "en";
@@ -44,12 +61,13 @@ export const getServerSideProps: GetServerSideProps<ChallengePageProps> = async 
       locale: resolvedLocale,
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
+      deploySha: resolveDeploySha(process.env),
       messages: await loadMessages(resolvedLocale, { namespaces: ["landing", "nav", "footer"] })
     } as ChallengePageProps
   };
 };
 
-export default function WebMcpChallenge({ locale, baseUrl, isPreviewHost }: ChallengePageProps) {
+export default function WebMcpChallenge({ locale, baseUrl, isPreviewHost, deploySha }: ChallengePageProps) {
   const router = useRouter();
   const currentLocale: SupportedLocale = resolveSupportedLocale(router.locale || locale || "en");
   const meta = META[currentLocale] || META.en;
@@ -77,7 +95,7 @@ export default function WebMcpChallenge({ locale, baseUrl, isPreviewHost }: Chal
         <meta name="twitter:title" content={meta.ogTitle} />
         <meta name="twitter:description" content={meta.ogDescription} />
       </Head>
-      <WebMcpChallengePage />
+      <WebMcpChallengePage deploySha={deploySha} />
     </>
   );
 }

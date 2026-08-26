@@ -1,0 +1,358 @@
+# Release candidate runbook (TI-376)
+
+Scope: document how to turn baseline input `425b414` into a later TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. This file records the procedure. It does not execute clone, install, eval, deploy, tag, or public smoke.
+
+SHA roles:
+
+- Challenge eligibility baseline (already tagged): `webmcp-challenge-baseline` = `00880457964929c0773237a9c724704f5da651f0`
+- TI-376 input SHA (current `HEAD` at runbook authoring): `425b4140d82daa709dd205e348cb82caa8f23a28` (`425b414`, TI-377 evals). This is **not** the TI-376 release candidate.
+- TI-376 release candidate SHA: resolve it from the clean reviewed HEAD with `CANDIDATE_SHA=$(git rev-parse HEAD)` after this runbook and the release files are committed. `<TI376_CANDIDATE_SHA>` is an operator placeholder only; record the exact value in Linear and the candidate tag without editing this file after validation.
+- Repo: `https://github.com/thannous/clawdeals`
+- Ticket: [TI-376](https://linear.app/ti-max/issue/TI-376/hackathon-produire-un-build-reproductible-et-une-preuve-live-stable)
+
+Plan links for this SHA split:
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+
+Hard rules:
+
+- Isolated local or staging Supabase only. Never production project `gztfmpuqtpvncdcuhqxy`.
+- Never copy production secrets into `.env.local`, CI, previews, or this runbook.
+- `CLAWDEALS_ENV=sandbox` must not point at production.
+- Do not treat a local gate as CI, deployment, or public proof.
+- After Devpost submission, freeze the submitted repo and site unless an explicit blocking-fix decision is recorded.
+
+## References
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+- Plan sections: [§13](https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md#13-plan-de-travail-jusquau-3-septembre), [§17](https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md#17-structure-du-d%C3%A9p%C3%B4t-public)
+- Local path: `docs/hackathon/plan-de-victoire-webmcp-challenge.md`
+
+Companion docs: `HACKATHON.md`, `README.md`, `docs/sandbox-getting-started.md`, `docs/local-supabase-development.md`, `docs/hosting-cloudflare-vercel.md`, `docs/release-environments.md`, `evals/webmcp/README.md`, `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`.
+
+## Proof layers
+
+| Layer | What it proves | What it does not prove |
+| --- | --- | --- |
+| LOCAL | Clean clone of `<TI376_CANDIDATE_SHA>` (must include `425b414` plus the TI-376 release files) can copy `.env.example`, migrate, seed synthetic fixtures, and pass `release:hackathon:local` | GitHub CI, Vercel/Cloudflare deploy, public URL |
+| CI | GitHub Actions on `<TI376_CANDIDATE_SHA>` | Playwright WebMCP gate, live site |
+| DEPLOYED | Vercel app and Cloudflare router serve this SHA | Judge-visible public behavior |
+| PUBLIC | Private-window judge smoke on the live URL | Local tests or CI |
+
+Fill evidence only after that layer actually ran. Unexecuted cells stay `PENDING`.
+
+Do not treat `425b414` as the judged candidate. It is the last committed input before the TI-376 files. Preflight, CI, deploy, tags, and public smoke all target `<TI376_CANDIDATE_SHA>`.
+
+---
+
+## 1. LOCAL — clean clone through `release:hackathon:local`
+
+### References
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+
+### Prerequisites
+
+- Node `24.19.0` from `.nvmrc`; engines require Node `>=24.19.0 <25` and npm `>=11.17.0 <12`
+- Docker
+- Supabase CLI
+- Isolated Redis compatible with `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (required by Playwright integration)
+
+### Clone and pin the TI-376 candidate
+
+```bash
+git clone https://github.com/thannous/clawdeals.git
+cd clawdeals
+git switch main
+git pull --ff-only origin main
+export CANDIDATE_SHA="$(git rev-parse HEAD)"
+test "$CANDIDATE_SHA" = '<TI376_CANDIDATE_SHA>'
+git merge-base --is-ancestor 425b4140d82daa709dd205e348cb82caa8f23a28 HEAD
+git merge-base --is-ancestor webmcp-challenge-baseline HEAD
+```
+
+### Install
+
+```bash
+npm ci
+npx playwright install --with-deps
+```
+
+### Isolated local Supabase and migrations
+
+```bash
+supabase start
+supabase status --output env
+supabase db reset
+```
+
+`supabase start` brings up local Postgres/Auth/API on `127.0.0.1:54321`. `supabase db reset` reapplies `supabase/migrations/` on that isolated instance, including `20260826170000_ti_377_offer_accept_lock_order.sql`. Do not target a remote project.
+
+`supabase/seed.sql` is intentionally empty so a schema reset never imports production-like data. The deterministic marketplace fixtures are created only after the sandbox API starts, through the scoped reset endpoint below.
+
+Stop when done: `supabase stop`.
+
+### Env setup without secrets
+
+Copy the committed template, then fill only local values. Never commit `.env.local`. Generate HMAC/idempotency values locally; copy only keys printed by local `supabase status`.
+
+```bash
+cp .env.example .env.local
+# example generators — local use only
+openssl rand -hex 32
+```
+
+Edit `.env.local`. Keep every `replace-with-*` placeholder until it is a local credential. The committed `.env.example` already contains:
+
+```bash
+CLAWDEALS_ENV=sandbox
+API_KEY_NAMESPACE=cd_sandbox
+NEXT_PUBLIC_WEBMCP_ENABLED=1
+SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE_KEY=replace-with-local-service-role-key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=replace-with-local-anon-key
+IDEMPOTENCY_SECRET=replace-with-local-idempotency-secret
+AUDIT_HMAC_SECRET=replace-with-local-audit-secret
+MESSAGE_REDACTION_HMAC_SECRET=replace-with-local-redaction-secret
+UPSTASH_REDIS_REST_URL=http://127.0.0.1:55400
+UPSTASH_REDIS_REST_TOKEN=replace-with-local-redis-token
+WEBMCP_JUDGE_AGENT_ID=93000000-0000-4000-8000-000000000001
+```
+
+Optional local defaults used by Playwright prod-mode webServer: `INTERNAL_CRON_SECRET`, `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=1` (test-only; must stay unset in production).
+
+Reject the run if `SUPABASE_URL` contains `gztfmpuqtpvncdcuhqxy`. Seed, smoke, and Playwright already fail closed on that host.
+
+### App, synthetic seed, WebMCP judge reset
+
+```bash
+npm run dev:sandbox
+```
+
+In another shell:
+
+```bash
+# general synthetic sandbox fixtures (deals/listings/watchlists for the seeded agent)
+npm run seed:dev:sandbox
+
+# create or reuse a judge agent, then reset the deterministic WebMCP challenge fixtures
+curl -sS -X POST 'http://localhost:3000/api/v1/agents' \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: webmcp-judge-1' \
+  -d '{ "name": "webmcp-judge" }'
+
+curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
+  -H 'Authorization: Bearer <JUDGE_API_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{ "mode": "webmcp_challenge" }'
+```
+
+Judge reset expects `WEBMCP_JUDGE_AGENT_ID` to match that agent. It returns `403` for any other agent and `404` when sandbox/judge identity is not configured. Fixtures are synthetic only: one buyer mission, one synthetic seller, five e-bikes, one thread, no real email/phone.
+
+Local API smoke (still non-prod only):
+
+```bash
+npm run test:smoke
+```
+
+`scripts/smoke-api.mjs` requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `IDEMPOTENCY_SECRET`, and `MESSAGE_REDACTION_HMAC_SECRET` or `AUDIT_HMAC_SECRET`. Default base is `http://localhost:3000`.
+
+### Build and local submission gate
+
+```bash
+npm run release:hackathon:preflight
+npm run release:hackathon:local
+```
+
+`release:hackathon:preflight` (`scripts/verify-hackathon-release.mjs`) is LOCAL only: clean `main`, ancestor of `webmcp-challenge-baseline`, required public files including `.env.example` / `.nvmrc`, Node 24, npm `11.17.0`, and a secret-shaped `.env.example` check. It explicitly reports `deployment`, `public_smoke`, and `devpost_submission` as `NOT_CHECKED`.
+
+`release:hackathon:local` is `release:hackathon:preflight && eval:webmcp:gate`. The gate is `typecheck && lint && test:unit && build && eval:webmcp:selection && eval:webmcp:contracts && eval:webmcp:ui && eval:webmcp:journey && eval:webmcp:security`. Journey and security stages need the isolated sandbox env above. Playwright refuses known production Supabase/API hosts. Preflight requires a clean working tree, so run it on the committed `<TI376_CANDIDATE_SHA>`, not on uncommitted WIP.
+
+Judge-facing local pages after `npm run dev:sandbox`: `/webmcp-challenge` and `/webmcp`.
+
+### LOCAL evidence
+
+| Check | Command / artifact | Result |
+| --- | --- | --- |
+| Clean clone SHA | `git rev-parse HEAD` equals `<TI376_CANDIDATE_SHA>` | PENDING |
+| Input ancestor | `425b414` is ancestor of HEAD | PENDING |
+| `cp .env.example .env.local` then local placeholders replaced | file exists locally, not committed | PENDING |
+| `npm ci` | install log | PENDING |
+| `supabase start` / `supabase db reset` | local migrations applied | PENDING |
+| `npm run seed:dev:sandbox` | seed JSON with masked key | PENDING |
+| `POST /api/v1/sandbox/reset` `mode=webmcp_challenge` | HTTP status + fixture IDs | PENDING |
+| `npm run test:smoke` | exit code | PENDING |
+| `npm run build` | exit code | PENDING |
+| `npm run release:hackathon:preflight` | JSON `status=PASS`, `proof_layer=LOCAL_PREFLIGHT` | PENDING |
+| `npm run release:hackathon:local` | includes `eval:webmcp:gate` | PENDING |
+| `npm run eval:webmcp:gate` | exit code | PENDING |
+
+A prior local eval index in `evals/webmcp/README.md` is not this runbook's evidence.
+
+---
+
+## 2. CI — GitHub Actions on the candidate SHA
+
+### References
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+
+Workflow: `.github/workflows/ci.yml` on `push` to `main` and pull requests. Inspect the run for `<TI376_CANDIDATE_SHA>`, not `425b414`.
+
+Jobs: `lint`, `contracts` (`typecheck`, i18n, OpenAPI, skill pack), sharded `test:unit`, Cloudflare worker contracts plus `wrangler deploy --dry-run`, then aggregator `test-ci`.
+
+CI does **not** run `eval:webmcp:gate`, Playwright UI, or sandbox journey/security. Passing CI is not a WebMCP submission gate.
+
+Inspect:
+
+- Commit: https://github.com/thannous/clawdeals/commit/425b4140d82daa709dd205e348cb82caa8f23a28
+- Candidate commit (after root creates it): https://github.com/thannous/clawdeals/commit/<TI376_CANDIDATE_SHA>
+- Actions: https://github.com/thannous/clawdeals/actions/workflows/ci.yml
+
+### CI evidence
+
+| Check | Artifact | Result |
+| --- | --- | --- |
+| Workflow run for `<TI376_CANDIDATE_SHA>` | Actions URL | PENDING |
+| `lint` | job result | PENDING |
+| `contracts` | job result | PENDING |
+| `unit_tests` | job result | PENDING |
+| `worker_contracts` | job result | PENDING |
+| `test-ci` aggregator | job result | PENDING |
+
+Do not claim CI green unless the run for this SHA is open and successful.
+
+---
+
+## 3. DEPLOYED — Vercel + Cloudflare pinned to `<TI376_CANDIDATE_SHA>`
+
+### References
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+
+Topology (`docs/hosting-cloudflare-vercel.md`):
+
+- Marketing/edge: `https://clawdeals.com` via `workers/edge-router.ts`
+- App: `https://app.clawdeals.com` via Vercel Git integration, region `dub1`
+- Staging only: `https://staging.app.clawdeals.com` / project `clawdeals-staging`
+
+This runbook does not deploy. Production deploy requires an explicit later authorization. Commands, if later authorized:
+
+```bash
+# Cloudflare edge router only — do not run unless production deploy is authorized
+npm run deploy:cloudflare
+```
+
+Vercel production follows Git integration on `main`. Confirm the deployment SHA equals `<TI376_CANDIDATE_SHA>` before calling the public site a candidate. `425b414` is only the input ancestor.
+
+Judge reset must stay off production. `POST /api/v1/sandbox/reset` is sandbox-only and should 404 in production.
+
+Candidate then final tags (plan §13). Do not create or push tags from this document:
+
+```bash
+# later, after LOCAL+CI+DEPLOYED+PUBLIC are actually green
+git tag -a webmcp-challenge-candidate-<TI376_CANDIDATE_SHA> <TI376_CANDIDATE_SHA>
+git push origin webmcp-challenge-candidate-<TI376_CANDIDATE_SHA>
+# final tag only after Devpost freeze decision
+git tag -a webmcp-challenge-final <TI376_CANDIDATE_SHA>
+git push origin webmcp-challenge-final
+```
+
+Existing tag `webmcp-challenge-baseline` marks pre-challenge commit `0088045` and is not the candidate.
+
+### DEPLOYED evidence
+
+| Check | Artifact | Result |
+| --- | --- | --- |
+| Vercel production deployment SHA | Vercel dashboard / deployment URL | PENDING |
+| Cloudflare worker version | wrangler/dashboard version vs SHA | PENDING |
+| Staging SHA (if used) | `clawdeals-staging` deployment | PENDING |
+| Candidate tag created and pushed | `git ls-remote --tags origin` | PENDING |
+| Final tag created and pushed | `git ls-remote --tags origin` | PENDING |
+| Production sandbox reset returns 404 | `curl -i https://clawdeals.com/api/v1/sandbox/reset` | PENDING |
+
+---
+
+## 4. PUBLIC — private-window judge smoke
+
+### References
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+
+Only valid after DEPLOYED proof shows the live hosts serve `<TI376_CANDIDATE_SHA>`. Follow `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. Do not use production data or real contact details.
+
+URLs:
+
+- Judge hub: `https://clawdeals.com/webmcp-challenge`
+- Marketplace demo: `https://clawdeals.com/webmcp`
+
+Private-window smoke:
+
+1. Open the hub in a clean private profile.
+2. Confirm the page loads and reports native `document.modelContext` (or record `INDETERMINATE` if the browser has no WebMCP).
+3. Without a key, record the five public tools: `get_page_context`, `show_listings`, `open_listing`, `search_listings`, `get_action_receipt`.
+4. With the allowlisted judge agent only on an isolated sandbox host, reset with `mode=webmcp_challenge` and record the eleven authenticated tools. Skip this step on production (expect 404).
+5. Paste the Paris e-bike mission from the hub / `HACKATHON.md`.
+6. Record first selected tool and sequence.
+7. Approve a compliant action; deny a protected one.
+8. Record the receipt id. Confirm no API key, email, phone, or raw contact data in model output.
+
+Chrome path, if used: Chrome 149+ with `chrome://flags/#enable-webmcp-testing`. ChatGPT in-app browser is a separate row.
+
+### PUBLIC evidence
+
+| Check | Artifact | Result |
+| --- | --- | --- |
+| Hub HTTP 200, commit/build identity if shown | private-window screenshot | PENDING |
+| Public tool registry (5 tools) | hub inspector | PENDING |
+| Authenticated registry (11 tools) | hub inspector, sandbox only | PENDING |
+| Public listings/API read | network/status | PENDING |
+| Judge reset | sandbox 2xx / production 404 | PENDING |
+| Critical path mission → confirmation → receipt | receipt id | PENDING |
+| ChatGPT in-app WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | PENDING — NOT RUN |
+| Chrome WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | PENDING — NOT RUN |
+| PII/secret scan | none found / found | PENDING |
+
+Lack of WebMCP in a given browser is `INDETERMINATE`, not a pass or fail.
+
+---
+
+## 5. Freeze after submission
+
+### References
+
+- Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
+- Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
+
+When PUBLIC proof is captured and Devpost is submitted:
+
+- Do not change the submitted Devpost entry.
+- Do not change the submitted git SHA or tags.
+- Do not deploy a different SHA to the judged URL.
+- Continue later work in a fork or a non-submitted checkout.
+
+Freeze decision: PENDING
+
+---
+
+## 6. Operator checklist vs TI-376
+
+| Acceptance | Layer | Status in this runbook |
+| --- | --- | --- |
+| Clean clone + install + migrations + demo seed + build documented | LOCAL | Documented; execution PENDING |
+| `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | Copy `.env.example` → `.env.local`; execution PENDING |
+| `release:hackathon:preflight` then `release:hackathon:local` | LOCAL | Documented; execution PENDING |
+| Vercel/Cloudflare attached to candidate commit | DEPLOYED | Procedure documented; proof PENDING |
+| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | Procedure documented; proof PENDING |
+| Candidate tag then final tag created and pushed | DEPLOYED | Commands listed; not executed |
+| LOCAL / CI / DEPLOYED / PUBLIC reported separately | all | Tables above |
+| No post-submission change without explicit decision | freeze | PENDING |
+
+This file is the TI-376 artifact. Filling PENDING cells requires later authorized runs against `<TI376_CANDIDATE_SHA>`, not against `425b414`.

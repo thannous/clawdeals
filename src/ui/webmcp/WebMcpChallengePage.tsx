@@ -67,7 +67,7 @@ function EvidenceLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-export default function WebMcpChallengePage() {
+export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: string | null }) {
   const { themeId, setTheme, themes } = useTheme();
   const { enabled, supported, registered, registeredToolNames, lastRegisterError } = useWebMcp();
   const apiKey = useSyncExternalStore(subscribeStoredApiKey, getStoredApiKey, () => null);
@@ -362,6 +362,10 @@ export default function WebMcpChallengePage() {
               <LockKeyhole className="h-5 w-5 text-primary" aria-hidden="true" />
               <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-subtle">Baseline</p>
               <p className="mt-1 break-all font-mono text-xs text-text">00880457964929c0773237a9c724704f5da651f0</p>
+              <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-subtle">Deployed build</p>
+              <p className="mt-1 break-all font-mono text-xs text-text" data-testid="webmcp-challenge-deploy-sha">
+                {deploySha ? deploySha.slice(0, 12) : "unavailable"}
+              </p>
             </div>
             <div>
               <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">Evidence</p>

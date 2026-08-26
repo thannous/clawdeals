@@ -1,0 +1,5 @@
+-- Intentionally empty.
+--
+-- Local schema reset must remain deterministic and must not import production
+-- data. Application fixtures are created after the API starts through the
+-- sandbox-only reset endpoint documented in docs/sandbox-getting-started.md.

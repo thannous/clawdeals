@@ -11,9 +11,10 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - Judge hub: [`/webmcp-challenge`](https://clawdeals.com/webmcp-challenge)
 - Real marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)
 - Strategy and acceptance plan: [`docs/hackathon/plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md)
+- Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
 - WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
 
-The judge hub reports the browser's real `document.modelContext` support and the exact tools that successfully registered. Its launch button opens the product marketplace, not a simulator.
+The judge hub reports the browser's real `document.modelContext` support, the exact tools that successfully registered, and the sanitized deployed commit SHA when the host provides one. Its launch button opens the product marketplace, not a simulator.
 
 ## Eligibility boundary
 
@@ -116,7 +117,9 @@ until the reviewed build is deployed.
 ## Local verification
 
 ```bash
+nvm use
 npm ci
+cp .env.example .env.local
 npm run typecheck
 npm run lint
 npm run test:unit
@@ -136,5 +139,11 @@ npm run eval:webmcp:security
 The complete local submission gate is `npm run eval:webmcp:gate`. Its journey
 and security stages require the non-production environment described in
 `docs/sandbox-getting-started.md`.
+
+For a clean release candidate, follow
+`docs/hackathon/release-candidate-runbook.md` and run
+`npm run release:hackathon:preflight` followed by
+`npm run release:hackathon:local`. The preflight deliberately reports deploy,
+public smoke and Devpost as unchecked local-external layers.
 
 Deployment, the public video and the final Devpost submission are separate proof layers; local test success does not claim that those artifacts are already public.

@@ -19,8 +19,10 @@ out/
 .open-next.bak/
 next-env.d.ts
 
-# Env files (keep .env.example committed if present)
-.env*.local
+# Env files (only the placeholder template may be committed)
+.env
+.env.*
+!.env.example
 
 # Tooling caches
 .eslintcache

@@ -3,6 +3,11 @@
   "private": true,
   "version": "0.0.1",
   "license": "MIT",
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": ">=24.19.0 <25",
+    "npm": ">=11.17.0 <12"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:sandbox": "CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox npm run dev",
@@ -42,6 +47,8 @@
     "eval:webmcp:journey": "CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox PW_WEB_SERVER_MODE=prod playwright test e2e/integration/sandbox-ebike-fixtures.spec.ts e2e/integration/webmcp-submission-journey.spec.ts --project=integration --workers=1",
     "eval:webmcp:security": "CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox PW_WEB_SERVER_MODE=prod playwright test e2e/integration/mission-owner-approval.spec.ts e2e/integration/offer-actions.spec.ts e2e/integration/contact-reveal.spec.ts e2e/integration/messaging-redaction.spec.ts --project=integration --workers=1",
     "eval:webmcp:gate": "npm run typecheck && npm run lint && npm run test:unit && npm run build && npm run eval:webmcp:selection && npm run eval:webmcp:contracts && npm run eval:webmcp:ui && npm run eval:webmcp:journey && npm run eval:webmcp:security",
+    "release:hackathon:preflight": "node scripts/verify-hackathon-release.mjs",
+    "release:hackathon:local": "npm run release:hackathon:preflight && npm run eval:webmcp:gate",
     "test:integration:deals": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/deals.api.spec.ts e2e/integration/deal-feed-journey.spec.ts",
     "test:integration:listings": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/listings.spec.ts e2e/integration/listings-update.spec.ts e2e/integration/console-listings-threads-approvals.spec.ts",
     "test:integration:transactions": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/offers.spec.ts e2e/integration/counter-offers.spec.ts e2e/integration/offer-actions.spec.ts e2e/integration/contact-reveal.spec.ts e2e/integration/completion-workflow.spec.ts e2e/integration/ratings.spec.ts e2e/integration/messaging-redaction.spec.ts e2e/integration/approvals.spec.ts e2e/integration/journey-seller-full.spec.ts e2e/integration/journey-buyer-full.spec.ts e2e/integration/journey-budget-approval-counter.spec.ts",
