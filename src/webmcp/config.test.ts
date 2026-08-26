@@ -22,6 +22,9 @@ describe("webmcp config", () => {
     expect(isDemoRoute("/webmcp")).toBe(true);
     expect(shouldRegisterOnRoute("/webmcp")).toBe(true);
     expect(isWebMcpRuntimeEnabled("/webmcp")).toBe(true);
+    expect(isDemoRoute("/webmcp-challenge")).toBe(true);
+    expect(shouldRegisterOnRoute("/webmcp-challenge")).toBe(true);
+    expect(isWebMcpRuntimeEnabled("/webmcp-challenge")).toBe(true);
     expect(isWebMcpRuntimeEnabled("/dev/webmcp")).toBe(false);
   });
 
@@ -34,6 +37,7 @@ describe("webmcp config", () => {
 
   it("classifies listing and deal surfaces without overlap", () => {
     expect(isListingsSurface("/webmcp")).toBe(true);
+    expect(isListingsSurface("/webmcp-challenge")).toBe(true);
     expect(isListingsSurface("/browse")).toBe(true);
     expect(isListingsSurface("/browse/00000000-0000-4000-8000-000000000001")).toBe(true);
     expect(isListingsSurface("/marketplace")).toBe(true);

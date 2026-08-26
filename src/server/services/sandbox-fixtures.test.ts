@@ -55,7 +55,9 @@ function createSandboxClient({
     policies: [],
     listings: [],
     deals: [],
-    watchlists: []
+    watchlists: [],
+    threads: [],
+    messages: []
   };
   const updates: Record<string, any[]> = {
     agents: [],
@@ -108,7 +110,7 @@ function createSandboxClient({
           deletes[table] = deletes[table] || [];
           deletes[table].push({ filters: { ...state.filters } });
         }
-        if (table === "agents" && state.contains?.value?.system === "sandbox.ebike-seller") {
+        if (table === "agents" && String(state.contains?.value?.system || "").startsWith("sandbox.ebike-seller")) {
           if (!reuseSeller) return { data: null, error: null };
           return {
             data: { id: sellerAgentId, owner_id: sellerOwnerId, trust_flags: ["quarantined"] },
@@ -154,6 +156,12 @@ function createSandboxClient({
         if (table === "policies" && state.op === "insert") {
           return { data: { policy_id: "policy-1" }, error: null };
         }
+        if (table === "threads" && state.op === "insert") {
+          return { data: Array.isArray(state.payload) ? state.payload[0] : state.payload, error: null };
+        }
+        if (table === "messages" && state.op === "insert") {
+          return { data: Array.isArray(state.payload) ? state.payload[0] : state.payload, error: null };
+        }
         return { data: null, error: null };
       }),
       then: vi.fn((resolve) => {
@@ -164,6 +172,20 @@ function createSandboxClient({
         if (state.op === "delete") {
           deletes[table] = deletes[table] || [];
           deletes[table].push({ filters: { ...state.filters } });
+        }
+        if (state.op === "insert") {
+          const rows = Array.isArray(state.payload) ? state.payload : [state.payload];
+          return resolve({
+            data:
+              table === "listings"
+                ? rows.map((row: any, index: number) => ({
+                    ...row,
+                    listing_id:
+                      row.listing_id || `99000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`
+                  }))
+                : rows,
+            error: null
+          });
         }
         return resolve({ data: [], error: null });
       })
@@ -263,7 +285,7 @@ describe("resetSandboxFixtures", () => {
     const sandbox = createSandboxClient({ buyerAgentId: agentId });
     vi.mocked(getSupabaseServiceClient).mockReturnValue(sandbox.client);
 
-    const result = await resetSandboxFixtures({ agentId, now });
+    const result = await resetSandboxFixtures({ agentId, now, judgeMode: true });
 
     expect(result.actors.buyer_agent_id).toBe(agentId);
     expect(result.actors.seller_agent_id).toBe(sandbox.sellerAgentId);
@@ -275,7 +297,11 @@ describe("resetSandboxFixtures", () => {
         {
           table: "agents",
           column: "metadata",
-          value: { system: "sandbox.ebike-seller", env: "sandbox" }
+          value: {
+            system: "sandbox.ebike-seller.judge",
+            env: "sandbox",
+            judge_agent_id: agentId
+          }
         }
       ])
     );
@@ -308,7 +334,7 @@ describe("resetSandboxFixtures", () => {
 
     const listingsPayload = sandbox.inserts.listings[0];
     const ebikeListings = listingsPayload.filter((item: any) =>
-      String(item.duplicate_fingerprint || "").startsWith("sandbox-ebike-")
+      String(item.duplicate_fingerprint || "").startsWith("sandbox-webmcp-judge-ebike-")
     );
     expect(ebikeListings).toHaveLength(5);
     expect(ebikeListings.every((item: any) => item.seller_agent_id === sandbox.sellerAgentId)).toBe(true);
@@ -316,10 +342,35 @@ describe("resetSandboxFixtures", () => {
     expect(ebikeListings.every((item: any) => item.owner_id === sandbox.sellerOwnerId)).toBe(true);
     expect(ebikeListings.every((item: any) => /used e-bike/i.test(item.title))).toBe(true);
     expect(JSON.stringify(ebikeListings)).not.toMatch(/@|\+33|phone/i);
+    expect(ebikeListings.map((item: any) => item.listing_id)).toEqual([
+      "90000000-0000-4000-8000-000000000001",
+      "90000000-0000-4000-8000-000000000002",
+      "90000000-0000-4000-8000-000000000003",
+      "90000000-0000-4000-8000-000000000004",
+      "90000000-0000-4000-8000-000000000005"
+    ]);
+
+    expect(sandbox.inserts.threads[0]).toMatchObject({
+      thread_id: "91000000-0000-4000-8000-000000000001",
+      listing_id: "90000000-0000-4000-8000-000000000001",
+      buyer_agent_id: agentId,
+      seller_agent_id: sandbox.sellerAgentId,
+      status: "OPEN"
+    });
+    expect(sandbox.inserts.messages[0]).toMatchObject({
+      message_id: "92000000-0000-4000-8000-000000000001",
+      thread_id: "91000000-0000-4000-8000-000000000001",
+      sender_type: "system",
+      redacted: false
+    });
+    expect(JSON.stringify(sandbox.inserts.threads[0])).not.toMatch(/@|\+33|phone/i);
+    expect(JSON.stringify(sandbox.inserts.messages[0])).not.toMatch(/@|\+33|phone/i);
+    expect(result.counts).toMatchObject({ threads: 1, messages: 1 });
+    expect(result.thread?.thread_id).toBe("91000000-0000-4000-8000-000000000001");
 
     const paris = { lat: 48.8566, lng: 2.3522 };
     const bySlug = Object.fromEntries(
-      ebikeListings.map((item: any) => [String(item.duplicate_fingerprint).replace("sandbox-ebike-", ""), item])
+      ebikeListings.map((item: any) => [String(item.duplicate_fingerprint).replace("sandbox-webmcp-judge-ebike-", ""), item])
     );
     expect(haversineKm(paris.lat, paris.lng, bySlug["target-fit"].geo_lat, bySlug["target-fit"].geo_lng)).toBeLessThan(25);
     expect(haversineKm(paris.lat, paris.lng, bySlug["out-of-radius"].geo_lat, bySlug["out-of-radius"].geo_lng)).toBeGreaterThan(25);

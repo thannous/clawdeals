@@ -31,7 +31,8 @@ export type ActionReceipt = {
   link: string | null;
 };
 
-export type StorageLike = Pick<Storage, "getItem" | "setItem">;
+export type StorageLike = Pick<Storage, "getItem" | "setItem"> &
+  Partial<Pick<Storage, "removeItem">>;
 
 type PendingReceiptInput = {
   requestId: string;
@@ -322,6 +323,21 @@ export class ActionReceiptStore {
       return fallback;
     }
   }
+
+  clear(): boolean {
+    this.receipts = [];
+    if (!this.storage) return false;
+    try {
+      if (this.storage.removeItem) {
+        this.storage.removeItem(this.storageKey);
+      } else {
+        this.storage.setItem(this.storageKey, "[]");
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export function createMemoryStorage(): StorageLike {
@@ -332,6 +348,9 @@ export function createMemoryStorage(): StorageLike {
     },
     setItem(key, value) {
       values.set(key, value);
+    },
+    removeItem(key) {
+      values.delete(key);
     }
   };
 }

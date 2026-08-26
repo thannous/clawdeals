@@ -124,6 +124,16 @@ describe("action receipts", () => {
     expect(reloaded.getByRequestId("req-1")?.outcome).toBe("denied");
   });
 
+  it("clears in-memory and persisted receipts for a fresh judge session", async () => {
+    const storage = createMemoryStorage();
+    const store = new ActionReceiptStore({ storage });
+    store.upsert(await pending());
+
+    expect(store.clear()).toBe(true);
+    expect(store.list()).toEqual([]);
+    expect(new ActionReceiptStore({ storage }).list()).toEqual([]);
+  });
+
   it("ignores corrupt storage and exposes best-effort write failures in memory", async () => {
     const corrupt = {
       getItem: () => "{not-json",

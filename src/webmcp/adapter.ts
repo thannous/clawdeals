@@ -47,12 +47,13 @@ export type WebMcpRegisterableTool = {
 export async function registerTools(
   tools: WebMcpRegisterableTool[],
   options?: { signal?: AbortSignal }
-): Promise<{ registered: number; errors: number; kind: string }> {
+): Promise<{ registered: number; errors: number; kind: string; registeredToolNames: string[] }> {
   const registerTool = getDocumentRegisterTool();
-  if (!registerTool) return { registered: 0, errors: 0, kind: "none" };
+  if (!registerTool) return { registered: 0, errors: 0, kind: "none", registeredToolNames: [] };
 
   let registered = 0;
   let errors = 0;
+  const registeredToolNames: string[] = [];
   const registerOptions = options?.signal ? { signal: options.signal } : undefined;
 
   for (const tool of tools) {
@@ -70,10 +71,11 @@ export async function registerTools(
         registerOptions
       );
       registered += 1;
+      registeredToolNames.push(tool.name);
     } catch {
       errors += 1;
     }
   }
 
-  return { registered, errors, kind: OFFICIAL_KIND };
+  return { registered, errors, kind: OFFICIAL_KIND, registeredToolNames };
 }

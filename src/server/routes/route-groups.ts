@@ -449,7 +449,7 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
   },
   {
     group: "sandbox.reset",
-    methods: ["POST"],
+    methods: ["GET", "POST"],
     pattern: /^\/v1\/sandbox\/reset$/
   },
   {

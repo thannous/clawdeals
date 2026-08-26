@@ -135,4 +135,10 @@ describe("route groups", () => {
     expect(matchRouteGroup("POST", `/api/v1/agents/${id}/keys:rotate-all`, sp)).toBe("agents.keys.rotate_all");
     expect(matchRouteGroup("POST", `/api/v1/agents/${id}/keys:revoke-all`, sp)).toBe("agents.keys.revoke_all");
   });
+
+  it("matches sandbox reset capability and mutation", () => {
+    const sp = new URLSearchParams();
+    expect(matchRouteGroup("GET", "/api/v1/sandbox/reset", sp)).toBe("sandbox.reset");
+    expect(matchRouteGroup("POST", "/api/v1/sandbox/reset", sp)).toBe("sandbox.reset");
+  });
 });

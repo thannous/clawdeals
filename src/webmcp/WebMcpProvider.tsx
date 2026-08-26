@@ -419,7 +419,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
           type: "register/success",
           registeredCount: result.registered,
           errorCount: result.errors,
-          toolNames: registerable.map((tool) => tool.name)
+          toolNames: result.registeredToolNames
         });
       })
       .catch((error: any) => {

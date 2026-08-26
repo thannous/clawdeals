@@ -18,6 +18,7 @@ describe("contextual WebMCP tool registry", () => {
   it("exposes only listing collaboration tools on listing surfaces", () => {
     const expected = ["get_page_context", "show_listings", "open_listing", "search_listings"];
     expect(namesFor("/webmcp")).toEqual([...expected, "get_action_receipt"]);
+    expect(namesFor("/webmcp-challenge")).toEqual([...expected, "get_action_receipt"]);
     expect(namesFor("/browse")).toEqual(expected);
     expect(namesFor("/browse/00000000-0000-4000-8000-000000000001")).toEqual(expected);
     expect(namesFor("/marketplace")).toEqual(expected);
@@ -40,6 +41,9 @@ describe("contextual WebMCP tool registry", () => {
     expect(getToolsForRoute("/webmcp", { hasAgentKey: true }).map((tool) => tool.name)).toEqual(
       expected
     );
+    expect(
+      getToolsForRoute("/webmcp-challenge", { hasAgentKey: true }).map((tool) => tool.name)
+    ).toEqual(expected);
     expect(
       getToolByName(
         "clawdeals.listings_create_draft",

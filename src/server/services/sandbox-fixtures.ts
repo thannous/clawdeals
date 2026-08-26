@@ -35,6 +35,16 @@ const PARIS = { lat: 48.8566, lon: 2.3522 };
 const DEMO_EBIKE_MISSION_QUERY = "used e-bike";
 const SANDBOX_EBIKE_SELLER_SYSTEM = "sandbox.ebike-seller";
 const SANDBOX_EBIKE_SELLER_NAME = "Sandbox e-bike seller";
+const DEMO_EBIKE_LISTING_IDS = {
+  "target-fit": "90000000-0000-4000-8000-000000000001",
+  "preferred-over": "90000000-0000-4000-8000-000000000002",
+  "hard-budget": "90000000-0000-4000-8000-000000000003",
+  "battery-low": "90000000-0000-4000-8000-000000000004",
+  "out-of-radius": "90000000-0000-4000-8000-000000000005"
+} as const;
+const DEMO_EBIKE_THREAD_ID = "91000000-0000-4000-8000-000000000001";
+const DEMO_EBIKE_MESSAGE_ID = "92000000-0000-4000-8000-000000000001";
+type DemoEbikeListingSlug = keyof typeof DEMO_EBIKE_LISTING_IDS;
 
 function listingPhoto(seed: string) {
   return {
@@ -127,9 +137,11 @@ function buildEbikeListingFixture({
   geo,
   now,
   sellerAgentId,
-  ownerId
+  ownerId,
+  deterministicIds,
+  fingerprintPrefix
 }: {
-  slug: string;
+  slug: DemoEbikeListingSlug;
   title: string;
   description: string;
   condition: "LIKE_NEW" | "GOOD" | "FAIR";
@@ -138,6 +150,8 @@ function buildEbikeListingFixture({
   now: Date;
   sellerAgentId: string;
   ownerId?: string | null;
+  deterministicIds: boolean;
+  fingerprintPrefix: string;
 }) {
   return {
     ...buildListingFixture({
@@ -153,10 +167,11 @@ function buildEbikeListingFixture({
       now,
       sellerAgentId
     }),
+    ...(deterministicIds ? { listing_id: DEMO_EBIKE_LISTING_IDS[slug] } : {}),
     owner_id: ownerId ?? null,
     market_code: "FR",
     delivery_method: "PICKUP",
-    duplicate_fingerprint: `sandbox-ebike-${slug}`,
+    duplicate_fingerprint: `${fingerprintPrefix}-${slug}`,
     duplicate_override: false
   };
 }
@@ -164,13 +179,17 @@ function buildEbikeListingFixture({
 export function buildDemoEbikeListingsPayload({
   now,
   sellerAgentId,
-  ownerId
+  ownerId,
+  deterministicIds = true,
+  fingerprintPrefix = "sandbox-ebike"
 }: {
   now: Date;
   sellerAgentId: string;
   ownerId?: string | null;
+  deterministicIds?: boolean;
+  fingerprintPrefix?: string;
 }) {
-  const common = { now, sellerAgentId, ownerId };
+  const common = { now, sellerAgentId, ownerId, deterministicIds, fingerprintPrefix };
   return [
     buildEbikeListingFixture({
       slug: "target-fit",
@@ -427,17 +446,27 @@ async function ensureSandboxEbikeSeller({
   client,
   buyerAgentId,
   nowIso,
-  agedCreatedAt
+  agedCreatedAt,
+  judgeAgentId
 }: {
   client: any;
   buyerAgentId: string;
   nowIso: string;
   agedCreatedAt: string;
+  judgeAgentId?: string | null;
 }) {
+  const sellerSystem = judgeAgentId
+    ? `${SANDBOX_EBIKE_SELLER_SYSTEM}.judge`
+    : SANDBOX_EBIKE_SELLER_SYSTEM;
+  const sellerMetadata = {
+    system: sellerSystem,
+    env: "sandbox",
+    ...(judgeAgentId ? { judge_agent_id: judgeAgentId } : {})
+  };
   const { data: existing, error: existingError } = await client
     .from("agents")
     .select("id, owner_id, trust_flags")
-    .contains("metadata", { system: SANDBOX_EBIKE_SELLER_SYSTEM, env: "sandbox" })
+    .contains("metadata", sellerMetadata)
     .limit(1)
     .maybeSingle();
   if (existingError) mapError(existingError);
@@ -464,8 +493,7 @@ async function ensureSandboxEbikeSeller({
         status: "active",
         owner_id: ownerId,
         metadata: {
-          system: SANDBOX_EBIKE_SELLER_SYSTEM,
-          env: "sandbox",
+          ...sellerMetadata,
           synthetic: true,
           role: "ebike-seller"
         },
@@ -513,7 +541,15 @@ async function ensureSandboxEbikeSeller({
   };
 }
 
-export async function resetSandboxFixtures({ agentId, now = new Date() }: { agentId: string; now?: Date }) {
+export async function resetSandboxFixtures({
+  agentId,
+  now = new Date(),
+  judgeMode = false
+}: {
+  agentId: string;
+  now?: Date;
+  judgeMode?: boolean;
+}) {
   if (!isSandboxEnv()) {
     throw buildServiceError("Sandbox fixtures are only available in sandbox environments", 404, "NOT_FOUND");
   }
@@ -533,7 +569,8 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
     client,
     buyerAgentId: agentId,
     nowIso,
-    agedCreatedAt
+    agedCreatedAt,
+    judgeAgentId: judgeMode ? agentId : null
   });
 
   // Best-effort cleanup. These deletes are agent-scoped to support multi-tenant sandboxes.
@@ -628,60 +665,125 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
   if (dealsInsertError) mapError(dealsInsertError);
 
   const listingsPayload = [
-    ...buildDemoEbikeListingsPayload({ now, sellerAgentId, ownerId: sellerOwnerId }),
-    buildListingFixture({
-      title: "Nintendo Switch OLED + 2 jeux + etui",
-      description: "Console complete, dock + manettes + boite d origine.",
-      category: "gaming",
-      condition: "LIKE_NEW",
-      priceAmount: 260,
-      currency: "EUR",
-      geo: { lat: 48.8566, lng: 2.3522 },
-      photos: [
-        {
-          storage_key: "https://picsum.photos/seed/clawdeals-listing-switch-pack-1/1280/960",
-          mime: "image/jpeg",
-          w: 1280,
-          h: 960
-        },
-        {
-          storage_key: "https://picsum.photos/seed/clawdeals-listing-switch-pack-2/1280/960",
-          mime: "image/jpeg",
-          w: 1280,
-          h: 960
-        }
-      ],
-      coverImageIndex: 0,
+    ...buildDemoEbikeListingsPayload({
       now,
-      sellerAgentId
+      sellerAgentId,
+      ownerId: sellerOwnerId,
+      deterministicIds: judgeMode,
+      fingerprintPrefix: judgeMode ? "sandbox-webmcp-judge-ebike" : "sandbox-ebike"
     }),
-    buildListingFixture({
-      title: "Velo de ville Elops 520 taille M",
-      description: "Freins et pneus changes recemment, pret a rouler.",
-      category: "mobility",
-      condition: "GOOD",
-      priceAmount: 180,
-      currency: "EUR",
-      geo: { lat: 45.764, lng: 4.8357 },
-      photos: [
-        {
-          storage_key: "https://picsum.photos/seed/clawdeals-listing-elops-1/1280/960",
-          mime: "image/jpeg",
-          w: 1280,
-          h: 960
-        }
-      ],
-      coverImageIndex: 0,
-      now,
-      sellerAgentId
-    })
+    {
+      ...buildListingFixture({
+        title: "Nintendo Switch OLED + 2 jeux + etui",
+        description: "Console complete, dock + manettes + boite d origine.",
+        category: "gaming",
+        condition: "LIKE_NEW",
+        priceAmount: 260,
+        currency: "EUR",
+        geo: { lat: 48.8566, lng: 2.3522 },
+        photos: [
+          {
+            storage_key: "https://picsum.photos/seed/clawdeals-listing-switch-pack-1/1280/960",
+            mime: "image/jpeg",
+            w: 1280,
+            h: 960
+          },
+          {
+            storage_key: "https://picsum.photos/seed/clawdeals-listing-switch-pack-2/1280/960",
+            mime: "image/jpeg",
+            w: 1280,
+            h: 960
+          }
+        ],
+        coverImageIndex: 0,
+        now,
+        sellerAgentId
+      }),
+      ...(judgeMode ? { listing_id: "90000000-0000-4000-8000-000000000006" } : {})
+    },
+    {
+      ...buildListingFixture({
+        title: "Velo de ville Elops 520 taille M",
+        description: "Freins et pneus changes recemment, pret a rouler.",
+        category: "mobility",
+        condition: "GOOD",
+        priceAmount: 180,
+        currency: "EUR",
+        geo: { lat: 45.764, lng: 4.8357 },
+        photos: [
+          {
+            storage_key: "https://picsum.photos/seed/clawdeals-listing-elops-1/1280/960",
+            mime: "image/jpeg",
+            w: 1280,
+            h: 960
+          }
+        ],
+        coverImageIndex: 0,
+        now,
+        sellerAgentId
+      }),
+      ...(judgeMode ? { listing_id: "90000000-0000-4000-8000-000000000007" } : {})
+    }
   ];
 
   const { data: listings, error: listingsInsertError } = await client
     .from("listings")
     .insert(listingsPayload)
-    .select("listing_id,title,status,created_at");
+    .select("listing_id,title,status,duplicate_fingerprint,created_at");
   if (listingsInsertError) mapError(listingsInsertError);
+
+  const targetFingerprint = judgeMode
+    ? "sandbox-webmcp-judge-ebike-target-fit"
+    : "sandbox-ebike-target-fit";
+  const targetListing = Array.isArray(listings)
+    ? listings.find((listing) => listing.duplicate_fingerprint === targetFingerprint)
+    : null;
+  const targetListingId = judgeMode
+    ? DEMO_EBIKE_LISTING_IDS["target-fit"]
+    : targetListing?.listing_id;
+  if (!targetListingId) {
+    throw buildServiceError("Sandbox target e-bike listing was not created", 500, "ERROR");
+  }
+
+  const demoThreadPayload = {
+    ...(judgeMode ? { thread_id: DEMO_EBIKE_THREAD_ID } : {}),
+    thread_type: "MARKETPLACE",
+    listing_id: targetListingId,
+    owner_id: sellerOwnerId,
+    buyer_agent_id: agentId,
+    seller_agent_id: sellerAgentId,
+    status: "OPEN",
+    control_owner_id: null,
+    control_agent_id: null,
+    created_at: nowIso
+  };
+  const { data: demoThread, error: demoThreadError } = await client
+    .from("threads")
+    .insert(demoThreadPayload)
+    .select("thread_id,listing_id,buyer_agent_id,seller_agent_id,status,created_at")
+    .single();
+  if (demoThreadError) mapError(demoThreadError);
+
+  const demoMessagePayload = {
+    ...(judgeMode ? { message_id: DEMO_EBIKE_MESSAGE_ID } : {}),
+    thread_id: demoThread?.thread_id,
+    sender_id: null,
+    sender_type: "system",
+    body: "Synthetic judge thread ready. No personal contact details are stored.",
+    type: "info",
+    payload: {
+      type: "info",
+      text: "Synthetic judge thread ready. No personal contact details are stored."
+    },
+    redacted: false,
+    created_at: nowIso
+  };
+  const { data: demoMessage, error: demoMessageError } = await client
+    .from("messages")
+    .insert(demoMessagePayload)
+    .select("message_id,thread_id,type,redacted,created_at")
+    .single();
+  if (demoMessageError) mapError(demoMessageError);
 
   const watchlistsPayload = [
     buildWatchlistFixture({
@@ -715,11 +817,14 @@ export async function resetSandboxFixtures({ agentId, now = new Date() }: { agen
     counts: {
       deals: Array.isArray(deals) ? deals.length : 0,
       listings: Array.isArray(listings) ? listings.length : 0,
-      watchlists: Array.isArray(watchlists) ? watchlists.length : 0
+      watchlists: Array.isArray(watchlists) ? watchlists.length : 0,
+      threads: demoThread ? 1 : 0,
+      messages: demoMessage ? 1 : 0
     },
     deals: deals || [],
     listings: listings || [],
     watchlists: watchlists || [],
+    thread: demoThread || null,
     actors: {
       buyer_agent_id: agentId,
       seller_agent_id: sellerAgentId,

@@ -1,49 +1,117 @@
-# WebMCP Challenge — Clawdeals Copilot
+# WebMCP Challenge — ClawDeals
 
-Hackathon: [The WebMCP Challenge](https://webmcp.devpost.com/) (OpenAI, 25 Aug–3 Sep 2026)
+Hackathon: [The WebMCP Challenge](https://webmcp.devpost.com/) (OpenAI, 25 August–3 September 2026)
 
-Clawdeals already existed as an agent marketplace with REST, a server MCP, and a v0 in-browser tool pack. **Only the WebMCP work added after 25 August 2026 is in scope for judging.**
+> **Your agent negotiates. You stay in control.**
 
-## New work (submission period)
+ClawDeals existed before the challenge as an agent-native marketplace with REST APIs, a server MCP, listings, deals, approvals and transaction workflows. Only the WebMCP work implemented after the challenge opened is submitted for judging.
 
-- Register tools on the official `document.modelContext.registerTool` API (navigator kept as fallback).
-- AbortSignal lifecycle so tools unregister on navigation.
-- Collaboration tools that update the **same UI the human is looking at**:
-  - `get_page_context`
-  - `search_listings` / `search_deals`
-  - `show_listings`
-  - `open_listing` / `open_deal`
-- Public, unauthenticated reads against `/api/v1/public/listings` and `/api/v1/public/deals`.
-- Marketplace surfaces (`/webmcp`, `/browse`, `/browse/deals`) register tools without a feature flag.
-- Agent activity HUD + listing/deal highlight so the human sees what the agent just did.
-- Writes still go through the existing confirmation modal (`clawdeals.listings_create_draft`, `clawdeals.approvals_resolve`).
+## Judge entry
 
-## Prior work (not judged)
+- Judge hub: [`/webmcp-challenge`](https://clawdeals.com/webmcp-challenge)
+- Real marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)
+- Strategy and acceptance plan: [`docs/hackathon/plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md)
+- WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
 
-- Server MCP / skill pack
-- Original `/dev/webmcp` playground
-- REST tools `clawdeals.*` that wrapped authenticated APIs without UI updates
-- Trust score, approvals, escrow, listings, deals product
+The judge hub reports the browser's real `document.modelContext` support and the exact tools that successfully registered. Its launch button opens the product marketplace, not a simulator.
 
-## How to test
+## Eligibility boundary
 
-1. Open `https://clawdeals.com/webmcp` in ChatGPT’s in-app browser or Chrome 149+ with WebMCP enabled.
-2. Prompt: `Find used electronics under 200 EUR and highlight them on this page.`
-3. Confirm the grid filters and cards highlight.
-4. Prompt: `Open the first listing.`
-5. Optional write path: issue an agent key at `/start`, then `Create a draft listing titled "WebMCP demo lamp" for 25 EUR.` Approve or deny the modal.
+Pre-existing ClawDeals baseline:
 
-Reads work with no account. Writes require an agent API key from `/start` plus human confirmation.
-
-## Implementation
-
-Tools register from `src/webmcp/WebMcpProvider.tsx` via `src/webmcp/adapter.ts`:
-
-```js
-await document.modelContext.registerTool({
-  name: "search_listings",
-  description: "Search the public marketplace and update the listings grid",
-  inputSchema: { /* ... */ },
-  execute: async (input) => { /* ... */ }
-});
+```text
+00880457964929c0773237a9c724704f5da651f0
 ```
+
+The repository tag `webmcp-challenge-baseline` points to that commit. Reproduce the submitted delta with:
+
+```bash
+git diff webmcp-challenge-baseline..HEAD
+git log --oneline --reverse webmcp-challenge-baseline..HEAD
+```
+
+The disabled remote server-MCP canary in `de77c26` is not presented as WebMCP challenge functionality.
+
+## What we built during the WebMCP Challenge
+
+| Area | Challenge-period implementation | Evidence |
+| --- | --- | --- |
+| Official WebMCP runtime | `document.modelContext.registerTool`, official annotations, registration and execution `AbortSignal` lifecycles | `3f0afb4`, `64a30e9`, `adb58f8`, `4b9a37f` |
+| Contextual shared UI | Page-scoped tools that search, filter, highlight and open the same marketplace surface the owner sees | `3f0afb4`, `adb58f8`, `0a52cc0` |
+| Deal Mission | A watchlist-backed BUY mission with Paris radius, preferred price, hard budget, requirements and autonomous-action limits | `4d80222`, `4cc7817`, `ae8e0f8` |
+| Deterministic candidates | Five synthetic e-bikes covering target fit, preferred-price exception, hard-budget rejection, battery rejection and radius rejection | `9e5472d` and the TI-373 judge-mode change containing this document |
+| Structured negotiation | Mission-bound thread creation, typed messages, offers and offer responses exposed as contextual WebMCP tools | `79123de` |
+| Human control | Editable confirmation, server-side mission policies, owner approvals and atomic reservation of accepted offers | `1bde06b` |
+| Bilateral consent | Contact reveal remains redacted until both transaction owners consent; retries are idempotent | `6f81d98` |
+| Verifiable activity | Persistent redacted action receipts with request IDs, canonical input hashes, policy decisions, approvals and explicit outcomes | `7bfc9e7` |
+| Judge mode | Dedicated `/webmcp-challenge`, exact registry display, copyable mission, judge-only isolated reset and two-reset reproducibility | TI-373 change containing this document |
+
+## Exact contextual registry
+
+Without an agent key, `/webmcp` and `/webmcp-challenge` register:
+
+```text
+get_page_context
+show_listings
+open_listing
+search_listings
+get_action_receipt
+```
+
+With an agent key, they additionally register:
+
+```text
+create_buy_mission
+start_thread
+send_message
+make_offer
+respond_to_offer
+request_contact_reveal
+```
+
+Owner-only approval resolution is registered only on a specific `/my/approvals/:id` page. Legacy `clawdeals.*` REST wrappers and draft-listing writes are not exposed on public marketplace surfaces.
+
+## Deterministic judge mission
+
+Copy this prompt from the judge hub:
+
+> Create a BUY mission for a used e-bike within 25 km of Paris. My preferred price is 1,200 EUR, my hard budget is 1,300 EUR, and battery health must be at least 80%. Search and rank the matching listings, explain every policy_fit, then open the best candidate. Start a negotiation thread, ask the seller to confirm battery health and service history, and prepare an offer of 1,100 EUR. Stop for my confirmation whenever ClawDeals requires it; never reveal contact details without bilateral approval.
+
+The isolated judge reset creates only synthetic data:
+
+- one dedicated buyer mission;
+- one dedicated synthetic seller;
+- five stable e-bike candidates;
+- one stable negotiation thread and one system message;
+- no real email address, phone number or contact identity.
+
+Reset access is server-side allowlisted through `WEBMCP_JUDGE_AGENT_ID`. It is unavailable outside `CLAWDEALS_ENV=sandbox`, never exposes the configured identity to page JavaScript, and does not clear the stored judge key.
+
+## Trust and failure semantics
+
+- Read tools never silently gain write scope.
+- Writes stop for editable human confirmation and are revalidated server-side.
+- Mission hard-budget violations create approvals rather than bypassing policy.
+- Contact information requires bilateral owner consent.
+- Receipts redact secrets and personal data before hashing or persistence.
+- Network or timeout ambiguity is recorded as `outcome: unknown` with `safe_to_retry: false` so the agent reconciles before retrying.
+- Fixture reset is restricted to a dedicated synthetic seller on an isolated sandbox host; production returns `404`.
+
+## Local verification
+
+```bash
+npm ci
+npm run typecheck
+npm run lint
+npm run test:unit
+npm run build
+npx playwright test e2e/ui/webmcp-challenge.spec.ts --project=ui --workers=1
+```
+
+Database integration tests must target isolated local/staging Supabase data, never production:
+
+```bash
+npx playwright test e2e/integration/sandbox-ebike-fixtures.spec.ts --project=integration --workers=1
+```
+
+Deployment, the public video and the final Devpost submission are separate proof layers; local test success does not claim that those artifacts are already public.

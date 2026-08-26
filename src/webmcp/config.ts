@@ -10,7 +10,12 @@ export function isWebMcpEnabled(): boolean {
 
 export function isDemoRoute(pathname: string): boolean {
   const path = String(pathname || "");
-  return path === "/webmcp" || path.startsWith("/webmcp/");
+  return (
+    path === "/webmcp" ||
+    path.startsWith("/webmcp/") ||
+    path === "/webmcp-challenge" ||
+    path.startsWith("/webmcp-challenge/")
+  );
 }
 
 export function isMarketplaceSurface(pathname: string): boolean {

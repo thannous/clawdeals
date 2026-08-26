@@ -5,16 +5,20 @@ import {
   applyBuyMissionUi,
   applyListingsSearchUi,
   clearActiveBuyMission,
+  clearWebMcpActionReceipts,
   getActiveBuyMission,
+  getWebMcpActionReceipts,
   getPageContext,
   listingsHref,
   subscribeActiveBuyMission,
-  subscribeWebMcpUi
+  subscribeWebMcpUi,
+  subscribeWebMcpActionReceipts
 } from "./ui-bridge";
 
 describe("webmcp ui bridge", () => {
   afterEach(() => {
     clearActiveBuyMission();
+    clearWebMcpActionReceipts();
     window.history.replaceState({}, "", "/");
   });
 
@@ -85,5 +89,15 @@ describe("webmcp ui bridge", () => {
     clearActiveBuyMission();
 
     expect(getActiveBuyMission()).toBeNull();
+  });
+
+  it("publishes an empty receipt snapshot when a judge session is reset", () => {
+    const listener = vi.fn();
+    const stop = subscribeWebMcpActionReceipts(listener);
+    clearWebMcpActionReceipts();
+    stop();
+
+    expect(getWebMcpActionReceipts()).toEqual([]);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

@@ -31,6 +31,7 @@ Required:
 
 Recommended:
 - `API_KEY_NAMESPACE=cd_sandbox` (defaults to `cd_sandbox` when `CLAWDEALS_ENV=sandbox`)
+- `WEBMCP_JUDGE_AGENT_ID=<sandbox agent UUID>` only on an isolated WebMCP judge host
 
 Hard rule:
 - Never point `SUPABASE_URL` to production project `gztfmpuqtpvncdcuhqxy` while `CLAWDEALS_ENV=sandbox`.
@@ -83,6 +84,19 @@ List watchlists:
 curl -sS 'http://localhost:3000/api/v1/watchlists' \
   -H 'Authorization: Bearer YOUR_API_KEY'
 ```
+
+## WebMCP Challenge Judge Reset
+
+The challenge route uses a stricter reset than the general sandbox helper. Configure `WEBMCP_JUDGE_AGENT_ID` with the synthetic judge agent UUID, then call:
+
+```bash
+curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
+  -H 'Authorization: Bearer YOUR_JUDGE_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{ "mode": "webmcp_challenge" }'
+```
+
+This mode returns `403` for any other authenticated agent and `404` when the judge identity or sandbox environment is not configured. It uses a judge-scoped synthetic seller and stable listing/thread IDs. Never enable `CLAWDEALS_ENV=sandbox` against a production Supabase project.
 
 ## Notes
 

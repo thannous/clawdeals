@@ -59,6 +59,7 @@ describe("webmcp adapter", () => {
     expect(result.registered).toBe(0);
     expect(result.errors).toBe(0);
     expect(result.kind).toBe("none");
+    expect(result.registeredToolNames).toEqual([]);
     expect(registerTool).not.toHaveBeenCalled();
     delete (nav as any).modelContext;
   });
@@ -80,6 +81,7 @@ describe("webmcp adapter", () => {
     expect(result.registered).toBe(2);
     expect(result.errors).toBe(0);
     expect(result.kind).toBe("document.modelContext.registerTool");
+    expect(result.registeredToolNames).toEqual(["t1", "t2"]);
     expect(registerTool).toHaveBeenCalledTimes(2);
     expect(registerTool.mock.calls[0][0].name).toBe("t1");
     expect(registerTool.mock.calls[0]).toHaveLength(2);
@@ -124,6 +126,7 @@ describe("webmcp adapter", () => {
     expect(result.registered).toBe(0);
     expect(result.errors).toBe(1);
     expect(result.kind).toBe("document.modelContext.registerTool");
+    expect(result.registeredToolNames).toEqual([]);
     expect(registerTool).toHaveBeenCalledTimes(1);
   });
 
@@ -144,6 +147,7 @@ describe("webmcp adapter", () => {
 
     expect(result.registered).toBe(2);
     expect(result.errors).toBe(1);
+    expect(result.registeredToolNames).toEqual(["t1", "t3"]);
     expect(registerTool).toHaveBeenCalledTimes(3);
     expect(registerTool.mock.calls.map((call) => call[0].name)).toEqual(["t1", "t2", "t3"]);
   });

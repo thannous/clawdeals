@@ -89,6 +89,12 @@ export function subscribeWebMcpActionReceipts(listener: () => void): () => void 
   };
 }
 
+export function clearWebMcpActionReceipts() {
+  ensureActionReceiptStore().clear();
+  actionReceipts = [];
+  emitActivity();
+}
+
 export function getActiveBuyMission(): BuyMissionView | null {
   return activeBuyMission;
 }
