@@ -1,6 +1,6 @@
 # Release candidate runbook (TI-376)
 
-Scope: document how to turn baseline input `425b414` into a later TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. Root validation executed the local procedure on `efd6310` and recorded the exact log in Linear; the final reviewed SHA must rerun it after the judge-doc and smoke-script refresh. This file does not claim CI, deploy, tag, public smoke, or Devpost execution.
+Scope: document how to turn baseline input `425b414` into a later TI-376 release candidate, then report LOCAL / CI / DEPLOYED / PUBLIC proof separately. The implementation candidate `3f10575` passed the clean-clone release gate, GitHub CI, SDK CI, Vercel deployment, and public HTTP route checks. Full private-window journey, candidate/final tags, and Devpost remain pending. See `RELEASE_EVIDENCE_2026-08-26.md`.
 
 SHA roles:
 
@@ -178,18 +178,18 @@ Judge-facing local pages after `npm run dev:sandbox`: `/webmcp-challenge` and `/
 
 | Check | Command / artifact | Result |
 | --- | --- | --- |
-| Clean clone SHA | `git rev-parse HEAD` | PASS on `efd6310fd8e875b08d00aa0519386db83e8a474f`; rerun required on final reviewed SHA |
-| Input ancestor | `425b414` is ancestor of HEAD | PASS on `efd6310` |
-| `cp .env.example .env.local` then local placeholders replaced | file exists locally, not committed | PASS on `efd6310` |
-| `npm ci` | install log | PASS: 1,714 packages; audit risk tracked separately in TI-378 |
-| `supabase start` / `supabase db reset` | all migrations + `supabase/seed.sql` | PASS on `efd6310` |
+| Clean clone SHA | `git rev-parse HEAD` | PASS on `3f1057541ac3fd523fbc89f0ea4b367e52077026` |
+| Input ancestor | `425b414` is ancestor of HEAD | PASS on `3f10575` |
+| `cp .env.example .env.local` then local placeholders replaced | file exists locally, not committed | PASS on `3f10575` |
+| `npm ci` | install log | PASS: 1,030 packages, 0 vulnerabilities |
+| `supabase start` / `supabase db reset` | all migrations + `supabase/seed.sql` | PASS on `3f10575` |
 | `npm run seed:dev:sandbox` | masked synthetic seed JSON | PASS: 3 deals, 7 listings, 3 watchlists |
 | `POST /api/v1/sandbox/reset` `mode=webmcp_challenge` | isolated journey and two-reset specs | PASS: 2/2 journey gate |
 | `npm run test:smoke` | owner session + CSRF + API workflow | PASS after the smoke-script session/CSRF refresh; rerun required in final clean clone |
 | `npm run build` | production build | PASS: 110 pages |
-| `npm run release:hackathon:preflight` | JSON `status=PASS`, `proof_layer=LOCAL_PREFLIGHT` | PASS on `efd6310` |
-| `npm run release:hackathon:local` | includes `eval:webmcp:gate` | PASS on `efd6310` |
-| `npm run eval:webmcp:gate` | 373 Vitest files; selector, contracts, UI, journey, security | PASS on `efd6310` |
+| `npm run release:hackathon:preflight` | JSON `status=PASS`, `proof_layer=LOCAL_PREFLIGHT` | PASS on `3f10575` |
+| `npm run release:hackathon:local` | includes `eval:webmcp:gate` | PASS on `3f10575` |
+| `npm run eval:webmcp:gate` | 373 Vitest files; selector, contracts, UI, journey, security | PASS on `3f10575` |
 
 A prior local eval index in `evals/webmcp/README.md` is not this runbook's evidence.
 
@@ -218,12 +218,12 @@ Inspect:
 
 | Check | Artifact | Result |
 | --- | --- | --- |
-| Workflow run for `<TI376_CANDIDATE_SHA>` | Actions URL | PENDING |
-| `lint` | job result | PENDING |
-| `contracts` | job result | PENDING |
-| `unit_tests` | job result | PENDING |
-| `worker_contracts` | job result | PENDING |
-| `test-ci` aggregator | job result | PENDING |
+| Workflow run for `3f10575` | [CI run 32959645029](https://github.com/thannous/clawdeals/actions/runs/32959645029) | PASS |
+| `lint` | job result | PASS |
+| `contracts` | job result | PASS |
+| `unit_tests` | both shards | PASS |
+| `worker_contracts` | job result | PASS |
+| `test-ci` aggregator | job result | PASS |
 
 Do not claim CI green unless the run for this SHA is open and successful.
 
@@ -270,7 +270,7 @@ Existing tag `webmcp-challenge-baseline` marks pre-challenge commit `0088045` an
 
 | Check | Artifact | Result |
 | --- | --- | --- |
-| Vercel production deployment SHA | Vercel dashboard / deployment URL | PENDING |
+| Vercel production deployment SHA | GitHub commit status + public hub | PASS on `3f10575` |
 | Cloudflare worker version | wrangler/dashboard version vs SHA | PENDING |
 | Staging SHA (if used) | `clawdeals-staging` deployment | PENDING |
 | Candidate tag created and pushed | `git ls-remote --tags origin` | PENDING |
@@ -310,7 +310,7 @@ Chrome path, if used: Chrome 149+ with `chrome://flags/#enable-webmcp-testing`. 
 
 | Check | Artifact | Result |
 | --- | --- | --- |
-| Hub HTTP 200, commit/build identity if shown | private-window screenshot | PENDING |
+| Hub HTTP 200, commit/build identity if shown | HTTP headers + rendered HTML | PASS: 200, `/en/webmcp-challenge`, `3f10575` |
 | Public tool registry (5 tools) | hub inspector | PENDING |
 | Authenticated registry (11 tools) | hub inspector, sandbox only | PENDING |
 | Public listings/API read | network/status | PENDING |
@@ -346,11 +346,11 @@ Freeze decision: PENDING
 
 | Acceptance | Layer | Status in this runbook |
 | --- | --- | --- |
-| Clean clone + install + migrations + demo seed + build documented | LOCAL | PASS on `efd6310`; final reviewed SHA rerun pending |
-| `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | LOCAL PASS; public judge verification pending |
-| `release:hackathon:local` | LOCAL | PASS on `efd6310`; final reviewed SHA rerun pending |
-| Vercel/Cloudflare attached to candidate commit | DEPLOYED | Procedure documented; proof PENDING |
-| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | Procedure documented; proof PENDING |
+| Clean clone + install + migrations + demo seed + build documented | LOCAL | PASS on `3f10575` |
+| `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | LOCAL PASS; full private-window verification pending |
+| `release:hackathon:local` | LOCAL | PASS on `3f10575` |
+| Vercel/Cloudflare attached to candidate commit | DEPLOYED | PASS on `3f10575`; Vercel status success and public route displays SHA |
+| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | HTTP route/SHA PASS; full private-window journey PENDING |
 | Candidate tag then final tag created and pushed | DEPLOYED | Commands listed; not executed |
 | LOCAL / CI / DEPLOYED / PUBLIC reported separately | all | Tables above |
 | No post-submission change without explicit decision | freeze | PENDING |

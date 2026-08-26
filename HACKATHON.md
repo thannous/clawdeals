@@ -17,6 +17,7 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - Evals and security: [`docs/hackathon/EVALS.md`](docs/hackathon/EVALS.md), [`docs/hackathon/SECURITY_MODEL.md`](docs/hackathon/SECURITY_MODEL.md)
 - Video recording script: [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — public upload pending
 - Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
+- Release evidence: [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md)
 - WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
 
 The judge hub reports the browser's real `document.modelContext` support, the exact tools that successfully registered, and the sanitized deployed commit SHA when the host provides one. Its launch button opens the product marketplace, not a simulator.
@@ -150,10 +151,11 @@ For a clean release candidate, follow
 `npm run release:hackathon:local`; it includes the preflight. The preflight deliberately reports deploy,
 public smoke and Devpost as unchecked local-external layers.
 
-The last clean-clone gate before the judge-document refresh passed on
-`efd6310fd8e875b08d00aa0519386db83e8a474f`: 373 Vitest files / 2,616 tests
-passed / 1 skipped, build 110 pages, selector 24 x 3, contracts 79/79, UI 5/5,
-journey 2/2 and security 10/10. The final reviewed SHA must rerun the same gate;
-the exact final log is recorded in TI-376 rather than embedded in the commit it identifies.
+The final clean-clone gate passed on implementation SHA `3f1057541ac3fd523fbc89f0ea4b367e52077026`:
+373 Vitest files / 2,616 tests passed / 1 skipped, build 110 pages, selector 24 × 3,
+contracts 79/79, UI 5/5, journey 2/2 and security 10/10. GitHub `CI` and `SDK CI`,
+Vercel deployment, and public HTTP route checks also passed for that SHA; the exact links and
+remaining proof boundaries are recorded in `docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`.
 
-Deployment, the public video and the final Devpost submission are separate proof layers; local test success does not claim that those artifacts are already public.
+The full private-window journey, real ChatGPT execution on the candidate, the public video,
+and the final Devpost submission remain separate pending proof layers.

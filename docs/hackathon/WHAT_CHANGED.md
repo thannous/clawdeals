@@ -100,14 +100,14 @@ request_contact_reveal
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on the pre-doc candidate | Root validation ran a clean clone of `efd6310fd8e875b08d00aa0519386db83e8a474f`: migrations + seed, 373 Vitest files / 2,616 passed / 1 skipped, build 110 pages, selector 24 x 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. The final reviewed SHA must rerun the gate after these docs are committed; its exact result belongs in TI-376 because embedding that SHA here would change it. |
-| CI | NOT PROVEN | GitHub Actions on the judged SHA is pending in the TI-376 runbook. |
-| DEPLOYED | NOT PROVEN | `https://clawdeals.com/webmcp-challenge` is the intended route. README states deployment of the reviewed SHA is still pending. |
-| PUBLIC | NOT PROVEN | Private-window / incognito smoke is pending. |
+| LOCAL | PASS | Clean-clone release gate passed on implementation SHA `3f10575`: migrations + seed, 373 Vitest files / 2,616 passed / 1 skipped, build 110 pages, selector 24 × 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. |
+| CI | PASS | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32959645029) and [`SDK CI`](https://github.com/thannous/clawdeals/actions/runs/32959645020) passed on `3f10575`. |
+| DEPLOYED | PASS | Vercel commit status completed successfully for `3f10575`. |
+| PUBLIC | HTTP PASS; journey PENDING | `https://clawdeals.com/webmcp-challenge` returned 200 and displayed `3f10575`; full private-window tools/API/reset/critical-path smoke remains pending. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
 
-Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.
+See [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP proof as native WebMCP selection, authenticated journey, or Devpost acceptance.
 
 
 ## Related judge docs
