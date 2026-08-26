@@ -161,7 +161,8 @@ export const collabTools: ToolDef[] = [
           sort: args.sort || "recent",
           limit: args.limit ?? 12
         },
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
       if (result.ok) {
         const items = summarizeListings(result.data);
@@ -214,7 +215,8 @@ export const collabTools: ToolDef[] = [
           status: args.status,
           limit: args.limit ?? 12
         },
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
       if (result.ok) {
         const items = summarizeDeals(result.data);

@@ -48,6 +48,9 @@ function stableError<T = any>(
 
 async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }): Promise<StableToolResult<T>> {
   const requestId = options.requestId || randomUuid();
+  if (options.signal?.aborted) {
+    return stableError(requestId, "ABORTED", "Tool execution was cancelled");
+  }
   const apiKey = options.auth === "none" ? null : getStoredApiKey();
   if (options.auth === "required" && !apiKey) {
     return stableError(requestId, "UNAUTHORIZED", "API key required; go to /start");

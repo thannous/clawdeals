@@ -20,7 +20,7 @@ type WebMcpContextValue = {
   registered: boolean;
   registeredToolNames: string[];
   lastRegisterError: string | null;
-  executeTool: (name: string, args: unknown) => Promise<StableToolResult>;
+  executeTool: (name: string, args: unknown, options?: { signal?: AbortSignal }) => Promise<StableToolResult>;
 };
 
 const WebMcpContext = createContext<WebMcpContextValue | null>(null);
@@ -79,11 +79,15 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
   const [registration, dispatchRegistration] = useReducer(registrationReducer, INITIAL_REGISTRATION_STATE);
 
   const executeTool = useCallback(
-    async (name: string, args: unknown): Promise<StableToolResult> => {
+    async (name: string, args: unknown, options?: { signal?: AbortSignal }): Promise<StableToolResult> => {
       const tool = getToolByName(name);
       const requestId = randomUuid();
+      const signal = options?.signal;
       if (!tool) {
         return { ok: false, error: { code: "NOT_FOUND", message: `Tool not found: ${name}`, details: {} }, meta: { request_id: requestId } };
+      }
+      if (signal?.aborted) {
+        return { ok: false, error: { code: "ABORTED", message: "Cancelled", details: {} }, meta: { request_id: requestId } };
       }
 
       const stable = await confirmAndExecute(tool as any, args, {
@@ -91,7 +95,8 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
         requestId,
         timeoutMs: 60_000,
         // Stable per tool invocation; allows server-side dedup for write/admin calls.
-        idempotencyKey: tool.scope === "read" ? null : requestId
+        idempotencyKey: tool.scope === "read" ? null : requestId,
+        signal
       });
 
       if (stable.ok === false) {
@@ -153,7 +158,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
         if (options?.signal?.aborted) {
           return { ok: false, error: { code: "ABORTED", message: "Cancelled", details: {} }, meta: { request_id: randomUuid() } };
         }
-        const result = await executeTool(t.name, toolArgs || {});
+        const result = await executeTool(t.name, toolArgs || {}, { signal: options?.signal });
         return result;
       }
     }));

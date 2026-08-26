@@ -46,5 +46,23 @@ describe("webmcp read tools", () => {
       })
     );
   });
+
+  it("forwards the execution AbortSignal to public HTTP calls", async () => {
+    const tool = readTools.find((t) => t.name === "clawdeals.deals_search")!;
+    const controller = new AbortController();
+    await tool.execute(
+      { limit: 5 },
+      { requestId: "req-signal", idempotencyKey: null, signal: controller.signal }
+    );
+
+    expect(callPublicWebmcp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: "GET",
+        path: "/v1/public/deals",
+        requestId: "req-signal",
+        signal: controller.signal
+      })
+    );
+  });
 });
 

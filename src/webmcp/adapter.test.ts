@@ -99,4 +99,28 @@ describe("webmcp adapter", () => {
     expect(result.registered).toBe(1);
     expect(result.kind).toBe("navigator.modelContext.registerTool");
   });
+
+  it("preserves the invocation execute function so AbortSignal can reach tools", async () => {
+    const registerTool = vi.fn();
+    const execute = vi.fn(async () => ({ ok: true }));
+    const doc = (globalThis as any).document ?? {};
+    if (!(globalThis as any).document) {
+      Object.defineProperty(globalThis, "document", { value: doc, configurable: true });
+    }
+    Object.defineProperty(doc, "modelContext", {
+      value: { registerTool },
+      configurable: true
+    });
+
+    const controller = new AbortController();
+    await registerTools(
+      [{ name: "t1", description: "d1", inputSchema: {}, execute }],
+      { signal: controller.signal }
+    );
+
+    expect(registerTool).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "t1", execute }),
+      { signal: controller.signal }
+    );
+  });
 });

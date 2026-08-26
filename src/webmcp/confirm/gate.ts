@@ -23,15 +23,21 @@ export async function confirmAndExecute<TArgs, TOut>(
     confirm,
     requestId,
     timeoutMs = 60_000,
-    idempotencyKey
+    idempotencyKey,
+    signal
   }: {
     confirm: ConfirmFn;
     requestId?: string;
     timeoutMs?: number;
     idempotencyKey?: string | null;
+    signal?: AbortSignal;
   }
 ): Promise<StableToolResult<TOut>> {
   const resolvedRequestId = requestId || randomUuid();
+
+  if (signal?.aborted) {
+    return stableError(resolvedRequestId, "ABORTED", "Cancelled");
+  }
 
   let parsed: TArgs;
   try {
@@ -46,7 +52,11 @@ export async function confirmAndExecute<TArgs, TOut>(
   const isWriteLike = tool.scope === "write" || tool.scope === "admin";
 
   if (!needsConfirm) {
-    const ctx: ToolExecutionContext = { requestId: resolvedRequestId, idempotencyKey: idempotencyKey || null };
+    const ctx: ToolExecutionContext = {
+      requestId: resolvedRequestId,
+      idempotencyKey: idempotencyKey || null,
+      signal
+    };
     return tool.execute(parsed, ctx) as any;
   }
 
@@ -76,9 +86,14 @@ export async function confirmAndExecute<TArgs, TOut>(
     return stableError(resolvedRequestId, "VALIDATION_ERROR", message);
   }
 
+  if (signal?.aborted) {
+    return stableError(resolvedRequestId, "ABORTED", "Cancelled");
+  }
+
   const ctx: ToolExecutionContext = {
     requestId: resolvedRequestId,
-    idempotencyKey: idempotencyKey || randomUuid()
+    idempotencyKey: idempotencyKey || randomUuid(),
+    signal
   };
 
   return tool.execute(approvedArgs, ctx) as any;

@@ -7,6 +7,7 @@ export type ToolScope = "read" | "write" | "admin";
 export type ToolExecutionContext = {
   requestId: string;
   idempotencyKey: string | null;
+  signal?: AbortSignal;
 };
 
 export type ToolAnnotations = {

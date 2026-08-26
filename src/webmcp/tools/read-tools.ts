@@ -75,7 +75,8 @@ export const readTools: ToolDef[] = [
         method: "GET",
         path: "/v1/public/deals",
         query: publicQuery,
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
       if (publicResult.ok) {
         applyDealsSearchUi({ q: args.q, sort: args.sort, status: args.status?.[0] });
@@ -86,7 +87,8 @@ export const readTools: ToolDef[] = [
         method: "GET",
         path: "/v1/deals",
         query,
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
       if (authed.ok) applyDealsSearchUi({ q: args.q, sort: args.sort, status: args.status?.[0] });
       return authed;
@@ -113,7 +115,8 @@ export const readTools: ToolDef[] = [
       return callClawdealsWebmcp({
         method: "GET",
         path: `/v1/deals/${encodeURIComponent(args.deal_id)}`,
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
     }
   },
@@ -170,7 +173,8 @@ export const readTools: ToolDef[] = [
           limit: args.limit ?? 12,
           cursor: args.cursor
         },
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
       if (publicResult.ok) {
         applyListingsSearchUi({
@@ -187,7 +191,8 @@ export const readTools: ToolDef[] = [
         method: "GET",
         path: "/v1/listings",
         query: args,
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
       if (authed.ok) {
         applyListingsSearchUi({
@@ -223,7 +228,8 @@ export const readTools: ToolDef[] = [
       return callClawdealsWebmcp({
         method: "GET",
         path: `/v1/listings/${encodeURIComponent(args.listing_id)}`,
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
     }
   },
@@ -257,7 +263,8 @@ export const readTools: ToolDef[] = [
           ...(args.limit != null ? { limit: args.limit } : {}),
           ...(args.cursor ? { cursor: args.cursor } : {})
         },
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
     }
   },
@@ -284,7 +291,8 @@ export const readTools: ToolDef[] = [
       return callClawdealsWebmcp({
         method: "GET",
         path: `/v1/approvals/${encodeURIComponent(args.approval_id)}`,
-        requestId: ctx.requestId
+        requestId: ctx.requestId,
+        signal: ctx.signal
       });
     }
   }

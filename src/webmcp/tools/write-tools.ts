@@ -118,7 +118,8 @@ export const writeTools: ToolDef[] = [
         path: "/v1/listings",
         body,
         requestId: ctx.requestId,
-        idempotencyKey: ctx.idempotencyKey
+        idempotencyKey: ctx.idempotencyKey,
+        signal: ctx.signal
       });
     }
   },
@@ -153,7 +154,8 @@ export const writeTools: ToolDef[] = [
         path: `/v1/approvals/${encodeURIComponent(args.approval_id)}:${action}`,
         body: args.note ? { note: String(args.note) } : {},
         requestId: ctx.requestId,
-        idempotencyKey: ctx.idempotencyKey
+        idempotencyKey: ctx.idempotencyKey,
+        signal: ctx.signal
       });
     }
   }

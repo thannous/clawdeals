@@ -133,6 +133,59 @@ describe("callClawdealsWebmcp", () => {
     });
   });
 
+
+  it("returns a stable ABORTED result without fetch when the signal is already aborted", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch" as any);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      callClawdealsWebmcp({
+        method: "GET",
+        path: "/v1/deals",
+        requestId: "req-aborted",
+        signal: controller.signal
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "ABORTED",
+        message: "Tool execution was cancelled",
+        details: {}
+      },
+      meta: { request_id: "req-aborted" }
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("forwards the invocation signal to fetch and maps AbortError to ABORTED", async () => {
+    const controller = new AbortController();
+    const fetchSpy = vi.spyOn(globalThis, "fetch" as any).mockImplementation(async (_url, init?: RequestInit) => {
+      expect(init?.signal).toBe(controller.signal);
+      const error = new Error("aborted");
+      error.name = "AbortError";
+      throw error;
+    });
+
+    await expect(
+      callPublicWebmcp({
+        method: "GET",
+        path: "/v1/public/listings",
+        requestId: "req-abort-fetch",
+        signal: controller.signal
+      })
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "ABORTED",
+        message: "Tool execution was cancelled",
+        details: {}
+      },
+      meta: { request_id: "req-abort-fetch" }
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("normalizes text, invalid JSON, and network responses", async () => {
     vi.spyOn(globalThis, "fetch" as any)
       .mockResolvedValueOnce(
