@@ -10,6 +10,18 @@ The public YouTube upload is **not published**. This file is the script, not PUB
 - Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
 - Ticket: TI-375
 - Companion: `HACKATHON.md`, `docs/hackathon/release-candidate-runbook.md`, `evals/webmcp/`
+- Timed English captions: [`DEMO_SUBTITLES.srt`](./DEMO_SUBTITLES.srt)
+
+Local deterministic capture, macOS voiceover and final assembly (all outputs stay in ignored `test-results/hackathon-video/`):
+
+```bash
+npm run capture:hackathon:all
+```
+
+The capture uses only the isolated WebMCP judge sandbox. It records at 1920 × 1080,
+encodes deterministic shots from the real browser journey, mixes the timed voiceover
+and captions, validates a 160-second audio/video result, and marks the metadata
+`LOCAL` / `NOT_PUBLISHED`.
 
 
 ## Before recording
@@ -115,7 +127,7 @@ Call out:
 - `receipt_version: "1"`
 - `tool.name` (`respond_to_offer` or `make_offer`)
 - `input_hash`
-- `policy.limit` 1300
+- `result.details.hard_budget_max` 1300 on the blocked action
 - `outcome: success`
 - no email, phone, or API key
 

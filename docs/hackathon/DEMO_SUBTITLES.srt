@@ -1,0 +1,63 @@
+1
+00:00:00,000 --> 00:00:06,000
+Shopping agents already search and fill carts.
+
+2
+00:00:06,000 --> 00:00:12,000
+Real deals need negotiation, hard limits, consent, and a receipt.
+
+3
+00:00:12,000 --> 00:00:22,000
+I delegate a BUY mission: a used e-bike within 25 kilometers of Paris.
+
+4
+00:00:22,000 --> 00:00:35,000
+Prefer 1,200 euros, hard cap 1,300, battery at least 80 percent. Contact reveal stays manual and bilateral.
+
+5
+00:00:35,000 --> 00:00:45,000
+Search ranks five synthetic bikes. Only policy fit tells the truth.
+
+6
+00:00:45,000 --> 00:01:00,000
+One is in budget, one is over my target, one blows the hard cap, one fails battery, and one is outside Paris.
+
+7
+00:01:00,000 --> 00:01:11,000
+The agent opens a thread and asks for battery health and service history. Seller text is untrusted data.
+
+8
+00:01:11,000 --> 00:01:22,000
+It prepares 1,100 euros, inside policy, and still stops for my confirmation.
+
+9
+00:01:22,000 --> 00:01:31,000
+Above 1,300 euros, ClawDeals does not let the agent accept. It creates an owner approval.
+
+10
+00:01:31,000 --> 00:01:40,000
+I edit the amount to 1,290 and approve.
+
+11
+00:01:40,000 --> 00:01:50,000
+The seller accepts. The listing flips to RESERVED in one atomic step, and other offers drop.
+
+12
+00:01:50,000 --> 00:02:00,000
+Nobody sees a phone number. Contact reveal needs both owners. One consent reveals nothing.
+
+13
+00:02:00,000 --> 00:02:11,000
+Every protected action leaves a receipt: request ID, redacted input hash, policy limit, approval IDs, and outcome.
+
+14
+00:02:11,000 --> 00:02:22,000
+The agent can reread it. Secrets and personal data are already gone.
+
+15
+00:02:22,000 --> 00:02:32,000
+ClawDeals turns WebMCP into a safe collaboration protocol for real-world commerce.
+
+16
+00:02:32,000 --> 00:02:40,000
+Your agent negotiates. You stay in control.
