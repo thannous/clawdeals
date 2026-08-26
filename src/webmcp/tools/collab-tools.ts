@@ -17,15 +17,59 @@ function ok<T>(requestId: string, data: T): StableToolResult<T> {
   return { ok: true, data, meta: { request_id: requestId } };
 }
 
-function summarizeListings(payload: any): Array<{ listing_id: string; title?: string; price?: unknown; condition?: string; category?: string }> {
+type ListingsDecisionContext = {
+  preferredPriceMax?: number;
+  hardBudgetMax?: number;
+  requirements?: string[];
+};
+
+function summarizeListings(payload: any, context: ListingsDecisionContext = {}) {
   const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : [];
-  return items.slice(0, 5).map((item: any) => ({
-    listing_id: String(item.listing_id || ""),
-    title: item.title,
-    price: item.price,
-    condition: item.condition,
-    category: item.category
-  }));
+  return items
+    .map((item: any) => {
+      const amount = typeof item?.price?.amount === "number" ? item.price.amount : null;
+      const sellerVerified = item?.seller?.verified === true;
+      const issues: string[] = [];
+      let eligible = true;
+      let score = 100;
+
+      if (typeof context.hardBudgetMax === "number" && amount !== null && amount > context.hardBudgetMax) {
+        eligible = false;
+        score -= 50;
+        issues.push("price_above_hard_budget");
+      } else if (
+        typeof context.preferredPriceMax === "number" &&
+        amount !== null &&
+        amount > context.preferredPriceMax
+      ) {
+        score -= 10;
+        issues.push("price_above_preferred_target");
+      }
+
+      if (!sellerVerified) score -= 10;
+      if (context.requirements?.length) {
+        score -= 5;
+        issues.push("requirements_need_seller_confirmation");
+      }
+
+      return {
+        listing_id: String(item.listing_id || ""),
+        title: item.title,
+        price: item.price,
+        distance_km: typeof item.distance_km === "number" ? item.distance_km : null,
+        condition: item.condition,
+        category: item.category,
+        trust: {
+          level: sellerVerified ? "medium" : "low",
+          reasons: [sellerVerified ? "seller_profile_verified" : "seller_verification_unavailable"]
+        },
+        policy_fit: { eligible, issues },
+        score,
+        url: `/browse/${encodeURIComponent(String(item.listing_id || ""))}`
+      };
+    })
+    .sort((a: any, b: any) => b.score - a.score || a.listing_id.localeCompare(b.listing_id))
+    .slice(0, 5);
 }
 
 function summarizeDeals(payload: any): Array<{ deal_id: string; title?: string; price?: unknown; status?: string }> {
@@ -132,7 +176,17 @@ export const collabTools: ToolDef[] = [
         condition: { type: "string", enum: ["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"] },
         price_min: { type: "integer", minimum: 0 },
         price_max: { type: "integer", minimum: 0 },
-        sort: { type: "string", enum: ["recent", "price_asc", "price_desc"] },
+        sort: { type: "string", enum: ["recent", "price_asc", "price_desc", "distance"] },
+        latitude: { type: "number", minimum: -90, maximum: 90 },
+        longitude: { type: "number", minimum: -180, maximum: 180 },
+        radius_km: { type: "integer", minimum: 1, maximum: 300 },
+        preferred_price_max: { type: "number", exclusiveMinimum: 0 },
+        hard_budget_max: { type: "number", exclusiveMinimum: 0 },
+        requirements: {
+          type: "array",
+          maxItems: 10,
+          items: { type: "string", minLength: 1, maxLength: 120 }
+        },
         limit: { type: "integer", minimum: 1, maximum: 5 }
       }
     },
@@ -143,10 +197,30 @@ export const collabTools: ToolDef[] = [
         condition: z.enum(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]).optional(),
         price_min: z.number().int().min(0).optional(),
         price_max: z.number().int().min(0).optional(),
-        sort: z.enum(["recent", "price_asc", "price_desc"]).optional(),
+        sort: z.enum(["recent", "price_asc", "price_desc", "distance"]).optional(),
+        latitude: z.number().min(-90).max(90).optional(),
+        longitude: z.number().min(-180).max(180).optional(),
+        radius_km: z.number().int().min(1).max(300).optional(),
+        preferred_price_max: z.number().positive().optional(),
+        hard_budget_max: z.number().positive().optional(),
+        requirements: z.array(z.string().trim().min(1).max(120)).max(10).optional(),
         limit: z.number().int().min(1).max(5).optional()
       })
-      .strict(),
+      .strict()
+      .superRefine((args, ctx) => {
+        const geoValues = [args.latitude, args.longitude, args.radius_km];
+        const geoCount = geoValues.filter((value) => value !== undefined).length;
+        if (geoCount !== 0 && geoCount !== 3) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "latitude, longitude, and radius_km must be provided together" });
+        }
+        if (
+          args.preferred_price_max !== undefined &&
+          args.hard_budget_max !== undefined &&
+          args.preferred_price_max > args.hard_budget_max
+        ) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: "preferred_price_max must not exceed hard_budget_max" });
+        }
+      }),
     outputHint: "Matching listings plus a UI update on the marketplace grid.",
     execute: async (args: any, ctx) => {
       const result = await callPublicWebmcp({
@@ -158,14 +232,21 @@ export const collabTools: ToolDef[] = [
           condition: args.condition,
           price_min: args.price_min,
           price_max: args.price_max,
-          sort: args.sort || "recent",
+          sort: args.latitude !== undefined ? "distance" : args.sort || "recent",
+          lat: args.latitude,
+          lng: args.longitude,
+          distance_km: args.radius_km,
           limit: args.limit ?? 5
         },
         requestId: ctx.requestId,
         signal: ctx.signal
       });
       if (result.ok) {
-        const items = summarizeListings(result.data);
+        const items = summarizeListings(result.data, {
+          preferredPriceMax: args.preferred_price_max,
+          hardBudgetMax: args.hard_budget_max,
+          requirements: args.requirements
+        });
         applyListingsSearchUi({
           q: args.q,
           category: args.category,

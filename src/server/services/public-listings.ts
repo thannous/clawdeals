@@ -36,6 +36,10 @@ export function mapPublicListingRow(row: any, sellerInfo?: { display_name: strin
     },
     images_count: typeof row?.images_count === "number" ? row.images_count : media.images_count,
     cover_image: row?.cover_image ?? media.cover_image,
+    distance_km:
+      typeof row?.distance_m === "number" && Number.isFinite(row.distance_m)
+        ? Math.round((row.distance_m / 1000) * 10) / 10
+        : null,
     created_at: row.created_at,
     seller: sellerInfo || null,
   };
@@ -84,6 +88,7 @@ export async function listPublicListings({
   sort = "recent",
   limit = PUBLIC_DEFAULT_LIMIT,
   cursor,
+  geo,
 }: any = {}) {
   const cappedLimit = Math.max(1, Math.min(PUBLIC_MAX_LIMIT, limit ?? PUBLIC_DEFAULT_LIMIT));
 
@@ -96,6 +101,7 @@ export async function listPublicListings({
     sort,
     limit: cappedLimit,
     cursor,
+    geo,
     includeHidden: false,
   });
 

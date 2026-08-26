@@ -3,7 +3,7 @@ import { listPublicListings } from "../../../../server/services/public-listings"
 import { decodeListingsCursor } from "../../../../server/services/listings-cursor";
 
 const CONDITIONS = new Set(["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"]);
-const VALID_SORTS = new Set(["recent", "price_asc", "price_desc"]);
+const VALID_SORTS = new Set(["recent", "price_asc", "price_desc", "distance"]);
 
 function resolveParam(value: unknown): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -17,6 +17,12 @@ function parseIntParam(raw: string | undefined): number | null {
   const n = Number(trimmed);
   if (!Number.isSafeInteger(n)) return null;
   return n;
+}
+
+function parseFloatParam(raw: string | undefined): number | null {
+  if (raw === undefined || raw === null || raw === "") return null;
+  const n = Number(String(raw).trim());
+  return Number.isFinite(n) ? n : null;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -60,6 +66,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const priceMin = parseIntParam(resolveParam(req.query?.price_min));
   const priceMax = parseIntParam(resolveParam(req.query?.price_max));
+  const lat = parseFloatParam(resolveParam(req.query?.lat));
+  const lng = parseFloatParam(resolveParam(req.query?.lng));
+  const distanceKm = parseIntParam(resolveParam(req.query?.distance_km));
+
+  let geo: { lat: number; lng: number; distanceKm: number } | undefined;
+  if (sort === "distance") {
+    if (
+      lat === null ||
+      lng === null ||
+      distanceKm === null ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180 ||
+      distanceKm < 1 ||
+      distanceKm > 300
+    ) {
+      res.status(400).json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "sort=distance requires valid lat, lng, and distance_km (1..300)"
+        }
+      });
+      return;
+    }
+    geo = { lat, lng, distanceKm };
+  }
 
   const rawCursor = resolveParam(req.query?.cursor);
   let cursor = null;
@@ -86,6 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sort,
       limit,
       cursor,
+      geo,
     });
 
     const data = result.items || [];

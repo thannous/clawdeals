@@ -68,6 +68,7 @@ describe("GET /api/v1/public/listings", () => {
           },
           images_count: 0,
           cover_image: null,
+          distance_km: null,
           created_at: "2026-02-16T00:00:00.000Z",
           seller: {
             display_name: "Seller",
@@ -118,6 +119,46 @@ describe("GET /api/v1/public/listings", () => {
     expect(listMock).toHaveBeenCalledWith(
       expect.objectContaining({ sort: "recent" })
     );
+  });
+
+  it("passes validated geo inputs for distance search", async () => {
+    listMock.mockResolvedValue({ items: [], nextCursor: null });
+
+    const res = mockRes();
+    await handler(
+      mockReq("GET", {
+        sort: "distance",
+        lat: "48.8566",
+        lng: "2.3522",
+        distance_km: "25"
+      }),
+      res
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(listMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sort: "distance",
+        geo: { lat: 48.8566, lng: 2.3522, distanceKm: 25 }
+      })
+    );
+  });
+
+  it("rejects incomplete or out-of-range distance searches", async () => {
+    listMock.mockResolvedValue({ items: [], nextCursor: null });
+
+    const missing = mockRes();
+    await handler(mockReq("GET", { sort: "distance", lat: "48.8566" }), missing);
+    expect(missing.statusCode).toBe(400);
+    expect(missing.body.error.code).toBe("VALIDATION_ERROR");
+
+    const invalid = mockRes();
+    await handler(
+      mockReq("GET", { sort: "distance", lat: "91", lng: "2.3", distance_km: "25" }),
+      invalid
+    );
+    expect(invalid.statusCode).toBe(400);
+    expect(listMock).not.toHaveBeenCalled();
   });
 
   it("passes search query", async () => {

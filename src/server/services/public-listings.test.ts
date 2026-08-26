@@ -43,6 +43,7 @@ describe("mapPublicListingRow", () => {
       price: { amount: 1999, currency: "EUR" },
       images_count: 0,
       cover_image: null,
+      distance_km: null,
       created_at: "2026-01-01T00:00:00Z",
       seller: null,
     });
@@ -107,6 +108,22 @@ describe("mapPublicListingRow", () => {
     const seller = { display_name: "John", avatar_url: "/avatar.png", verified: true };
     const result = mapPublicListingRow(row, seller);
     expect(result.seller).toEqual(seller);
+  });
+
+  it("maps internal distance meters to a rounded public kilometer value", () => {
+    const result = mapPublicListingRow({
+      listing_id: "abc-123",
+      title: "Nearby",
+      description: null,
+      category: "other",
+      condition: "GOOD",
+      price_amount: 100,
+      currency: "EUR",
+      distance_m: 14249,
+      created_at: "2026-01-01T00:00:00Z"
+    });
+
+    expect(result.distance_km).toBe(14.2);
   });
 });
 
@@ -237,6 +254,23 @@ describe("listPublicListings", () => {
         category: "books",
         condition: "NEW",
         includeHidden: false,
+      })
+    );
+  });
+
+  it("passes geo criteria to the existing distance listing service", async () => {
+    listListingsMock.mockResolvedValue({ items: [], nextCursor: null });
+
+    await listPublicListings({
+      sort: "distance",
+      geo: { lat: 48.8566, lng: 2.3522, distanceKm: 25 }
+    });
+
+    expect(listListingsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sort: "distance",
+        geo: { lat: 48.8566, lng: 2.3522, distanceKm: 25 },
+        includeHidden: false
       })
     );
   });
