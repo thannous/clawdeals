@@ -16,6 +16,22 @@ function mapRpcError(error: any) {
     return { status: 404, code: "TX_NOT_FOUND", message: "Transaction not found" };
   }
 
+  if (/OWNER_CONTACT_MISSING/i.test(message)) {
+    return {
+      status: 409,
+      code: "OWNER_CONTACT_MISSING",
+      message: "Both owners must verify an email address and phone number before contact reveal"
+    };
+  }
+
+  if (/CONTACT_REVEAL_PARTIES_NOT_DISTINCT/i.test(message)) {
+    return {
+      status: 409,
+      code: "CONTACT_REVEAL_PARTIES_NOT_DISTINCT",
+      message: "Contact reveal requires two distinct owners"
+    };
+  }
+
   const notReadyMatch = /TX_NOT_READY:([A-Z_]+)/i.exec(message);
   if (notReadyMatch) {
     return {
@@ -58,16 +74,16 @@ export async function getTransaction(txId: string) {
   return data || null;
 }
 
-export async function getContactRevealApprovalByTxId(txId: string) {
+export async function getContactRevealApprovalByTxId(txId: string, ownerId?: string | null) {
   const client = getSupabaseServiceClient();
-  const { data, error } = await client
+  let query = client
     .from("approvals")
     .select("*")
-    .eq("action_type", "contact_reveal")
+    .eq("action_type", "contact_reveal_consent")
     .eq("action_ref_id", txId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: false });
+  if (ownerId) query = query.eq("owner_id", ownerId);
+  const { data, error } = await query.limit(1).maybeSingle();
   if (error) {
     mapError(error);
   }
@@ -76,19 +92,16 @@ export async function getContactRevealApprovalByTxId(txId: string) {
 
 export async function requestContactReveal({
   txId,
-  actorAgentId,
-  autoApprove
+  actorAgentId
 }: {
   txId: string;
   actorAgentId: string;
-  autoApprove: boolean;
 }) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client
-    .rpc("transaction_request_contact_reveal_v0", {
+    .rpc("transaction_request_contact_reveal_v1", {
       p_tx_id: txId,
-      p_actor_agent_id: actorAgentId,
-      p_auto_approve: autoApprove
+      p_actor_agent_id: actorAgentId
     })
     .single();
 

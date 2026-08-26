@@ -121,6 +121,25 @@ function summarizeOfferResponse(
   };
 }
 
+function summarizeContactRevealRequest(result: StableToolResult<any>): StableToolResult<any> {
+  if (result.ok === false) return result;
+  const data = result.data as any;
+  return {
+    ok: true,
+    data: {
+      tx_id: String(data.tx_id || ""),
+      contact_reveal_state: data.contact_reveal_state ? String(data.contact_reveal_state) : null,
+      approval_id: data.approval_id ? String(data.approval_id) : null,
+      requester_role: data.requester_role ? String(data.requester_role) : null,
+      consent_states: {
+        buyer: data.consent_states?.buyer ? String(data.consent_states.buyer) : null,
+        seller: data.consent_states?.seller ? String(data.consent_states.seller) : null
+      }
+    },
+    meta: result.meta
+  };
+}
+
 const respondToOfferSchema = z
   .object({
     offer_id: uuid,
@@ -343,6 +362,39 @@ export const negotiationTools: ToolDef[] = [
         signal: ctx.signal
       });
       return summarizeOfferResponse(args.action, result);
+    }
+  },
+  {
+    name: "request_contact_reveal",
+    description:
+      "Request bilateral contact exchange for one accepted transaction. The server verifies agent participation and creates a separate consent for each owner.",
+    scope: "write",
+    requiresConfirmation: true,
+    annotations: { readOnlyHint: false, untrustedContentHint: false },
+    inputJsonSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["tx_id"],
+      properties: {
+        tx_id: {
+          type: "string",
+          format: "uuid",
+          description: "Accepted transaction returned by respond_to_offer."
+        }
+      }
+    },
+    zodSchema: z.object({ tx_id: uuid }).strict(),
+    outputHint: "Returns bilateral consent states and the current owner's approval ID; never returns contact details.",
+    execute: async (args: any, ctx) => {
+      const result = await callClawdealsWebmcp({
+        method: "POST",
+        path: `/v1/transactions/${encodeURIComponent(args.tx_id)}/request-contact-reveal`,
+        body: {},
+        requestId: ctx.requestId,
+        idempotencyKey: ctx.idempotencyKey,
+        signal: ctx.signal
+      });
+      return summarizeContactRevealRequest(result);
     }
   }
 ];

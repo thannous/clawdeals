@@ -56,6 +56,8 @@ export default function MyApprovalDetailPage() {
 
   const missionOfferApproval =
     approval?.action_type === "offer_over_budget" && Boolean(approval?.action_ref?.mission_id);
+  const contactRevealConsent = approval?.action_type === "contact_reveal_consent";
+  const contactRevealRole = String(approval?.action_ref?.party_role || "").toUpperCase();
   const currency = String(
     approval?.action_payload_redacted?.offer?.currency || approval?.action_ref?.currency || "EUR"
   );
@@ -168,6 +170,46 @@ export default function MyApprovalDetailPage() {
               </section>
             )}
 
+            {contactRevealConsent && (
+              <section
+                data-testid="contact-reveal-consent-sheet"
+                className="border border-primary/30 bg-surface p-5 space-y-5"
+              >
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                    {t("detail.contactReveal.requestedActionLabel")}
+                  </p>
+                  <p className="mt-1 text-base font-semibold text-text">
+                    {t("detail.contactReveal.requestedAction")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                    {t("detail.contactReveal.yourRoleLabel")}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-text">
+                    {contactRevealRole === "BUYER"
+                      ? t("detail.contactReveal.roleBuyer")
+                      : t("detail.contactReveal.roleSeller")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                    {t("detail.contactReveal.whyLabel")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">{t("detail.contactReveal.why")}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                    {t("detail.contactReveal.consequencesLabel")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    {t("detail.contactReveal.consequences")}
+                  </p>
+                </div>
+              </section>
+            )}
+
             {/* Action buttons for PENDING */}
             {approval.state === "PENDING" && (
               <div className="space-y-3">
@@ -200,6 +242,23 @@ export default function MyApprovalDetailPage() {
               </div>
             )}
 
+            {contactRevealConsent &&
+              approval.state === "APPROVED" &&
+              approval.contact_reveal_state === "REQUESTED" && (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted">{t("detail.contactReveal.revokeHint")}</p>
+                  <button
+                    type="button"
+                    disabled={submitState === "loading"}
+                    onClick={() => execute(approval.approval_id, "revoke")}
+                    className="px-4 py-2 text-xs font-mono font-bold uppercase border border-error/50 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                  >
+                    {t("detail.revoke")}
+                  </button>
+                  {submitError && <p className="text-xs font-mono text-error">{submitError}</p>}
+                </div>
+              )}
+
             {/* Detail grid */}
             <div className="bg-surface border border-border p-4 space-y-3">
               <DetailRow label={t("detail.approvalId")}>
@@ -209,13 +268,15 @@ export default function MyApprovalDetailPage() {
                 <span className="text-sm font-mono">{approval.action_type || "—"}</span>
               </DetailRow>
               <DetailRow label={t("detail.reference")}>
-                {approval.action_ref_id ? (
+                {approval.action_ref_id && !contactRevealConsent ? (
                   <Link
                     href={`/my/listings/${approval.action_ref_id}`}
                     className="text-xs font-mono text-primary hover:underline"
                   >
                     {approval.action_ref_id}
                   </Link>
+                ) : approval.action_ref_id ? (
+                  <TruncatedId id={approval.action_ref_id} />
                 ) : (
                   <span className="text-subtle">—</span>
                 )}

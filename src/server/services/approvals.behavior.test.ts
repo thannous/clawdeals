@@ -229,6 +229,85 @@ describe("approvals service behavior", () => {
     });
   });
 
+  it("uses the dedicated atomic RPC for bilateral contact consent", async () => {
+    const existing = {
+      approval_id: "approval-1",
+      owner_id: "owner-1",
+      action_type: "contact_reveal_consent",
+      action_ref: { tx_id: "tx-1", party_role: "BUYER" },
+      action_ref_id: "tx-1",
+      state: "PENDING"
+    };
+    const resolved = { ...existing, state: "APPROVED", resolved_at: "2026-08-26T10:00:00.000Z" };
+    const rpc = vi.fn().mockReturnValue({
+      single: vi.fn(async () => ({
+        data: {
+          tx_id: "tx-1",
+          contact_reveal_state: "REQUESTED",
+          tx_status: "ACCEPTED",
+          became_revealed: false
+        },
+        error: null
+      }))
+    });
+    dependencyMocks.getSupabaseServiceClient.mockReturnValue({
+      from: vi
+        .fn()
+        .mockReturnValueOnce(createQuery({ data: existing, error: null }))
+        .mockReturnValueOnce(createQuery({ data: resolved, error: null })),
+      rpc
+    });
+
+    await expect(
+      resolveApproval({
+        approvalId: "approval-1",
+        ownerId: "owner-1",
+        decision: "APPROVED",
+        resolvedBy: "owner-1",
+        reason: "consent"
+      })
+    ).resolves.toMatchObject({
+      state: "APPROVED",
+      tx_id: "tx-1",
+      contact_reveal_state: "REQUESTED",
+      became_revealed: false
+    });
+    expect(rpc).toHaveBeenCalledWith("resolve_contact_reveal_consent_v1", {
+      p_approval_id: "approval-1",
+      p_owner_id: "owner-1",
+      p_decision: "APPROVED",
+      p_reason: "consent"
+    });
+  });
+
+  it("refuses the legacy unilateral contact reveal approval type", async () => {
+    const existingQuery = createQuery({
+      data: {
+        approval_id: "approval-1",
+        owner_id: "owner-1",
+        action_type: "contact_reveal",
+        action_ref_id: "tx-1",
+        state: "PENDING"
+      },
+      error: null
+    });
+    const rpc = vi.fn();
+    dependencyMocks.getSupabaseServiceClient.mockReturnValue({
+      from: vi.fn(() => existingQuery),
+      rpc
+    });
+
+    await expect(
+      resolveApproval({
+        approvalId: "approval-1",
+        ownerId: "owner-1",
+        decision: "APPROVED",
+        resolvedBy: "owner-1"
+      })
+    ).rejects.toMatchObject({ status: 409, code: "BILATERAL_CONSENT_REQUIRED" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("maps a changed offer during approval resolution to a stable conflict", async () => {
     const existingQuery = createQuery({
       data: {

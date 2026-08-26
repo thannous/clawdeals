@@ -33,7 +33,8 @@ describe("contextual WebMCP tool registry", () => {
       "start_thread",
       "send_message",
       "make_offer",
-      "respond_to_offer"
+      "respond_to_offer",
+      "request_contact_reveal"
     ];
     expect(getToolsForRoute("/webmcp", { hasAgentKey: true }).map((tool) => tool.name)).toEqual(
       expected

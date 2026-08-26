@@ -9,6 +9,7 @@ const LISTING_ID = "11111111-1111-4111-8111-111111111111";
 const THREAD_ID = "22222222-2222-4222-8222-222222222222";
 const OFFER_ID = "33333333-3333-4333-8333-333333333333";
 const MISSION_ID = "44444444-4444-4444-8444-444444444444";
+const TX_ID = "55555555-5555-4555-8555-555555555555";
 const EXPIRES_AT = "2026-08-26T12:00:00.000Z";
 const context = {
   requestId: "request-1",
@@ -23,12 +24,13 @@ function tool(name: string) {
 describe("negotiation WebMCP tools", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("exposes the four confirmed mutation contracts", () => {
+  it("exposes the five confirmed mutation contracts", () => {
     expect(negotiationTools.map((candidate) => candidate.name)).toEqual([
       "start_thread",
       "send_message",
       "make_offer",
-      "respond_to_offer"
+      "respond_to_offer",
+      "request_contact_reveal"
     ]);
     expect(negotiationTools.every((candidate) => candidate.requiresConfirmation)).toBe(true);
     expect(negotiationTools.every((candidate) => candidate.scope === "write")).toBe(true);
@@ -190,5 +192,41 @@ describe("negotiation WebMCP tools", () => {
       expect((result.data as any).transaction).not.toHaveProperty("buyer_agent_id");
       expect((result.data as any).transaction).not.toHaveProperty("seller_agent_id");
     }
+  });
+
+  it("requests bilateral contact reveal without returning contacts", async () => {
+    vi.mocked(callClawdealsWebmcp).mockResolvedValue({
+      ok: true,
+      data: {
+        tx_id: TX_ID,
+        contact_reveal_state: "REQUESTED",
+        approval_id: "66666666-6666-4666-8666-666666666666",
+        requester_role: "BUYER",
+        consent_states: { buyer: "PENDING", seller: "PENDING" },
+        buyer_contact: { email: "must-not-leak@example.com" }
+      },
+      meta: { request_id: "server-5" }
+    } as any);
+
+    const result = await tool("request_contact_reveal").execute({ tx_id: TX_ID } as any, context);
+
+    expect(callClawdealsWebmcp).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: `/v1/transactions/${TX_ID}/request-contact-reveal`,
+        body: {},
+        idempotencyKey: "idem-1",
+        signal: context.signal
+      })
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        tx_id: TX_ID,
+        contact_reveal_state: "REQUESTED",
+        requester_role: "BUYER",
+        consent_states: { buyer: "PENDING", seller: "PENDING" }
+      }
+    });
+    if (result.ok) expect(result.data).not.toHaveProperty("buyer_contact");
   });
 });

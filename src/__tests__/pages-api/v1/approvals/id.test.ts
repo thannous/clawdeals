@@ -10,6 +10,14 @@ vi.mock("../../../../server/audit/singleton", () => ({
   safeAuditLog: vi.fn().mockResolvedValue(null)
 }));
 
+vi.mock("../../../../server/services/transactions", () => ({
+  getTransaction: vi.fn()
+}));
+
+vi.mock("../../../../server/sse/store", () => ({
+  publishSseEvent: vi.fn().mockResolvedValue({ ok: true })
+}));
+
 import { handler } from "../../../../pages/api/v1/approvals/[id]";
 import {
   editPendingMissionOfferApproval,
@@ -17,6 +25,8 @@ import {
   resolveApproval
 } from "../../../../server/services/approvals";
 import { safeAuditLog } from "../../../../server/audit/singleton";
+import { getTransaction } from "../../../../server/services/transactions";
+import { publishSseEvent } from "../../../../server/sse/store";
 
 const ownerId = "c1cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
 const approvalId = "a2cb3c39-7e2f-4c2d-9d0b-53b77339b8de";
@@ -25,6 +35,8 @@ const mockedGetApprovalForOwner = vi.mocked(getApprovalForOwner);
 const mockedResolveApproval = vi.mocked(resolveApproval);
 const mockedEditPendingMissionOfferApproval = vi.mocked(editPendingMissionOfferApproval);
 const mockedSafeAuditLog = vi.mocked(safeAuditLog);
+const mockedGetTransaction = vi.mocked(getTransaction);
+const mockedPublishSseEvent = vi.mocked(publishSseEvent);
 
 type OwnerCtx = {
   ownerId: string | null;
@@ -212,6 +224,83 @@ describe("POST /v1/approvals/[id]", () => {
     expect(result.status).toBe(200);
     expect((result.body as any).data.state).toBe("DENIED");
     expect(ctx.auditEvent).toBe("approval.resolved");
+  });
+
+  it("records one owner consent without revealing contacts", async () => {
+    const existing = {
+      approval_id: approvalId,
+      owner_id: ownerId,
+      state: "PENDING",
+      action_type: "contact_reveal_consent",
+      action_ref: { tx_id: "11111111-1111-4111-8111-111111111111", party_role: "BUYER" }
+    };
+    mockedGetApprovalForOwner.mockResolvedValue(existing as any);
+    mockedResolveApproval.mockResolvedValue({
+      ...existing,
+      state: "APPROVED",
+      tx_id: existing.action_ref.tx_id,
+      contact_reveal_state: "REQUESTED",
+      became_revealed: false
+    } as any);
+    mockedGetTransaction.mockResolvedValue({
+      tx_id: existing.action_ref.tx_id,
+      listing_id: "22222222-2222-4222-8222-222222222222",
+      buyer_agent_id: "33333333-3333-4333-8333-333333333333",
+      seller_agent_id: "44444444-4444-4444-8444-444444444444"
+    } as any);
+    const ctx: any = ownerCtx();
+
+    const result: any = await handler(makeReq(`${approvalId}:approve`), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.data).toMatchObject({
+      state: "APPROVED",
+      contact_reveal_state: "REQUESTED",
+      became_revealed: false
+    });
+    expect(result.body.data).not.toHaveProperty("buyer_contact");
+    expect(result.body.data).not.toHaveProperty("seller_contact");
+    expect(ctx.auditEvent).toBe("contact_reveal.consent_approved");
+    expect(mockedPublishSseEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "contact_reveal.consent_approved",
+        payload: expect.not.objectContaining({ email: expect.anything(), phone: expect.anything() })
+      })
+    );
+  });
+
+  it("allows pre-final consent revocation and maps it to CANCELLED", async () => {
+    const existing = {
+      approval_id: approvalId,
+      owner_id: ownerId,
+      state: "APPROVED",
+      action_type: "contact_reveal_consent",
+      action_ref: { tx_id: "11111111-1111-4111-8111-111111111111", party_role: "SELLER" }
+    };
+    mockedGetApprovalForOwner.mockResolvedValue(existing as any);
+    mockedResolveApproval.mockResolvedValue({
+      ...existing,
+      state: "CANCELLED",
+      tx_id: existing.action_ref.tx_id,
+      contact_reveal_state: "DENIED",
+      became_revealed: false
+    } as any);
+    mockedGetTransaction.mockResolvedValue({
+      tx_id: existing.action_ref.tx_id,
+      listing_id: "22222222-2222-4222-8222-222222222222",
+      buyer_agent_id: "33333333-3333-4333-8333-333333333333",
+      seller_agent_id: "44444444-4444-4444-8444-444444444444"
+    } as any);
+    const ctx: any = ownerCtx();
+
+    const result: any = await handler(makeReq(`${approvalId}:revoke`), null, ctx);
+
+    expect(result.status).toBe(200);
+    expect(result.body.data.state).toBe("CANCELLED");
+    expect(mockedResolveApproval).toHaveBeenCalledWith(
+      expect.objectContaining({ decision: "REVOKED", ownerId })
+    );
+    expect(ctx.auditEvent).toBe("contact_reveal.consent_revoked");
   });
 
   it("returns 404 for unknown action", async () => {
@@ -412,5 +501,32 @@ describe("GET /v1/approvals/[id] (detail)", () => {
     expect(result.status).toBe(200);
     expect(result.body.data.approval_id).toBe(approvalId);
     expect(ctx.auditEvent).toBe("approval.viewed");
+  });
+
+  it("adds aggregate contact state without adding PII", async () => {
+    mockedGetApprovalForOwner.mockResolvedValue({
+      approval_id: approvalId,
+      state: "PENDING",
+      action_type: "contact_reveal_consent",
+      action_ref_id: "11111111-1111-4111-8111-111111111111",
+      action_ref: { tx_id: "11111111-1111-4111-8111-111111111111", party_role: "BUYER" }
+    } as any);
+    mockedGetTransaction.mockResolvedValue({
+      contact_reveal_state: "REQUESTED",
+      status: "ACCEPTED"
+    } as any);
+
+    const result: any = await handler(
+      { method: "GET", headers: {}, query: { id: approvalId } },
+      null,
+      ownerCtx()
+    );
+
+    expect(result.status).toBe(200);
+    expect(result.body.data).toMatchObject({
+      contact_reveal_state: "REQUESTED",
+      tx_status: "ACCEPTED"
+    });
+    expect(JSON.stringify(result.body.data)).not.toMatch(/email|phone/i);
   });
 });

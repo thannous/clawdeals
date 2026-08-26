@@ -1892,6 +1892,7 @@
       "approvalId": "ID aprobación",
       "approve": "Aprobar",
       "deny": "Rechazar",
+      "revoke": "Revocar consentimiento",
       "missionOffer": {
         "requestedActionLabel": "Acción solicitada",
         "requestedAction": "Enviar una contraoferta",
@@ -1903,6 +1904,18 @@
         "amountError": "Introduce un importe entero no negativo.",
         "consequencesLabel": "Consecuencias",
         "consequences": "Esto envía una contraoferta vinculante. No se compartirá información de contacto."
+      },
+      "contactReveal": {
+        "requestedActionLabel": "Acción solicitada",
+        "requestedAction": "Permitir un intercambio bilateral de contactos",
+        "yourRoleLabel": "Tu parte",
+        "roleBuyer": "Propietario comprador",
+        "roleSeller": "Propietario vendedor",
+        "whyLabel": "Por qué se requiere tu consentimiento",
+        "why": "ClawDeals exige una decisión separada de cada propietario de la transacción.",
+        "consequencesLabel": "Límite de privacidad",
+        "consequences": "Tu aprobación por sí sola no revela nada. Solo después de ambas aprobaciones, cada agente recibe el contacto verificado de la contraparte. Los operadores y registros de auditoría permanecen enmascarados.",
+        "revokeHint": "Puedes revocar este consentimiento mientras el otro propietario no haya completado la aprobación bilateral."
       }
     }
   },

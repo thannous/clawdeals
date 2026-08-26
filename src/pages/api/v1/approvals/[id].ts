@@ -9,13 +9,22 @@ import {
   resolveApproval
 } from "../../../../server/services/approvals";
 import { safeAuditLog } from "../../../../server/audit/singleton";
+import { getTransaction } from "../../../../server/services/transactions";
+import { publishSseEvent } from "../../../../server/sse/store";
 
-function shouldReplayApprovalSideEffects(approval: any, decision: "APPROVED" | "DENIED"): boolean {
+function shouldReplayApprovalSideEffects(
+  approval: any,
+  decision: "APPROVED" | "DENIED" | "REVOKED"
+): boolean {
   return (
     decision === "APPROVED" &&
     approval?.state === "APPROVED" &&
     approval?.action_type === "escrow.confirm_received"
   );
+}
+
+function uniqueStrings(values: Array<string | null | undefined>) {
+  return Array.from(new Set(values.filter((value): value is string => typeof value === "string" && Boolean(value))));
 }
 
 function getHeaderValue(req, name) {
@@ -113,13 +122,25 @@ export async function handler(req, res, ctx) {
         return jsonResponse(404, errorPayload("NOT_FOUND", "Approval not found"));
       }
 
+      if (approval.action_type === "contact_reveal_consent") {
+        const txId = approval.action_ref?.tx_id || approval.action_ref_id;
+        const tx = isUuid(String(txId || "")) ? await getTransaction(String(txId)) : null;
+        return jsonResponse(200, {
+          data: {
+            ...approval,
+            contact_reveal_state: tx?.contact_reveal_state || null,
+            tx_status: tx?.status || null
+          }
+        });
+      }
+
       return jsonResponse(200, { data: approval });
     } catch (error) {
       return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
     }
   }
 
-  // POST /v1/approvals/{approval_id}:approve|deny
+  // POST /v1/approvals/{approval_id}:approve|deny|revoke
   if (!action) {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown approval action"));
   }
@@ -160,12 +181,12 @@ export async function handler(req, res, ctx) {
     amount = rawAmount;
   }
 
-  if (action !== "approve" && action !== "deny") {
+  if (action !== "approve" && action !== "deny" && action !== "revoke") {
     return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown approval action"));
   }
 
-  const decision = action === "approve" ? "APPROVED" : "DENIED";
-  if (decision === "DENIED" && amount !== null) {
+  const decision = action === "approve" ? "APPROVED" : action === "deny" ? "DENIED" : "REVOKED";
+  if (decision !== "APPROVED" && amount !== null) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "amount is only valid when approving"));
   }
 
@@ -175,7 +196,8 @@ export async function handler(req, res, ctx) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Approval not found"));
     }
 
-    if (existing.state !== "PENDING") {
+    const contactRevealConsent = existing.action_type === "contact_reveal_consent";
+    if (existing.state !== "PENDING" && !contactRevealConsent) {
       if (shouldReplayApprovalSideEffects(existing, decision)) {
         const replayed = await resolveApproval({
           approvalId,
@@ -237,17 +259,62 @@ export async function handler(req, res, ctx) {
       reason: note
     });
 
-    if (resolved.state !== decision) {
+    const expectedState = decision === "REVOKED" ? "CANCELLED" : decision;
+    if (resolved.state !== expectedState) {
       return jsonResponse(409, errorPayload("APPROVAL_ALREADY_RESOLVED", "Approval already resolved"));
     }
 
     if (ctx) {
-      ctx.auditEvent = "approval.resolved";
+      ctx.auditEvent = contactRevealConsent
+        ? `contact_reveal.consent_${action === "approve" ? "approved" : action === "deny" ? "denied" : "revoked"}`
+        : "approval.resolved";
       ctx.policy = ctx.policy || {
         decision: "N_A",
         approval_id: approvalId,
         policy_version: null
       };
+      if (contactRevealConsent && ctx.body && typeof ctx.body === "object") {
+        Object.assign(ctx.body, {
+          tx_id: resolved.tx_id || null,
+          contact_reveal_state: resolved.contact_reveal_state || null
+        });
+      }
+    }
+
+    if (contactRevealConsent && resolved.tx_id) {
+      const tx = await getTransaction(String(resolved.tx_id));
+      if (tx) {
+        const eventType = resolved.became_revealed
+          ? "contact_reveal.approved"
+          : decision === "APPROVED"
+            ? "contact_reveal.consent_approved"
+            : decision === "DENIED"
+              ? "contact_reveal.denied"
+              : "contact_reveal.revoked";
+        await Promise.all(
+          uniqueStrings([tx.buyer_agent_id, tx.seller_agent_id]).map(async (audienceId) => {
+            try {
+              await publishSseEvent({
+                audienceType: "agent",
+                audienceId,
+                type: eventType,
+                actor: { type: "human", id: ownerId },
+                entity: { type: "transaction", id: tx.tx_id },
+                payload: {
+                  listing_id: tx.listing_id,
+                  contact_reveal_state: resolved.contact_reveal_state,
+                  consent_role: existing.action_ref?.party_role || null
+                }
+              });
+            } catch (publishError: any) {
+              console.info("sse.publish_failed", {
+                type: eventType,
+                error: publishError?.message || String(publishError)
+              });
+            }
+          })
+        );
+      }
     }
 
     // If this approval executes a redacted message, write an additional audit event

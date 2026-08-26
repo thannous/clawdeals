@@ -67,7 +67,7 @@ describe("transactions service behavior", () => {
 
     await getContactRevealApprovalByTxId("tx-1");
 
-    expect(query.eq).toHaveBeenCalledWith("action_type", "contact_reveal");
+    expect(query.eq).toHaveBeenCalledWith("action_type", "contact_reveal_consent");
     expect(query.eq).toHaveBeenCalledWith("action_ref_id", "tx-1");
     expect(query.order).toHaveBeenCalledWith("created_at", { ascending: false });
     expect(query.limit).toHaveBeenCalledWith(1);
@@ -81,14 +81,12 @@ describe("transactions service behavior", () => {
     await expect(
       requestContactReveal({
         txId: "tx-1",
-        actorAgentId: "buyer-1",
-        autoApprove: true
+        actorAgentId: "buyer-1"
       })
     ).resolves.toEqual(row);
-    expect(harness.rpc).toHaveBeenCalledWith("transaction_request_contact_reveal_v0", {
+    expect(harness.rpc).toHaveBeenCalledWith("transaction_request_contact_reveal_v1", {
       p_tx_id: "tx-1",
-      p_actor_agent_id: "buyer-1",
-      p_auto_approve: true
+      p_actor_agent_id: "buyer-1"
     });
   });
 

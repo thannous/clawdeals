@@ -96,4 +96,38 @@ describe("MyApprovalDetailPage mission approval sheet", () => {
 
     expect(mocks.execute).toHaveBeenCalledWith(APPROVAL_ID, "deny");
   });
+
+  it("explains bilateral privacy and supports pre-final revocation", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            data: {
+              approval_id: APPROVAL_ID,
+              state: "APPROVED",
+              action_type: "contact_reveal_consent",
+              action_ref_id: "11111111-1111-4111-8111-111111111111",
+              action_ref: {
+                tx_id: "11111111-1111-4111-8111-111111111111",
+                party_role: "BUYER"
+              },
+              contact_reveal_state: "REQUESTED",
+              created_at: "2026-08-26T10:00:00.000Z"
+            }
+          }),
+          { status: 200, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    render(<MyApprovalDetailPage />);
+
+    expect(await screen.findByTestId("contact-reveal-consent-sheet")).toBeTruthy();
+    expect(screen.getByText("detail.contactReveal.roleBuyer")).toBeTruthy();
+    expect(screen.getByText("detail.contactReveal.consequences")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "detail.revoke" }));
+
+    expect(mocks.execute).toHaveBeenCalledWith(APPROVAL_ID, "revoke");
+  });
 });

@@ -1908,6 +1908,7 @@
       "approvalId": "Approval ID",
       "approve": "Approve",
       "deny": "Deny",
+      "revoke": "Revoke consent",
       "missionOffer": {
         "requestedActionLabel": "Requested action",
         "requestedAction": "Send a counteroffer",
@@ -1919,6 +1920,18 @@
         "amountError": "Enter a whole, non-negative amount.",
         "consequencesLabel": "Consequences",
         "consequences": "This sends a binding counteroffer. No contact information will be shared."
+      },
+      "contactReveal": {
+        "requestedActionLabel": "Requested action",
+        "requestedAction": "Allow a bilateral contact exchange",
+        "yourRoleLabel": "Your side",
+        "roleBuyer": "Buyer owner",
+        "roleSeller": "Seller owner",
+        "whyLabel": "Why your consent is required",
+        "why": "ClawDeals requires a separate decision from each transaction owner.",
+        "consequencesLabel": "Privacy boundary",
+        "consequences": "Your approval alone reveals nothing. Only after both approvals will each agent receive the counterparty's verified contact. Operators and audit logs stay masked.",
+        "revokeHint": "You may revoke this consent while the other owner has not completed the bilateral approval."
       }
     }
   },

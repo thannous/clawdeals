@@ -68,6 +68,26 @@ function throwIfStaleOfferApproval(error: any, approval: any) {
   });
 }
 
+function throwContactRevealConsentError(error: any): never {
+  const message = String(error?.message || "");
+  const known: Array<[RegExp, number, string, string]> = [
+    [/APPROVAL_NOT_FOUND/i, 404, "NOT_FOUND", "Approval not found"],
+    [/TX_NOT_FOUND/i, 404, "NOT_FOUND", "Approval not found"],
+    [/OWNER_CONTACT_MISSING/i, 409, "OWNER_CONTACT_MISSING", "Both owners must verify their contact details"],
+    [/CONTACT_REVEAL_FINALIZED/i, 409, "CONTACT_REVEAL_FINALIZED", "Contact reveal is already final"],
+    [/CONTACT_REVEAL_NOT_REQUESTED/i, 409, "CONTACT_REVEAL_NOT_REQUESTED", "Contact reveal is not pending"],
+    [/APPROVAL_ALREADY_RESOLVED/i, 409, "APPROVAL_ALREADY_RESOLVED", "Approval already resolved"],
+    [/INVALID_DECISION/i, 400, "VALIDATION_ERROR", "Invalid approval decision"]
+  ];
+  for (const [pattern, status, code, publicMessage] of known) {
+    if (pattern.test(message)) {
+      throw Object.assign(new Error(publicMessage), { status, code });
+    }
+  }
+  mapError(error);
+  throw new Error("Unreachable contact reveal consent error");
+}
+
 const DIRECT_RESOLVE_ACTION_TYPES = new Set(["scopes.upgrade", "escrow.create", "escrow.confirm_received"]);
 
 export async function createApproval({
@@ -373,6 +393,39 @@ export async function resolveApproval({ approvalId, ownerId, decision, resolvedB
   const existing = await getApprovalForOwner(approvalId, ownerId);
   if (!existing) {
     throw Object.assign(new Error("Approval not found"), { status: 404, code: "NOT_FOUND" });
+  }
+
+  if (existing.action_type === "contact_reveal") {
+    throw Object.assign(new Error("Bilateral owner consent is required for contact reveal"), {
+      status: 409,
+      code: "BILATERAL_CONSENT_REQUIRED"
+    });
+  }
+
+  if (existing.action_type === "contact_reveal_consent") {
+    const client = getSupabaseServiceClient();
+    const { data: outcome, error } = await client
+      .rpc("resolve_contact_reveal_consent_v1", {
+        p_approval_id: approvalId,
+        p_owner_id: ownerId,
+        p_decision: decision,
+        p_reason: reason ?? null
+      })
+      .single();
+    if (error) throwContactRevealConsentError(error);
+
+    const resolved = await getApprovalForOwner(approvalId, ownerId);
+    if (!resolved) {
+      throw Object.assign(new Error("Approval not found"), { status: 404, code: "NOT_FOUND" });
+    }
+    return {
+      ...resolved,
+      tx_id: outcome?.tx_id || existing.action_ref?.tx_id || existing.action_ref_id,
+      contact_reveal_state: outcome?.contact_reveal_state || null,
+      contact_revealed_at: outcome?.contact_revealed_at || null,
+      tx_status: outcome?.tx_status || null,
+      became_revealed: outcome?.became_revealed === true
+    };
   }
 
   if (DIRECT_RESOLVE_ACTION_TYPES.has(String(existing.action_type || ""))) {

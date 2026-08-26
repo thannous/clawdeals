@@ -16,7 +16,7 @@ export function useMyApprovalAction({ onSuccess }: UseMyApprovalActionOptions = 
   const execute = useCallback(
     async (
       approvalId: string,
-      action: "approve" | "deny",
+      action: "approve" | "deny" | "revoke",
       input: ApprovalActionInput = {}
     ) => {
       if (!approvalId || submitState === "loading") return;

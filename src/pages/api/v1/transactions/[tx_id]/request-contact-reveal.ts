@@ -8,7 +8,6 @@ import { getListing } from "../../../../../server/services/listings";
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/policy/evaluate";
 import {
-  getContactRevealApprovalByTxId,
   getTransaction,
   requestContactReveal
 } from "../../../../../server/services/transactions";
@@ -100,27 +99,6 @@ export async function handler(req, res, ctx) {
       });
     }
 
-    if (tx.contact_reveal_state === "REQUESTED") {
-      const approval = await getContactRevealApprovalByTxId(tx.tx_id);
-      if (!approval) {
-        return jsonResponse(500, errorPayload("ERROR", "Missing contact reveal approval"));
-      }
-      if (ctx) {
-        ctx.auditEvent = "contact_reveal.requested";
-        ctx.policy = {
-          decision: POLICY_DECISION.REQUIRES_APPROVAL,
-          policy_version: null,
-          approval_id: approval.approval_id
-        };
-      }
-      return jsonResponse(202, {
-        tx_id: tx.tx_id,
-        contact_reveal_state: tx.contact_reveal_state,
-        approval_id: approval.approval_id,
-        message: "Contact reveal request pending approval"
-      });
-    }
-
     // Safe default: contact reveal is only actionable on ACCEPTED.
     if (tx.status !== "ACCEPTED") {
       return jsonResponse(
@@ -147,9 +125,6 @@ export async function handler(req, res, ctx) {
       action: "contact_reveal"
     });
 
-    // TI-332: Contact reveal is always approval-required (disable auto-approve path).
-    const autoApprove = false;
-
     if (ctx) {
       ctx.policy = {
         decision: POLICY_DECISION.REQUIRES_APPROVAL,
@@ -160,49 +135,29 @@ export async function handler(req, res, ctx) {
 
     const result = await requestContactReveal({
       txId: tx.tx_id,
-      actorAgentId: agentId,
-      autoApprove
+      actorAgentId: agentId
     });
 
     const audienceIds = uniqueStrings([tx.buyer_agent_id, tx.seller_agent_id]);
 
     if (result.contact_reveal_state === "APPROVED") {
       if (ctx) {
-        ctx.auditEvent = "contact_reveal.auto_approved";
+        ctx.auditEvent = "contact_reveal.requested";
       }
-      await Promise.all(
-        audienceIds.map(async (audienceId) => {
-          try {
-            await publishSseEvent({
-              audienceType: "agent",
-              audienceId,
-              type: "contact_reveal.approved",
-              actor: { type: "agent", id: agentId },
-              entity: { type: "transaction", id: tx.tx_id },
-              payload: {
-                listing_id: tx.listing_id,
-                contact_reveal_state: "APPROVED"
-              }
-            });
-          } catch (error) {
-            console.info("sse.publish_failed", { type: "contact_reveal.approved", error: error?.message || String(error) });
-          }
-        })
-      );
-
       return jsonResponse(200, {
         tx_id: result.tx_id,
         status: result.tx_status || result.status || "CONTACT_REVEALED",
         contact_reveal_state: result.contact_reveal_state,
         contact_revealed_at: result.contact_revealed_at,
-        message: "Contact reveal approved automatically"
+        message: "Contact reveal already approved by both owners"
       });
     }
 
     if (ctx) {
       ctx.auditEvent = "contact_reveal.requested";
       ctx.policy = {
-        decision: policyDecision.decision,
+        // Bilateral owner consent is invariant; a legacy policy cannot auto-reveal PII.
+        decision: POLICY_DECISION.REQUIRES_APPROVAL,
         policy_version: policyDecision.policy_version,
         approval_id: result.approval_id || null
       };
@@ -225,8 +180,7 @@ export async function handler(req, res, ctx) {
             entity: { type: "transaction", id: tx.tx_id },
             payload: {
               listing_id: tx.listing_id,
-              contact_reveal_state: "REQUESTED",
-              approval_id: result.approval_id || null
+              contact_reveal_state: "REQUESTED"
             }
           });
         } catch (error) {
@@ -239,7 +193,12 @@ export async function handler(req, res, ctx) {
       tx_id: result.tx_id,
       contact_reveal_state: result.contact_reveal_state || "REQUESTED",
       approval_id: result.approval_id,
-      message: "Contact reveal request pending approval"
+      requester_role: result.requester_role,
+      consent_states: {
+        buyer: result.buyer_consent_state,
+        seller: result.seller_consent_state
+      },
+      message: "Contact reveal requires approval from both owners"
     });
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));

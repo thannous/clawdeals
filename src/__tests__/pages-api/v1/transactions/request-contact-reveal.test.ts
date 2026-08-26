@@ -229,8 +229,7 @@ suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
     expect(result.body.approval_id).toBe("appr-1");
     expect(requestContactRevealMock).toHaveBeenCalledWith({
       txId,
-      actorAgentId: buyerAgentId,
-      autoApprove: false
+      actorAgentId: buyerAgentId
     });
   });
 
@@ -253,8 +252,7 @@ suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
     expect(result.body.approval_id).toBe("appr-1");
     expect(requestContactRevealMock).toHaveBeenCalledWith({
       txId,
-      actorAgentId: buyerAgentId,
-      autoApprove: false
+      actorAgentId: buyerAgentId
     });
   });
 });

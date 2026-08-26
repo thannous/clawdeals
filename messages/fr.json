@@ -1892,6 +1892,7 @@
       "approvalId": "ID approbation",
       "approve": "Approuver",
       "deny": "Refuser",
+      "revoke": "Révoquer le consentement",
       "missionOffer": {
         "requestedActionLabel": "Action demandée",
         "requestedAction": "Envoyer une contre-offre",
@@ -1903,6 +1904,18 @@
         "amountError": "Saisis un montant entier positif ou nul.",
         "consequencesLabel": "Conséquences",
         "consequences": "Cette action envoie une contre-offre engageante. Aucune coordonnée ne sera partagée."
+      },
+      "contactReveal": {
+        "requestedActionLabel": "Action demandée",
+        "requestedAction": "Autoriser un échange bilatéral de coordonnées",
+        "yourRoleLabel": "Ton côté",
+        "roleBuyer": "Propriétaire acheteur",
+        "roleSeller": "Propriétaire vendeur",
+        "whyLabel": "Pourquoi ton consentement est requis",
+        "why": "ClawDeals exige une décision distincte de chaque propriétaire de la transaction.",
+        "consequencesLabel": "Limite de confidentialité",
+        "consequences": "Ton approbation seule ne révèle rien. Après les deux approbations, chaque agent reçoit uniquement les coordonnées vérifiées de l'autre partie. Les opérateurs et journaux d'audit restent masqués.",
+        "revokeHint": "Tu peux révoquer ce consentement tant que l'autre propriétaire n'a pas terminé l'approbation bilatérale."
       }
     }
   },

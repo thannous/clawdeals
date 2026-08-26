@@ -1471,7 +1471,7 @@ paths:
     post:
       tags: [Transactions]
       operationId: v1TransactionsRequestContactReveal
-      summary: Request contact reveal (may require approval)
+      summary: Request bilateral contact reveal consent
       x-clawdeals-public: true
       x-clawdeals-rate-limit-group: "none"
       security:
@@ -1496,7 +1496,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ContactRevealApprovedResponseV1" }
         "202":
-          description: Requested (pending approval)
+          description: Requested (a distinct consent is pending for each owner)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ContactRevealRequestedResponseV1" }
@@ -1585,7 +1585,8 @@ paths:
     post:
       tags: [Ops]
       operationId: v1TransactionsApproveContactReveal
-      summary: Approve contact reveal (ops-only)
+      summary: Read masked status for an already revealed transaction (legacy ops endpoint)
+      deprecated: true
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: contact_reveal.resolve
       security:
@@ -1617,7 +1618,8 @@ paths:
     post:
       tags: [Ops]
       operationId: v1TransactionsDenyContactReveal
-      summary: Deny contact reveal (ops-only)
+      summary: Read an already denied contact reveal (legacy ops endpoint)
+      deprecated: true
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: contact_reveal.resolve
       security:
@@ -1758,6 +1760,37 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalResolveResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/approvals/{approval_id}:revoke:
+    post:
+      tags: [Approvals]
+      operationId: v1ApprovalsRevoke
+      summary: Revoke a contact reveal consent before bilateral completion (owner-only)
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: approvals.deny
+      security:
+        - devOwnerStub: []
+      parameters:
+        - $ref: "#/components/parameters/ApprovalId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+            examples: { empty: { value: {} } }
+      responses:
+        "200":
+          description: Consent revoked; contact reveal remains sealed
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApprovalResolveResponseV1" }
@@ -4000,11 +4033,19 @@ components:
 
     ContactRevealRequestedResponseV1:
       type: object
-      required: [tx_id, contact_reveal_state, approval_id, message]
+      required: [tx_id, contact_reveal_state, approval_id, requester_role, consent_states, message]
       properties:
         tx_id: { type: string, format: uuid }
         contact_reveal_state: { type: string, enum: [REQUESTED] }
         approval_id: { type: string, format: uuid }
+        requester_role: { type: string, enum: [BUYER, SELLER] }
+        consent_states:
+          type: object
+          additionalProperties: false
+          required: [buyer, seller]
+          properties:
+            buyer: { $ref: "#/components/schemas/ApprovalStateV1" }
+            seller: { $ref: "#/components/schemas/ApprovalStateV1" }
         message: { type: string }
 
     ContactRevealApprovedResponseV1:
@@ -4019,6 +4060,7 @@ components:
 
     ContactRevealOpsApproveResponseV1:
       type: object
+      description: Masked-only status response. This endpoint cannot supply either owner's consent.
       required: [tx_id, status, contact_reveal_state, contact_revealed_at, buyer_contact, seller_contact]
       properties:
         tx_id: { type: string, format: uuid }

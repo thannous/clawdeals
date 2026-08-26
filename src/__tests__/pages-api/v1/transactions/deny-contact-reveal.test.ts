@@ -120,7 +120,7 @@ suite("POST /v1/transactions/{tx_id}/deny-contact-reveal (TI-203)", () => {
     expect(result.body.error.code).toBe("PERMISSION_DENIED");
   });
 
-  it("denies => 200", async () => {
+  it("cannot replace either owner's consent decision", async () => {
     const req: any = {
       method: "POST",
       headers: { "idempotency-key": "idem-1" },
@@ -129,8 +129,9 @@ suite("POST /v1/transactions/{tx_id}/deny-contact-reveal (TI-203)", () => {
     };
 
     const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(200);
-    expect(result.body.contact_reveal_state).toBe("DENIED");
-    expect(publishSseEventMock).toHaveBeenCalled();
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("BILATERAL_CONSENT_REQUIRED");
+    expect(resolveApprovalMock).not.toHaveBeenCalled();
+    expect(publishSseEventMock).not.toHaveBeenCalled();
   });
 });

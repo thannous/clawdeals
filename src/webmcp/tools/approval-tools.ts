@@ -18,13 +18,13 @@ function currentApprovalId(): string | null {
 
 const resolveApprovalSchema = z
   .object({
-    decision: z.enum(["approve", "deny"]),
+    decision: z.enum(["approve", "deny", "revoke"]),
     amount: z.number().int().min(0).max(2_147_483_647).optional(),
     note: z.string().trim().max(400).optional()
   })
   .strict()
   .superRefine((args, ctx) => {
-    if (args.decision === "deny" && args.amount !== undefined) {
+    if (args.decision !== "approve" && args.amount !== undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["amount"],
@@ -52,7 +52,7 @@ export const approvalTools: ToolDef[] = [
   {
     name: "resolve_approval",
     description:
-      "Approve, edit, or deny only the approval shown on this owner-session page. Never uses an agent API key.",
+      "Approve, edit, deny, or revoke only the approval shown on this owner-session page. Never uses an agent API key.",
     scope: "admin",
     requiresConfirmation: true,
     annotations: { readOnlyHint: false, untrustedContentHint: false },
@@ -63,7 +63,7 @@ export const approvalTools: ToolDef[] = [
       properties: {
         decision: {
           type: "string",
-          enum: ["approve", "deny"],
+          enum: ["approve", "deny", "revoke"],
           description: "Owner decision for the approval currently shown."
         },
         amount: {

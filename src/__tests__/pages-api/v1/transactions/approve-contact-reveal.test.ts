@@ -120,7 +120,7 @@ suite("POST /v1/transactions/{tx_id}/approve-contact-reveal (TI-203)", () => {
     expect(result.body.error.code).toBe("PERMISSION_DENIED");
   });
 
-  it("returns 409 when tx is not REQUESTED", async () => {
+  it("returns 409 because ops cannot provide owner consent", async () => {
     getTransactionMock.mockResolvedValue({
       tx_id: txId,
       listing_id: listingId,
@@ -139,15 +139,10 @@ suite("POST /v1/transactions/{tx_id}/approve-contact-reveal (TI-203)", () => {
 
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(409);
-    expect(result.body.error.code).toBe("TX_NOT_REQUESTED");
+    expect(result.body.error.code).toBe("BILATERAL_CONSENT_REQUIRED");
   });
 
-  it("returns 409 and does not approve when contacts are missing/unverified", async () => {
-    const error: any = new Error("Owner contact missing or unverified");
-    error.status = 409;
-    error.code = "OWNER_CONTACT_MISSING";
-    getMaskedContactsForTransactionMock.mockRejectedValueOnce(error);
-
+  it("does not inspect contacts or mutate approvals while consent is pending", async () => {
     const req: any = {
       method: "POST",
       headers: { "idempotency-key": "idem-1" },
@@ -157,31 +152,22 @@ suite("POST /v1/transactions/{tx_id}/approve-contact-reveal (TI-203)", () => {
 
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(409);
-    expect(result.body.error.code).toBe("OWNER_CONTACT_MISSING");
+    expect(result.body.error.code).toBe("BILATERAL_CONSENT_REQUIRED");
+    expect(getMaskedContactsForTransactionMock).not.toHaveBeenCalled();
     expect(resolveApprovalMock).not.toHaveBeenCalled();
     expect(publishSseEventMock).not.toHaveBeenCalled();
   });
 
-  it("approves => 200 with masked contacts", async () => {
-    getTransactionMock
-      .mockResolvedValueOnce({
-        tx_id: txId,
-        listing_id: listingId,
-        buyer_agent_id: buyerAgentId,
-        seller_agent_id: sellerAgentId,
-        status: "ACCEPTED",
-        contact_reveal_state: "REQUESTED",
-        contact_revealed_at: null
-      } as any)
-      .mockResolvedValueOnce({
-        tx_id: txId,
-        listing_id: listingId,
-        buyer_agent_id: buyerAgentId,
-        seller_agent_id: sellerAgentId,
-        status: "CONTACT_REVEALED",
-        contact_reveal_state: "APPROVED",
-        contact_revealed_at: "2026-02-08T12:00:00Z"
-      } as any);
+  it("returns masked-only status for an already revealed transaction", async () => {
+    getTransactionMock.mockResolvedValueOnce({
+      tx_id: txId,
+      listing_id: listingId,
+      buyer_agent_id: buyerAgentId,
+      seller_agent_id: sellerAgentId,
+      status: "CONTACT_REVEALED",
+      contact_reveal_state: "APPROVED",
+      contact_revealed_at: "2026-02-08T12:00:00Z"
+    } as any);
 
     const req: any = {
       method: "POST",
@@ -194,6 +180,8 @@ suite("POST /v1/transactions/{tx_id}/approve-contact-reveal (TI-203)", () => {
     expect(result.status).toBe(200);
     expect(result.body.contact_reveal_state).toBe("APPROVED");
     expect(result.body.buyer_contact?.email_masked).toContain("***");
-    expect(publishSseEventMock).toHaveBeenCalled();
+    expect(result.body.buyer_contact).not.toHaveProperty("email");
+    expect(resolveApprovalMock).not.toHaveBeenCalled();
+    expect(publishSseEventMock).not.toHaveBeenCalled();
   });
 });
