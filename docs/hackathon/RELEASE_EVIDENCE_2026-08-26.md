@@ -6,8 +6,9 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 
 - Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
 - Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
-- Candidate implementation SHA: `3f1057541ac3fd523fbc89f0ea4b367e52077026`
-- Current public proof SHA: `9e7102ea4dcc879aa1f5ffb4e68bb712cf11c96e`
+- Clean-clone candidate SHA: `3f1057541ac3fd523fbc89f0ea4b367e52077026`
+- Latest functional hardening SHA: `3739c7c96f574251af5d778adae4edeb2a2ba078`
+- Last observed public HEAD before this evidence update: `7b52d94bc2f304fcd4e9debeec5f89ebd88f1dbd`
 - Pre-challenge baseline: `webmcp-challenge-baseline` → `00880457964929c0773237a9c724704f5da651f0`
 
 ## Evidence matrix
@@ -15,10 +16,12 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 | Layer | Status | Evidence |
 | --- | --- | --- |
 | LOCAL release gate | PASS | Clean clone of `3f10575`: migrations + synthetic seed, 373 Vitest files / 2,616 passed / 1 skipped, build, selector 24 × 3, contracts 79/79, UI 5/5, journey 2/2, security 10/10. |
+| LOCAL hardening gate | PASS on `3739c7c` / `7b52d94` | 375 Vitest files / 2,627 passed / 1 skipped, typecheck, lint, 109-page production build, contracts 81/81, WebMCP UI 5/5, release preflight and a runtime Origin Trial meta probe all passed. |
 | LOCAL GitHub-workflow replay | PASS | Node 24.19.0 / npm 11.17.0 replayed the exact `CI` commands: lint, typecheck and contracts, two unit shards (1,370 passed + 1 skipped; 1,246 passed), Worker contracts (14 passed), and Wrangler dry-run. TypeScript SDK generation was deterministic, typechecked, and passed 3 runtime tests. Python 3.11.15 generation was deterministic, imported successfully, and passed 2 tests. |
-| CI | PASS | [`CI` run 32959645029](https://github.com/thannous/clawdeals/actions/runs/32959645029) and [`SDK CI` run 32959645020](https://github.com/thannous/clawdeals/actions/runs/32959645020) completed successfully on `3f10575`. |
-| DEPLOYED | PASS | GitHub's Vercel commit status for `3f10575` reported `Deployment has completed`. |
-| PUBLIC HTTP | PASS | `https://clawdeals.com/webmcp-challenge` returned HTTP 200 with `x-matched-path: /en/webmcp-challenge` and displayed deploy SHA `3f10575`; `https://clawdeals.com/webmcp` also returned HTTP 200. |
+| CI historical | PASS | [`CI` run 32959645029](https://github.com/thannous/clawdeals/actions/runs/32959645029) and [`SDK CI` run 32959645020](https://github.com/thannous/clawdeals/actions/runs/32959645020) completed successfully on `3f10575`; [`CI` run 32980551636](https://github.com/thannous/clawdeals/actions/runs/32980551636) passed on `9e7102e`. |
+| CI current HEAD | WAIVED / NOT RUN | Runs [32984012783](https://github.com/thannous/clawdeals/actions/runs/32984012783) and [32984555747](https://github.com/thannous/clawdeals/actions/runs/32984555747) were accepted for `7b52d94` but never created jobs. The owner explicitly waived a fresh remote rerun; this row is neither PASS nor FAIL. |
+| DEPLOYED | PASS on `7b52d94` | GitHub's Vercel commit status reported `Deployment has completed`. |
+| PUBLIC HTTP | PASS on `7b52d94` | `https://clawdeals.com/webmcp-challenge` returned HTTP 200, displayed `7b52d94bc2f3`, production `GET /api/v1/sandbox/reset` returned 404, and `GET /api/v1/public/listings?limit=1` returned 200. |
 | PUBLIC incognito read-only | PASS on `1b52e64` | Fresh Chromium context: challenge page 200, displayed SHA `1b52e64799fd`, no stored key, public listings 200, production sandbox GET 404. See [`PUBLIC_SMOKE_2026-08-26.md`](./PUBLIC_SMOKE_2026-08-26.md). |
 | PUBLIC deployed registry wiring | PASS on `1b52e64` with explicit mock boundary | A separate clean context injected `document.modelContext` and observed the exact five guest tools. This is deployed wiring proof, not native Chrome/ChatGPT proof. |
 | PUBLIC native in-app read path | PASS on `9e7102e` | Codex in-app browser discovered the five live tools and executed `get_page_context` → `search_listings` → `get_action_receipt`; the shared UI moved to `/browse?q=e-bike` and receipt data stayed redacted. See [`NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](./NATIVE_WEBMCP_EVIDENCE_2026-08-26.md). |
@@ -39,3 +42,8 @@ public tool discovery, selection, shared-UI navigation and a redacted receipt.
 They do not prove ChatGPT's separate runtime, Chrome with its experimental flag
 enabled, an authenticated public sandbox journey, a public video, or Devpost
 acceptance.
+
+The current-HEAD GitHub Actions rerun was explicitly waived after GitHub kept
+both dispatch records before job creation. Historical green CI, current local
+validation, Vercel deployment and public HTTP behavior remain separate evidence
+and must not be collapsed into a synthetic current-CI pass.

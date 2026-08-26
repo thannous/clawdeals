@@ -167,5 +167,12 @@ contracts 79/79, UI 5/5, journey 2/2 and security 10/10. GitHub `CI` and `SDK CI
 Vercel deployment, and public HTTP route checks also passed for that SHA; the exact links and
 remaining proof boundaries are recorded in `docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`.
 
+Later hardening on `3739c7c` / `7b52d94` passed 2,627 unit tests plus one
+skip, typecheck, lint, a 109-page production build, 81 WebMCP contracts and five
+WebMCP UI tests. Vercel and public HTTP checks passed on `7b52d94`. A fresh
+GitHub Actions rerun for that HEAD was explicitly waived before any job was
+created; the last green remote CI remains `9e7102e` and is not misrepresented as
+current-HEAD CI.
+
 The full private-window journey, real ChatGPT execution on the candidate, the public video,
 and the final Devpost submission remain separate pending proof layers.
