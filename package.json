@@ -52,6 +52,7 @@
     "capture:hackathon:all": "npm run capture:hackathon:video && npm run capture:hackathon:voiceover && npm run capture:hackathon:assemble",
     "eval:webmcp:gate": "npm run typecheck && npm run lint && npm run test:unit && npm run build && npm run eval:webmcp:selection && npm run eval:webmcp:contracts && npm run eval:webmcp:ui && npm run eval:webmcp:journey && npm run eval:webmcp:security",
     "release:hackathon:preflight": "node scripts/verify-hackathon-release.mjs",
+    "bootstrap:webmcp:judge": "node scripts/bootstrap-webmcp-judge.mjs",
     "verify:public-sandbox": "node scripts/verify-public-sandbox.mjs",
     "release:hackathon:local": "npm run release:hackathon:preflight && npm run eval:webmcp:gate",
     "test:integration:deals": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/deals.api.spec.ts e2e/integration/deal-feed-journey.spec.ts",

@@ -129,7 +129,7 @@ Optional local defaults used by Playwright prod-mode webServer: `INTERNAL_CRON_S
 
 Reject the run if `SUPABASE_URL` contains `gztfmpuqtpvncdcuhqxy`. Seed, smoke, and Playwright already fail closed on that host.
 
-### App, synthetic seed, WebMCP judge reset
+### App, local synthetic seed, and deterministic WebMCP judge bootstrap
 
 ```bash
 npm run dev:sandbox
@@ -140,20 +140,47 @@ In another shell:
 ```bash
 # general synthetic sandbox fixtures (deals/listings/watchlists for the seeded agent)
 npm run seed:dev:sandbox
-
-# create or reuse a judge agent, then reset the deterministic WebMCP challenge fixtures
-curl -sS -X POST 'http://localhost:3000/api/v1/agents' \
-  -H 'Content-Type: application/json' \
-  -H 'Idempotency-Key: webmcp-judge-1' \
-  -d '{ "name": "webmcp-judge" }'
-
-curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
-  -H 'Authorization: Bearer <JUDGE_API_KEY>' \
-  -H 'Content-Type: application/json' \
-  -d '{ "mode": "webmcp_challenge" }'
 ```
 
-Judge reset expects `WEBMCP_JUDGE_AGENT_ID` to match that agent. It returns `403` for any other agent and `404` when sandbox/judge identity is not configured. Fixtures are synthetic only: one buyer mission, one synthetic seller, five e-bikes, one thread, no real email/phone.
+The general seed above is a local legacy helper. It creates or reuses a random
+agent and may use test-only identity headers. It must not be used to provision
+the public judge.
+
+For the public isolated host, set the branch-specific Supabase URLs, the exact
+`https://sandbox.clawdeals.com` public URLs and the fixed judge ID shown above.
+After migrations, validate the plan without a service-role key or network call:
+
+```bash
+npm run bootstrap:webmcp:judge
+```
+
+Only after the dry-run succeeds and the isolated branch/host are confirmed,
+provide the staging service-role key and explicitly apply:
+
+```bash
+npm run bootstrap:webmcp:judge -- --apply
+```
+
+The bootstrap intentionally does not load `.env.local` or `.env` on its own.
+Export the reviewed staging-only values in the current shell. This prevents an
+ambient developer or production credential from being combined with the
+sandbox command.
+
+The apply command uses service-role access only from the operator shell. It
+upserts owner `94000000-0000-4000-8000-000000000001` and judge agent
+`93000000-0000-4000-8000-000000000001`, rotates isolated `cd_sandbox` buyer
+and seller keys, calls the judge reset twice, and writes the raw keys only to
+the gitignored `.env.webmcp-judge.local` file with mode `0600`. It never prints
+the raw keys. Existing secret files are never overwritten. Production hosts,
+the production Supabase ref, mismatched branch refs, Vercel default hosts and
+legacy identity headers fail before any database mutation.
+`SUPABASE_SERVICE_ROLE_PROJECT_REF` must explicitly equal the isolated branch
+ref, and `NEXT_PUBLIC_WEBMCP_ENABLED` must equal `1`.
+
+Judge reset returns `403` for any other agent and `404` when sandbox/judge
+identity is not configured. Fixtures are synthetic only: one buyer mission,
+one synthetic seller, five e-bikes plus two supporting listings, one stable
+thread, and no real email or phone.
 
 Local API smoke (still non-prod only):
 

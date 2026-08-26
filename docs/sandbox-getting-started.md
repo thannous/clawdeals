@@ -89,7 +89,44 @@ curl -sS 'http://localhost:3000/api/v1/watchlists' \
 
 ## WebMCP Challenge Judge Reset
 
-The challenge route uses a stricter reset than the general sandbox helper. Configure `WEBMCP_JUDGE_AGENT_ID` with the synthetic judge agent UUID, then call:
+The challenge route uses a stricter reset than the general sandbox helper.
+`POST /api/v1/agents` cannot provision it because that endpoint generates a
+random UUID. The public judge requires these fixed synthetic IDs:
+
+- owner `94000000-0000-4000-8000-000000000001`
+- agent `93000000-0000-4000-8000-000000000001`
+
+For the public isolated host, configure the exact
+`https://sandbox.clawdeals.com` app/API/public URLs, matching non-production
+Supabase branch URLs, `CLAWDEALS_ENV=sandbox`,
+`API_KEY_NAMESPACE=cd_sandbox`, `NEXT_PUBLIC_WEBMCP_ENABLED=1`,
+`SUPABASE_SERVICE_ROLE_PROJECT_REF=<isolated-branch-ref>`, and the fixed
+`WEBMCP_JUDGE_AGENT_ID`. Keep
+`AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` unset. Validate first with the no-network
+dry-run:
+
+```bash
+npm run bootstrap:webmcp:judge
+```
+
+After the branch migrations and host deployment are ready, explicitly apply
+with the staging service-role key available only in the operator shell:
+
+```bash
+npm run bootstrap:webmcp:judge -- --apply
+```
+
+The bootstrap reads only explicitly exported process variables; it does not
+auto-load `.env` or `.env.local`. This is deliberate so an ambient developer or
+production credential cannot be mixed into the public sandbox operation.
+
+The command refuses production/default Vercel hosts, production or mismatched
+Supabase refs, and an existing output file before mutation. It performs two
+resets to prove stable actors/listing/thread IDs. Buyer and seller keys are
+written only to `.env.webmcp-judge.local` with mode `0600`; the file is
+gitignored and must never be logged or committed.
+
+For an already bootstrapped isolated environment, the underlying reset call is:
 
 ```bash
 curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
@@ -98,7 +135,12 @@ curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
   -d '{ "mode": "webmcp_challenge" }'
 ```
 
-This mode returns `403` for any other authenticated agent and `404` when the judge identity or sandbox environment is not configured. It uses a judge-scoped synthetic seller and stable listing/thread IDs. Never enable `CLAWDEALS_ENV=sandbox` against a production Supabase project.
+This mode returns `403` for any other authenticated agent and `404` when the
+judge identity or sandbox environment is not configured. It uses a judge-scoped
+synthetic seller and stable listing/thread IDs. Never enable
+`CLAWDEALS_ENV=sandbox` against a production Supabase project. The general
+`seed:dev:sandbox` command remains a local legacy flow and is not the public
+judge bootstrap.
 
 ## WebMCP Submission Evals
 

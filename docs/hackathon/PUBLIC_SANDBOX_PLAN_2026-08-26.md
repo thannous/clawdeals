@@ -81,6 +81,47 @@ an administrative staging-only operation:
 `POST /api/v1/agents` is not sufficient because it creates a random agent ID
 that cannot equal `WEBMCP_JUDGE_AGENT_ID`.
 
+After the data-less branch exists and all migrations have completed, use the
+offline service-role bootstrap. It is dry-run only by default and performs no
+network request or database mutation without `--apply`:
+
+```bash
+# validates the exact sandbox host, matching non-production branch refs,
+# fixed judge identity and gitignored output path; service role is not needed
+npm run bootstrap:webmcp:judge
+
+# explicit staging mutation after reviewing the dry-run
+npm run bootstrap:webmcp:judge -- --apply
+```
+
+The command reads only the current process environment. It intentionally does
+not auto-load `.env`, `.env.local` or another ambient file. Export the isolated
+values in the operator shell, or invoke Node with an explicit staging-only
+`--env-file`; never rely on a developer `.env.local` whose provenance is mixed.
+
+The apply mode reserves `.env.webmcp-judge.local` with exclusive create and
+mode `0600` before any database write. It idempotently upserts the fixed owner and
+agent, revokes prior active/grace keys, creates `cd_sandbox` buyer and seller
+keys, executes the judge reset twice, and rejects unstable actors, fixture
+counts, listing IDs or thread IDs. Raw keys and the service role are never
+printed. If a later step fails, newly issued keys are revoked and the reserved
+file is removed. The file is covered by `.gitignore`; never copy it into
+Devpost, Linear, logs or the repository.
+
+Apply mode additionally requires all of the following to be exact:
+
+- `PUBLIC_SANDBOX_URL=https://sandbox.clawdeals.com`
+- `NEXT_PUBLIC_APP_URL=https://sandbox.clawdeals.com`
+- `NEXT_PUBLIC_API_BASE_URL=https://sandbox.clawdeals.com`
+- identical branch-specific `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL` refs
+- staging `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SERVICE_ROLE_PROJECT_REF` equal to that isolated branch ref
+- `NEXT_PUBLIC_WEBMCP_ENABLED=1`
+- `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` unset
+
+This is an operator-side script. Do not add a public bootstrap endpoint and do
+not use `seed:dev:sandbox` for the public judge identity.
+
 ## Acceptance sequence
 
 1. `GET https://sandbox.clawdeals.com/webmcp-challenge` returns 200 without a
@@ -93,7 +134,9 @@ that cannot equal `WEBMCP_JUDGE_AGENT_ID`.
    `get_page_context`, `show_listings`, `open_listing`, `search_listings`,
    `create_buy_mission`, `start_thread`, `send_message`, `make_offer`,
    `respond_to_offer`, `request_contact_reveal`, `get_action_receipt`.
-6. Judge reset returns 200 twice with stable listing and thread IDs.
+6. `bootstrap:webmcp:judge -- --apply` returns two successful resets with stable
+   buyer/seller actors, seven listing IDs and thread ID
+   `91000000-0000-4000-8000-000000000001`.
 7. Execute mission creation, policy-fit search, listing navigation, thread,
    message and the editable 1,100 EUR offer confirmation.
 8. Verify the receipt, hard-budget denial above 1,300 EUR and zero raw contact

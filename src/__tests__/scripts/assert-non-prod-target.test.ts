@@ -21,6 +21,8 @@ describe("assert-non-prod-target", () => {
   });
 
   it("detects production api host", () => {
+    expect(isProductionApiTarget("https://clawdeals.com/webmcp-challenge")).toBe(true);
+    expect(isProductionApiTarget("https://www.clawdeals.com/webmcp-challenge")).toBe(true);
     expect(isProductionApiTarget("https://app.clawdeals.com")).toBe(true);
     expect(isProductionApiTarget("http://localhost:3000")).toBe(false);
   });
