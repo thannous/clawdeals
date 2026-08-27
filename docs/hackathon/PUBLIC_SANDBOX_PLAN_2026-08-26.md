@@ -8,17 +8,19 @@ It must never run against ClawDeals production or the production Supabase projec
 | Check | Result |
 | --- | --- |
 | `staging.app.clawdeals.com` DNS | NOT PROVISIONED — no DNS answer |
-| Public sandbox hostname | NOT PROVISIONED |
+| Public sandbox hostname | RESERVED AS TARGET — `sandbox.clawdeals.com`; DNS and certificate not provisioned |
 | GitHub deployment environments | `Preview` and `Production` only |
-| Vercel dashboard | PASS — authenticated Chrome sees production project `clawdeals`; no `clawdeals-staging` project exists |
-| Supabase dashboard | PASS — production `clawdeals` is in the Vercel-linked Pro organization; branching is enabled and no persistent branch exists |
+| Vercel dashboard | PARTIAL — isolated project `clawdeals-staging` exists with non-sensitive sandbox configuration; no Git connection or deployment |
+| Supabase dashboard | PARTIAL — persistent data-less branch `webmcp-sandbox` exists at ref `eusjrzydepzzsnhrhysp`; historical migrations were replayed, but TI-367, TI-370, TI-377 and the execute-hardening migration remain unapplied |
+| Upstash Redis | NOT PROVISIONED — isolated database and OAuth session pending |
+| Sensitive staging variables | NOT PROVISIONED — no branch keys, Redis token or generated HMAC/session secrets have been sent to Vercel |
 | GitHub staging variables/secrets | NOT PROVISIONED — repository exposes only `NPM_TOKEN`; no staging variables |
 | Production reset | PASS — `/api/v1/sandbox/reset` returns 404 |
 | Local isolated journey | PASS — recorded by the release gate |
 | Public authenticated eleven-tool journey | PENDING |
 
-The environment described in `docs/release-environments.md` is therefore a
-target topology, not a currently proven deployment.
+The environment described in `docs/release-environments.md` is partially
+provisioned, but it is not yet a deployment and has no public proof.
 
 ## Required topology
 
@@ -154,15 +156,17 @@ even though a buyer key is sufficient to expose the eleven-tool registry.
 
 ## External setup gate
 
-Creating the Vercel staging project, persistent Supabase branch, Redis database,
-DNS record and staging secrets changes external infrastructure and requires the
-account owner at action time. No such resource was created during this audit.
+The owner authorized the public sandbox and its branch cost. The persistent
+Supabase branch and isolated Vercel project were created. OAuth login to create
+the isolated Redis, transmitting staging-only secrets, applying the four final
+migrations, connecting Git and changing DNS remain action-gated external
+mutations. None of those pending actions may target production.
 
 The dashboard and current Supabase billing documentation show that the branch
 starts on Micro compute at `USD 0.01344/hour` (about `USD 0.32/day` or
 `USD 10/month` if kept continuously). Branching compute is billed separately
 from the organization's compute credit and is not covered by the Spend Cap.
-Confirm that cost immediately before creating the persistent branch.
+The owner accepted that cost before the persistent branch was created.
 
 References:
 

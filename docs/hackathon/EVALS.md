@@ -98,11 +98,17 @@ Root validation ran the official `npm run release:hackathon:local` gate to exit 
 
 This clean-commit gate is local proof. Remote CI, deployment and public behavior remain separately evidenced below.
 
+On 27 August, the clean repository candidate `fc29e6659d5afa3bca9e64774693e81895836cef`
+passed release preflight, typecheck, lint, 381 Vitest files / 2,667 passed / 1
+skipped, a 109-page build, selector 24 × 3, contracts 82/82 and Chromium UI
+6/6. Journey and security were not rerun on that SHA because the local Docker
+engine was unavailable; the public sandbox was not used as a substitute.
+
 ## Proof layers
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on clean `2ed489d` | 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. |
+| LOCAL | Full database gate PASS on clean `2ed489d`; non-database layers PASS on clean `fc29e66` | `fc29e66`: 381 Vitest files / 2,667 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82 and UI 6/6. Current-SHA journey/security remain pending. |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
 | DEPLOYED / PUBLIC HTTP | PASS on `2ed489d5a508` | Vercel completed, the live challenge and browse routes are 200 with `Origin-Agent-Cluster: ?1`, public listings are 200 and production sandbox reset remains 404. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |

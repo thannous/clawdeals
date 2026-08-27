@@ -123,12 +123,12 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 
 | Couche | Statut |
 |---|---|
-| LOCAL current candidate | PASS sur commit propre `2ed489d` |
+| LOCAL current repository candidate | PASS hors couches DB sur commit propre `fc29e66` ; gate DB complet historique PASS sur `2ed489d` |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN |
 | DEPLOYED / PUBLIC HTTP | PASS sur `2ed489d` |
 | WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
 | Chrome WebMCP | INDETERMINATE |
-| Parcours authentifié public | PENDING |
+| Parcours authentifié public | PENDING ; bases Supabase/Vercel isolées créées, Redis/secrets/migrations/deploy/DNS ouverts |
 | ChatGPT in-app | NOT RUN |
 | Vidéo locale | PASS, 160 s en 1080p avec audio |
 | Vidéo publique / Devpost soumis | PENDING |
@@ -919,9 +919,11 @@ Le compte de démonstration doit posséder :
 - **PASS** : licence MIT détectée par GitHub ;
 - **PASS** : dernière CI GitHub Actions verte sur `9e7102e`; CI du candidat courant **WAIVED / NOT RUN** ;
 - **PASS** : HTTP public et WebMCP natif invité dans Codex sur `2ed489d`, y compris la persistance du reçu après navigation ;
-- **PASS LOCAL** : gate complet du candidat courant et vidéo 160 secondes en 1080p avec audio ;
+- **PASS LOCAL historique** : gate complet sur `2ed489d` et vidéo 160 secondes en 1080p avec audio ;
+- **PASS LOCAL hors DB** : `fc29e66` passe préflight, typecheck, lint, 381 fichiers / 2 667 tests / 1 ignoré, build 109 pages, sélection 24 × 3, contrats 82/82 et UI 6/6 ; journey/security restent à rejouer sur ce SHA ;
 - **INDETERMINATE** : Chrome WebMCP sans runtime actif dans le profil testé ;
-- **PENDING** : sandbox authentifié public, vidéo YouTube, soumission Devpost et ChatGPT in-app.
+- **PARTIAL** : fondations isolées Supabase/Vercel du sandbox authentifié créées ; Redis, secrets, migrations finales, déploiement, DNS et preuve publique restent ouverts ;
+- **PENDING** : vidéo YouTube, soumission Devpost et ChatGPT in-app.
 
 Reste à faire le 26 août (si non clos ailleurs) :
 
