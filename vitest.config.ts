@@ -2,6 +2,9 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    // The default CPU-derived worker count oversubscribes jsdom and Node
+    // projects on local/CI hosts, causing otherwise fast tests to time out.
+    maxWorkers: 4,
     exclude: ["node_modules", ".next", "test-results"],
     projects: [
       {
