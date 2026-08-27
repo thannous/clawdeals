@@ -110,12 +110,12 @@ engine was unavailable; the public sandbox was not used as a substitute.
 | --- | --- | --- |
 | LOCAL | Full database gate PASS on clean `2ed489d`; non-database layers PASS on clean `fc29e66` | `fc29e66`: 381 Vitest files / 2,667 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82 and UI 6/6. Current-SHA journey/security remain pending. |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
-| DEPLOYED / PUBLIC HTTP | PASS on `2ed489d5a508` | Vercel completed, the live challenge and browse routes are 200 with `Origin-Agent-Cluster: ?1`, public listings are 200 and production sandbox reset remains 404. |
+| DEPLOYED / PUBLIC HTTP | PASS for runtime ancestry through `fc29e66` | The live hub displayed descendant `e1b46c99210b` on 27 August, returned 200 with `Origin-Agent-Cluster: ?1`, and production sandbox reset remained 404. Database migration state is not inferred from deployment. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |
 | PUBLIC authenticated sandbox | PENDING | Eleven-tool reset and mutation journey are not proven on a public isolated sandbox. |
 | CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | PASS | Verified 160-second 1080p H.264/AAC artifact. |
+| VIDEO LOCAL | HISTORICAL PASS / CURRENT FILE MISSING | The previously verified 160-second artifact must be regenerated before upload. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | YouTube publication, submission, and freeze are pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.

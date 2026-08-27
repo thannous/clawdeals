@@ -33,7 +33,8 @@ A MIT `LICENSE` file exists in the repository. Public GitHub visibility, live SH
 
 ## Challenge-period WebMCP work
 
-All dates below are 26 August 2026. The victory plan's later calendar was a delivery schedule, not a claim that these commits landed on later days.
+The victory plan's calendar is a delivery schedule. The ledger below records the
+actual commit dates.
 
 | Date | Commit | WebMCP / challenge feature | Ticket |
 | --- | --- | --- | --- |
@@ -59,8 +60,19 @@ All dates below are 26 August 2026. The victory plan's later calendar was a deli
 | 2026-08-26 | `7b52d94` | Manual CI dispatch support; deployed publicly, with the current remote rerun explicitly waived before jobs were created | TI-376 |
 | 2026-08-26 | `b9fc2e3` | Current public proof docs and explicit GitHub Actions waiver | TI-376 |
 | 2026-08-26 | `2ed489d` | Cross-route receipt persistence, deterministic loopback Upstash test mock, global origin-agent-cluster header, refreshed judge proof | TI-376 |
+| 2026-08-27 | `e2f0035` / `6416ac9` | Fail-closed public sandbox verifier and deterministic service-role judge bootstrap | TI-376 |
+| 2026-08-27 | `388bada` | RLS and public Data API hardening for OAuth lockout state and the watchlist queue worker | TI-376 |
+| 2026-08-27 | `bbfda8c` | Stable four-worker Vitest execution on local and CI-sized hosts | TI-376 |
+| 2026-08-27 | `fc29e66` | Service-role-only execution for the recreated atomic offer-accept wrapper | TI-377 |
 
 Commit `2ed489d` passed the official clean-commit local gate, was pushed to `main`, completed its Vercel deployment and was verified publicly. Native Codex WebMCP retained `get_action_receipt` across `/webmcp-challenge` → `/browse` and read the redacted receipt there.
+
+Runtime candidate `fc29e66` subsequently passed release preflight, typecheck,
+lint, 381 Vitest files / 2,667 passed / 1 skipped, a 109-page build, selector
+24 × 3, contracts 82/82 and Chromium UI 6/6. Vercel later served documentation
+descendant `e1b46c9`, proving that the deployed code contains `fc29e66` in its
+ancestry. Current-SHA database journey/security and production migration state
+remain separately unproven.
 
 ## What a judge can actually exercise
 
@@ -107,10 +119,10 @@ request_contact_reveal
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | PASS on clean `2ed489d` | Full gate: 377 Vitest files / 2,634 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2, security 10/10. |
+| LOCAL | Full database gate PASS on clean `2ed489d`; non-database layers PASS on `fc29e66` | `fc29e66`: 381 Vitest files / 2,667 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82 and UI 6/6. Current-SHA journey/security remain pending. |
 | CI | PASS through `9e7102e`; current HEAD WAIVED / NOT RUN | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32980551636) passed every job on `9e7102e`. The two `7b52d94` dispatch records created no jobs, and the owner waived a fresh remote rerun; they are not cited as green. |
-| DEPLOYED | PASS on `2ed489d` | Vercel completed and the public challenge page displayed `2ed489d5a508`. |
-| PUBLIC | Native guest read and HTTP PASS on `2ed489d`; authenticated journey PENDING | Codex in-app discovered five live tools, executed context → search, retained the five-tool registry on `/browse` and read the redacted receipt there. Public challenge/browse headers and production reset closure passed. The isolated eleven-tool sandbox journey remains pending. |
+| DEPLOYED / PUBLIC HTTP | PASS for runtime ancestry through `fc29e66` | On 27 August the public challenge page displayed descendant `e1b46c99210b`, returned 200 with `Origin-Agent-Cluster: ?1`, and production reset returned 404. Database migration state is not inferred from a Vercel deploy. |
+| PUBLIC native guest | PASS historically on `2ed489d`; authenticated journey PENDING | Codex in-app discovered five live tools, executed context → search, retained the five-tool registry on `/browse` and read the redacted receipt there. The isolated eleven-tool sandbox journey remains pending. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |
 

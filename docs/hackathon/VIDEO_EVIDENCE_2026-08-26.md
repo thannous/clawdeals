@@ -13,21 +13,24 @@ Current video proof for the WebMCP Challenge submission.
 | Property | Value |
 | --- | --- |
 | Local path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
-| Local file | **PASS — present and independently probed** |
+| Local file | **MISSING — historical artifact is not present in the current workspace** |
 | Publication status | **NOT_PUBLISHED** |
-| Duration | `160.000000` seconds |
-| Video | H.264, 1920×1080 |
-| Audio | AAC, 48 kHz, stereo |
-| Size | `7,102,105` bytes |
-| SHA-256 | `929d74fa5aada1c4da18044f91f649b2788aeb9a10492a5f375dfbd9d1b80fd3` |
+| Historical duration | `160.000000` seconds |
+| Historical video | H.264, 1920×1080 |
+| Historical audio | AAC, 48 kHz, stereo |
+| Historical size | `7,102,105` bytes |
+| Historical SHA-256 | `929d74fa5aada1c4da18044f91f649b2788aeb9a10492a5f375dfbd9d1b80fd3` |
 | YouTube URL | None |
 | Devpost attachment | None |
 
-The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The final artifact was regenerated from the deterministic 17-shot capture, the 16-cue Daniel voiceover at 155 WPM, and the current subtitle file. Representative frames at 20 and 130 seconds were inspected for readable confirmation and receipt overlays.
+The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The historical artifact was regenerated from the deterministic 17-shot capture, the 16-cue Daniel voiceover at 155 WPM, and the subtitle file, then representative frames were inspected. That observation does not prove the file is still locally available.
 
 ## Boundary
 
-The local artifact is current proof of the produced demo only. It is not public video proof. Do not treat the MP4, a Devpost draft, or the script as YouTube publication or final submission.
+The historical probe proves that the pipeline produced a compliant demo once;
+it does not prove a current uploadable file. Regenerate and probe the MP4 before
+publication. A Devpost draft or the script is not YouTube publication or final
+submission proof.
 
 ## Public upload package — prepared, not sent
 

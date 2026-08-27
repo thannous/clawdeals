@@ -32,7 +32,7 @@ Official contest samples already cover catalogues and carts. The judged differen
 | --- | --- | --- |
 | Judge hub | `/webmcp-challenge` | Compatibility, exact registered tools, copyable mission, isolated reset |
 | Live marketplace | `/webmcp` | Real product surface, not a simulator. The hub launch button opens this page |
-| Production hub | https://clawdeals.com/webmcp-challenge | Contains reviewed implementation `2ed489d5a508`; a later documentation-only descendant may be the displayed deploy SHA. Codex guest WebMCP PASS, including cross-route receipt retrieval. Authenticated sandbox journey PENDING. |
+| Production hub | https://clawdeals.com/webmcp-challenge | Contains reviewed runtime `fc29e6659d5a`; the page reports its exact deployment descendant. HTTP PASS on descendant `e1b46c99210b`; native Codex guest proof remains historical on `2ed489d`. Authenticated sandbox journey PENDING. |
 | Eligibility ledger | `HACKATHON.md` | Baseline SHA, challenge-period commits, registry |
 
 The hub reports the browser's real `document.modelContext` support, the tools that actually registered, and a sanitized deploy SHA when the host provides one. Missing native WebMCP is `INDETERMINATE`, not a product fail.
@@ -75,7 +75,10 @@ Judges are not required to build the repo. If a live WebMCP browser is available
 12. `request_contact_reveal` creates two independent owner consents. One consent reveals nothing.
 13. `get_action_receipt` shows a redacted receipt. Agent Activity on the page should match that receipt.
 
-If the browser has no WebMCP, follow the [demo script](./DEMO_SCRIPT.md). The verified local MP4 is `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` (160 seconds, 1080p H.264/AAC). The public YouTube file is **not published**, so the local artifact is not public submission proof.
+If the browser has no WebMCP, follow the [demo script](./DEMO_SCRIPT.md). A
+160-second 1080p H.264/AAC MP4 was historically verified, but the gitignored
+artifact is absent from the current workspace and must be regenerated before
+upload. The public YouTube file is **not published**.
 
 ## What must not happen
 
@@ -107,12 +110,12 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 | --- | --- | --- |
 | LOCAL release candidate | PASS on clean `2ed489d` | `npm run release:hackathon:local` passed typecheck, lint, 377 Vitest files / 2,634 passed / 1 skipped, build, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2 and security 10/10. |
 | CI | Last green `9e7102e`; current **WAIVED / NOT RUN** | Last actually green remote CI is [`CI` run 32980551636](https://github.com/thannous/clawdeals/actions/runs/32980551636) on `9e7102e`. Current HEAD remote CI is waived / not run. |
-| DEPLOYED / PUBLIC HTTP | PASS on `2ed489d5a508` | Vercel completed. The live judge hub displays `2ed489d5a508`, challenge and browse return 200 with `Origin-Agent-Cluster: ?1`, and production reset remains closed. |
+| DEPLOYED / PUBLIC HTTP | PASS for runtime ancestry through `fc29e66` | The live judge hub displayed descendant `e1b46c99210b` on 27 August, returned 200 with `Origin-Agent-Cluster: ?1`, and production reset remained 404. Production database migration state remains unverified. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered the five public tools and executed context → search → cross-route redacted receipt without returning to the hub. Request IDs: context `8d6975ba-279d-4c42-aaad-914225764fd0`, search `ec572532-5994-4145-96e9-2095d592e666`, receipt-read `df16a0fb-2cc6-4619-9989-12fcb652a802`. |
 | PUBLIC authenticated sandbox | PENDING | Eleven-tool judge reset and mutation path are not proven on a public isolated sandbox. |
 | CHROME | INDETERMINATE | Connected Chrome loaded the deployed build without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | PASS | 160-second 1920×1080 H.264/AAC artifact, SHA-256 `929d74fa5aada1c4da18044f91f649b2788aeb9a10492a5f375dfbd9d1b80fd3`. |
+| VIDEO LOCAL | HISTORICAL PASS / CURRENT FILE MISSING | The previously probed 160-second artifact is absent from the current workspace and must be regenerated before publication. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | Public YouTube and Devpost submission are not proven. |
 
 Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP proof as native WebMCP selection, authenticated journey, or Devpost acceptance.

@@ -4,8 +4,8 @@ Agent-native second-hand marketplace: humans set policy, agents operate, WebMCP 
 
 ## WebMCP Challenge judge links
 
-1. [Live judge demo](https://clawdeals.com/webmcp-challenge) — includes reviewed implementation SHA `2ed489d5a508`; later documentation-only descendants may change the displayed deploy SHA.
-2. [Demo recording script](./docs/hackathon/DEMO_SCRIPT.md) — the verified 160-second local MP4 is ready; the public YouTube video is **not published**.
+1. [Live judge demo](https://clawdeals.com/webmcp-challenge) — includes reviewed runtime `fc29e6659d5a`; the page reports its exact deployment descendant.
+2. [Demo recording script](./docs/hackathon/DEMO_SCRIPT.md) — the historical 160-second MP4 must be regenerated locally; the public YouTube video is **not published**.
 3. [Judge guide](./docs/hackathon/JUDGE_GUIDE.md)
 4. [What was built during the challenge](./docs/hackathon/WHAT_CHANGED.md)
 5. [WebMCP contextual registry](./docs/hackathon/WEBMCP_ARCHITECTURE.md#contextual-tool-catalog)

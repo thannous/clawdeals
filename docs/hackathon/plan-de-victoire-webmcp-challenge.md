@@ -125,12 +125,12 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 |---|---|
 | LOCAL current reviewed runtime candidate | PASS hors couches DB sur commit propre `fc29e66` ; les descendants de documentation ne changent pas cette preuve ; gate DB complet historique PASS sur `2ed489d` |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN |
-| DEPLOYED / PUBLIC HTTP | PASS sur `2ed489d` |
+| DEPLOYED / PUBLIC HTTP | PASS pour l’ascendance runtime `fc29e66` via le descendant servi `e1b46c9` ; migrations DB non déduites |
 | WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
 | Chrome WebMCP | INDETERMINATE |
 | Parcours authentifié public | PENDING ; bases Supabase/Vercel isolées créées, Redis/secrets/migrations/deploy/DNS ouverts |
 | ChatGPT in-app | NOT RUN |
-| Vidéo locale | PASS, 160 s en 1080p avec audio |
+| Vidéo locale | HISTORICAL PASS ; MP4 actuel absent, régénération requise |
 | Vidéo publique / Devpost soumis | PENDING |
 
 ### 3.4 Livrables obligatoires
