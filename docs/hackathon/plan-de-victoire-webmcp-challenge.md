@@ -123,7 +123,7 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 
 | Couche | Statut |
 |---|---|
-| LOCAL current repository candidate | PASS hors couches DB sur commit propre `fc29e66` ; gate DB complet historique PASS sur `2ed489d` |
+| LOCAL current reviewed runtime candidate | PASS hors couches DB sur commit propre `fc29e66` ; les descendants de documentation ne changent pas cette preuve ; gate DB complet historique PASS sur `2ed489d` |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN |
 | DEPLOYED / PUBLIC HTTP | PASS sur `2ed489d` |
 | WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
