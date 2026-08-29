@@ -23,6 +23,21 @@ type ListingsDecisionContext = {
   requirements?: string[];
 };
 
+function truncateUtf8(value: string, maxBytes: number): string {
+  const encoder = new TextEncoder();
+  let bytes = 0;
+  let output = "";
+
+  for (const character of value) {
+    const characterBytes = encoder.encode(character).length;
+    if (bytes + characterBytes > maxBytes) break;
+    output += character;
+    bytes += characterBytes;
+  }
+
+  return output;
+}
+
 function summarizeListings(payload: any, context: ListingsDecisionContext = {}) {
   const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : [];
   return items
@@ -36,40 +51,38 @@ function summarizeListings(payload: any, context: ListingsDecisionContext = {}) 
       if (typeof context.hardBudgetMax === "number" && amount !== null && amount > context.hardBudgetMax) {
         eligible = false;
         score -= 50;
-        issues.push("price_above_hard_budget");
+        issues.push("over_hard_budget");
       } else if (
         typeof context.preferredPriceMax === "number" &&
         amount !== null &&
         amount > context.preferredPriceMax
       ) {
         score -= 10;
-        issues.push("price_above_preferred_target");
+        issues.push("over_preferred_price");
       }
 
       if (!sellerVerified) score -= 10;
       if (context.requirements?.length) {
         score -= 5;
-        issues.push("requirements_need_seller_confirmation");
+        issues.push("requirements_unverified");
       }
 
       return {
         listing_id: String(item.listing_id || ""),
-        title: item.title,
+        title: typeof item.title === "string" ? truncateUtf8(item.title, 40) : undefined,
         price: item.price,
         distance_km: typeof item.distance_km === "number" ? item.distance_km : null,
-        condition: item.condition,
-        category: item.category,
-        trust: {
-          level: sellerVerified ? "medium" : "low",
-          reasons: [sellerVerified ? "seller_profile_verified" : "seller_verification_unavailable"]
-        },
+        seller_verified: sellerVerified,
         policy_fit: { eligible, issues },
-        score,
-        url: `/browse/${encodeURIComponent(String(item.listing_id || ""))}`
+        score
       };
     })
     .sort((a: any, b: any) => b.score - a.score || a.listing_id.localeCompare(b.listing_id))
-    .slice(0, 5);
+    .slice(0, 5)
+    .map(({ score: _score, ...item }: any, index: number) => ({
+      rank: index + 1,
+      ...item
+    }));
 }
 
 function summarizeDeals(payload: any): Array<{ deal_id: string; title?: string; price?: unknown; status?: string }> {
@@ -256,7 +269,7 @@ export const collabTools: ToolDef[] = [
           sort: args.sort,
           highlight_ids: items.map((item) => item.listing_id).filter(Boolean)
         });
-        return ok(ctx.requestId, { items, next_cursor: (result.data as any)?.next_cursor || null, ui: "updated" });
+        return ok(ctx.requestId, { items });
       }
       return result as StableToolResult<any>;
     }

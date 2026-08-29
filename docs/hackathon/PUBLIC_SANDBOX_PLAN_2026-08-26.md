@@ -5,18 +5,21 @@ It must never run against ClawDeals production or the production Supabase projec
 
 ## Current observed state
 
+Update verified on 29 August 2026. Secrets remain confined to the external
+sandbox providers and are not stored in this repository.
+
 | Check | Result |
 | --- | --- |
 | `staging.app.clawdeals.com` DNS | NOT PROVISIONED — no DNS answer |
-| Public sandbox hostname | RESERVED AS TARGET — `sandbox.clawdeals.com`; DNS and certificate not provisioned |
+| Public sandbox hostname | DNS PASS / DEPLOYMENT PENDING — `sandbox.clawdeals.com` is a DNS-only CNAME to the exact Vercel target; public TLS/application proof waits for the first deployment |
 | GitHub deployment environments | `Preview` and `Production` only |
-| Vercel dashboard | PARTIAL — isolated project `clawdeals-staging` exists with non-sensitive sandbox configuration; no Git connection or deployment |
-| Supabase dashboard | PARTIAL — persistent data-less branch `webmcp-sandbox` exists at ref `eusjrzydepzzsnhrhysp`; historical migrations were replayed, but TI-367, TI-370, TI-377 and the execute-hardening migration remain unapplied |
-| Upstash Redis | NOT PROVISIONED — isolated database and OAuth session pending |
-| Sensitive staging variables | NOT PROVISIONED — no branch keys, Redis token or generated HMAC/session secrets have been sent to Vercel |
+| Vercel dashboard | PARTIAL — isolated project `clawdeals-staging`, sandbox configuration, protected variables and custom domain exist; no Git connection or deployment |
+| Supabase dashboard | MIGRATIONS PASS / JOURNEY PENDING — persistent data-less branch `webmcp-sandbox` at ref `eusjrzydepzzsnhrhysp` includes TI-367, TI-370, TI-377 and the execute-hardening migration; targeted offer/contact functions are executable only by `service_role` |
+| Upstash Redis | PROVISIONED — isolated free-tier database `clawdeals-webmcp-sandbox` in AWS Frankfurt; credentials are stored only in the Vercel sandbox |
+| Sensitive staging variables | PROVISIONED — branch keys, Redis credentials and generated HMAC/session secrets are stored only in `clawdeals-staging` Production variables and are masked in the dashboard |
 | GitHub staging variables/secrets | NOT PROVISIONED — repository exposes only `NPM_TOKEN`; no staging variables |
 | Production reset | PASS — `/api/v1/sandbox/reset` returns 404 |
-| Local isolated journey | PASS — recorded by the release gate |
+| Local isolated journey | PASS — fresh local reset applied every migration and the journey passed 2/2; the adversarial security suite passed 10/10 on 29 August 2026 |
 | Public authenticated eleven-tool journey | PENDING |
 
 The environment described in `docs/release-environments.md` is partially
@@ -157,10 +160,13 @@ even though a buyer key is sufficient to expose the eleven-tool registry.
 ## External setup gate
 
 The owner authorized the public sandbox and its branch cost. The persistent
-Supabase branch and isolated Vercel project were created. OAuth login to create
-the isolated Redis, transmitting staging-only secrets, applying the four final
-migrations, connecting Git and changing DNS remain action-gated external
-mutations. None of those pending actions may target production.
+Supabase branch, isolated Vercel project and Redis database were created. The
+staging-only secrets were transmitted to the isolated Vercel project, the four
+final migrations were applied only to the branch, OrbStack was restarted, and
+the exact DNS-only CNAME was created and observed through public DNS on 29
+August 2026. Connecting the public GitHub repository to Vercel remains an
+action-time-gated persistent access mutation; no deployment has been claimed.
+None of these actions targets production.
 
 The dashboard and current Supabase billing documentation show that the branch
 starts on Micro compute at `USD 0.01344/hour` (about `USD 0.32/day` or

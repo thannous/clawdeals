@@ -130,7 +130,7 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 | Chrome WebMCP | INDETERMINATE |
 | Parcours authentifié public | PENDING ; bases Supabase/Vercel isolées créées, Redis/secrets/migrations/deploy/DNS ouverts |
 | ChatGPT in-app | NOT RUN |
-| Vidéo locale | HISTORICAL PASS ; MP4 actuel absent, régénération requise |
+| Vidéo locale | PASS le 29 août ; MP4 actuel 160 s, H.264 1080p + AAC, hash vérifié et images représentatives relues |
 | Vidéo publique / Devpost soumis | PENDING |
 
 ### 3.4 Livrables obligatoires

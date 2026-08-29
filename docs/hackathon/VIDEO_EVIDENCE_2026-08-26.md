@@ -13,24 +13,24 @@ Current video proof for the WebMCP Challenge submission.
 | Property | Value |
 | --- | --- |
 | Local path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
-| Local file | **MISSING — historical artifact is not present in the current workspace** |
+| Local file | **PASS — regenerated and independently probed on 29 August 2026** |
 | Publication status | **NOT_PUBLISHED** |
-| Historical duration | `160.000000` seconds |
-| Historical video | H.264, 1920×1080 |
-| Historical audio | AAC, 48 kHz, stereo |
-| Historical size | `7,102,105` bytes |
-| Historical SHA-256 | `929d74fa5aada1c4da18044f91f649b2788aeb9a10492a5f375dfbd9d1b80fd3` |
+| Duration | `160.000000` seconds |
+| Video | H.264, 1920×1080 |
+| Audio | AAC, 48 kHz, stereo |
+| Size | `7,021,649` bytes |
+| SHA-256 | `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d` |
 | YouTube URL | None |
 | Devpost attachment | None |
 
-The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The historical artifact was regenerated from the deterministic 17-shot capture, the 16-cue Daniel voiceover at 155 WPM, and the subtitle file, then representative frames were inspected. That observation does not prove the file is still locally available.
+The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The current artifact was regenerated from a passing deterministic 17-shot capture, the 16-cue Daniel voiceover at 155 WPM and the subtitle file. `ffprobe`, `shasum -a 256` and representative frames at the hero, search, approval, consent, receipt and close beats were independently inspected. The search beat also proves that the structured result survives the 1,500-byte WebMCP output cap instead of falling back to a truncated error payload.
 
 ## Boundary
 
-The historical probe proves that the pipeline produced a compliant demo once;
-it does not prove a current uploadable file. Regenerate and probe the MP4 before
-publication. A Devpost draft or the script is not YouTube publication or final
-submission proof.
+The current local probe proves an uploadable file and its media contract. It
+does not prove a YouTube upload, public anonymous playback, Devpost attachment
+or final submission. Recheck the exact hash immediately before upload. A
+Devpost draft or the script is not publication proof.
 
 ## Public upload package — prepared, not sent
 

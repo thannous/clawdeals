@@ -13,6 +13,7 @@ vi.mock("../ui-bridge", () => ({
 }));
 
 import { callPublicWebmcp } from "../http";
+import { capToolOutputBytes, WEBMCP_TOOL_OUTPUT_MAX_BYTES } from "../security/output-cap";
 import { collabTools } from "./collab-tools";
 
 describe("public collaboration tools", () => {
@@ -95,18 +96,18 @@ describe("public collaboration tools", () => {
     if (!result.ok) return;
     const items = (result.data as any).items;
     expect(items[0]).toMatchObject({
+      rank: 1,
       listing_id: "fit",
       distance_km: 14.2,
-      trust: { level: "medium", reasons: ["seller_profile_verified"] },
+      seller_verified: true,
       policy_fit: {
         eligible: true,
-        issues: ["requirements_need_seller_confirmation"]
-      },
-      url: "/browse/fit"
+        issues: ["requirements_unverified"]
+      }
     });
     expect(items[1].policy_fit).toEqual({
       eligible: false,
-      issues: ["price_above_hard_budget", "requirements_need_seller_confirmation"]
+      issues: ["over_hard_budget", "requirements_unverified"]
     });
     expect(callPublicWebmcp).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -118,6 +119,46 @@ describe("public collaboration tools", () => {
           limit: 5
         })
       })
+    );
+  });
+
+  it("keeps five decision summaries below the WebMCP UTF-8 output budget", async () => {
+    const tool = collabTools.find((candidate) => candidate.name === "search_listings")!;
+    vi.mocked(callPublicWebmcp).mockResolvedValue({
+      ok: true,
+      data: {
+        data: Array.from({ length: 5 }, (_, index) => ({
+          listing_id: `90000000-0000-4000-8000-00000000000${index + 1}`,
+          title: `Used e-bike 🚲 candidate ${index + 1} with a deliberately descriptive title`,
+          price: { amount: 1150 + index * 50, currency: "EUR" },
+          distance_km: 3.5 + index,
+          seller: { verified: index % 2 === 0 }
+        })),
+        next_cursor: "ignored-by-the-non-paginated-tool"
+      },
+      meta: { request_id: "req-five-results" }
+    } as any);
+
+    const result = await tool.execute(
+      {
+        preferred_price_max: 1200,
+        hard_budget_max: 1300,
+        requirements: ["battery_health >= 80%"]
+      },
+      { requestId: "req-five-results", idempotencyKey: null }
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect((result.data as any).items).toHaveLength(5);
+    expect(
+      new TextEncoder().encode((result.data as any).items[0].title).length
+    ).toBeLessThanOrEqual(40);
+
+    const capped = capToolOutputBytes(result.data, { maxBytes: WEBMCP_TOOL_OUTPUT_MAX_BYTES });
+    expect(capped.truncated).toBe(false);
+    expect(new TextEncoder().encode(JSON.stringify(result.data)).length).toBeLessThanOrEqual(
+      WEBMCP_TOOL_OUTPUT_MAX_BYTES
     );
   });
 
@@ -156,7 +197,7 @@ describe("public collaboration tools", () => {
         items: [
           {
             listing_id: "untrusted-listing",
-            title: injection,
+            title: injection.slice(0, 40),
             policy_fit: { eligible: true }
           }
         ]

@@ -266,8 +266,14 @@ test("records the deterministic WebMCP victory journey", async ({ page, request 
       limit: 5
     });
     expect(searchResult).toMatchObject({ ok: true });
+    const highlightedIds = Array.isArray(searchResult.data?.items)
+      ? searchResult.data.items
+          .map((item: { listing_id?: string }) => String(item?.listing_id || ""))
+          .filter(Boolean)
+      : [];
+    expect(highlightedIds.length).toBeGreaterThan(0);
     await page.getByTestId("browse-grid").scrollIntoViewIfNeeded();
-    await expect(page.locator('[data-highlighted="true"]')).toHaveCount(5);
+    await expect(page.locator('[data-highlighted="true"]')).toHaveCount(highlightedIds.length);
     await shot("03-search-policy-fit", 25);
 
     const { result: threadPromise } = await startToolInvocation(page, "start_thread", {

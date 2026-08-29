@@ -62,7 +62,7 @@ Picture:
 
 Voice:
 
-> Search ranks five synthetic bikes. Only policy_fit tells the truth: one is in budget, one is over my target, one blows the hard cap, one fails battery, one is outside Paris.
+> The sandbox compares five synthetic bikes. Search highlights the four within radius. The visible policy edges are deliberate: one is in budget, one is over my target, one blows the hard cap, one fails battery, one is outside Paris.
 
 Picture: `search_listings` then `open_listing` on the 1,150 EUR target-fit bike (battery 88%, inside radius). Grid highlights the same IDs. No emails.
 

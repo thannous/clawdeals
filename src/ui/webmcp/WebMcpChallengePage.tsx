@@ -248,7 +248,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
               <Database className="h-6 w-6 text-primary" aria-hidden="true" />
             </div>
             <p className="mt-4 text-sm leading-relaxed text-muted">
-              An isolated sandbox rebuilds one buyer mission, five policy-fit e-bikes, one dedicated seller and one negotiation thread. No real account or contact data is used.
+              An isolated sandbox rebuilds one buyer mission, five policy-test e-bikes, one dedicated seller and one negotiation thread. No real account or contact data is used.
             </p>
             <button
               type="button"
