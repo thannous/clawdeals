@@ -48,10 +48,11 @@ Additional information:
 - AI tools used: `OpenAI Codex, ChatGPT and Grok 4.6`;
 - keep learning `Significant` and career value `Yes`.
 
-Judge credentials and private testing instructions remain blank until the
-isolated public sandbox exists. Saving these fields, uploading the video,
-accepting the rules and submitting are external actions that require action-time
-confirmation.
+Judge credentials remain blank until the isolated public sandbox is deployed
+and verified. Its Supabase, Redis, masked secrets, DNS and TLS infrastructure now
+exists, but the Vercel project still has no Git deployment. Saving Devpost
+fields, publishing the video, accepting the rules and submitting are external
+actions that require action-time confirmation.
 
 ## Project story
 
@@ -162,11 +163,12 @@ whether the result is trustworthy.
 
 ### What's next
 
-Before final submission we will attach the public demo video and enable the
-Chrome WebMCP Origin Trial on the judged origin. A dedicated public sandbox will
-remain isolated from production data for the authenticated mutation journey.
-After submission, the judged commit and site will be frozen except for an
-explicitly documented blocking fix.
+Before final submission we will attach the public demo video and finish the
+dedicated authenticated sandbox, which remains isolated from production data.
+Judges can use ChatGPT's in-app browser or Chrome 149+ with
+`chrome://flags/#enable-webmcp-testing`, as specified by the official rules; an
+Origin Trial token is not required. After submission, the judged commit and site
+will be frozen except for an explicitly documented blocking fix.
 
 ## Built with
 
@@ -184,6 +186,14 @@ Recommended tags:
 4. Reproduction and evidence:
    https://github.com/thannous/clawdeals/blob/main/HACKATHON.md
 
+Testing instructions:
+
+1. Open the live judge hub in ChatGPT's in-app browser, or in Chrome 149+ after
+   enabling `chrome://flags/#enable-webmcp-testing` and restarting Chrome.
+2. Visit `https://clawdeals.com/webmcp-challenge` for the public guest tools.
+3. Authenticated sandbox credentials and the isolated mutation journey will be
+   added only after signed-out verification of `sandbox.clawdeals.com`.
+
 ## Video demo link
 
 `PENDING — public YouTube URL must be verified without authentication.`
@@ -193,8 +203,8 @@ Local video proof:
 
 ## Finalization checklist
 
-- [ ] Chrome Origin Trial token active on the live origin, or an explicit judge
-  instruction for the supported flag.
+- [x] Explicit judge instruction for ChatGPT in-app and the supported Chrome
+  149+ flag is included; Origin Trial is not treated as a required gate.
 - [ ] Public sandbox credentials/instructions are safe, synthetic and verified
   in a private window.
 - [ ] YouTube video is public, has audio and is shorter than three minutes.

@@ -123,12 +123,12 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 
 | Couche | Statut |
 |---|---|
-| LOCAL current reviewed runtime candidate | PASS hors couches DB sur commit propre `fc29e66` ; les descendants de documentation ne changent pas cette preuve ; gate DB complet historique PASS sur `2ed489d` |
+| LOCAL current reviewed runtime candidate | PASS sur `60b99f7` : typecheck, lint, 381 fichiers Vitest / 2 668 tests réussis / 1 ignoré, reset Supabase complet, journey 2/2, sécurité 10/10 et capture 1/1 |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN |
-| DEPLOYED / PUBLIC HTTP | PASS pour l’ascendance runtime `fc29e66` via le descendant servi `e1b46c9` ; migrations DB non déduites |
+| DEPLOYED / PUBLIC HTTP | PASS pour le runtime `60b99f7` via le descendant documentaire servi `f276332` : hub 200, API publique 200, reset production 404 et `Origin-Agent-Cluster: ?1` |
 | WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
 | Chrome WebMCP | INDETERMINATE |
-| Parcours authentifié public | PENDING ; bases Supabase/Vercel isolées créées, Redis/secrets/migrations/deploy/DNS ouverts |
+| Parcours authentifié public | INFRA PASS / APP PENDING : Supabase isolé, Redis, secrets, migrations, DNS et TLS sont prêts ; connexion Git Vercel, premier déploiement et E2E public restent ouverts |
 | ChatGPT in-app | NOT RUN |
 | Vidéo locale | PASS le 29 août ; MP4 actuel 160 s, H.264 1080p + AAC, hash vérifié et images représentatives relues |
 | Vidéo publique / Devpost soumis | PENDING |
@@ -921,8 +921,9 @@ Le compte de démonstration doit posséder :
 - **PASS** : HTTP public et WebMCP natif invité dans Codex sur `2ed489d`, y compris la persistance du reçu après navigation ;
 - **PASS LOCAL historique** : gate complet sur `2ed489d` et vidéo 160 secondes en 1080p avec audio ;
 - **PASS LOCAL hors DB** : `fc29e66` passe préflight, typecheck, lint, 381 fichiers / 2 667 tests / 1 ignoré, build 109 pages, sélection 24 × 3, contrats 82/82 et UI 6/6 ; journey/security restent à rejouer sur ce SHA ;
+- **PASS LOCAL courant** : `60b99f7` passe typecheck, lint, 381 fichiers / 2 668 tests / 1 ignoré, reset Supabase complet, journey 2/2, sécurité 10/10 et capture vidéo 1/1 ;
 - **INDETERMINATE** : Chrome WebMCP sans runtime actif dans le profil testé ;
-- **PARTIAL** : fondations isolées Supabase/Vercel du sandbox authentifié créées ; Redis, secrets, migrations finales, déploiement, DNS et preuve publique restent ouverts ;
+- **INFRA PASS / APP PENDING** : Supabase isolé, Redis, secrets Vercel, migrations finales, DNS et TLS sont prêts ; la connexion Git Vercel, le premier déploiement et le parcours public authentifié restent ouverts ;
 - **PENDING** : vidéo YouTube, soumission Devpost et ChatGPT in-app.
 
 Reste à faire le 26 août (si non clos ailleurs) :
@@ -931,7 +932,7 @@ Reste à faire le 26 août (si non clos ailleurs) :
 - **PASS** : scénario du vélo électrique figé ;
 - **PASS** : `document.modelContext`, enregistrement asynchrone et `AbortSignal` officiels ;
 - **PASS LOCAL / PUBLIC** : header `Origin-Agent-Cluster: ?1` sur `/webmcp-challenge` et `/browse`, avec test de configuration ;
-- **PENDING** : activation Origin Trial ou flag Chrome sur le runtime réellement testé.
+- **PASS DOCUMENTATION / RUNTIME CHROME INDETERMINATE** : les règles officielles autorisent ChatGPT in-app ou Chrome 149+ avec `chrome://flags/#enable-webmcp-testing`; l’Origin Trial n’est pas un prérequis de soumission. Le runtime Chrome natif reste à tester avec ce flag dans un profil qui l’expose.
 
 ### Jeudi 27 août — registre contextuel
 
