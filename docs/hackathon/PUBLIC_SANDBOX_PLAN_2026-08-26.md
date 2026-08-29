@@ -11,7 +11,7 @@ sandbox providers and are not stored in this repository.
 | Check | Result |
 | --- | --- |
 | `staging.app.clawdeals.com` DNS | NOT PROVISIONED — no DNS answer |
-| Public sandbox hostname | DNS PASS / DEPLOYMENT PENDING — `sandbox.clawdeals.com` is a DNS-only CNAME to the exact Vercel target; public TLS/application proof waits for the first deployment |
+| Public sandbox hostname | DNS + TLS PASS / DEPLOYMENT PENDING — `sandbox.clawdeals.com` is a DNS-only CNAME to the exact Vercel target and validates TLS; `/webmcp-challenge` returns Vercel 404 because the project still has no deployment |
 | GitHub deployment environments | `Preview` and `Production` only |
 | Vercel dashboard | PARTIAL — isolated project `clawdeals-staging`, sandbox configuration, protected variables and custom domain exist; no Git connection or deployment |
 | Supabase dashboard | MIGRATIONS PASS / JOURNEY PENDING — persistent data-less branch `webmcp-sandbox` at ref `eusjrzydepzzsnhrhysp` includes TI-367, TI-370, TI-377 and the execute-hardening migration; targeted offer/contact functions are executable only by `service_role` |
