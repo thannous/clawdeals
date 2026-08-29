@@ -53,6 +53,9 @@ Reproduction and evidence: https://github.com/thannous/clawdeals/blob/main/HACKA
 ClawDeals existed before the challenge. The repository baseline tag and dated ledger separate prior work from the WebMCP extension built during the competition.
 
 The full mutation sequence shown in the video runs only against isolated synthetic sandbox data. Production keeps the judge reset disabled.
+
+Synthetic listing photography is served by Lorem Picsum from Unsplash and used under the Unsplash License: https://unsplash.com/license
+Photo credits: Drew Patrick Miller (https://unsplash.com/photos/VLT62-JzddA), Greg Shield (https://unsplash.com/photos/v9eNihIWh8k), Patryk Sobczak (https://unsplash.com/photos/9VPtNW84vGI), Fré Sonneveld (https://unsplash.com/photos/Bpb6yvtkpEY), Kelley Bozarth (https://unsplash.com/photos/n6vS3xlnsCc).
 ```
 
 Upload settings:
@@ -63,6 +66,28 @@ Upload settings:
 - language: English;
 - tags: `WebMCP`, `AI agents`, `agentic commerce`, `Next.js`, `OpenAI`,
   `hackathon`, `human in the loop`.
+
+Prepared 1920×1080 thumbnail: `test-results/hackathon-video/frames/00-hero.jpg`
+with SHA-256
+`7e11c235f3faea69a0d1d27a88a6bd54abe9042ffe8640229e4e310cd15f678a`.
+The two prepared gallery frames and their accessible descriptions are indexed in
+[`DEVPOST_SUBMISSION_DRAFT.md`](./DEVPOST_SUBMISSION_DRAFT.md#prepared-submission-media--local-only).
+
+## Media rights check
+
+- audio is the locally rendered macOS `Daniel` voiceover; the video contains no
+  music;
+- the ClawDeals interface, captions and motion assembly are repository-owned;
+- the five deterministic listing images resolve through Lorem Picsum to the
+  exact credited Unsplash sources above; the [Unsplash
+  License](https://unsplash.com/license) permits commercial and non-commercial
+  reuse;
+- the selected hero thumbnail contains no listing photograph; the search gallery
+  frame includes the licensed sources and the receipt frame is primarily product
+  UI;
+- recheck the final uploaded file and metadata for unintended third-party marks
+  before publication. This inventory records provenance; it is not a claim that
+  a local file equals a public upload.
 
 Uploading the file, saving metadata and publishing are external actions. Confirm
 them at action time, then verify the final URL in a signed-out window before

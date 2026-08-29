@@ -201,6 +201,32 @@ Testing instructions:
 Local video proof:
 [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md).
 
+## Prepared submission media — local only
+
+All three images are deterministic 1920×1080 JPEG frames generated with the
+current video. They remain in the gitignored capture directory and have not been
+uploaded.
+
+1. YouTube thumbnail / Devpost cover:
+   `test-results/hackathon-video/frames/00-hero.jpg`
+   - caption: `Your agent negotiates. You stay in control.`
+   - alt text: `ClawDeals WebMCP judge hub showing eleven contextual tools and the human-agent-platform trust model.`
+   - SHA-256: `7e11c235f3faea69a0d1d27a88a6bd54abe9042ffe8640229e4e310cd15f678a`
+2. Product gallery — policy-aware search:
+   `test-results/hackathon-video/frames/03-search-policy-fit.jpg`
+   - caption: `The agent ranks synthetic e-bikes while showing why each candidate fits or violates the owner's policy.`
+   - alt text: `Five synthetic e-bike cards with the Agent Activity panel exposing a compact redacted search receipt.`
+   - SHA-256: `f77733d26b09bc89d77773c4204bbcec7be9b3997d18de2dea07688c7c91bfc8`
+   - rights: includes the credited Lorem Picsum / Unsplash fixture images listed
+     in [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md#media-rights-check)
+3. Product gallery — verifiable receipt:
+   `test-results/hackathon-video/frames/14-redacted-receipt.jpg`
+   - caption: `Every sensitive action leaves a policy decision, confirmation state and redacted receipt.`
+   - alt text: `ClawDeals Agent Activity panel showing redacted receipts beside the Deal Mission interface.`
+   - SHA-256: `e7f54cafefc2440563cf7c9d0f28cf7aa00dd50d87d34eff6064aa2ace87176d`
+
+Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
+
 ## Finalization checklist
 
 - [x] Explicit judge instruction for ChatGPT in-app and the supported Chrome
