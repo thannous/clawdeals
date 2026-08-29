@@ -76,9 +76,9 @@ Judges are not required to build the repo. If a live WebMCP browser is available
 13. `get_action_receipt` shows a redacted receipt. Agent Activity on the page should match that receipt.
 
 If the browser has no WebMCP, follow the [demo script](./DEMO_SCRIPT.md). A
-160-second 1080p H.264/AAC MP4 was historically verified, but the gitignored
-artifact is absent from the current workspace and must be regenerated before
-upload. The public YouTube file is **not published**.
+160-second 1080p H.264/AAC MP4 is present in the current workspace and was
+independently verified on 29 August. The public YouTube file is **not
+published**.
 
 ## What must not happen
 
@@ -108,14 +108,14 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL release candidate | PASS on clean `2ed489d` | `npm run release:hackathon:local` passed typecheck, lint, 377 Vitest files / 2,634 passed / 1 skipped, build, selector 24 × 3, contracts 82/82, UI 6/6, journey 2/2 and security 10/10. |
+| LOCAL release candidate | PASS on reviewed runtime `60b99f7` | Typecheck, lint, 381 Vitest files / 2,668 passed / 1 skipped, complete Supabase reset, journey 2/2, security 10/10 and final capture 1/1 passed. |
 | CI | Last green `9e7102e`; current **WAIVED / NOT RUN** | Last actually green remote CI is [`CI` run 32980551636](https://github.com/thannous/clawdeals/actions/runs/32980551636) on `9e7102e`. Current HEAD remote CI is waived / not run. |
-| DEPLOYED / PUBLIC HTTP | PASS for runtime ancestry through `fc29e66` | The live judge hub displayed descendant `e1b46c99210b` on 27 August, returned 200 with `Origin-Agent-Cluster: ?1`, and production reset remained 404. Production database migration state remains unverified. |
+| DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live judge hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production reset remains 404. Production database migration state remains separate. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered the five public tools and executed context → search → cross-route redacted receipt without returning to the hub. Request IDs: context `8d6975ba-279d-4c42-aaad-914225764fd0`, search `ec572532-5994-4145-96e9-2095d592e666`, receipt-read `df16a0fb-2cc6-4619-9989-12fcb652a802`. |
 | PUBLIC authenticated sandbox | PENDING | Eleven-tool judge reset and mutation path are not proven on a public isolated sandbox. |
 | CHROME | INDETERMINATE | Connected Chrome loaded the deployed build without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | HISTORICAL PASS / CURRENT FILE MISSING | The previously probed 160-second artifact is absent from the current workspace and must be regenerated before publication. |
+| VIDEO LOCAL | PASS / CURRENT FILE PRESENT | The 160-second H.264 1080p + AAC artifact exists locally; SHA-256 `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d`. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | Public YouTube and Devpost submission are not proven. |
 
 Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP proof as native WebMCP selection, authenticated journey, or Devpost acceptance.

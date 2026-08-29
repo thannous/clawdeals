@@ -104,18 +104,23 @@ skipped, a 109-page build, selector 24 × 3, contracts 82/82 and Chromium UI
 6/6. Journey and security were not rerun on that SHA because the local Docker
 engine was unavailable; the public sandbox was not used as a substitute.
 
+On 29 August, runtime `60b99f70868fc70a2b947a8a70c4e2212e174f3a`
+superseded that local candidate: typecheck, lint, 381 Vitest files / 2,668
+passed / 1 skipped, complete Supabase reset, journey 2/2, security 10/10 and the
+final 160-second capture 1/1 all passed.
+
 ## Proof layers
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | Full database gate PASS on clean `2ed489d`; non-database layers PASS on clean `fc29e66` | `fc29e66`: 381 Vitest files / 2,667 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82 and UI 6/6. Current-SHA journey/security remain pending. |
+| LOCAL | PASS on reviewed runtime `60b99f7` | 381 Vitest files / 2,668 passed / 1 skipped, typecheck, lint, complete Supabase reset, journey 2/2, security 10/10 and capture 1/1. |
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
-| DEPLOYED / PUBLIC HTTP | PASS for runtime ancestry through `fc29e66` | The live hub displayed descendant `e1b46c99210b` on 27 August, returned 200 with `Origin-Agent-Cluster: ?1`, and production sandbox reset remained 404. Database migration state is not inferred from deployment. |
+| DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production sandbox reset remains 404. Database migration state is not inferred from deployment. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |
 | PUBLIC authenticated sandbox | PENDING | Eleven-tool reset and mutation journey are not proven on a public isolated sandbox. |
 | CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | HISTORICAL PASS / CURRENT FILE MISSING | The previously verified 160-second artifact must be regenerated before upload. |
+| VIDEO LOCAL | PASS / CURRENT FILE PRESENT | The 160-second H.264 1080p + AAC artifact exists locally; SHA-256 `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d`. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | YouTube publication, submission, and freeze are pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.
