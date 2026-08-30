@@ -143,7 +143,7 @@ function resolveLocalePrefix(request: NextRequest, localePrefix: string): string
   return localePrefixFor(DEFAULT_LOCALE);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = normalizeHost(url.hostname || request.headers.get("host") || "");
   const forwardedHost = normalizeHost(request.headers.get("x-forwarded-host") || "");

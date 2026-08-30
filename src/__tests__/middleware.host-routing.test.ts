@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
-import { middleware } from "../../middleware";
+import { proxy as middleware } from "../../proxy";
 
 function makeReq(url: string, host?: string) {
   return new NextRequest(url, {
@@ -12,7 +12,7 @@ function makeReqWithHeaders(url: string, headers: Record<string, string>) {
   return new NextRequest(url, { headers });
 }
 
-describe("middleware host routing", () => {
+describe("proxy host routing", () => {
   it("redirects app host / to /start by default", () => {
     const res = middleware(makeReq("https://app.clawdeals.com/", "app.clawdeals.com"));
     expect(res?.status).toBe(308);
