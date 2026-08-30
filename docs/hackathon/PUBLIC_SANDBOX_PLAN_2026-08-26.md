@@ -143,8 +143,9 @@ not use `seed:dev:sandbox` for the public judge identity.
 6. `bootstrap:webmcp:judge -- --apply` returns two successful resets with stable
    buyer/seller actors, seven listing IDs and thread ID
    `91000000-0000-4000-8000-000000000001`.
-7. Execute mission creation, policy-fit search, listing navigation, thread,
-   message and the editable 1,100 EUR offer confirmation.
+7. Execute mission creation, policy-fit search, listing navigation, thread and
+   message. The copyable judge mission prepares 1,100 EUR; the deployed
+   regression uses the target listing price, 1,150 EUR. Both are in-policy.
 8. Verify the receipt, hard-budget denial above 1,300 EUR and zero raw contact
    data or credentials in output.
 9. Confirm no request touched the production Supabase project.

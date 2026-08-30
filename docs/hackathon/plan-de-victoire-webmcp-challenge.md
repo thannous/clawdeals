@@ -1091,7 +1091,9 @@ Les artefacts reproductibles sont maintenant indexés dans `evals/webmcp/` :
   de 1,5 K caractère ;
 - `LIVE-BROWSER-EVIDENCE.md` sépare les runtimes : Codex in-app invité est
   `PASS`, Chrome est `INDETERMINATE`, ChatGPT est `NOT RUN` et le parcours
-  authentifié public reste `PENDING`.
+  authentifié public est `PASS` sur `deb00e3` sous injection de compatibilité
+  Playwright explicite. Cette dernière preuve n’est pas une preuve native
+  Chrome ou ChatGPT.
 
 Le release gate local explicite est `npm run eval:webmcp:gate`. Il enchaîne
 typecheck, lint, toute la suite Vitest, un build de production, le corpus 24 × 3,

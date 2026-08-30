@@ -7,8 +7,9 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 - Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
 - Drive plan: https://drive.google.com/file/d/1ayeRe0rY5si4eQSg6IgolprYZvKrR_2V/view?usp=drivesdk
 - Clean-clone candidate SHA: `3f1057541ac3fd523fbc89f0ea4b367e52077026`
-- Current reviewed runtime candidate SHA: `fc29e6659d5afa3bca9e64774693e81895836cef`; later documentation-only descendants do not change this runtime proof
+- Current reviewed WebMCP runtime SHA: `60b99f70868fc70a2b947a8a70c4e2212e174f3a`; production serves it through descendant `f276332`
 - Public sandbox runtime fix: `deb00e3` (`proxy.ts` on the Node.js runtime); Vercel deployment `dpl_5qjh93UvcATeEcZpC8SNn1VJEuqJ`
+- Current sandbox evidence/test SHA: `2d6efa3d5a9547e16b0b4639472ccb52105d5995`
 - Latest security hardening SHA: `fc29e6659d5afa3bca9e64774693e81895836cef`
 - Reviewed implementation SHA: `2ed489d5a5086f449c9985d9627f2d024032e3a3`. Later documentation-only descendants may change the public deploy SHA without changing this runtime implementation.
 - Pre-challenge baseline: `webmcp-challenge-baseline` → `00880457964929c0773237a9c724704f5da651f0`
@@ -38,7 +39,7 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 | CHROME ACTIVATION PATH | DOCUMENTED / RUNTIME INDETERMINATE | The official rules permit Chrome 149+ with `chrome://flags/#enable-webmcp-testing`; an Origin Trial token is optional, not a submission requirement. The managed Chrome profile used for evidence did not expose a native runtime, so Chrome execution remains unproven. |
 | CHATGPT | NOT RUN on current release | Real ChatGPT in-app selection and execution remains separate from the Codex in-app proof, HTTP and CI. |
 | SECRET AUDIT | PASS | GitHub Secret Scanning: 0 alerts. Gitleaks 8.30.1: 492 commits and candidate tree reviewed; 0 confirmed secrets after false-positive triage. See [`SECRET_AUDIT_2026-08-26.md`](./SECRET_AUDIT_2026-08-26.md). |
-| VIDEO LOCAL | PASS on 29 August | The current gitignored MP4 exists and independently probes as 160 seconds, H.264 1920×1080 plus AAC 48 kHz stereo. SHA-256: `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d`. Publication remains separate. See [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
+| VIDEO LOCAL | PASS on 30 August | The regenerated gitignored MP4 exists and independently probes as 160 seconds, H.264 1920×1080 plus AAC 48 kHz stereo; capture passed 1/1. SHA-256: `88dda46f82697d066c3455b974fbb7d295d3fd1b5866ae500f1d759243fd1cbc`. Publication remains separate. See [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
 | VIDEO PUBLIC / DEVPOST | PENDING | Public YouTube URL, final Devpost fields, submission, and post-submission freeze are not proven. |
 
 ## Boundary

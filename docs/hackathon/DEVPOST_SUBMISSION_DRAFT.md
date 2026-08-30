@@ -6,7 +6,7 @@ Observed Devpost project: `Clawdeals Copilot`, draft `3/5`, submission ID
 `1153777`. The current remote story is stale and must be replaced only after the
 remaining public links are ready.
 
-Live dashboard recheck on 26 August 2026 confirmed:
+Live dashboard recheck on 30 August 2026 confirmed, without saving any field:
 
 - project overview currently says `Clawdeals Copilot` with the pitch
   `A human and an AI agent share the same live marketplace page via WebMCP.`;
@@ -18,6 +18,12 @@ Live dashboard recheck on 26 August 2026 confirmed:
 - submitter `Individual`, country `France`, app status `Existing`, learning
   `Significant` and career value `Yes` are already selected;
 - no Devpost field was changed during this recheck.
+
+The official event page currently requires a working live URL, a text
+description, a public YouTube demo under three minutes with audio, and a public
+repository with a detectable open-source license. Its judging criteria are
+WebMCP Leverage, Execution, Potential Impact, and Creativity & Ambition. The
+deadline displayed for Europe/Paris is 3 September 2026 at 22:00.
 
 ## Action-time update package — prepared, not saved
 
@@ -61,9 +67,9 @@ are external actions that require action-time confirmation.
 ### Inspiration
 
 Most shopping agents either guess a website's DOM or bypass the human through a
-backend integration. ClawDeals asks a harder question: how can two agents search
-and negotiate a real second-hand deal while their owners keep control of budget,
-identity, contact details and final approval?
+backend integration. ClawDeals asks a harder question: how can a buyer agent and
+a seller actor complete a synthetic, policy-bound negotiation while owners keep
+control of budget, identity, contact details and final approval?
 
 WebMCP gave us the missing in-page contract. The agent can use structured tools,
 while the human watches the same marketplace page change and remains the final
@@ -166,8 +172,10 @@ whether the result is trustworthy.
 
 ### What's next
 
-Before final submission we will attach the public demo video and finish the
-dedicated authenticated sandbox, which remains isolated from production data.
+Before final submission we will attach the public YouTube URL. The isolated
+authenticated sandbox is already live at
+`https://sandbox.clawdeals.com/webmcp-challenge`; production reset stays closed.
+ChatGPT in-app and Chrome 149+ native WebMCP remain unproven.
 Judges can use ChatGPT's in-app browser or Chrome 149+ with
 `chrome://flags/#enable-webmcp-testing`, as specified by the official rules; an
 Origin Trial token is not required. After submission, the judged commit and site
@@ -183,10 +191,12 @@ Recommended tags:
 ## Try it out links
 
 1. Live judge hub: https://clawdeals.com/webmcp-challenge
-2. Public repository: https://github.com/thannous/clawdeals
-3. Challenge-period ledger:
+2. Authenticated synthetic sandbox:
+   https://sandbox.clawdeals.com/webmcp-challenge
+3. Public repository: https://github.com/thannous/clawdeals
+4. Challenge-period ledger:
    https://github.com/thannous/clawdeals/blob/main/docs/hackathon/WHAT_CHANGED.md
-4. Reproduction and evidence:
+5. Reproduction and evidence:
    https://github.com/thannous/clawdeals/blob/main/HACKATHON.md
 
 Testing instructions:
@@ -197,6 +207,46 @@ Testing instructions:
 3. Authenticated sandbox credentials are ready and will be added only to the
    private judge instructions; the isolated mutation journey is verified on
    `sandbox.clawdeals.com`.
+
+### Private judge instructions — paste only after credential-transmission confirmation
+
+The following text is prepared for Devpost's private judge-instructions field.
+Replace the two placeholders only at action time; never commit or publish their
+values.
+
+```text
+Authenticated synthetic sandbox:
+https://sandbox.clawdeals.com/webmcp-challenge
+
+Buyer API key: <PRIVATE_SYNTHETIC_BUYER_KEY>
+Seller API key: <PRIVATE_SYNTHETIC_SELLER_KEY>
+
+1. Open the sandbox URL in a WebMCP-capable client.
+2. Connect the buyer key. The authenticated registry should expose eleven
+   contextual tools.
+3. Use the page's Reset demo control before each run. Reset is intentionally
+   available only on the isolated sandbox; production returns 404.
+4. Run the copyable Deal Mission: Paris e-bike, preferred price 1,100 EUR,
+   hard budget 1,300 EUR, radius 15 km.
+5. Search policy-fit listings, open the target listing, start the negotiation,
+   send a question and prepare an offer. The deterministic regression uses the
+   target listing price of 1,150 EUR; both 1,100 and 1,150 are in-policy.
+6. Switch to the seller key and accept the offer. Expect an atomic RESERVED
+   result, a redacted receipt and an idempotent replay response.
+7. Contact details stay redacted until bilateral owner consent. All identities,
+   listings and messages in this sandbox are synthetic.
+
+Evidence and exact proof boundaries:
+https://github.com/thannous/clawdeals/blob/main/HACKATHON.md
+```
+
+The final tested-clients field must stay explicit about proof boundaries:
+
+```text
+Codex in-app browser: native guest WebMCP PASS. Playwright Chromium with an
+explicit document.modelContext compatibility injection: authenticated sandbox
+PASS. Chrome 151: runtime unavailable / INDETERMINATE. ChatGPT in-app: NOT RUN.
+```
 
 ## Video demo link
 
@@ -214,20 +264,20 @@ uploaded.
 1. YouTube thumbnail / Devpost cover:
    `test-results/hackathon-video/frames/00-hero.jpg`
    - caption: `Your agent negotiates. You stay in control.`
-   - alt text: `ClawDeals WebMCP judge hub showing eleven contextual tools and the human-agent-platform trust model.`
+   - alt text: `ClawDeals WebMCP judge hub showing the five public guest tools and the human-agent-platform trust model.`
    - SHA-256: `7e11c235f3faea69a0d1d27a88a6bd54abe9042ffe8640229e4e310cd15f678a`
 2. Product gallery — policy-aware search:
    `test-results/hackathon-video/frames/03-search-policy-fit.jpg`
    - caption: `The agent ranks synthetic e-bikes while showing why each candidate fits or violates the owner's policy.`
    - alt text: `Five synthetic e-bike cards with the Agent Activity panel exposing a compact redacted search receipt.`
-   - SHA-256: `f77733d26b09bc89d77773c4204bbcec7be9b3997d18de2dea07688c7c91bfc8`
+   - SHA-256: `40dc9c2b12afecaaa6b13c904c0e470636d3e04fa9ae16749523e55b690d0d47`
    - rights: includes the credited Lorem Picsum / Unsplash fixture images listed
      in [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md#media-rights-check)
 3. Product gallery — verifiable receipt:
    `test-results/hackathon-video/frames/14-redacted-receipt.jpg`
    - caption: `Every sensitive action leaves a policy decision, confirmation state and redacted receipt.`
    - alt text: `ClawDeals Agent Activity panel showing redacted receipts beside the Deal Mission interface.`
-   - SHA-256: `e7f54cafefc2440563cf7c9d0f28cf7aa00dd50d87d34eff6064aa2ace87176d`
+   - SHA-256: `2fb110235678d3477ffb3dee3ef16e04440d87ba1ba8cace254df43ecf2d8a1d`
 
 Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
 
@@ -235,8 +285,10 @@ Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
 
 - [x] Explicit judge instruction for ChatGPT in-app and the supported Chrome
   149+ flag is included; Origin Trial is not treated as a required gate.
-- [x] Public sandbox credentials/instructions are safe, synthetic and verified
-  in a private window.
+- [x] Public sandbox credentials are synthetic, kept outside version control and
+  verified by the authenticated public Playwright journey.
+- [ ] Verify the final judge instructions in a native ChatGPT or WebMCP-enabled
+  Chrome profile; do not relabel the injected journey as native proof.
 - [ ] YouTube video is public, has audio and is shorter than three minutes.
 - [ ] Replace the stale Devpost story with the exact Markdown above.
 - [ ] Replace the demo URL `/webmcp` with `/webmcp-challenge`.

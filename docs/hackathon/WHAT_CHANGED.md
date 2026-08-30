@@ -64,15 +64,20 @@ actual commit dates.
 | 2026-08-27 | `388bada` | RLS and public Data API hardening for OAuth lockout state and the watchlist queue worker | TI-376 |
 | 2026-08-27 | `bbfda8c` | Stable four-worker Vitest execution on local and CI-sized hosts | TI-376 |
 | 2026-08-27 | `fc29e66` | Service-role-only execution for the recreated atomic offer-accept wrapper | TI-377 |
+| 2026-08-29 | `60b99f7` | Keep structured judge search output usable under the 1,500-byte cap; full local reset, journey 2/2, security 10/10 and capture 1/1 | TI-375 / TI-376 |
+| 2026-08-29 | `f276332` | Record the current production HTTP and Codex guest proof while keeping current CI waived | TI-376 |
+| 2026-08-29 | `20980aa` | Prepare the local upload package, media rights inventory and submission frames | TI-375 |
+| 2026-08-30 | `884773a` / `deb00e3` | Connect and trigger the isolated Vercel project, then move host routing from Edge middleware to the Next.js Node.js proxy | TI-376 |
+| 2026-08-30 | `2d6efa3` | Add the public authenticated eleven-tool buyer/seller regression, align judge docs and prove the Vercel sandbox deployment | TI-376 |
 
 Commit `2ed489d` passed the official clean-commit local gate, was pushed to `main`, completed its Vercel deployment and was verified publicly. Native Codex WebMCP retained `get_action_receipt` across `/webmcp-challenge` → `/browse` and read the redacted receipt there.
 
-Runtime candidate `fc29e66` subsequently passed release preflight, typecheck,
-lint, 381 Vitest files / 2,667 passed / 1 skipped, a 109-page build, selector
-24 × 3, contracts 82/82 and Chromium UI 6/6. Vercel later served documentation
-descendant `e1b46c9`, proving that the deployed code contains `fc29e66` in its
-ancestry. Current-SHA database journey/security and production migration state
-remain separately unproven.
+Runtime `60b99f7` superseded `fc29e66` and passed typecheck, lint, 381 Vitest
+files / 2,668 passed / 1 skipped, complete local Supabase reset, journey 2/2,
+security 10/10 and capture 1/1. Production serves it through descendant
+`f276332`. The isolated Vercel sandbox adds host-routing fix `deb00e3`; evidence
+commit `2d6efa3` passed the authenticated verifier and the eleven-tool
+buyer/seller Playwright journey. Production migration state remains separate.
 
 ## What a judge can actually exercise
 
@@ -119,9 +124,9 @@ request_contact_reveal
 
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
-| LOCAL | Full database gate PASS on clean `2ed489d`; non-database layers PASS on `fc29e66` | `fc29e66`: 381 Vitest files / 2,667 passed / 1 skipped, build 109 pages, selector 24 × 3, contracts 82/82 and UI 6/6. Current-SHA journey/security remain pending. |
+| LOCAL | Full database and capture gate PASS on `60b99f7` | 381 Vitest files / 2,668 passed / 1 skipped, typecheck, lint, complete Supabase reset, journey 2/2, security 10/10 and capture 1/1. |
 | CI | PASS through `9e7102e`; current HEAD WAIVED / NOT RUN | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32980551636) passed every job on `9e7102e`. The two `7b52d94` dispatch records created no jobs, and the owner waived a fresh remote rerun; they are not cited as green. |
-| DEPLOYED / PUBLIC HTTP | PASS for runtime ancestry through `fc29e66` | On 27 August the public challenge page displayed descendant `e1b46c99210b`, returned 200 with `Origin-Agent-Cluster: ?1`, and production reset returned 404. Database migration state is not inferred from a Vercel deploy. |
+| DEPLOYED / PUBLIC HTTP | Production PASS through `f276332`; sandbox PASS through `2d6efa3` | Both Vercel deployments completed. Sandbox challenge and listings return 200 with `Origin-Agent-Cluster: ?1`; production reset returns 404. Database migration state is not inferred from a Vercel deploy. |
 | PUBLIC native guest / authenticated sandbox | Guest PASS historically on `2ed489d`; authenticated injected journey PASS on `deb00e3` | Codex in-app discovered five live tools and completed the cross-route read path. Separately, the isolated sandbox passed the eleven-tool buyer/seller agreement journey under explicit Playwright compatibility injection. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | DEVPOST | NOT PROVEN | Submission, public video, and freeze are pending. |

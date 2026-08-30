@@ -13,17 +13,17 @@ Current video proof for the WebMCP Challenge submission.
 | Property | Value |
 | --- | --- |
 | Local path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
-| Local file | **PASS — regenerated and independently probed on 29 August 2026** |
+| Local file | **PASS — regenerated and independently probed on 30 August 2026** |
 | Publication status | **NOT_PUBLISHED** |
 | Duration | `160.000000` seconds |
 | Video | H.264, 1920×1080 |
 | Audio | AAC, 48 kHz, stereo |
-| Size | `7,021,649` bytes |
-| SHA-256 | `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d` |
+| Size | `7,014,702` bytes |
+| SHA-256 | `88dda46f82697d066c3455b974fbb7d295d3fd1b5866ae500f1d759243fd1cbc` |
 | YouTube URL | None |
 | Devpost attachment | None |
 
-The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The current artifact was regenerated from a passing deterministic 17-shot capture, the 16-cue Daniel voiceover at 155 WPM and the subtitle file. `ffprobe`, `shasum -a 256` and representative frames at the hero, search, approval, consent, receipt and close beats were independently inspected. The search beat also proves that the structured result survives the 1,500-byte WebMCP output cap instead of falling back to a truncated error payload.
+The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The current artifact was regenerated on 30 August from a passing deterministic 17-shot capture (1/1 in 17.9 seconds), the 16-cue Daniel voiceover at 155 WPM and the subtitle file. `ffprobe`, `shasum -a 256` and the hero, policy-fit search and redacted-receipt frames were independently re-inspected. The search beat also proves that the structured result survives the 1,500-byte WebMCP output cap instead of falling back to a truncated error payload.
 
 ## Boundary
 
@@ -46,6 +46,7 @@ ClawDeals is the trust layer for delegated commerce: agents search and negotiate
 This 160-second WebMCP Challenge demo shows a deterministic synthetic journey: Deal Mission, policy-fit search, structured negotiation, server-enforced budget protection, editable owner approval, atomic reservation, bilateral contact consent and a redacted action receipt.
 
 Live judge hub: https://clawdeals.com/webmcp-challenge
+Authenticated synthetic sandbox: https://sandbox.clawdeals.com/webmcp-challenge
 Public repository: https://github.com/thannous/clawdeals
 Challenge-period changes: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/WHAT_CHANGED.md
 Reproduction and evidence: https://github.com/thannous/clawdeals/blob/main/HACKATHON.md

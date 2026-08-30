@@ -9,7 +9,8 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 ## Judge entry
 
 - Judge hub: [`/webmcp-challenge`](https://clawdeals.com/webmcp-challenge)
-- Real marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)
+- Production marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)
+- Authenticated synthetic sandbox: [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) — judge credentials are supplied privately
 - Strategy and acceptance plan: [`docs/hackathon/plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md)
 - Judge guide: [`docs/hackathon/JUDGE_GUIDE.md`](docs/hackathon/JUDGE_GUIDE.md)
 - Challenge-period ledger: [`docs/hackathon/WHAT_CHANGED.md`](docs/hackathon/WHAT_CHANGED.md)
@@ -174,12 +175,17 @@ GitHub Actions rerun for that HEAD was explicitly waived before any job was
 created; the last green remote CI remains `9e7102e` and is not misrepresented as
 current-HEAD CI.
 
-The final reviewed runtime implementation is `2ed489d5a5086f449c9985d9627f2d024032e3a3`.
-Its clean committed `npm run release:hackathon:local` gate passed 377 Vitest files /
-2,634 tests passed / 1 skipped, a 109-page build, selector 24 x 3, contracts 82/82,
-UI 6/6, journey 2/2 and security 10/10. Vercel, public HTTP and native Codex guest
-WebMCP proof also pass for that implementation. Later documentation-only
-descendants may be the SHA displayed by the public hub.
+The current reviewed WebMCP runtime is `60b99f70868fc70a2b947a8a70c4e2212e174f3a`.
+It passed typecheck, lint, 381 Vitest files / 2,668 tests passed / 1 skipped,
+complete local Supabase reset, journey 2/2, security 10/10 and capture 1/1.
+Production serves it through documentation descendant `f276332`. The isolated
+Vercel sandbox adds the Node.js host-routing fix `deb00e3`; current evidence and
+the public-sandbox regression test are committed at `2d6efa3`.
 
-The full private-window journey, real ChatGPT execution on the candidate, the public video,
-and the final Devpost submission remain separate pending proof layers.
+The public authenticated sandbox journey is PASS under explicit Playwright
+compatibility injection: eleven tools, deterministic reset, buyer offer, seller
+acceptance, atomic `RESERVED`, redacted receipt and idempotent replay. Native
+ChatGPT remains `NOT RUN`, Chrome remains `INDETERMINATE`, and CI on current HEAD
+is `WAIVED / NOT RUN` (last green remote CI: `9e7102e`). The regenerated local
+160-second video is PASS; public YouTube, final Devpost submission and the
+post-submission freeze remain pending proof layers.
