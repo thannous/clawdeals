@@ -125,7 +125,7 @@ request_contact_reveal
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
 | LOCAL | Full database and capture gate PASS on `60b99f7` | 381 Vitest files / 2,668 passed / 1 skipped, typecheck, lint, complete Supabase reset, journey 2/2, security 10/10 and capture 1/1. |
-| CI | PASS through `9e7102e`; current HEAD WAIVED / NOT RUN | GitHub [`CI`](https://github.com/thannous/clawdeals/actions/runs/32980551636) passed every job on `9e7102e`. The two `7b52d94` dispatch records created no jobs, and the owner waived a fresh remote rerun; they are not cited as green. |
+| CI | PASS on submission-evidence SHA `d737312` | GitHub [`CI` run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) passed both unit shards, lint, typecheck/contracts, Worker contracts and the aggregate gate. Earlier empty dispatch records remain historical and are not cited as green. |
 | DEPLOYED / PUBLIC HTTP | Production PASS through `f276332`; sandbox PASS through `2d6efa3` | Both Vercel deployments completed. Sandbox challenge and listings return 200 with `Origin-Agent-Cluster: ?1`; production reset returns 404. Database migration state is not inferred from a Vercel deploy. |
 | PUBLIC native guest / authenticated sandbox | Guest PASS historically on `2ed489d`; authenticated injected journey PASS on `deb00e3` | Codex in-app discovered five live tools and completed the cross-route read path. Separately, the isolated sandbox passed the eleven-tool buyer/seller agreement journey under explicit Playwright compatibility injection. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |

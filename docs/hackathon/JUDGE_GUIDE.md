@@ -110,7 +110,7 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
 | LOCAL release candidate | PASS on reviewed runtime `60b99f7` | Typecheck, lint, 381 Vitest files / 2,668 passed / 1 skipped, complete Supabase reset, journey 2/2, security 10/10 and final capture 1/1 passed. |
-| CI | Last green `9e7102e`; current **WAIVED / NOT RUN** | Last actually green remote CI is [`CI` run 32980551636](https://github.com/thannous/clawdeals/actions/runs/32980551636) on `9e7102e`. Current HEAD remote CI is waived / not run. |
+| CI | PASS on submission-evidence SHA `d737312` | GitHub [`CI` run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) passed both unit shards, lint, typecheck/contracts, Worker contracts and the aggregate gate. |
 | DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live judge hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production reset remains 404. Production database migration state remains separate. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered the five public tools and executed context → search → cross-route redacted receipt without returning to the hub. Request IDs: context `8d6975ba-279d-4c42-aaad-914225764fd0`, search `ec572532-5994-4145-96e9-2095d592e666`, receipt-read `df16a0fb-2cc6-4619-9989-12fcb652a802`. |
 | PUBLIC authenticated sandbox | PASS on `deb00e3` | Playwright buyer/seller journey: eleven tools, 1,150 EUR listing-price offer, atomic `RESERVED` and redacted receipt. The copyable mission asks for 1,100 EUR; both amounts are in-policy. Explicit compatibility injection; not native Chrome/ChatGPT proof. |

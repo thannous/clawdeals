@@ -171,9 +171,10 @@ remaining proof boundaries are recorded in `docs/hackathon/RELEASE_EVIDENCE_2026
 Later hardening on `3739c7c` / `7b52d94` passed 2,627 unit tests plus one
 skip, typecheck, lint, a 109-page production build, 81 WebMCP contracts and five
 WebMCP UI tests. Vercel and public HTTP checks passed on `7b52d94`. A fresh
-GitHub Actions rerun for that HEAD was explicitly waived before any job was
-created; the last green remote CI remains `9e7102e` and is not misrepresented as
-current-HEAD CI.
+GitHub Actions rerun for that historical HEAD was explicitly waived before any
+job was created. A later current-packet run supersedes that boundary: [`CI` run
+33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103)
+passed on `d737312`.
 
 The current reviewed WebMCP runtime is `60b99f70868fc70a2b947a8a70c4e2212e174f3a`.
 It passed typecheck, lint, 381 Vitest files / 2,668 tests passed / 1 skipped,
@@ -185,7 +186,8 @@ the public-sandbox regression test are committed at `2d6efa3`.
 The public authenticated sandbox journey is PASS under explicit Playwright
 compatibility injection: eleven tools, deterministic reset, buyer offer, seller
 acceptance, atomic `RESERVED`, redacted receipt and idempotent replay. Native
-ChatGPT remains `NOT RUN`, Chrome remains `INDETERMINATE`, and CI on current HEAD
-is `WAIVED / NOT RUN` (last green remote CI: `9e7102e`). The regenerated local
+ChatGPT remains `NOT RUN` and Chrome remains `INDETERMINATE`. Submission-evidence
+CI is PASS on `d737312` (run `33312602103`), and both production and
+sandbox Vercel deployments completed successfully. The regenerated local
 160-second video is PASS; public YouTube, final Devpost submission and the
 post-submission freeze remain pending proof layers.

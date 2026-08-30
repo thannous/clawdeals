@@ -114,7 +114,7 @@ final 160-second capture 1/1 all passed.
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
 | LOCAL | PASS on reviewed runtime `60b99f7` | 381 Vitest files / 2,668 passed / 1 skipped, typecheck, lint, complete Supabase reset, journey 2/2, security 10/10 and capture 1/1. |
-| CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
+| CI | PASS on submission-evidence SHA `d737312` | GitHub [`CI` run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) passed both unit shards, lint, typecheck/contracts, Worker contracts and the aggregate gate. |
 | DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production sandbox reset remains 404. Database migration state is not inferred from deployment. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |
 | PUBLIC authenticated sandbox | PASS on `deb00e3` | Explicit Playwright compatibility injection: eleven tools, deterministic reset, buyer mission/offer, seller acceptance, reserved listing, redacted receipt and idempotent replay; 1/1 in 6.7 s. This is not native Chrome or ChatGPT proof. |

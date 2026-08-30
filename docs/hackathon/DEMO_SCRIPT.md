@@ -169,7 +169,7 @@ Hard cut. No extra features, escrow, or Telegram.
 | Layer | Status | What this file may cite |
 | --- | --- | --- |
 | LOCAL | PASS on the reviewed implementation | The clean committed `2ed489d` gate passed typecheck, lint, 377 Vitest files / 2,634 passed / 1 skipped, a 109-page build, selector 24 x 3, contracts 82/82, UI 6/6, journey 2/2 and security 10/10. See [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). |
-| CI | WAIVED / NOT RUN on the reviewed implementation | The owner waived a fresh GitHub Actions run. Historical green CI and the current local gate remain separate evidence. |
+| CI | PASS on submission-evidence SHA `d737312` | GitHub [`CI` run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) passed all jobs. |
 | DEPLOYED / PUBLIC HTTP | PASS | The reviewed implementation was deployed; the public challenge and browse routes return 200 with `Origin-Agent-Cluster: ?1`, public listings return 200 and the production sandbox reset remains 404. Later documentation-only descendants may display a newer deploy SHA without changing the reviewed runtime. |
 | PUBLIC native guest / authenticated sandbox | Guest PASS in Codex; authenticated injected journey PASS on `deb00e3` | Codex in-app discovered and executed the five guest tools. Separately, the isolated sandbox passed the eleven-tool buyer/seller journey under explicit Playwright compatibility injection; this is not native Chrome or ChatGPT proof. |
 | CHROME | INDETERMINATE | The tested Chrome profile exposed no `document.modelContext`; this is neither a product pass nor a fail. |

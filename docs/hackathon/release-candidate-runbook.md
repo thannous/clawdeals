@@ -254,7 +254,7 @@ Inspect:
 | `unit_tests` | both shards | PASS |
 | `worker_contracts` | job result | PASS |
 | `test-ci` aggregator | job result | PASS |
-| Current reviewed implementation | GitHub checks on `2ed489d` | WAIVED / NOT RUN by owner; neither PASS nor FAIL |
+| Submission-evidence SHA | [CI run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) on `d737312` | PASS |
 
 Do not claim CI green unless the run for this SHA is open and successful.
 

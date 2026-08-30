@@ -124,7 +124,7 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 | Couche | Statut |
 |---|---|
 | LOCAL current reviewed runtime candidate | PASS sur `60b99f7` : typecheck, lint, 381 fichiers Vitest / 2 668 tests réussis / 1 ignoré, reset Supabase complet, journey 2/2, sécurité 10/10 et capture 1/1 |
-| CI | Last green `9e7102e`; current WAIVED / NOT RUN |
+| CI | PASS sur le SHA de preuve de soumission `d737312` — [run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) |
 | DEPLOYED / PUBLIC HTTP | PASS pour le runtime `60b99f7` via le descendant documentaire servi `f276332` : hub 200, API publique 200, reset production 404 et `Origin-Agent-Cluster: ?1` |
 | WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
 | Chrome WebMCP | INDETERMINATE |
@@ -917,7 +917,7 @@ Le compte de démonstration doit posséder :
 - **PASS** : tag `webmcp-challenge-baseline` (`0088045`) présent et poussé ;
 - **PASS** : dépôt actuel `thannous/clawdeals` public ; pas d’édition dédiée ;
 - **PASS** : licence MIT détectée par GitHub ;
-- **PASS** : dernière CI GitHub Actions verte sur `9e7102e`; CI du candidat courant **WAIVED / NOT RUN** ;
+- **PASS** : CI GitHub Actions du SHA de preuve de soumission `d737312`, [run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) ;
 - **PASS** : HTTP public et WebMCP natif invité dans Codex sur `2ed489d`, y compris la persistance du reçu après navigation ;
 - **PASS LOCAL historique** : gate complet sur `2ed489d` et vidéo 160 secondes en 1080p avec audio ;
 - **PASS LOCAL hors DB** : `fc29e66` passe préflight, typecheck, lint, 381 fichiers / 2 667 tests / 1 ignoré, build 109 pages, sélection 24 × 3, contrats 82/82 et UI 6/6 ; journey/security restent à rejouer sur ce SHA ;
