@@ -2,7 +2,7 @@
 
 Narration and picture for the WebMCP Challenge video. Target length **2 minutes 40 seconds**. Must stay under 3 minutes, include clear audio, and show the real product in the first 15 seconds.
 
-The public YouTube upload is **not published**. This file is the script, not PUBLIC or DEVPOST proof.
+The public upload is available at https://youtu.be/mjNd6BNk_0U. This file remains the narration and shot script; publication proof is recorded separately.
 
 ## References
 
@@ -178,6 +178,6 @@ Hard cut. No extra features, escrow, or Telegram.
 | PUBLIC native guest / authenticated sandbox | Guest PASS in Codex; authenticated injected journey PASS on `deb00e3` | Codex in-app discovered and executed the five guest tools. Separately, the isolated sandbox passed the eleven-tool buyer/seller journey under explicit Playwright compatibility injection; this is not native Chrome or ChatGPT proof. |
 | CHROME | INDETERMINATE | The tested Chrome profile exposed no `document.modelContext`; this is neither a product pass nor a fail. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO / DEVPOST | LOCAL VIDEO PASS; PUBLIC PENDING | The 160-second 1080p video exists locally. YouTube publication, Devpost submission and post-submission freeze remain pending. |
+| VIDEO / DEVPOST | VIDEO PUBLIC PASS; DEVPOST DRAFT 4/5 | The 160-second 1080p video is public and anonymously reachable. Devpost is saved and previewed but not submitted; post-submission freeze remains pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.

@@ -15,25 +15,26 @@ Current video proof for the WebMCP Challenge submission.
 | Durable upload path | `submission-assets/webmcp-challenge/clawdeals-webmcp-demo-final.mp4` |
 | Generated source path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
 | Local file | **PASS — regenerated and independently probed on 30 August 2026** |
-| Publication status | **NOT_PUBLISHED** |
+| Publication status | **PUBLIC — verified 30 August 2026** |
 | Duration | `160.000000` seconds |
 | Video | H.264, 1920×1080 |
 | Audio | AAC, 48 kHz, stereo |
 | Size | `7,025,623` bytes |
 | SHA-256 | `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693` |
-| YouTube URL | None |
-| Devpost attachment | None |
+| YouTube URL | https://youtu.be/mjNd6BNk_0U |
+| Devpost attachment | **PASS — embedded in saved 4/5 draft; not submitted** |
 
 The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The current artifact was regenerated on 30 August from a passing deterministic 17-shot capture (1/1), the 16-cue Daniel voiceover at 155 WPM and the subtitle file. `capture:hackathon:all` now copies the upload assets and a hash manifest into the ignored `submission-assets/webmcp-challenge/` directory, which is not cleared by later Playwright runs. `ffprobe`, `shasum -a 256` and the hero, policy-fit search and redacted-receipt frames were independently re-inspected. The search beat also proves that the structured result survives the 1,500-byte WebMCP output cap instead of falling back to a truncated error payload.
 
 ## Boundary
 
-The current local probe proves an uploadable file and its media contract. It
-does not prove a YouTube upload, public anonymous playback, Devpost attachment
-or final submission. Recheck the exact hash immediately before upload. A
-Devpost draft or the script is not publication proof.
+The local probe proves the uploadable file and its media contract. YouTube
+Studio recorded the video as public on 30 August 2026; the official oEmbed
+endpoint returned the expected title and channel, and the anonymous watch URL
+returned HTTP 200. Devpost embeds the video in the saved project preview. These
+checks do not prove final Devpost submission.
 
-## Public upload package — prepared, not sent
+## Public upload package — sent and verified
 
 Suggested title:
 

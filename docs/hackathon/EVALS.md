@@ -121,7 +121,7 @@ final 160-second capture 1/1 all passed.
 | CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Regenerated and packaged on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. |
-| VIDEO PUBLIC / DEVPOST | NOT PROVEN | YouTube publication, submission, and freeze are pending. |
+| VIDEO PUBLIC / DEVPOST | VIDEO PASS; DEVPOST DRAFT 4/5 | YouTube publication and anonymous playback passed. Devpost fields and media are saved and previewed; final submission and freeze are pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.
 

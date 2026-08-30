@@ -41,7 +41,7 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 | CHATGPT | NOT RUN on current release | Real ChatGPT in-app selection and execution remains separate from the Codex in-app proof, HTTP and CI. |
 | SECRET AUDIT | PASS | GitHub Secret Scanning: 0 alerts. Gitleaks 8.30.1: 492 commits and candidate tree reviewed; 0 confirmed secrets after false-positive triage. See [`SECRET_AUDIT_2026-08-26.md`](./SECRET_AUDIT_2026-08-26.md). |
 | VIDEO LOCAL | PASS on 30 August | The regenerated MP4 is copied to the durable ignored submission package and independently probes as 160 seconds, H.264 1920×1080 plus AAC 48 kHz stereo; capture passed 1/1. SHA-256: `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. Publication remains separate. See [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
-| VIDEO PUBLIC / DEVPOST | PENDING | Public YouTube URL, final Devpost fields, submission, and post-submission freeze are not proven. |
+| VIDEO PUBLIC / DEVPOST | VIDEO PASS; DEVPOST DRAFT 4/5 | Public YouTube `https://youtu.be/mjNd6BNk_0U` passed Studio publication, oEmbed and anonymous HTTP checks. Devpost fields, video, three gallery images, thumbnail and private judge instructions are saved and previewed. Final Submit and post-submission freeze remain pending. |
 
 ## Boundary
 

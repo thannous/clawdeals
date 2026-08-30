@@ -85,7 +85,9 @@ En cas d’égalité, l’utilisation de WebMCP est le premier critère de dépa
 
 **PASS** : l’inscription au **WebMCP Challenge** est active. Le brouillon de soumission ClawDeals existe déjà.
 
-**PENDING** : ce brouillon n’est pas soumis. La vidéo YouTube publique, les champs finaux Devpost, la soumission officielle et le gel post-soumission restent ouverts. Un brouillon n’est pas une preuve de publication.
+**PASS vidéo / brouillon** : la vidéo YouTube est publique et vérifiée ; les champs, médias et instructions privées Devpost sont enregistrés et prévisualisés dans le brouillon 4/5.
+
+**PENDING** : le brouillon Devpost n’est pas soumis. La confirmation des règles, la soumission officielle et le gel post-soumission restent ouverts. Un brouillon n’est pas une preuve de soumission.
 
 ### 3.2 Dépôt public et licence MIT
 
@@ -131,7 +133,7 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 | Parcours authentifié public | PASS sur `deb00e3` : GitHub connecté au projet Vercel isolé, déploiement Ready, HTTP/reset authentifié vérifiés et parcours Playwright à onze outils 1/1 ; injection de compatibilité explicite, donc pas une preuve Chrome/ChatGPT native |
 | ChatGPT in-app | NOT RUN |
 | Vidéo locale | PASS le 29 août ; MP4 actuel 160 s, H.264 1080p + AAC, hash vérifié et images représentatives relues |
-| Vidéo publique / Devpost soumis | PENDING |
+| Vidéo publique / Devpost soumis | Vidéo PASS ; Devpost brouillon 4/5, soumission PENDING |
 
 ### 3.4 Livrables obligatoires
 
@@ -140,10 +142,10 @@ Il faut fournir :
 - une URL publique utilisable dans un navigateur WebMCP (**PASS** HTTP, WebMCP natif invité dans Codex et parcours authentifié injecté sur le sandbox ; **INDETERMINATE** dans Chrome ; **NOT RUN** dans ChatGPT in-app) ;
 - un dépôt public avec licence open source (**PASS** : `thannous/clawdeals`, MIT) ;
 - une description en anglais ;
-- une vidéo YouTube publique de moins de trois minutes, avec audio (**PENDING** : non publiée) ;
+- une vidéo YouTube publique de moins de trois minutes, avec audio (**PASS** : https://youtu.be/mjNd6BNk_0U) ;
 - des instructions et des identifiants de test si l’application est authentifiée.
 
-Les juges ne sont pas obligés de construire le dépôt ni de tester longtemps l’application. La vidéo, la page de projet et le README doivent suffire à comprendre la valeur. La vidéo publique et la soumission Devpost restent **PENDING**.
+Les juges ne sont pas obligés de construire le dépôt ni de tester longtemps l’application. La vidéo, la page de projet et le README doivent suffire à comprendre la valeur. La vidéo publique est **PASS** ; la soumission finale Devpost reste **PENDING**.
 
 ### 3.5 Références officielles
 
@@ -924,7 +926,8 @@ Le compte de démonstration doit posséder :
 - **PASS LOCAL courant** : `60b99f7` passe typecheck, lint, 381 fichiers / 2 668 tests / 1 ignoré, reset Supabase complet, journey 2/2, sécurité 10/10 et capture vidéo 1/1 ;
 - **INDETERMINATE** : Chrome WebMCP sans runtime actif dans le profil testé ;
 - **PASS sandbox authentifié** : Supabase/Redis isolés, secrets et migrations dédiés, DNS/TLS, connexion Git Vercel, déploiement `deb00e3`, reset authentifié et parcours Playwright à onze outils 1/1 ; cette preuve injectée ne remplace pas Chrome ou ChatGPT natif ;
-- **PENDING** : vidéo YouTube, soumission Devpost et ChatGPT in-app.
+- **PASS** : vidéo YouTube publique et brouillon Devpost 4/5 enregistré/prévisualisé ;
+- **PENDING** : soumission finale Devpost et ChatGPT in-app.
 
 Reste à faire le 26 août (si non clos ailleurs) :
 
@@ -1289,7 +1292,7 @@ C’est désormais la dernière couche de preuve et de publication :
 - fournir un sandbox public isolé pour les onze outils authentifiés ;
 - activer et vérifier Chrome WebMCP ou l’Origin Trial ;
 - tester séparément ChatGPT in-app ;
-- publier la vidéo et soumettre Devpost.
+- soumettre définitivement Devpost puis geler le candidat jugé.
 
 La force est que presque tout le domaine métier nécessaire existe déjà.
 

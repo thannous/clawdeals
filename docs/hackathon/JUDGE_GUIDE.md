@@ -78,8 +78,8 @@ Judges are not required to build the repo. If a live WebMCP browser is available
 
 If the browser has no WebMCP, follow the [demo script](./DEMO_SCRIPT.md). A
 160-second 1080p H.264/AAC MP4 is present in the current workspace and was
-independently verified on 29 August. The public YouTube file is **not
-published**.
+independently verified on 30 August. The public demo is available at
+https://youtu.be/mjNd6BNk_0U.
 
 ## What must not happen
 
@@ -117,6 +117,6 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 | CHROME | INDETERMINATE | Connected Chrome loaded the deployed build without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Regenerated and packaged on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. |
-| VIDEO PUBLIC / DEVPOST | NOT PROVEN | Public YouTube and Devpost submission are not proven. |
+| VIDEO PUBLIC / DEVPOST | VIDEO PASS; DEVPOST DRAFT 4/5 | YouTube is public and anonymously reachable. Devpost fields, media and private judge instructions are saved and previewed; final submission is not complete. |
 
 Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP or injected authenticated proof as native Chrome/ChatGPT WebMCP selection or Devpost acceptance.

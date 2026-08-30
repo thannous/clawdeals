@@ -1,23 +1,23 @@
 # Devpost submission draft — ClawDeals
 
-Status: **DRAFT ONLY — not saved to Devpost and not submitted.**
+Status: **SAVED DRAFT 4/5 — verified on Devpost, not submitted.**
 
-Observed Devpost project: `Clawdeals Copilot`, draft `3/5`, submission ID
-`1153777`. The current remote story is stale and must be replaced only after the
-remaining public links are ready.
+Observed Devpost project: `ClawDeals`, draft `4/5`, submission ID `1153777`,
+slug `clawdeals`. The saved project preview was re-opened on 30 August 2026 and
+shows the current pitch, story, public YouTube embed and three-image gallery.
 
-Live dashboard recheck on 30 August 2026 confirmed, without saving any field:
+The saved remote draft now contains:
 
-- project overview currently says `Clawdeals Copilot` with the pitch
-  `A human and an AI agent share the same live marketplace page via WebMCP.`;
-- project details still claim a `navigator` fallback and only a draft-listing
-  write path;
-- the demo URL still points to `https://clawdeals.com/webmcp`;
-- the public repository URL is correct;
-- the YouTube field is empty;
-- submitter `Individual`, country `France`, app status `Existing`, learning
-  `Significant` and career value `Yes` are already selected;
-- no Devpost field was changed during this recheck.
+- project name `ClawDeals` and pitch `Your agent negotiates. You stay in control.`;
+- the current trust-layer story and challenge-period delta;
+- ten built-with tags and five judge/reproduction links;
+- the public video `https://youtu.be/mjNd6BNk_0U`;
+- the three prepared gallery images and the hero project thumbnail;
+- `Individual`, `France`, `Existing`, learning `Significant` and career value `Yes`;
+- private synthetic buyer/seller credentials in the judge-only instructions.
+
+The Official Rules checkbox remains unchecked and `Submit project` was not
+clicked. Final submission requires a separate confirmation.
 
 The official event page currently requires a working live URL, a text
 description, a public YouTube demo under three minutes with audio, and a public
@@ -25,7 +25,7 @@ repository with a detectable open-source license. Its judging criteria are
 WebMCP Leverage, Execution, Potential Impact, and Creativity & Ambition. The
 deadline displayed for Europe/Paris is 3 September 2026 at 22:00.
 
-## Action-time update package — prepared, not saved
+## Saved update package — not submitted
 
 Project overview:
 
@@ -40,7 +40,7 @@ Project details:
 - replace the demo URL with `https://clawdeals.com/webmcp-challenge`;
 - keep `https://github.com/thannous/clawdeals`;
 - add the challenge ledger and `HACKATHON.md` links listed under **Try it out**;
-- add the public YouTube URL only after signed-out verification.
+- public YouTube URL: `https://youtu.be/mjNd6BNk_0U` (anonymous verification PASS).
 
 Additional information:
 
@@ -57,10 +57,10 @@ Additional information:
 
 The isolated public sandbox is deployed and verified at
 `https://sandbox.clawdeals.com/webmcp-challenge`. Synthetic judge credentials
-exist and passed the authenticated journey; they must be supplied only through
-Devpost's private judge-instructions field, never committed to this draft.
-Saving Devpost fields, publishing the video, accepting the rules and submitting
-are external actions that require action-time confirmation.
+exist and passed the authenticated journey; they were supplied only through
+Devpost's private judge-instructions field and remain absent from this file and
+version control. Accepting the rules and submitting remain separate external
+actions requiring action-time confirmation.
 
 ## Project story
 
@@ -172,8 +172,8 @@ whether the result is trustworthy.
 
 ### What's next
 
-Before final submission we will attach the public YouTube URL. The isolated
-authenticated sandbox is already live at
+The public YouTube demo and isolated authenticated sandbox are live. The
+sandbox remains available at
 `https://sandbox.clawdeals.com/webmcp-challenge`; production reset stays closed.
 ChatGPT in-app and Chrome 149+ native WebMCP remain unproven.
 Judges can use ChatGPT's in-app browser or Chrome 149+ with
@@ -204,15 +204,15 @@ Testing instructions:
 1. Open the live judge hub in ChatGPT's in-app browser, or in Chrome 149+ after
    enabling `chrome://flags/#enable-webmcp-testing` and restarting Chrome.
 2. Visit `https://clawdeals.com/webmcp-challenge` for the public guest tools.
-3. Authenticated sandbox credentials are ready and will be added only to the
-   private judge instructions; the isolated mutation journey is verified on
+3. Authenticated sandbox credentials are present only in the private judge
+   instructions; the isolated mutation journey is verified on
    `sandbox.clawdeals.com`.
 
-### Private judge instructions — paste only after credential-transmission confirmation
+### Private judge instructions — saved after credential-transmission confirmation
 
-The following text is prepared for Devpost's private judge-instructions field.
-Replace the two placeholders only at action time; never commit or publish their
-values.
+The following redacted template mirrors Devpost's saved private instructions.
+The live field contains the synthetic credentials; this repository deliberately
+retains placeholders only.
 
 ```text
 Authenticated synthetic sandbox:
@@ -250,16 +250,16 @@ PASS. Chrome 151: runtime unavailable / INDETERMINATE. ChatGPT in-app: NOT RUN.
 
 ## Video demo link
 
-`PENDING — public YouTube URL must be verified without authentication.`
+https://youtu.be/mjNd6BNk_0U — public oEmbed and anonymous watch HTTP 200 verified.
 
 Local video proof:
 [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md).
 
-## Prepared submission media — local only
+## Submission media — uploaded to the saved draft
 
 All three images are deterministic 1920×1080 JPEG frames generated with the
-current video. They remain in the gitignored capture directory and have not been
-uploaded.
+current video. The files remain in the gitignored package and were uploaded to
+the saved Devpost gallery; the hero was also uploaded as the project thumbnail.
 
 1. YouTube thumbnail / Devpost cover:
    `submission-assets/webmcp-challenge/frames/00-hero.jpg`
@@ -289,10 +289,10 @@ Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
   verified by the authenticated public Playwright journey.
 - [ ] Verify the final judge instructions in a native ChatGPT or WebMCP-enabled
   Chrome profile; do not relabel the injected journey as native proof.
-- [ ] YouTube video is public, has audio and is shorter than three minutes.
-- [ ] Replace the stale Devpost story with the exact Markdown above.
-- [ ] Replace the demo URL `/webmcp` with `/webmcp-challenge`.
-- [ ] Add the final public video URL.
-- [ ] Preview every Devpost section and link.
+- [x] YouTube video is public, has audio and is shorter than three minutes.
+- [x] Replace the stale Devpost story with the exact Markdown above.
+- [x] Replace the demo URL `/webmcp` with `/webmcp-challenge`.
+- [x] Add the final public video URL.
+- [x] Preview every Devpost section and link.
 - [ ] Ask the user for action-time confirmation before final Submit.
 - [ ] Record the submitted URL and timestamp, then freeze the judged commit.

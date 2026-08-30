@@ -18,9 +18,9 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - WebMCP architecture and tool catalog: [`docs/hackathon/WEBMCP_ARCHITECTURE.md`](docs/hackathon/WEBMCP_ARCHITECTURE.md)
 - Evals and security: [`docs/hackathon/EVALS.md`](docs/hackathon/EVALS.md), [`docs/hackathon/SECURITY_MODEL.md`](docs/hackathon/SECURITY_MODEL.md)
 - Secret audit: [`docs/hackathon/SECRET_AUDIT_2026-08-26.md`](docs/hackathon/SECRET_AUDIT_2026-08-26.md)
-- Video recording script: [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — public upload pending
-- Local video evidence: [`docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md) — public upload pending
-- Devpost final copy: [`docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) — draft only, not submitted
+- Public video: [YouTube](https://youtu.be/mjNd6BNk_0U) and [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — publication and anonymous playback PASS
+- Video evidence: [`docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md)
+- Devpost final copy: [`docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) — saved draft 4/5, not submitted
 - Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
 - Release evidence: [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md)
 - Public smoke evidence: [`docs/hackathon/PUBLIC_SMOKE_2026-08-26.md`](docs/hackathon/PUBLIC_SMOKE_2026-08-26.md)
@@ -188,6 +188,7 @@ compatibility injection: eleven tools, deterministic reset, buyer offer, seller
 acceptance, atomic `RESERVED`, redacted receipt and idempotent replay. Native
 ChatGPT remains `NOT RUN` and Chrome remains `INDETERMINATE`. Submission-evidence
 CI is PASS on `d737312` (run `33312602103`), and both production and
-sandbox Vercel deployments completed successfully. The regenerated local
-160-second video is PASS; public YouTube, final Devpost submission and the
+sandbox Vercel deployments completed successfully. The 160-second video is
+public at https://youtu.be/mjNd6BNk_0U and anonymous playback is PASS. The
+Devpost entry is saved and previewed as a 4/5 draft; final submission and the
 post-submission freeze remain pending proof layers.
