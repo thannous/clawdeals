@@ -32,7 +32,8 @@ Official contest samples already cover catalogues and carts. The judged differen
 | --- | --- | --- |
 | Judge hub | `/webmcp-challenge` | Compatibility, exact registered tools, copyable mission, isolated reset |
 | Live marketplace | `/webmcp` | Real product surface, not a simulator. The hub launch button opens this page |
-| Production hub | https://clawdeals.com/webmcp-challenge | Contains reviewed runtime `fc29e6659d5a`; the page reports its exact deployment descendant. HTTP PASS on descendant `e1b46c99210b`; native Codex guest proof remains historical on `2ed489d`. Authenticated sandbox journey PENDING. |
+| Production hub | https://clawdeals.com/webmcp-challenge | Contains the reviewed production runtime; native Codex guest proof remains historical on `2ed489d`. Production reset stays closed. |
+| Authenticated sandbox | https://sandbox.clawdeals.com/webmcp-challenge | Vercel runtime `deb00e3`; HTTP, reset and injected eleven-tool buyer/seller journey PASS. Use only synthetic judge credentials supplied privately. |
 | Eligibility ledger | `HACKATHON.md` | Baseline SHA, challenge-period commits, registry |
 
 The hub reports the browser's real `document.modelContext` support, the tools that actually registered, and a sanitized deploy SHA when the host provides one. Missing native WebMCP is `INDETERMINATE`, not a product fail.
@@ -112,10 +113,10 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 | CI | Last green `9e7102e`; current **WAIVED / NOT RUN** | Last actually green remote CI is [`CI` run 32980551636](https://github.com/thannous/clawdeals/actions/runs/32980551636) on `9e7102e`. Current HEAD remote CI is waived / not run. |
 | DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live judge hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production reset remains 404. Production database migration state remains separate. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered the five public tools and executed context → search → cross-route redacted receipt without returning to the hub. Request IDs: context `8d6975ba-279d-4c42-aaad-914225764fd0`, search `ec572532-5994-4145-96e9-2095d592e666`, receipt-read `df16a0fb-2cc6-4619-9989-12fcb652a802`. |
-| PUBLIC authenticated sandbox | PENDING | Eleven-tool judge reset and mutation path are not proven on a public isolated sandbox. |
+| PUBLIC authenticated sandbox | PASS on `deb00e3` | Authenticated verifier plus Playwright buyer/seller journey: eleven tools, deterministic reset, mission, 1,150 EUR offer, atomic acceptance, redacted receipt and idempotent replay. Explicit compatibility injection; not native Chrome/ChatGPT proof. |
 | CHROME | INDETERMINATE | Connected Chrome loaded the deployed build without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | VIDEO LOCAL | PASS / CURRENT FILE PRESENT | The 160-second H.264 1080p + AAC artifact exists locally; SHA-256 `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d`. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | Public YouTube and Devpost submission are not proven. |
 
-Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP proof as native WebMCP selection, authenticated journey, or Devpost acceptance.
+Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP or injected authenticated proof as native Chrome/ChatGPT WebMCP selection or Devpost acceptance.

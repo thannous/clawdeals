@@ -43,16 +43,18 @@ Additional information:
   challenge** below;
 - live URL: `https://clawdeals.com/webmcp-challenge`;
 - public repo: `https://github.com/thannous/clawdeals`;
-- tested clients: `Codex in-app browser — native guest WebMCP PASS; Chrome 151
+- tested clients: `Codex in-app browser — native guest WebMCP PASS; isolated
+  public sandbox — authenticated eleven-tool injected journey PASS; Chrome 151
   — runtime unavailable, recorded as INDETERMINATE; ChatGPT in-app — NOT RUN`;
 - AI tools used: `OpenAI Codex, ChatGPT and Grok 4.6`;
 - keep learning `Significant` and career value `Yes`.
 
-Judge credentials remain blank until the isolated public sandbox is deployed
-and verified. Its Supabase, Redis, masked secrets, DNS and TLS infrastructure now
-exists, but the Vercel project still has no Git deployment. Saving Devpost
-fields, publishing the video, accepting the rules and submitting are external
-actions that require action-time confirmation.
+The isolated public sandbox is deployed and verified at
+`https://sandbox.clawdeals.com/webmcp-challenge`. Synthetic judge credentials
+exist and passed the authenticated journey; they must be supplied only through
+Devpost's private judge-instructions field, never committed to this draft.
+Saving Devpost fields, publishing the video, accepting the rules and submitting
+are external actions that require action-time confirmation.
 
 ## Project story
 
@@ -91,9 +93,10 @@ executed as `get_page_context` → `search_listings` → `get_action_receipt`; t
 shared UI navigated to the filtered listings view and the receipt preserved all
 redactions.
 
-An authenticated isolated sandbox expands the contextual registry to eleven
-tools for the full mission and negotiation workflow. Production intentionally
-keeps the synthetic reset and mutation journey disabled.
+The authenticated isolated sandbox expands the contextual registry to eleven
+tools for the full mission and negotiation workflow. The public buyer/seller
+agreement journey is verified; production intentionally keeps the synthetic
+reset and mutation journey disabled.
 
 ### How we built it
 
@@ -191,8 +194,9 @@ Testing instructions:
 1. Open the live judge hub in ChatGPT's in-app browser, or in Chrome 149+ after
    enabling `chrome://flags/#enable-webmcp-testing` and restarting Chrome.
 2. Visit `https://clawdeals.com/webmcp-challenge` for the public guest tools.
-3. Authenticated sandbox credentials and the isolated mutation journey will be
-   added only after signed-out verification of `sandbox.clawdeals.com`.
+3. Authenticated sandbox credentials are ready and will be added only to the
+   private judge instructions; the isolated mutation journey is verified on
+   `sandbox.clawdeals.com`.
 
 ## Video demo link
 
@@ -231,7 +235,7 @@ Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
 
 - [x] Explicit judge instruction for ChatGPT in-app and the supported Chrome
   149+ flag is included; Origin Trial is not treated as a required gate.
-- [ ] Public sandbox credentials/instructions are safe, synthetic and verified
+- [x] Public sandbox credentials/instructions are safe, synthetic and verified
   in a private window.
 - [ ] YouTube video is public, has audio and is shorter than three minutes.
 - [ ] Replace the stale Devpost story with the exact Markdown above.

@@ -117,7 +117,7 @@ final 160-second capture 1/1 all passed.
 | CI | Last green `9e7102e`; current WAIVED / NOT RUN | GitHub Actions is intentionally not used for the current candidate. |
 | DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production sandbox reset remains 404. Database migration state is not inferred from deployment. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |
-| PUBLIC authenticated sandbox | PENDING | Eleven-tool reset and mutation journey are not proven on a public isolated sandbox. |
+| PUBLIC authenticated sandbox | PASS on `deb00e3` | Explicit Playwright compatibility injection: eleven tools, deterministic reset, buyer mission/offer, seller acceptance, reserved listing, redacted receipt and idempotent replay; 1/1 in 6.7 s. This is not native Chrome or ChatGPT proof. |
 | CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | VIDEO LOCAL | PASS / CURRENT FILE PRESENT | The 160-second H.264 1080p + AAC artifact exists locally; SHA-256 `ed2372ac304cdb81527c1da97d8b71e199e4153c24612b2a9dad07c39961315d`. |

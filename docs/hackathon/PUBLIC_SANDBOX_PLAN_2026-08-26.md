@@ -1,29 +1,29 @@
-# Public WebMCP sandbox plan — 26 August 2026
+# Public WebMCP sandbox plan — verified 30 August 2026
 
 The authenticated eleven-tool journey must run on a public, isolated sandbox.
 It must never run against ClawDeals production or the production Supabase project.
 
 ## Current observed state
 
-Update verified on 29 August 2026. Secrets remain confined to the external
-sandbox providers and are not stored in this repository.
+Update verified on 30 August 2026. Raw synthetic judge keys remain outside
+version control and are never written to tickets, logs or committed docs.
 
 | Check | Result |
 | --- | --- |
 | `staging.app.clawdeals.com` DNS | NOT PROVISIONED — no DNS answer |
-| Public sandbox hostname | DNS + TLS PASS / DEPLOYMENT PENDING — `sandbox.clawdeals.com` is a DNS-only CNAME to the exact Vercel target and validates TLS; `/webmcp-challenge` returns Vercel 404 because the project still has no deployment |
+| Public sandbox hostname | PASS — `https://sandbox.clawdeals.com/webmcp-challenge` returns 200 over TLS with `Origin-Agent-Cluster: ?1` and matches `/en/webmcp-challenge` |
 | GitHub deployment environments | `Preview` and `Production` only |
-| Vercel dashboard | PARTIAL — isolated project `clawdeals-staging`, sandbox configuration, protected variables and custom domain exist; no Git connection or deployment |
-| Supabase dashboard | MIGRATIONS PASS / JOURNEY PENDING — persistent data-less branch `webmcp-sandbox` at ref `eusjrzydepzzsnhrhysp` includes TI-367, TI-370, TI-377 and the execute-hardening migration; targeted offer/contact functions are executable only by `service_role` |
+| Vercel dashboard | PASS — project `clawdeals-staging` is connected to `thannous/clawdeals`, uses the Next.js preset, and deployment `dpl_5qjh93UvcATeEcZpC8SNn1VJEuqJ` is Ready for runtime `deb00e3` |
+| Supabase dashboard | PASS — persistent data-less branch `webmcp-sandbox` at ref `eusjrzydepzzsnhrhysp` contains the final challenge migrations and deterministic synthetic buyer/seller actors; production ref `gztfmpuqtpvncdcuhqxy` remains outside the journey |
 | Upstash Redis | PROVISIONED — isolated free-tier database `clawdeals-webmcp-sandbox` in AWS Frankfurt; credentials are stored only in the Vercel sandbox |
 | Sensitive staging variables | PROVISIONED — branch keys, Redis credentials and generated HMAC/session secrets are stored only in `clawdeals-staging` Production variables and are masked in the dashboard |
 | GitHub staging variables/secrets | NOT PROVISIONED — repository exposes only `NPM_TOKEN`; no staging variables |
 | Production reset | PASS — `/api/v1/sandbox/reset` returns 404 |
 | Local isolated journey | PASS — fresh local reset applied every migration and the journey passed 2/2; the adversarial security suite passed 10/10 on 29 August 2026 |
-| Public authenticated eleven-tool journey | PENDING |
+| Public authenticated eleven-tool journey | PASS — authenticated verifier passed; Playwright exposed exactly eleven registered tools, created a mission and 1,150 EUR offer, accepted it as the seller, observed `RESERVED`, checked a redacted <=1,500-byte receipt, replayed acceptance idempotently, and reset fixtures (1/1 in 6.7 s) |
 
-The environment described in `docs/release-environments.md` is partially
-provisioned, but it is not yet a deployment and has no public proof.
+The environment described in `docs/release-environments.md` is now deployed and
+has separate public HTTP, authenticated reset and browser-journey proof.
 
 ## Required topology
 
@@ -46,7 +46,8 @@ browser
 Do not use `clawdeals.com`, `www.clawdeals.com` or `app.clawdeals.com` for the
 reset or mutation journey. Do not use a default `*.vercel.app` domain because
 the middleware canonicalizes it away. A custom host that is neither the app
-host nor a marketing host is served directly by `middleware.ts`.
+host nor a marketing host is served directly by the Node.js `proxy.ts` host
+router.
 
 ## Required staging variables
 
@@ -154,19 +155,18 @@ redacts any supplied judge key. Optional `PUBLIC_SANDBOX_JUDGE_KEY` only
 authenticates the sandbox reset GET.
 
 Seller acceptance and bilateral contact reveal need the deterministic seller
-key as a separate actor. They remain required for the full critical-path proof,
-even though a buyer key is sufficient to expose the eleven-tool registry.
+key as a separate actor. Seller acceptance is included in the public journey;
+bilateral contact reveal remains covered by the local security suite and is not
+claimed as part of this narrower public agreement proof.
 
 ## External setup gate
 
-The owner authorized the public sandbox and its branch cost. The persistent
-Supabase branch, isolated Vercel project and Redis database were created. The
-staging-only secrets were transmitted to the isolated Vercel project, the four
-final migrations were applied only to the branch, OrbStack was restarted, and
-the exact DNS-only CNAME was created and observed through public DNS on 29
-August 2026. Connecting the public GitHub repository to Vercel remains an
-action-time-gated persistent access mutation; no deployment has been claimed.
-None of these actions targets production.
+The owner authorized the public sandbox, branch cost, GitHub connection and
+first deployment. The persistent Supabase branch, isolated Vercel project and
+Redis database were created; staging-only secrets and migrations target only
+the isolated branch. The DNS-only CNAME and TLS are public. GitHub repository
+`thannous/clawdeals` is connected to `clawdeals-staging`, and runtime `deb00e3`
+is deployed. None of these actions targets the production database.
 
 The dashboard and current Supabase billing documentation show that the branch
 starts on Micro compute at `USD 0.01344/hour` (about `USD 0.32/day` or

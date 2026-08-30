@@ -46,6 +46,7 @@
     "eval:webmcp:ui": "PW_WEB_SERVER_MODE=prod playwright test e2e/ui/webmcp-challenge.spec.ts e2e/ui/webmcp.spec.ts --project=ui --workers=1",
     "eval:webmcp:journey": "E2E_USE_LOCAL_UPSTASH_MOCK=1 CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox PW_WEB_SERVER_MODE=prod playwright test e2e/integration/sandbox-ebike-fixtures.spec.ts e2e/integration/webmcp-submission-journey.spec.ts --project=integration --workers=1",
     "eval:webmcp:security": "E2E_USE_LOCAL_UPSTASH_MOCK=1 CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox PW_WEB_SERVER_MODE=prod playwright test e2e/integration/mission-owner-approval.spec.ts e2e/integration/offer-actions.spec.ts e2e/integration/contact-reveal.spec.ts e2e/integration/messaging-redaction.spec.ts --project=integration --workers=1",
+    "eval:webmcp:public-sandbox": "playwright test e2e/integration/webmcp-public-sandbox-journey.spec.ts --project=integration --workers=1",
     "capture:hackathon:video": "E2E_USE_LOCAL_UPSTASH_MOCK=1 CLAWDEALS_ENV=sandbox API_KEY_NAMESPACE=cd_sandbox PW_WEB_SERVER_MODE=prod playwright test --config=playwright.hackathon-video.config.ts --project=hackathon-video --workers=1 && node scripts/finalize-hackathon-capture.mjs",
     "capture:hackathon:voiceover": "node scripts/render-hackathon-voiceover.mjs",
     "capture:hackathon:assemble": "node scripts/assemble-hackathon-video.mjs",

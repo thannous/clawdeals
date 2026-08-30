@@ -128,7 +128,7 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 | DEPLOYED / PUBLIC HTTP | PASS pour le runtime `60b99f7` via le descendant documentaire servi `f276332` : hub 200, API publique 200, reset production 404 et `Origin-Agent-Cluster: ?1` |
 | WebMCP natif invité | PASS dans Codex in-app sur `2ed489d`, reçu relu après navigation |
 | Chrome WebMCP | INDETERMINATE |
-| Parcours authentifié public | INFRA PASS / APP PENDING : Supabase isolé, Redis, secrets, migrations, DNS et TLS sont prêts ; connexion Git Vercel, premier déploiement et E2E public restent ouverts |
+| Parcours authentifié public | PASS sur `deb00e3` : GitHub connecté au projet Vercel isolé, déploiement Ready, HTTP/reset authentifié vérifiés et parcours Playwright à onze outils 1/1 ; injection de compatibilité explicite, donc pas une preuve Chrome/ChatGPT native |
 | ChatGPT in-app | NOT RUN |
 | Vidéo locale | PASS le 29 août ; MP4 actuel 160 s, H.264 1080p + AAC, hash vérifié et images représentatives relues |
 | Vidéo publique / Devpost soumis | PENDING |
@@ -137,7 +137,7 @@ Preuve CI et HTTP public du 26 août 2026, distincte de Devpost et de la vidéo 
 
 Il faut fournir :
 
-- une URL de production utilisable dans un navigateur WebMCP (**PASS** HTTP public et WebMCP natif invité dans Codex ; **INDETERMINATE** dans Chrome ; **PENDING** parcours authentifié et ChatGPT in-app) ;
+- une URL publique utilisable dans un navigateur WebMCP (**PASS** HTTP, WebMCP natif invité dans Codex et parcours authentifié injecté sur le sandbox ; **INDETERMINATE** dans Chrome ; **NOT RUN** dans ChatGPT in-app) ;
 - un dépôt public avec licence open source (**PASS** : `thannous/clawdeals`, MIT) ;
 - une description en anglais ;
 - une vidéo YouTube publique de moins de trois minutes, avec audio (**PENDING** : non publiée) ;
@@ -923,7 +923,7 @@ Le compte de démonstration doit posséder :
 - **PASS LOCAL hors DB** : `fc29e66` passe préflight, typecheck, lint, 381 fichiers / 2 667 tests / 1 ignoré, build 109 pages, sélection 24 × 3, contrats 82/82 et UI 6/6 ; journey/security restent à rejouer sur ce SHA ;
 - **PASS LOCAL courant** : `60b99f7` passe typecheck, lint, 381 fichiers / 2 668 tests / 1 ignoré, reset Supabase complet, journey 2/2, sécurité 10/10 et capture vidéo 1/1 ;
 - **INDETERMINATE** : Chrome WebMCP sans runtime actif dans le profil testé ;
-- **INFRA PASS / APP PENDING** : Supabase isolé, Redis, secrets Vercel, migrations finales, DNS et TLS sont prêts ; la connexion Git Vercel, le premier déploiement et le parcours public authentifié restent ouverts ;
+- **PASS sandbox authentifié** : Supabase/Redis isolés, secrets et migrations dédiés, DNS/TLS, connexion Git Vercel, déploiement `deb00e3`, reset authentifié et parcours Playwright à onze outils 1/1 ; cette preuve injectée ne remplace pas Chrome ou ChatGPT natif ;
 - **PENDING** : vidéo YouTube, soumission Devpost et ChatGPT in-app.
 
 Reste à faire le 26 août (si non clos ailleurs) :
