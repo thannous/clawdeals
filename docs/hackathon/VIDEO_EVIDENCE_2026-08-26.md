@@ -12,18 +12,19 @@ Current video proof for the WebMCP Challenge submission.
 
 | Property | Value |
 | --- | --- |
-| Local path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
+| Durable upload path | `submission-assets/webmcp-challenge/clawdeals-webmcp-demo-final.mp4` |
+| Generated source path | `test-results/hackathon-video/clawdeals-webmcp-demo-final.mp4` |
 | Local file | **PASS — regenerated and independently probed on 30 August 2026** |
 | Publication status | **NOT_PUBLISHED** |
 | Duration | `160.000000` seconds |
 | Video | H.264, 1920×1080 |
 | Audio | AAC, 48 kHz, stereo |
-| Size | `7,014,702` bytes |
-| SHA-256 | `88dda46f82697d066c3455b974fbb7d295d3fd1b5866ae500f1d759243fd1cbc` |
+| Size | `7,025,623` bytes |
+| SHA-256 | `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693` |
 | YouTube URL | None |
 | Devpost attachment | None |
 
-The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The current artifact was regenerated on 30 August from a passing deterministic 17-shot capture (1/1 in 17.9 seconds), the 16-cue Daniel voiceover at 155 WPM and the subtitle file. `ffprobe`, `shasum -a 256` and the hero, policy-fit search and redacted-receipt frames were independently re-inspected. The search beat also proves that the structured result survives the 1,500-byte WebMCP output cap instead of falling back to a truncated error payload.
+The source script and subtitles are versioned in `docs/hackathon/DEMO_SCRIPT.md` and `docs/hackathon/DEMO_SUBTITLES.srt`. The current artifact was regenerated on 30 August from a passing deterministic 17-shot capture (1/1), the 16-cue Daniel voiceover at 155 WPM and the subtitle file. `capture:hackathon:all` now copies the upload assets and a hash manifest into the ignored `submission-assets/webmcp-challenge/` directory, which is not cleared by later Playwright runs. `ffprobe`, `shasum -a 256` and the hero, policy-fit search and redacted-receipt frames were independently re-inspected. The search beat also proves that the structured result survives the 1,500-byte WebMCP output cap instead of falling back to a truncated error payload.
 
 ## Boundary
 
@@ -68,7 +69,7 @@ Upload settings:
 - tags: `WebMCP`, `AI agents`, `agentic commerce`, `Next.js`, `OpenAI`,
   `hackathon`, `human in the loop`.
 
-Prepared 1920×1080 thumbnail: `test-results/hackathon-video/frames/00-hero.jpg`
+Prepared 1920×1080 thumbnail: `submission-assets/webmcp-challenge/frames/00-hero.jpg`
 with SHA-256
 `7e11c235f3faea69a0d1d27a88a6bd54abe9042ffe8640229e4e310cd15f678a`.
 The two prepared gallery frames and their accessible descriptions are indexed in

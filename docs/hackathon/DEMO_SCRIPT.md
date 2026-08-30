@@ -12,11 +12,15 @@ The public YouTube upload is **not published**. This file is the script, not PUB
 - Companion: `HACKATHON.md`, `docs/hackathon/release-candidate-runbook.md`, `evals/webmcp/`
 - Timed English captions: [`DEMO_SUBTITLES.srt`](./DEMO_SUBTITLES.srt)
 
-Local deterministic capture, macOS voiceover and final assembly (all outputs stay in ignored `test-results/hackathon-video/`):
+Local deterministic capture, macOS voiceover, final assembly and durable ignored upload package:
 
 ```bash
 npm run capture:hackathon:all
 ```
+
+Generated intermediates stay in `test-results/hackathon-video/`; upload assets
+and their manifest are copied to `submission-assets/webmcp-challenge/` so later
+Playwright runs cannot delete the final package.
 
 The capture uses only the isolated WebMCP judge sandbox. It records at 1920 × 1080,
 encodes deterministic shots from the real browser journey, mixes the timed voiceover

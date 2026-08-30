@@ -40,7 +40,7 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 | CHROME ACTIVATION PATH | DOCUMENTED / RUNTIME INDETERMINATE | The official rules permit Chrome 149+ with `chrome://flags/#enable-webmcp-testing`; an Origin Trial token is optional, not a submission requirement. The managed Chrome profile used for evidence did not expose a native runtime, so Chrome execution remains unproven. |
 | CHATGPT | NOT RUN on current release | Real ChatGPT in-app selection and execution remains separate from the Codex in-app proof, HTTP and CI. |
 | SECRET AUDIT | PASS | GitHub Secret Scanning: 0 alerts. Gitleaks 8.30.1: 492 commits and candidate tree reviewed; 0 confirmed secrets after false-positive triage. See [`SECRET_AUDIT_2026-08-26.md`](./SECRET_AUDIT_2026-08-26.md). |
-| VIDEO LOCAL | PASS on 30 August | The regenerated gitignored MP4 exists and independently probes as 160 seconds, H.264 1920×1080 plus AAC 48 kHz stereo; capture passed 1/1. SHA-256: `88dda46f82697d066c3455b974fbb7d295d3fd1b5866ae500f1d759243fd1cbc`. Publication remains separate. See [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
+| VIDEO LOCAL | PASS on 30 August | The regenerated MP4 is copied to the durable ignored submission package and independently probes as 160 seconds, H.264 1920×1080 plus AAC 48 kHz stereo; capture passed 1/1. SHA-256: `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. Publication remains separate. See [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
 | VIDEO PUBLIC / DEVPOST | PENDING | Public YouTube URL, final Devpost fields, submission, and post-submission freeze are not proven. |
 
 ## Boundary

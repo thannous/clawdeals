@@ -116,7 +116,7 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 | PUBLIC authenticated sandbox | PASS on `deb00e3` | Playwright buyer/seller journey: eleven tools, 1,150 EUR listing-price offer, atomic `RESERVED` and redacted receipt. The copyable mission asks for 1,100 EUR; both amounts are in-policy. Explicit compatibility injection; not native Chrome/ChatGPT proof. |
 | CHROME | INDETERMINATE | Connected Chrome loaded the deployed build without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | PASS / CURRENT FILE PRESENT | Regenerated on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `88dda46f82697d066c3455b974fbb7d295d3fd1b5866ae500f1d759243fd1cbc`. |
+| VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Regenerated and packaged on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | Public YouTube and Devpost submission are not proven. |
 
 Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP or injected authenticated proof as native Chrome/ChatGPT WebMCP selection or Devpost acceptance.

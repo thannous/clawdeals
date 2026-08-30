@@ -120,7 +120,7 @@ final 160-second capture 1/1 all passed.
 | PUBLIC authenticated sandbox | PASS on `deb00e3` | Explicit Playwright compatibility injection: eleven tools, deterministic reset, buyer mission/offer, seller acceptance, reserved listing, redacted receipt and idempotent replay; 1/1 in 6.7 s. This is not native Chrome or ChatGPT proof. |
 | CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | PASS / CURRENT FILE PRESENT | Regenerated on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `88dda46f82697d066c3455b974fbb7d295d3fd1b5866ae500f1d759243fd1cbc`. |
+| VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Regenerated and packaged on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. |
 | VIDEO PUBLIC / DEVPOST | NOT PROVEN | YouTube publication, submission, and freeze are pending. |
 
 Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool selection, or Devpost acceptance.

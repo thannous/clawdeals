@@ -31,6 +31,7 @@ coverage/
 .wrangler/
 playwright-report/
 test-results/
+submission-assets/
 migration-artifacts/
 
 # Editors

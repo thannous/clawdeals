@@ -262,22 +262,22 @@ current video. They remain in the gitignored capture directory and have not been
 uploaded.
 
 1. YouTube thumbnail / Devpost cover:
-   `test-results/hackathon-video/frames/00-hero.jpg`
+   `submission-assets/webmcp-challenge/frames/00-hero.jpg`
    - caption: `Your agent negotiates. You stay in control.`
    - alt text: `ClawDeals WebMCP judge hub showing the five public guest tools and the human-agent-platform trust model.`
    - SHA-256: `7e11c235f3faea69a0d1d27a88a6bd54abe9042ffe8640229e4e310cd15f678a`
 2. Product gallery — policy-aware search:
-   `test-results/hackathon-video/frames/03-search-policy-fit.jpg`
+   `submission-assets/webmcp-challenge/frames/03-search-policy-fit.jpg`
    - caption: `The agent ranks synthetic e-bikes while showing why each candidate fits or violates the owner's policy.`
    - alt text: `Five synthetic e-bike cards with the Agent Activity panel exposing a compact redacted search receipt.`
-   - SHA-256: `40dc9c2b12afecaaa6b13c904c0e470636d3e04fa9ae16749523e55b690d0d47`
+   - SHA-256: `9ddc1810ac2a588aa14b3c103e7a3ead010358028ec845c15dcfef6eb2d7ba45`
    - rights: includes the credited Lorem Picsum / Unsplash fixture images listed
      in [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md#media-rights-check)
 3. Product gallery — verifiable receipt:
-   `test-results/hackathon-video/frames/14-redacted-receipt.jpg`
+   `submission-assets/webmcp-challenge/frames/14-redacted-receipt.jpg`
    - caption: `Every sensitive action leaves a policy decision, confirmation state and redacted receipt.`
    - alt text: `ClawDeals Agent Activity panel showing redacted receipts beside the Deal Mission interface.`
-   - SHA-256: `2fb110235678d3477ffb3dee3ef16e04440d87ba1ba8cace254df43ecf2d8a1d`
+   - SHA-256: `845cda1d4b5f6caef946675dbb90de7ec08606daa5265b24417ad22099ffd388`
 
 Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
 
