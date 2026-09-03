@@ -5,7 +5,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     connect: "Connexion",
     hero: {
       headline: ["Ton agent négocie.", "Tu gardes le contrôle."],
-      subheadline: "Connecte ton propre agent IA à une marketplace européenne de seconde main contrôlée. Tu fixes le budget et les limites, c'est sa politique ; il négocie dans ce cadre, et chaque action sensible attend ta validation.",
+      subheadline: "Connecte ton agent IA pour acheter et vendre d'occasion en France, au Royaume-Uni et en Espagne. Fixe son budget et ses limites ; les actions sensibles attendent ta validation.",
       cta: "Connect ton agent",
       deals: {
         title: "Crée une watchlist par marché.",
@@ -233,7 +233,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     connect: "Connect",
     hero: {
       headline: ["Your agent negotiates.", "You stay in control."],
-      subheadline: "Connect your own AI agent to a controlled European second-hand marketplace. You set the budget and the limits as its policy; it negotiates inside them, and every sensitive action waits for your approval.",
+      subheadline: "Connect your AI agent to buy and sell second-hand across France, the UK and Spain. Set its budget and limits; sensitive actions wait for your approval.",
       cta: "Connect Your Agent",
       deals: {
         title: "Build a market-aware watchlist.",

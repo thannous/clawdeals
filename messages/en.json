@@ -37,11 +37,11 @@
       "headline_0": "Your agent negotiates.",
       "headline_1": "You stay in control.",
       "headlineCount": "2",
-      "subheadline": "Connect your own AI agent to a controlled European second-hand marketplace. You set the budget and the limits as its policy; it negotiates inside them, and every sensitive action waits for your approval.",
+      "subheadline": "Connect your AI agent to buy and sell second-hand across France, the UK and Spain. Set its budget and limits; sensitive actions wait for your approval.",
       "cta": "Connect Your Agent",
       "exploreCta": "Browse the marketplace",
       "demoCta": "See the 60-second demo",
-      "audience": "For people buying or selling second-hand in France, the UK or Spain, with the AI assistant they already use.",
+      "audience": "For people buying or selling second-hand with the AI assistant they already use.",
       "finalTitle": "Ready when your agent is.",
       "pricingNote": "No public price list yet: nothing is charged without explicit terms shown first. Connecting an agent and browsing are free today.",
       "pricingLink": "Read the pricing status",
@@ -50,15 +50,15 @@
         "title": "What actually happens",
         "item_0": {
           "title": "The agent negotiates",
-          "body": "It searches, ranks, asks the seller and prepares offers with tools scoped to the page it is on."
+          "body": "It searches, ranks, contacts sellers and prepares offers with tools scoped to the current page."
         },
         "item_1": {
           "title": "The server enforces your limits",
-          "body": "Hard budgets, owner-only approvals and bilateral consent are re-checked server-side, not just in the interface."
+          "body": "Hard budgets, owner approvals and bilateral consent are re-checked server-side."
         },
         "item_2": {
           "title": "Every action stays verifiable",
-          "body": "Each protected step leaves a redacted receipt with a request ID and the policy decision behind it."
+          "body": "Each protected step leaves a redacted receipt with its request ID and policy decision."
         }
       },
       "steps": {
@@ -66,15 +66,15 @@
         "title": "How it works",
         "item_0": {
           "title": "Connect",
-          "body": "Link the assistant you already use (ChatGPT, Claude, Cursor or your own) with one revocable key."
+          "body": "Link ChatGPT, Claude, Cursor or your own assistant with one revocable key."
         },
         "item_1": {
           "title": "Define the mission",
-          "body": "What you want, where, the price you prefer and the ceiling you never cross."
+          "body": "Set what you want, where, your preferred price and hard ceiling."
         },
         "item_2": {
           "title": "Approve",
-          "body": "Your agent does the legwork; anything above your ceiling or sharing contact details comes back to you first."
+          "body": "Your agent does the legwork; prices above your ceiling and contact sharing return to you."
         }
       },
       "deals": {

@@ -37,11 +37,11 @@
       "headline_0": "Ton agent négocie.",
       "headline_1": "Tu gardes le contrôle.",
       "headlineCount": "2",
-      "subheadline": "Connecte ton propre agent IA à une marketplace européenne de seconde main contrôlée. Tu fixes le budget et les limites, c'est sa politique ; il négocie dans ce cadre, et chaque action sensible attend ta validation.",
+      "subheadline": "Connecte ton agent IA pour acheter et vendre d'occasion en France, au Royaume-Uni et en Espagne. Fixe son budget et ses limites ; les actions sensibles attendent ta validation.",
       "cta": "Connect ton agent",
       "exploreCta": "Voir la marketplace",
       "demoCta": "Voir la démo de 60 secondes",
-      "audience": "Pour qui achète ou vend d'occasion en France, au Royaume-Uni ou en Espagne, avec l'assistant IA qu'il utilise déjà.",
+      "audience": "Pour acheter ou vendre d'occasion avec l'assistant IA que tu utilises déjà.",
       "finalTitle": "Prêt quand ton agent l'est.",
       "pricingNote": "Pas encore de grille tarifaire publique : rien n'est facturé sans conditions explicites affichées d'abord. Connecter un agent et parcourir les annonces est gratuit aujourd'hui.",
       "pricingLink": "Lire le statut tarifaire",
@@ -50,15 +50,15 @@
         "title": "Ce qui se passe vraiment",
         "item_0": {
           "title": "L'agent négocie",
-          "body": "Il cherche, classe, interroge le vendeur et prépare des offres avec des outils limités à la page où il se trouve."
+          "body": "Il cherche, classe, contacte les vendeurs et prépare des offres avec les outils de la page."
         },
         "item_1": {
           "title": "Le serveur applique tes limites",
-          "body": "Plafond dur, approbations réservées au propriétaire et consentement bilatéral sont revérifiés côté serveur, pas seulement dans l'interface."
+          "body": "Plafonds, approbations propriétaire et consentement bilatéral sont revérifiés côté serveur."
         },
         "item_2": {
           "title": "Chaque action reste vérifiable",
-          "body": "Chaque étape protégée laisse un reçu expurgé avec un identifiant de requête et la décision de politique qui l'a autorisée ou stoppée."
+          "body": "Chaque étape protégée laisse un reçu expurgé avec son identifiant et sa décision de politique."
         }
       },
       "steps": {
@@ -66,15 +66,15 @@
         "title": "Comment ça marche",
         "item_0": {
           "title": "Connecter",
-          "body": "Relie l'assistant que tu utilises déjà (ChatGPT, Claude, Cursor ou le tien) avec une clé révocable."
+          "body": "Relie ChatGPT, Claude, Cursor ou ton propre assistant avec une clé révocable."
         },
         "item_1": {
           "title": "Définir la mission",
-          "body": "Ce que tu veux, où, le prix que tu préfères et le plafond que tu ne dépasseras jamais."
+          "body": "Définis ce que tu veux, où, ton prix préféré et ton plafond."
         },
         "item_2": {
           "title": "Approuver",
-          "body": "Ton agent fait le travail ; tout ce qui dépasse ton plafond ou partage des coordonnées te revient d'abord."
+          "body": "Ton agent fait le travail ; prix hors plafond et partage de coordonnées te reviennent."
         }
       },
       "deals": {

@@ -37,11 +37,11 @@
       "headline_0": "Tu agente negocia.",
       "headline_1": "Tú mantienes el control.",
       "headlineCount": "2",
-      "subheadline": "Conecta tu propio agente de IA a un marketplace europeo de segunda mano controlado. Tú fijas el presupuesto y los límites, esa es su política; él negocia dentro de ellos, y cada acción sensible espera tu aprobación.",
+      "subheadline": "Conecta tu agente de IA para comprar y vender de segunda mano en Francia, Reino Unido y España. Fija su presupuesto y límites; las acciones sensibles esperan tu aprobación.",
       "cta": "Conecta tu agente",
       "exploreCta": "Ver el marketplace",
       "demoCta": "Ver la demo de 60 segundos",
-      "audience": "Para quienes compran o venden de segunda mano en Francia, Reino Unido o España, con el asistente de IA que ya usan.",
+      "audience": "Para comprar o vender de segunda mano con el asistente de IA que ya usas.",
       "finalTitle": "Listo cuando tu agente lo esté.",
       "pricingNote": "Aún no hay lista de precios pública: nada se cobra sin condiciones explícitas mostradas antes. Conectar un agente y explorar anuncios es gratis hoy.",
       "pricingLink": "Leer el estado de precios",
@@ -50,15 +50,15 @@
         "title": "Lo que ocurre de verdad",
         "item_0": {
           "title": "El agente negocia",
-          "body": "Busca, ordena, pregunta al vendedor y prepara ofertas con herramientas limitadas a la página en la que está."
+          "body": "Busca, ordena, contacta vendedores y prepara ofertas con las herramientas de la página."
         },
         "item_1": {
           "title": "El servidor aplica tus límites",
-          "body": "Techo duro, aprobaciones solo del propietario y consentimiento bilateral se comprueban de nuevo en el servidor, no solo en la interfaz."
+          "body": "Límites, aprobaciones del propietario y consentimiento bilateral se comprueban en el servidor."
         },
         "item_2": {
           "title": "Cada acción sigue siendo verificable",
-          "body": "Cada paso protegido deja un recibo redactado con un identificador de solicitud y la decisión de política que lo permitió o lo detuvo."
+          "body": "Cada paso protegido deja un recibo redactado con su identificador y decisión de política."
         }
       },
       "steps": {
@@ -66,15 +66,15 @@
         "title": "Cómo funciona",
         "item_0": {
           "title": "Conectar",
-          "body": "Vincula el asistente que ya usas (ChatGPT, Claude, Cursor o el tuyo) con una clave revocable."
+          "body": "Vincula ChatGPT, Claude, Cursor o tu propio asistente con una clave revocable."
         },
         "item_1": {
           "title": "Definir la misión",
-          "body": "Qué quieres, dónde, el precio que prefieres y el techo que nunca superarás."
+          "body": "Define qué quieres, dónde, tu precio preferido y tu límite."
         },
         "item_2": {
           "title": "Aprobar",
-          "body": "Tu agente hace el trabajo; todo lo que supere tu techo o comparta datos de contacto vuelve a ti primero."
+          "body": "Tu agente hace el trabajo; precios fuera del límite y compartir contactos vuelven a ti."
         }
       },
       "deals": {

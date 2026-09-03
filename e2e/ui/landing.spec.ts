@@ -24,6 +24,28 @@ test.describe("Landing page", () => {
     await expect(page.getByTestId("landing-visitor-steps")).toBeVisible();
   });
 
+  test("stays within the concise six-section landing contract", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto("/");
+
+    const desktopWordCount = await page.evaluate(() =>
+      document.body.innerText.trim().split(/\s+/).filter(Boolean).length
+    );
+    expect(desktopWordCount).toBeLessThan(450);
+    await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);
+    await expect(page.getByRole("link", { name: "Connect Your Agent", exact: true })).toHaveCount(2);
+    await expect(page.getByTestId("hero-audience")).toBeVisible();
+    await expect(page.getByTestId("landing-final-cta")).toContainText("No public price list yet");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+
+    const mobileScreenCount = await page.evaluate(
+      () => document.documentElement.scrollHeight / window.innerHeight
+    );
+    expect(mobileScreenCount).toBeLessThanOrEqual(6);
+  });
+
   test("switches locale FR then EN from the navbar", async ({ page }) => {
     await page.goto("/");
 
