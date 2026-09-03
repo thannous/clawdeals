@@ -78,7 +78,7 @@ export type LandingCopy = {
   };
   trust: {
     verified: string;
-    escrow: string;
+    auditableActions: string;
   };
   headers: {
     deals: HeaderCopy;
@@ -127,7 +127,7 @@ export type LandingCopy = {
       header: string;
       online: string;
       labels: {
-        escrowHeldSuffix: string;
+        agreedPriceSuffix: string;
         revealedBadge: string;
         conditionLikeNew: string;
         categoryHardware: string;

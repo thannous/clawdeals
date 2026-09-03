@@ -25,7 +25,9 @@ function debugLog(event: string, payload?: Record<string, unknown>) {
 
 async function probeOwnerSession(): Promise<OwnerSessionProbe> {
   try {
-    const resp = await fetch("/api/v1/auth/me", {
+    // `/auth/session` answers 200 for anonymous visitors (authenticated: false),
+    // so an anonymous /start visit no longer produces a failed request.
+    const resp = await fetch("/api/v1/auth/session", {
       method: "GET",
       cache: "no-store"
     });
@@ -38,6 +40,9 @@ async function probeOwnerSession(): Promise<OwnerSessionProbe> {
       return { hasSession: true, ownerId: null };
     }
     const body = await resp.json().catch(() => null);
+    if (body?.data?.authenticated === false) {
+      return { hasSession: false, ownerId: null };
+    }
     const ownerId = body?.data?.owner_id ? String(body.data.owner_id) : null;
     return { hasSession: true, ownerId };
   } catch {

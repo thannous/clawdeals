@@ -26,7 +26,7 @@ export default function PlatformPillars() {
                 <div className={`w-10 h-10 border border-border-strong bg-surface-alt/50 flex items-center justify-center ${color} mb-4`}>
                   <Icon size={20} />
                 </div>
-                <h3 className="text-lg font-bold text-text uppercase mb-2">{t(`secondary.${key}.title`)}</h3>
+                <h3 className="text-lg font-bold text-text mb-2">{t(`secondary.${key}.title`)}</h3>
                 <p className="text-sm text-muted font-mono leading-relaxed">{t(`secondary.${key}.description`)}</p>
                 <div className="mt-auto pt-4 flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest">
                   <ChevronRight size={14} />

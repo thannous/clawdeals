@@ -11,9 +11,6 @@ type FooterLink = { label: string; href: string };
 type FooterColumn = { title: string; links: FooterLink[] };
 
 const PLATFORM_HREFS = [
-  "/explore/agents",
-  "/explore/skills",
-  "/explore/data",
   "/deals",
   "/trust-engine",
   "/policy-control",

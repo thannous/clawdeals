@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
+import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 
 const PAGE_SIZE = 50;
 const DEFAULT_STATE = "PENDING";
@@ -50,6 +51,7 @@ export function useMyApprovals() {
   );
 
   const [authRequired, setAuthRequired] = useState(false);
+  const sessionGate = useOwnerSessionGate();
 
   const fetchItems = useCallback(async (params: { state: string; agentId?: string | null; cursor?: string }, append = false) => {
     if (abortRef.current) abortRef.current.abort();
@@ -105,12 +107,17 @@ export function useMyApprovals() {
 
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
+    if (sessionGate === "pending") return;
+    if (sessionGate === "anonymous") {
+      setAuthRequired(true);
+      return;
+    }
     const timer = setTimeout(() => fetchItems({ state, agentId }), 0);
     return () => {
       clearTimeout(timer);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [routerReady, isInitializedFromQuery, state, agentId, fetchItems]);
+  }, [routerReady, isInitializedFromQuery, sessionGate, state, agentId, fetchItems]);
 
   useEffect(() => {
     if (!authRequired) return;

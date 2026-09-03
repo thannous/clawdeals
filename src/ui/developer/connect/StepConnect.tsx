@@ -45,6 +45,10 @@ type Props = {
 
 type KeyMode = "generate" | "paste";
 type AsyncStatus = "idle" | "loading" | "success" | "error";
+type MethodTab = "mcp" | "api";
+
+const METHOD_TABS: readonly MethodTab[] = ["mcp", "api"];
+const DEMO_SANDBOX_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 
 function KeyModeToggle({
   mode,
@@ -120,6 +124,7 @@ function useStepConnectView({
   const [claimOpenMsg, setClaimOpenMsg] = useState("");
 
   // --- API Key state ---
+  const [method, setMethod] = useState<MethodTab>("mcp");
   const [keyMode, setKeyMode] = useState<"generate" | "paste">("generate");
   const [agentName, setAgentName] = useState(() => generateFunnyAgentName());
   const [pastedKey, setPastedKey] = useState("");
@@ -524,50 +529,81 @@ function useStepConnectView({
         </p>
       </div>
 
-      {/* Step 1 (optional): sign in */}
-      {!hasOwnerSession && (
-        <div className="space-y-3">
-          <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
-            {t("step.connect.step1Label")}
+      {/* No agent yet: point to the deterministic judge sandbox */}
+      <aside
+        className="border border-secondary/40 bg-secondary/5 p-5 clip-corner space-y-4"
+        aria-labelledby="connect-demo-title"
+        data-testid="connect-try-without-agent"
+      >
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="space-y-2">
+            <div className="text-[11px] font-mono text-secondary uppercase tracking-widest">{t("step.connect.demo.eyebrow")}</div>
+            <h2 id="connect-demo-title" className="text-lg font-bold tracking-tight">{t("step.connect.demo.title")}</h2>
+            <p className="text-sm text-muted leading-relaxed max-w-xl">{t("step.connect.demo.desc")}</p>
           </div>
-          <div className="border border-warning/30 bg-warning/5 p-4 clip-corner space-y-3">
-            <div className="text-xs font-mono text-warning">
-              {t("step.connect.accountWarning")}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={loginHref}
-                className="border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
-              >
-                {t("step.connect.logIn")}
-              </Link>
-              <Link
-                href={signupHref}
-                className="border border-border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
-              >
-                {t("step.connect.createAccount")}
-              </Link>
-            </div>
-          </div>
+          <a
+            href={DEMO_SANDBOX_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center justify-center h-11 px-6 border border-secondary text-secondary font-bold uppercase tracking-wider text-xs hover:bg-secondary hover:text-bg transition-colors"
+          >
+            {t("step.connect.demo.cta")}
+          </a>
         </div>
-      )}
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[0, 1, 2].map((index) => (
+            <li key={index} className="flex items-start gap-3 text-sm text-muted">
+              <span className="shrink-0 w-6 h-6 border border-secondary/40 text-secondary font-mono text-[11px] flex items-center justify-center">
+                {index + 1}
+              </span>
+              <span>{t(`step.connect.demo.step_${index}`)}</span>
+            </li>
+          ))}
+        </ol>
+      </aside>
 
-      {/* Step 2 label (only when anonymous) */}
-      {!hasOwnerSession && (
-        <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
-          {t("step.connect.step2Label")}
-        </div>
-      )}
-      {/* Choose one method instruction */}
-      {hasOwnerSession && (
+      {/* Method selector: one key form, two destinations */}
+      <div className="space-y-4">
         <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
           {t("step.connect.chooseMethod")}
         </div>
-      )}
+        <div role="tablist" aria-label={t("step.connect.chooseMethod")} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {METHOD_TABS.map((tab) => {
+            const active = method === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-controls={`connect-method-panel-${tab}`}
+                id={`connect-method-tab-${tab}`}
+                onClick={() => setMethod(tab)}
+                data-testid={`connect-method-${tab}`}
+                className={`text-left border p-4 clip-corner transition-colors ${
+                  active ? "border-primary bg-primary/5" : "border-border bg-surface hover:border-border-strong"
+                }`}
+              >
+                <div className="text-sm font-bold tracking-wide text-text">{t(`step.connect.method.${tab}.title`)}</div>
+                <div className="mt-1 text-xs text-muted leading-relaxed">{t(`step.connect.method.${tab}.desc`)}</div>
+                <div className="mt-2 text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  {t(`step.connect.method.${tab}.tech`)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-6">
         {/* API Key */}
-        <div className="border border-border bg-surface p-6 space-y-4 clip-corner">
+        <div
+          id="connect-method-panel-api"
+          role="tabpanel"
+          aria-labelledby="connect-method-tab-api"
+          hidden={method !== "api"}
+          className="border border-border bg-surface p-6 space-y-4 clip-corner"
+        >
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-subtle rounded">
@@ -680,7 +716,13 @@ function useStepConnectView({
         </div>
 
         {/* MCP */}
-        <div className="border border-border bg-surface p-6 space-y-4 clip-corner">
+        <div
+          id="connect-method-panel-mcp"
+          role="tabpanel"
+          aria-labelledby="connect-method-tab-mcp"
+          hidden={method !== "mcp"}
+          className="border border-border bg-surface p-6 space-y-4 clip-corner"
+        >
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 text-xs font-mono font-bold uppercase border border-border text-subtle rounded">
@@ -767,6 +809,29 @@ function useStepConnectView({
         </div>
       </div>
 
+      {/* Account: framed as an unlock, after the value is visible */}
+      {!hasOwnerSession && (
+        <div className="border border-border bg-surface-alt p-4 clip-corner space-y-3" data-testid="connect-account-unlock">
+          <div className="text-xs text-muted leading-relaxed">
+            {t("step.connect.accountWarning")}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={loginHref}
+              className="border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+            >
+              {t("step.connect.logIn")}
+            </Link>
+            <Link
+              href={signupHref}
+              className="border border-border px-4 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong transition-colors"
+            >
+              {t("step.connect.createAccount")}
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Separator */}
       <div className="flex items-center gap-4">
         <div className="flex-1 h-px bg-border" />
@@ -784,8 +849,9 @@ function useStepConnectView({
               {t("step.connect.claim.selfInstallBadge")}
             </span>
             <div className="text-lg font-bold tracking-wide">
-              Claim Link
+              {t("step.connect.claim.title")}
             </div>
+            <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Claim Link</div>
             <div className="text-sm font-mono text-subtle leading-relaxed">
               {t("step.connect.claim.longDesc")}
             </div>

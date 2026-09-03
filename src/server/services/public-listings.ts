@@ -1,6 +1,7 @@
 import { listListings, getListing } from "./listings";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getOwnerPublicProfiles } from "./owners";
+import { getAgentById } from "./agents";
 import { normalizeReadMedia } from "../media/images";
 
 const PUBLIC_DEFAULT_LIMIT = 24;
@@ -45,6 +46,34 @@ export function mapPublicListingRow(row: any, sellerInfo?: { display_name: strin
   };
 }
 
+export type PublicSellerTrust = {
+  score: number | null;
+  quarantined: boolean;
+  member_since: string | null;
+};
+
+// Rounded to ~1 km so a public page never exposes the seller's exact address.
+function roundPublicCoordinate(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
+}
+
+async function getPublicSellerTrust(agentId: unknown): Promise<PublicSellerTrust | null> {
+  if (typeof agentId !== "string" || !agentId) return null;
+  try {
+    const agent = await getAgentById(agentId);
+    if (!agent) return null;
+    const flags = Array.isArray(agent.trust_flags) ? agent.trust_flags.map(String) : [];
+    return {
+      score: typeof agent.trust_score === "number" ? agent.trust_score : null,
+      quarantined: flags.includes("quarantined"),
+      member_since: agent.created_at ?? null
+    };
+  } catch {
+    // Trust is a hint on a public page; never fail the listing because of it.
+    return null;
+  }
+}
+
 export async function getPublicListing(listingId: string) {
   const row = await getListing(listingId);
   if (!row || row.status !== "LIVE") return null;
@@ -53,13 +82,25 @@ export async function getPublicListing(listingId: string) {
     rawCoverImageIndex: row?.cover_image_index
   });
 
-  let seller = null;
-  if (row.owner_id) {
-    const profiles = await getOwnerPublicProfiles([row.owner_id]);
-    seller = profiles.get(row.owner_id) ?? null;
+  let seller: { display_name: string | null; avatar_url: string | null; verified: boolean; trust?: PublicSellerTrust | null } | null = null;
+  const [profiles, trust] = await Promise.all([
+    row.owner_id ? getOwnerPublicProfiles([row.owner_id]) : Promise.resolve(null),
+    getPublicSellerTrust(row.agent_id)
+  ]);
+  if (row.owner_id && profiles) {
+    const profile = profiles.get(row.owner_id) ?? null;
+    seller = profile ? { ...profile, trust } : null;
+  }
+  if (!seller && trust) {
+    seller = { display_name: null, avatar_url: null, verified: false, trust };
   }
 
+  const geoLat = roundPublicCoordinate(row.geo_lat);
+  const geoLng = roundPublicCoordinate(row.geo_lng);
+
   return {
+    market_code: row.market_code ?? null,
+    geo: geoLat !== null && geoLng !== null ? { lat: geoLat, lng: geoLng } : null,
     listing_id: row.listing_id,
     title: row.title,
     description: row.description ?? null,

@@ -130,23 +130,80 @@ function MissionSummary({ mission }: { mission: BuyMissionView }) {
   );
 }
 
-export default function BuyMissionPanel() {
+export type BuyMissionPrefill = {
+  query?: string;
+  marketCode?: MarketCode;
+  locationLabel?: string;
+  latitude?: string;
+  longitude?: string;
+  preferredPriceMax?: string;
+  hardBudgetMax?: string;
+  requirements?: string;
+  /** Listing that triggered the prefill (shown as context, not sent to the tool). */
+  listingTitle?: string;
+};
+
+const HARD_BUDGET_HEADROOM = 1.1;
+
+/**
+ * Builds a mission prefill from a listing a human is looking at: preferred price =
+ * asking price, hard ceiling = asking price + 10 %, location = the listing's market.
+ */
+export function prefillFromListing(input: {
+  title?: string | null;
+  category?: string | null;
+  price?: number | null;
+  marketCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}): BuyMissionPrefill {
+  const prefill: BuyMissionPrefill = {};
+  const title = typeof input.title === "string" ? input.title.trim() : "";
+  if (title) {
+    prefill.query = title;
+    prefill.listingTitle = title;
+  } else if (input.category) {
+    prefill.query = String(input.category).toLowerCase();
+  }
+  if (input.marketCode === "FR" || input.marketCode === "GB" || input.marketCode === "ES") {
+    prefill.marketCode = input.marketCode;
+  }
+  if (typeof input.price === "number" && Number.isFinite(input.price) && input.price > 0) {
+    prefill.preferredPriceMax = String(Math.round(input.price));
+    prefill.hardBudgetMax = String(Math.round(input.price * HARD_BUDGET_HEADROOM));
+  }
+  if (
+    typeof input.latitude === "number" &&
+    typeof input.longitude === "number" &&
+    Number.isFinite(input.latitude) &&
+    Number.isFinite(input.longitude)
+  ) {
+    prefill.latitude = String(input.latitude);
+    prefill.longitude = String(input.longitude);
+    prefill.locationLabel = "Listing location";
+  }
+  prefill.requirements = "";
+  return prefill;
+}
+
+export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefill | null } = {}) {
   const { executeTool } = useWebMcp();
   const activeMission = useSyncExternalStore(
     subscribeActiveBuyMission,
     getActiveBuyMission,
     () => null
   );
-  const [query, setQuery] = useState("used e-bike");
-  const [marketCode, setMarketCode] = useState<MarketCode>("FR");
-  const [cityPreset, setCityPreset] = useState<string>("paris");
-  const [locationLabel, setLocationLabel] = useState("Paris");
-  const [latitude, setLatitude] = useState("48.8566");
-  const [longitude, setLongitude] = useState("2.3522");
+  const hasCustomLocation = Boolean(prefill?.latitude && prefill?.longitude);
+  const [query, setQuery] = useState(prefill?.query ?? "used e-bike");
+  const [marketCode, setMarketCode] = useState<MarketCode>(prefill?.marketCode ?? "FR");
+  const [cityPreset, setCityPreset] = useState<string>(hasCustomLocation ? "custom" : "paris");
+  const [locationLabel, setLocationLabel] = useState(prefill?.locationLabel ?? "Paris");
+  const [latitude, setLatitude] = useState(prefill?.latitude ?? "48.8566");
+  const [longitude, setLongitude] = useState(prefill?.longitude ?? "2.3522");
   const [radiusKm, setRadiusKm] = useState("25");
-  const [preferredPriceMax, setPreferredPriceMax] = useState("1200");
-  const [hardBudgetMax, setHardBudgetMax] = useState("1300");
-  const [requirements, setRequirements] = useState("battery_health >= 80%");
+  const [preferredPriceMax, setPreferredPriceMax] = useState(prefill?.preferredPriceMax ?? "1200");
+  const [hardBudgetMax, setHardBudgetMax] = useState(prefill?.hardBudgetMax ?? "1300");
+  const [requirements, setRequirements] = useState(prefill?.requirements ?? "battery_health >= 80%");
   const [autonomousActions, setAutonomousActions] = useState<string[]>([
     "search",
     "ask_question",
@@ -219,7 +276,7 @@ export default function BuyMissionPanel() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 space-y-4">
+    <div id="buy-mission" className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 space-y-4 scroll-mt-24">
       {activeMission ? <MissionSummary mission={activeMission} /> : null}
 
       <form
@@ -234,6 +291,12 @@ export default function BuyMissionPanel() {
             <h2 className="mt-1 text-xl font-bold uppercase tracking-wide text-text">
               Delegate the search. Keep the limits.
             </h2>
+            {prefill?.listingTitle ? (
+              <p className="mt-2 text-xs font-mono text-muted" data-testid="buy-mission-prefill-note">
+                Prefilled from the listing “{prefill.listingTitle}”: preferred price = asking price, ceiling = +10 %. Adjust
+                anything before creating the mission.
+              </p>
+            ) : null}
           </div>
           <span className="text-[10px] font-mono uppercase text-subtle">Declarative + imperative WebMCP</span>
         </div>

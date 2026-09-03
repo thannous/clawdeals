@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
+import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 
 const PAGE_SIZE = 50;
 
@@ -49,6 +50,7 @@ export function useMyThreads() {
   );
 
   const [authRequired, setAuthRequired] = useState(false);
+  const sessionGate = useOwnerSessionGate();
 
   const fetchItems = useCallback(async (params: { status: string | null; agentId?: string | null; cursor?: string }, append = false) => {
     if (abortRef.current) abortRef.current.abort();
@@ -104,12 +106,17 @@ export function useMyThreads() {
 
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
+    if (sessionGate === "pending") return;
+    if (sessionGate === "anonymous") {
+      setAuthRequired(true);
+      return;
+    }
     const timer = setTimeout(() => fetchItems({ status, agentId }), 0);
     return () => {
       clearTimeout(timer);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [routerReady, isInitializedFromQuery, status, agentId, fetchItems]);
+  }, [routerReady, isInitializedFromQuery, sessionGate, status, agentId, fetchItems]);
 
   useEffect(() => {
     if (!authRequired) return;

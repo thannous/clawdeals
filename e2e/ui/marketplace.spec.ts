@@ -24,19 +24,21 @@ test.describe("Marketplace hub", () => {
     await expect(link).toHaveAttribute("href", /\/deals/);
   });
 
-  test("country chips are visible with Worldwide selected by default", async ({ page }) => {
+  test("shows only the supported markets with All selected by default", async ({ page }) => {
     await page.goto("/marketplace");
 
-    const worldwide = page.getByTestId("country-chip-worldwide");
-    await expect(worldwide).toBeVisible();
+    const allMarkets = page.getByTestId("country-chip-all");
+    await expect(allMarkets).toBeVisible();
+    await expect(allMarkets).toHaveClass(/bg-text/);
 
-    // Worldwide chip should have the active style (bg-text)
-    await expect(worldwide).toHaveClass(/bg-text/);
+    await expect(page.getByTestId("country-chip-FR")).toContainText("FR · EUR");
+    await expect(page.getByTestId("country-chip-GB")).toContainText("GB · GBP");
+    await expect(page.getByTestId("country-chip-ES")).toContainText("ES · EUR");
 
-    // Popular country chips should be visible
-    await expect(page.getByTestId("country-chip-FR")).toBeVisible();
-    await expect(page.getByTestId("country-chip-US")).toBeVisible();
-    await expect(page.getByTestId("country-chip-GB")).toBeVisible();
+    await expect(page.getByTestId("country-chip-US")).toHaveCount(0);
+    await expect(page.getByTestId("country-chip-DE")).toHaveCount(0);
+    await expect(page.getByTestId("country-chip-BE")).toHaveCount(0);
+    await expect(page.getByTestId("country-more-btn")).toHaveCount(0);
   });
 
   test("clicking a country chip updates card links with ?country=", async ({ page }) => {
@@ -47,8 +49,8 @@ test.describe("Marketplace hub", () => {
 
     // FR chip should be active
     await expect(page.getByTestId("country-chip-FR")).toHaveClass(/bg-text/);
-    // Worldwide should no longer be active
-    await expect(page.getByTestId("country-chip-worldwide")).not.toHaveClass(/bg-text/);
+    // All markets should no longer be active
+    await expect(page.getByTestId("country-chip-all")).not.toHaveClass(/bg-text/);
 
     // Card links should include country param
     const listingsHref = await page.getByTestId("marketplace-card-listings").getAttribute("href");
@@ -58,7 +60,7 @@ test.describe("Marketplace hub", () => {
     expect(dealsHref).toContain("country=FR");
   });
 
-  test("clicking Worldwide removes ?country= from links", async ({ page }) => {
+  test("clicking All removes ?country= from links", async ({ page }) => {
     await page.goto("/marketplace");
 
     // Select FR first
@@ -66,8 +68,8 @@ test.describe("Marketplace hub", () => {
     let href = await page.getByTestId("marketplace-card-listings").getAttribute("href");
     expect(href).toContain("country=FR");
 
-    // Click Worldwide
-    await page.getByTestId("country-chip-worldwide").click();
+    // Click All
+    await page.getByTestId("country-chip-all").click();
     href = await page.getByTestId("marketplace-card-listings").getAttribute("href");
     expect(href).not.toContain("country=");
   });
@@ -75,39 +77,28 @@ test.describe("Marketplace hub", () => {
   test("country selection persists in localStorage", async ({ page }) => {
     await page.goto("/marketplace");
 
-    // Select DE
-    await page.getByTestId("country-chip-DE").click();
+    // Select ES
+    await page.getByTestId("country-chip-ES").click();
 
     const stored = await page.evaluate(() => localStorage.getItem("clawdeals:country"));
-    expect(stored).toBe("DE");
+    expect(stored).toBe("ES");
 
     // Reload and check it's still selected
     await page.reload();
-    await expect(page.getByTestId("country-chip-DE")).toHaveClass(/bg-text/);
+    await expect(page.getByTestId("country-chip-ES")).toHaveClass(/bg-text/);
 
     const href = await page.getByTestId("marketplace-card-listings").getAttribute("href");
-    expect(href).toContain("country=DE");
+    expect(href).toContain("country=ES");
   });
 
-  test("More dropdown opens with search and allows country selection", async ({ page }) => {
+  test("drops a persisted unsupported market", async ({ page }) => {
     await page.goto("/marketplace");
+    await page.evaluate(() => localStorage.setItem("clawdeals:country", "US"));
+    await page.reload();
 
-    await page.getByTestId("country-more-btn").click();
-    await expect(page.getByTestId("country-search")).toBeVisible();
-
-    // Search for Belgium
-    await page.getByTestId("country-search").fill("Belg");
-    await expect(page.getByTestId("country-option-BE")).toBeVisible();
-
-    // Select Belgium from dropdown
-    await page.getByTestId("country-option-BE").click();
-
-    // Dropdown should close
-    await expect(page.getByTestId("country-search")).not.toBeVisible();
-
-    // Links should have country=BE
-    const href = await page.getByTestId("marketplace-card-listings").getAttribute("href");
-    expect(href).toContain("country=BE");
+    await expect(page.getByTestId("country-chip-all")).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("clawdeals:country"))).toBeNull();
+    await expect(page.getByTestId("marketplace-card-listings")).toHaveAttribute("href", "/browse");
   });
 
   test("locale switch to FR shows French translations", async ({ page }) => {
@@ -121,7 +112,7 @@ test.describe("Marketplace hub", () => {
     await expect(page.getByTestId("marketplace-heading")).toHaveText(/MARKETPLACE/i);
 
     // Country label should be in French
-    await expect(page.getByText("Pays")).toBeVisible();
-    await expect(page.getByTestId("country-chip-worldwide")).toContainText(/monde entier/i);
+    await expect(page.getByText("Pays", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("country-chip-all")).toContainText(/^Tous$/i);
   });
 });

@@ -1,6 +1,10 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../auth/ownerSessionProbe", () => ({
+  probeOwnerSession: vi.fn().mockResolvedValue({ state: "authenticated", ownerId: "owner-1" })
+}));
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((res) => {

@@ -18,7 +18,7 @@ export function hrefLangFor(locale: SupportedLocale) {
 }
 
 export const DEFAULT_SOCIAL_DESCRIPTION =
-  "ClawDeals marketplace for AI agents with trust scores, human approvals, audit trails, and secure transactions for production teams.";
+  "ClawDeals marketplace for AI agents with trust scores, human approvals, audit trails, and owner-controlled transaction workflows.";
 
 export const META_DESCRIPTION_MIN_LENGTH = 110;
 export const META_DESCRIPTION_MAX_LENGTH = 160;

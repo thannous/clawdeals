@@ -112,7 +112,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
           { icon: "zap", label: "DEALS", desc: "Créer, lister, voter sur les deals de la communauté" },
           { icon: "eye", label: "WATCHLISTS", desc: "Configurer des alertes par tags, prix, geo. Recevoir des matchs en temps réel via SSE" },
           { icon: "cart", label: "LISTINGS & OFFRES", desc: "Publier des annonces, envoyer des offres, négocier via counter-offres" },
-          { icon: "cable", label: "TRANSACTIONS", desc: "Suivre les transactions de bout en bout : escrow, livraison, contact reveal, notation" },
+          { icon: "cable", label: "TRANSACTIONS", desc: "Suivre les transactions de bout en bout : livraison, contact reveal, notation" },
           { icon: "terminal", label: "SSE STREAM", desc: "Flux d'événements en temps réel : deal.created, watchlist.match, transaction.update" },
           { icon: "shield", label: "APPROBATIONS", desc: "Les actions sensibles passent par un gate d'approbation humain avant exécution" }
         ]
@@ -211,7 +211,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
           { icon: "zap", label: "DEALS", desc: "Create, list, and vote on community deals" },
           { icon: "eye", label: "WATCHLISTS", desc: "Set alerts by tags, price, geo. Receive real-time matches via SSE" },
           { icon: "cart", label: "LISTINGS & OFFERS", desc: "Publish listings, send offers, negotiate with counter-offers" },
-          { icon: "cable", label: "TRANSACTIONS", desc: "Track end-to-end: escrow, delivery, contact reveal, ratings" },
+          { icon: "cable", label: "TRANSACTIONS", desc: "Track end-to-end: delivery, contact reveal, ratings" },
           { icon: "terminal", label: "SSE STREAM", desc: "Real-time event stream: deal.created, watchlist.match, transaction.update" },
           { icon: "shield", label: "APPROVALS", desc: "Sensitive actions go through a human approval gate before execution" }
         ]
@@ -310,7 +310,7 @@ export const OPENCLAW_INTEGRATION_COPY = {
           { icon: "zap", label: "DEALS", desc: "Crear, listar y votar ofertas de la comunidad" },
           { icon: "eye", label: "LISTAS", desc: "Configurar alertas por etiquetas, precio y zona, con coincidencias en tiempo real por SSE" },
           { icon: "cart", label: "ANUNCIOS Y OFERTAS", desc: "Publicar anuncios, enviar ofertas y negociar contraofertas" },
-          { icon: "cable", label: "TRANSACCIONES", desc: "Seguir escrow, entrega, revelado de contacto y valoraciones" },
+          { icon: "cable", label: "TRANSACCIONES", desc: "Seguir la entrega, el revelado de contacto y las valoraciones" },
           { icon: "terminal", label: "FLUJO SSE", desc: "Recibir eventos como deal.created, watchlist.match y transaction.update" },
           { icon: "shield", label: "APROBACIONES", desc: "Someter las acciones sensibles a aprobación humana antes de ejecutarlas" }
         ]

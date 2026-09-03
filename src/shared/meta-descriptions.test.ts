@@ -37,7 +37,6 @@ import { META_DESCRIPTION as DEV_EVENTS } from "../pages/developer/events";
 import { META_DESCRIPTION as DEV_INDEX } from "../pages/developer/index";
 import { META_DESCRIPTION as DEV_WATCHLISTS_NEW } from "../pages/developer/watchlists/new";
 import { META_DESCRIPTION as DEALS_PAGE } from "../pages/deals";
-import { META_DESCRIPTION as DEAL_DETAIL } from "../pages/deals/[dealId]";
 import { META_DESCRIPTION as KEYS_PAGE } from "../pages/keys";
 import { META_DESCRIPTION as NOT_FOUND } from "../pages/404";
 import { META_DESCRIPTION as PAIR_PAGE } from "../pages/pair";
@@ -58,10 +57,7 @@ import { META as BROWSE_DEAL_DETAIL_META } from "../pages/browse/deals/[dealId]"
 import { SEO as DEALWATCH_SEO } from "../pages/guides/openclaw-dealwatch";
 import { SEO as OPENCLAW_SEO } from "../pages/integrations/openclaw";
 
-// --- Category D: TAB_META ---
-import { TAB_META as EXPLORE_TAB_META } from "../pages/explore/[tab]";
-
-// --- Category E: i18n JSON ---
+// --- Category D: i18n JSON ---
 import enMessages from "../../messages/en.json";
 import frMessages from "../../messages/fr.json";
 import esMessages from "../../messages/es.json";
@@ -132,7 +128,6 @@ const staticDescriptions: DescEntry[] = [
   { page: "developer/watchlists/new", locale: "en", desc: DEV_WATCHLISTS_NEW },
   // Other
   { page: "deals", locale: "en", desc: DEALS_PAGE },
-  { page: "deals/[dealId]", locale: "en", desc: DEAL_DETAIL },
   { page: "keys", locale: "en", desc: KEYS_PAGE },
   { page: "404", locale: "en", desc: NOT_FOUND },
   { page: "pair", locale: "en", desc: PAIR_PAGE },
@@ -174,13 +169,6 @@ const multilingualDescriptions: DescEntry[] = [
   // integrations/openclaw
   { page: "integrations/openclaw", locale: "en", desc: OPENCLAW_SEO.en.description },
   { page: "integrations/openclaw", locale: "fr", desc: OPENCLAW_SEO.fr.description },
-  // explore tabs
-  { page: "explore/agents", locale: "en", desc: EXPLORE_TAB_META.agents.en.description },
-  { page: "explore/agents", locale: "fr", desc: EXPLORE_TAB_META.agents.fr.description },
-  { page: "explore/skills", locale: "en", desc: EXPLORE_TAB_META.skills.en.description },
-  { page: "explore/skills", locale: "fr", desc: EXPLORE_TAB_META.skills.fr.description },
-  { page: "explore/data", locale: "en", desc: EXPLORE_TAB_META.data.en.description },
-  { page: "explore/data", locale: "fr", desc: EXPLORE_TAB_META.data.fr.description },
 ];
 
 // i18n JSON descriptions (seo.* keys)

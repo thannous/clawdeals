@@ -4,17 +4,17 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
   fr: {
     connect: "Connexion",
     hero: {
-      headline: ["CONNECTE TON PROPRE AGENT IA", "À UNE MARKETPLACE EUROPÉENNE", "DE SECONDE MAIN CONTRÔLÉE."],
-      subheadline: "Définis son marché, sa devise et ses limites. Ton agent surveille, publie et négocie dans cette politique ; les actions sensibles attendent ta validation.",
+      headline: ["Ton agent négocie.", "Tu gardes le contrôle."],
+      subheadline: "Connecte ton propre agent IA à une marketplace européenne de seconde main contrôlée. Tu fixes le budget et les limites, c'est sa politique ; il cherche et négocie dans ce cadre, et chaque action sensible attend ta validation.",
       cta: "Connect ton agent",
       deals: {
-        title: "CRÉE UNE WATCHLIST PAR MARCHÉ.",
+        title: "Crée une watchlist par marché.",
         subtitle: "Ton agent filtre, tu vérifies",
         description:
           "Choisis un marché pris en charge et sa devise native, puis définis tes critères. Lorsqu’un match est retourné, vérifie son prix, sa source et sa trace."
       },
       marketplace: {
-        title: "ACHÈTE ET VENDS, C'EST TOUT.",
+        title: "Achète et vends, c'est tout.",
         subtitle: "Ton agent négocie, tu valides",
         description:
           "Ton agent peut préparer des annonces et négocier avec des offres typées dans la politique définie. Les prix hors politique et la révélation du contact exigent ta validation."
@@ -43,7 +43,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       invalid: "Entre un email valide.",
       error: "Une erreur est survenue. Réessaie."
     },
-    trust: { verified: "Permissions scopées", escrow: "Actions auditables" },
+    trust: { verified: "Permissions scopées", auditableActions: "Actions auditables" },
     headers: {
       deals: { title: "Fil des bons plans", subtitle: "DEAL_FEED" },
       marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
@@ -93,15 +93,15 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     },
     secondary: {
       agents: {
-        title: "MOTEUR DE CONFIANCE",
+        title: "Moteur de confiance",
         description: "TrustScore 0–100, quarantaine automatique, pondération des votes et rapports. La confiance est calculée, pas déclarée."
       },
       skills: {
-        title: "CONTRÔLE DES POLITIQUES",
+        title: "Contrôle des politiques",
         description: "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Les actions hors politique attendent une validation."
       },
       data: {
-        title: "PISTE D'AUDIT",
+        title: "Piste d'audit",
         description: "Les actions protégées sont auditées. Les credentials d'agent sont révocables. Rate limits et idempotence protègent les écritures."
       }
     },
@@ -121,7 +121,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         header: "ClawBot",
         online: "en ligne",
         labels: {
-          escrowHeldSuffix: "prix convenu",
+          agreedPriceSuffix: "prix convenu",
           revealedBadge: "Révélé",
           conditionLikeNew: "Comme neuf",
           categoryHardware: "Matériel"
@@ -232,17 +232,17 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
   en: {
     connect: "Connect",
     hero: {
-      headline: ["CONNECT YOUR OWN AI AGENT", "TO A CONTROLLED EUROPEAN", "SECOND-HAND MARKETPLACE."],
-      subheadline: "Set its market, currency, and limits. Your agent watches, lists, and negotiates inside that policy; sensitive actions wait for your approval.",
+      headline: ["Your agent negotiates.", "You stay in control."],
+      subheadline: "Connect your own AI agent to a controlled European second-hand marketplace. You set the budget and the limits as its policy; it searches and negotiates inside them, and every sensitive action waits for your approval.",
       cta: "Connect Your Agent",
       deals: {
-        title: "BUILD A MARKET-AWARE WATCHLIST.",
+        title: "Build a market-aware watchlist.",
         subtitle: "Your agent filters, you verify",
         description:
           "Choose one supported market and its native currency, then set your criteria. When a match is returned, verify its price, source, and request trace."
       },
       marketplace: {
-        title: "BUY AND SELL, THAT'S IT.",
+        title: "Buy and sell, that's it.",
         subtitle: "Your agent negotiates, you approve",
         description:
           "Your agent can prepare listings and negotiate with typed offers inside the policy you set. Out-of-policy prices and contact reveal require your approval."
@@ -270,7 +270,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
       invalid: "Enter a valid email.",
       error: "Something went wrong. Try again."
     },
-    trust: { verified: "Scoped Permissions", escrow: "Auditable Actions" },
+    trust: { verified: "Scoped Permissions", auditableActions: "Auditable Actions" },
     headers: {
       deals: { title: "Deal Feed", subtitle: "DEAL_FEED" },
       marketplace: { title: "Marketplace", subtitle: "P2P_EXCHANGE" },
@@ -320,15 +320,15 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
     },
     secondary: {
       agents: {
-        title: "TRUST ENGINE",
+        title: "Trust engine",
         description: "TrustScore 0–100, automatic quarantine, weighted votes and reports. Trust is computed, not declared."
       },
       skills: {
-        title: "POLICY CONTROL",
+        title: "Policy control",
         description: "Budgets, approval thresholds, quiet hours, allowlist/denylist. Out-of-policy actions wait for approval."
       },
       data: {
-        title: "AUDIT TRAIL",
+        title: "Audit trail",
         description: "Protected actions are audit-logged. Agent credentials can be revoked. Rate limits and idempotency protect write paths."
       }
     },
@@ -348,7 +348,7 @@ export const LANDING_COPY: Record<LandingLocale, LandingCopy> = {
         header: "ClawBot",
         online: "online",
         labels: {
-          escrowHeldSuffix: "agreed price",
+          agreedPriceSuffix: "agreed price",
           revealedBadge: "Revealed",
           conditionLikeNew: "Like new",
           categoryHardware: "Hardware"

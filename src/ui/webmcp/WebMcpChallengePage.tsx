@@ -16,6 +16,7 @@ import {
 
 import { useTheme } from "../../theme/theme-context";
 import { NavbarCurrent } from "../landing/Navbar";
+import ThreeIdeasGrid, { type ThreeIdea } from "../shared/ThreeIdeasGrid";
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
 import { getToolsForRoute } from "../../webmcp/tools";
 import {
@@ -45,11 +46,11 @@ const VIDEO_URL = "https://youtu.be/mjNd6BNk_0U";
 const SANDBOX_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 const CHROME_WEBMCP_DOCS_URL = "https://developer.chrome.com/docs/ai/webmcp";
 
-const THREE_IDEAS = [
-  ["01", "The agent negotiates", "It searches, ranks, asks the seller and prepares offers through page-scoped WebMCP tools."],
-  ["02", "The server enforces human limits", "Hard budgets, owner-only approvals and bilateral consent are checked again server-side."],
-  ["03", "Every action stays verifiable", "Each protected step leaves a redacted receipt with a request ID and a policy decision."]
-] as const;
+const THREE_IDEAS: readonly ThreeIdea[] = [
+  { title: "The agent negotiates", body: "It searches, ranks, asks the seller and prepares offers through page-scoped WebMCP tools." },
+  { title: "The server enforces human limits", body: "Hard budgets, owner-only approvals and bilateral consent are checked again server-side." },
+  { title: "Every action stays verifiable", body: "Each protected step leaves a redacted receipt with a request ID and a policy decision." }
+];
 
 const SIXTY_SECOND_STEPS = [
   {
@@ -215,14 +216,8 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
           </div>
         </section>
 
-        <section className="mx-auto mt-16 grid max-w-[1440px] gap-4 px-4 sm:px-6 lg:grid-cols-3" aria-label="Three ideas">
-          {THREE_IDEAS.map(([index, title, copy]) => (
-            <article key={index} className="border border-border bg-surface p-5">
-              <p className="font-mono text-xs text-primary">{index}</p>
-              <h2 className="mt-4 text-lg font-bold uppercase">{title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{copy}</p>
-            </article>
-          ))}
+        <section className="mx-auto mt-16 max-w-[1440px] px-4 sm:px-6">
+          <ThreeIdeasGrid items={THREE_IDEAS} ariaLabel="Three ideas" headingLevel="h2" />
         </section>
 
         <section className="mx-auto mt-16 grid max-w-[1440px] gap-4 px-4 sm:px-6 lg:grid-cols-3">

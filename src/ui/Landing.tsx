@@ -2,7 +2,7 @@ import React, { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, Play, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryHref, joinUrl } from "../shared/urls";
 import { localePrefixFor } from "../shared/seo";
@@ -12,11 +12,10 @@ import HowItWorks from "./landing/HowItWorks";
 import MissionSelect from "./landing/MissionSelect";
 import { NavbarCurrent, NavbarFuture } from "./landing/Navbar";
 import { SectionHeader } from "./landing/primitives";
-import ExploreDemos from "./landing/ExploreDemos";
 import PlatformPillars from "./landing/PlatformPillars";
 import Footer from "./Footer";
-import ActivationPath from "./seo/ActivationPath";
 import LocalizedMarketContext from "./seo/LocalizedMarketContext";
+import ThreeIdeasGrid from "./shared/ThreeIdeasGrid";
 
 const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
 const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
@@ -37,6 +36,7 @@ const TRUST_MARQUEE_KEYS = [
 ] as const;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const JUDGE_DEMO_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 
 function toStableStringEntries(values: readonly string[]) {
   const seen = new Map<string, number>();
@@ -204,12 +204,12 @@ function HeroFrame({ children }: { children: React.ReactNode }) {
       <div className="tech-grid absolute inset-0 opacity-30" />
 
       <div className="max-w-[1440px] mx-auto relative z-10 flex flex-col items-center text-center">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold uppercase leading-[0.9] tracking-tighter mb-6 text-text text-shadow-glow">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tight mb-6 text-text text-shadow-glow">
           {keyedHeadlines.map((line) => (
             <span key={line.key} className="block">{line.value}</span>
           ))}
         </h1>
-        <p className="text-sm md:text-base text-muted font-mono mb-8 max-w-4xl">
+        <p className="text-base md:text-lg text-muted leading-relaxed mb-8 max-w-3xl">
           {t("hero.subheadline")}
         </p>
 
@@ -227,28 +227,90 @@ function HeroCurrent({ locale }: { locale: string }) {
 
   return (
     <HeroFrame>
-      <div className="flex flex-wrap items-center justify-center gap-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
         <Link
           href={entryUrl}
           data-acquisition-cta="hero"
-          className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
+          className="w-full sm:w-auto text-center px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors clip-corner-top-right relative group overflow-hidden bg-primary text-bg hover:bg-text"
         >
-          <span className="relative z-10 flex items-center gap-2">
+          <span className="relative z-10 flex items-center justify-center gap-2">
             {t("hero.cta")} <ChevronRight className="w-4 h-4" />
           </span>
         </Link>
-        {process.env.NODE_ENV !== "production" && (
-          <Link
-            href={`${localePrefix}/marketplace`}
-            className="px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
-          >
-            <span className="flex items-center gap-2">
-              {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
-            </span>
-          </Link>
-        )}
+        <Link
+          href={`${localePrefix}/browse`}
+          data-testid="hero-browse-cta"
+          className="w-full sm:w-auto text-center px-8 py-4 font-bold uppercase tracking-wider text-sm transition-colors border border-secondary text-secondary hover:bg-secondary hover:text-bg"
+        >
+          <span className="flex items-center justify-center gap-2">
+            {t("hero.exploreCta")} <ChevronRight className="w-4 h-4" />
+          </span>
+        </Link>
       </div>
+      <a
+        href={JUDGE_DEMO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-5 inline-flex items-center gap-2 font-mono text-xs text-subtle underline-offset-4 hover:text-primary hover:underline"
+        data-testid="hero-demo-link"
+      >
+        <Play className="w-3.5 h-3.5" aria-hidden="true" />
+        {t("hero.demoCta")}
+      </a>
     </HeroFrame>
+  );
+}
+
+function CoreIdeas() {
+  const t = useTranslations("landing");
+  const items = [0, 1, 2].map((index) => ({
+    title: t(`hero.ideas.item_${index}.title`),
+    body: t(`hero.ideas.item_${index}.body`)
+  }));
+
+  return (
+    <section data-testid="landing-core-ideas">
+      <SectionHeader title={t("hero.ideas.title")} subtitle={t("hero.ideas.eyebrow")} />
+      <ThreeIdeasGrid items={items} ariaLabel={t("hero.ideas.title")} />
+    </section>
+  );
+}
+
+function VisitorSteps({ locale }: { locale: SupportedLocale }) {
+  const t = useTranslations("landing");
+  const localePrefix = localePrefixFor(locale);
+  const steps = [0, 1, 2].map((index) => ({
+    title: t(`hero.steps.item_${index}.title`),
+    body: t(`hero.steps.item_${index}.body`)
+  }));
+
+  return (
+    <section data-testid="landing-visitor-steps">
+      <SectionHeader title={t("hero.steps.title")} subtitle={t("hero.steps.eyebrow")} accentText="text-secondary" accentBg="bg-secondary" />
+      <ol className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {steps.map((step, index) => (
+          <li key={step.title} className="border border-border bg-surface p-5 flex items-start gap-4">
+            <span className="shrink-0 w-8 h-8 border border-secondary/50 bg-secondary/5 text-secondary font-mono text-xs flex items-center justify-center">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div>
+              <h3 className="font-bold text-text">{step.title}</h3>
+              <p className="mt-2 text-sm text-muted leading-6">{step.body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-6">
+        <Link
+          href={getPublicAppEntryHref(localePrefix)}
+          data-acquisition-cta="landing_activation"
+          className="inline-flex items-center gap-2 px-6 py-3 border border-primary bg-primary text-bg font-bold uppercase tracking-wider text-xs hover:bg-text hover:border-text transition-colors"
+        >
+          {t("hero.cta")}
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -514,8 +576,9 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
         )}
 
         {mode === "current" && (
-          <div className="max-w-[1440px] mx-auto px-6 py-16">
-            <ActivationPath locale={locale} source="landing" />
+          <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-16">
+            <CoreIdeas />
+            <VisitorSteps locale={locale} />
           </div>
         )}
 
@@ -531,7 +594,7 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
                 </span>
                 <span className="opacity-30">{"///"}</span>
                 <span className="flex items-center gap-2">
-                  <Lock size={14} /> {t("trust.escrow")}
+                  <Lock size={14} /> {t("trust.auditableActions")}
                 </span>
                 <span className="opacity-30">{"///"}</span>
               </React.Fragment>
@@ -544,13 +607,17 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
 
           <HowItWorks />
 
-          <MissionSelect />
+          {/* Interactive demos and the terminal are desktop-only: on a phone they
+              triple the page length without adding to the pitch. */}
+          <div className="hidden md:block">
+            <MissionSelect />
+          </div>
 
           <PlatformPillars />
 
-          <DeveloperSection />
-
-          <ExploreDemos />
+          <div className="hidden md:block">
+            <DeveloperSection />
+          </div>
 
           <Faq />
         </div>

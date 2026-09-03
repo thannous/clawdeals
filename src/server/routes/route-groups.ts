@@ -24,7 +24,7 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
   {
     group: "auth.me.read",
     methods: ["GET"],
-    pattern: /^\/v1\/auth\/me$/
+    pattern: /^\/v1\/auth\/(?:me|session)$/
   },
   {
     group: "auth.session.start",

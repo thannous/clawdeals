@@ -1,5 +1,5 @@
 import Head from "next/head";
-import DealsPage from "../ui/deals/DealsPage";
+import MyDealsPage from "../ui/my-deals/MyDealsPage";
 import { normalizeMetaDescription } from "../shared/seo";
 
 export { getI18nStaticProps as getStaticProps } from "../shared/i18n";
@@ -14,7 +14,7 @@ export default function Deals() {
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>
-      <DealsPage />
+      <MyDealsPage />
     </>
   );
 }

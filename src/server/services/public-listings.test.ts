@@ -2,6 +2,11 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("./listings", () => ({
   listListings: vi.fn(),
+  getListing: vi.fn(),
+}));
+
+vi.mock("./agents", () => ({
+  getAgentById: vi.fn(),
 }));
 
 vi.mock("../db/supabase", () => ({
@@ -12,14 +17,86 @@ vi.mock("./owners", () => ({
   getOwnerPublicProfiles: vi.fn(),
 }));
 
-import { listListings } from "./listings";
+import { getListing, listListings } from "./listings";
+import { getAgentById } from "./agents";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getOwnerPublicProfiles } from "./owners";
-import { mapPublicListingRow, listPublicListings } from "./public-listings";
+import { getPublicListing, mapPublicListingRow, listPublicListings } from "./public-listings";
 
 const listListingsMock = vi.mocked(listListings);
+const getListingMock = vi.mocked(getListing);
+const getAgentByIdMock = vi.mocked(getAgentById);
 const getClientMock = vi.mocked(getSupabaseServiceClient);
 const getOwnerProfilesMock = vi.mocked(getOwnerPublicProfiles);
+
+describe("getPublicListing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const liveRow = {
+    listing_id: "lst-1",
+    status: "LIVE",
+    title: "Used e-bike",
+    description: "Battery 88%",
+    category: "mobility",
+    condition: "GOOD",
+    price_amount: 1150,
+    currency: "EUR",
+    created_at: "2026-08-01T00:00:00Z",
+    owner_id: "owner-1",
+    agent_id: "agent-1",
+    market_code: "FR",
+    geo_lat: 48.856614,
+    geo_lng: 2.352222,
+  };
+
+  it("exposes the market, a coarse location and the seller trust signal", async () => {
+    getListingMock.mockResolvedValue(liveRow as any);
+    getOwnerProfilesMock.mockResolvedValue(
+      new Map([["owner-1", { display_name: "Vélo Paris", avatar_url: null, verified: true }]])
+    );
+    getAgentByIdMock.mockResolvedValue({
+      id: "agent-1",
+      trust_score: 62,
+      trust_flags: [],
+      created_at: "2026-02-01T00:00:00Z",
+    } as any);
+
+    const result = await getPublicListing("lst-1");
+
+    expect(result?.market_code).toBe("FR");
+    expect(result?.geo).toEqual({ lat: 48.86, lng: 2.35 });
+    expect(result?.seller).toEqual({
+      display_name: "Vélo Paris",
+      avatar_url: null,
+      verified: true,
+      trust: { score: 62, quarantined: false, member_since: "2026-02-01T00:00:00Z" },
+    });
+  });
+
+  it("flags quarantined sellers and survives a trust lookup failure", async () => {
+    getListingMock.mockResolvedValue({ ...liveRow, geo_lat: null, geo_lng: null } as any);
+    getOwnerProfilesMock.mockResolvedValue(
+      new Map([["owner-1", { display_name: "New seller", avatar_url: null, verified: false }]])
+    );
+    getAgentByIdMock.mockResolvedValueOnce({ id: "agent-1", trust_score: 10, trust_flags: ["quarantined"], created_at: null } as any);
+
+    const quarantined = await getPublicListing("lst-1");
+    expect(quarantined?.geo).toBeNull();
+    expect(quarantined?.seller?.trust).toEqual({ score: 10, quarantined: true, member_since: null });
+
+    getAgentByIdMock.mockRejectedValueOnce(new Error("db down"));
+    const degraded = await getPublicListing("lst-1");
+    expect(degraded?.seller).toEqual({ display_name: "New seller", avatar_url: null, verified: false, trust: null });
+  });
+
+  it("returns null for non-live listings", async () => {
+    getListingMock.mockResolvedValue({ ...liveRow, status: "DRAFT" } as any);
+    expect(await getPublicListing("lst-1")).toBeNull();
+    expect(getAgentByIdMock).not.toHaveBeenCalled();
+  });
+});
 
 describe("mapPublicListingRow", () => {
   it("maps a full row with all fields", () => {

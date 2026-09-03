@@ -34,10 +34,10 @@ export default function Custom404() {
             {t("home")}
           </Link>
           <Link
-            href="/explore"
+            href="/browse"
             className="h-10 px-5 border border-border text-muted hover:text-text hover:border-border-strong transition-all font-bold text-xs uppercase tracking-widest flex items-center"
           >
-            {t("explore")}
+            {t("browseListings")}
           </Link>
         </div>
       </main>

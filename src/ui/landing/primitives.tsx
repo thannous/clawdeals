@@ -33,7 +33,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="flex items-end gap-4 mb-8 border-b border-border pb-2">
-      <h2 className="text-3xl font-bold uppercase tracking-wider text-text">
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
         <span className={`${accentText} mr-2`}>/</span>
         {title}
       </h2>

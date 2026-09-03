@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 
+import { probeOwnerSession } from "../auth/ownerSessionProbe";
+
 interface Agent {
   id: string;
   name: string | null;
@@ -15,6 +17,11 @@ async function fetchOwnerAgentsOnce(): Promise<Agent[]> {
 
   inflightRequest = (async () => {
     try {
+      // Anonymous visitors get an empty dropdown without a failing request.
+      const session = await probeOwnerSession();
+      if (session.state === "anonymous") {
+        return [];
+      }
       const resp = await fetch("/api/v1/owner/agents?limit=100");
       if (!resp.ok) {
         cachedAgents = [];

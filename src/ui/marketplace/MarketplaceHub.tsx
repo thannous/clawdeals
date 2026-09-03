@@ -1,12 +1,17 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ShoppingBag, Zap, ChevronRight, Globe } from "lucide-react";
+import { ShoppingBag, Zap, ChevronRight } from "lucide-react";
 import { useTheme } from "../../theme/theme-context";
 
 import { resolveSupportedLocale } from "../../shared/i18n";
-import { POPULAR_COUNTRIES, ALL_COUNTRIES, localizeCountries } from "../../shared/countries";
+import {
+  LAUNCH_MARKETS,
+  normalizeMarketCode,
+  type LaunchMarketCode
+} from "../../shared/markets";
+import { flagEmoji } from "../../shared/countries";
 import { NavbarCurrent } from "../landing/Navbar";
 import LocalizedMarketContext from "../seo/LocalizedMarketContext";
 
@@ -46,48 +51,29 @@ export default function MarketplaceHub() {
   const localePrefix = locale === "en" ? "" : `/${locale}`;
   const { themeId, setTheme, themes } = useTheme();
 
-  const [country, setCountry] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const moreRef = useRef<HTMLDivElement>(null);
-
-  const localizedPopular = useMemo(() => localizeCountries(POPULAR_COUNTRIES, locale), [locale]);
-  const localizedAll = useMemo(() => localizeCountries(ALL_COUNTRIES, locale), [locale]);
+  const [country, setCountry] = useState<LaunchMarketCode | null>(null);
 
   // Sync from localStorage after hydration (legitimate external-store read)
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { try { const s = localStorage.getItem(STORAGE_KEY); if (s) setCountry(s); } catch {} }, []);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const supportedMarket = normalizeMarketCode(stored);
+      if (supportedMarket) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCountry(supportedMarket);
+      } else if (stored) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {}
+  }, []);
 
-  function selectCountry(code: string | null) {
+  function selectCountry(code: LaunchMarketCode | null) {
     setCountry(code);
-    setMoreOpen(false);
-    setSearch("");
     try {
       if (code) localStorage.setItem(STORAGE_KEY, code);
       else localStorage.removeItem(STORAGE_KEY);
     } catch {}
   }
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!moreOpen) return;
-    function onClickOutside(e: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-        setSearch("");
-      }
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [moreOpen]);
-
-  const filtered = useMemo(() => {
-    if (!search) return localizedAll;
-    const q = search.toLowerCase();
-    return localizedAll.filter(
-      (c) => c.label.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
-    );
-  }, [search, localizedAll]);
 
   const chipBase = "px-3 py-1.5 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap";
   const chipActive = "bg-text text-bg";
@@ -114,83 +100,36 @@ export default function MarketplaceHub() {
         )}
 
         {/* Country selector */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-8" ref={moreRef}>
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-8">
           <div className="flex items-center gap-2 mb-2">
             <span className="font-mono text-xs text-subtle tracking-widest uppercase">
               {t("country.label")}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* Worldwide */}
             <button
               type="button"
-              data-testid="country-chip-worldwide"
+              data-testid="country-chip-all"
+              aria-pressed={country === null}
               onClick={() => selectCountry(null)}
-              className={`${chipBase} ${country === null ? chipActive : chipInactive} flex items-center gap-1.5`}
+              className={`${chipBase} ${country === null ? chipActive : chipInactive}`}
             >
-              <Globe className="w-3.5 h-3.5" />
-              {t("country.worldwide")}
+              {t("country.all")}
             </button>
 
-            {/* Popular countries */}
-            {localizedPopular.map((c) => (
+            {LAUNCH_MARKETS.map((market) => (
               <button
-                key={c.code}
+                key={market.code}
                 type="button"
-                data-testid={`country-chip-${c.code}`}
-                onClick={() => selectCountry(c.code)}
-                className={`${chipBase} ${country === c.code ? chipActive : chipInactive}`}
+                data-testid={`country-chip-${market.code}`}
+                aria-pressed={country === market.code}
+                onClick={() => selectCountry(market.code)}
+                className={`${chipBase} ${country === market.code ? chipActive : chipInactive}`}
               >
-                {c.flag} {c.label}
+                {flagEmoji(market.code)} {market.code} · {market.currency}
               </button>
             ))}
-
-            {/* More button */}
-            <button
-              type="button"
-              data-testid="country-more-btn"
-              onClick={() => setMoreOpen((p) => !p)}
-              className={`${chipBase} ${chipInactive}`}
-            >
-              {t("country.more")}
-            </button>
           </div>
-
-          {/* More dropdown */}
-          {moreOpen && (
-            <div className="mt-3 border border-border bg-surface p-4 max-w-lg">
-              <input
-                type="text"
-                data-testid="country-search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t("country.search")}
-                className="w-full bg-bg border border-border px-3 py-2 text-sm font-mono text-text placeholder:text-subtle focus:outline-none focus:border-text mb-3"
-              />
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 max-h-60 overflow-y-auto">
-                {filtered.map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    data-testid={`country-option-${c.code}`}
-                    onClick={() => selectCountry(c.code)}
-                    className={`text-left px-2 py-1.5 text-xs font-mono truncate transition-colors ${
-                      country === c.code
-                        ? "bg-text text-bg"
-                        : "text-muted hover:text-text hover:bg-surface"
-                    }`}
-                  >
-                    {c.flag} {c.label}
-                  </button>
-                ))}
-                {filtered.length === 0 && (
-                  <p className="col-span-full text-xs text-subtle font-mono py-2">
-                    —
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Cards */}

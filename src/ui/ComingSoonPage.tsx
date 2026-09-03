@@ -33,10 +33,10 @@ export default function ComingSoonPage({ title, badge, description }: ComingSoon
               Home
             </Link>
             <Link
-              href="/explore"
+              href="/browse"
               className="px-6 py-3 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:text-bg transition-colors"
             >
-              Explore
+              Browse listings
             </Link>
           </div>
         </div>
@@ -44,4 +44,3 @@ export default function ComingSoonPage({ title, badge, description }: ComingSoon
     </div>
   );
 }
-

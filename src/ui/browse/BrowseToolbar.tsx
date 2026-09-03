@@ -41,6 +41,7 @@ export default function BrowseToolbar({
 }: BrowseToolbarProps) {
   const t = useTranslations("browse");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = [category, condition, priceMin, priceMax].filter(Boolean).length;
 
   return (
     <div data-testid="browse-toolbar" className="space-y-3">
@@ -84,10 +85,14 @@ export default function BrowseToolbar({
         <button
           data-testid="browse-filters-toggle"
           onClick={() => setFiltersOpen(!filtersOpen)}
-          aria-label={t("filters")}
-          className="sm:hidden px-3 py-1.5 text-xs font-mono border border-border rounded text-muted hover:text-text"
+          aria-expanded={filtersOpen}
+          className="sm:hidden inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-mono border border-border rounded text-muted hover:text-text"
         >
-          <SlidersHorizontal size={14} />
+          <SlidersHorizontal size={14} aria-hidden="true" />
+          <span>
+            {t("filters")}
+            {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </span>
         </button>
       </div>
 

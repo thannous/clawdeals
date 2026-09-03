@@ -10,8 +10,7 @@ const STATIC_SEO_ROUTES: readonly SeoSitemapRoute[] = [
   { path: "/browse", lastmod: "2026-07-29" },
   { path: "/browse/deals", lastmod: "2026-07-29" },
   { path: "/marketplace", lastmod: "2026-07-29" },
-  // /explore/* is intentionally NOT indexed: its catalog is illustrative fixture
-  // content, not live marketplace data. Re-add once it serves real listings.
+  // /explore/* is retired and redirects home. Keep it out of the public sitemap.
   { path: "/trust-engine", lastmod: "2026-07-29" },
   { path: "/policy-control", lastmod: "2026-07-29" },
   { path: "/audit-trail", lastmod: "2026-07-29" },

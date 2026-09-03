@@ -7,6 +7,9 @@ import { resolveSupportedLocale } from "../../shared/i18n";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { resolveCoverImageSrc } from "../media/cover-image";
 import { NavbarCurrent } from "../landing/Navbar";
+import DealRoomPanel from "../webmcp/DealRoomPanel";
+import PendingApprovalBanner from "../webmcp/PendingApprovalBanner";
+import ListingHumanActions from "./ListingHumanActions";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -111,6 +114,13 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                 {formatPrice(listing.price.amount, listing.price.currency, locale)}
               </div>
 
+              {/* Human actions: the page is no longer a dead end without an agent */}
+              <ListingHumanActions listing={listing} localePrefix={localePrefix} />
+
+              {/* Live negotiation state, when a mission is running in this browser */}
+              <PendingApprovalBanner />
+              <DealRoomPanel />
+
               {coverImageSrc && (
                 <div className="relative w-full aspect-[16/10] border border-border overflow-hidden bg-surface">
                   <Image
@@ -187,16 +197,22 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                       </svg>
                     )}
                   </div>
+                  <SellerTrust
+                    trust={listing.seller.trust}
+                    verified={Boolean(listing.seller.verified)}
+                    locale={locale}
+                    localePrefix={localePrefix}
+                  />
                 </div>
               )}
 
-              {/* CTA */}
+              {/* Secondary CTA for visitors who do not have an agent yet */}
               <div className="border border-border bg-surface p-6 text-center space-y-3">
                 <p className="text-sm font-mono text-muted">{t("detail.ctaText")}</p>
                 <Link
                   href={getPublicAppEntryHref(localePrefix)}
                   data-acquisition-cta="browse"
-                  className="inline-block px-6 py-2.5 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+                  className="inline-block px-6 py-2.5 font-bold uppercase tracking-wider text-sm border border-border text-text hover:border-primary hover:text-primary transition-colors"
                 >
                   {t("detail.ctaButton")}
                 </Link>
@@ -205,6 +221,48 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
           )}
         </div>
       </main>
+    </div>
+  );
+}
+
+type SellerTrustInfo = { score: number | null; quarantined: boolean; member_since: string | null } | null | undefined;
+
+function SellerTrust({
+  trust,
+  verified,
+  locale,
+  localePrefix
+}: {
+  trust: SellerTrustInfo;
+  verified: boolean;
+  locale: string;
+  localePrefix: string;
+}) {
+  const t = useTranslations("browse");
+  const memberSince = trust?.member_since
+    ? new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(new Date(trust.member_since))
+    : null;
+  const score = typeof trust?.score === "number" ? Math.max(0, Math.min(100, Math.round(trust.score))) : null;
+  const scoreTone = score === null ? "text-subtle" : score >= 60 ? "text-success" : score >= 30 ? "text-text" : "text-warning";
+
+  return (
+    <div className="mt-3 border-t border-border pt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-mono" data-testid="listing-seller-trust">
+      {trust?.quarantined ? (
+        <span className="text-warning">{t("trust.quarantined")}</span>
+      ) : score !== null ? (
+        <span className="flex items-center gap-2">
+          <span className="text-subtle uppercase tracking-wider">{t("trust.score")}</span>
+          <span className={`font-bold ${scoreTone}`}>{score}/100</span>
+          <span className="h-1.5 w-24 bg-border overflow-hidden" aria-hidden="true">
+            <span className={`block h-full ${score >= 60 ? "bg-success" : score >= 30 ? "bg-text" : "bg-warning"}`} style={{ width: `${score}%` }} />
+          </span>
+        </span>
+      ) : null}
+      <span className={verified ? "text-text" : "text-subtle"}>{verified ? t("trust.verified") : t("trust.unverified")}</span>
+      {memberSince ? <span className="text-subtle">{t("trust.memberSince", { date: memberSince })}</span> : null}
+      <Link href={`${localePrefix}/trust-engine`} className="text-primary hover:underline underline-offset-4">
+        {t("trust.explain")}
+      </Link>
     </div>
   );
 }

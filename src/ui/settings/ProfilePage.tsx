@@ -61,13 +61,19 @@ function useProfilePageView() {
     setState("loading");
 
     try {
-      const meResp = await fetch("/api/v1/auth/me", { signal: controller.signal });
+      // `/auth/session` answers 200 for anonymous visitors, so the redirect to
+      // login does not leave a failed request behind.
+      const meResp = await fetch("/api/v1/auth/session", { signal: controller.signal });
       if (meResp.status === 401) {
         redirectToLogin();
         return;
       }
       const meBody = await meResp.json().catch(() => ({}));
       if (!meResp.ok) throw new Error(meBody?.error?.message || `HTTP ${meResp.status}`);
+      if (meBody?.data?.authenticated === false) {
+        redirectToLogin();
+        return;
+      }
 
       const ownerId = meBody?.data?.owner_id;
       if (!ownerId) throw new Error("Missing owner_id");

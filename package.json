@@ -56,6 +56,7 @@
     "release:hackathon:preflight": "node scripts/verify-hackathon-release.mjs",
     "bootstrap:webmcp:judge": "node scripts/bootstrap-webmcp-judge.mjs",
     "verify:public-sandbox": "node scripts/verify-public-sandbox.mjs",
+    "verify:static-chunks": "node scripts/verify-static-chunks.mjs",
     "release:hackathon:local": "npm run release:hackathon:preflight && npm run eval:webmcp:gate",
     "test:integration:deals": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/deals.api.spec.ts e2e/integration/deal-feed-journey.spec.ts",
     "test:integration:listings": "PW_WEB_SERVER_MODE=prod playwright test --project=integration e2e/integration/listings.spec.ts e2e/integration/listings-update.spec.ts e2e/integration/console-listings-threads-approvals.spec.ts",

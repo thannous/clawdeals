@@ -40,6 +40,62 @@ describe("worker edge router", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it("retries immutable build assets when the origin answers 5xx during a deploy cutover", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("cutover", { status: 503 }))
+      .mockResolvedValueOnce(new Response("console.log(1)", { status: 200, headers: { "content-type": "application/javascript" } }));
+
+    const response = await edgeRouterWorker.fetch(
+      new Request("https://clawdeals.com/_next/static/immutable/chunks/abc123.js"),
+      {
+        APP_ORIGIN: "https://app.clawdeals.com",
+        MARKETING_ORIGIN: "https://clawdeals.vercel.app",
+        MARKETING_HOST: "clawdeals.com"
+      }
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    for (const [target] of fetchSpy.mock.calls) {
+      expect((target as Request).url).toBe("https://clawdeals.vercel.app/_next/static/immutable/chunks/abc123.js");
+    }
+  });
+
+  it("returns the last upstream error once static retries are exhausted", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("down", { status: 503 }));
+
+    const response = await edgeRouterWorker.fetch(
+      new Request("https://clawdeals.com/_next/static/chunks/main.js"),
+      {
+        APP_ORIGIN: "https://app.clawdeals.com",
+        MARKETING_ORIGIN: "https://clawdeals.vercel.app",
+        MARKETING_HOST: "clawdeals.com"
+      }
+    );
+
+    expect(response.status).toBe(503);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not retry non-static proxied requests on 5xx", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("oops", { status: 503 }));
+
+    const response = await edgeRouterWorker.fetch(
+      new Request("https://clawdeals.com/browse"),
+      {
+        APP_ORIGIN: "https://app.clawdeals.com",
+        MARKETING_ORIGIN: "https://clawdeals.vercel.app",
+        MARKETING_HOST: "clawdeals.com"
+      }
+    );
+
+    expect(response.status).toBe(503);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("dispatches the fast-lane cron endpoints with bearer authentication", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(

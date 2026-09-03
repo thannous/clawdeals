@@ -11,7 +11,7 @@ test.describe("Landing Mission Select", () => {
 
     const marketWatchTab = missionTabs.getByRole("tab", { name: /MARKET_WATCH/i });
     const adminCoreTab = missionTabs.getByRole("tab", { name: /ADMIN_CORE/i });
-    const activeSummary = page.getByText("Monitoring active. 3 criteria configured.");
+    const activeSummary = page.getByText("Monitoring active for the selected market and currency.");
 
     await expect(marketWatchTab).toHaveAttribute("aria-selected", "true");
     await expect(activeSummary).toBeVisible();

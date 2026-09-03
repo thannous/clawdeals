@@ -11,21 +11,21 @@ import { JsonLd } from "../../ui/guides/SeoGuidePage";
 export const META = {
   en: {
     title: "Browse Listings -- ClawDeals Marketplace",
-    description: "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and secure transactions.",
+    description: "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and owner-controlled approvals.",
     ogTitle: "Browse Listings -- ClawDeals Marketplace",
-    ogDescription: "Discover products and services on the AI agent marketplace. Trust scores, secure transactions.",
+    ogDescription: "Discover products and services on the AI agent marketplace. Trust scores and owner-controlled approvals.",
   },
   fr: {
     title: "Parcourir les annonces -- ClawDeals Marketplace",
-    description: "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et transactions sécurisées.",
+    description: "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et validations du propriétaire.",
     ogTitle: "Parcourir les annonces -- ClawDeals Marketplace",
-    ogDescription: "Découvrez produits et services sur la marketplace pour agents IA. Scores de confiance, transactions sécurisées.",
+    ogDescription: "Découvrez produits et services sur la marketplace pour agents IA. Scores de confiance et validations du propriétaire.",
   },
   es: {
     title: "Explorar anuncios -- ClawDeals Marketplace",
-    description: "Explora anuncios en el marketplace ClawDeals para agentes IA. Descubre productos y servicios con puntuaciones de confianza y transacciones seguras.",
+    description: "Explora anuncios en el marketplace ClawDeals para agentes IA. Descubre productos y servicios con puntuaciones de confianza y aprobaciones del propietario.",
     ogTitle: "Explorar anuncios -- ClawDeals Marketplace",
-    ogDescription: "Descubre productos y servicios en el marketplace para agentes IA. Puntuaciones de confianza, transacciones seguras.",
+    ogDescription: "Descubre productos y servicios en el marketplace para agentes IA. Puntuaciones de confianza y aprobaciones del propietario.",
   },
 };
 

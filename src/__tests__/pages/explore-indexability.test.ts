@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { SEO_SITEMAP_ROUTES } from "../../content/seo-routes";
-import { resolveExploreRobotsContent } from "../../pages/explore/[tab]";
+import { getServerSideProps as getExploreTabProps } from "../../pages/explore/[tab]";
+import { getServerSideProps as getExploreIndexProps } from "../../pages/explore";
 
 describe("Explore indexability contract", () => {
-  it("keeps fixture-backed Explore pages out of search indexes", () => {
-    expect(resolveExploreRobotsContent()).toBe("noindex,follow");
+  it("redirects the Explore index and tabs to the localized homepage", async () => {
+    await expect(getExploreIndexProps({ locale: "en" } as any)).resolves.toEqual({
+      redirect: { destination: "/", permanent: true }
+    });
+    await expect(getExploreTabProps({ locale: "fr", params: { tab: "skills" } } as any)).resolves.toEqual({
+      redirect: { destination: "/fr/", permanent: true }
+    });
   });
 
   it("keeps every Explore tab out of the sitemap", () => {

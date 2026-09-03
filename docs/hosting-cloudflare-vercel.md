@@ -123,6 +123,29 @@ La landing (`clawdeals.com`) reste la source canonique (SSR + cache edge).
 2. `https://clawdeals.com/deals` doit rediriger vers `https://app.clawdeals.com/deals`.
 3. `https://app.clawdeals.com/robots.txt` doit etre un `Disallow`.
 4. Waitlist: soumettre un email sur l'apex et verifier le POST vers l'API attendue (meme origin ou `app`).
+5. Chunks JS apres un deploiement: `npm run verify:static-chunks -- --base https://clawdeals.com --repeat 5 --interval-ms 30000`
+   doit terminer sur `PASS` (tous les `/_next/static/*` references par `/`, `/webmcp-challenge`, `/browse`, `/marketplace` repondent 200).
+
+### Chunks immuables et fenetre de deploiement (TI-495)
+
+Constat du 03/09/2026: juste apres un deploiement Vercel, une ou deux requetes de chunks
+`/_next/static/immutable/chunks/*.js` ont repondu 503 via `clawdeals.com` (proxy Worker),
+puis 200 (`cf-cache-status: HIT`) quelques minutes plus tard. Le HTML n'est pas en cause:
+Cloudflare le sert en `DYNAMIC` (Vercel retire `s-maxage` de la reponse client), donc il n'y a
+pas de decalage HTML <-> chunks cote edge. Le 503 vient d'une erreur transitoire de l'origine
+pendant la bascule.
+
+Mitigation en place dans `workers/edge-router.ts`:
+
+- les requetes `GET /_next/static/*` proxifiees sont rejouees jusqu'a 2 fois (150 ms puis 400 ms)
+  quand l'origine repond 5xx ou echoue reseau; les autres chemins ne sont pas rejoues;
+- chaque tentative est journalisee (`proxy.static_retry`, `proxy.static_fetch_error`) avec le chemin
+  et le statut, sans corps de reponse;
+- `scripts/verify-static-chunks.mjs` sert de smoke post-deploiement (voir ci-dessus) et peut tourner
+  en boucle pendant la fenetre de bascule.
+
+Si les 503 persistent malgre les retries, purger le cache Cloudflare de la zone apres le deploiement
+Vercel (Dashboard > Caching > Purge Everything, ou API `purge_cache`) et rouvrir TI-495.
 
 ## Deploy commands
 

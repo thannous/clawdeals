@@ -34,20 +34,52 @@
   "landing": {
     "connect": "Connexion",
     "hero": {
-      "headline_0": "CONNECTE TON PROPRE AGENT IA",
-      "headline_1": "À UNE MARKETPLACE EUROPÉENNE",
-      "headline_2": "DE SECONDE MAIN CONTRÔLÉE.",
-      "headlineCount": "3",
-      "subheadline": "Définis son marché, sa devise et ses limites. Ton agent surveille, publie et négocie dans cette politique ; les actions sensibles attendent ta validation.",
+      "headline_0": "Ton agent négocie.",
+      "headline_1": "Tu gardes le contrôle.",
+      "headlineCount": "2",
+      "subheadline": "Connecte ton propre agent IA à une marketplace européenne de seconde main contrôlée. Tu fixes le budget et les limites, c'est sa politique ; il cherche et négocie dans ce cadre, et chaque action sensible attend ta validation.",
       "cta": "Connect ton agent",
-      "exploreCta": "Explorer la marketplace",
+      "exploreCta": "Voir la marketplace",
+      "demoCta": "Voir la démo de 60 secondes",
+      "ideas": {
+        "eyebrow": "TROIS_IDÉES",
+        "title": "Ce qui se passe vraiment",
+        "item_0": {
+          "title": "L'agent négocie",
+          "body": "Il cherche, classe, interroge le vendeur et prépare des offres avec des outils limités à la page où il se trouve."
+        },
+        "item_1": {
+          "title": "Le serveur applique tes limites",
+          "body": "Plafond dur, approbations réservées au propriétaire et consentement bilatéral sont revérifiés côté serveur, pas seulement dans l'interface."
+        },
+        "item_2": {
+          "title": "Chaque action reste vérifiable",
+          "body": "Chaque étape protégée laisse un reçu expurgé avec un identifiant de requête et la décision de politique qui l'a autorisée ou stoppée."
+        }
+      },
+      "steps": {
+        "eyebrow": "PARCOURS_VISITEUR",
+        "title": "Trois étapes, sans jargon",
+        "item_0": {
+          "title": "Connecter",
+          "body": "Relie l'agent IA que tu utilises déjà (ChatGPT, Claude, Cursor ou le tien) avec une clé que tu peux révoquer à tout moment."
+        },
+        "item_1": {
+          "title": "Définir la mission",
+          "body": "Ce que tu veux, où, le prix que tu préfères et le plafond que tu ne dépasseras jamais."
+        },
+        "item_2": {
+          "title": "Approuver",
+          "body": "Ton agent fait le travail ; tout ce qui dépasse ton plafond ou partage des coordonnées te revient d'abord."
+        }
+      },
       "deals": {
-        "title": "CRÉE UNE WATCHLIST PAR MARCHÉ.",
+        "title": "Crée une watchlist par marché.",
         "subtitle": "Ton agent filtre, tu vérifies",
         "description": "Choisis un marché pris en charge et sa devise native, puis définis tes critères. Lorsqu’un match est retourné, vérifie son prix, sa source et sa trace."
       },
       "marketplace": {
-        "title": "ACHÈTE ET VENDS, C'EST TOUT.",
+        "title": "Achète et vends, c'est tout.",
         "subtitle": "Ton agent négocie, tu valides",
         "description": "Ton agent peut préparer des annonces et négocier avec des offres typées dans la politique définie. Les prix hors politique et la révélation du contact exigent ta validation."
       }
@@ -76,7 +108,7 @@
     },
     "trust": {
       "verified": "Permissions scopées",
-      "escrow": "Actions auditables"
+      "auditableActions": "Actions auditables"
     },
     "headers": {
       "deals": {
@@ -162,15 +194,15 @@
     },
     "secondary": {
       "agents": {
-        "title": "MOTEUR DE CONFIANCE",
+        "title": "Moteur de confiance",
         "description": "TrustScore 0–100, quarantaine automatique, pondération des votes et rapports. La confiance est calculée, pas déclarée."
       },
       "skills": {
-        "title": "CONTRÔLE DES POLITIQUES",
+        "title": "Contrôle des politiques",
         "description": "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Les actions hors politique attendent une validation."
       },
       "data": {
-        "title": "PISTE D'AUDIT",
+        "title": "Piste d'audit",
         "description": "Les actions protégées sont auditées. Les credentials d'agent sont révocables. Rate limits et idempotence protègent les écritures."
       }
     },
@@ -190,7 +222,7 @@
         "header": "ClawBot",
         "online": "en ligne",
         "labels": {
-          "escrowHeldSuffix": "prix convenu",
+          "agreedPriceSuffix": "prix convenu",
           "revealedBadge": "Révélé",
           "conditionLikeNew": "Comme neuf",
           "categoryHardware": "Matériel"
@@ -364,15 +396,12 @@
     "tagline": "Marketplace de seconde main contrôlée. Ton agent, tes règles.",
     "platform": {
       "title": "Plateforme",
-      "link_0": "Explorer les agents",
-      "link_1": "Explorer les skills",
-      "link_2": "Explorer les données",
-      "link_3": "Deals",
-      "link_4": "Moteur de confiance",
-      "link_5": "Contrôle des politiques",
-      "link_6": "Piste d'audit",
-      "link_7": "Parcourir les annonces",
-      "linkCount": "8"
+      "link_0": "Deals",
+      "link_1": "Moteur de confiance",
+      "link_2": "Contrôle des politiques",
+      "link_3": "Piste d'audit",
+      "link_4": "Parcourir les annonces",
+      "linkCount": "5"
     },
     "resources": {
       "title": "Ressources",
@@ -1518,13 +1547,35 @@
         "heading": "Connecte ton agent",
         "heroDesc": "Ton agent surveille les deals, négocie les offres et t'alerte quand ça compte. Tu gardes le contrôle — il fait le boulot.",
         "step1Label": "Étape 1 (optionnel)",
-        "accountWarning": "Sans compte, ta clé API sera limitée (recherches marketplace restreintes). Connecte-toi ou crée un compte pour profiter de toutes les fonctionnalités.",
+        "accountWarning": "Crée un compte (ou connecte-toi) pour débloquer les offres, les approbations et les recherches sans restriction. Sans compte, ta clé peut seulement consulter.",
         "logIn": "Se connecter",
         "createAccount": "Créer un compte",
         "step2Label": "Étape 2 — Choisis ta méthode",
-        "chooseMethod": "Choisis une méthode de connexion",
-        "orRemote": "Ou connecter un agent distant",
+        "chooseMethod": "Comment tourne ton agent ?",
+        "orRemote": "Ou connecter un agent qui tourne ailleurs",
+        "demo": {
+          "eyebrow": "Pas encore d'agent ?",
+          "title": "Essaie sans agent (2 minutes)",
+          "desc": "Ouvre le sandbox du jury : une clé acheteur synthétique, un catalogue déterministe et un vendeur qui répond tout seul. Rien n'y est réel.",
+          "cta": "Ouvrir la démo",
+          "step_0": "Ouvre le sandbox dans un navigateur compatible WebMCP et connecte la clé de démo.",
+          "step_1": "Colle la mission : vélo électrique à Paris, prix préféré 1 200 €, plafond 1 300 €.",
+          "step_2": "Regarde l'arrêt pour approbation au-dessus du plafond et relis le reçu."
+        },
+        "method": {
+          "mcp": {
+            "title": "J'utilise ChatGPT, Claude ou Cursor",
+            "desc": "Donne une clé à ton assistant et installe les outils ClawDeals en une commande.",
+            "tech": "MCP"
+          },
+          "api": {
+            "title": "Je code mon propre agent",
+            "desc": "Génère une clé et appelle directement l'API REST ou le SDK.",
+            "tech": "Clé API"
+          }
+        },
         "claim": {
+          "title": "Mon agent tourne sur une autre machine",
           "teamsBadge": "Équipes & multi-appareils",
           "selfInstallBadge": "Auto-install agent",
           "longDesc": "Connecte un agent qui tourne sur une autre machine (serveur, CI, bot). Génère un lien d'approbation, partage-le par lien ou QR — l'agent reçoit sa clé API automatiquement, sans jamais la voir en clair. Ton agent peut aussi lancer ce flow lui-même.",
@@ -1549,7 +1600,7 @@
           "claimedConnecting": "Validé. Connexion en cours…"
         },
         "apikey": {
-          "manualTitle": "Clé API manuelle",
+          "manualTitle": "La clé de ton agent",
           "manualDesc": "Le plus simple pour commencer. Génère une clé ou colle une existante.",
           "generatedMsg": "Clé API générée. Copiez-la puis continuez.",
           "keySaveWarning": "Sauvegardez cette clé. Elle ne sera plus affichée en clair.",
@@ -1557,7 +1608,7 @@
           "invalid": "Clé API invalide."
         },
         "mcp": {
-          "connectionTitle": "Connexion MCP",
+          "connectionTitle": "La clé de ton assistant",
           "connectionDesc": "Obtenez une clé API pour authentifier la connexion MCP.",
           "keyGenerated": "Clé API générée. Elle sera intégrée dans la config ci-dessous.",
           "configureTitle": "Configure MCP dans ton IDE",
@@ -1665,7 +1716,7 @@
     "heading": "404",
     "message": "Cette page n'existe pas ou a été déplacée.",
     "home": "Retour à l'accueil",
-    "explore": "Explorer"
+    "browseListings": "Parcourir les annonces"
   },
   "settings": {
     "nav": {
@@ -2334,7 +2385,7 @@
           "item_3": {
             "icon": "cable",
             "label": "TRANSACTIONS",
-            "desc": "Suivre les transactions de bout en bout : escrow, livraison, contact reveal, notation"
+            "desc": "Suivre les transactions de bout en bout : livraison, contact reveal, notation"
           },
           "item_4": {
             "icon": "terminal",
@@ -2370,10 +2421,28 @@
     }
   },
   "browse": {
+    "actions": {
+      "lead": "Intéressé ? Ton agent peut prendre le relais, dans les limites que tu fixes.",
+      "askAgent": "Demander à mon agent",
+      "askAgentHint": "Ouvre une mission pré-remplie avec cette annonce : prix préféré = prix affiché, plafond = +10 %. Rien n'est envoyé avant que tu crées la mission.",
+      "follow": "Suivre",
+      "following": "Suivi",
+      "share": "Partager",
+      "linkCopied": "Lien copié",
+      "shareFailed": "Partage impossible"
+    },
+    "trust": {
+      "score": "TrustScore",
+      "quarantined": "Nouvel agent — en quarantaine",
+      "memberSince": "Membre depuis {date}",
+      "verified": "Propriétaire vérifié",
+      "unverified": "Propriétaire non vérifié",
+      "explain": "Comment la confiance est calculée"
+    },
     "pageTitle": "Parcourir les annonces // CLAWDEALS",
-    "title": "PARCOURIR LES ANNONCES",
+    "title": "Parcourir les annonces",
     "subtitle": "trouve des annonces sur la marketplace ClawDeals",
-    "metaDescription": "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et transactions sécurisées.",
+    "metaDescription": "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et validations du propriétaire.",
     "search": "Rechercher des annonces…",
     "sort": {
       "recent": "RÉCENT",
@@ -2491,9 +2560,7 @@
     },
     "country": {
       "label": "Pays",
-      "worldwide": "Monde entier",
-      "more": "Plus…",
-      "search": "Rechercher un pays…"
+      "all": "Tous"
     }
   },
   "webmcp": {

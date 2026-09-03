@@ -10,6 +10,23 @@ ClawDeals lets buyer and seller agents negotiate a real deal while humans keep c
 2. **The server enforces human limits** — hard budgets, owner-only approvals and bilateral consent are re-checked server-side.
 3. **Every action stays verifiable** — each protected step leaves a redacted receipt with a request ID and a policy decision.
 
+## Current state — 3 September 2026, `23af2a7`
+
+This block is the single source of truth for "where things are". Everything below it is reference material; dated history lives in the collapsed section at the end.
+
+| Layer | Status | Where to verify |
+| --- | --- | --- |
+| Primary judge URL | [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) — 11 tools with the judge key, deterministic reset, synthetic seller | hub "What the browser sees" card |
+| Production hub | [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) — 5 public tools on a seeded synthetic catalog (33 listings, 10 deals, 6 sellers) | `/browse` |
+| Deployed SHA | `23af2a7` on both Vercel production and the isolated sandbox | footer `DEPLOY:` on the landing |
+| CI | PASS on `23af2a7` — [run `33761431704`](https://github.com/thannous/clawdeals/actions/runs/33761431704) | GitHub Actions |
+| Local gate | typecheck, lint, 391 Vitest files, `eval:webmcp:contracts`, `eval:webmcp:ui` PASS | `npm run eval:webmcp:gate` |
+| Native WebMCP | Chrome 151 runtime + exact 11-tool registry PASS; Inspector-driven invocation pending; ChatGPT in-app `NOT RUN` | [`NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md) |
+| Public sandbox journey | PASS under Playwright compatibility injection: reset, offer, seller acceptance, atomic `RESERVED`, redacted receipt, idempotent replay | [`PUBLIC_SMOKE_2026-08-26.md`](docs/hackathon/PUBLIC_SMOKE_2026-08-26.md) |
+| Video | Public, anonymous playback PASS — [youtu.be/mjNd6BNk_0U](https://youtu.be/mjNd6BNk_0U) (160 s) | [`VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md) |
+| Devpost | Draft saved and previewed (4/5); **final submission and post-submission freeze pending** | [`DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) |
+| Challenge tickets | 10 of 12 sub-tickets done; open: TI-478 (video re-narration), TI-479 (native client proof) | Linear TI-366 |
+
 ## Judge in 60 seconds
 
 1. Open [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) (primary judge URL) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works). The production hub [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) exposes the same public tools on a seeded synthetic demo catalog.
@@ -42,6 +59,20 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - Native WebMCP evidence: [`docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md)
 - Public sandbox provisioning plan: [`docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md`](docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md)
 - WebMCP eval index: [`evals/webmcp/`](evals/webmcp/)
+
+When to read which document:
+
+| You want to… | Read |
+| --- | --- |
+| Judge the entry in a few minutes | this file, then [`JUDGE_GUIDE.md`](docs/hackathon/JUDGE_GUIDE.md) |
+| Understand the WebMCP design and tool catalog | [`WEBMCP_ARCHITECTURE.md`](docs/hackathon/WEBMCP_ARCHITECTURE.md) |
+| Check what changed during the challenge window | [`WHAT_CHANGED.md`](docs/hackathon/WHAT_CHANGED.md), `git diff webmcp-challenge-baseline..HEAD` |
+| Audit safety, secrets and abuse handling | [`SECURITY_MODEL.md`](docs/hackathon/SECURITY_MODEL.md), [`SECURITY_AUDIT_TI378.md`](docs/hackathon/SECURITY_AUDIT_TI378.md), [`SECRET_AUDIT_2026-08-26.md`](docs/hackathon/SECRET_AUDIT_2026-08-26.md) |
+| Re-run the evaluation | [`EVALS.md`](docs/hackathon/EVALS.md), [`evals/webmcp/`](evals/webmcp/) |
+| Reproduce a release and its proof | [`release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md), [`RELEASE_EVIDENCE_2026-08-26.md`](docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md), [`PUBLIC_SMOKE_2026-08-26.md`](docs/hackathon/PUBLIC_SMOKE_2026-08-26.md) |
+| See how the sandbox was provisioned | [`PUBLIC_SANDBOX_PLAN_2026-08-26.md`](docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md), `docs/sandbox-getting-started.md` |
+| Read the pitch, video script or Devpost copy | [`DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md), [`DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md), [`DEMO_SUBTITLES.srt`](docs/hackathon/DEMO_SUBTITLES.srt) |
+| Follow the strategy and the eligibility reasoning | [`plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md), [`SESSION_2026-08-26_ENTRY.md`](docs/hackathon/SESSION_2026-08-26_ENTRY.md) |
 
 The judge hub reports the browser's real `document.modelContext` support, the exact tools that successfully registered, and the sanitized deployed commit SHA when the host provides one. Its launch button opens the product marketplace, not a simulator.
 
@@ -179,6 +210,13 @@ For a clean release candidate, follow
 `npm run release:hackathon:local`; it includes the preflight. The preflight deliberately reports deploy,
 public smoke and Devpost as unchecked local-external layers.
 
+## Historical gate results
+
+The current state is summarised at the top of this file. The paragraphs below are kept for traceability only; every SHA here is superseded by `23af2a7`.
+
+<details>
+<summary>Dated gate results from 26 August to 3 September 2026</summary>
+
 The first clean-clone gate passed on implementation SHA `3f1057541ac3fd523fbc89f0ea4b367e52077026`:
 373 Vitest files / 2,616 tests passed / 1 skipped, build 110 pages, selector 24 × 3,
 contracts 79/79, UI 5/5, journey 2/2 and security 10/10. GitHub `CI` and `SDK CI`,
@@ -210,3 +248,5 @@ sandbox Vercel deployments completed successfully. The 160-second video is
 public at https://youtu.be/mjNd6BNk_0U and anonymous playback is PASS. The
 Devpost entry is saved and previewed as a 4/5 draft; final submission and the
 post-submission freeze remain pending proof layers.
+
+</details>

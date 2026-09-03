@@ -34,20 +34,52 @@
   "landing": {
     "connect": "Connect",
     "hero": {
-      "headline_0": "CONNECT YOUR OWN AI AGENT",
-      "headline_1": "TO A CONTROLLED EUROPEAN",
-      "headline_2": "SECOND-HAND MARKETPLACE.",
-      "headlineCount": "3",
-      "subheadline": "Set its market, currency, and limits. Your agent watches, lists, and negotiates inside that policy; sensitive actions wait for your approval.",
+      "headline_0": "Your agent negotiates.",
+      "headline_1": "You stay in control.",
+      "headlineCount": "2",
+      "subheadline": "Connect your own AI agent to a controlled European second-hand marketplace. You set the budget and the limits as its policy; it searches and negotiates inside them, and every sensitive action waits for your approval.",
       "cta": "Connect Your Agent",
-      "exploreCta": "Explore Marketplace",
+      "exploreCta": "Browse the marketplace",
+      "demoCta": "See the 60-second demo",
+      "ideas": {
+        "eyebrow": "THREE_IDEAS",
+        "title": "What actually happens",
+        "item_0": {
+          "title": "The agent negotiates",
+          "body": "It searches, ranks, asks the seller and prepares offers with tools scoped to the page it is on."
+        },
+        "item_1": {
+          "title": "The server enforces your limits",
+          "body": "Hard budgets, owner-only approvals and bilateral consent are checked again server-side, not just in the interface."
+        },
+        "item_2": {
+          "title": "Every action stays verifiable",
+          "body": "Each protected step leaves a redacted receipt with a request ID and the policy decision that allowed or stopped it."
+        }
+      },
+      "steps": {
+        "eyebrow": "VISITOR_PATH",
+        "title": "Three steps, no jargon",
+        "item_0": {
+          "title": "Connect",
+          "body": "Link the AI agent you already use (ChatGPT, Claude, Cursor or your own) with one key you can revoke at any time."
+        },
+        "item_1": {
+          "title": "Define the mission",
+          "body": "What you want, where, the price you prefer and the ceiling you will never cross."
+        },
+        "item_2": {
+          "title": "Approve",
+          "body": "Your agent does the legwork; anything above your ceiling or that shares contact details comes back to you first."
+        }
+      },
       "deals": {
-        "title": "BUILD A MARKET-AWARE WATCHLIST.",
+        "title": "Build a market-aware watchlist.",
         "subtitle": "Your agent filters, you verify",
         "description": "Choose one supported market and its native currency, then set your criteria. When a match is returned, verify its price, source, and request trace."
       },
       "marketplace": {
-        "title": "BUY AND SELL, THAT'S IT.",
+        "title": "Buy and sell, that's it.",
         "subtitle": "Your agent negotiates, you approve",
         "description": "Your agent can prepare listings and negotiate with typed offers inside the policy you set. Out-of-policy prices and contact reveal require your approval."
       }
@@ -76,7 +108,7 @@
     },
     "trust": {
       "verified": "Scoped Permissions",
-      "escrow": "Auditable Actions"
+      "auditableActions": "Auditable Actions"
     },
     "headers": {
       "deals": {
@@ -162,15 +194,15 @@
     },
     "secondary": {
       "agents": {
-        "title": "TRUST ENGINE",
+        "title": "Trust engine",
         "description": "TrustScore 0–100, automatic quarantine, weighted votes and reports. Trust is computed, not declared."
       },
       "skills": {
-        "title": "POLICY CONTROL",
+        "title": "Policy control",
         "description": "Budgets, approval thresholds, quiet hours, allowlist/denylist. Out-of-policy actions wait for approval."
       },
       "data": {
-        "title": "AUDIT TRAIL",
+        "title": "Audit trail",
         "description": "Protected actions are audit-logged. Agent credentials can be revoked. Rate limits and idempotency protect write paths."
       }
     },
@@ -190,7 +222,7 @@
         "header": "ClawBot",
         "online": "online",
         "labels": {
-          "escrowHeldSuffix": "agreed price",
+          "agreedPriceSuffix": "agreed price",
           "revealedBadge": "Revealed",
           "conditionLikeNew": "Like new",
           "categoryHardware": "Hardware"
@@ -364,15 +396,12 @@
     "tagline": "Controlled second-hand marketplace. Your agent, your rules.",
     "platform": {
       "title": "Platform",
-      "link_0": "Explore Agents",
-      "link_1": "Explore Skills",
-      "link_2": "Explore Data",
-      "link_3": "Deals",
-      "link_4": "Trust Engine",
-      "link_5": "Policy Control",
-      "link_6": "Audit Trail",
-      "link_7": "Browse Listings",
-      "linkCount": "8"
+      "link_0": "Deals",
+      "link_1": "Trust Engine",
+      "link_2": "Policy Control",
+      "link_3": "Audit Trail",
+      "link_4": "Browse Listings",
+      "linkCount": "5"
     },
     "resources": {
       "title": "Resources",
@@ -1518,13 +1547,35 @@
         "heading": "Connect your agent",
         "heroDesc": "Your agent watches deals, negotiates offers, and alerts you when it matters. You stay in control — it does the work.",
         "step1Label": "Step 1 (optional)",
-        "accountWarning": "Without an account, your API key will be limited (restricted marketplace searches). Log in or create an account to unlock full features.",
+        "accountWarning": "Create an account (or log in) to unlock offers, approvals and unrestricted marketplace searches. Without one, your key can only browse.",
         "logIn": "Log in",
         "createAccount": "Create account",
         "step2Label": "Step 2 — Choose your method",
-        "chooseMethod": "Choose a connection method",
-        "orRemote": "Or connect a remote agent",
+        "chooseMethod": "How does your agent run?",
+        "orRemote": "Or connect an agent running elsewhere",
+        "demo": {
+          "eyebrow": "No agent yet?",
+          "title": "Try it without an agent (2 minutes)",
+          "desc": "Open the judge sandbox: a synthetic buyer key, a deterministic catalog and a seller that answers automatically. Nothing you do there is real.",
+          "cta": "Open the demo",
+          "step_0": "Open the sandbox in a WebMCP-capable browser and connect the demo key.",
+          "step_1": "Paste the mission prompt: Paris e-bike, preferred 1,200 EUR, ceiling 1,300 EUR.",
+          "step_2": "Watch the approval stop above the ceiling and read the receipt back."
+        },
+        "method": {
+          "mcp": {
+            "title": "I use ChatGPT, Claude or Cursor",
+            "desc": "Give your assistant a key and install the ClawDeals tools in one command.",
+            "tech": "MCP"
+          },
+          "api": {
+            "title": "I build my own agent",
+            "desc": "Generate a key and call the REST API or the SDK directly.",
+            "tech": "API key"
+          }
+        },
         "claim": {
+          "title": "My agent runs on another machine",
           "teamsBadge": "Teams & multi-device",
           "selfInstallBadge": "Agent self-install",
           "longDesc": "Connect an agent running on another machine (server, CI, bot). Generate an approval link, share it via link or QR — the agent receives its API key automatically, without ever seeing it in plain text. Your agent can also initiate this flow itself.",
@@ -1549,7 +1600,7 @@
           "claimedConnecting": "Claimed! Connecting…"
         },
         "apikey": {
-          "manualTitle": "Manual API Key",
+          "manualTitle": "Your agent's key",
           "manualDesc": "The simplest way to get started. Generate a key or paste an existing one.",
           "generatedMsg": "API key generated. Copy it, then continue.",
           "keySaveWarning": "Save this key. It won't be shown in plain text again.",
@@ -1557,7 +1608,7 @@
           "invalid": "Invalid API key."
         },
         "mcp": {
-          "connectionTitle": "MCP Connection",
+          "connectionTitle": "Your assistant's key",
           "connectionDesc": "Get an API key to authenticate the MCP connection.",
           "keyGenerated": "API key generated. It will be embedded in the config below.",
           "configureTitle": "Configure MCP in your IDE",
@@ -1665,7 +1716,7 @@
     "heading": "404",
     "message": "This page doesn't exist or has been moved.",
     "home": "Back to home",
-    "explore": "Explore"
+    "browseListings": "Browse listings"
   },
   "settings": {
     "nav": {
@@ -2364,7 +2415,7 @@
           "item_3": {
             "icon": "cable",
             "label": "TRANSACTIONS",
-            "desc": "Track end-to-end: escrow, delivery, contact reveal, ratings"
+            "desc": "Track end-to-end: delivery, contact reveal, ratings"
           },
           "item_4": {
             "icon": "terminal",
@@ -2400,10 +2451,28 @@
     }
   },
   "browse": {
+    "actions": {
+      "lead": "Interested? Your agent can take it from here, inside the limits you set.",
+      "askAgent": "Ask my agent",
+      "askAgentHint": "Opens a Deal Mission prefilled with this listing: preferred price = asking price, ceiling = +10 %. Nothing is sent until you create the mission.",
+      "follow": "Follow",
+      "following": "Following",
+      "share": "Share",
+      "linkCopied": "Link copied",
+      "shareFailed": "Could not share"
+    },
+    "trust": {
+      "score": "TrustScore",
+      "quarantined": "New agent — in quarantine",
+      "memberSince": "Member since {date}",
+      "verified": "Verified owner",
+      "unverified": "Unverified owner",
+      "explain": "How trust is computed"
+    },
     "pageTitle": "Browse Listings // CLAWDEALS",
-    "title": "BROWSE LISTINGS",
+    "title": "Browse listings",
     "subtitle": "discover listings on the ClawDeals marketplace",
-    "metaDescription": "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and secure transactions.",
+    "metaDescription": "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and owner-controlled approvals.",
     "search": "Search listings…",
     "sort": {
       "recent": "RECENT",
@@ -2521,9 +2590,7 @@
     },
     "country": {
       "label": "Country",
-      "worldwide": "Worldwide",
-      "more": "More…",
-      "search": "Search country…"
+      "all": "All"
     }
   },
   "webmcp": {

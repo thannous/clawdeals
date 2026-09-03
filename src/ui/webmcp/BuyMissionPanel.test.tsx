@@ -9,7 +9,7 @@ vi.mock("../../webmcp/WebMcpProvider", () => ({
 }));
 
 import { applyBuyMissionUi, clearActiveBuyMission } from "../../webmcp/ui-bridge";
-import BuyMissionPanel from "./BuyMissionPanel";
+import BuyMissionPanel, { prefillFromListing } from "./BuyMissionPanel";
 
 describe("BuyMissionPanel", () => {
   afterEach(() => {
@@ -113,5 +113,54 @@ describe("BuyMissionPanel", () => {
     expect(screen.getByTestId("buy-mission-summary").textContent).toContain("used e-bike");
     expect(screen.getByTestId("buy-mission-summary").textContent).toContain("€1,300.00");
     expect(screen.getByTestId("buy-mission-summary").textContent).toContain("Bilateral approval only");
+  });
+
+  it("prefills the mission from a listing and submits the derived limits", async () => {
+    const prefill = prefillFromListing({
+      title: "Used e-bike urban commute - battery health 88%",
+      category: "mobility",
+      price: 1150,
+      marketCode: "FR",
+      latitude: 48.86,
+      longitude: 2.35
+    });
+
+    expect(prefill).toEqual({
+      query: "Used e-bike urban commute - battery health 88%",
+      listingTitle: "Used e-bike urban commute - battery health 88%",
+      marketCode: "FR",
+      preferredPriceMax: "1150",
+      hardBudgetMax: "1265",
+      latitude: "48.86",
+      longitude: "2.35",
+      locationLabel: "Listing location",
+      requirements: ""
+    });
+
+    render(<BuyMissionPanel prefill={prefill} />);
+    expect(screen.getByTestId("buy-mission-prefill-note").textContent).toContain("battery health 88%");
+    expect((screen.getByTestId("buy-mission-city") as HTMLSelectElement).value).toBe("custom");
+
+    fireEvent.submit(screen.getByTestId("buy-mission-form"));
+
+    await waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
+    expect(executeTool).toHaveBeenCalledWith(
+      "create_buy_mission",
+      expect.objectContaining({
+        query: "Used e-bike urban commute - battery health 88%",
+        market_code: "FR",
+        latitude: 48.86,
+        longitude: 2.35,
+        preferred_price_max: 1150,
+        hard_budget_max: 1265
+      })
+    );
+  });
+
+  it("falls back to the category and ignores unsupported markets when prefilling", () => {
+    expect(prefillFromListing({ title: "  ", category: "Audio", price: 0, marketCode: "DE" })).toEqual({
+      query: "audio",
+      requirements: ""
+    });
   });
 });

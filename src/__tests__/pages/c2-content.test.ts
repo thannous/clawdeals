@@ -58,11 +58,11 @@ describe("C2 SEO and activation content", () => {
       const messages = MESSAGES[locale];
       const copy = LANDING_COPY[locale];
 
-      expect(copy.hero.headline).toEqual([
-        messages.landing.hero.headline_0,
-        messages.landing.hero.headline_1,
-        messages.landing.hero.headline_2
-      ]);
+      const headlineCount = parseInt(messages.landing.hero.headlineCount, 10);
+      expect(headlineCount).toBeLessThanOrEqual(2);
+      expect(copy.hero.headline).toEqual(
+        Array.from({ length: headlineCount }, (_, index) => messages.landing.hero[`headline_${index}` as "headline_0"])
+      );
       expect(copy.hero.subheadline).toBe(messages.landing.hero.subheadline);
       expect(copy.showcase.marketplace.title).toBe(messages.landing.showcase.marketplace.title);
       expect(copy.footer.tagline).toBe(messages.footer.tagline);

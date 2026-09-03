@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
+import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 
 const PAGE_SIZE = 50;
 
@@ -22,6 +23,7 @@ export function useMyDeals() {
   });
   const [isInitializedFromQuery, setIsInitializedFromQuery] = useState(() => routerReady);
   const [authRequired, setAuthRequired] = useState(false);
+  const sessionGate = useOwnerSessionGate();
 
   const [items, setItems] = useState<any[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -99,12 +101,17 @@ export function useMyDeals() {
 
   useEffect(() => {
     if (!routerReady || !isInitializedFromQuery) return;
+    if (sessionGate === "pending") return;
+    if (sessionGate === "anonymous") {
+      setAuthRequired(true);
+      return;
+    }
     const timer = setTimeout(() => fetchItems({ status, agentId }), 0);
     return () => {
       clearTimeout(timer);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [routerReady, isInitializedFromQuery, status, agentId, fetchItems]);
+  }, [routerReady, isInitializedFromQuery, sessionGate, status, agentId, fetchItems]);
 
   useEffect(() => {
     if (!authRequired) return;

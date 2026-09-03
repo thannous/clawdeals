@@ -11,7 +11,7 @@ import { getToolsForRoute, WEBMCP_TOOLS } from "../../webmcp/tools";
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
 import { getStoredApiKey, subscribeStoredApiKey } from "../developer/storage";
 import AgentKeyConnect from "./AgentKeyConnect";
-import BuyMissionPanel from "./BuyMissionPanel";
+import BuyMissionPanel, { prefillFromListing, type BuyMissionPrefill } from "./BuyMissionPanel";
 import DealRoomPanel from "./DealRoomPanel";
 import JudgeResetButton from "./JudgeResetButton";
 import MissionMilestones from "./MissionMilestones";
@@ -32,6 +32,26 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
   const { supported, registered, registeredToolNames, lastRegisterError } = useWebMcp();
   const apiKey = useSyncExternalStore(subscribeStoredApiKey, getStoredApiKey, () => null);
   const judgeReset = useJudgeReset(apiKey);
+  // "Ask my agent" on a listing page lands here with the listing summarised in
+  // the query string so the mission form opens prefilled.
+  const missionPrefill = useMemo<BuyMissionPrefill | null>(() => {
+    if (!router.isReady) return null;
+    const single = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+    const listingId = single(router.query.listing);
+    if (!listingId) return null;
+    const toNumber = (value: string | undefined) => {
+      const parsed = value ? Number(value) : NaN;
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+    return prefillFromListing({
+      title: single(router.query.title) ?? null,
+      category: single(router.query.category) ?? null,
+      price: toNumber(single(router.query.price)),
+      marketCode: single(router.query.market) ?? null,
+      latitude: toNumber(single(router.query.lat)),
+      longitude: toNumber(single(router.query.lng))
+    });
+  }, [router.isReady, router.query]);
   const contextualTools = useMemo(
     () => {
       if (registeredToolNames.length === 0) {
@@ -128,7 +148,7 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
           </section>
         </div>
 
-        <BuyMissionPanel />
+        <BuyMissionPanel key={missionPrefill ? `prefill-${String(router.query.listing)}` : "default"} prefill={missionPrefill} />
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DealRoomPanel />

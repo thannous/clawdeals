@@ -13,7 +13,7 @@ test.describe("Start page: agent naming", () => {
       window.localStorage.setItem("clawdeals_api_key", key);
     }, API_KEY);
 
-    await page.route("**/api/v1/auth/me", async (route) => {
+    await page.route(/\/api\/v1\/auth\/(me|session)$/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -75,7 +75,7 @@ test.describe("Start page: agent naming", () => {
     let claimCalled = false;
     let authProbeCount = 0;
 
-    await page.route("**/api/v1/auth/me", async (route) => {
+    await page.route(/\/api\/v1\/auth\/(me|session)$/, async (route) => {
       authProbeCount += 1;
       const isAuthenticated = authProbeCount >= 2;
       if (!isAuthenticated) {
@@ -144,6 +144,7 @@ test.describe("Start page: agent naming", () => {
 
     await page.goto("/start");
 
+    await page.getByTestId("connect-method-api").click();
     await page.getByRole("button", { name: "I have a key" }).first().click();
     await page.locator("#connect-paste-key").fill(API_KEY);
     await page.getByTestId("validate-key").click();
@@ -163,7 +164,7 @@ test.describe("Start page: agent naming", () => {
       window.localStorage.setItem("clawdeals_api_key", key);
     }, API_KEY);
 
-    await page.route("**/api/v1/auth/me", async (route) => {
+    await page.route(/\/api\/v1\/auth\/(me|session)$/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -245,7 +246,7 @@ test.describe("Start page: agent naming", () => {
       window.localStorage.setItem("clawdeals_api_key", key);
     }, API_KEY);
 
-    await page.route("**/api/v1/auth/me", async (route) => {
+    await page.route(/\/api\/v1\/auth\/(me|session)$/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -325,7 +326,7 @@ test.describe("Start page: agent naming", () => {
       window.localStorage.setItem("clawdeals_api_key", key);
     }, API_KEY);
 
-    await page.route("**/api/v1/auth/me", async (route) => {
+    await page.route(/\/api\/v1\/auth\/(me|session)$/, async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",

@@ -29,7 +29,7 @@ function MiniListingCard({
   );
 }
 
-function EscrowBadge({ amount, suffix }: { amount: string; suffix: string }) {
+function AgreedPriceBadge({ amount, suffix }: { amount: string; suffix: string }) {
   return (
     <div className="bg-bg border border-border p-2 mt-1.5 rounded flex items-center gap-2">
       <div className="w-4 h-4 border border-success rounded-sm flex items-center justify-center">
@@ -88,7 +88,7 @@ export default function MarketPhone() {
         content: (
           <>
             <p className="text-xs text-text mb-0.5">{t("chat.marketplace.messages.accepted")}</p>
-            <EscrowBadge amount="1 380\u20ac" suffix={t("chat.marketplace.labels.escrowHeldSuffix")} />
+            <AgreedPriceBadge amount="1 380\u20ac" suffix={t("chat.marketplace.labels.agreedPriceSuffix")} />
           </>
         )
       },

@@ -98,6 +98,43 @@ function withForwardHeaders(request: Request, target: string): Request {
   return new Request(upstream, { headers });
 }
 
+// Build assets are immutable and idempotent to fetch, so a transient origin 5xx
+// during a Vercel deployment cutover is retried instead of breaking hydration
+// for the page that referenced the chunk (observed as sporadic 503s on
+// `/_next/static/immutable/chunks/*.js` right after deploys).
+const STATIC_ASSET_PREFIX = "/_next/static/";
+const STATIC_RETRY_DELAYS_MS = [150, 400];
+
+function isRetryableStaticRequest(request: Request, pathname: string) {
+  return request.method === "GET" && pathname.startsWith(STATIC_ASSET_PREFIX);
+}
+
+async function fetchStaticWithRetry(upstream: Request): Promise<Response> {
+  let response: Response | null = null;
+  for (let attempt = 0; attempt <= STATIC_RETRY_DELAYS_MS.length; attempt += 1) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, STATIC_RETRY_DELAYS_MS[attempt - 1]));
+    }
+    try {
+      response = await fetch(upstream.clone(), { redirect: "manual" });
+    } catch (error) {
+      console.log(JSON.stringify({ event: "proxy.static_fetch_error", attempt, path: new URL(upstream.url).pathname }));
+      if (attempt === STATIC_RETRY_DELAYS_MS.length) throw error;
+      continue;
+    }
+    if (response.status < 500) {
+      return response;
+    }
+    console.log(JSON.stringify({
+      event: "proxy.static_retry",
+      attempt,
+      status: response.status,
+      path: new URL(upstream.url).pathname
+    }));
+  }
+  return response as Response;
+}
+
 const edgeRouterWorker = {
   async fetch(request: Request, env: EdgeRouterWorkerEnv): Promise<Response> {
     const url = new URL(request.url);
@@ -130,7 +167,11 @@ const edgeRouterWorker = {
     }
 
     if (decision.type === "proxy") {
-      return fetch(withForwardHeaders(request, decision.target), { redirect: "manual" });
+      const upstream = withForwardHeaders(request, decision.target);
+      if (isRetryableStaticRequest(request, url.pathname)) {
+        return fetchStaticWithRetry(upstream);
+      }
+      return fetch(upstream, { redirect: "manual" });
     }
 
     if (decision.type === "error") {

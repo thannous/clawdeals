@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 const MOCK_OWNER_ID = "11111111-1111-4111-a111-111111111111";
 
 function mockAuthMe(page: any) {
-  return page.route("**/api/v1/auth/me**", async (route: any) => {
+  return page.route(/\/api\/v1\/auth\/(me|session)(\?.*)?$/, async (route: any) => {
     return route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -60,7 +60,7 @@ function mockOwnerGet(page: any, overrides: Record<string, unknown> = {}) {
 
 test.describe("Settings: Profile", () => {
   test("redirects to login when auth is missing", async ({ page }) => {
-    await page.route("**/api/v1/auth/me**", async (route) => {
+    await page.route(/\/api\/v1\/auth\/(me|session)(\?.*)?$/, async (route) => {
       return route.fulfill({
         status: 401,
         contentType: "application/json",
