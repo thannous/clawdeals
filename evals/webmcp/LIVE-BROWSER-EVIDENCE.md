@@ -79,8 +79,8 @@ observed capability result. Do not convert lack of access into a pass or fail.
 
 ## Chrome WebMCP
 
-Status: **INDETERMINATE — Chrome 151 loaded the deployed build, but its WebMCP
-runtime was not active.**
+Status: **PARTIAL PASS — Chrome 151 exposes the native WebMCP runtime and exact
+eleven-tool authenticated registry; Inspector-driven execution is pending.**
 
 Use a supported Chrome build and enable `chrome://flags/#enable-webmcp-testing`
 when the runtime still requires the experimental flag.
@@ -88,18 +88,25 @@ when the runtime still requires the experimental flag.
 | Evidence | Value |
 | --- | --- |
 | Chrome version | `151.0.0.0` |
-| Flag state | Not inspectable through the managed browser; no setting changed |
-| Tested URL | `https://clawdeals.com/webmcp-challenge` |
-| Build commit | `9e7102ea4dcc879aa1f5ffb4e68bb712cf11c96e` |
-| Test date/time (UTC) | `2026-08-26T14:39Z` |
-| Native WebMCP supported | INDETERMINATE — `document.modelContext` absent in this profile |
-| Public/authenticated registry | Pending |
+| Flag state | User enabled `enable-webmcp-testing` and relaunched Chrome |
+| Tested URL | `https://sandbox.clawdeals.com/webmcp-challenge` |
+| Build commit | `23af2a7cd2a62a308acc6210c6fbf00e08b539f4` |
+| Test date/time (UTC) | `2026-09-03` connected session; exact timestamp not retained |
+| Native WebMCP supported | PASS — hub reported `Runtime Enabled` and `Browser API Supported` |
+| Public/authenticated registry | PASS — `getTools()` / `toolchange` matched the exact eleven-tool authenticated registry |
 | First selected tool | Pending |
 | Full sequence | Pending |
 | Confirmation approve/deny | Pending |
 | Receipt ID | Pending |
 | PII/secret scan | Pending |
 | Video/screenshot artifact | None retained; textual browser state recorded |
+
+The earlier 26 August observation on `9e7102e` remains historical evidence: the
+flag was not inspectable then and that profile exposed no runtime. The 3
+September rerun supersedes the capability verdict but not the pending execution
+rows. The official WebMCP Model Context Tool Inspector was not installed in the
+connected profile, so registry discovery must not be presented as native Chrome
+tool invocation.
 
 ## Evidence boundary
 
@@ -108,4 +115,5 @@ when the runtime still requires the experimental flag.
   wiring and UI behavior.
 - Isolated Playwright plus Supabase proves the synthetic marketplace workflow.
 - Only the completed Codex section proves native in-app WebMCP behavior here.
-  ChatGPT is not run and Chrome remains indeterminate.
+  ChatGPT is not run. Chrome separately proves native runtime and registry
+  discovery, not Inspector-selected execution.

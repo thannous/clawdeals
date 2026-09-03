@@ -321,8 +321,8 @@ Only valid after DEPLOYED proof shows the live hosts serve `<TI376_CANDIDATE_SHA
 
 URLs:
 
-- Judge hub: `https://clawdeals.com/webmcp-challenge`
-- Marketplace demo: `https://clawdeals.com/webmcp`
+- Judge hub: `https://sandbox.clawdeals.com/webmcp-challenge`
+- Production marketplace: `https://clawdeals.com/webmcp-challenge`
 
 Private-window smoke:
 
@@ -343,12 +343,12 @@ Chrome path, if used: Chrome 149+ with `chrome://flags/#enable-webmcp-testing`. 
 | --- | --- | --- |
 | Hub HTTP 200, commit/build identity if shown | HTTP headers + rendered HTML | PASS on reviewed implementation `2ed489d`; later documentation-only descendants may be displayed |
 | Public tool registry (5 tools) | Codex in-app native discovery | PASS — exact five guest tools retained across challenge to browse navigation |
-| Authenticated registry (11 tools) | hub inspector, sandbox only | PASS under explicit Playwright compatibility injection on `deb00e3` |
+| Authenticated registry (11 tools) | hub inspector, sandbox only | PASS natively in Chrome 151 on `23af2a7`; full journey separately PASS under explicit Playwright compatibility injection on `deb00e3` |
 | Public listings/API read | network/status | PASS — public listings HTTP 200 |
 | Judge reset | sandbox 2xx / production 404 | PASS — authenticated sandbox reset 200; production reset 404 |
 | Critical path mission → confirmation → receipt | receipt id | PASS — mission, 1,150 EUR offer, seller acceptance, `RESERVED`, redacted receipt and idempotent replay; 1/1 in 6.7 s |
 | ChatGPT in-app WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | PENDING — NOT RUN |
-| Chrome WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | INDETERMINATE — tested Chrome profile exposed no `document.modelContext` |
+| Chrome WebMCP | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | PARTIAL PASS — native runtime and exact eleven-tool registry on `23af2a7`; Inspector invocation/request ID pending |
 | PII/secret scan | none found / found | PASS — authenticated receipt excludes both synthetic keys, email, phone and raw contact data; <=1,500 bytes |
 
 Lack of WebMCP in a given browser is `INDETERMINATE`, not a pass or fail.
@@ -381,7 +381,7 @@ Freeze decision: PENDING
 | `.env.example` without secrets + judge instructions | LOCAL / PUBLIC | LOCAL PASS; full private-window verification pending |
 | `release:hackathon:local` | LOCAL | PASS on clean reviewed implementation `2ed489d` |
 | Vercel/Cloudflare attached to candidate commit | DEPLOYED | Vercel and public Cloudflare-routed HTTP PASS on reviewed implementation `2ed489d`; exact Cloudflare worker-version mapping remains pending |
-| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | PASS for HTTP, APIs, reset separation and injected authenticated critical path; native Chrome remains INDETERMINATE and ChatGPT NOT RUN |
+| Public private-window smoke: page, tools, APIs, reset, critical path | PUBLIC | PASS for HTTP, APIs, reset separation and injected authenticated critical path; Chrome native runtime/registry PARTIAL PASS and ChatGPT NOT RUN |
 | Candidate tag then final tag created and pushed | DEPLOYED | Commands listed; not executed |
 | LOCAL / CI / DEPLOYED / PUBLIC reported separately | all | Tables above |
 | No post-submission change without explicit decision | freeze | PENDING |

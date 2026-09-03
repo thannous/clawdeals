@@ -19,7 +19,7 @@ Reproducible evaluation index for the WebMCP Challenge submission. Deterministic
 | Would a reference planner pick the first tool we expect? | 24 x 3 deterministic plans | ChatGPT tool selection |
 | Do registered handlers create a mission, reserve a listing, and persist a receipt? | isolated Playwright + Supabase | production data |
 | Do authz, consent, races, and redaction hold on the server? | `eval:webmcp:security` | a public URL |
-| Does a real in-app runtime call the tools? | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | Codex guest path PASS; ChatGPT NOT RUN; Chrome INDETERMINATE |
+| Does a real in-app runtime call the tools? | `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` | Codex guest path PASS; Chrome runtime/registry PARTIAL PASS; ChatGPT NOT RUN |
 
 ## Commands
 
@@ -118,7 +118,7 @@ final 160-second capture 1/1 all passed.
 | DEPLOYED / PUBLIC HTTP | PASS for runtime `60b99f7` through a documentation descendant | The live hub returns 200 with `Origin-Agent-Cluster: ?1`, public listings return 200, and production sandbox reset remains 404. Database migration state is not inferred from deployment. |
 | PUBLIC native guest | PASS on `2ed489d5a508` | Codex in-app discovered five tools, executed context → search, navigated to `/browse`, retained the same five-tool registry and read the redacted receipt there. |
 | PUBLIC authenticated sandbox | PASS on `deb00e3` | Explicit Playwright compatibility injection: eleven tools, deterministic reset, buyer mission/offer, seller acceptance, reserved listing, redacted receipt and idempotent replay; 1/1 in 6.7 s. This is not native Chrome or ChatGPT proof. |
-| CHROME | INDETERMINATE | Chrome 151 loaded the deployment without an active WebMCP runtime. |
+| CHROME | PARTIAL PASS on `23af2a7` | Chrome 151 with the testing flag enabled exposed the native runtime and exact eleven-tool authenticated registry. Inspector-driven tool execution remains pending. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
 | VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Regenerated and packaged on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. |
 | VIDEO PUBLIC / DEVPOST | VIDEO PASS; DEVPOST DRAFT 4/5 | YouTube publication and anonymous playback passed. Devpost fields and media are saved and previewed; final submission and freeze are pending. |
@@ -128,4 +128,7 @@ Do not treat a local test pass as CI, deployment, public smoke, ChatGPT tool sel
 
 ## Live browser template
 
-Update `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` after every reviewed deployment. ChatGPT remains `NOT RUN`; Chrome remains `INDETERMINATE` because the tested profile did not expose the API. Lack of the API in a given browser is not a product pass or fail.
+Update `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` after every reviewed deployment.
+ChatGPT remains `NOT RUN`. Chrome runtime and registry discovery passed on
+`23af2a7`, while Inspector-driven invocation remains pending; do not collapse
+those two proof layers.

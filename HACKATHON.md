@@ -143,8 +143,10 @@ The isolated submission journey invokes the actual registered tool handlers for
 mission creation, offer creation, seller acceptance and receipt lookup against
 synthetic Supabase data. `evals/webmcp/LIVE-BROWSER-EVIDENCE.md` keeps real
 in-app and Chrome WebMCP verification separate. The deployed public read path
-passed in the Codex in-app browser; ChatGPT remains `NOT RUN`, and connected
-Chrome 151 remains `INDETERMINATE` because its WebMCP runtime was not active.
+passed in the Codex in-app browser. Connected Chrome 151 now passes native
+runtime and exact eleven-tool registry discovery on sandbox build `23af2a7`
+after the testing flag was enabled; Inspector-driven invocation remains
+pending. ChatGPT remains `NOT RUN`.
 
 ## Local verification
 
@@ -201,8 +203,9 @@ the public-sandbox regression test are committed at `2d6efa3`.
 The public authenticated sandbox journey is PASS under explicit Playwright
 compatibility injection: eleven tools, deterministic reset, buyer offer, seller
 acceptance, atomic `RESERVED`, redacted receipt and idempotent replay. Native
-ChatGPT remains `NOT RUN` and Chrome remains `INDETERMINATE`. Submission-evidence
-CI is PASS on `d737312` (run `33312602103`), and both production and
+Chrome runtime and the exact eleven-tool registry are separately PASS on
+`23af2a7`; Inspector-driven invocation remains pending and ChatGPT remains
+`NOT RUN`. CI is PASS on `23af2a7` (run `33761431704`), and both production and
 sandbox Vercel deployments completed successfully. The 160-second video is
 public at https://youtu.be/mjNd6BNk_0U and anonymous playback is PASS. The
 Devpost entry is saved and previewed as a 4/5 draft; final submission and the

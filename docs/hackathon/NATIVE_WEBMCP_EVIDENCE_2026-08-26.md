@@ -56,7 +56,7 @@ shared UI update and redacted receipt retrieval.
 - Historical build `b9fc2e3` required returning to the hub to read the receipt;
   the current native sequence proves that gap is closed.
 
-## Connected Chrome — INDETERMINATE
+## Connected Chrome — historical INDETERMINATE on 26 August
 
 The previously connected external browser reported `Chrome/151.0.0.0` and
 loaded the then-current reviewed deployment. Its page exposed neither `document.modelContext`
@@ -85,3 +85,47 @@ The repository supports optional public Origin Trial delivery through
 committed, and the observed public build had no Origin Trial header or meta, so
 this hook does not change the Chrome verdict until a live token is configured
 and independently verified.
+
+## Connected Chrome — native runtime and registry PASS on 3 September
+
+The user enabled `chrome://flags/#enable-webmcp-testing`, relaunched the
+connected Chrome 151 profile and opened
+`https://sandbox.clawdeals.com/webmcp-challenge` on deployed build
+`23af2a7cd2a6`.
+
+The live judge hub then reported all of the following from the browser runtime:
+
+- `Runtime Enabled`;
+- `Browser API Supported`;
+- `Registry 11 tools registered`;
+- `getTools()`, `toolchange` and the visible registry matched;
+- the exact authenticated set was `get_page_context`, `show_listings`,
+  `open_listing`, `search_listings`, `create_buy_mission`, `start_thread`,
+  `send_message`, `make_offer`, `respond_to_offer`,
+  `request_contact_reveal`, `get_action_receipt`.
+
+This is native Chrome runtime and registry proof. It is not yet native Chrome
+tool-execution proof: the official WebMCP Model Context Tool Inspector was not
+installed in the connected profile, so no Inspector-driven invocation or
+request ID was recorded. It also does not prove the separate ChatGPT in-app
+runtime.
+
+## Public sandbox synthetic seller turn — PASS on 3 September
+
+In the isolated public sandbox, the authenticated eleven-tool registry created
+a synthetic Paris e-bike mission with a 1,300 EUR hard budget. A native
+`make_offer` call prepared and, after explicit human approval, created a 1,100
+EUR offer. The visible redacted receipt reported `SUCCESS`, `CREATED`,
+`APPROVED BY YOU` and `SERVER ACCEPTED`, with request ID
+`9066a16a-4a43-4357-8c68-ac6b8dd8a3f3`.
+
+The **Let the synthetic seller respond** control was then clicked exactly once.
+The seller countered at 1,350 EUR, above the mission's 1,300 EUR hard budget,
+and the live UI stated that a buyer accept would return `APPROVAL_REQUIRED` and
+hand the decision back to the owner. No second seller response was requested,
+and the above-budget counter was not accepted in this browser session.
+
+The local isolated-Supabase `eval:webmcp:journey` and
+`eval:webmcp:security` suites were replayed separately on 3 September and passed
+2/2 and 10/10 respectively. Those automated results verify the policy behavior;
+they are not relabelled as native browser execution.

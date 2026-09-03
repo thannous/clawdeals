@@ -3,15 +3,16 @@
 Status: **SAVED DRAFT 4/5 — verified on Devpost, not submitted.**
 
 Observed Devpost project: `ClawDeals`, draft `4/5`, submission ID `1153777`,
-slug `clawdeals`. The saved project preview was re-opened on 30 August 2026 and
-shows the current pitch, story, public YouTube embed and three-image gallery.
+slug `clawdeals`. The saved project preview was re-opened on 3 September 2026
+and shows the current pitch, final story, public YouTube embed, three-image
+gallery and the sandbox as the first **Try it out** link.
 
 The saved remote draft now contains:
 
 - project name `ClawDeals` and pitch `Your agent negotiates. You stay in control.`
   (the story now opens with the one-line pitch *ClawDeals lets buyer and seller
   agents negotiate a real deal while humans keep control of budgets, approvals
-  and identity.*, to be pasted again into Devpost with the rest of the story);
+  and identity.*);
 - the current trust-layer story and challenge-period delta;
 - ten built-with tags and five judge/reproduction links;
 - the public video `https://youtu.be/mjNd6BNk_0U`;
@@ -58,8 +59,11 @@ Additional information:
   marketplace: `https://clawdeals.com/webmcp-challenge`);
 - public repo: `https://github.com/thannous/clawdeals`;
 - tested clients: `Codex in-app browser — native guest WebMCP PASS; isolated
-  public sandbox — authenticated eleven-tool injected journey PASS; Chrome 151
-  — runtime unavailable, recorded as INDETERMINATE; ChatGPT in-app — NOT RUN`;
+  public sandbox — authenticated eleven-tool journey PASS under an explicit
+  Playwright compatibility injection; Chrome 151 — native runtime and exact
+  eleven-tool registry PASS after enabling the testing flag, but no
+  Inspector-driven tool invocation/request ID was recorded; ChatGPT in-app —
+  NOT RUN`;
 - AI tools used: `OpenAI Codex, ChatGPT and Grok 4.6`;
 - keep learning `Significant` and career value `Yes`.
 
@@ -198,8 +202,10 @@ whether the result is trustworthy.
 The public YouTube demo and isolated authenticated sandbox are live. The
 sandbox remains available at
 `https://sandbox.clawdeals.com/webmcp-challenge`; production reset stays closed.
-ChatGPT in-app and Chrome 149+ native WebMCP remain unproven.
-Judges can use ChatGPT's in-app browser or Chrome 149+ with
+Chrome 151 now exposes the native WebMCP runtime and the exact eleven-tool
+authenticated registry after enabling the testing flag. An Inspector-driven
+Chrome tool invocation with request IDs is still pending, and ChatGPT in-app
+remains untested. Judges can use ChatGPT's in-app browser or Chrome 149+ with
 `chrome://flags/#enable-webmcp-testing`, as specified by the official rules; an
 Origin Trial token is not required. After submission, the judged commit and site
 will be frozen except for an explicitly documented blocking fix.
@@ -227,6 +233,9 @@ Testing instructions:
 
 1. Open the live judge hub in ChatGPT's in-app browser, or in Chrome 149+ after
    enabling `chrome://flags/#enable-webmcp-testing` and restarting Chrome.
+   In Chrome, install the official **WebMCP Model Context Tool Inspector** from
+   the Chrome Web Store to inspect and invoke the registered tools without the
+   developer console.
 2. Visit `https://sandbox.clawdeals.com/webmcp-challenge`: the five public
    guest tools work without any key; paste the private judge key in the
    **Judge key** field to unlock the eleven authenticated tools, the reset and
@@ -248,9 +257,13 @@ https://sandbox.clawdeals.com/webmcp-challenge
 Buyer API key: <PRIVATE_SYNTHETIC_BUYER_KEY>
 Seller API key: <PRIVATE_SYNTHETIC_SELLER_KEY>
 
-1. Open the sandbox URL in a WebMCP-capable client.
-2. Connect the buyer key. The authenticated registry should expose eleven
-   contextual tools.
+1. Open the sandbox URL in ChatGPT's in-app browser, or in Chrome 149+ after
+   enabling `chrome://flags/#enable-webmcp-testing` and restarting Chrome. In
+   Chrome, install the official WebMCP Model Context Tool Inspector extension
+   to inspect and invoke tools.
+2. Paste the buyer key into the page's inline **Judge key** field and connect
+   it; no developer console is needed. The authenticated registry should expose
+   eleven contextual tools.
 3. Use the page's Reset demo control before each run. Reset is intentionally
    available only on the isolated sandbox; production returns 404.
 4. Run the copyable Deal Mission: Paris e-bike, preferred price 1,100 EUR,
@@ -275,7 +288,9 @@ The final tested-clients field must stay explicit about proof boundaries:
 ```text
 Codex in-app browser: native guest WebMCP PASS. Playwright Chromium with an
 explicit document.modelContext compatibility injection: authenticated sandbox
-PASS. Chrome 151: runtime unavailable / INDETERMINATE. ChatGPT in-app: NOT RUN.
+PASS. Chrome 151: native runtime and exact eleven-tool registry PASS after the
+testing flag was enabled; Inspector-driven tool invocation/request IDs were not
+recorded. ChatGPT in-app: NOT RUN.
 ```
 
 ## Video demo link
@@ -317,16 +332,18 @@ Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
   149+ flag is included; Origin Trial is not treated as a required gate.
 - [x] Public sandbox credentials are synthetic, kept outside version control and
   verified by the authenticated public Playwright journey.
-- [ ] Verify the final judge instructions in a native ChatGPT or WebMCP-enabled
-  Chrome profile; do not relabel the injected journey as native proof.
+- [x] Verify the final judge hub in a WebMCP-enabled Chrome profile: native
+  runtime and the exact eleven-tool authenticated registry are visible.
+- [ ] Invoke a tool through Chrome's Inspector and record its request ID;
+  ChatGPT in-app remains a separate, unrun proof layer.
 - [x] YouTube video is public, has audio and is shorter than three minutes.
 - [x] Replace the stale Devpost story with the exact Markdown above.
-- [ ] Re-paste the 3 September story (one-line pitch, three ideas, "Who this is
+- [x] Re-paste the 3 September story (one-line pitch, three ideas, "Who this is
   for", `getTools()` paragraph) into Devpost and preview it.
-- [ ] Add "Model Context Tool Inspector extension" to the Chrome testing
+- [x] Add "Model Context Tool Inspector extension" to the Chrome testing
   instruction and mention the inline **Judge key** field (no developer console
   needed) in the private judge instructions.
-- [ ] Set the Devpost **Try it out / demo URL** to
+- [x] Set the Devpost **Try it out / demo URL** to
   `https://sandbox.clawdeals.com/webmcp-challenge` and reorder the links as in
   **Try it out links** above.
 - [x] Replace the demo URL `/webmcp` with `/webmcp-challenge`.

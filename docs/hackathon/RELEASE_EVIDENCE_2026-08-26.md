@@ -35,9 +35,11 @@ Evidence captured after the first public push of the WebMCP Challenge implementa
 | PUBLIC native in-app read path | PASS on `2ed489d` | Codex in-app discovered five tools, executed `get_page_context` → `search_listings`, moved to `/browse?q=e-bike`, rediscovered the same five tools there and executed `get_action_receipt` without returning to the hub. Receipt data kept coordinates and secrets redacted. See [`NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](./NATIVE_WEBMCP_EVIDENCE_2026-08-26.md). |
 | REMOTE sandbox infrastructure | PASS on 30 August | The isolated Supabase branch has the final challenge migrations and deterministic synthetic actors. Dedicated Upstash Redis, masked staging secrets, DNS and TLS are provisioned. Vercel project `clawdeals-staging` is connected to `thannous/clawdeals`, uses the Next.js preset and reports deployment `dpl_5qjh93UvcATeEcZpC8SNn1VJEuqJ` Ready for `deb00e3`. |
 | PUBLIC authenticated journey | PASS on sandbox runtime `deb00e3` | Anonymous and authenticated public verifiers passed. A Playwright browser journey under explicit `document.modelContext` compatibility injection exposed exactly eleven tools, reset deterministic fixtures, created a mission and 1,150 EUR offer, accepted as the seller, observed atomic `RESERVED`, validated the redacted <=1,500-byte receipt, replayed acceptance idempotently and reset again: 1/1 in 6.7 s. Production reset remains 404. This is deployed authenticated wiring and behavior proof, not native Chrome or ChatGPT proof. |
-| CHROME native | INDETERMINATE on `9e7102e` | Connected Chrome 151 loaded the final build but exposed no `document.modelContext`; the managed browser could not inspect or change `chrome://flags`. |
+| CHROME native historical | INDETERMINATE on `9e7102e` | On 26 August, connected Chrome 151 loaded the then-current build but exposed no `document.modelContext`; the managed browser could not inspect or change `chrome://flags`. |
+| CHROME native registry | PARTIAL PASS on `23af2a7` (3 September) | After the user enabled `chrome://flags/#enable-webmcp-testing` and relaunched Chrome 151, the deployed sandbox hub reported Runtime Enabled, Browser API Supported, 11 tools registered and a matching `getTools()` / `toolchange` registry. The exact eleven authenticated tools were visible. The Inspector was not installed, so no native Chrome tool invocation or request ID was recorded. |
+| PUBLIC synthetic seller turn | PASS on `23af2a7` (3 September) | The authenticated sandbox created an explicitly approved 1,100 EUR offer with redacted request ID `9066a16a-4a43-4357-8c68-ac6b8dd8a3f3`. **Let the synthetic seller respond** was clicked exactly once; the seller countered at 1,350 EUR against the mission's 1,300 EUR hard budget, and the UI stated that buyer acceptance would return `APPROVAL_REQUIRED`. The above-budget counter was not accepted in this session. Local isolated-Supabase journey 2/2 and security 10/10 passed separately. |
 | ORIGIN-AGENT-CLUSTER | LOCAL + PUBLIC PASS on `2ed489d` | The config contract passes; local and public probes on `/webmcp-challenge` and `/browse` returned 200 with `Origin-Agent-Cluster: ?1`. |
-| CHROME ACTIVATION PATH | DOCUMENTED / RUNTIME INDETERMINATE | The official rules permit Chrome 149+ with `chrome://flags/#enable-webmcp-testing`; an Origin Trial token is optional, not a submission requirement. The managed Chrome profile used for evidence did not expose a native runtime, so Chrome execution remains unproven. |
+| CHROME ACTIVATION PATH | RUNTIME + REGISTRY PASS / INVOCATION PENDING | The official rules permit Chrome 149+ with `chrome://flags/#enable-webmcp-testing`; an Origin Trial token is optional, not a submission requirement. The 3 September connected Chrome profile exposed the native runtime and exact eleven-tool registry after relaunch. Inspector-driven tool execution remains unproven. |
 | CHATGPT | NOT RUN on current release | Real ChatGPT in-app selection and execution remains separate from the Codex in-app proof, HTTP and CI. |
 | SECRET AUDIT | PASS | GitHub Secret Scanning: 0 alerts. Gitleaks 8.30.1: 492 commits and candidate tree reviewed; 0 confirmed secrets after false-positive triage. See [`SECRET_AUDIT_2026-08-26.md`](./SECRET_AUDIT_2026-08-26.md). |
 | VIDEO LOCAL | PASS on 30 August | The regenerated MP4 is copied to the durable ignored submission package and independently probes as 160 seconds, H.264 1920×1080 plus AAC 48 kHz stereo; capture passed 1/1. SHA-256: `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. Publication remains separate. See [`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md). |
@@ -49,10 +51,11 @@ The HTTP and incognito checks prove public routing, deployed-SHA visibility,
 production reset closure and guest registration wiring under an explicit
 compatibility injection. The Codex in-app execution separately proves native
 public tool discovery, selection, shared-UI navigation and a redacted receipt.
-They do not prove ChatGPT's separate runtime, Chrome with its experimental flag
-enabled, a public video, or Devpost acceptance. The authenticated sandbox row
-is proven separately through an explicit compatibility injection and therefore
-must not be cited as native browser WebMCP selection.
+They do not prove ChatGPT's separate runtime or Devpost acceptance. The
+3 September Chrome session separately proves the native runtime and exact
+eleven-tool registry, but not Inspector-driven tool execution. The authenticated
+sandbox journey row is proven through an explicit compatibility injection and
+therefore must not be cited as native browser WebMCP selection.
 
 The current-HEAD GitHub Actions rerun was explicitly waived after GitHub kept
 both dispatch records before job creation. Historical green CI, current local
