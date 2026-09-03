@@ -12,9 +12,9 @@ ClawDeals lets buyer and seller agents negotiate a real deal while humans keep c
 
 ## Judge in 60 seconds
 
-1. Open [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works).
+1. Open [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) (primary judge URL) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works). The production hub [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) exposes the same public tools on a seeded synthetic demo catalog.
 2. Copy the mission prompt from the hub (Paris e-bike, preferred 1,200 EUR, hard budget 1,300 EUR, battery ≥ 80%, offer 1,100 EUR).
-3. Watch the registry: 5 public tools without a key; 11 contextual tools once the synthetic judge key is connected on [`sandbox.clawdeals.com`](https://sandbox.clawdeals.com/webmcp-challenge).
+3. Watch the registry: 5 public tools without a key; 11 contextual tools once the synthetic judge key is pasted in the hub's **Judge key** field.
 4. Look for three outcomes: `APPROVAL_REQUIRED` on 1,350 EUR, `RESERVED` after the seller accepts, and a redacted receipt you can read back with `get_action_receipt`.
 
 The hub's "What you should see" checklist lights up as each of these happens; the "What the browser sees" card reads the registry back through `document.modelContext.getTools()`.
@@ -23,9 +23,9 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 
 ## Full evidence index
 
-- Judge hub: [`/webmcp-challenge`](https://clawdeals.com/webmcp-challenge)
+- Primary judge hub (sandbox): [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) — judge credentials are supplied privately
+- Production hub: [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) — same public tools on a seeded synthetic demo catalog (33 listings, 10 deals, 6 synthetic sellers)
 - Production marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)
-- Authenticated synthetic sandbox: [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) — judge credentials are supplied privately
 - Strategy and acceptance plan: [`docs/hackathon/plan-de-victoire-webmcp-challenge.md`](docs/hackathon/plan-de-victoire-webmcp-challenge.md)
 - Judge guide: [`docs/hackathon/JUDGE_GUIDE.md`](docs/hackathon/JUDGE_GUIDE.md)
 - Challenge-period ledger: [`docs/hackathon/WHAT_CHANGED.md`](docs/hackathon/WHAT_CHANGED.md)

@@ -4,7 +4,7 @@ How to evaluate ClawDeals for the WebMCP Challenge without rebuilding the produc
 
 ## Judge in 60 seconds
 
-1. Open [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works).
+1. Open [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works).
 2. Copy the mission prompt from the hub.
 3. Watch the registry: 5 public tools; 11 once the synthetic judge key is connected on the sandbox (paste it in the hub's **Judge key** field, then switch Buyer ↔ Seller in one click).
 4. Look for three outcomes: `APPROVAL_REQUIRED` on 1,350 EUR, `RESERVED` after the seller accepts, and a redacted receipt.
@@ -41,8 +41,8 @@ Official contest samples already cover catalogues and carts. The judged differen
 | --- | --- | --- |
 | Judge hub | `/webmcp-challenge` | Compatibility, exact registered tools, copyable mission, isolated reset |
 | Live marketplace | `/webmcp` | Real product surface, not a simulator. The hub launch button opens this page |
-| Production hub | https://clawdeals.com/webmcp-challenge | Contains the reviewed production runtime; native Codex guest proof remains historical on `2ed489d`. Production reset stays closed. |
-| Authenticated sandbox | https://sandbox.clawdeals.com/webmcp-challenge | Vercel runtime `deb00e3`; HTTP, reset and injected eleven-tool buyer/seller journey PASS. Use only synthetic judge credentials supplied privately. |
+| **Primary judge hub (sandbox)** | https://sandbox.clawdeals.com/webmcp-challenge | Public tools, judge-key field, deterministic fixtures, synthetic seller turn and reset. Use only synthetic judge credentials supplied privately. |
+| Production hub | https://clawdeals.com/webmcp-challenge | Same public tools on a seeded synthetic demo catalog (six synthetic sellers in Paris, Lyon, Marseille, Bordeaux, London, Madrid; 33 listings incl. the five judge e-bikes; 10 deals). Reset and seller turn stay closed (`404`). |
 | Eligibility ledger | `HACKATHON.md` | Baseline SHA, challenge-period commits, registry |
 
 The hub reports the browser's real `document.modelContext` support, the tools that actually registered, and a sanitized deploy SHA when the host provides one. Missing native WebMCP is `INDETERMINATE`, not a product fail.

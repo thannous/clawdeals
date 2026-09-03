@@ -6,7 +6,7 @@ Agent-native second-hand marketplace: the agent negotiates, the server enforces 
 
 ## WebMCP Challenge judge links
 
-1. [Live judge demo](https://clawdeals.com/webmcp-challenge) — includes reviewed runtime `60b99f70868f`; the page reports its exact deployment descendant.
+1. [Live judge demo (sandbox)](https://sandbox.clawdeals.com/webmcp-challenge) — public tools, judge key, deterministic fixtures, synthetic seller and reset. The [production hub](https://clawdeals.com/webmcp-challenge) exposes the same public tools on a seeded synthetic demo catalog; both pages report their exact deployed SHA.
 2. [Public 160-second demo](https://youtu.be/mjNd6BNk_0U), [recording script](./docs/hackathon/DEMO_SCRIPT.md) and [video evidence](./docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md) — YouTube publication and anonymous playback are **PASS**.
 3. [Judge guide](./docs/hackathon/JUDGE_GUIDE.md)
 4. [What was built during the challenge](./docs/hackathon/WHAT_CHANGED.md)

@@ -40,7 +40,11 @@ Project details:
 - replace the remote story with **Project story** below;
 - built-with tags: `webmcp`, `next.js`, `typescript`, `react`, `supabase`,
   `postgresql`, `vercel`, `cloudflare`, `vitest`, `playwright`;
-- replace the demo URL with `https://clawdeals.com/webmcp-challenge`;
+- **primary live/demo URL: `https://sandbox.clawdeals.com/webmcp-challenge`**
+  (decision of 3 September: the sandbox hosts the five public tools, the eleven
+  authenticated tools, the deterministic fixtures, the synthetic seller turn and
+  the judge reset; the production hub `https://clawdeals.com/webmcp-challenge`
+  stays listed second as the public marketplace with a seeded demo catalog);
 - keep `https://github.com/thannous/clawdeals`;
 - add the challenge ledger and `HACKATHON.md` links listed under **Try it out**;
 - public YouTube URL: `https://youtu.be/mjNd6BNk_0U` (anonymous verification PASS).
@@ -50,7 +54,8 @@ Additional information:
 - keep `Individual`, `France` and `Existing`;
 - describe the challenge-period delta using **What we built during the
   challenge** below;
-- live URL: `https://clawdeals.com/webmcp-challenge`;
+- live URL: `https://sandbox.clawdeals.com/webmcp-challenge` (production
+  marketplace: `https://clawdeals.com/webmcp-challenge`);
 - public repo: `https://github.com/thannous/clawdeals`;
 - tested clients: `Codex in-app browser — native guest WebMCP PASS; isolated
   public sandbox — authenticated eleven-tool injected journey PASS; Chrome 151
@@ -208,9 +213,10 @@ Recommended tags:
 
 ## Try it out links
 
-1. Live judge hub: https://clawdeals.com/webmcp-challenge
-2. Authenticated synthetic sandbox:
-   https://sandbox.clawdeals.com/webmcp-challenge
+1. Live judge hub (sandbox — public tools, judge key, fixtures, synthetic
+   seller, reset): https://sandbox.clawdeals.com/webmcp-challenge
+2. Production marketplace (public tools on a seeded demo catalog):
+   https://clawdeals.com/webmcp-challenge
 3. Public repository: https://github.com/thannous/clawdeals
 4. Challenge-period ledger:
    https://github.com/thannous/clawdeals/blob/main/docs/hackathon/WHAT_CHANGED.md
@@ -221,10 +227,13 @@ Testing instructions:
 
 1. Open the live judge hub in ChatGPT's in-app browser, or in Chrome 149+ after
    enabling `chrome://flags/#enable-webmcp-testing` and restarting Chrome.
-2. Visit `https://clawdeals.com/webmcp-challenge` for the public guest tools.
-3. Authenticated sandbox credentials are present only in the private judge
-   instructions; the isolated mutation journey is verified on
-   `sandbox.clawdeals.com`.
+2. Visit `https://sandbox.clawdeals.com/webmcp-challenge`: the five public
+   guest tools work without any key; paste the private judge key in the
+   **Judge key** field to unlock the eleven authenticated tools, the reset and
+   the synthetic seller turn.
+3. `https://clawdeals.com/webmcp-challenge` is the production marketplace with
+   the same public tools on a seeded synthetic demo catalog (33 listings, 10
+   deals); production keeps the reset and the seller turn disabled.
 
 ### Private judge instructions — saved after credential-transmission confirmation
 
@@ -317,6 +326,9 @@ Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
 - [ ] Add "Model Context Tool Inspector extension" to the Chrome testing
   instruction and mention the inline **Judge key** field (no developer console
   needed) in the private judge instructions.
+- [ ] Set the Devpost **Try it out / demo URL** to
+  `https://sandbox.clawdeals.com/webmcp-challenge` and reorder the links as in
+  **Try it out links** above.
 - [x] Replace the demo URL `/webmcp` with `/webmcp-challenge`.
 - [x] Add the final public video URL.
 - [x] Preview every Devpost section and link.
