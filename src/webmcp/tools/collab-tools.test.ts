@@ -210,6 +210,53 @@ describe("public collaboration tools", () => {
     );
   });
 
+  it("flags a seller claim that already falls short of a numeric requirement", async () => {
+    const tool = collabTools.find((candidate) => candidate.name === "search_listings")!;
+    vi.mocked(callPublicWebmcp).mockResolvedValue({
+      ok: true,
+      data: {
+        data: [
+          {
+            listing_id: "battery-low",
+            title: "Used e-bike - battery health 64% needs confirmation",
+            description: "Synthetic demo listing. Used e-bike with battery health 64%.",
+            price: { amount: 980, currency: "EUR" },
+            seller: { verified: true }
+          },
+          {
+            listing_id: "battery-ok",
+            title: "Used e-bike urban commute - battery health 88%",
+            price: { amount: 1150, currency: "EUR" },
+            seller: { verified: true }
+          },
+          {
+            listing_id: "battery-unknown",
+            title: "Used e-bike, good condition",
+            price: { amount: 1100, currency: "EUR" },
+            seller: { verified: true }
+          }
+        ],
+        next_cursor: null
+      },
+      meta: { request_id: "req-battery" }
+    } as any);
+
+    const result = await tool.execute(
+      { hard_budget_max: 1300, requirements: ["battery_health >= 80%"] },
+      { requestId: "req-battery", idempotencyKey: null }
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const byId = Object.fromEntries((result.data as any).items.map((item: any) => [item.listing_id, item]));
+    expect(byId["battery-low"].policy_fit).toEqual({
+      eligible: false,
+      issues: ["battery_health_below_requirement", "requirements_unverified"]
+    });
+    expect(byId["battery-ok"].policy_fit).toEqual({ eligible: true, issues: ["requirements_unverified"] });
+    expect(byId["battery-unknown"].policy_fit).toEqual({ eligible: true, issues: ["requirements_unverified"] });
+    expect(byId["battery-low"].rank).toBe(3);
+  });
+
   it("shares the policy_fit verdicts with the human grid only under a mission policy", async () => {
     const tool = collabTools.find((candidate) => candidate.name === "search_listings")!;
     const payload = {

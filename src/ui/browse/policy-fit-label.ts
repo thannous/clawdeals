@@ -11,6 +11,7 @@ const ISSUE_LABELS: Record<string, string> = {
   over_preferred_price: "Above preferred price",
   requirements_unverified: "Requirements to confirm",
   battery_below_requirement: "Battery too low",
+  battery_health_below_requirement: "Battery too low",
   out_of_radius: "Out of radius"
 };
 

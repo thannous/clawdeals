@@ -38,6 +38,44 @@ function truncateUtf8(value: string, maxBytes: number): string {
   return output;
 }
 
+const REQUIREMENT_RE = /^([a-z][a-z0-9_ -]*?)\s*(>=|<=|>|<|=|==)\s*(\d+(?:\.\d+)?)\s*%?$/i;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Checks numeric requirements such as `battery_health >= 80%` against the seller's own text.
+ * Seller text is untrusted, so meeting the threshold never *proves* anything (the requirement stays
+ * `requirements_unverified`); only a claim that already falls short becomes a blocking issue.
+ */
+export function evaluateRequirementShortfalls(item: any, requirements: string[] = []): string[] {
+  const haystack = `${typeof item?.title === "string" ? item.title : ""} ${typeof item?.description === "string" ? item.description : ""}`;
+  if (!haystack.trim()) return [];
+  const shortfalls: string[] = [];
+  for (const requirement of requirements) {
+    const match = REQUIREMENT_RE.exec(String(requirement || "").trim());
+    if (!match) continue;
+    const key = match[1].trim().toLowerCase().replace(/[\s-]+/g, "_");
+    const operator = match[2];
+    const threshold = Number(match[3]);
+    if (!Number.isFinite(threshold)) continue;
+    const words = key.split("_").filter(Boolean).map(escapeRegExp).join("[\\s_-]*");
+    const valueMatch = new RegExp(`${words}[^0-9%]{0,16}?(\\d{1,3}(?:\\.\\d+)?)\\s*%?`, "i").exec(haystack);
+    if (!valueMatch) continue;
+    const claimed = Number(valueMatch[1]);
+    if (!Number.isFinite(claimed)) continue;
+    const meets =
+      operator === ">=" ? claimed >= threshold
+      : operator === ">" ? claimed > threshold
+      : operator === "<=" ? claimed <= threshold
+      : operator === "<" ? claimed < threshold
+      : claimed === threshold;
+    if (!meets) shortfalls.push(`${key}_${operator.startsWith("<") ? "above" : "below"}_requirement`);
+  }
+  return shortfalls;
+}
+
 function summarizeListings(payload: any, context: ListingsDecisionContext = {}) {
   const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.items) ? payload.items : [];
   return items
@@ -47,6 +85,12 @@ function summarizeListings(payload: any, context: ListingsDecisionContext = {}) 
       const issues: string[] = [];
       let eligible = true;
       let score = 100;
+
+      for (const shortfall of evaluateRequirementShortfalls(item, context.requirements)) {
+        eligible = false;
+        score -= 30;
+        issues.push(shortfall);
+      }
 
       if (typeof context.hardBudgetMax === "number" && amount !== null && amount > context.hardBudgetMax) {
         eligible = false;
