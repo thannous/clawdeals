@@ -11,6 +11,8 @@
  * Exit code 1 when any referenced asset is not 200 in any round.
  */
 
+import https from "node:https";
+
 const args = process.argv.slice(2);
 function readArg(name, fallback) {
   const index = args.indexOf(`--${name}`);
@@ -71,6 +73,40 @@ for (let round = 1; round <= repeat; round += 1) {
     });
   }
   console.log(JSON.stringify({ round, at: new Date().toISOString(), base, report: roundReport }, null, 2));
+}
+
+// Cloudflare Speed Brain answers 503 `cf-speculation-refused` to any request that
+// carries `Sec-Purpose: prefetch` on a Worker-routed zone. Browsers send that
+// header for Next.js chunk prefetches, which shows up as console 503s even though
+// the page itself hydrates. Surface it explicitly so it is not mistaken for an
+// origin outage.
+try {
+  const probe = await fetch(`${base}/`, { headers: { accept: "text/html" } });
+  const probeHtml = await probe.text();
+  const firstAsset = [...probeHtml.matchAll(ASSET_RE)][0]?.[1];
+  const speculationRules = probe.headers.get("speculation-rules");
+  if (firstAsset) {
+    const url = firstAsset.startsWith("http") ? firstAsset : `${base}${firstAsset}`;
+    // `Sec-*` headers are forbidden in the Fetch API, so the probe goes through node:https.
+    const prefetch = await new Promise((resolve, reject) => {
+      const req = https.request(url, { method: "HEAD", headers: { "sec-purpose": "prefetch" } }, (res) => {
+        res.resume();
+        resolve({ status: res.statusCode, headers: res.headers });
+      });
+      req.on("error", reject);
+      req.end();
+    });
+    const refused = prefetch.headers["cf-speculation-refused"] || null;
+    console.log(JSON.stringify({ prefetch_probe: { url: url.replace(base, ""), status: prefetch.status, cf_speculation_refused: refused, speed_brain_header: speculationRules } }));
+    if (refused) {
+      console.error(
+        `[static-chunks] WARN: Cloudflare refuses prefetch requests on this zone (${refused}). ` +
+          "Browsers will log 503s for Next.js chunk prefetches. Disable Speed Brain on the zone (Speed > Optimization > Content Optimization) or exclude the Worker route."
+      );
+    }
+  }
+} catch (error) {
+  console.error(`[static-chunks] prefetch probe skipped: ${error instanceof Error ? error.message : String(error)}`);
 }
 
 if (failures > 0) {

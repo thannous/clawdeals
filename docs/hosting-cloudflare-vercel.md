@@ -126,16 +126,29 @@ La landing (`clawdeals.com`) reste la source canonique (SSR + cache edge).
 5. Chunks JS apres un deploiement: `npm run verify:static-chunks -- --base https://clawdeals.com --repeat 5 --interval-ms 30000`
    doit terminer sur `PASS` (tous les `/_next/static/*` references par `/`, `/webmcp-challenge`, `/browse`, `/marketplace` repondent 200).
 
-### Chunks immuables et fenetre de deploiement (TI-495)
+### Chunks immuables: 503 `cf-speculation-refused` (TI-495)
 
-Constat du 03/09/2026: juste apres un deploiement Vercel, une ou deux requetes de chunks
-`/_next/static/immutable/chunks/*.js` ont repondu 503 via `clawdeals.com` (proxy Worker),
-puis 200 (`cf-cache-status: HIT`) quelques minutes plus tard. Le HTML n'est pas en cause:
-Cloudflare le sert en `DYNAMIC` (Vercel retire `s-maxage` de la reponse client), donc il n'y a
-pas de decalage HTML <-> chunks cote edge. Le 503 vient d'une erreur transitoire de l'origine
-pendant la bascule.
+Constat du 03/09/2026: dans un navigateur, une ou deux requetes de chunks
+`/_next/static/immutable/chunks/*.js` par page repondent 503 via `clawdeals.com`, de facon
+**deterministe** (toujours les memes chunks), alors que `curl` obtient 200.
 
-Mitigation en place dans `workers/edge-router.ts`:
+Cause racine (verifiee le 03/09 a 23:30): ces requetes sont des **prefetch** du navigateur
+(`Sec-Purpose: prefetch`, declenches par Next.js pour les routes liees). La zone a **Speed Brain**
+actif (`speculation-rules: "/cdn-cgi/speculation"`, `tag: cf-speed-brain`) et Cloudflare refuse
+tout prefetch sur une route servie par un Worker: reponse `503`, corps vide, en-tete
+`cf-speculation-refused: prefetch refused: disabled for worker requests`, sans jamais atteindre
+le Worker ni l'origine. La page s'hydrate normalement (les chunks necessaires ne sont pas des
+prefetch); l'effet visible est une erreur console par prefetch refuse. Ce n'est ni un decalage
+HTML <-> chunks (le HTML est servi `DYNAMIC`) ni une erreur transitoire de Vercel.
+
+Correctif: desactiver **Speed Brain** sur la zone `clawdeals.com` (Dashboard > Speed >
+Optimization > Content Optimization > Speed Brain: Off), puis verifier que
+`curl -sI -H 'Sec-Purpose: prefetch' https://clawdeals.com/_next/static/immutable/chunks/<x>.js`
+repond 200 et que l'en-tete `speculation-rules` a disparu de `/`. `npm run verify:static-chunks`
+inclut cette sonde (`prefetch_probe`) et avertit tant que le refus est actif.
+
+Mitigation complementaire dans `workers/edge-router.ts` (conservee, utile pour les vraies
+erreurs d'origine pendant une bascule de deploiement):
 
 - les requetes `GET /_next/static/*` proxifiees sont rejouees jusqu'a 2 fois (150 ms puis 400 ms)
   quand l'origine repond 5xx ou echoue reseau; les autres chemins ne sont pas rejoues;
@@ -144,8 +157,9 @@ Mitigation en place dans `workers/edge-router.ts`:
 - `scripts/verify-static-chunks.mjs` sert de smoke post-deploiement (voir ci-dessus) et peut tourner
   en boucle pendant la fenetre de bascule.
 
-Si les 503 persistent malgre les retries, purger le cache Cloudflare de la zone apres le deploiement
-Vercel (Dashboard > Caching > Purge Everything, ou API `purge_cache`) et rouvrir TI-495.
+Si des 503 **sans** `cf-speculation-refused` apparaissent malgre les retries, purger le cache
+Cloudflare de la zone apres le deploiement Vercel (Dashboard > Caching > Purge Everything, ou API
+`purge_cache`) et rouvrir TI-495.
 
 ## Deploy commands
 
