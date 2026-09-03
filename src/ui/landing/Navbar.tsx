@@ -170,7 +170,7 @@ function NavbarFrame({
             {center || (
               <div className="hidden sm:flex items-center gap-1">
                 <MarketingLink
-                  href={`${localePrefix}/marketplace`}
+                  href={`${localePrefix}/browse`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-muted hover:text-text transition-colors"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
@@ -312,7 +312,7 @@ function NavbarFrame({
                     {tn("marketplace")}
                   </div>
                   <MarketingLink
-                    href={`${localePrefix}/marketplace`}
+                    href={`${localePrefix}/browse`}
                     onClick={() => setMobileSettingsOpen(false)}
                     className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted hover:text-text hover:bg-surface-alt transition-colors"
                   >

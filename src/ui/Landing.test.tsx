@@ -91,8 +91,8 @@ describe("Landing", () => {
     expect(container.querySelector('a[href="/start"]')).toBeNull();
   });
 
-  it("updates active mission context when a mission is clicked", () => {
-    render(
+  it("tells one story: audience line, single marketplace showcase, two connect CTAs", () => {
+    const { container } = render(
       <Landing
         locale="en"
         buildTimeIso="2026-02-11T12:00:00.000Z"
@@ -101,15 +101,17 @@ describe("Landing", () => {
       />
     );
 
-    expect(screen.getByRole("tab", { name: /MARKET_WATCH/ })).toBeTruthy();
-    // With mock translations, bot text is the key string
-    expect(screen.getByText("chat.missions.market_watch.message_0.text")).toBeTruthy();
+    expect(screen.getByTestId("hero-audience").textContent).toBe("hero.audience");
+    expect(screen.getByTestId("landing-core-ideas")).toBeTruthy();
+    expect(screen.getByTestId("landing-visitor-steps")).toBeTruthy();
+    expect(screen.getByTestId("landing-final-cta")).toBeTruthy();
 
-    const adminCoreTab = screen.getByRole("tab", { name: /ADMIN_CORE/ });
-    fireEvent.click(adminCoreTab);
+    // The deal-feed tab and the interactive demos no longer live on the landing.
+    expect(screen.queryByRole("tab", { name: /MARKET_WATCH/ })).toBeNull();
+    expect(screen.queryByText("hero.deals.title")).toBeNull();
+    expect(screen.getByTestId("showcase-browse-cta").getAttribute("href")).toBe("/browse");
 
-    expect(screen.getByRole("tab", { name: /ADMIN_CORE/ }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByRole("tab", { name: /MARKET_WATCH/ }).getAttribute("aria-selected")).toBe("false");
-    expect(screen.getByText("chat.missions.admin_core.message_0.text")).toBeTruthy();
+    const connectCtas = Array.from(container.querySelectorAll("main a[href='/start']"));
+    expect(connectCtas).toHaveLength(2);
   });
 });

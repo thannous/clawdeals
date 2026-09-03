@@ -37,10 +37,14 @@
       "headline_0": "Tu agente negocia.",
       "headline_1": "Tú mantienes el control.",
       "headlineCount": "2",
-      "subheadline": "Conecta tu propio agente de IA a un marketplace europeo de segunda mano controlado. Tú fijas el presupuesto y los límites, esa es su política; él busca y negocia dentro de ellos, y cada acción sensible espera tu aprobación.",
+      "subheadline": "Conecta tu propio agente de IA a un marketplace europeo de segunda mano controlado. Tú fijas el presupuesto y los límites, esa es su política; él negocia dentro de ellos, y cada acción sensible espera tu aprobación.",
       "cta": "Conecta tu agente",
       "exploreCta": "Ver el marketplace",
       "demoCta": "Ver la demo de 60 segundos",
+      "audience": "Para quienes compran o venden de segunda mano en Francia, Reino Unido o España, con el asistente de IA que ya usan.",
+      "finalTitle": "Listo cuando tu agente lo esté.",
+      "pricingNote": "Aún no hay lista de precios pública: nada se cobra sin condiciones explícitas mostradas antes. Conectar un agente y explorar anuncios es gratis hoy.",
+      "pricingLink": "Leer el estado de precios",
       "ideas": {
         "eyebrow": "TRES_IDEAS",
         "title": "Lo que ocurre de verdad",
@@ -59,10 +63,10 @@
       },
       "steps": {
         "eyebrow": "RUTA_VISITANTE",
-        "title": "Tres pasos, sin jerga",
+        "title": "Cómo funciona",
         "item_0": {
           "title": "Conectar",
-          "body": "Vincula el agente de IA que ya usas (ChatGPT, Claude, Cursor o el tuyo) con una clave que puedes revocar en cualquier momento."
+          "body": "Vincula el asistente que ya usas (ChatGPT, Claude, Cursor o el tuyo) con una clave revocable."
         },
         "item_1": {
           "title": "Definir la misión",
@@ -128,7 +132,7 @@
         "subtitle": "CHOOSE_OPERATIONAL_VERTICAL"
       },
       "secondary": {
-        "title": "Cómo funciona",
+        "title": "Bajo el capó",
         "subtitle": "HOW_IT_WORKS"
       },
       "developer": {
@@ -2496,9 +2500,9 @@
     }
   },
   "browseDeals": {
-    "pageTitle": "Explorar deals // CLAWDEALS",
-    "title": "EXPLORAR DEALS",
-    "subtitle": "descubre deals en el marketplace ClawDeals",
+    "pageTitle": "Ofertas // CLAWDEALS",
+    "title": "Ofertas",
+    "subtitle": "bajadas de precio detectadas por agentes, con votos y caducidad",
     "search": "Buscar deals\u2026",
     "sort": {
       "new": "RECIENTE",
@@ -2555,10 +2559,10 @@
       "cta": "Explorar anuncios"
     },
     "deals": {
-      "title": "DEALS",
-      "subtitle": "DEAL_FEED",
-      "description": "Descubre deals publicados por agentes. Vota, vigila y no pierdas ninguna oportunidad.",
-      "cta": "Ver deals"
+      "title": "OFERTAS",
+      "subtitle": "PRICE_ALERTS",
+      "description": "Bajadas de precio detectadas por agentes. Vota, vigila y no pierdas ninguna oportunidad.",
+      "cta": "Ver ofertas"
     },
     "country": {
       "label": "País",

@@ -8,8 +8,6 @@ import { getPublicApiBaseUrl, getPublicAppEntryHref, joinUrl } from "../shared/u
 import { localePrefixFor } from "../shared/seo";
 import type { SupportedLocale } from "../shared/i18n";
 import Faq from "./landing/Faq";
-import HowItWorks from "./landing/HowItWorks";
-import MissionSelect from "./landing/MissionSelect";
 import { NavbarCurrent, NavbarFuture } from "./landing/Navbar";
 import { SectionHeader } from "./landing/primitives";
 import PlatformPillars from "./landing/PlatformPillars";
@@ -17,23 +15,10 @@ import Footer from "./Footer";
 import LocalizedMarketContext from "./seo/LocalizedMarketContext";
 import ThreeIdeasGrid from "./shared/ThreeIdeasGrid";
 
-const TerminalEmulator = dynamic(() => import("./landing/TerminalEmulator"));
-const NpmCallout = dynamic(() => import("./landing/NpmCallout"));
 const DealsPhone = dynamic(() => import("./landing/DealsPhone"));
 const MarketPhone = dynamic(() => import("./landing/MarketPhone"));
 
-const TRUST_MARQUEE_KEYS = [
-  "segment-01",
-  "segment-02",
-  "segment-03",
-  "segment-04",
-  "segment-05",
-  "segment-06",
-  "segment-07",
-  "segment-08",
-  "segment-09",
-  "segment-10"
-] as const;
+const TRUST_MARQUEE_KEYS = ["segment-01", "segment-02", "segment-03", "segment-04"] as const;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const JUDGE_DEMO_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
@@ -209,8 +194,11 @@ function HeroFrame({ children }: { children: React.ReactNode }) {
             <span key={line.key} className="block">{line.value}</span>
           ))}
         </h1>
-        <p className="text-base md:text-lg text-muted leading-relaxed mb-8 max-w-3xl">
+        <p className="text-base md:text-lg text-muted leading-relaxed mb-4 max-w-3xl">
           {t("hero.subheadline")}
+        </p>
+        <p className="font-mono text-xs text-subtle uppercase tracking-widest mb-8 max-w-2xl" data-testid="hero-audience">
+          {t("hero.audience")}
         </p>
 
         {children}
@@ -276,9 +264,8 @@ function CoreIdeas() {
   );
 }
 
-function VisitorSteps({ locale }: { locale: SupportedLocale }) {
+function VisitorSteps() {
   const t = useTranslations("landing");
-  const localePrefix = localePrefixFor(locale);
   const steps = [0, 1, 2].map((index) => ({
     title: t(`hero.steps.item_${index}.title`),
     body: t(`hero.steps.item_${index}.body`)
@@ -300,16 +287,6 @@ function VisitorSteps({ locale }: { locale: SupportedLocale }) {
           </li>
         ))}
       </ol>
-      <div className="mt-6">
-        <Link
-          href={getPublicAppEntryHref(localePrefix)}
-          data-acquisition-cta="landing_activation"
-          className="inline-flex items-center gap-2 px-6 py-3 border border-primary bg-primary text-bg font-bold uppercase tracking-wider text-xs hover:bg-text hover:border-text transition-colors"
-        >
-          {t("hero.cta")}
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-      </div>
     </section>
   );
 }
@@ -341,10 +318,17 @@ const SHOWCASE_TABS: ShowcaseTabMeta[] = [
 
 type TabbedShowcaseActionMap = Record<ShowcaseTab, React.ReactNode>;
 
-function TabbedShowcaseFrame({ actionByTab }: { actionByTab: TabbedShowcaseActionMap }) {
+function TabbedShowcaseFrame({
+  actionByTab,
+  tabs = SHOWCASE_TABS
+}: {
+  actionByTab: TabbedShowcaseActionMap;
+  tabs?: ShowcaseTabMeta[];
+}) {
   const t = useTranslations("landing");
-  const [active, setActive] = useState<ShowcaseTab>("marketplace");
+  const [active, setActive] = useState<ShowcaseTab>(tabs[0]?.key ?? "marketplace");
   const tabsRef = useRef<HTMLDivElement>(null);
+  const singleTab = tabs.length === 1;
 
   const handleTabClick = (key: ShowcaseTab) => {
     setActive(key);
@@ -373,14 +357,14 @@ function TabbedShowcaseFrame({ actionByTab }: { actionByTab: TabbedShowcaseActio
   };
 
   const header = headerMap[active];
-  const activeTab = SHOWCASE_TABS.find((tab) => tab.key === active)!;
+  const activeTab = tabs.find((tab) => tab.key === active) ?? SHOWCASE_TABS[0];
   const PhoneComponent = active === "deals" ? DealsPhone : MarketPhone;
 
   return (
     <div>
-      {/* ValueProps as clickable cards */}
-      <div ref={tabsRef} className="grid grid-cols-2 gap-4 md:gap-16 mb-4 md:mb-8 scroll-mt-20">
-        {SHOWCASE_TABS.map(({ key, Icon, colorClass, borderClass, accentBg }) => {
+      {/* ValueProps as clickable cards (only when there is a choice to make) */}
+      <div ref={tabsRef} className={singleTab ? "hidden" : "grid grid-cols-2 gap-4 md:gap-16 mb-4 md:mb-8 scroll-mt-20"}>
+        {tabs.map(({ key, Icon, colorClass, borderClass, accentBg }) => {
           const isActive = active === key;
           return (
             <div key={key} className="flex flex-col">
@@ -432,7 +416,12 @@ function TabbedShowcaseFrame({ actionByTab }: { actionByTab: TabbedShowcaseActio
         <SectionHeader title={header.title} subtitle={header.subtitle} accentText={activeTab.colorClass} accentBg={activeTab.accentBg} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h3 className="text-2xl font-bold text-text uppercase tracking-wide mb-6">{t(`showcase.${active}.title`)}</h3>
+            {singleTab ? (
+              <p className={`font-mono text-xs ${activeTab.colorClass} tracking-widest uppercase mb-3`}>
+                {heroData[active].subtitle}
+              </p>
+            ) : null}
+            <h3 className="text-2xl font-bold text-text tracking-tight mb-6">{t(`showcase.${active}.title`)}</h3>
             <ul className="space-y-3 mb-8">
               {bullets.map((bullet, index) => (
                 <li key={bullet} className="flex items-start gap-3">
@@ -445,7 +434,8 @@ function TabbedShowcaseFrame({ actionByTab }: { actionByTab: TabbedShowcaseActio
             </ul>
             {actionByTab[active]}
           </div>
-          <div className="flex justify-center">
+          {/* The phone mock-up is decorative on a 390 px screen and costs a full screen of scroll. */}
+          <div className="hidden lg:flex justify-center">
             <PhoneComponent />
           </div>
         </div>
@@ -472,16 +462,46 @@ function TabbedShowcaseCurrent({ locale }: { locale: string }) {
     ),
     marketplace: (
       <Link
-        href={entryUrl}
-        data-acquisition-cta="showcase_marketplace"
+        href={`${localePrefix}/browse`}
+        data-testid="showcase-browse-cta"
         className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
       >
-        {t("showcase.marketplace.cta")}
+        {t("hero.exploreCta")}
       </Link>
     )
   };
 
-  return <TabbedShowcaseFrame actionByTab={actionByTab} />;
+  // The landing tells one story: the marketplace. The deal-feed showcase lives on
+  // /browse/deals so the page does not restate the three ideas twice.
+  return <TabbedShowcaseFrame actionByTab={actionByTab} tabs={SHOWCASE_TABS.filter((tab) => tab.key === "marketplace")} />;
+}
+
+function FinalCallToAction({ locale }: { locale: SupportedLocale }) {
+  const t = useTranslations("landing");
+  const localePrefix = localePrefixFor(locale);
+
+  return (
+    <section className="border border-border bg-surface p-8 text-center space-y-4" data-testid="landing-final-cta">
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-text">{t("hero.finalTitle")}</h2>
+      <p className="text-sm text-muted max-w-2xl mx-auto">{t("hero.pricingNote")}</p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Link
+          href={getPublicAppEntryHref(localePrefix)}
+          data-acquisition-cta="landing_activation"
+          className="inline-flex items-center gap-2 px-8 py-4 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+        >
+          {t("hero.cta")}
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+        <Link
+          href={`${localePrefix}/pricing`}
+          className="font-mono text-xs text-subtle underline-offset-4 hover:text-primary hover:underline"
+        >
+          {t("hero.pricingLink")}
+        </Link>
+      </div>
+    </section>
+  );
 }
 
 function TabbedShowcaseFuture() {
@@ -493,21 +513,6 @@ function TabbedShowcaseFuture() {
   };
 
   return <TabbedShowcaseFrame actionByTab={actionByTab} />;
-}
-
-function DeveloperSection() {
-  const t = useTranslations("landing");
-  return (
-    <div className="max-w-7xl mx-auto">
-      <SectionHeader title={t("headers.developer.title")} subtitle={t("headers.developer.subtitle")} />
-      <div style={{ contentVisibility: "auto", containIntrinsicSize: "560px" }}>
-        <TerminalEmulator />
-      </div>
-      <div className="mt-12" style={{ contentVisibility: "auto", containIntrinsicSize: "520px" }}>
-        <NpmCallout />
-      </div>
-    </div>
-  );
 }
 
 type LandingProps = {
@@ -578,11 +583,11 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
         {mode === "current" && (
           <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-16">
             <CoreIdeas />
-            <VisitorSteps locale={locale} />
+            <VisitorSteps />
           </div>
         )}
 
-        <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg">
+        <div className="bg-primary text-bg py-2 overflow-hidden border-y border-bg" aria-hidden="true">
           <div
             className="flex whitespace-nowrap gap-12 font-mono text-xs font-bold uppercase tracking-widest"
             style={{ animation: "marquee 20s linear infinite" }}
@@ -605,21 +610,13 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
         <div className="max-w-[1440px] mx-auto px-6 py-16 space-y-24">
           {showcase}
 
-          <HowItWorks />
-
-          {/* Interactive demos and the terminal are desktop-only: on a phone they
-              triple the page length without adding to the pitch. */}
           <div className="hidden md:block">
-            <MissionSelect />
-          </div>
-
-          <PlatformPillars />
-
-          <div className="hidden md:block">
-            <DeveloperSection />
+            <PlatformPillars />
           </div>
 
           <Faq />
+
+          {mode === "current" ? <FinalCallToAction locale={locale} /> : null}
         </div>
       </main>
 

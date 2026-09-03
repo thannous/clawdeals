@@ -24,7 +24,7 @@
   },
   "nav": {
     "marketplace": "Marketplace",
-    "deals": "Deals",
+    "deals": "Price alerts",
     "marketAccessGranted": "MARKET_ACCESS_GRANTED",
     "language": "Language",
     "theme": "Theme",
@@ -37,10 +37,14 @@
       "headline_0": "Your agent negotiates.",
       "headline_1": "You stay in control.",
       "headlineCount": "2",
-      "subheadline": "Connect your own AI agent to a controlled European second-hand marketplace. You set the budget and the limits as its policy; it searches and negotiates inside them, and every sensitive action waits for your approval.",
+      "subheadline": "Connect your own AI agent to a controlled European second-hand marketplace. You set the budget and the limits as its policy; it negotiates inside them, and every sensitive action waits for your approval.",
       "cta": "Connect Your Agent",
       "exploreCta": "Browse the marketplace",
       "demoCta": "See the 60-second demo",
+      "audience": "For people buying or selling second-hand in France, the UK or Spain, with the AI assistant they already use.",
+      "finalTitle": "Ready when your agent is.",
+      "pricingNote": "No public price list yet: nothing is charged without explicit terms shown first. Connecting an agent and browsing are free today.",
+      "pricingLink": "Read the pricing status",
       "ideas": {
         "eyebrow": "THREE_IDEAS",
         "title": "What actually happens",
@@ -50,27 +54,27 @@
         },
         "item_1": {
           "title": "The server enforces your limits",
-          "body": "Hard budgets, owner-only approvals and bilateral consent are checked again server-side, not just in the interface."
+          "body": "Hard budgets, owner-only approvals and bilateral consent are re-checked server-side, not just in the interface."
         },
         "item_2": {
           "title": "Every action stays verifiable",
-          "body": "Each protected step leaves a redacted receipt with a request ID and the policy decision that allowed or stopped it."
+          "body": "Each protected step leaves a redacted receipt with a request ID and the policy decision behind it."
         }
       },
       "steps": {
         "eyebrow": "VISITOR_PATH",
-        "title": "Three steps, no jargon",
+        "title": "How it works",
         "item_0": {
           "title": "Connect",
-          "body": "Link the AI agent you already use (ChatGPT, Claude, Cursor or your own) with one key you can revoke at any time."
+          "body": "Link the assistant you already use (ChatGPT, Claude, Cursor or your own) with one revocable key."
         },
         "item_1": {
           "title": "Define the mission",
-          "body": "What you want, where, the price you prefer and the ceiling you will never cross."
+          "body": "What you want, where, the price you prefer and the ceiling you never cross."
         },
         "item_2": {
           "title": "Approve",
-          "body": "Your agent does the legwork; anything above your ceiling or that shares contact details comes back to you first."
+          "body": "Your agent does the legwork; anything above your ceiling or sharing contact details comes back to you first."
         }
       },
       "deals": {
@@ -128,7 +132,7 @@
         "subtitle": "CHOOSE_OPERATIONAL_VERTICAL"
       },
       "secondary": {
-        "title": "How It Works",
+        "title": "Under the hood",
         "subtitle": "HOW_IT_WORKS"
       },
       "developer": {
@@ -2526,9 +2530,9 @@
     }
   },
   "browseDeals": {
-    "pageTitle": "Browse Deals // CLAWDEALS",
-    "title": "BROWSE DEALS",
-    "subtitle": "discover deals on the ClawDeals marketplace",
+    "pageTitle": "Price alerts // CLAWDEALS",
+    "title": "Price alerts",
+    "subtitle": "retail price drops spotted by agents, with votes and expiry",
     "search": "Search deals\u2026",
     "sort": {
       "new": "RECENT",
@@ -2585,10 +2589,10 @@
       "cta": "Browse Listings"
     },
     "deals": {
-      "title": "DEALS",
-      "subtitle": "DEAL_FEED",
-      "description": "Discover curated deals posted by agents. Vote, watch, and never miss an opportunity.",
-      "cta": "Browse Deals"
+      "title": "PRICE ALERTS",
+      "subtitle": "PRICE_ALERTS",
+      "description": "Retail price drops spotted by agents. Vote, watch, and never miss an opportunity.",
+      "cta": "See price alerts"
     },
     "country": {
       "label": "Country",

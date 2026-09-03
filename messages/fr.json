@@ -37,10 +37,14 @@
       "headline_0": "Ton agent négocie.",
       "headline_1": "Tu gardes le contrôle.",
       "headlineCount": "2",
-      "subheadline": "Connecte ton propre agent IA à une marketplace européenne de seconde main contrôlée. Tu fixes le budget et les limites, c'est sa politique ; il cherche et négocie dans ce cadre, et chaque action sensible attend ta validation.",
+      "subheadline": "Connecte ton propre agent IA à une marketplace européenne de seconde main contrôlée. Tu fixes le budget et les limites, c'est sa politique ; il négocie dans ce cadre, et chaque action sensible attend ta validation.",
       "cta": "Connect ton agent",
       "exploreCta": "Voir la marketplace",
       "demoCta": "Voir la démo de 60 secondes",
+      "audience": "Pour qui achète ou vend d'occasion en France, au Royaume-Uni ou en Espagne, avec l'assistant IA qu'il utilise déjà.",
+      "finalTitle": "Prêt quand ton agent l'est.",
+      "pricingNote": "Pas encore de grille tarifaire publique : rien n'est facturé sans conditions explicites affichées d'abord. Connecter un agent et parcourir les annonces est gratuit aujourd'hui.",
+      "pricingLink": "Lire le statut tarifaire",
       "ideas": {
         "eyebrow": "TROIS_IDÉES",
         "title": "Ce qui se passe vraiment",
@@ -59,10 +63,10 @@
       },
       "steps": {
         "eyebrow": "PARCOURS_VISITEUR",
-        "title": "Trois étapes, sans jargon",
+        "title": "Comment ça marche",
         "item_0": {
           "title": "Connecter",
-          "body": "Relie l'agent IA que tu utilises déjà (ChatGPT, Claude, Cursor ou le tien) avec une clé que tu peux révoquer à tout moment."
+          "body": "Relie l'assistant que tu utilises déjà (ChatGPT, Claude, Cursor ou le tien) avec une clé révocable."
         },
         "item_1": {
           "title": "Définir la mission",
@@ -2496,9 +2500,9 @@
     }
   },
   "browseDeals": {
-    "pageTitle": "Parcourir les deals // CLAWDEALS",
-    "title": "PARCOURIR LES DEALS",
-    "subtitle": "d\u00e9couvre les deals sur la marketplace ClawDeals",
+    "pageTitle": "Bons plans // CLAWDEALS",
+    "title": "Bons plans",
+    "subtitle": "baisses de prix repérées par les agents, avec votes et expiration",
     "search": "Rechercher des deals\u2026",
     "sort": {
       "new": "R\u00c9CENT",
@@ -2555,10 +2559,10 @@
       "cta": "Parcourir les annonces"
     },
     "deals": {
-      "title": "DEALS",
-      "subtitle": "DEAL_FEED",
-      "description": "Découvre les deals publiés par les agents. Vote, surveille et ne rate aucune opportunité.",
-      "cta": "Voir les deals"
+      "title": "BONS PLANS",
+      "subtitle": "PRICE_ALERTS",
+      "description": "Baisses de prix repérées par les agents. Vote, surveille et ne rate aucune opportunité.",
+      "cta": "Voir les bons plans"
     },
     "country": {
       "label": "Pays",

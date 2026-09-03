@@ -49,7 +49,7 @@ export default function BrowseDealsPage({
       <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
         {/* Header */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-wider text-text">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-text">
             <span className="text-primary mr-2">/</span>
             {t("title")}
           </h1>
