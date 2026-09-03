@@ -2,6 +2,15 @@
 
 How to evaluate ClawDeals for the WebMCP Challenge without rebuilding the product.
 
+## Judge in 60 seconds
+
+1. Open [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works).
+2. Copy the mission prompt from the hub.
+3. Watch the registry: 5 public tools; 11 once the synthetic judge key is connected on the sandbox (paste it in the hub's **Judge key** field, then switch Buyer ↔ Seller in one click).
+4. Look for three outcomes: `APPROVAL_REQUIRED` on 1,350 EUR, `RESERVED` after the seller accepts, and a redacted receipt.
+
+The hub's **What you should see** checklist, the **Deal room** card on `/webmcp` and the sticky **approval awaiting your decision** banner are all derived from the local receipts, so they only light up when a tool actually ran.
+
 ## References
 
 - Repo plan: https://github.com/thannous/clawdeals/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md
@@ -48,6 +57,8 @@ The hub copies this exact prompt:
 
 Judge reset (`POST /api/v1/sandbox/reset` with `mode=webmcp_challenge`) is allowlisted to `WEBMCP_JUDGE_AGENT_ID` and exists only when `CLAWDEALS_ENV=sandbox`. Production must return `404`. A non-judge agent gets `403`.
 
+The optional **Let the synthetic seller respond** button (`POST /api/v1/sandbox/seller-turn`, same guards) plays the seller side deterministically, so a judge holding only the buyer key can still reach the policy stop: below 1,250 EUR the seller counters at 1,350 EUR (above the 1,300 EUR hard budget); at or above, it accepts and the listing becomes `RESERVED`. A second click while its counter is open is idempotent. No LLM is involved.
+
 Reset creates only synthetic data:
 
 - one BUY mission (preferred 1,200 EUR, hard budget 1,300 EUR, 25 km of Paris, battery health >= 80%);
@@ -58,7 +69,7 @@ Reset creates only synthetic data:
 
 Two authorized resets keep the same synthetic actors, listing IDs, and thread ID. Reset clears stale local mission/receipt state and does not clear the stored judge key.
 
-## Suggested path (under 10 minutes)
+## Full path (under 10 minutes)
 
 Judges are not required to build the repo. If a live WebMCP browser is available:
 
@@ -70,7 +81,7 @@ Judges are not required to build the repo. If a live WebMCP browser is available
 6. Watch `search_listings` rank with `policy_fit` issues, then `open_listing` on the best eligible candidate.
 7. `start_thread` + `send_message` (seller text is untrusted data).
 8. `make_offer` at 1,100 EUR stops for editable confirmation.
-9. Force a policy stop: a counter or accept above 1,300 EUR returns `APPROVAL_REQUIRED` / `hard_budget_exceeded` instead of bypassing the mission.
+9. Force a policy stop: a counter or accept above 1,300 EUR returns `APPROVAL_REQUIRED` / `hard_budget_exceeded` instead of bypassing the mission. Without a seller key, click **Let the synthetic seller respond** after step 8: it counters at 1,350 EUR, then ask the buyer agent to accept.
 10. Resolve the owner approval on `/my/approvals/:id` only. Agents cannot call `resolve_approval` from browse or the challenge page.
 11. Seller `respond_to_offer` `accept` reserves the listing (`RESERVED`).
 12. `request_contact_reveal` creates two independent owner consents. One consent reveals nothing.

@@ -8,7 +8,10 @@ shows the current pitch, story, public YouTube embed and three-image gallery.
 
 The saved remote draft now contains:
 
-- project name `ClawDeals` and pitch `Your agent negotiates. You stay in control.`;
+- project name `ClawDeals` and pitch `Your agent negotiates. You stay in control.`
+  (the story now opens with the one-line pitch *ClawDeals lets buyer and seller
+  agents negotiate a real deal while humans keep control of budgets, approvals
+  and identity.*, to be pasted again into Devpost with the rest of the story);
 - the current trust-layer story and challenge-period delta;
 - ten built-with tags and five judge/reproduction links;
 - the public video `https://youtu.be/mjNd6BNk_0U`;
@@ -64,45 +67,50 @@ actions requiring action-time confirmation.
 
 ## Project story
 
+ClawDeals lets buyer and seller agents negotiate a real deal while humans keep
+control of budgets, approvals and identity.
+
+1. **The agent negotiates.** It searches, ranks, asks the seller and prepares
+   offers through page-scoped WebMCP tools.
+2. **The server enforces human limits.** Hard budgets, owner-only approvals and
+   bilateral consent are re-checked server-side; a confirmation modal is never
+   the security boundary.
+3. **Every action stays verifiable.** Each protected step leaves a redacted
+   receipt with a request ID, an input hash and a policy decision.
+
 ### Inspiration
 
-Most shopping agents either guess a website's DOM or bypass the human through a
-backend integration. ClawDeals asks a harder question: how can a buyer agent and
-a seller actor complete a synthetic, policy-bound negotiation while owners keep
-control of budget, identity, contact details and final approval?
+Shopping agents already search and fill carts. Real second-hand deals are
+harder: two independent people, an asynchronous negotiation, a hard budget, and
+contact details nobody wants leaked to a stranger's bot. WebMCP gave us the
+missing in-page contract: the agent gets structured tools, the human keeps the
+same page and the last word.
 
-WebMCP gave us the missing in-page contract. The agent can use structured tools,
-while the human watches the same marketplace page change and remains the final
-authority for sensitive actions.
+### Who this is for
+
+Second-hand marketplaces between individuals — bikes, electronics, furniture —
+where negotiation is asynchronous, scams and leaked contact details are the first
+risk, and an agent without server-enforced limits is unusable. Beyond e-bikes,
+the same primitives (mission, policy stop, atomic reservation, bilateral consent,
+receipt) apply to housing, used cars and freelance work.
 
 ### What it does
 
-ClawDeals is a trust layer for delegated commerce. A buyer can define a Deal
-Mission with a preferred price, a hard budget, a radius and product requirements.
-The agent searches and ranks listings with an explicit `policy_fit`, opens the
-best candidate, starts a negotiation, asks structured questions and prepares an
-offer.
+A buyer defines a Deal Mission: preferred price, hard budget, radius,
+requirements. The agent searches and ranks listings with an explicit
+`policy_fit` — and the human sees the same verdict as a badge on each card —
+opens the best candidate, starts a thread, asks structured questions and
+prepares an offer. Every write stops for a human-readable confirmation where the
+amount can be edited before approval.
 
-Sensitive steps do not happen silently:
+Above the hard budget the server answers `APPROVAL_REQUIRED` instead of sending
+the offer; only the owner page can resolve it. Acceptance reserves the listing
+atomically. Contact details stay redacted until both owners consent. A live
+checklist on the judge hub lights up each of these moments from the receipts.
 
-- owner policies are enforced again on the server;
-- write tools stop for an editable confirmation;
-- an amount above the mission's hard budget becomes `APPROVAL_REQUIRED`;
-- offer acceptance reserves the listing atomically;
-- contact details stay redacted until both owners consent;
-- every action produces a compact receipt with a request ID, policy decision,
-  confirmation state, input hash and redacted result.
-
-The live judge page exposes five public read-only WebMCP tools. In a connected
-in-app browser, those tools were discovered directly from the deployed page and
-executed as `get_page_context` → `search_listings` → `get_action_receipt`; the
-shared UI navigated to the filtered listings view and the receipt preserved all
-redactions.
-
-The authenticated isolated sandbox expands the contextual registry to eleven
-tools for the full mission and negotiation workflow. The public buyer/seller
-agreement journey is verified; production intentionally keeps the synthetic
-reset and mutation journey disabled.
+Official contest samples cover catalogues and carts. ClawDeals adds multiparty
+negotiation, non-bypassable policy, editable approval, atomic reservation,
+bilateral consent and audit.
 
 ### How we built it
 
@@ -110,7 +118,17 @@ The application is a Next.js Pages Router product written in TypeScript and
 React. WebMCP tools register through the official
 `document.modelContext.registerTool(tool, { signal })` lifecycle. The registry
 changes with the page and authentication state, so an agent receives only the
-tools that are useful and allowed in the current human context.
+tools that are useful and allowed in the current human context. The judge hub
+reads that registry back through `document.modelContext.getTools()` and
+refreshes on `toolchange`, so judges see the browser's own view next to ours.
+
+The live judge page exposes five public read-only WebMCP tools. In a connected
+in-app browser, those tools were discovered directly from the deployed page and
+executed as `get_page_context` → `search_listings` → `get_action_receipt`; the
+shared UI navigated to the filtered listings view and the receipt preserved all
+redactions. The authenticated isolated sandbox expands the contextual registry to
+eleven tools for the full mission and negotiation workflow; production keeps the
+synthetic reset and mutation journey disabled.
 
 The tools reuse the same APIs and policy engine as the visible product. Vitest
 contracts cover schemas, policy enforcement, confirmation and redaction.
@@ -231,8 +249,11 @@ Seller API key: <PRIVATE_SYNTHETIC_SELLER_KEY>
 5. Search policy-fit listings, open the target listing, start the negotiation,
    send a question and prepare an offer. The deterministic regression uses the
    target listing price of 1,150 EUR; both 1,100 and 1,150 are in-policy.
-6. Switch to the seller key and accept the offer. Expect an atomic RESERVED
-   result, a redacted receipt and an idempotent replay response.
+6. Switch to the seller key (one click in the hub's Judge key panel once both
+   keys are pasted) and accept the offer. Expect an atomic RESERVED result, a
+   redacted receipt and an idempotent replay response. Alternatively click
+   "Let the synthetic seller respond": it counters at 1,350 EUR, and the buyer
+   agent's accept is refused with APPROVAL_REQUIRED.
 7. Contact details stay redacted until bilateral owner consent. All identities,
    listings and messages in this sandbox are synthetic.
 
@@ -291,6 +312,11 @@ Recheck dimensions and hashes immediately before any YouTube or Devpost upload.
   Chrome profile; do not relabel the injected journey as native proof.
 - [x] YouTube video is public, has audio and is shorter than three minutes.
 - [x] Replace the stale Devpost story with the exact Markdown above.
+- [ ] Re-paste the 3 September story (one-line pitch, three ideas, "Who this is
+  for", `getTools()` paragraph) into Devpost and preview it.
+- [ ] Add "Model Context Tool Inspector extension" to the Chrome testing
+  instruction and mention the inline **Judge key** field (no developer console
+  needed) in the private judge instructions.
 - [x] Replace the demo URL `/webmcp` with `/webmcp-challenge`.
 - [x] Add the final public video URL.
 - [x] Preview every Devpost section and link.

@@ -2509,12 +2509,12 @@
       "hint": "Ouvrez cette URL dans le navigateur intégré de ChatGPT, ou Chrome 149+ avec chrome://flags/#enable-webmcp-testing."
     },
     "test": {
-      "title": "Comment tester",
-      "step1": "Activez WebMCP dans le navigateur ChatGPT ou le flag expérimental Chrome.",
-      "step2": "Demandez : « Trouve de l’électronique d’occasion sous 200 EUR et montre-la sur cette page. »",
-      "step3": "La grille se filtre et se met en avant, sans clics DOM.",
-      "step4": "Pour une écriture, demandez un brouillon d’annonce. Approuvez ou refusez la modale.",
-      "writeHint": "Les tools d’écriture nécessitent une clé agent via /start. Les lectures fonctionnent sans compte.",
+      "title": "Évaluer en 60 secondes",
+      "step1": "Ouvrez cette page dans le navigateur intégré de ChatGPT ou dans Chrome 149+ avec chrome://flags/#enable-webmcp-testing.",
+      "step2": "Collez la mission juge : vélo électrique à Paris, prix préféré 1 200 EUR, plafond 1 300 EUR, batterie ≥ 80 %, offre 1 100 EUR.",
+      "step3": "Observez le registre : 5 outils publics, 11 une fois la clé juge synthétique connectée sur le sandbox.",
+      "step4": "Cherchez APPROVAL_REQUIRED sur 1 350 EUR, RESERVED après l’acceptation du vendeur, et un reçu expurgé.",
+      "writeHint": "Les tools d’écriture nécessitent une clé agent connectée. Les lectures fonctionnent sans compte. Les clés juge sont fournies en privé et ne fonctionnent que sur le sandbox isolé.",
       "getKey": "Créer une clé agent"
     },
     "tools": {

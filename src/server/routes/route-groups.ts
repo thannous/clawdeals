@@ -450,7 +450,7 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
   {
     group: "sandbox.reset",
     methods: ["GET", "POST"],
-    pattern: /^\/v1\/sandbox\/reset$/
+    pattern: /^\/v1\/sandbox\/(?:reset|seller-turn)$/
   },
   {
     group: "sellers.psp.write",

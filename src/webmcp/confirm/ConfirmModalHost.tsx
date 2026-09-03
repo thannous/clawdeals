@@ -1,13 +1,25 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { canonicalJsonStringify } from "../utils";
+import { getActiveBuyMission, subscribeActiveBuyMission } from "../ui-bridge";
 import { useWebMcpConfirm } from "./context";
+import { applyPrimaryField, formatMoney, summarizeConfirmRequest, type ConfirmSummary } from "./summarize";
 import type { ConfirmDecision, ConfirmHistoryEntry, ConfirmRequest } from "./types";
 
 function formatSeconds(ms: number): string {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${s}s`;
 }
+
+function prettyJson(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return canonicalJsonStringify(value);
+  }
+}
+
+const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], summary';
 
 export default function ConfirmModalHost() {
   const { pending, decide, history, cooldownUntilMs } = useWebMcpConfirm();
@@ -49,25 +61,25 @@ function ConfirmModal({
   decide: (decision: ConfirmDecision) => void;
   history: ConfirmHistoryEntry[];
 }) {
-  const [mode, setMode] = useState<"preview" | "edit">("preview");
-  const [edited, setEdited] = useState<string>(() => {
-    try {
-      // Confirmations should show the exact payload that will be approved/executed.
-      return JSON.stringify(pending.args, null, 2);
-    } catch {
-      // Fallback for any unexpected non-JSON args shape.
-      return canonicalJsonStringify(pending.args);
-    }
-  });
+  const mission = useSyncExternalStore(subscribeActiveBuyMission, getActiveBuyMission, () => null);
+  const summary: ConfirmSummary = useMemo(() => summarizeConfirmRequest(pending, mission), [pending, mission]);
+  const field = summary.primaryField;
+
+  // The JSON text is the single source of truth for what gets approved; the primary field edits it.
+  const [edited, setEdited] = useState<string>(() => prettyJson(pending.args));
+  const [fieldValue, setFieldValue] = useState<string>(() => (field?.value === null || field?.value === undefined ? "" : String(field.value)));
   const [error, setError] = useState<string>("");
-  const [remainingMs, setRemainingMs] = useState<number>(0);
+  const [remainingMs, setRemainingMs] = useState<number>(pending.timeoutMs);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const rejectRef = useRef<HTMLButtonElement | null>(null);
+  const primaryRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const approveRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const start = Date.now();
     const tick = () => {
       const elapsed = Date.now() - start;
-      const left = Math.max(0, pending.timeoutMs - elapsed);
-      setRemainingMs(left);
+      setRemainingMs(Math.max(0, pending.timeoutMs - elapsed));
     };
     tick();
     const id = setInterval(tick, 250);
@@ -76,9 +88,26 @@ function ConfirmModal({
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
+    const target = primaryRef.current || approveRef.current;
+    target?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
+      // Escape never decides on the agent's behalf; it only moves focus to the explicit Reject control.
       if (e.key === "Escape") {
-        decide({ kind: "deny", code: "USER_DENIED", reason: "escape" });
+        e.preventDefault();
+        rejectRef.current?.focus();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const nodes = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -86,28 +115,77 @@ function ConfirmModal({
       document.body.style.overflow = "";
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [decide]);
+  }, []);
 
-  const canonicalArgs = useMemo(() => canonicalJsonStringify(pending.args), [pending.args]);
+  const parsedEdited = useMemo(() => {
+    try {
+      return { value: JSON.parse(edited || "{}") as unknown, error: null as string | null };
+    } catch {
+      return { value: null, error: "Invalid JSON. Fix the payload or reset it." };
+    }
+  }, [edited]);
 
-  const handleDeny = useCallback(() => {
+  const livePolicyHint = useMemo(() => {
+    if (!field || field.kind !== "amount" || !mission) return summary.policyHint;
+    const current = Number(fieldValue);
+    if (!Number.isFinite(current)) return summary.policyHint;
+    return summarizeConfirmRequest({ ...pending, args: { ...(parsedEdited.value as object), [field.key]: current } }, mission).policyHint;
+  }, [field, fieldValue, mission, parsedEdited.value, pending, summary.policyHint]);
+
+  const onFieldChange = useCallback(
+    (raw: string) => {
+      setFieldValue(raw);
+      if (!field) return;
+      const base = parsedEdited.error ? pending.args : parsedEdited.value;
+      const applied = applyPrimaryField(base, field, raw);
+      setError(applied.error || "");
+      if (!applied.error) setEdited(prettyJson(applied.args));
+    },
+    [field, parsedEdited.error, parsedEdited.value, pending.args]
+  );
+
+  const onJsonChange = useCallback(
+    (raw: string) => {
+      setEdited(raw);
+      setError("");
+      if (!field) return;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && field.key in parsed) {
+          const next = (parsed as Record<string, unknown>)[field.key];
+          setFieldValue(next === null || next === undefined ? "" : String(next));
+        }
+      } catch {
+        // Leave the primary field untouched while the JSON is mid-edit.
+      }
+    },
+    [field]
+  );
+
+  const handleReject = useCallback(() => {
     decide({ kind: "deny", code: "USER_DENIED", reason: "user_denied" });
   }, [decide]);
 
   const handleApprove = useCallback(() => {
-    setError("");
-    if (mode === "edit") {
-      try {
-        const parsed = JSON.parse(edited || "{}");
-        decide({ kind: "approve", args: parsed });
-        return;
-      } catch {
-        setError("Invalid JSON. Fix the payload or go back.");
+    if (parsedEdited.error) {
+      setError(parsedEdited.error);
+      return;
+    }
+    if (field) {
+      const applied = applyPrimaryField(parsedEdited.value, field, fieldValue);
+      if (applied.error) {
+        setError(applied.error);
         return;
       }
+      decide({ kind: "approve", args: applied.args });
+      return;
     }
-    decide({ kind: "approve", args: pending.args });
-  }, [decide, edited, mode, pending.args]);
+    decide({ kind: "approve", args: parsedEdited.value });
+  }, [decide, field, fieldValue, parsedEdited]);
+
+  const edits = useMemo(() => canonicalJsonStringify(parsedEdited.value) !== canonicalJsonStringify(pending.args), [parsedEdited.value, pending.args]);
+  const progress = pending.timeoutMs > 0 ? Math.max(0, Math.min(1, remainingMs / pending.timeoutMs)) : 0;
+  const hint = livePolicyHint;
 
   return (
     <>
@@ -116,6 +194,9 @@ function ConfirmModal({
           <div>Agent action pending: {pending.toolName}</div>
           <div>Timeout: {formatSeconds(remainingMs)}</div>
         </div>
+        <div className="h-0.5 w-full bg-border" aria-hidden="true">
+          <div className="h-full bg-primary transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+        </div>
       </div>
 
       <div
@@ -123,83 +204,130 @@ function ConfirmModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="webmcp-confirm-title"
+        aria-describedby="webmcp-confirm-sentence"
         data-testid="webmcp-confirm-modal"
       >
-        <button
-          type="button"
-          aria-label="Close confirmation dialog"
-          className="absolute inset-0 modal-overlay border-0 p-0"
-          onClick={handleDeny}
-        />
+        <div aria-hidden="true" className="absolute inset-0 modal-overlay" />
 
-        <div className="relative bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <h2 id="webmcp-confirm-title" className="text-sm font-bold font-mono uppercase tracking-wider text-text">
-                Confirm tool execution
-              </h2>
-              <div className="text-xs font-mono text-muted">
-                <span className="text-subtle">Tool:</span> {pending.toolName}
-              </div>
-              <div className="text-xs font-mono text-muted">
-                <span className="text-subtle">Scope:</span> {pending.toolScope}
-              </div>
-              <div className="text-xs font-mono text-muted">
-                <span className="text-subtle">Request:</span> {pending.requestId}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleDeny}
-              className="border border-border px-3 py-1 text-xs font-mono font-bold uppercase text-muted hover:border-border-strong hover:text-text"
-            >
-              Close
-            </button>
+        <div ref={dialogRef} className="relative bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4">
+          <div className="space-y-2">
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">The agent asks for your confirmation</p>
+            <h2 id="webmcp-confirm-title" className="text-xl font-bold uppercase tracking-wide text-text">
+              {summary.title}
+            </h2>
+            <p id="webmcp-confirm-sentence" className="text-sm leading-relaxed text-text" data-testid="webmcp-confirm-sentence">
+              {summary.sentence}
+            </p>
+            <p className="text-xs leading-relaxed text-muted">{summary.consequence}</p>
           </div>
 
-          <div className="border border-border bg-bg/40 rounded p-3 space-y-2">
-            <div className="text-xs font-mono uppercase tracking-widest text-subtle">Parameters</div>
-            {mode === "preview" ? (
-              <pre className="text-xs font-mono text-text whitespace-pre-wrap break-words">{canonicalArgs}</pre>
-            ) : (
+          {hint ? (
+            <p
+              data-testid="webmcp-confirm-policy-hint"
+              data-tone={hint.tone}
+              className={`border px-3 py-2 text-xs font-mono leading-relaxed ${
+                hint.tone === "warn" ? "border-warning/50 bg-warning/10 text-warning" : "border-success/40 bg-success/10 text-success"
+              }`}
+            >
+              {hint.text}
+            </p>
+          ) : null}
+
+          {field ? (
+            <label className="block space-y-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                {field.label}
+                {field.kind === "amount" && field.currency ? ` · ${field.currency}` : ""}
+                <span className="ml-2 normal-case tracking-normal text-subtle">— edit before approving if needed</span>
+              </span>
+              {field.kind === "amount" ? (
+                <input
+                  ref={(node) => {
+                    primaryRef.current = node;
+                  }}
+                  data-testid="webmcp-confirm-primary-field"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={1}
+                  value={fieldValue}
+                  onChange={(event) => onFieldChange(event.target.value)}
+                  className="w-full border border-border bg-bg px-3 py-2 font-mono text-lg font-bold text-text focus:border-primary focus:outline-none"
+                />
+              ) : (
+                <textarea
+                  ref={(node) => {
+                    primaryRef.current = node;
+                  }}
+                  data-testid="webmcp-confirm-primary-field"
+                  rows={3}
+                  value={fieldValue}
+                  onChange={(event) => onFieldChange(event.target.value)}
+                  className="w-full border border-border bg-bg px-3 py-2 font-mono text-sm text-text focus:border-primary focus:outline-none"
+                />
+              )}
+              {field.kind === "amount" && Number.isFinite(Number(fieldValue)) && fieldValue !== "" ? (
+                <span className="block text-xs font-mono text-muted">{formatMoney(Number(fieldValue), field.currency)}</span>
+              ) : null}
+            </label>
+          ) : null}
+
+          <details className="border border-border bg-bg/40 rounded" data-testid="webmcp-confirm-advanced">
+            <summary className="cursor-pointer select-none px-3 py-2 text-xs font-mono uppercase tracking-widest text-subtle hover:text-text">
+              Advanced · raw parameters{edits ? " · edited" : ""}
+            </summary>
+            <div className="space-y-2 border-t border-border p-3">
               <textarea
                 aria-label="Edit tool parameters JSON"
                 value={edited}
-                onChange={(e) => setEdited(e.target.value)}
+                onChange={(event) => onJsonChange(event.target.value)}
+                spellCheck={false}
                 className="w-full min-h-[160px] text-xs font-mono bg-bg border border-border rounded p-2 text-text focus:outline-none focus:border-primary"
               />
-            )}
-            {error ? <div className="text-xs font-mono text-red-400">{error}</div> : null}
-          </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-subtle">
+                <span>
+                  Tool {pending.toolName} · scope {pending.toolScope} · request {pending.requestId.slice(0, 8)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEdited(prettyJson(pending.args));
+                    setFieldValue(field?.value === null || field?.value === undefined ? "" : String(field.value));
+                    setError("");
+                  }}
+                  className="border border-border px-2 py-1 uppercase tracking-wider hover:text-text"
+                >
+                  Reset edits
+                </button>
+              </div>
+              <p className="text-[11px] font-mono text-subtle">What the agent will receive: {pending.outputHint}</p>
+            </div>
+          </details>
 
-          <div className="border border-border bg-bg/40 rounded p-3 space-y-2">
-            <div className="text-xs font-mono uppercase tracking-widest text-subtle">What the agent will receive</div>
-            <div className="text-xs font-mono text-muted">{pending.outputHint}</div>
-          </div>
+          {error ? (
+            <div role="alert" className="text-xs font-mono text-error">
+              {error}
+            </div>
+          ) : null}
 
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs font-mono text-subtle">Recent actions: {history.length}</div>
             <div className="flex items-center gap-2">
               <button
+                ref={rejectRef}
                 type="button"
-                onClick={() => setMode((m) => (m === "preview" ? "edit" : "preview"))}
-                className="border border-border px-4 py-2 text-xs font-mono font-bold uppercase text-muted hover:border-border-strong hover:text-text"
+                onClick={handleReject}
+                className="border border-border px-4 py-2 text-xs font-mono font-bold uppercase text-muted hover:border-error hover:text-error"
               >
-                {mode === "preview" ? "Edit" : "Preview"}
+                Reject
               </button>
               <button
-                type="button"
-                onClick={handleDeny}
-                className="border border-border px-4 py-2 text-xs font-mono font-bold uppercase text-muted hover:border-border-strong hover:text-text"
-              >
-                Deny
-              </button>
-              <button
+                ref={approveRef}
                 type="button"
                 onClick={handleApprove}
-                className="border border-primary px-4 py-2 text-xs font-mono font-bold uppercase text-primary hover:bg-primary hover:text-bg"
+                className="border border-primary bg-primary px-4 py-2 text-xs font-mono font-bold uppercase text-bg hover:brightness-110"
               >
-                Approve
+                {edits ? "Approve edited" : "Approve"}
               </button>
             </div>
           </div>

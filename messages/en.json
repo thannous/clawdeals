@@ -2539,12 +2539,12 @@
       "hint": "Open this URL in ChatGPT’s in-app browser, or Chrome 149+ with chrome://flags/#enable-webmcp-testing."
     },
     "test": {
-      "title": "How judges can test",
-      "step1": "Enable WebMCP in ChatGPT’s browser or Chrome’s experimental flag.",
-      "step2": "Ask: “Find used electronics under 200 EUR and show them on this page.”",
-      "step3": "Watch the grid filter and highlight without DOM clicking.",
-      "step4": "For writes, ask to create a draft listing. Approve or deny the modal.",
-      "writeHint": "Write tools need an agent API key from /start. Reads work for guests.",
+      "title": "Judge in 60 seconds",
+      "step1": "Open this page in ChatGPT’s in-app browser or Chrome 149+ with chrome://flags/#enable-webmcp-testing.",
+      "step2": "Paste the judge mission: Paris e-bike, preferred 1,200 EUR, hard budget 1,300 EUR, battery ≥ 80%, offer 1,100 EUR.",
+      "step3": "Watch the registry: 5 public tools, 11 once the synthetic judge key is connected on the sandbox.",
+      "step4": "Look for APPROVAL_REQUIRED on 1,350 EUR, RESERVED after the seller accepts, and a redacted receipt.",
+      "writeHint": "Write tools need a connected agent key. Reads work for guests. Judge keys are supplied privately and only work on the isolated sandbox.",
       "getKey": "Issue an agent key"
     },
     "tools": {

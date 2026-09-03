@@ -1,0 +1,68 @@
+// @vitest-environment jsdom
+
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("../developer/api", () => ({
+  apiRequest: vi.fn(),
+  maskApiKey: (key: string) => `${key.slice(0, 6)}…${key.slice(-4)}`
+}));
+
+import { apiRequest } from "../developer/api";
+import { getStoredApiKey } from "../developer/storage";
+import AgentKeyConnect from "./AgentKeyConnect";
+import { getRoleKeys } from "./role-keys";
+
+afterEach(cleanup);
+beforeEach(() => {
+  vi.mocked(apiRequest).mockReset();
+  window.localStorage.clear();
+  window.sessionStorage.clear();
+});
+
+async function connect(key: string, role: "buyer" | "seller") {
+  fireEvent.change(screen.getByTestId("agent-key-role"), { target: { value: role } });
+  fireEvent.change(screen.getByTestId("agent-key-input"), { target: { value: key } });
+  await act(async () => {
+    fireEvent.submit(screen.getByTestId("agent-key-form"));
+  });
+}
+
+describe("AgentKeyConnect", () => {
+  it("stores a verified key and lets the judge switch roles without re-pasting", async () => {
+    vi.mocked(apiRequest).mockResolvedValue({ data: {}, headers: new Headers() });
+    render(<AgentKeyConnect />);
+
+    await connect("cd_test_buyer_key_0001", "buyer");
+    await waitFor(() => expect(getStoredApiKey()).toBe("cd_test_buyer_key_0001"));
+    expect(apiRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/v1/deals?limit=1", method: "GET", apiKey: "cd_test_buyer_key_0001" })
+    );
+    expect(screen.getByTestId("agent-key-connected").textContent).toContain("Buyer key");
+    expect(document.body.textContent).not.toContain("cd_test_buyer_key_0001");
+
+    fireEvent.click(screen.getByTestId("agent-key-add-other"));
+    await connect("cd_test_seller_key_0002", "seller");
+    await waitFor(() => expect(getStoredApiKey()).toBe("cd_test_seller_key_0002"));
+    expect(getRoleKeys()).toEqual({ buyer: "cd_test_buyer_key_0001", seller: "cd_test_seller_key_0002" });
+
+    fireEvent.click(screen.getByTestId("agent-key-switch"));
+    await waitFor(() => expect(getStoredApiKey()).toBe("cd_test_buyer_key_0001"));
+    expect(screen.getByTestId("agent-key-switch").textContent).toContain("Switch to seller");
+
+    fireEvent.click(screen.getByTestId("agent-key-disconnect"));
+    await waitFor(() => expect(getStoredApiKey()).toBeNull());
+    expect(getRoleKeys()).toEqual({});
+    expect(screen.getByTestId("agent-key-form")).toBeTruthy();
+  });
+
+  it("does not store a rejected key", async () => {
+    vi.mocked(apiRequest).mockRejectedValue({ status: 401, code: "UNAUTHORIZED", message: "Unauthorized" });
+    render(<AgentKeyConnect />);
+
+    await connect("cd_test_bad_key_000000", "buyer");
+    await waitFor(() => expect(screen.getByTestId("agent-key-message").textContent).toMatch(/rejected/i));
+    expect(getStoredApiKey()).toBeNull();
+    expect(getRoleKeys()).toEqual({});
+  });
+});

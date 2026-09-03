@@ -59,6 +59,38 @@ describe("BuyMissionPanel", () => {
     );
   });
 
+  it("fills coordinates and market from a city preset and toggles autonomy with checkboxes", async () => {
+    render(<BuyMissionPanel />);
+    fireEvent.change(screen.getByTestId("buy-mission-city"), { target: { value: "london" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /Make policy-compliant offers/i }));
+    expect((screen.getByRole("checkbox", { name: /Search and rank/i }) as HTMLInputElement).disabled).toBe(true);
+
+    fireEvent.submit(screen.getByTestId("buy-mission-form"));
+    await waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
+    expect(executeTool).toHaveBeenCalledWith(
+      "create_buy_mission",
+      expect.objectContaining({
+        market_code: "GB",
+        location_label: "London",
+        latitude: 51.5074,
+        longitude: -0.1278,
+        autonomous_actions: ["search", "ask_question"]
+      })
+    );
+  });
+
+  it("explains failures in plain language while keeping the code available", async () => {
+    executeTool.mockResolvedValue({
+      ok: false,
+      error: { code: "USER_DENIED", message: "User denied tool execution", details: {} },
+      meta: { request_id: "request-2" }
+    });
+    render(<BuyMissionPanel />);
+    fireEvent.submit(screen.getByTestId("buy-mission-form"));
+    await waitFor(() => expect(screen.getByTestId("buy-mission-result").textContent).toContain("Confirmation declined"));
+    expect(screen.getByTestId("buy-mission-result").getAttribute("data-code")).toBe("USER_DENIED");
+  });
+
   it("renders the mission summary immediately after a tool updates shared UI state", async () => {
     render(<BuyMissionPanel />);
     act(() => {

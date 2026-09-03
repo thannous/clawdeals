@@ -71,7 +71,7 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered-count")).toHaveText("20");
 
-    // Select a write tool and run it: Deny first.
+    // Select a write tool and run it: Reject first.
     const createDraftButton = page
       .locator("button")
       .filter({ hasText: "clawdeals.listings_create_draft" })
@@ -87,7 +87,7 @@ test.describe("Dev WebMCP demo", () => {
     await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
 
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "Deny" }).evaluate((el) => (el as HTMLButtonElement).click());
+    await page.getByRole("button", { name: "Reject" }).evaluate((el) => (el as HTMLButtonElement).click());
 
     await expect(page.getByText("\"USER_DENIED\"").first()).toBeVisible();
     await expect(page.getByTestId("webmcp-activity-hud")).toBeVisible();

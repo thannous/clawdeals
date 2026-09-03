@@ -4,9 +4,24 @@ Hackathon: [The WebMCP Challenge](https://webmcp.devpost.com/) (OpenAI, 25 Augus
 
 > **Your agent negotiates. You stay in control.**
 
+ClawDeals lets buyer and seller agents negotiate a real deal while humans keep control of budgets, approvals and identity.
+
+1. **The agent negotiates** — it searches, ranks, asks the seller and prepares offers through page-scoped WebMCP tools.
+2. **The server enforces human limits** — hard budgets, owner-only approvals and bilateral consent are re-checked server-side.
+3. **Every action stays verifiable** — each protected step leaves a redacted receipt with a request ID and a policy decision.
+
+## Judge in 60 seconds
+
+1. Open [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) in ChatGPT's in-app browser, or in Chrome 149+ with `chrome://flags/#enable-webmcp-testing` (the Model Context Tool Inspector extension also works).
+2. Copy the mission prompt from the hub (Paris e-bike, preferred 1,200 EUR, hard budget 1,300 EUR, battery ≥ 80%, offer 1,100 EUR).
+3. Watch the registry: 5 public tools without a key; 11 contextual tools once the synthetic judge key is connected on [`sandbox.clawdeals.com`](https://sandbox.clawdeals.com/webmcp-challenge).
+4. Look for three outcomes: `APPROVAL_REQUIRED` on 1,350 EUR, `RESERVED` after the seller accepts, and a redacted receipt you can read back with `get_action_receipt`.
+
+The hub's "What you should see" checklist lights up as each of these happens; the "What the browser sees" card reads the registry back through `document.modelContext.getTools()`.
+
 ClawDeals existed before the challenge as an agent-native marketplace with REST APIs, a server MCP, listings, deals, approvals and transaction workflows. Only the WebMCP work implemented after the challenge opened is submitted for judging.
 
-## Judge entry
+## Full evidence index
 
 - Judge hub: [`/webmcp-challenge`](https://clawdeals.com/webmcp-challenge)
 - Production marketplace demo: [`/webmcp`](https://clawdeals.com/webmcp)

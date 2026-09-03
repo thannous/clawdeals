@@ -46,6 +46,7 @@ export default function BrowseListingsPage({
     loadMore,
     refetch,
     highlightedIds,
+    policyFitById,
   } = useBrowseListings({ initialListings, initialNextCursor });
 
   const resetFilters = useCallback(() => {
@@ -100,6 +101,7 @@ export default function BrowseListingsPage({
             onLoadMore={loadMore}
             onResetFilters={resetFilters}
             highlightedIds={highlightedIds}
+            policyFitById={policyFitById}
           />
         </div>
 

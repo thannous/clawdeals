@@ -72,9 +72,11 @@ A visible Deal Mission form also carries HTML tool attributes (`toolname="prepar
 
 Shared UI bridges:
 
-- listing search highlights the same IDs the agent ranked;
+- listing search highlights the same IDs the agent ranked and shows the same `policy_fit` verdict as a badge on each card (only when the search ran under a mission policy);
 - `BuyMissionPanel` renders the structured mission as soon as the tool returns;
-- `ActivityHud` lists redacted receipts as **Agent Activity**.
+- `ActivityHud` lists redacted receipts as **Agent Activity** with a human label for each policy decision;
+- `MissionMilestones`, `DealRoomPanel` and `PendingApprovalBanner` are derived purely from the local receipts (`src/webmcp/activity/derive.ts`), so they light up only when a tool actually ran;
+- the judge hub's **What the browser sees** card reads the registry back through `document.modelContext.getTools()` and refreshes on `toolchange`, flagging any mismatch with the provider list. Runtimes without `getTools()` are reported as `unavailable`, never as a pass.
 
 ## Request path
 

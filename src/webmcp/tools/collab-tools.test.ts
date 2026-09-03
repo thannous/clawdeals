@@ -13,6 +13,7 @@ vi.mock("../ui-bridge", () => ({
 }));
 
 import { callPublicWebmcp } from "../http";
+import { applyListingsSearchUi } from "../ui-bridge";
 import { capToolOutputBytes, WEBMCP_TOOL_OUTPUT_MAX_BYTES } from "../security/output-cap";
 import { collabTools } from "./collab-tools";
 
@@ -207,6 +208,41 @@ describe("public collaboration tools", () => {
     expect(callPublicWebmcp).toHaveBeenCalledWith(
       expect.objectContaining({ method: "GET", path: "/v1/public/listings" })
     );
+  });
+
+  it("shares the policy_fit verdicts with the human grid only under a mission policy", async () => {
+    const tool = collabTools.find((candidate) => candidate.name === "search_listings")!;
+    const payload = {
+      ok: true,
+      data: {
+        data: [
+          { listing_id: "fit", price: { amount: 1150, currency: "EUR" }, seller: { verified: true } },
+          { listing_id: "over", price: { amount: 1420, currency: "EUR" }, seller: { verified: true } }
+        ],
+        next_cursor: null
+      },
+      meta: { request_id: "req-fit" }
+    } as any;
+
+    vi.mocked(callPublicWebmcp).mockResolvedValue(payload);
+    vi.mocked(applyListingsSearchUi).mockClear();
+    await tool.execute({ hard_budget_max: 1300 }, { requestId: "req-fit", idempotencyKey: null });
+    expect(applyListingsSearchUi).toHaveBeenCalledWith(
+      expect.objectContaining({
+        highlight_ids: ["fit", "over"],
+        policy_fit_by_id: {
+          fit: { eligible: true, issues: [] },
+          over: { eligible: false, issues: ["over_hard_budget"] }
+        }
+      })
+    );
+
+    vi.mocked(callPublicWebmcp).mockResolvedValue(payload);
+    vi.mocked(applyListingsSearchUi).mockClear();
+    await tool.execute({ q: "e-bike" }, { requestId: "req-plain", idempotencyKey: null });
+    const plainCall = vi.mocked(applyListingsSearchUi).mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(plainCall).toBeDefined();
+    expect(plainCall.policy_fit_by_id).toBeUndefined();
   });
 
   it("rejects incomplete geo and inverted mission budgets", () => {

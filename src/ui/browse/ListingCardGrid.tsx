@@ -2,6 +2,7 @@ import { memo } from "react";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import ListingCard from "./ListingCard";
+import type { ListingPolicyFit } from "../../webmcp/ui-bridge";
 
 function SkeletonCard() {
   return (
@@ -45,6 +46,7 @@ function ListingCardGrid({
   onLoadMore,
   onResetFilters,
   highlightedIds,
+  policyFitById,
 }: {
   listings: any[];
   fetchState: string;
@@ -55,6 +57,7 @@ function ListingCardGrid({
   onLoadMore: () => void;
   onResetFilters?: () => void;
   highlightedIds?: string[];
+  policyFitById?: Record<string, ListingPolicyFit> | null;
 }) {
   const t = useTranslations("browse");
 
@@ -116,6 +119,7 @@ function ListingCardGrid({
             key={listing.listing_id}
             listing={listing}
             highlighted={Boolean(highlightedIds?.includes(listing.listing_id))}
+            policyFit={policyFitById?.[listing.listing_id] ?? null}
           />
         ))}
       </div>

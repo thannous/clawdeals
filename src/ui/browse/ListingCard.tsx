@@ -13,6 +13,14 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { resolveCoverImageSrc } from "../media/cover-image";
+import { describePolicyFit } from "./policy-fit-label";
+import type { ListingPolicyFit } from "../../webmcp/ui-bridge";
+
+const POLICY_FIT_CLASSES = {
+  fit: "text-success border-success/60 bg-success/10",
+  warn: "text-warning border-warning/60 bg-warning/10",
+  reject: "text-error border-error/60 bg-error/10",
+} as const;
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -76,10 +84,19 @@ function resolveAvatarSrc(value: unknown): string {
   return "/avatars/default-1.svg";
 }
 
-function ListingCard({ listing, highlighted }: { listing: any; highlighted?: boolean }) {
+function ListingCard({
+  listing,
+  highlighted,
+  policyFit,
+}: {
+  listing: any;
+  highlighted?: boolean;
+  policyFit?: ListingPolicyFit | null;
+}) {
   const t = useTranslations("browse");
   const { locale } = useRouter();
   const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
+  const policyBadge = policyFit ? describePolicyFit(policyFit) : null;
   const conditionClasses =
     CONDITION_CLASSES[listing.condition] || "text-muted border-border bg-surface-alt";
   const ConditionIcon = CONDITION_ICONS[listing.condition];
@@ -139,6 +156,17 @@ function ListingCard({ listing, highlighted }: { listing: any; highlighted?: boo
               )}
             </div>
           </div>
+
+          {policyBadge && (
+            <span
+              data-testid="listing-policy-fit"
+              data-tone={policyBadge.tone}
+              title={policyBadge.details.join(" · ") || policyBadge.label}
+              className={`self-start text-[11px] font-mono font-bold uppercase px-2 py-0.5 border rounded whitespace-nowrap ${POLICY_FIT_CLASSES[policyBadge.tone]}`}
+            >
+              {policyBadge.label}
+            </span>
+          )}
 
           {/* Title */}
           <h3 className="text-base font-semibold text-text line-clamp-2 leading-snug group-hover:text-primary transition-colors">

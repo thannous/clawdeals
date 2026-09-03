@@ -20,6 +20,9 @@ server revalidates for those tools.
 | Tool output size | At most 1,500 UTF-8 bytes | `src/webmcp/security/output-cap.test.ts`, isolated submission journey | WebMCP contract |
 | Secret and PII output | Redacted; UUID workflow IDs preserved | `src/webmcp/security/sanitize.test.ts`, `src/webmcp/activity/action-receipts.test.ts`, isolated submission journey | WebMCP contract |
 | Mission to agreement to receipt | Reproducible on clean synthetic data | `e2e/integration/webmcp-submission-journey.spec.ts` | WebMCP + isolated DB |
+| Judge reset and synthetic seller turn outside the sandbox | `404`; fail-closed on a production database target; `403` for non-judge agents | `src/__tests__/pages-api/v1/sandbox/reset.test.ts`, `src/__tests__/pages-api/v1/sandbox/seller-turn.test.ts` | Server authz |
+| Synthetic seller turn | Counters below 1,250 EUR at 1,350 EUR (above the judge hard budget), accepts at or above, idempotent while its counter is open | `src/server/services/sandbox-seller-autopilot.test.ts` | Sandbox-only server logic |
+| Edited confirmation | Human-edited amount is what gets approved; Escape and overlay never emit `USER_DENIED` | `src/webmcp/confirm/ConfirmModalHost.test.tsx`, `src/webmcp/confirm/summarize.test.ts` | WebMCP confirmation gate |
 
 The natural-language selector corpus is a deterministic reference planner, not
 a claim about ChatGPT's model behavior. Real browser evidence belongs in

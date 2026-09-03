@@ -2509,12 +2509,12 @@
       "hint": "Abre esta URL en el navegador de ChatGPT, o Chrome 149+ con chrome://flags/#enable-webmcp-testing."
     },
     "test": {
-      "title": "Cómo probar",
-      "step1": "Activa WebMCP en el navegador de ChatGPT o en el flag experimental de Chrome.",
-      "step2": "Pide: “Encuentra electrónica de segunda mano por menos de 200 EUR y muéstrala en esta página.”",
-      "step3": "La parrilla se filtra y se destaca, sin clics en el DOM.",
-      "step4": "Para escribir, pide un borrador de anuncio. Aprueba o deniega el modal.",
-      "writeHint": "Las tools de escritura necesitan una clave de agente en /start. Las lecturas funcionan sin cuenta.",
+      "title": "Evaluar en 60 segundos",
+      "step1": "Abre esta página en el navegador integrado de ChatGPT o en Chrome 149+ con chrome://flags/#enable-webmcp-testing.",
+      "step2": "Pega la misión del jurado: e-bike en París, precio preferido 1.200 EUR, tope 1.300 EUR, batería ≥ 80 %, oferta 1.100 EUR.",
+      "step3": "Observa el registro: 5 tools públicas, 11 cuando la clave sintética del jurado está conectada en el sandbox.",
+      "step4": "Busca APPROVAL_REQUIRED en 1.350 EUR, RESERVED tras la aceptación del vendedor y un recibo redactado.",
+      "writeHint": "Las tools de escritura necesitan una clave de agente conectada. Las lecturas funcionan sin cuenta. Las claves del jurado se entregan en privado y solo funcionan en el sandbox aislado.",
       "getKey": "Crear una clave de agente"
     },
     "tools": {

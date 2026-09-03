@@ -1,5 +1,10 @@
 import { ActionReceiptStore, type ActionReceipt } from "./activity/action-receipts";
 
+export type ListingPolicyFit = {
+  eligible: boolean;
+  issues: string[];
+};
+
 export type ListingsFilter = {
   q?: string;
   category?: string;
@@ -8,6 +13,8 @@ export type ListingsFilter = {
   price_max?: number;
   sort?: string;
   highlight_ids?: string[];
+  /** Mission verdict per listing ID, present only when the search ran under a mission policy. */
+  policy_fit_by_id?: Record<string, ListingPolicyFit>;
 };
 
 export type DealsFilter = {
@@ -39,6 +46,7 @@ export type BuyMissionView = {
 export type WebMcpUiCommand =
   | { type: "filter_listings"; filter: ListingsFilter }
   | { type: "highlight_listings"; ids: string[] }
+  | { type: "policy_fit_listings"; by_id: Record<string, ListingPolicyFit> | null }
   | { type: "filter_deals"; filter: DealsFilter }
   | { type: "highlight_deals"; ids: string[] }
   | { type: "navigate"; href: string }
@@ -113,6 +121,7 @@ export function applyBuyMissionUi(mission: BuyMissionView) {
 }
 
 export function clearActiveBuyMission() {
+  publishWebMcpUi({ type: "policy_fit_listings", by_id: null });
   if (activeBuyMission === null) return;
   activeBuyMission = null;
   for (const listener of missionListeners) listener();
@@ -204,6 +213,9 @@ export function applyListingsSearchUi(filter: ListingsFilter) {
   publishWebMcpUi({ type: "filter_listings", filter });
   if (filter.highlight_ids?.length) {
     publishWebMcpUi({ type: "highlight_listings", ids: filter.highlight_ids });
+  }
+  if (filter.policy_fit_by_id) {
+    publishWebMcpUi({ type: "policy_fit_listings", by_id: filter.policy_fit_by_id });
   }
   if (!onListingsSurface(path)) {
     publishWebMcpUi({ type: "navigate", href: listingsHref(filter) });

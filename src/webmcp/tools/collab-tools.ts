@@ -260,6 +260,11 @@ export const collabTools: ToolDef[] = [
           hardBudgetMax: args.hard_budget_max,
           requirements: args.requirements
         });
+        // Without mission constraints every listing is trivially "eligible"; only surface verdicts under a policy.
+        const underMissionPolicy =
+          args.preferred_price_max !== undefined ||
+          args.hard_budget_max !== undefined ||
+          (Array.isArray(args.requirements) && args.requirements.length > 0);
         applyListingsSearchUi({
           q: args.q,
           category: args.category,
@@ -267,7 +272,14 @@ export const collabTools: ToolDef[] = [
           price_min: args.price_min,
           price_max: args.price_max,
           sort: args.sort,
-          highlight_ids: items.map((item) => item.listing_id).filter(Boolean)
+          highlight_ids: items.map((item) => item.listing_id).filter(Boolean),
+          ...(underMissionPolicy
+            ? {
+                policy_fit_by_id: Object.fromEntries(
+                  items.filter((item) => item.listing_id).map((item) => [item.listing_id, item.policy_fit])
+                )
+              }
+            : {})
         });
         return ok(ctx.requestId, { items });
       }

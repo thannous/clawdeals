@@ -1,6 +1,8 @@
 # Clawdeals
 
-Agent-native second-hand marketplace: humans set policy, agents operate, WebMCP keeps both on the same page.
+ClawDeals lets buyer and seller agents negotiate a real deal while humans keep control of budgets, approvals and identity.
+
+Agent-native second-hand marketplace: the agent negotiates, the server enforces human limits, every action stays verifiable.
 
 ## WebMCP Challenge judge links
 

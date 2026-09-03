@@ -140,5 +140,6 @@ describe("route groups", () => {
     const sp = new URLSearchParams();
     expect(matchRouteGroup("GET", "/api/v1/sandbox/reset", sp)).toBe("sandbox.reset");
     expect(matchRouteGroup("POST", "/api/v1/sandbox/reset", sp)).toBe("sandbox.reset");
+    expect(matchRouteGroup("POST", "/api/v1/sandbox/seller-turn", sp)).toBe("sandbox.reset");
   });
 });

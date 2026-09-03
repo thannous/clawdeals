@@ -1,17 +1,23 @@
-import { useCallback, useMemo } from "react";
-import Link from "next/link";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
 
 import { useTheme } from "../../theme/theme-context";
-import { resolveSupportedLocale } from "../../shared/i18n";
 import { NavbarCurrent } from "../landing/Navbar";
 import BrowseToolbar from "../browse/BrowseToolbar";
 import ListingCardGrid from "../browse/ListingCardGrid";
 import { useBrowseListings } from "../browse/useBrowseListings";
 import { getToolsForRoute, WEBMCP_TOOLS } from "../../webmcp/tools";
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
+import { getStoredApiKey, subscribeStoredApiKey } from "../developer/storage";
+import AgentKeyConnect from "./AgentKeyConnect";
 import BuyMissionPanel from "./BuyMissionPanel";
+import DealRoomPanel from "./DealRoomPanel";
+import JudgeResetButton from "./JudgeResetButton";
+import MissionMilestones from "./MissionMilestones";
+import PendingApprovalBanner from "./PendingApprovalBanner";
+import SellerTurnButton from "./SellerTurnButton";
+import { useJudgeReset } from "./useJudgeReset";
 
 type WebMcpDemoPageProps = {
   initialListings: any[];
@@ -22,10 +28,10 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
   const t = useTranslations("webmcp");
   const browseT = useTranslations("browse");
   const router = useRouter();
-  const locale = resolveSupportedLocale(router.locale);
-  const localePrefix = locale === "en" ? "" : `/${locale}`;
   const { themeId, setTheme, themes } = useTheme();
   const { supported, registered, registeredToolNames, lastRegisterError } = useWebMcp();
+  const apiKey = useSyncExternalStore(subscribeStoredApiKey, getStoredApiKey, () => null);
+  const judgeReset = useJudgeReset(apiKey);
   const contextualTools = useMemo(
     () => {
       if (registeredToolNames.length === 0) {
@@ -57,7 +63,8 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
     error,
     loadMore,
     refetch,
-    highlightedIds
+    highlightedIds,
+    policyFitById
   } = useBrowseListings({ initialListings, initialNextCursor });
 
   const resetFilters = useCallback(() => {
@@ -71,6 +78,7 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
   return (
     <div className="min-h-screen bg-bg" data-testid="webmcp-demo-page">
       <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
+      <PendingApprovalBanner />
 
       <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10">
@@ -83,7 +91,7 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
         </div>
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4 mb-10">
-          <section className="border border-border bg-surface rounded clip-corner p-4 space-y-2">
+          <section className="border border-border bg-surface rounded clip-corner p-4 space-y-3">
             <h2 className="text-xs font-mono uppercase tracking-widest text-subtle">{t("status.title")}</h2>
             <p className="text-xs font-mono text-muted" data-testid="webmcp-demo-supported">
               {t("status.supported")}: {supported ? t("yes") : t("no")}
@@ -93,6 +101,19 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
             </p>
             {lastRegisterError ? <p className="text-xs font-mono text-error">{lastRegisterError}</p> : null}
             <p className="text-xs font-mono text-subtle">{t("status.hint")}</p>
+            <div className="border-t border-border pt-3">
+              <AgentKeyConnect compact />
+            </div>
+            {judgeReset.capability.enabled || judgeReset.capability.loading ? (
+              <div className="border-t border-border pt-3">
+                <JudgeResetButton {...judgeReset} testIdPrefix="webmcp-demo" />
+              </div>
+            ) : null}
+            {judgeReset.capability.authorized ? (
+              <div className="border-t border-border pt-3">
+                <SellerTurnButton apiKey={apiKey} testIdPrefix="webmcp-demo" />
+              </div>
+            ) : null}
           </section>
 
           <section className="border border-border bg-surface rounded clip-corner p-4 space-y-2 lg:col-span-2">
@@ -104,13 +125,17 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
               <li>{t("test.step4")}</li>
             </ol>
             <p className="text-xs font-mono text-subtle">{t("test.writeHint")}</p>
-            <Link href={`${localePrefix}/start`} className="inline-block text-xs font-mono uppercase text-primary hover:underline">
-              {t("test.getKey")}
-            </Link>
           </section>
         </div>
 
         <BuyMissionPanel />
+
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <DealRoomPanel />
+          <div className="lg:only:col-span-2">
+            <MissionMilestones />
+          </div>
+        </div>
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10">
           <h2 className="text-xs font-mono uppercase tracking-widest text-subtle mb-3">{t("tools.title")}</h2>
@@ -164,6 +189,7 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
             onLoadMore={loadMore}
             onResetFilters={resetFilters}
             highlightedIds={highlightedIds}
+            policyFitById={policyFitById}
           />
         </div>
       </main>

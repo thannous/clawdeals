@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { getPublicApiBaseUrl, joinUrl } from "../../shared/urls";
-import { subscribeWebMcpUi, type ListingsFilter } from "../../webmcp/ui-bridge";
+import { subscribeWebMcpUi, type ListingPolicyFit, type ListingsFilter } from "../../webmcp/ui-bridge";
 
 const DEFAULT_SORT = "recent";
 const PAGE_SIZE = 24;
@@ -87,6 +87,7 @@ export function useBrowseListings({
   const [loadMoreState, setLoadMoreState] = useState<string>("idle");
   const [error, setError] = useState<string | null>(null);
   const [highlightedIds, setHighlightedIds] = useState<string[]>([]);
+  const [policyFitById, setPolicyFitById] = useState<Record<string, ListingPolicyFit> | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const categoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -397,6 +398,7 @@ export function useBrowseListings({
       setPriceMaxState(nextPriceMax);
       setDebouncedPriceMax(nextPriceMax);
       if (filter.highlight_ids) setHighlightedIds(filter.highlight_ids);
+      if (filter.policy_fit_by_id) setPolicyFitById(filter.policy_fit_by_id);
       setListings([]);
       setNextCursor(null);
       syncUrl(nextSort, nextQ, nextCategory, nextCondition, nextPriceMin, nextPriceMax);
@@ -408,6 +410,7 @@ export function useBrowseListings({
     return subscribeWebMcpUi((command) => {
       if (command.type === "filter_listings") applyAgentFilter(command.filter);
       if (command.type === "highlight_listings") setHighlightedIds(command.ids);
+      if (command.type === "policy_fit_listings") setPolicyFitById(command.by_id);
     });
   }, [applyAgentFilter]);
 
@@ -432,5 +435,6 @@ export function useBrowseListings({
     loadMore,
     refetch,
     highlightedIds,
+    policyFitById,
   };
 }
