@@ -24,6 +24,7 @@ import {
 } from "../developer/storage";
 import AgentKeyConnect from "./AgentKeyConnect";
 import BrowserRegistryCard from "./BrowserRegistryCard";
+import CatalogAvailabilityNotice from "./CatalogAvailabilityNotice";
 import JudgeResetButton from "./JudgeResetButton";
 import MissionMilestones from "./MissionMilestones";
 import PendingApprovalBanner from "./PendingApprovalBanner";
@@ -201,6 +202,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
                 <EvidenceLink href={CHROME_WEBMCP_DOCS_URL} label="Chrome WebMCP docs" />
               </div>
             </div>
+            <CatalogAvailabilityNotice />
             <ol className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="webmcp-challenge-60s">
               {SIXTY_SECOND_STEPS.map((step, index) => (
                 <li key={step.title} className="border border-border bg-surface p-4">

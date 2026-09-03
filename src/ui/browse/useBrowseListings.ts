@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { getPublicApiBaseUrl, joinUrl } from "../../shared/urls";
-import { subscribeWebMcpUi, type ListingPolicyFit, type ListingsFilter } from "../../webmcp/ui-bridge";
+import {
+  getLastListingsAgentUi,
+  subscribeWebMcpUi,
+  type ListingPolicyFit,
+  type ListingsFilter
+} from "../../webmcp/ui-bridge";
 
 const DEFAULT_SORT = "recent";
 const PAGE_SIZE = 24;
@@ -86,8 +91,11 @@ export function useBrowseListings({
   const [fetchState, setFetchState] = useState<string>("done");
   const [loadMoreState, setLoadMoreState] = useState<string>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [highlightedIds, setHighlightedIds] = useState<string[]>([]);
-  const [policyFitById, setPolicyFitById] = useState<Record<string, ListingPolicyFit> | null>(null);
+  // Seed from the agent's last search so hub → /browse keeps the same highlights and verdicts.
+  const [highlightedIds, setHighlightedIds] = useState<string[]>(() => getLastListingsAgentUi().highlight_ids);
+  const [policyFitById, setPolicyFitById] = useState<Record<string, ListingPolicyFit> | null>(
+    () => getLastListingsAgentUi().policy_fit_by_id
+  );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const categoryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

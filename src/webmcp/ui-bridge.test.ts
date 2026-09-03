@@ -7,6 +7,7 @@ import {
   clearActiveBuyMission,
   clearWebMcpActionReceipts,
   getActiveBuyMission,
+  getLastListingsAgentUi,
   getWebMcpActionReceipts,
   getPageContext,
   listingsHref,
@@ -35,6 +36,24 @@ describe("webmcp ui bridge", () => {
     stop();
     expect(seen.some((command) => command.type === "filter_listings")).toBe(true);
     expect(seen.some((command) => command.type === "navigate" && command.href === "/browse?q=bike")).toBe(true);
+  });
+
+  it("remembers the agent's last highlights and policy verdicts across route changes", () => {
+    applyListingsSearchUi({
+      q: "e-bike",
+      highlight_ids: ["a", "b"],
+      policy_fit_by_id: { a: { eligible: true, issues: [] }, b: { eligible: false, issues: ["over_hard_budget"] } }
+    });
+    expect(getLastListingsAgentUi()).toEqual({
+      highlight_ids: ["a", "b"],
+      policy_fit_by_id: { a: { eligible: true, issues: [] }, b: { eligible: false, issues: ["over_hard_budget"] } }
+    });
+
+    applyListingsSearchUi({ q: "other" });
+    expect(getLastListingsAgentUi().highlight_ids).toEqual(["a", "b"]);
+
+    clearActiveBuyMission();
+    expect(getLastListingsAgentUi()).toEqual({ highlight_ids: ["a", "b"], policy_fit_by_id: null });
   });
 
   it("reads page context from window.location", () => {

@@ -181,7 +181,10 @@ export default function ActivityHud() {
     getWebMcpActionReceipts,
     () => EMPTY_RECEIPTS
   );
-  const [collapsed, setCollapsed] = useState(false);
+  // On small screens the open drawer would cover the form the judge is about to use, so start minimized.
+  const [collapsed, setCollapsed] = useState(
+    () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 1023px)").matches
+  );
   const [confirmClear, setConfirmClear] = useState(false);
   // Count receipts that arrived while minimized so the collapsed bar can show a "new" marker.
   const [seenCount, setSeenCount] = useState(0);

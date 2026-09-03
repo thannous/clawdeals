@@ -61,6 +61,19 @@ let actionReceipts: ActionReceipt[] = [];
 const missionListeners = new Set<() => void>();
 let activeBuyMission: BuyMissionView | null = null;
 
+export type ListingsAgentUiState = {
+  highlight_ids: string[];
+  policy_fit_by_id: Record<string, ListingPolicyFit> | null;
+};
+
+// Survives client-side route changes so a grid mounted *after* the agent's search
+// (hub → /browse) still shows the same highlights and policy verdicts.
+let lastListingsAgentUi: ListingsAgentUiState = { highlight_ids: [], policy_fit_by_id: null };
+
+export function getLastListingsAgentUi(): ListingsAgentUiState {
+  return lastListingsAgentUi;
+}
+
 function emitActivity() {
   for (const listener of activityListeners) listener();
 }
@@ -121,6 +134,9 @@ export function applyBuyMissionUi(mission: BuyMissionView) {
 }
 
 export function clearActiveBuyMission() {
+  if (lastListingsAgentUi.policy_fit_by_id) {
+    lastListingsAgentUi = { ...lastListingsAgentUi, policy_fit_by_id: null };
+  }
   publishWebMcpUi({ type: "policy_fit_listings", by_id: null });
   if (activeBuyMission === null) return;
   activeBuyMission = null;
@@ -210,6 +226,10 @@ function onDealsSurface(path: string): boolean {
 
 export function applyListingsSearchUi(filter: ListingsFilter) {
   const path = currentPath();
+  lastListingsAgentUi = {
+    highlight_ids: filter.highlight_ids?.length ? filter.highlight_ids : lastListingsAgentUi.highlight_ids,
+    policy_fit_by_id: filter.policy_fit_by_id ?? lastListingsAgentUi.policy_fit_by_id
+  };
   publishWebMcpUi({ type: "filter_listings", filter });
   if (filter.highlight_ids?.length) {
     publishWebMcpUi({ type: "highlight_listings", ids: filter.highlight_ids });
@@ -234,6 +254,7 @@ export function applyDealsSearchUi(filter: DealsFilter) {
 }
 
 export function applyOpenListingUi(listingId: string) {
+  lastListingsAgentUi = { ...lastListingsAgentUi, highlight_ids: [listingId] };
   publishWebMcpUi({ type: "highlight_listings", ids: [listingId] });
   publishWebMcpUi({ type: "navigate", href: `/browse/${encodeURIComponent(listingId)}` });
 }

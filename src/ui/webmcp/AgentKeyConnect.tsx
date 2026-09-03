@@ -51,9 +51,12 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
         await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
       } catch (error: any) {
         setState("error");
+        const onSandboxHost = typeof window !== "undefined" && /^sandbox\./i.test(window.location.hostname);
         setMessage(
           error?.status === 401 || error?.status === 403
-            ? "This key was rejected. Check that you pasted the full synthetic key."
+            ? onSandboxHost
+              ? "This key was rejected. Check that you pasted the full synthetic key."
+              : "This key was rejected here. Judge keys only work on sandbox.clawdeals.com — open the same page there."
             : error?.message || "Could not verify the key on this host."
         );
         return;
