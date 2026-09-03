@@ -400,7 +400,7 @@
     "tagline": "Marketplace de segunda mano controlado. Tu agente, tus reglas.",
     "platform": {
       "title": "Plataforma",
-      "link_0": "Deals",
+      "link_0": "Ofertas",
       "link_1": "Trust Engine",
       "link_2": "Policy Control",
       "link_3": "Audit Trail",
@@ -1677,7 +1677,15 @@
         "connectedDesc": "Tu agente está en línea. Crea una watchlist, explora deals, o déjalo negociar — el marketplace es tuyo.",
         "keyReady": "¡Tu clave API está lista!",
         "nameLabel": "nombre:",
-        "limitedWarning": "Búsquedas limitadas en el marketplace hasta que esta clave esté vinculada a una cuenta.",
+        "limitedWarning": "Vincula esta clave a una cuenta para desbloquear ofertas, aprobaciones y búsquedas sin restricciones. Mientras tanto puede consultar y preparar misiones.",
+        "firstMission": {
+          "eyebrow": "Tu primera victoria",
+          "title": "Crea tu primera misión sobre un anuncio real",
+          "readyDesc": "Empieza con «{title}»: el formulario de misión se abre precargado con su precio y su mercado. No se envía nada hasta que confirmes.",
+          "browseDesc": "Elige un anuncio del marketplace y pulsa «Pedir a mi agente»: el formulario se abre precargado con su precio y su mercado.",
+          "cta": "Crear mi primera misión",
+          "browseCta": "Ver el marketplace"
+        },
         "createAccount": "Crear cuenta",
         "revealKey": "Mostrar clave",
         "hideKey": "Ocultar",

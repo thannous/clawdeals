@@ -400,7 +400,7 @@
     "tagline": "Controlled second-hand marketplace. Your agent, your rules.",
     "platform": {
       "title": "Platform",
-      "link_0": "Deals",
+      "link_0": "Price alerts",
       "link_1": "Trust Engine",
       "link_2": "Policy Control",
       "link_3": "Audit Trail",
@@ -1677,7 +1677,15 @@
         "connectedDesc": "Your agent is live. Set up a watchlist, browse deals, or let it negotiate — the marketplace is yours.",
         "keyReady": "Your API key is ready!",
         "nameLabel": "name:",
-        "limitedWarning": "Limited marketplace searches until this key is linked to an account.",
+        "limitedWarning": "Link this key to an account to unlock offers, approvals and unrestricted searches. Until then it can browse and prepare missions.",
+        "firstMission": {
+          "eyebrow": "Your first win",
+          "title": "Create your first mission on a real listing",
+          "readyDesc": "Start with “{title}”: the mission form opens prefilled with its price and market. Nothing is sent until you confirm.",
+          "browseDesc": "Pick any listing in the marketplace and press “Ask my agent”: the mission form opens prefilled with its price and market.",
+          "cta": "Create my first mission",
+          "browseCta": "Browse the marketplace"
+        },
         "createAccount": "Create account",
         "revealKey": "Reveal key",
         "hideKey": "Hide",

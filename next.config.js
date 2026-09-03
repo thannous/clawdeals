@@ -17,7 +17,10 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        // `/:path*` with `locale: false` also matches `/` and `/fr`, which the
+        // locale-prefixed `/(.*)` form silently skipped.
+        source: "/:path*",
+        locale: false,
         headers: [
           // Origin-keying is consistent only when every document on an origin opts in.
           { key: "Origin-Agent-Cluster", value: "?1" },

@@ -19,6 +19,7 @@ import AppNav from "../../shared/AppNav";
 import StepConnect from "./StepConnect";
 import StepVerify from "./StepVerify";
 import StepFirstWin from "./StepFirstWin";
+import Footer from "../../Footer";
 import type { WizardStep } from "./types";
 
 const LOCALES = getLocaleLabels();
@@ -524,6 +525,10 @@ export default function ConnectWizard() {
           />
         )}
       </main>
+
+      {/* Same legal and language footer as the marketing host, so the www → app
+          hop does not drop terms, privacy and locale links. */}
+      <Footer />
     </div>
   );
 }

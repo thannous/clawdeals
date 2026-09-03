@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { apiRequest, maskApiKey } from "../api";
 import { getPublicApiBaseUrl, joinUrl } from "../../../shared/urls";
 import type { AgentMeResponse } from "./types";
+import FirstMissionCard from "./FirstMissionCard";
 
 type Props = {
   apiKey: string | null;
@@ -163,21 +164,6 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
             )}
           </div>
 
-          {/* Limitation notice + create account CTA */}
-          {!hasOwnerSession && (
-            <div className="border border-warning/30 bg-warning/5 p-3 clip-corner space-y-3">
-              <div className="text-xs font-mono text-warning">
-                {t("step.firstwin.limitedWarning")}
-              </div>
-              <Link
-                href="/auth/login?next=/start"
-                className="inline-block border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
-              >
-                {t("step.firstwin.createAccount")}
-              </Link>
-            </div>
-          )}
-
           {/* Key display + action button */}
           {state.keyRevealed ? (
             <div className="space-y-3">
@@ -256,6 +242,24 @@ export default function StepFirstWin({ apiKey, agentMe, hasOwnerSession }: Props
               )}
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* The first win itself: a real mission on a real listing, key in hand */}
+      {apiKey ? <FirstMissionCard /> : null}
+
+      {/* Account comes after the value, framed as what it unlocks */}
+      {!hasOwnerSession && (
+        <div className="border border-border bg-surface-alt p-4 clip-corner space-y-3" data-testid="firstwin-account-unlock">
+          <div className="text-xs text-muted leading-relaxed">
+            {t("step.firstwin.limitedWarning")}
+          </div>
+          <Link
+            href="/auth/login?next=/start"
+            className="inline-block border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+          >
+            {t("step.firstwin.createAccount")}
+          </Link>
         </div>
       )}
 

@@ -400,7 +400,7 @@
     "tagline": "Marketplace de seconde main contrôlée. Ton agent, tes règles.",
     "platform": {
       "title": "Plateforme",
-      "link_0": "Deals",
+      "link_0": "Bons plans",
       "link_1": "Moteur de confiance",
       "link_2": "Contrôle des politiques",
       "link_3": "Piste d'audit",
@@ -1677,7 +1677,15 @@
         "connectedDesc": "Ton agent est en ligne. Crée une watchlist, explore les deals, ou laisse-le négocier — le marketplace est à toi.",
         "keyReady": "Ta clé API est prête !",
         "nameLabel": "nom:",
-        "limitedWarning": "Recherches limitées sur le marketplace tant que cette clé n'est pas liée à un compte.",
+        "limitedWarning": "Lie cette clé à un compte pour débloquer les offres, les approbations et les recherches sans restriction. En attendant, elle peut consulter et préparer des missions.",
+        "firstMission": {
+          "eyebrow": "Ta première victoire",
+          "title": "Crée ta première mission sur une vraie annonce",
+          "readyDesc": "Commence par « {title} » : le formulaire de mission s'ouvre pré-rempli avec son prix et son marché. Rien n'est envoyé avant ta confirmation.",
+          "browseDesc": "Choisis une annonce dans la marketplace et clique « Demander à mon agent » : le formulaire s'ouvre pré-rempli avec son prix et son marché.",
+          "cta": "Créer ma première mission",
+          "browseCta": "Voir la marketplace"
+        },
         "createAccount": "Créer un compte",
         "revealKey": "Afficher la clé",
         "hideKey": "Masquer",
