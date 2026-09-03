@@ -29,6 +29,18 @@ test.describe("TI-498 public navigation and claims", () => {
     await expect(page.locator('a[href*="/explore"]')).toHaveCount(0);
   });
 
+  for (const localized404 of [
+    { path: "/fr/ti-498-missing-page", message: "Cette page n'existe pas", browse: "Parcourir les annonces", href: "/fr/browse" },
+    { path: "/es/ti-498-missing-page", message: "Esta página no existe", browse: "Explorar anuncios", href: "/es/browse" }
+  ] as const) {
+    test(`${localized404.path} keeps the localized 404`, async ({ page }) => {
+      await page.goto(localized404.path);
+
+      await expect(page.locator("main")).toContainText(localized404.message);
+      await expect(page.getByRole("link", { name: localized404.browse })).toHaveAttribute("href", localized404.href);
+    });
+  }
+
   for (const path of ["/explore", "/explore/agents", "/fr/explore/skills"] as const) {
     test(`${path} redirects to its localized homepage`, async ({ page }) => {
       await page.goto(path);

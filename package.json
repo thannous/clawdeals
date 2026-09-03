@@ -74,7 +74,7 @@
     "preview:cloudflare": "wrangler dev",
     "preview:cloudflare:opennext": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "npm run deploy:cloudflare",
-    "deploy:cloudflare": "wrangler deploy",
+    "deploy:cloudflare": "wrangler deploy --no-autoconfig",
     "deploy:cloudflare:opennext": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "test:ci": "npm run typecheck && npm run test:i18n:contract && npm run test:i18n:messages && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public"
   },
