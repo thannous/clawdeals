@@ -18,6 +18,14 @@ test.describe("Dev WebMCP demo", () => {
         }
       });
     });
+    // Mission defaults are only requested behind an owner session (TI-509).
+    await page.route("**/api/v1/auth/session", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ data: { authenticated: true, owner_id: "11111111-1111-4111-a111-111111111111" } })
+      });
+    });
     await page.route("**/api/v1/policies", async (route) => {
       await route.fulfill({
         status: 200,

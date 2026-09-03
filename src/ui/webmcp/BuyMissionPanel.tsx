@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
 import { getActiveBuyMission, subscribeActiveBuyMission, type BuyMissionView } from "../../webmcp/ui-bridge";
+import { probeOwnerSession } from "../auth/ownerSessionProbe";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -292,13 +293,19 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
     const initialMarketCode = prefill?.marketCode ?? "FR";
     const hasListingPricePrefill = prefill?.preferredPriceMax !== undefined || prefill?.hardBudgetMax !== undefined;
 
-    void fetch("/api/v1/policies", {
-      credentials: "include",
-      cache: "no-store",
-      signal: controller.signal
-    })
+    // Mission defaults come from the owner's policy, which only exists behind an
+    // owner session: skip the call (and its 401) for anonymous visitors.
+    void probeOwnerSession()
+      .then((session) => {
+        if (session.state === "anonymous" || controller.signal.aborted) return null;
+        return fetch("/api/v1/policies", {
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal
+        });
+      })
       .then(async (response) => {
-        if (!response.ok) return;
+        if (!response || !response.ok) return;
         const payload = await response.json();
         const policy = payload?.data;
         const radius = policy?.mission_defaults?.radius_km;

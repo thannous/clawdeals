@@ -106,14 +106,18 @@ test.describe("Browse page", () => {
       });
 
       await page.goto("/browse");
+      await expect(page.getByTestId("sort-price_asc")).toBeVisible();
 
-      // Click price ascending sort (bypass nextjs-portal with DOM click)
+      // Click price ascending sort (bypass nextjs-portal with DOM click) and wait for
+      // the resulting fetch instead of a fixed delay, which was flaky under load.
+      const sortRequestPromise = page.waitForRequest((request) =>
+        request.url().includes("/api/v1/public/listings") && request.url().includes("sort=price_asc")
+      );
       await domClick(page, "sort-price_asc");
-      await page.waitForTimeout(500);
+      await sortRequestPromise;
 
-      expect(page.url()).toContain("sort=price_asc");
-      const sortRequest = requests.find((url) => url.includes("sort=price_asc"));
-      expect(sortRequest).toBeTruthy();
+      await expect.poll(() => page.url()).toContain("sort=price_asc");
+      expect(requests.some((url) => url.includes("sort=price_asc"))).toBe(true);
     });
 
     test("search input updates URL after debounce", async ({ page }) => {

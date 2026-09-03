@@ -19,6 +19,16 @@ export type JudgeResetState = "idle" | "running" | "done" | "failed";
 
 const INITIAL_CAPABILITY: JudgeCapability = { loading: true, enabled: false, authorized: false, error: null };
 
+/** Hosts where `/api/v1/sandbox/reset` can exist: sandbox deployments, previews and local dev. */
+export function isJudgeResetHost(hostname: string = typeof window === "undefined" ? "" : window.location.hostname): boolean {
+  const host = String(hostname || "").trim().toLowerCase();
+  if (!host) return false;
+  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost")) return true;
+  if (host.startsWith("sandbox.") || host.includes("-sandbox") || host.includes("sandbox-")) return true;
+  if (host.endsWith(".vercel.app")) return true;
+  return process.env.NEXT_PUBLIC_CLAWDEALS_ENV === "sandbox";
+}
+
 /**
  * Shared judge-mode reset logic: probes `/api/v1/sandbox/reset` (404 outside the sandbox host) and
  * runs the deterministic `webmcp_challenge` reset with the stored agent key. Both the hub and the
@@ -33,6 +43,14 @@ export function useJudgeReset(apiKey: string | null) {
   useEffect(() => {
     const controller = new AbortController();
     setCapability(INITIAL_CAPABILITY);
+
+    // Production answers 404 by design; probing it only adds a failed request to
+    // every visitor's console. The reset exists on sandbox and local hosts only.
+    if (!isJudgeResetHost()) {
+      setCapability({ loading: false, enabled: false, authorized: false, error: null });
+      return () => controller.abort();
+    }
+
     const headers: Record<string, string> = {};
     if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 

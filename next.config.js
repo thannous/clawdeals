@@ -17,9 +17,35 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Origin-keying is consistent only when every document on an origin opts in.
         source: "/(.*)",
-        headers: [{ key: "Origin-Agent-Cluster", value: "?1" }]
+        headers: [
+          // Origin-keying is consistent only when every document on an origin opts in.
+          { key: "Origin-Agent-Cluster", value: "?1" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()"
+          },
+          // Report-only first: the marketing and app surfaces load Supabase, Vercel
+          // analytics and inline Next.js bootstrap, so we observe before enforcing.
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+              "style-src 'self' 'unsafe-inline' https:",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data: https:",
+              "connect-src 'self' https: wss:",
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self' https:"
+            ].join("; ")
+          }
+        ]
       }
     ];
   },
