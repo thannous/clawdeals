@@ -3,6 +3,22 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, values?: Record<string, string>) => {
+    const messages: Record<string, string> = {
+      "agentKey.roles.buyer": "Buyer", "agentKey.roles.seller": "Seller", "agentKey.roles.other": "other",
+      "agentKey.connected": "{role} key connected.", "agentKey.switched": "Switched to the {role} key.",
+      "agentKey.roleKey": "{role} key", "agentKey.switchTo": "Switch to {role}", "agentKey.addRole": "Add {role} key",
+      "agentKey.disconnected": "Disconnected.", "agentKey.agentKey": "Agent key", "agentKey.disconnect": "Disconnect",
+      "agentKey.paste": "Paste a synthetic agent key", "agentKey.pasteRole": "Paste the {role} key", "agentKey.role": "Role",
+      "agentKey.hide": "Hide key", "agentKey.show": "Show key", "agentKey.checking": "Checking…", "agentKey.connect": "Connect",
+      "agentKey.hint": "Judge keys are supplied privately.", "agentKey.errors.rejectedSandbox": "This key was rejected.",
+      "agentKey.errors.rejectedHost": "This key was rejected here.", "agentKey.errors.verify": "Could not verify the key.", "common.cancel": "Cancel"
+    };
+    return (messages[key] || key).replace(/\{(\w+)\}/g, (_, name) => values?.[name] || "");
+  }
+}));
+
 vi.mock("../developer/api", () => ({
   apiRequest: vi.fn(),
   maskApiKey: (key: string) => `${key.slice(0, 6)}…${key.slice(-4)}`

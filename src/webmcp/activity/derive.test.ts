@@ -176,6 +176,7 @@ describe("deriveDealRoom", () => {
 describe("formatAmount", () => {
   it("formats amounts and tolerates unknown currencies", () => {
     expect(formatAmount(1300, "EUR")).toBe("€1,300");
+    expect(formatAmount(1300, "EUR", "fr")).toMatch(/1[\s\u202f]300\s€/);
     expect(formatAmount(null, "EUR")).toBeNull();
     expect(formatAmount(12, "???")).toBe("12 ???");
   });

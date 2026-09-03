@@ -7,7 +7,12 @@ import { randomId } from "./helpers/ids";
 import { createListing, createOffer, acceptOffer, expectStatus, markTransactionCompleted } from "./helpers/http";
 import { openSse, waitForSseFrame } from "./helpers/sse";
 import { waitForAuditLogMatching } from "./helpers/audit";
-import { createSupabaseAdmin, ensureOwnerDb, createAgentDbWithOverrides, createActiveApiKeyDb } from "./helpers/supabase";
+import {
+  createSupabaseAdmin,
+  ensureOwnerDb,
+  createAgentDbWithOverrides,
+  createActiveApiKeyDb
+} from "./helpers/supabase";
 
 assertIntegrationEnv();
 
@@ -22,7 +27,10 @@ async function setupPolicy(request: any, ownerId: string) {
     data: {
       budgets: { max_offer: 1000, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
-      auto_approve: { message_types: [], actions: ["listing.create", "thread.create", "offer.accept"] },
+      auto_approve: {
+        message_types: [],
+        actions: ["listing.create", "thread.create", "offer.accept"]
+      },
       allowlist_agent_ids: [],
       denylist_agent_ids: []
     }
@@ -52,15 +60,27 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     await setupPolicy(request, ownerId);
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
-    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Completion listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Completion listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -77,7 +97,9 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     const offerBody = await offerRes.json();
     const offerId = offerBody.offer_id;
 
-    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, {
+      idempotencyKey: randomId()
+    });
     await expectStatus(acceptRes, 200);
     const acceptBody = await acceptRes.json();
     const txId = acceptBody.transaction?.tx_id;
@@ -104,10 +126,16 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
 
     const types = encodeURIComponent("transaction.pending_confirm,transaction.completed");
     const buyerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${types}`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
     const sellerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${types}`, {
-      headers: { Authorization: `Bearer ${sellerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${sellerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
 
     try {
@@ -225,7 +253,9 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     }
   });
 
-  test("concurrency: buyer + seller mark completed concurrently => tx COMPLETED with both timestamps", async ({ request }) => {
+  test("concurrency: buyer + seller mark completed concurrently => tx COMPLETED with both timestamps", async ({
+    request
+  }) => {
     const supabase = createSupabaseAdmin();
 
     const ownerId = randomId();
@@ -233,15 +263,27 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     await setupPolicy(request, ownerId);
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
-    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Completion concurrency listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Completion concurrency listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -258,7 +300,9 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     const offerBody = await offerRes.json();
     const offerId = offerBody.offer_id;
 
-    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, {
+      idempotencyKey: randomId()
+    });
     await expectStatus(acceptRes, 200);
     const acceptBody = await acceptRes.json();
     const txId = acceptBody.transaction?.tx_id;
@@ -284,8 +328,12 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     if (listingUpdateErr) throw listingUpdateErr;
 
     const [buyerRes, sellerRes] = await Promise.all([
-      markTransactionCompleted(request, buyerApiKey, txId, { idempotencyKey: randomId() }),
-      markTransactionCompleted(request, sellerApiKey, txId, { idempotencyKey: randomId() })
+      markTransactionCompleted(request, buyerApiKey, txId, {
+        idempotencyKey: randomId()
+      }),
+      markTransactionCompleted(request, sellerApiKey, txId, {
+        idempotencyKey: randomId()
+      })
     ]);
 
     await expectStatus(buyerRes, 200);
@@ -332,15 +380,27 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     await setupPolicy(request, ownerId);
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
-    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Auto-close listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Auto-close listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -357,7 +417,9 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
     const offerBody = await offerRes.json();
     const offerId = offerBody.offer_id;
 
-    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, {
+      idempotencyKey: randomId()
+    });
     await expectStatus(acceptRes, 200);
     const acceptBody = await acceptRes.json();
     const txId = acceptBody.transaction?.tx_id;
@@ -387,10 +449,16 @@ test.describe.serial("Integration: Completion workflow (TI-204)", () => {
 
     const types = encodeURIComponent("transaction.auto_completed");
     const buyerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${types}`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
     const sellerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${types}`, {
-      headers: { Authorization: `Bearer ${sellerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${sellerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
 
     try {

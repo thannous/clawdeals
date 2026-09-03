@@ -34,6 +34,7 @@ describe("/v1/policies", () => {
     const result: any = await handler(req, null, ownerCtx());
     expect(result.status).toBe(200);
     expect(result.body.data.version).toBe(1);
+    expect(result.headers["Cache-Control"]).toBe("no-store");
   });
 
   it("validates policy input on PUT", async () => {
@@ -48,6 +49,7 @@ describe("/v1/policies", () => {
     const result: any = await handler(req, null, ownerCtx());
     expect(result.status).toBe(200);
     expect(result.body.data.version).toBe(2);
+    expect(result.headers["Cache-Control"]).toBe("no-store");
   });
 
   it("returns 400 when If-Match is not an integer", async () => {

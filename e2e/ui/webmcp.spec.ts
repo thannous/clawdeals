@@ -4,6 +4,95 @@ test.describe("Dev WebMCP demo", () => {
   // First-run Next.js dev compilation can be slow on WSL/Windows filesystems.
   test.setTimeout(180_000);
 
+  test("localizes the French mission and confirmation surfaces", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("clawdeals_api_key", "cd_test_dummy");
+      const registrations: Array<{ tool: any; signal?: AbortSignal }> = [];
+      (window as any).__webmcp_i18n_registrations = registrations;
+      Object.defineProperty(document as any, "modelContext", {
+        configurable: true,
+        value: {
+          registerTool: (tool: any, options?: { signal?: AbortSignal }) => {
+            registrations.push({ tool, signal: options?.signal });
+          }
+        }
+      });
+    });
+    await page.route("**/api/v1/policies", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            budgets: { preferred_offer: 875, max_offer: 950, currency: "EUR" },
+            mission_defaults: {
+              radius_km: 40,
+              autonomous_actions: ["search", "make_offer"]
+            }
+          }
+        })
+      });
+    });
+    await page.route("**/api/v1/sandbox/reset", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ enabled: false, authorized: false })
+      });
+    });
+
+    await page.goto("/fr/webmcp");
+
+    await expect(
+      page.getByRole("heading", {
+        name: "Déléguez la recherche. Gardez les limites."
+      })
+    ).toBeVisible();
+    await expect(page.getByText("Prix préféré", { exact: true })).toBeVisible();
+    await expect(page.locator('[name="radius_km"]')).toHaveValue("40");
+    await expect(page.locator('[name="preferred_price_max"]')).toHaveValue("875");
+    await expect(page.locator('[name="hard_budget_max"]')).toHaveValue("950");
+    await expect(page.getByRole("checkbox", { name: /Poser des questions/i })).not.toBeChecked();
+
+    await page.evaluate(() => {
+      const rows = ((window as any).__webmcp_i18n_registrations || []) as Array<{
+        tool?: {
+          name?: string;
+          execute?: (args: unknown, options?: unknown) => Promise<unknown>;
+        };
+        signal?: AbortSignal;
+      }>;
+      const registration = rows
+        .slice()
+        .reverse()
+        .find((row) => row.tool?.name === "create_buy_mission" && !row.signal?.aborted);
+      if (!registration?.tool?.execute) throw new Error("create_buy_mission is not registered");
+      void registration.tool.execute(
+        {
+          query: "vélo électrique d’occasion",
+          market_code: "FR",
+          location_label: "Paris",
+          latitude: 48.8566,
+          longitude: 2.3522,
+          radius_km: 40,
+          hard_budget_max: 950,
+          requirements: [],
+          autonomous_actions: ["search", "make_offer"],
+          contact_reveal: "manual_bilateral_approval",
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        },
+        { signal: new AbortController().signal }
+      );
+    });
+
+    await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible();
+    await expect(page.getByText("L’agent demande votre confirmation")).toBeVisible();
+    await page.getByTestId("webmcp-confirm-advanced").locator("summary").click();
+    await expect(page.getByText("L’agent recevra un résultat expurgé après l’exécution.")).toBeVisible();
+    await page.getByRole("button", { name: "Refuser" }).click();
+    await expect(page.getByTestId("webmcp-confirm-modal")).not.toBeVisible();
+  });
+
   test("registers tools, blocks writes via confirm gate, and injects Idempotency-Key on approve", async ({ page }) => {
     await page.addInitScript(() => {
       // Provide a dummy API key for the in-browser WebMCP tool HTTP helper.
@@ -21,12 +110,7 @@ test.describe("Dev WebMCP demo", () => {
 
       const modelContext = {
         registerTool: (arg1: any, arg2: any) => {
-          const name =
-            typeof arg1 === "string"
-              ? arg1
-              : arg1 && typeof arg1 === "object"
-                ? arg1.name
-                : null;
+          const name = typeof arg1 === "string" ? arg1 : arg1 && typeof arg1 === "object" ? arg1.name : null;
           if (name) tools.push(String(name));
           if (arg1 && typeof arg1 === "object") {
             registrations.push({ tool: arg1, signal: arg2?.signal });
@@ -50,14 +134,24 @@ test.describe("Dev WebMCP demo", () => {
         return route.fulfill({
           status: 400,
           contentType: "application/json",
-          body: JSON.stringify({ error: { code: "VALIDATION_ERROR", message: "Idempotency-Key is required", details: {} } })
+          body: JSON.stringify({
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "Idempotency-Key is required",
+              details: {}
+            }
+          })
         });
       }
 
       return route.fulfill({
         status: 201,
         contentType: "application/json",
-        body: JSON.stringify({ listing_id: "l1", status: "DRAFT", created_at: new Date().toISOString() })
+        body: JSON.stringify({
+          listing_id: "l1",
+          status: "DRAFT",
+          created_at: new Date().toISOString()
+        })
       });
     });
 
@@ -72,38 +166,41 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-registered-count")).toHaveText("20");
 
     // Select a write tool and run it: Reject first.
-    const createDraftButton = page
-      .locator("button")
-      .filter({ hasText: "clawdeals.listings_create_draft" })
-      .first();
+    const createDraftButton = page.locator("button").filter({ hasText: "clawdeals.listings_create_draft" }).first();
     // Next.js dev overlay uses <nextjs-portal> which can intercept pointer events; bypass via DOM click().
     await createDraftButton.evaluate((el) => (el as HTMLButtonElement).click());
 
     // Ensure the selection actually applied (prevents accidentally running the default read tool).
     // The default expect timeout (5s) can be tight on first-run dev compilation.
-    await expect(page.locator("textarea")).toHaveValue(/price_amount_minor/, { timeout: 20_000 });
+    await expect(page.locator("textarea")).toHaveValue(/price_amount_minor/, {
+      timeout: 20_000
+    });
 
     // Next.js dev overlay uses <nextjs-portal> which can intercept pointer events; bypass via DOM click().
     await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
 
-    await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({
+      timeout: 20_000
+    });
     await page.getByRole("button", { name: "Reject" }).evaluate((el) => (el as HTMLButtonElement).click());
 
-    await expect(page.getByText("\"USER_DENIED\"").first()).toBeVisible();
+    await expect(page.getByText('"USER_DENIED"').first()).toBeVisible();
     await expect(page.getByTestId("webmcp-activity-hud")).toBeVisible();
     await expect(page.getByTestId("webmcp-receipt-outcome")).toHaveText("denied");
 
     // Run again: Approve this time and ensure idempotency header is present.
     const reqPromise = page.waitForRequest((req) => req.method() === "POST" && req.url().includes("/api/v1/listings"));
     await page.getByRole("button", { name: "Run" }).evaluate((el) => (el as HTMLButtonElement).click());
-    await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible({
+      timeout: 20_000
+    });
     await page.getByRole("button", { name: "Approve" }).evaluate((el) => (el as HTMLButtonElement).click());
 
     const req = await reqPromise;
     expect(req.headers()["idempotency-key"]).toBeTruthy();
 
-    await expect(page.getByText("\"ok\": true")).toBeVisible();
-    await expect(page.getByText("\"status\": \"DRAFT\"")).toBeVisible();
+    await expect(page.getByText('"ok": true')).toBeVisible();
+    await expect(page.getByText('"status": "DRAFT"')).toBeVisible();
 
     const persisted = await page.evaluate(() => {
       const raw = window.localStorage.getItem("clawdeals:webmcp:action-receipts:v1") || "[]";
@@ -111,10 +208,7 @@ test.describe("Dev WebMCP demo", () => {
     });
     expect(persisted.raw).not.toContain("cd_test_dummy");
     expect(persisted.receipts).toHaveLength(2);
-    expect(persisted.receipts.map((receipt: any) => receipt.outcome).sort()).toEqual([
-      "denied",
-      "success"
-    ]);
+    expect(persisted.receipts.map((receipt: any) => receipt.outcome).sort()).toEqual(["denied", "success"]);
     expect(persisted.receipts.every((receipt: any) => /^sha256:[a-f0-9]{64}$/.test(receipt.input_hash))).toBe(true);
 
     const successReceipt = persisted.receipts.find((receipt: any) => receipt.outcome === "success");
@@ -127,10 +221,7 @@ test.describe("Dev WebMCP demo", () => {
         .slice()
         .reverse()
         .find((entry) => entry.tool?.name === "get_action_receipt" && !entry.signal?.aborted);
-      return row?.tool?.execute(
-        { request_id: requestId },
-        { signal: new AbortController().signal }
-      );
+      return row?.tool?.execute({ request_id: requestId }, { signal: new AbortController().signal });
     }, successReceipt.request_id);
     expect(lookup).toMatchObject({
       ok: true,
@@ -154,7 +245,10 @@ test.describe("Dev WebMCP demo", () => {
         configurable: true,
         value: {
           registerTool: (tool: { name?: string }, options?: { signal?: AbortSignal }) => {
-            registrations.push({ name: String(tool?.name || ""), signal: options?.signal });
+            registrations.push({
+              name: String(tool?.name || ""),
+              signal: options?.signal
+            });
           }
         }
       });
@@ -254,9 +348,7 @@ test.describe("Dev WebMCP demo", () => {
           tool?: { name?: string };
           signal?: AbortSignal;
         }>;
-        const active = rows
-          .filter((row) => !row.signal?.aborted)
-          .map((row) => String(row.tool?.name || ""));
+        const active = rows.filter((row) => !row.signal?.aborted).map((row) => String(row.tool?.name || ""));
         return {
           active,
           aborted: rows.filter((row) => row.signal?.aborted).length,
@@ -265,20 +357,17 @@ test.describe("Dev WebMCP demo", () => {
       });
 
     await expect.poll(registrationState).toMatchObject({
-      active: [
-        "get_page_context",
-        "show_listings",
-        "open_listing",
-        "search_listings",
-        "get_action_receipt"
-      ],
+      active: ["get_page_context", "show_listings", "open_listing", "search_listings", "get_action_receipt"],
       aborted: 0,
       total: 5
     });
 
     const searchResult: any = await page.evaluate(async () => {
       const rows = ((window as any).__webmcp_registrations || []) as Array<{
-        tool?: { name?: string; execute?: (args: unknown, options?: unknown) => Promise<unknown> };
+        tool?: {
+          name?: string;
+          execute?: (args: unknown, options?: unknown) => Promise<unknown>;
+        };
         signal?: AbortSignal;
       }>;
       const search = rows
@@ -292,13 +381,7 @@ test.describe("Dev WebMCP demo", () => {
 
     await expect(page).toHaveURL(/\/browse\?q=e-bike/, { timeout: 20_000 });
     await expect.poll(registrationState).toMatchObject({
-      active: [
-        "get_page_context",
-        "show_listings",
-        "open_listing",
-        "search_listings",
-        "get_action_receipt"
-      ]
+      active: ["get_page_context", "show_listings", "open_listing", "search_listings", "get_action_receipt"]
     });
     const afterNav = await registrationState();
     expect(afterNav.active).not.toContain("create_buy_mission");
@@ -368,16 +451,10 @@ test.describe("Dev WebMCP demo", () => {
           .filter((row: any) => !row.signal?.aborted)
           .map((row: any) => row.tool?.name)
       );
-    await expect.poll(activeToolNames).toEqual([
-      "get_page_context",
-      "resolve_approval",
-      "get_action_receipt"
-    ]);
+    await expect.poll(activeToolNames).toEqual(["get_page_context", "resolve_approval", "get_action_receipt"]);
 
     const requestPromise = page.waitForRequest(
-      (request) =>
-        request.method() === "POST" &&
-        request.url().includes(`/api/v1/approvals/${approvalId}:approve`)
+      (request) => request.method() === "POST" && request.url().includes(`/api/v1/approvals/${approvalId}:approve`)
     );
     await page.evaluate(() => {
       const row = ((window as any).__webmcp_owner_registrations || []).find(
@@ -389,10 +466,7 @@ test.describe("Dev WebMCP demo", () => {
       );
     });
     await expect(page.getByTestId("webmcp-confirm-modal")).toBeVisible();
-    await page
-      .getByTestId("webmcp-confirm-modal")
-      .getByRole("button", { name: "Approve" })
-      .click();
+    await page.getByTestId("webmcp-confirm-modal").getByRole("button", { name: "Approve" }).click();
 
     const request = await requestPromise;
     expect(request.headers()["authorization"]).toBeUndefined();

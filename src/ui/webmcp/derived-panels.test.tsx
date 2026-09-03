@@ -7,6 +7,20 @@ import type { ActionReceipt } from "../../webmcp/activity/action-receipts";
 
 const state = vi.hoisted(() => ({ receipts: [] as ActionReceipt[] }));
 
+vi.mock("next-intl", () => ({
+  useLocale: () => "en",
+  useTranslations: () => (key: string, values?: Record<string, number | string>) => {
+    const messages: Record<string, string> = {
+      "milestones.title": "What you should see", "milestones.progress": "{done}/{total} observed",
+      "approvals.count": "{count} approval awaiting your decision", "dealRoom.status.reserved.label": "Reserved",
+      "approvals.aboveCeiling": "The agent tried {amount}, above your {ceiling} ceiling.",
+      "dealRoom.consent.granted": "granted", "dealRoom.consent.pending": "pending", "dealRoom.openThread": "Open thread",
+      "dealRoom.openOffers": "Open offers", "dealRoom.approval": "Approval {id}"
+    };
+    return (messages[key] || key).replace(/\{(\w+)\}/g, (_, name) => String(values?.[name] ?? ""));
+  }
+}));
+
 vi.mock("./useWebMcpReceipts", () => ({
   useWebMcpReceipts: () => state.receipts
 }));

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Radar } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import {
   getBrowserReportedTools,
@@ -12,7 +13,7 @@ type DiscoveryState =
   | { kind: "unsupported" }
   | { kind: "loading" }
   | { kind: "ready"; tools: BrowserReportedTool[]; changes: number }
-  | { kind: "error"; message: string };
+  | { kind: "error" };
 
 function sameNames(a: readonly string[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;
@@ -27,6 +28,7 @@ function sameNames(a: readonly string[], b: readonly string[]): boolean {
  * "unavailable" is an honest statement about the runtime, never a pass.
  */
 export default function BrowserRegistryCard({ providerToolNames }: { providerToolNames: readonly string[] }) {
+  const t = useTranslations("webmcp");
   const [state, setState] = useState<DiscoveryState>({ kind: "loading" });
   const changesRef = useRef(0);
 
@@ -45,9 +47,9 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
           return;
         }
         setState({ kind: "ready", tools, changes: changesRef.current });
-      } catch (error: any) {
+      } catch {
         if (!alive) return;
-        setState({ kind: "error", message: error?.message || "getTools() failed" });
+        setState({ kind: "error" });
       }
     };
     void refresh();
@@ -63,14 +65,14 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
 
   const browserNames = useMemo(() => (state.kind === "ready" ? state.tools.map((tool) => tool.name) : []), [state]);
   const match = state.kind === "ready" ? sameNames(browserNames, providerToolNames) : null;
-  const origin = state.kind === "ready" ? state.tools.find((tool) => tool.origin)?.origin ?? null : null;
+  const origin = state.kind === "ready" ? (state.tools.find((tool) => tool.origin)?.origin ?? null) : null;
 
   return (
     <div className="border border-border bg-surface p-5 sm:p-6" data-testid="webmcp-browser-registry">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">Browser-reported</p>
-          <h2 className="mt-2 text-2xl font-bold uppercase">What the browser sees</h2>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("browserRegistry.eyebrow")}</p>
+          <h2 className="mt-2 text-2xl font-bold uppercase">{t("browserRegistry.title")}</h2>
         </div>
         <div className="inline-flex items-center gap-2 border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
           <Radar className="h-3.5 w-3.5" aria-hidden="true" />
@@ -87,7 +89,8 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
               match ? "border-success/40 bg-success/10 text-success" : "border-error/40 bg-error/10 text-error"
             }`}
           >
-            {match ? "Match" : "Mismatch"} · {browserNames.length} tool{browserNames.length === 1 ? "" : "s"}
+            {t(match ? "browserRegistry.match" : "browserRegistry.mismatch")} ·{" "}
+            {t("browserRegistry.toolCount", { count: browserNames.length })}
           </span>
         ) : (
           <span
@@ -95,13 +98,19 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
             data-match="unavailable"
             className="border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-subtle"
           >
-            {state.kind === "loading" ? "Reading…" : state.kind === "error" ? "getTools() error" : "getTools() unavailable in this runtime"}
+            {state.kind === "loading"
+              ? t("browserRegistry.reading")
+              : state.kind === "error"
+                ? t("browserRegistry.error")
+                : t("browserRegistry.unavailable")}
           </span>
         )}
-        {origin ? <span className="font-mono text-[11px] text-muted">origin {origin}</span> : null}
+        {origin ? (
+          <span className="font-mono text-[11px] text-muted">{t("browserRegistry.origin", { origin })}</span>
+        ) : null}
         {state.kind === "ready" && state.changes > 0 ? (
           <span className="font-mono text-[11px] text-muted" data-testid="webmcp-browser-registry-changes">
-            {state.changes} toolchange event{state.changes === 1 ? "" : "s"}
+            {t("browserRegistry.changeCount", { count: state.changes })}
           </span>
         ) : null}
       </div>
@@ -112,7 +121,6 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
             <li
               key={tool.name}
               data-testid="webmcp-browser-registry-tool"
-              title={tool.description}
               className={`border px-2.5 py-1 font-mono text-[11px] ${
                 providerToolNames.includes(tool.name)
                   ? "border-border text-text"
@@ -120,24 +128,25 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
               }`}
             >
               {tool.name}
-              {tool.annotations?.readOnlyHint ? <span className="ml-1 text-subtle">ro</span> : null}
+              {tool.annotations?.readOnlyHint ? (
+                <span className="ml-1 text-subtle">{t("browserRegistry.readOnly")}</span>
+              ) : null}
             </li>
           ))
         ) : (
           <li className="border border-border px-2.5 py-1 font-mono text-[11px] text-subtle">
             {state.kind === "ready"
-              ? "Browser reports no tools."
+              ? t("browserRegistry.noTools")
               : state.kind === "error"
-                ? state.message
-                : "Older WebMCP runtimes expose registerTool() only; the provider list on the left remains the reference."}
+                ? t("browserRegistry.readFailed")
+                : t("browserRegistry.legacy")}
           </li>
         )}
       </ul>
       <p className="mt-4 text-xs leading-relaxed text-muted">
-        Left: the tools our provider registered. Here: the same registry read back from{" "}
-        <code className="font-mono">document.modelContext.getTools()</code>, refreshed on every{" "}
-        <code className="font-mono">toolchange</code>. Connect or remove an agent key and watch both move from 5 to 11
-        together.
+        {t("browserRegistry.descriptionBefore")} <code className="font-mono">document.modelContext.getTools()</code>,{" "}
+        {t("browserRegistry.descriptionMiddle")} <code className="font-mono">toolchange</code>.{" "}
+        {t("browserRegistry.descriptionAfter")}
       </p>
     </div>
   );

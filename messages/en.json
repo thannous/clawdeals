@@ -1185,6 +1185,7 @@
     "meta": "Policy Control // CLAWDEALS",
     "subtitle": "POLICY CONTROL",
     "description": "Budgets, approval thresholds, quiet hours, allowlist/denylist. Your agent operates within your rules.",
+    "ownerEditor": { "title": "Owner controls available", "description": "Review the policy your agents use now, then change budgets, approvals and seller lists in one place.", "cta": "Edit my policy" },
     "sections": {
       "rules": {
         "title": "Rules Engine",
@@ -1722,6 +1723,7 @@
     "nav": {
       "profile": "Profile",
       "account": "Account",
+      "policy": "Policy",
       "identities": "Linked Identities",
       "connectedApps": "Connected Apps",
       "connect": "Connect",
@@ -2603,7 +2605,9 @@
       "title": "Browser support",
       "supported": "SUPPORTED",
       "registered": "REGISTERED",
-      "hint": "Open this URL in ChatGPT’s in-app browser, or Chrome 149+ with chrome://flags/#enable-webmcp-testing."
+      "hint": "Open this URL in ChatGPT’s in-app browser, or Chrome 149+ with chrome://flags/#enable-webmcp-testing.",
+      "registrationPartial": "{count, plural, one {# tool failed} other {# tools failed}} to register.",
+      "registrationFailed": "Tool registration failed."
     },
     "test": {
       "title": "Judge in 60 seconds",
@@ -2616,8 +2620,99 @@
     },
     "tools": {
       "title": "Registered tools",
-      "confirm": "confirm"
+      "confirm": "confirmation",
+      "read": "read",
+      "write": "write"
     },
-    "gridHint": "Agent tool calls update this same grid. Highlighted cards are the ones the agent selected."
+    "gridHint": "Agent tool calls update this same grid. Highlighted cards are the ones the agent selected.",
+    "common": {
+      "copied": "Copied", "copyFailed": "Copy failed", "none": "None", "pending": "pending", "required": "required", "cancel": "Cancel",
+      "enabled": "Enabled", "disabled": "Disabled", "supported": "Supported", "notDetected": "Not detected", "unavailable": "unavailable"
+    },
+    "policyFit": {
+      "fits": "Fits mission", "fitsConfirm": "Fits · confirm requirements", "abovePreferredPrice": "Above preferred price", "outsideMission": "Outside mission",
+      "issues": { "overHardBudget": "Over hard budget", "overPreferredPrice": "Above preferred price", "requirementsUnverified": "Requirements to confirm", "batteryTooLow": "Battery too low", "outOfRadius": "Out of radius", "unknown": "{issue}" }
+    },
+    "activity": {
+      "ariaLabel": "Agent activity receipts", "title": "Agent Activity", "newCount": "{count} new", "receiptCount": "{count, plural, one {# redacted receipt} other {# redacted receipts}}",
+      "clearAll": "Clear all", "keep": "Keep", "clear": "Clear", "expand": "Expand", "minimize": "Minimize", "copyRequestId": "Copy request ID", "copyReceipt": "Copy receipt", "openRelated": "Open related view", "raw": "Raw", "bestEffort": "Best-effort warning: {error}",
+      "outcomes": { "pending": "pending", "success": "success", "denied": "denied", "unknown": "unknown" },
+      "results": { "pending": "Awaiting completion", "reported": "{value}", "completed": "Completed", "denied": "Denied", "unknown": "Outcome requires reconciliation" },
+      "fields": { "actor": "Actor", "confirmation": "Confirmation", "requestId": "Request ID", "approvals": "Approvals", "inputHash": "Input hash", "arguments": "Arguments", "policy": "Policy", "result": "Result", "receipt": "Receipt" },
+      "policy": { "read": "Read", "allowed": "Allowed", "awaitingConfirmation": "Awaiting your confirmation", "humanApproved": "Approved by you · executing", "serverAccepted": "Server accepted", "humanAndServerAccepted": "Approved by you · server accepted", "humanDenied": "Rejected by you", "approvalRequired": "Policy stop · owner approval required", "serverRejected": "Server rejected · {errorCode}", "outcomeUnknown": "Outcome unknown · reconcile before retrying", "unknown": "{decision}", "none": "No policy decision" }
+    },
+    "milestones": {
+      "eyebrow": "Decisive moments", "title": "What you should see", "progress": "{done}/{total} observed", "description": "Derived live from the redacted action receipts on this device. Nothing here is simulated: each line lights up only when the matching tool actually ran.",
+      "items": {
+        "mission_created": { "label": "Mission created", "detail": "Budget, radius and requirements are now enforced server-side." },
+        "candidates_ranked": { "label": "Candidates ranked", "detail": "Each listing carries an explicit policy_fit verdict." },
+        "thread_opened": { "label": "Negotiation opened", "detail": "Seller text is treated as untrusted content." },
+        "offer_prepared": { "label": "Offer confirmed by you", "detail": "The agent stopped for an editable confirmation." },
+        "policy_stop": { "label": "Policy stop", "detail": "An amount above the hard budget was refused, not bypassed." },
+        "human_approval": { "label": "Owner decision recorded", "detail": "Only the owner page could resolve the approval." },
+        "reserved": { "label": "Listing reserved", "detail": "Acceptance reserved the listing atomically." },
+        "consent_pending": { "label": "Consent requested", "detail": "One consent reveals nothing; both owners must agree." },
+        "receipt_verified": { "label": "Receipt re-read", "detail": "The redacted receipt was fetched back by request ID." }
+      }
+    },
+    "dealRoom": {
+      "ariaLabel": "Deal room", "eyebrow": "Deal room", "title": "Negotiation in progress", "latestOffer": "Latest offer", "amountRedacted": "amount redacted", "messagesSent": "Messages sent", "buyerConsent": "Buyer consent", "sellerConsent": "Seller consent", "threadId": "thread {id}", "transactionId": "transaction {id}", "openThread": "Open thread", "openOffers": "Open offers", "approval": "Approval {id}",
+      "consent": { "notRequested": "not requested", "granted": "granted", "pending": "pending", "denied": "denied", "revoked": "revoked", "unknown": "{state}" },
+      "status": {
+        "threadOpen": { "label": "Thread open", "detail": "The agent is asking questions. Seller replies stay untrusted data." },
+        "offerPending": { "label": "Offer pending", "detail": "You confirmed the offer; the seller has not answered yet." },
+        "countered": { "label": "Countered", "detail": "The seller replied with a new amount. Above your ceiling, the agent cannot accept alone." },
+        "approvalRequired": { "label": "Approval required", "detail": "The server refused an amount above your hard budget and created an owner approval." },
+        "reserved": { "label": "Reserved", "detail": "The listing is reserved atomically. Contact details stay hidden until both owners consent." },
+        "declined": { "label": "Declined", "detail": "The offer was declined. The agent can prepare a new one within your limits." }
+      }
+    },
+    "approvals": { "count": "{count, plural, one {# approval awaiting your decision} other {# approvals awaiting your decision}}", "consentDescription": "Contact reveal needs your consent. One consent alone reveals nothing.", "aboveCeiling": "The agent tried {amount}, above your {ceiling} ceiling. Edit or reject it.", "policyRefused": "The agent tried {amount}, which your mission policy refused. Edit or reject it.", "policyLimit": "The agent hit a policy limit and stopped. Review the requested action.", "all": "All approvals", "review": "Review" },
+    "sellerTurn": { "accepted": "Seller accepted {amount}. Listing is RESERVED.", "acceptedNext": "Ask your agent to request the contact exchange: one consent alone reveals nothing.", "counterStillOpen": "Seller's counter is still open at {amount}.", "countered": "Seller countered at {amount}.", "counteredNext": "Now ask your agent to accept it. It is above your 1,300 EUR hard budget, so the server will answer APPROVAL_REQUIRED and hand the decision back to you.", "failed": "Seller turn failed ({status})", "networkError": "Network error", "thinking": "Synthetic seller is thinking…", "run": "Let the synthetic seller respond", "policy": "Deterministic policy: counters below 1,250 EUR at 1,350 EUR, accepts at or above. No LLM, no real seller.", "noOpenOffer": "No open buyer offer yet. Ask your agent to make an offer first.", "notReady": "Run Reset demo data first so the synthetic seller exists." },
+    "judgeReset": { "checkingAccess": "Checking judge access…", "resetting": "Resetting synthetic data…", "again": "Reset demo again", "reset": "Reset demo data", "checkingHost": "Checking this host and stored agent key.", "authorized": "Authorized judge key detected. Reset affects synthetic judge data only.", "unauthorized": "Judge mode exists, but the stored agent key is not authorized.", "capabilityFailed": "the capability check failed", "unavailableError": "Judge reset unavailable: {error}.", "unavailable": "Judge reset unavailable on this host.", "ready": "Ready: {listings} listings · {threads} thread · {messages} message.", "rejected": "Reset rejected. Verify the isolated host and judge key." },
+    "agentKey": {
+      "roles": { "buyer": "Buyer", "seller": "Seller", "other": "other" }, "errors": { "rejectedSandbox": "This key was rejected. Check that you pasted the full synthetic key.", "rejectedHost": "This key was rejected here. Judge keys only work on sandbox.clawdeals.com — open the same page there.", "verify": "Could not verify the key on this host." },
+      "connected": "{role} key connected. The registry now exposes the authenticated tools.", "switched": "Switched to the {role} key.", "disconnected": "Disconnected. Only the five public tools remain registered.", "roleKey": "{role} key", "agentKey": "Agent key", "switchTo": "Switch to {role}", "addRole": "Add {role} key", "disconnect": "Disconnect", "pasteRole": "Paste the {role} key", "paste": "Paste a synthetic agent key", "hide": "Hide key", "show": "Show key", "role": "Role", "checking": "Checking…", "connect": "Connect", "hint": "Judge keys are supplied privately and only work on the isolated sandbox. Nothing is sent to production."
+    },
+    "browserRegistry": { "eyebrow": "Browser-reported", "title": "What the browser sees", "match": "Match", "mismatch": "Mismatch", "toolCount": "{count, plural, one {# tool} other {# tools}}", "reading": "Reading…", "error": "getTools() error", "unavailable": "getTools() unavailable in this runtime", "origin": "origin {origin}", "changeCount": "{count, plural, one {# toolchange event} other {# toolchange events}}", "noTools": "Browser reports no tools.", "readFailed": "The browser registry could not be read.", "legacy": "Older WebMCP runtimes expose registerTool() only; the provider list on the left remains the reference.", "readOnly": "read-only", "descriptionBefore": "Left: the tools our provider registered. Here: the same registry read back from", "descriptionMiddle": "refreshed on every", "descriptionAfter": "Connect or remove an agent key and watch both move from 5 to 11 together." },
+    "catalog": { "emptyTitle": "This host has no public listings right now.", "emptyDescription": "The five public tools still register and return receipts, but the mission has nothing to rank here. Run the full e-bike mission on the isolated sandbox, where the five deterministic candidates and the synthetic seller live.", "openSandbox": "Open the sandbox hub" },
+    "mission": {
+      "defaults": { "query": "used e-bike" }, "cities": { "paris": "Paris", "lyon": "Lyon", "marseille": "Marseille", "london": "London", "madrid": "Madrid" }, "countries": { "fr": "France", "gb": "United Kingdom", "es": "Spain" }, "listingLocation": "Listing location",
+      "toolDescription": "Fill the visible Clawdeals buying mission form. The human reviews and submits it before the mission is created.", "eyebrow": "Deal Mission", "title": "Delegate the search. Keep the limits.", "prefill": "Prefilled from the listing “{title}”: preferred price = asking price, ceiling = +10 %. Adjust anything before creating the mission.", "mode": "Declarative + imperative WebMCP", "customCoordinates": "Custom coordinates…", "manualBilateral": "Manual bilateral approval", "advanced": "Advanced · coordinates", "creating": "Creating…", "create": "Create mission", "submitHint": "Requires a connected agent key and explicit confirmation. Contact data stays hidden.",
+      "fields": { "query": "What to find", "city": "City", "location": "Location label", "radius": "Radius km", "expires": "Expires", "preferred": "Preferred price", "ceiling": "Hard ceiling", "requirements": "Minimum requirements", "autonomy": "Autonomous actions", "contact": "Contact rule", "latitude": "Latitude", "longitude": "Longitude", "market": "Market" },
+      "params": { "query": "The product or item the owner wants the agent to find.", "location": "Human-readable center of the mission search area.", "radius": "Maximum search radius in kilometers, from 1 to 300.", "expires": "Mission expiration, no more than 90 days in the future.", "preferred": "Preferred price target in the market currency.", "ceiling": "Absolute offer ceiling that the backend must enforce.", "requirements": "Comma- or newline-separated requirements the seller must confirm.", "delegate": "Delegate “{action}” to the agent.", "contact": "Contact details remain hidden until both owners approve.", "latitude": "Latitude of the mission center, between -90 and 90.", "longitude": "Longitude of the mission center, between -180 and 180.", "market": "The Clawdeals market used for currency and listing availability." },
+      "autonomy": { "search": { "label": "Search and rank listings", "hint": "Always on: the mission is useless without it." }, "ask": { "label": "Ask the seller questions", "hint": "Messages go through the server redaction." }, "offer": { "label": "Make policy-compliant offers", "hint": "Every offer still stops for your confirmation." } },
+      "summary": { "eyebrow": "Active Deal Mission", "active": "Active", "selectedArea": "Selected area", "preferred": "Preferred", "hardCeiling": "Hard ceiling", "autonomy": "Autonomy", "contact": "Contact", "bilateral": "Bilateral approval only", "requirements": "Minimum requirements" },
+      "result": { "created": "Mission created. The server now enforces your {ceiling} ceiling on every offer.", "createdWithReceipt": "Mission created. The server now enforces your {ceiling} ceiling on every offer. Receipt {requestId} is in Agent Activity.", "denied": "Confirmation declined. Nothing was created.", "auth": "Connect an agent key first, then create the mission.", "validation": "The server rejected the mission. Check the fields and try again.", "unknown": "The result is unknown. Check Agent Activity before retrying.", "failed": "The mission could not be created. Try again or inspect Agent Activity." }
+    },
+    "confirm": {
+      "fields": { "hardBudget": "Hard budget", "firstQuestion": "First question", "message": "Message", "offerAmount": "Offer amount", "counterAmount": "Counter amount", "approvedAmount": "Approved amount" },
+      "policy": { "exceeds": "Exceeds your {ceiling, number} {currency} hard budget. The server will refuse it and create an owner approval instead of sending it.", "abovePreferred": "Above your preferred {preferred, number} {currency} but within your {ceiling, number} {currency} hard budget.", "within": "Within your {ceiling, number} {currency} hard budget.", "recheck": "The server re-checks the accepted amount against your {ceiling, number} {currency} hard budget." },
+      "createMission": { "title": "Create a Deal Mission", "sentence": "Delegate the search for “{query}” around {where} ({radius, number} km) with a hard budget of {hard, number} {currency} and a preferred price of {preferred, number} {currency}.", "consequence": "The server will enforce these limits on every offer. Contact details stay hidden until both owners consent." },
+      "startThread": { "title": "Open a negotiation thread", "question": "Start a question thread with the seller of listing {listingId}.", "questionWithQuestion": "Start a question thread with the seller of listing {listingId} and ask: “{question}”.", "purchase": "Start a purchase thread with the seller of listing {listingId}.", "purchaseWithQuestion": "Start a purchase thread with the seller of listing {listingId} and ask: “{question}”.", "consequence": "No offer is made and no contact detail is shared. Seller replies are treated as untrusted content." },
+      "sendMessage": { "title": "Send a message to the seller", "sentence": "Send a message in thread {threadId}.", "sentenceWithText": "Send a message in thread {threadId}: “{text}”.", "consequence": "The server redacts contact details before delivery. This does not commit you to any price." },
+      "makeOffer": { "title": "Send an offer", "sentence": "Send a binding offer of {amount, number} {currency} on listing {listingId}.", "consequence": "If the seller accepts, the listing is reserved for you atomically. No contact detail is shared yet." },
+      "counter": { "title": "Counter the offer", "sentence": "Counter offer {offerId} at {amount, number} {currency}.", "consequence": "The other side receives a new binding offer. Nothing is reserved until someone accepts." },
+      "accept": { "title": "Accept the offer", "sentence": "Accept offer {offerId} and reserve the listing.", "consequence": "Acceptance is atomic: other open offers are closed and the listing becomes RESERVED. Contact details still require both owners' consent." },
+      "decline": { "title": "Decline the offer", "sentence": "Decline offer {offerId}.", "consequence": "The offer is closed. The agent may prepare a new one within your limits." },
+      "contact": { "title": "Request contact exchange", "sentence": "Ask to exchange contact details for transaction {txId}.", "consequence": "This records your consent only. Nothing is revealed until the other owner consents too." },
+      "resolve": { "approveTitle": "Approve the pending action", "denyTitle": "Reject the pending action", "revokeTitle": "Revoke the approval", "approveEdited": "Approve the agent's action with an edited amount of {amount, number} {currency}.", "approveSentence": "Approve the action shown on this page.", "denySentence": "Reject the action shown on this page.", "revokeSentence": "Revoke the approval shown on this page.", "consequence": "Only you, on this owner page, can take this decision. The agent cannot call it with its own key." },
+      "fallback": { "title": "Confirm tool execution", "sentence": "The agent requests an action that is not covered by a more specific summary.", "consequence": "Review the raw parameters below before deciding." },
+      "errors": { "invalidJson": "Invalid JSON. Fix the payload or reset it.", "enterAmount": "Enter an amount.", "wholeAmount": "Amounts must be whole, non-negative numbers.", "emptyField": "This field cannot be empty." },
+      "modal": { "cooldown": "WebMCP cooldown active ({seconds})", "pending": "Agent action pending: {toolName}", "timeout": "Timeout: {seconds}", "eyebrow": "The agent asks for your confirmation", "editHint": "edit before approving if needed", "advanced": "Advanced · raw parameters", "edited": "edited", "editJson": "Edit tool parameters JSON", "toolMeta": "Tool {toolName} · scope {scope} · request {requestId}", "resetEdits": "Reset edits", "outputHint": "The agent will receive a redacted result after execution.", "recentActions": "Recent actions: {count}", "reject": "Reject", "approveEdited": "Approve edited", "approve": "Approve" }
+    },
+    "challenge": {
+      "prompt": "Create a BUY mission for a used e-bike within 25 km of Paris. My preferred price is 1,200 EUR, my hard budget is 1,300 EUR, and battery health must be at least 80%. Search and rank the matching listings, explain every policy_fit, then open the best candidate. Start a negotiation thread, ask the seller to confirm battery health and service history, and prepare an offer of 1,100 EUR. Stop for my confirmation whenever ClawDeals requires it; never reveal contact details without bilateral approval.",
+      "badge": "WebMCP Challenge · Judge mode", "heroTitle": "Your agent negotiates.", "heroAccent": "You stay in control.", "pitch": "ClawDeals lets buyer and seller agents negotiate a real deal while humans keep control of budgets, approvals and identity.", "intro": "Built for second-hand marketplaces between individuals, where negotiation is asynchronous, scams and leaked contact details are the first risk, and an agent without server-enforced limits is unusable. The same primitives — mission, policy stop, atomic reservation, bilateral consent, receipt — apply to housing, used cars and freelance work.", "launch": "Launch live demo", "promptCopied": "Prompt copied", "copyJudgePrompt": "Copy judge prompt", "watchDemo": "Watch the 160 s demo", "startHere": "Start here", "judge60": "Judge in 60 seconds", "copyExact": "Copy this exact mission", "copyPrompt": "Copy prompt", "openMarketplace": "Open the real marketplace",
+      "compatibility": { "ariaLabel": "WebMCP compatibility", "title": "Live compatibility", "runtime": "Runtime", "browserApi": "Browser API", "registry": "Registry", "toolsRegistered": "{count, plural, one {# tool registered} other {# tools registered}}", "noRegistration": "No active registration" },
+      "steps": { "1": { "title": "Open this hub in a WebMCP client", "copy": "ChatGPT's in-app browser, or Chrome 149+ with chrome://flags/#enable-webmcp-testing (the Model Context Tool Inspector extension also works)." }, "2": { "title": "Copy the mission prompt", "copy": "One paragraph: Paris e-bike, preferred 1,200 EUR, hard budget 1,300 EUR, battery ≥ 80%, offer 1,100 EUR." }, "3": { "title": "Watch the registry", "copy": "5 public tools without a key; 11 contextual tools once the synthetic judge key is connected on the sandbox." }, "4": { "title": "Look for three outcomes", "copy": "APPROVAL_REQUIRED on 1,350 EUR, RESERVED after the seller accepts, and a redacted receipt you can read back." } },
+      "ideas": { "ariaLabel": "Three ideas", "1": { "title": "The agent negotiates", "body": "It searches, ranks, asks the seller and prepares offers through page-scoped WebMCP tools." }, "2": { "title": "The server enforces human limits", "body": "Hard budgets, owner-only approvals and bilateral consent are checked again server-side." }, "3": { "title": "Every action stays verifiable", "body": "Each protected step leaves a redacted receipt with a request ID and a policy decision." } },
+      "roles": { "agent": { "title": "Agent", "copy": "Searches, compares, starts threads, asks questions and prepares offers." }, "owner": { "title": "Owner", "copy": "Defines the mission and budget, edits sensitive actions and keeps the final say." }, "clawdeals": { "copy": "Enforces policy server-side, controls contact reveal and emits redacted action receipts." } },
+      "fixture": { "eyebrow": "Deterministic fixture", "title": "Fresh judge session", "description": "An isolated sandbox rebuilds one buyer mission, five policy-test e-bikes, one dedicated seller and one negotiation thread. No real account or contact data is used.", "judgeKey": "Judge key", "seller": "Synthetic seller" },
+      "registry": { "eyebrow": "Imperative API", "title": "Exact tool registry", "registeredNow": "Registered now", "none": "None — WebMCP API not active in this browser.", "expected": "Expected for this session" },
+      "eligibility": { "eyebrow": "Eligible work only", "title": "Built after August 25", "description": "Official contest samples cover catalogues and carts. ClawDeals adds multiparty negotiation, non-bypassable policy, editable approval, atomic reservation, bilateral consent and audit.", "items": { "1": { "title": "Contextual WebMCP", "copy": "Official registration lifecycle, scoped tools and shared human-agent UI." }, "2": { "title": "Deal Mission", "copy": "Hard budgets, policy_fit ranking and deterministic Paris e-bike candidates." }, "3": { "title": "Controlled negotiation", "copy": "Editable confirmation, owner approvals and atomic offer reservation." }, "4": { "title": "Trust receipts", "copy": "Bilateral contact consent, redacted hashes and durable action outcomes." } } },
+      "evidence": { "baseline": "Baseline", "deployedBuild": "Deployed build", "title": "Evidence", "strategy": "Strategy", "productPath": "Product path" },
+      "links": { "sandbox": "Authenticated sandbox", "guide": "Full judge guide", "chromeDocs": "Chrome WebMCP docs", "ledger": "Full eligibility ledger", "repository": "Public repository", "evals": "WebMCP evals", "plan": "Victory plan" }
+    }
   }
 }

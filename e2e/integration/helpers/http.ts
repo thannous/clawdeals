@@ -44,7 +44,10 @@ export async function registerAgent(
   ip?: string,
   options: { requestId?: string } = {}
 ): Promise<APIResponse> {
-  const headers: Record<string, string> = { "x-owner-id": ownerId, "Idempotency-Key": idempotencyKey };
+  const headers: Record<string, string> = {
+    "x-owner-id": ownerId,
+    "Idempotency-Key": idempotencyKey
+  };
   if (ip) headers["x-forwarded-for"] = ip;
   if (options.requestId) headers["x-request-id"] = options.requestId;
 
@@ -111,7 +114,7 @@ export async function createOffer(
     currency: string;
     expiresAt: string;
   },
-  options: { idempotencyKey?: string } = {}
+  options: { idempotencyKey?: string; requestId?: string } = {}
 ): Promise<APIResponse> {
   const data: Record<string, unknown> = {
     amount,
@@ -126,11 +129,14 @@ export async function createOffer(
     data.mission_id = missionId;
   }
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "Idempotency-Key": options.idempotencyKey || randomId()
+  };
+  if (options.requestId) headers["x-request-id"] = options.requestId;
+
   return api.post(`/api/v1/listings/${encodeURIComponent(listingId)}/offers`, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Idempotency-Key": options.idempotencyKey || randomId()
-    },
+    headers,
     data
   });
 }
@@ -144,7 +150,12 @@ export async function createCounterOffer(
     amount,
     currency,
     expiresAt
-  }: { missionId?: string | null; amount: number; currency: string; expiresAt: string },
+  }: {
+    missionId?: string | null;
+    amount: number;
+    currency: string;
+    expiresAt: string;
+  },
   options: { idempotencyKey?: string } = {}
 ): Promise<APIResponse> {
   return api.post(`/api/v1/offers/${encodeURIComponent(offerId)}/counter`, {
@@ -225,11 +236,7 @@ export async function createTransactionRating(
   api: APIRequestContext,
   apiKey: string,
   txId: string,
-  {
-    score,
-    reasonCode,
-    comment
-  }: { score: number; reasonCode?: string | null; comment?: string | null },
+  { score, reasonCode, comment }: { score: number; reasonCode?: string | null; comment?: string | null },
   options: { idempotencyKey?: string } = {}
 ): Promise<APIResponse> {
   const data: Record<string, unknown> = { score };
@@ -483,10 +490,7 @@ export async function evidenceGet(api: APIRequestContext, apiKey: string, disput
 export async function suspendAgentByOps(
   api: APIRequestContext,
   targetAgentId: string,
-  {
-    reason = "integration test suspension",
-    idempotencyKey
-  }: { reason?: string; idempotencyKey?: string } = {}
+  { reason = "integration test suspension", idempotencyKey }: { reason?: string; idempotencyKey?: string } = {}
 ): Promise<APIResponse> {
   return api.post("/api/console/moderation/suspend", {
     headers: {
@@ -503,10 +507,7 @@ export async function suspendAgentByOps(
 export async function unsuspendAgentByOps(
   api: APIRequestContext,
   targetAgentId: string,
-  {
-    reason = "integration test unsuspension",
-    idempotencyKey
-  }: { reason?: string; idempotencyKey?: string } = {}
+  { reason = "integration test unsuspension", idempotencyKey }: { reason?: string; idempotencyKey?: string } = {}
 ): Promise<APIResponse> {
   return api.post("/api/console/moderation/unsuspend", {
     headers: {

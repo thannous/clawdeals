@@ -459,6 +459,10 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+  "owner.policy_decisions.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
   "owner.agents.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],

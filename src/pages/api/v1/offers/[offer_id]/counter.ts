@@ -11,10 +11,7 @@ import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/pol
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { createApproval } from "../../../../../server/services/approvals";
 import { ALLOWED_CURRENCIES } from "../../../../../server/config/deals";
-import {
-  OFFERS_TTL_MIN_SECONDS,
-  OFFERS_TTL_WINDOW_SECONDS
-} from "../../../../../server/config/offers";
+import { OFFERS_TTL_MIN_SECONDS, OFFERS_TTL_WINDOW_SECONDS } from "../../../../../server/config/offers";
 import crypto from "crypto";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 import { publishSseEvent } from "../../../../../server/sse/store";
@@ -147,14 +144,10 @@ export async function handler(req, res, ctx) {
   if (!expiresAtResult.ok) {
     return jsonResponse(
       400,
-      errorPayload(
-        "INVALID_EXPIRES_AT",
-        expiresAtResult.error,
-        {
-          min_seconds: OFFERS_TTL_MIN_SECONDS,
-          max_seconds: OFFERS_TTL_WINDOW_SECONDS
-        }
-      )
+      errorPayload("INVALID_EXPIRES_AT", expiresAtResult.error, {
+        min_seconds: OFFERS_TTL_MIN_SECONDS,
+        max_seconds: OFFERS_TTL_WINDOW_SECONDS
+      })
     );
   }
   const expiresAt = expiresAtResult.value;
@@ -186,16 +179,10 @@ export async function handler(req, res, ctx) {
 
     const offerMissionId = offer.buy_mission_id ? String(offer.buy_mission_id) : null;
     if (requestedMissionId && requestedMissionId !== offerMissionId) {
-      return jsonResponse(
-        409,
-        errorPayload("MISSION_MISMATCH", "Mission does not match the offer chain")
-      );
+      return jsonResponse(409, errorPayload("MISSION_MISMATCH", "Mission does not match the offer chain"));
     }
     if (isSeller && requestedMissionId) {
-      return jsonResponse(
-        400,
-        errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer")
-      );
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "mission_id is only valid for the buyer"));
     }
     if (offer.status !== "CREATED") {
       return jsonResponse(
@@ -205,14 +192,8 @@ export async function handler(req, res, ctx) {
     }
 
     const currentOfferExpiresAt = new Date(offer.expires_at);
-    if (
-      Number.isNaN(currentOfferExpiresAt.getTime()) ||
-      currentOfferExpiresAt.getTime() <= Date.now()
-    ) {
-      return jsonResponse(
-        409,
-        errorPayload("OFFER_NOT_COUNTERABLE", "Offer not counterable", { status: "EXPIRED" })
-      );
+    if (Number.isNaN(currentOfferExpiresAt.getTime()) || currentOfferExpiresAt.getTime() <= Date.now()) {
+      return jsonResponse(409, errorPayload("OFFER_NOT_COUNTERABLE", "Offer not counterable", { status: "EXPIRED" }));
     }
 
     if (isBuyer && offerMissionId) {
@@ -238,10 +219,7 @@ export async function handler(req, res, ctx) {
           currency,
           expiresAt,
           reason: String(error?.details?.reason || "mission_policy"),
-          hardBudgetMax:
-            typeof error?.details?.hard_budget_max === "number"
-              ? error.details.hard_budget_max
-              : null
+          hardBudgetMax: typeof error?.details?.hard_budget_max === "number" ? error.details.hard_budget_max : null
         });
         if (ctx) {
           ctx.auditEvent = "offer.approval_required";
@@ -275,19 +253,21 @@ export async function handler(req, res, ctx) {
       return jsonResponse(403, errorPayload("TRUST_RESTRICTED", "Agent trust restrictions prevent offers"));
     }
 
-    const targetOwnerId = listing.owner_id || null;
+    // A counter-offer is governed by the policy of the agent making it. For a
+    // buyer counter, allow/deny rules still evaluate the seller agent.
+    const policyOwnerId = ctx?.ownerId || null;
 
     let policyDecision: any = { decision: POLICY_DECISION.N_A, policy_version: null, reason: null };
     let policyRecord: any = null;
 
-    if (targetOwnerId) {
-      policyRecord = await getPolicyOrDefault(targetOwnerId);
+    if (policyOwnerId) {
+      policyRecord = await getPolicyOrDefault(policyOwnerId);
 
       // Apply allowlist only for buyer -> seller counter-offers.
       if (isBuyer) {
         const allowlistResponse = await enforceAllowlist({
-          ownerId: targetOwnerId,
-          agentId,
+          ownerId: policyOwnerId,
+          agentId: offer.seller_agent_id,
           ctx,
           policyRecord
         });
@@ -307,11 +287,12 @@ export async function handler(req, res, ctx) {
         ctx.policy = {
           decision: policyDecision.decision,
           policy_version: policyDecision.policy_version,
-          approval_id: null
+          approval_id: null,
+          owner_id: policyOwnerId
         };
       }
     } else if (ctx) {
-      ctx.policy = { decision: "N_A", policy_version: null, approval_id: null };
+      ctx.policy = { decision: "N_A", policy_version: null, approval_id: null, owner_id: null };
     }
 
     if (ctx?.body && typeof ctx.body === "object") {
@@ -336,8 +317,7 @@ export async function handler(req, res, ctx) {
 
     const quarantineApplied = Boolean(trustContext?.quarantine_applied);
     const requiresApproval =
-      Boolean(targetOwnerId) &&
-      (quarantineApplied || policyDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL);
+      Boolean(policyOwnerId) && (quarantineApplied || policyDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL);
 
     if (requiresApproval) {
       const reason = quarantineApplied ? "quarantine_applied" : policyDecision.reason || "policy_requires_approval";
@@ -345,7 +325,7 @@ export async function handler(req, res, ctx) {
       const actionRef = {
         listing_id: offer.listing_id,
         thread_id: offer.thread_id,
-        owner_id: targetOwnerId,
+        owner_id: policyOwnerId,
         agent_id: agentId,
         buyer_agent_id: offer.buyer_agent_id,
         seller_agent_id: offer.seller_agent_id,
@@ -372,7 +352,7 @@ export async function handler(req, res, ctx) {
         .digest("hex");
 
       const approval = await createApproval({
-        ownerId: targetOwnerId,
+        ownerId: policyOwnerId,
         actionType: "offer_over_budget",
         actionRef,
         actionRefId,
@@ -394,7 +374,8 @@ export async function handler(req, res, ctx) {
         ctx.policy = {
           decision: policyDecision.decision,
           policy_version: policyDecision.policy_version,
-          approval_id: approval.approval_id
+          approval_id: approval.approval_id,
+          owner_id: policyOwnerId
         };
       }
 
@@ -462,10 +443,7 @@ export async function handler(req, res, ctx) {
 
     return jsonResponse(201, mapOfferResponse(next));
   } catch (error) {
-    return jsonResponse(
-      error.status || 500,
-      errorPayload(error.code || "ERROR", error.message, error.details)
-    );
+    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 }
 

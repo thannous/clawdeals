@@ -12,10 +12,7 @@ import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/pol
 import { getPolicyOrDefault } from "../../../../../server/services/policies";
 import { createApproval } from "../../../../../server/services/approvals";
 import { ALLOWED_CURRENCIES } from "../../../../../server/config/deals";
-import {
-  OFFERS_TTL_MIN_SECONDS,
-  OFFERS_TTL_WINDOW_SECONDS
-} from "../../../../../server/config/offers";
+import { OFFERS_TTL_MIN_SECONDS, OFFERS_TTL_WINDOW_SECONDS } from "../../../../../server/config/offers";
 import crypto from "crypto";
 import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
 import { publishSseEvent } from "../../../../../server/sse/store";
@@ -157,14 +154,10 @@ export async function handler(req, res, ctx) {
   if (!expiresAtResult.ok) {
     return jsonResponse(
       400,
-      errorPayload(
-        "INVALID_EXPIRES_AT",
-        expiresAtResult.error,
-        {
-          min_seconds: OFFERS_TTL_MIN_SECONDS,
-          max_seconds: OFFERS_TTL_WINDOW_SECONDS
-        }
-      )
+      errorPayload("INVALID_EXPIRES_AT", expiresAtResult.error, {
+        min_seconds: OFFERS_TTL_MIN_SECONDS,
+        max_seconds: OFFERS_TTL_WINDOW_SECONDS
+      })
     );
   }
   const expiresAt = expiresAtResult.value;
@@ -182,7 +175,10 @@ export async function handler(req, res, ctx) {
 
   try {
     const listingPromise = getListing(listingId);
-    const trustPromise = resolveTrustContext({ ctx, actionType: "offer.create" });
+    const trustPromise = resolveTrustContext({
+      ctx,
+      actionType: "offer.create"
+    });
     const [listing, trustContext] = await Promise.all([listingPromise, trustPromise]);
 
     if (!listing) {
@@ -219,17 +215,22 @@ export async function handler(req, res, ctx) {
       return jsonResponse(403, errorPayload("TRUST_RESTRICTED", "Agent trust restrictions prevent offers"));
     }
 
-    const targetOwnerId = listing.owner_id || null;
+    const sellerOwnerId = listing.owner_id || null;
+    const policyOwnerId = ctx?.ownerId || null;
 
-    let policyDecision: any = { decision: POLICY_DECISION.N_A, policy_version: null, reason: null };
+    let policyDecision: any = {
+      decision: POLICY_DECISION.N_A,
+      policy_version: null,
+      reason: null
+    };
     let policyRecord: any = null;
 
-    if (targetOwnerId) {
-      policyRecord = await getPolicyOrDefault(targetOwnerId);
+    if (policyOwnerId) {
+      policyRecord = await getPolicyOrDefault(policyOwnerId);
 
       const allowlistResponse = await enforceAllowlist({
-        ownerId: targetOwnerId,
-        agentId: buyerAgentId,
+        ownerId: policyOwnerId,
+        agentId: sellerAgentId,
         ctx,
         policyRecord
       });
@@ -248,11 +249,17 @@ export async function handler(req, res, ctx) {
         ctx.policy = {
           decision: policyDecision.decision,
           policy_version: policyDecision.policy_version,
-          approval_id: null
+          approval_id: null,
+          owner_id: policyOwnerId
         };
       }
     } else if (ctx) {
-      ctx.policy = { decision: "N_A", policy_version: null, approval_id: null };
+      ctx.policy = {
+        decision: "N_A",
+        policy_version: null,
+        approval_id: null,
+        owner_id: null
+      };
     }
 
     let thread: any = null;
@@ -260,14 +267,19 @@ export async function handler(req, res, ctx) {
 
     if (threadId) {
       thread = await getThread(threadId);
-      if (!thread || thread.listing_id !== listingId || thread.buyer_agent_id !== buyerAgentId || thread.seller_agent_id !== sellerAgentId) {
+      if (
+        !thread ||
+        thread.listing_id !== listingId ||
+        thread.buyer_agent_id !== buyerAgentId ||
+        thread.seller_agent_id !== sellerAgentId
+      ) {
         // Anti-enumeration: pretend it doesn't exist.
         return jsonResponse(404, errorPayload("NOT_FOUND", "Thread not found"));
       }
     } else {
       const resolved = await createOrGetThread({
         listingId,
-        ownerId: targetOwnerId,
+        ownerId: sellerOwnerId,
         buyerAgentId,
         sellerAgentId
       });
@@ -280,7 +292,9 @@ export async function handler(req, res, ctx) {
       ctx.body.thread_created = Boolean(threadCreated);
     }
 
-    const openOffer = await getOpenOfferForThread({ threadId: thread.thread_id });
+    const openOffer = await getOpenOfferForThread({
+      threadId: thread.thread_id
+    });
     if (openOffer) {
       if (ctx) {
         ctx.auditEvent = "offer.already_open";
@@ -296,15 +310,14 @@ export async function handler(req, res, ctx) {
 
     const quarantineApplied = Boolean(trustContext?.quarantine_applied);
     const requiresApproval =
-      Boolean(targetOwnerId) &&
-      (quarantineApplied || policyDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL);
+      Boolean(policyOwnerId) && (quarantineApplied || policyDecision.decision === POLICY_DECISION.REQUIRES_APPROVAL);
 
     if (requiresApproval) {
       const reason = quarantineApplied ? "quarantine_applied" : policyDecision.reason || "policy_requires_approval";
       const actionRef = {
         listing_id: listingId,
         thread_id: thread.thread_id,
-        owner_id: targetOwnerId,
+        owner_id: policyOwnerId,
         agent_id: buyerAgentId,
         buyer_agent_id: buyerAgentId,
         seller_agent_id: sellerAgentId,
@@ -330,7 +343,7 @@ export async function handler(req, res, ctx) {
         .digest("hex");
 
       const approval = await createApproval({
-        ownerId: targetOwnerId,
+        ownerId: policyOwnerId,
         actionType: "offer_over_budget",
         actionRef,
         actionRefId,
@@ -348,11 +361,15 @@ export async function handler(req, res, ctx) {
 
       if (ctx) {
         ctx.auditEvent = "offer.approval_required";
-        ctx.outcome = { type: "BLOCKED", reason: quarantineApplied ? "trust" : "policy" };
+        ctx.outcome = {
+          type: "BLOCKED",
+          reason: quarantineApplied ? "trust" : "policy"
+        };
         ctx.policy = {
           decision: policyDecision.decision,
           policy_version: policyDecision.policy_version,
-          approval_id: approval.approval_id
+          approval_id: approval.approval_id,
+          owner_id: policyOwnerId
         };
       }
 
@@ -400,18 +417,22 @@ export async function handler(req, res, ctx) {
         type: "offer.created",
         actor: { type: "agent", id: buyerAgentId },
         entity: { type: "offer", id: offer.offer_id },
-        payload: { listing_id: listingId, thread_id: thread.thread_id, status: offer.status }
+        payload: {
+          listing_id: listingId,
+          thread_id: thread.thread_id,
+          status: offer.status
+        }
       });
     } catch (error) {
-      console.info("sse.publish_failed", { type: "offer.created", error: error?.message || String(error) });
+      console.info("sse.publish_failed", {
+        type: "offer.created",
+        error: error?.message || String(error)
+      });
     }
 
     return jsonResponse(201, mapOfferResponse(offer));
   } catch (error) {
-    return jsonResponse(
-      error.status || 500,
-      errorPayload(error.code || "ERROR", error.message, error.details)
-    );
+    return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
   }
 }
 

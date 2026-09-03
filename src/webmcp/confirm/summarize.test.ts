@@ -19,73 +19,184 @@ const mission: BuyMissionView = {
 };
 
 function request(toolName: string, args: unknown): ConfirmRequest {
-  return { toolName, toolDescription: `desc ${toolName}`, toolScope: "write", outputHint: "hint", args, requestId: "req", timeoutMs: 60_000 };
+  return {
+    toolName,
+    toolDescription: `desc ${toolName}`,
+    toolScope: "write",
+    outputHint: "hint",
+    args,
+    requestId: "req",
+    timeoutMs: 60_000
+  };
 }
 
 describe("summarizeConfirmRequest", () => {
   it("explains an in-policy offer with an editable amount", () => {
     const summary = summarizeConfirmRequest(
-      request("make_offer", { mission_id: "m1", listing_id: "90000000-0000-4000-8000-000000000001", amount: 1100, currency: "EUR" }),
+      request("make_offer", {
+        mission_id: "m1",
+        listing_id: "90000000-0000-4000-8000-000000000001",
+        amount: 1100,
+        currency: "EUR"
+      }),
       mission
     );
-    expect(summary.title).toBe("Send an offer");
-    expect(summary.sentence).toContain("€1,100");
-    expect(summary.primaryField).toMatchObject({ key: "amount", kind: "amount", value: 1100, currency: "EUR" });
+    expect(summary.title).toEqual({
+      key: "confirm.makeOffer.title",
+      values: undefined
+    });
+    expect(summary.sentence).toMatchObject({
+      key: "confirm.makeOffer.sentence",
+      values: { amount: 1100, currency: "EUR" }
+    });
+    expect(summary.primaryField).toMatchObject({
+      key: "amount",
+      kind: "amount",
+      value: 1100,
+      currency: "EUR"
+    });
     expect(summary.policyHint).toMatchObject({ tone: "ok" });
-    expect(summary.policyHint?.text).toContain("€1,300");
+    expect(summary.policyHint?.message).toMatchObject({
+      key: "confirm.policy.within",
+      values: { ceiling: 1300, currency: "EUR" }
+    });
   });
 
   it("warns when the amount exceeds the hard budget", () => {
     const summary = summarizeConfirmRequest(request("make_offer", { amount: 1350, currency: "EUR" }), mission);
     expect(summary.policyHint).toMatchObject({ tone: "warn" });
-    expect(summary.policyHint?.text).toMatch(/owner approval/i);
+    expect(summary.policyHint?.message.key).toBe("confirm.policy.exceeds");
   });
 
   it("describes counters, accepts, declines and consent", () => {
-    expect(summarizeConfirmRequest(request("respond_to_offer", { action: "counter", amount: 1290, currency: "EUR", offer_id: "o" }), mission)).toMatchObject({
-      title: "Counter the offer",
+    expect(
+      summarizeConfirmRequest(
+        request("respond_to_offer", {
+          action: "counter",
+          amount: 1290,
+          currency: "EUR",
+          offer_id: "o"
+        }),
+        mission
+      )
+    ).toMatchObject({
+      title: { key: "confirm.counter.title" },
       primaryField: { key: "amount", value: 1290 }
     });
-    expect(summarizeConfirmRequest(request("respond_to_offer", { action: "accept", offer_id: "o" }), mission)).toMatchObject({
-      title: "Accept the offer",
+    expect(
+      summarizeConfirmRequest(request("respond_to_offer", { action: "accept", offer_id: "o" }), mission)
+    ).toMatchObject({
+      title: { key: "confirm.accept.title" },
       primaryField: null
     });
-    expect(summarizeConfirmRequest(request("respond_to_offer", { action: "decline", offer_id: "o" }), null).title).toBe("Decline the offer");
-    expect(summarizeConfirmRequest(request("request_contact_reveal", { tx_id: "t" }), null).consequence).toMatch(/other owner consents/);
+    expect(
+      summarizeConfirmRequest(request("respond_to_offer", { action: "decline", offer_id: "o" }), null).title.key
+    ).toBe("confirm.decline.title");
+    expect(summarizeConfirmRequest(request("request_contact_reveal", { tx_id: "t" }), null).consequence.key).toBe(
+      "confirm.contact.consequence"
+    );
   });
 
   it("covers mission creation, threads, messages and owner approvals", () => {
-    expect(summarizeConfirmRequest(request("create_buy_mission", { query: "used e-bike", location_label: "Paris", radius_km: 25, hard_budget_max: 1300, preferred_price_max: 1200, currency: "EUR" }), null).sentence).toBe(
-      "Delegate the search for “used e-bike” around Paris (25 km) with a hard budget of €1,300 and a preferred price of €1,200."
-    );
-    expect(summarizeConfirmRequest(request("start_thread", { intent: "BUY", listing_id: "l", initial_question: "Battery health?" }), null).sentence).toContain("Battery health?");
-    expect(summarizeConfirmRequest(request("send_message", { thread_id: "t", type: "question", text: "Invoice?" }), null).primaryField).toMatchObject({ key: "text", value: "Invoice?" });
-    expect(summarizeConfirmRequest(request("resolve_approval", { decision: "approve", amount: 1290 }), null)).toMatchObject({
-      title: "Approve the pending action",
+    expect(
+      summarizeConfirmRequest(
+        request("create_buy_mission", {
+          query: "used e-bike",
+          location_label: "Paris",
+          radius_km: 25,
+          hard_budget_max: 1300,
+          preferred_price_max: 1200,
+          currency: "EUR"
+        }),
+        null
+      ).sentence
+    ).toMatchObject({
+      key: "confirm.createMission.sentence",
+      values: {
+        query: "used e-bike",
+        where: "Paris",
+        radius: 25,
+        hard: 1300,
+        preferred: 1200,
+        currency: "EUR"
+      }
+    });
+    expect(
+      summarizeConfirmRequest(
+        request("start_thread", {
+          intent: "BUY",
+          listing_id: "l",
+          initial_question: "Battery health?"
+        }),
+        null
+      ).sentence
+    ).toMatchObject({
+      key: "confirm.startThread.purchaseWithQuestion",
+      values: { question: "Battery health?" }
+    });
+    expect(
+      summarizeConfirmRequest(
+        request("send_message", {
+          thread_id: "t",
+          type: "question",
+          text: "Invoice?"
+        }),
+        null
+      ).primaryField
+    ).toMatchObject({ key: "text", value: "Invoice?" });
+    expect(
+      summarizeConfirmRequest(request("resolve_approval", { decision: "approve", amount: 1290 }), null)
+    ).toMatchObject({
+      title: { key: "confirm.resolve.approveTitle" },
+      sentence: { key: "confirm.resolve.approveEdited" },
       primaryField: { key: "amount", value: 1290 }
     });
   });
 
-  it("falls back to the tool description for unknown tools", () => {
+  it("uses localized generic copy for unknown tools", () => {
     const summary = summarizeConfirmRequest(request("clawdeals.listings_create_draft", { title: "x" }), null);
-    expect(summary.title).toBe("Confirm tool execution");
-    expect(summary.sentence).toBe("desc clawdeals.listings_create_draft");
+    expect(summary.title.key).toBe("confirm.fallback.title");
+    expect(summary.sentence).toEqual({
+      key: "confirm.fallback.sentence",
+      values: undefined
+    });
+    expect(summary.consequence).toEqual({
+      key: "confirm.fallback.consequence",
+      values: undefined
+    });
     expect(summary.primaryField).toBeNull();
   });
 });
 
 describe("applyPrimaryField", () => {
-  const field = { key: "amount", label: "Offer amount", kind: "amount" as const, value: 1100, currency: "EUR" };
+  const field = {
+    key: "amount",
+    labelKey: "confirm.fields.offerAmount",
+    kind: "amount" as const,
+    value: 1100,
+    currency: "EUR"
+  };
 
   it("rewrites the amount and validates integers", () => {
-    expect(applyPrimaryField({ amount: 1100, listing_id: "l" }, field, "1250")).toEqual({ args: { amount: 1250, listing_id: "l" }, error: null });
-    expect(applyPrimaryField({ amount: 1100 }, field, "12.5").error).toMatch(/whole/);
-    expect(applyPrimaryField({ amount: 1100 }, field, "").error).toMatch(/Enter/);
+    expect(applyPrimaryField({ amount: 1100, listing_id: "l" }, field, "1250")).toEqual({
+      args: { amount: 1250, listing_id: "l" },
+      error: null
+    });
+    expect(applyPrimaryField({ amount: 1100 }, field, "12.5").error).toBe("confirm.errors.wholeAmount");
+    expect(applyPrimaryField({ amount: 1100 }, field, "").error).toBe("confirm.errors.enterAmount");
   });
 
   it("rewrites text fields and rejects empty text", () => {
-    const textField = { key: "text", label: "Message", kind: "text" as const, value: "a", currency: null };
-    expect(applyPrimaryField({ text: "a" }, textField, "Is the invoice available?").args).toEqual({ text: "Is the invoice available?" });
+    const textField = {
+      key: "text",
+      labelKey: "confirm.fields.message",
+      kind: "text" as const,
+      value: "a",
+      currency: null
+    };
+    expect(applyPrimaryField({ text: "a" }, textField, "Is the invoice available?").args).toEqual({
+      text: "Is the invoice available?"
+    });
     expect(applyPrimaryField({ text: "a" }, textField, "   ").error).toBeTruthy();
   });
 });

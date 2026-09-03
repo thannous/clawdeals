@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { clearActiveBuyMission, clearWebMcpActionReceipts } from "../../webmcp/ui-bridge";
 
@@ -24,6 +25,7 @@ const INITIAL_CAPABILITY: JudgeCapability = { loading: true, enabled: false, aut
  * live demo page use it so the judge never has to go back to the hub to start over.
  */
 export function useJudgeReset(apiKey: string | null) {
+  const t = useTranslations("webmcp");
   const [capability, setCapability] = useState<JudgeCapability>(INITIAL_CAPABILITY);
   const [resetState, setResetState] = useState<JudgeResetState>("idle");
   const [resetResult, setResetResult] = useState<JudgeResetResult | null>(null);
@@ -36,7 +38,7 @@ export function useJudgeReset(apiKey: string | null) {
 
     fetch("/api/v1/sandbox/reset", { method: "GET", headers, signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) throw new Error(response.status === 404 ? "Unavailable on this host" : "Capability check failed");
+        if (!response.ok) throw new Error(`HTTP_${response.status}`);
         const payload = await response.json();
         setCapability({
           loading: false,
@@ -45,18 +47,18 @@ export function useJudgeReset(apiKey: string | null) {
           error: null
         });
       })
-      .catch((error) => {
+      .catch(() => {
         if (controller.signal.aborted) return;
         setCapability({
           loading: false,
           enabled: false,
           authorized: false,
-          error: error?.message || "Capability check failed"
+          error: t("judgeReset.capabilityFailed")
         });
       });
 
     return () => controller.abort();
-  }, [apiKey]);
+  }, [apiKey, t]);
 
   const resetDemo = useCallback(async () => {
     if (!apiKey || !capability.authorized || resetState === "running") return;
@@ -73,7 +75,7 @@ export function useJudgeReset(apiKey: string | null) {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(payload?.error?.message || `Reset failed (${response.status})`);
+        throw new Error(payload?.error?.code || `HTTP_${response.status}`);
       }
       clearActiveBuyMission();
       clearWebMcpActionReceipts();
@@ -85,20 +87,22 @@ export function useJudgeReset(apiKey: string | null) {
   }, [apiKey, capability.authorized, resetState]);
 
   const resetLabel = capability.loading
-    ? "Checking judge access…"
+    ? t("judgeReset.checkingAccess")
     : resetState === "running"
-      ? "Resetting synthetic data…"
+      ? t("judgeReset.resetting")
       : resetState === "done"
-        ? "Reset demo again"
-        : "Reset demo data";
+        ? t("judgeReset.again")
+        : t("judgeReset.reset")
 
   const statusText = capability.loading
-    ? "Checking this host and stored agent key."
+    ? t("judgeReset.checkingHost")
     : capability.authorized
-      ? "Authorized judge key detected. Reset affects synthetic judge data only."
+      ? t("judgeReset.authorized")
       : capability.enabled
-        ? "Judge mode exists, but the stored agent key is not authorized."
-        : `Judge reset unavailable${capability.error ? `: ${capability.error}` : " on this host"}.`;
+        ? t("judgeReset.unauthorized")
+        : capability.error
+          ? t("judgeReset.unavailableError", { error: capability.error })
+          : t("judgeReset.unavailable");
 
   return { capability, resetState, resetResult, resetDemo, resetLabel, statusText };
 }

@@ -11,6 +11,7 @@ import type { SupportedLocale } from "../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import type { GetServerSideProps } from "next";
+import PolicyEditorLink from "../ui/settings/PolicyEditorLink";
 
 const RULE_ICONS: Record<string, typeof Lock> = {
   dollar: DollarSign,
@@ -144,6 +145,8 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
         accentColor="text-secondary"
         accentBg="bg-secondary"
       >
+        <PolicyEditorLink />
+
         <LocalizedMarketContext locale={resolvedLocale} context="policy" />
 
         {/* Section 1: Rules Engine */}

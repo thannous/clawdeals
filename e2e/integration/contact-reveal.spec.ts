@@ -22,7 +22,10 @@ async function loginOwner(api: APIRequestContext, email: string) {
   await expectStatus(start, 201);
   const started = await start.json();
   const confirm = await api.post("/api/v1/auth/login:confirm", {
-    data: { session_id: started.data.session_id, token: started.data.session_token }
+    data: {
+      session_id: started.data.session_id,
+      token: started.data.session_token
+    }
   });
   await expectStatus(confirm, 200);
   return started.data.owner_id as string;
@@ -34,7 +37,10 @@ async function setupPolicy(request: APIRequestContext, ownerId: string) {
     data: {
       budgets: { max_offer: 2000, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 2000, contact_reveal: "always" },
-      auto_approve: { message_types: [], actions: ["listing.create", "thread.create", "offer.accept"] },
+      auto_approve: {
+        message_types: [],
+        actions: ["listing.create", "thread.create", "offer.accept"]
+      },
       allowlist_agent_ids: [],
       denylist_agent_ids: []
     }
@@ -54,7 +60,7 @@ async function setupAcceptedTransaction(request: APIRequestContext) {
     ensureOwnerDb(supabase, buyerOwnerId),
     ensureOwnerDb(supabase, thirdOwnerId)
   ]);
-  await setupPolicy(request, sellerOwnerId);
+  await Promise.all([setupPolicy(request, sellerOwnerId), setupPolicy(request, buyerOwnerId)]);
 
   const sellerEmail = `itest+seller-consent+${sellerOwnerId.slice(0, 8)}@example.com`;
   const buyerEmail = `itest+buyer-consent+${buyerOwnerId.slice(0, 8)}@example.com`;
@@ -101,12 +107,11 @@ async function setupAcceptedTransaction(request: APIRequestContext) {
     trustScore: 90,
     trustFlags: []
   });
-  const [{ apiKey: sellerApiKey }, { apiKey: buyerApiKey }, { apiKey: thirdApiKey }] =
-    await Promise.all([
-      createActiveApiKeyDb(supabase, seller.id),
-      createActiveApiKeyDb(supabase, buyer.id),
-      createActiveApiKeyDb(supabase, third.id)
-    ]);
+  const [{ apiKey: sellerApiKey }, { apiKey: buyerApiKey }, { apiKey: thirdApiKey }] = await Promise.all([
+    createActiveApiKeyDb(supabase, seller.id),
+    createActiveApiKeyDb(supabase, buyer.id),
+    createActiveApiKeyDb(supabase, third.id)
+  ]);
 
   const listing = await createListing(request, sellerApiKey, {
     title: `Bilateral contact reveal ${randomId()}`,
@@ -128,7 +133,9 @@ async function setupAcceptedTransaction(request: APIRequestContext) {
   );
   await expectStatus(offer, 201);
   const offerId = (await offer.json()).offer_id as string;
-  const accepted = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+  const accepted = await acceptOffer(request, sellerApiKey, offerId, {
+    idempotencyKey: randomId()
+  });
   await expectStatus(accepted, 200);
   const txId = (await accepted.json()).transaction?.tx_id as string;
   expect(txId).toBeTruthy();
@@ -183,13 +190,13 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       expect(await loginOwner(buyerOwner, setup.buyerEmail)).toBe(setup.buyerOwnerId);
       expect(await loginOwner(sellerOwner, setup.sellerEmail)).toBe(setup.sellerOwnerId);
 
-      const requested = await request.post(
-        `/api/v1/transactions/${setup.txId}/request-contact-reveal`,
-        {
-          headers: { Authorization: `Bearer ${setup.buyerApiKey}`, "Idempotency-Key": randomId() },
-          data: {}
-        }
-      );
+      const requested = await request.post(`/api/v1/transactions/${setup.txId}/request-contact-reveal`, {
+        headers: {
+          Authorization: `Bearer ${setup.buyerApiKey}`,
+          "Idempotency-Key": randomId()
+        },
+        data: {}
+      });
       await expectStatus(requested, 202);
       const requestBody = await requested.json();
       expect(requestBody).toMatchObject({
@@ -213,17 +220,24 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       const sellerConsent = consents.find((row: any) => row.owner_id === setup.sellerOwnerId);
       expect(requestBody.approval_id).toBe(buyerConsent.approval_id);
 
-      const opsCannotApprove = await request.post(
-        `/api/v1/transactions/${setup.txId}/approve-contact-reveal`,
-        { headers: { "x-owner-id": OPS_CONSOLE_OWNER_ID, "Idempotency-Key": randomId() }, data: {} }
-      );
+      const opsCannotApprove = await request.post(`/api/v1/transactions/${setup.txId}/approve-contact-reveal`, {
+        headers: {
+          "x-owner-id": OPS_CONSOLE_OWNER_ID,
+          "Idempotency-Key": randomId()
+        },
+        data: {}
+      });
       await expectStatus(opsCannotApprove, 409);
       expect((await opsCannotApprove.json()).error.code).toBe("BILATERAL_CONSENT_REQUIRED");
 
       const first = await resolveConsent(buyerOwner, origin, buyerConsent.approval_id, "approve");
       await expectStatus(first, 200);
       expect(await first.json()).toMatchObject({
-        data: { state: "APPROVED", contact_reveal_state: "REQUESTED", became_revealed: false }
+        data: {
+          state: "APPROVED",
+          contact_reveal_state: "REQUESTED",
+          became_revealed: false
+        }
       });
 
       const afterOne = await request.get(`/api/v1/transactions/${setup.txId}`, {
@@ -244,7 +258,11 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       const second = await resolveConsent(sellerOwner, origin, sellerConsent.approval_id, "approve");
       await expectStatus(second, 200);
       expect(await second.json()).toMatchObject({
-        data: { state: "APPROVED", contact_reveal_state: "APPROVED", became_revealed: true }
+        data: {
+          state: "APPROVED",
+          contact_reveal_state: "APPROVED",
+          became_revealed: true
+        }
       });
 
       const buyerView = await request.get(`/api/v1/transactions/${setup.txId}`, {
@@ -269,10 +287,13 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       });
       await expectStatus(thirdParty, 404);
 
-      const opsMasked = await request.post(
-        `/api/v1/transactions/${setup.txId}/approve-contact-reveal`,
-        { headers: { "x-owner-id": OPS_CONSOLE_OWNER_ID, "Idempotency-Key": randomId() }, data: {} }
-      );
+      const opsMasked = await request.post(`/api/v1/transactions/${setup.txId}/approve-contact-reveal`, {
+        headers: {
+          "x-owner-id": OPS_CONSOLE_OWNER_ID,
+          "Idempotency-Key": randomId()
+        },
+        data: {}
+      });
       await expectStatus(opsMasked, 200);
       const opsBody = await opsMasked.json();
       expect(JSON.stringify(opsBody)).not.toContain(setup.buyerEmail);
@@ -308,15 +329,17 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       await loginOwner(buyerOwner, setup.buyerEmail);
       await loginOwner(sellerOwner, setup.sellerEmail);
 
-      const requested = await request.post(
-        `/api/v1/transactions/${setup.txId}/request-contact-reveal`,
-        {
-          headers: { Authorization: `Bearer ${setup.sellerApiKey}`, "Idempotency-Key": randomId() },
-          data: {}
-        }
-      );
+      const requested = await request.post(`/api/v1/transactions/${setup.txId}/request-contact-reveal`, {
+        headers: {
+          Authorization: `Bearer ${setup.sellerApiKey}`,
+          "Idempotency-Key": randomId()
+        },
+        data: {}
+      });
       await expectStatus(requested, 202);
-      expect(await requested.json()).toMatchObject({ requester_role: "SELLER" });
+      expect(await requested.json()).toMatchObject({
+        requester_role: "SELLER"
+      });
       let consents = await loadConsents(setup.supabase, setup.txId);
       const buyerConsent = consents.find((row: any) => row.owner_id === setup.buyerOwnerId);
       const sellerConsent = consents.find((row: any) => row.owner_id === setup.sellerOwnerId);
@@ -328,7 +351,11 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       const denied = await resolveConsent(buyerOwner, origin, buyerConsent.approval_id, "deny");
       await expectStatus(denied, 200);
       expect(await denied.json()).toMatchObject({
-        data: { state: "DENIED", contact_reveal_state: "DENIED", became_revealed: false }
+        data: {
+          state: "DENIED",
+          contact_reveal_state: "DENIED",
+          became_revealed: false
+        }
       });
       const deniedReplay = await resolveConsent(buyerOwner, origin, buyerConsent.approval_id, "deny");
       await expectStatus(deniedReplay, 200);
@@ -339,13 +366,13 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       await expectStatus(deniedView, 200);
       expect(JSON.stringify(await deniedView.json())).not.toContain(setup.sellerEmail);
 
-      const retried = await request.post(
-        `/api/v1/transactions/${setup.txId}/request-contact-reveal`,
-        {
-          headers: { Authorization: `Bearer ${setup.buyerApiKey}`, "Idempotency-Key": randomId() },
-          data: {}
-        }
-      );
+      const retried = await request.post(`/api/v1/transactions/${setup.txId}/request-contact-reveal`, {
+        headers: {
+          Authorization: `Bearer ${setup.buyerApiKey}`,
+          "Idempotency-Key": randomId()
+        },
+        data: {}
+      });
       await expectStatus(retried, 202);
       consents = await loadConsents(setup.supabase, setup.txId);
       expect(consents).toHaveLength(2);
@@ -359,16 +386,20 @@ test.describe.serial("Integration: bilateral contact reveal (TI-370)", () => {
       const revoked = await resolveConsent(buyerOwner, origin, buyerConsent.approval_id, "revoke");
       await expectStatus(revoked, 200);
       expect(await revoked.json()).toMatchObject({
-        data: { state: "CANCELLED", contact_reveal_state: "DENIED", became_revealed: false }
+        data: {
+          state: "CANCELLED",
+          contact_reveal_state: "DENIED",
+          became_revealed: false
+        }
       });
 
-      const finalRetry = await request.post(
-        `/api/v1/transactions/${setup.txId}/request-contact-reveal`,
-        {
-          headers: { Authorization: `Bearer ${setup.sellerApiKey}`, "Idempotency-Key": randomId() },
-          data: {}
-        }
-      );
+      const finalRetry = await request.post(`/api/v1/transactions/${setup.txId}/request-contact-reveal`, {
+        headers: {
+          Authorization: `Bearer ${setup.sellerApiKey}`,
+          "Idempotency-Key": randomId()
+        },
+        data: {}
+      });
       await expectStatus(finalRetry, 202);
       const sellerAgain = await resolveConsent(sellerOwner, origin, sellerConsent.approval_id, "approve");
       await expectStatus(sellerAgain, 200);

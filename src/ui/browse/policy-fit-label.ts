@@ -1,22 +1,26 @@
 import type { ListingPolicyFit } from "../../webmcp/ui-bridge";
 
 export type PolicyFitBadge = {
-  label: string;
+  labelKey: string;
+  labelValues?: Record<string, string | number>;
   tone: "fit" | "warn" | "reject";
-  details: string[];
+  details: Array<{ key: string; values?: Record<string, string | number> }>;
 };
 
 const ISSUE_LABELS: Record<string, string> = {
-  over_hard_budget: "Over hard budget",
-  over_preferred_price: "Above preferred price",
-  requirements_unverified: "Requirements to confirm",
-  battery_below_requirement: "Battery too low",
-  battery_health_below_requirement: "Battery too low",
-  out_of_radius: "Out of radius"
+  over_hard_budget: "policyFit.issues.overHardBudget",
+  over_preferred_price: "policyFit.issues.overPreferredPrice",
+  requirements_unverified: "policyFit.issues.requirementsUnverified",
+  battery_below_requirement: "policyFit.issues.batteryTooLow",
+  battery_health_below_requirement: "policyFit.issues.batteryTooLow",
+  out_of_radius: "policyFit.issues.outOfRadius"
 };
 
-function humanizeIssue(issue: string): string {
-  return ISSUE_LABELS[issue] || issue.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+function describeIssue(issue: string): { key: string; values?: Record<string, string> } {
+  const knownKey = ISSUE_LABELS[issue];
+  return knownKey
+    ? { key: knownKey }
+    : { key: "policyFit.issues.unknown", values: { issue: issue.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) } };
 }
 
 /**
@@ -24,19 +28,21 @@ function humanizeIssue(issue: string): string {
  * The first blocking issue wins; soft issues (preferred price, unverified requirements) stay eligible.
  */
 export function describePolicyFit(fit: ListingPolicyFit): PolicyFitBadge {
-  const details = fit.issues.map(humanizeIssue);
+  const details = fit.issues.map(describeIssue);
   if (!fit.eligible) {
     const blocking = fit.issues.find((issue) => issue !== "requirements_unverified" && issue !== "over_preferred_price");
-    return { label: blocking ? humanizeIssue(blocking) : "Outside mission", tone: "reject", details };
+    const label = blocking ? describeIssue(blocking) : { key: "policyFit.outsideMission" };
+    return { labelKey: label.key, labelValues: label.values, tone: "reject", details };
   }
   if (fit.issues.includes("over_preferred_price")) {
-    return { label: "Above preferred price", tone: "warn", details };
+    return { labelKey: "policyFit.abovePreferredPrice", tone: "warn", details };
   }
   if (fit.issues.includes("requirements_unverified")) {
-    return { label: "Fits · confirm requirements", tone: "fit", details };
+    return { labelKey: "policyFit.fitsConfirm", tone: "fit", details };
   }
   if (fit.issues.length > 0) {
-    return { label: humanizeIssue(fit.issues[0]), tone: "warn", details };
+    const label = describeIssue(fit.issues[0]);
+    return { labelKey: label.key, labelValues: label.values, tone: "warn", details };
   }
-  return { label: "Fits mission", tone: "fit", details };
+  return { labelKey: "policyFit.fits", tone: "fit", details };
 }

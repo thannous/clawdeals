@@ -4,26 +4,132 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const executeTool = vi.fn();
 
+vi.mock("next-intl", () => ({
+  useLocale: () => "en",
+  useTranslations: () => (key: string, values?: Record<string, string>) => {
+    const messages: Record<string, string> = {
+      "mission.defaults.query": "used e-bike",
+      "mission.cities.paris": "Paris",
+      "mission.cities.london": "London",
+      "mission.cities.lyon": "Lyon",
+      "mission.cities.marseille": "Marseille",
+      "mission.cities.madrid": "Madrid",
+      "mission.listingLocation": "Listing location",
+      "mission.toolDescription": "Fill the form; the human reviews it.",
+      "mission.fields.query": "What to find",
+      "mission.params.query": "The product or item to find.",
+      "mission.autonomy.search.label": "Search and rank listings",
+      "mission.autonomy.ask.label": "Ask the seller questions",
+      "mission.autonomy.offer.label": "Make policy-compliant offers",
+      "mission.result.createdWithReceipt": "Mission created.",
+      "mission.result.created": "Mission created.",
+      "mission.result.denied": "Confirmation declined. Nothing was created.",
+      "mission.summary.active": "Active",
+      "mission.summary.bilateral": "Bilateral approval only",
+      "mission.prefill": "Prefilled from {title}",
+      "mission.countries.fr": "France",
+      "mission.countries.gb": "United Kingdom",
+      "mission.countries.es": "Spain"
+    };
+    return (messages[key] || key).replace(/\{(\w+)\}/g, (_, name) => values?.[name] || "");
+  }
+}));
+
 vi.mock("../../webmcp/WebMcpProvider", () => ({
   useWebMcp: () => ({ executeTool })
 }));
 
 import { applyBuyMissionUi, clearActiveBuyMission } from "../../webmcp/ui-bridge";
-import BuyMissionPanel, { prefillFromListing } from "./BuyMissionPanel";
+import BuyMissionPanel, { describeMissionResult, prefillFromListing } from "./BuyMissionPanel";
 
 describe("BuyMissionPanel", () => {
   afterEach(() => {
     cleanup();
     clearActiveBuyMission();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
     executeTool.mockResolvedValue({
       ok: true,
       data: {},
       meta: { request_id: "request-1" }
     });
+  });
+
+  it("maps server failures to localized keys without exposing raw messages", () => {
+    expect(
+      describeMissionResult(
+        { ok: false, error: { code: "VALIDATION_ERROR", message: "internal validation detail" } },
+        "€950"
+      )
+    ).toEqual({ key: "mission.result.validation", code: "VALIDATION_ERROR" });
+    expect(
+      describeMissionResult({ ok: false, error: { code: "INTERNAL_ERROR", message: "admin stack detail" } }, "€950")
+    ).toEqual({ key: "mission.result.failed", code: "INTERNAL_ERROR" });
+  });
+
+  it("hydrates mission defaults from the authenticated owner policy", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          budgets: { preferred_offer: 875, max_offer: 950, currency: "EUR" },
+          mission_defaults: {
+            radius_km: 40,
+            autonomous_actions: ["make_offer"]
+          }
+        }
+      })
+    } as Response);
+
+    render(<BuyMissionPanel />);
+    const form = screen.getByTestId("buy-mission-form");
+    const radius = form.querySelector<HTMLInputElement>('[name="radius_km"]');
+    const preferred = form.querySelector<HTMLInputElement>('[name="preferred_price_max"]');
+    const hard = form.querySelector<HTMLInputElement>('[name="hard_budget_max"]');
+
+    await waitFor(() => {
+      expect(radius?.value).toBe("40");
+      expect(preferred?.value).toBe("875");
+      expect(hard?.value).toBe("950");
+    });
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: /Search and rank/i
+        }) as HTMLInputElement
+      ).checked
+    ).toBe(true);
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: /Ask the seller/i
+        }) as HTMLInputElement
+      ).checked
+    ).toBe(false);
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: /Make policy-compliant offers/i
+        }) as HTMLInputElement
+      ).checked
+    ).toBe(true);
+
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
+    expect(executeTool).toHaveBeenCalledWith(
+      "create_buy_mission",
+      expect.objectContaining({
+        radius_km: 40,
+        preferred_price_max: 875,
+        hard_budget_max: 950,
+        autonomous_actions: ["search", "make_offer"]
+      })
+    );
   });
 
   it("exposes a declarative WebMCP form and submits through the imperative tool", async () => {
@@ -54,16 +160,22 @@ describe("BuyMissionPanel", () => {
         contact_reveal: "manual_bilateral_approval"
       })
     );
-    await waitFor(() =>
-      expect(screen.getByTestId("buy-mission-result").textContent).toContain("Mission created")
-    );
+    await waitFor(() => expect(screen.getByTestId("buy-mission-result").textContent).toContain("Mission created"));
   });
 
   it("fills coordinates and market from a city preset and toggles autonomy with checkboxes", async () => {
     render(<BuyMissionPanel />);
-    fireEvent.change(screen.getByTestId("buy-mission-city"), { target: { value: "london" } });
+    fireEvent.change(screen.getByTestId("buy-mission-city"), {
+      target: { value: "london" }
+    });
     fireEvent.click(screen.getByRole("checkbox", { name: /Make policy-compliant offers/i }));
-    expect((screen.getByRole("checkbox", { name: /Search and rank/i }) as HTMLInputElement).disabled).toBe(true);
+    expect(
+      (
+        screen.getByRole("checkbox", {
+          name: /Search and rank/i
+        }) as HTMLInputElement
+      ).disabled
+    ).toBe(true);
 
     fireEvent.submit(screen.getByTestId("buy-mission-form"));
     await waitFor(() => expect(executeTool).toHaveBeenCalledTimes(1));
@@ -82,12 +194,18 @@ describe("BuyMissionPanel", () => {
   it("explains failures in plain language while keeping the code available", async () => {
     executeTool.mockResolvedValue({
       ok: false,
-      error: { code: "USER_DENIED", message: "User denied tool execution", details: {} },
+      error: {
+        code: "USER_DENIED",
+        message: "User denied tool execution",
+        details: {}
+      },
       meta: { request_id: "request-2" }
     });
     render(<BuyMissionPanel />);
     fireEvent.submit(screen.getByTestId("buy-mission-form"));
-    await waitFor(() => expect(screen.getByTestId("buy-mission-result").textContent).toContain("Confirmation declined"));
+    await waitFor(() =>
+      expect(screen.getByTestId("buy-mission-result").textContent).toContain("Confirmation declined")
+    );
     expect(screen.getByTestId("buy-mission-result").getAttribute("data-code")).toBe("USER_DENIED");
   });
 
@@ -133,7 +251,7 @@ describe("BuyMissionPanel", () => {
       hardBudgetMax: "1265",
       latitude: "48.86",
       longitude: "2.35",
-      locationLabel: "Listing location",
+      locationLabelKey: "mission.listingLocation",
       requirements: ""
     });
 
@@ -158,7 +276,14 @@ describe("BuyMissionPanel", () => {
   });
 
   it("falls back to the category and ignores unsupported markets when prefilling", () => {
-    expect(prefillFromListing({ title: "  ", category: "Audio", price: 0, marketCode: "DE" })).toEqual({
+    expect(
+      prefillFromListing({
+        title: "  ",
+        category: "Audio",
+        price: 0,
+        marketCode: "DE"
+      })
+    ).toEqual({
       query: "audio",
       requirements: ""
     });

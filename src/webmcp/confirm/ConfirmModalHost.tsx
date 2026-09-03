@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useLocale, useTranslations } from "next-intl";
 
 import { canonicalJsonStringify } from "../utils";
 import { getActiveBuyMission, subscribeActiveBuyMission } from "../ui-bridge";
@@ -19,9 +20,11 @@ function prettyJson(value: unknown): string {
   }
 }
 
-const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], summary';
+const FOCUSABLE =
+  "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], summary";
 
 export default function ConfirmModalHost() {
+  const t = useTranslations("webmcp");
   const { pending, decide, history, cooldownUntilMs } = useWebMcpConfirm();
   const [cooldownRemainingMs, setCooldownRemainingMs] = useState<number>(0);
   useEffect(() => {
@@ -41,7 +44,9 @@ export default function ConfirmModalHost() {
       <>
         {cooldownRemainingMs > 0 ? (
           <div className="fixed bottom-4 right-4 z-50 border border-border bg-surface px-3 py-2 text-xs font-mono text-muted">
-            WebMCP cooldown active ({formatSeconds(cooldownRemainingMs)})
+            {t("confirm.modal.cooldown", {
+              seconds: formatSeconds(cooldownRemainingMs)
+            })}
           </div>
         ) : null}
       </>
@@ -61,13 +66,17 @@ function ConfirmModal({
   decide: (decision: ConfirmDecision) => void;
   history: ConfirmHistoryEntry[];
 }) {
+  const t = useTranslations("webmcp");
+  const locale = useLocale();
   const mission = useSyncExternalStore(subscribeActiveBuyMission, getActiveBuyMission, () => null);
   const summary: ConfirmSummary = useMemo(() => summarizeConfirmRequest(pending, mission), [pending, mission]);
   const field = summary.primaryField;
 
   // The JSON text is the single source of truth for what gets approved; the primary field edits it.
   const [edited, setEdited] = useState<string>(() => prettyJson(pending.args));
-  const [fieldValue, setFieldValue] = useState<string>(() => (field?.value === null || field?.value === undefined ? "" : String(field.value)));
+  const [fieldValue, setFieldValue] = useState<string>(() =>
+    field?.value === null || field?.value === undefined ? "" : String(field.value)
+  );
   const [error, setError] = useState<string>("");
   const [remainingMs, setRemainingMs] = useState<number>(pending.timeoutMs);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -119,17 +128,26 @@ function ConfirmModal({
 
   const parsedEdited = useMemo(() => {
     try {
-      return { value: JSON.parse(edited || "{}") as unknown, error: null as string | null };
+      return {
+        value: JSON.parse(edited || "{}") as unknown,
+        error: null as string | null
+      };
     } catch {
-      return { value: null, error: "Invalid JSON. Fix the payload or reset it." };
+      return { value: null, error: t("confirm.errors.invalidJson") };
     }
-  }, [edited]);
+  }, [edited, t]);
 
   const livePolicyHint = useMemo(() => {
     if (!field || field.kind !== "amount" || !mission) return summary.policyHint;
     const current = Number(fieldValue);
     if (!Number.isFinite(current)) return summary.policyHint;
-    return summarizeConfirmRequest({ ...pending, args: { ...(parsedEdited.value as object), [field.key]: current } }, mission).policyHint;
+    return summarizeConfirmRequest(
+      {
+        ...pending,
+        args: { ...(parsedEdited.value as object), [field.key]: current }
+      },
+      mission
+    ).policyHint;
   }, [field, fieldValue, mission, parsedEdited.value, pending, summary.policyHint]);
 
   const onFieldChange = useCallback(
@@ -138,10 +156,10 @@ function ConfirmModal({
       if (!field) return;
       const base = parsedEdited.error ? pending.args : parsedEdited.value;
       const applied = applyPrimaryField(base, field, raw);
-      setError(applied.error || "");
+      setError(applied.error ? t(applied.error) : "");
       if (!applied.error) setEdited(prettyJson(applied.args));
     },
-    [field, parsedEdited.error, parsedEdited.value, pending.args]
+    [field, parsedEdited.error, parsedEdited.value, pending.args, t]
   );
 
   const onJsonChange = useCallback(
@@ -174,16 +192,19 @@ function ConfirmModal({
     if (field) {
       const applied = applyPrimaryField(parsedEdited.value, field, fieldValue);
       if (applied.error) {
-        setError(applied.error);
+        setError(t(applied.error));
         return;
       }
       decide({ kind: "approve", args: applied.args });
       return;
     }
     decide({ kind: "approve", args: parsedEdited.value });
-  }, [decide, field, fieldValue, parsedEdited]);
+  }, [decide, field, fieldValue, parsedEdited, t]);
 
-  const edits = useMemo(() => canonicalJsonStringify(parsedEdited.value) !== canonicalJsonStringify(pending.args), [parsedEdited.value, pending.args]);
+  const edits = useMemo(
+    () => canonicalJsonStringify(parsedEdited.value) !== canonicalJsonStringify(pending.args),
+    [parsedEdited.value, pending.args]
+  );
   const progress = pending.timeoutMs > 0 ? Math.max(0, Math.min(1, remainingMs / pending.timeoutMs)) : 0;
   const hint = livePolicyHint;
 
@@ -191,8 +212,12 @@ function ConfirmModal({
     <>
       <div className="fixed top-0 left-0 right-0 z-50 bg-surface/90 border-b border-border backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-2 text-xs font-mono text-muted flex items-center justify-between">
-          <div>Agent action pending: {pending.toolName}</div>
-          <div>Timeout: {formatSeconds(remainingMs)}</div>
+          <div>{t("confirm.modal.pending", { toolName: pending.toolName })}</div>
+          <div>
+            {t("confirm.modal.timeout", {
+              seconds: formatSeconds(remainingMs)
+            })}
+          </div>
         </div>
         <div className="h-0.5 w-full bg-border" aria-hidden="true">
           <div className="h-full bg-primary transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
@@ -209,16 +234,27 @@ function ConfirmModal({
       >
         <div aria-hidden="true" className="absolute inset-0 modal-overlay" />
 
-        <div ref={dialogRef} className="relative bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4">
+        <div
+          ref={dialogRef}
+          className="relative bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4"
+        >
           <div className="space-y-2">
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">The agent asks for your confirmation</p>
-            <h2 id="webmcp-confirm-title" className="text-xl font-bold uppercase tracking-wide text-text">
-              {summary.title}
-            </h2>
-            <p id="webmcp-confirm-sentence" className="text-sm leading-relaxed text-text" data-testid="webmcp-confirm-sentence">
-              {summary.sentence}
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">
+              {t("confirm.modal.eyebrow")}
             </p>
-            <p className="text-xs leading-relaxed text-muted">{summary.consequence}</p>
+            <h2 id="webmcp-confirm-title" className="text-xl font-bold uppercase tracking-wide text-text">
+              {t(summary.title.key, summary.title.values)}
+            </h2>
+            <p
+              id="webmcp-confirm-sentence"
+              className="text-sm leading-relaxed text-text"
+              data-testid="webmcp-confirm-sentence"
+            >
+              {t(summary.sentence.key, summary.sentence.values)}
+            </p>
+            <p className="text-xs leading-relaxed text-muted">
+              {t(summary.consequence.key, summary.consequence.values)}
+            </p>
           </div>
 
           {hint ? (
@@ -226,19 +262,21 @@ function ConfirmModal({
               data-testid="webmcp-confirm-policy-hint"
               data-tone={hint.tone}
               className={`border px-3 py-2 text-xs font-mono leading-relaxed ${
-                hint.tone === "warn" ? "border-warning/50 bg-warning/10 text-warning" : "border-success/40 bg-success/10 text-success"
+                hint.tone === "warn"
+                  ? "border-warning/50 bg-warning/10 text-warning"
+                  : "border-success/40 bg-success/10 text-success"
               }`}
             >
-              {hint.text}
+              {t(hint.message.key, hint.message.values)}
             </p>
           ) : null}
 
           {field ? (
             <label className="block space-y-1.5">
               <span className="text-[10px] font-mono uppercase tracking-widest text-subtle">
-                {field.label}
+                {t(field.labelKey)}
                 {field.kind === "amount" && field.currency ? ` · ${field.currency}` : ""}
-                <span className="ml-2 normal-case tracking-normal text-subtle">— edit before approving if needed</span>
+                <span className="ml-2 normal-case tracking-normal text-subtle">— {t("confirm.modal.editHint")}</span>
               </span>
               {field.kind === "amount" ? (
                 <input
@@ -267,18 +305,21 @@ function ConfirmModal({
                 />
               )}
               {field.kind === "amount" && Number.isFinite(Number(fieldValue)) && fieldValue !== "" ? (
-                <span className="block text-xs font-mono text-muted">{formatMoney(Number(fieldValue), field.currency)}</span>
+                <span className="block text-xs font-mono text-muted">
+                  {formatMoney(Number(fieldValue), field.currency, locale)}
+                </span>
               ) : null}
             </label>
           ) : null}
 
           <details className="border border-border bg-bg/40 rounded" data-testid="webmcp-confirm-advanced">
             <summary className="cursor-pointer select-none px-3 py-2 text-xs font-mono uppercase tracking-widest text-subtle hover:text-text">
-              Advanced · raw parameters{edits ? " · edited" : ""}
+              {t("confirm.modal.advanced")}
+              {edits ? ` · ${t("confirm.modal.edited")}` : ""}
             </summary>
             <div className="space-y-2 border-t border-border p-3">
               <textarea
-                aria-label="Edit tool parameters JSON"
+                aria-label={t("confirm.modal.editJson")}
                 value={edited}
                 onChange={(event) => onJsonChange(event.target.value)}
                 spellCheck={false}
@@ -286,7 +327,11 @@ function ConfirmModal({
               />
               <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-subtle">
                 <span>
-                  Tool {pending.toolName} · scope {pending.toolScope} · request {pending.requestId.slice(0, 8)}
+                  {t("confirm.modal.toolMeta", {
+                    toolName: pending.toolName,
+                    scope: pending.toolScope,
+                    requestId: pending.requestId.slice(0, 8)
+                  })}
                 </span>
                 <button
                   type="button"
@@ -297,10 +342,10 @@ function ConfirmModal({
                   }}
                   className="border border-border px-2 py-1 uppercase tracking-wider hover:text-text"
                 >
-                  Reset edits
+                  {t("confirm.modal.resetEdits")}
                 </button>
               </div>
-              <p className="text-[11px] font-mono text-subtle">What the agent will receive: {pending.outputHint}</p>
+              <p className="text-[11px] font-mono text-subtle">{t("confirm.modal.outputHint")}</p>
             </div>
           </details>
 
@@ -311,7 +356,9 @@ function ConfirmModal({
           ) : null}
 
           <div className="flex items-center justify-between gap-3">
-            <div className="text-xs font-mono text-subtle">Recent actions: {history.length}</div>
+            <div className="text-xs font-mono text-subtle">
+              {t("confirm.modal.recentActions", { count: history.length })}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 ref={rejectRef}
@@ -319,7 +366,7 @@ function ConfirmModal({
                 onClick={handleReject}
                 className="border border-border px-4 py-2 text-xs font-mono font-bold uppercase text-muted hover:border-error hover:text-error"
               >
-                Reject
+                {t("confirm.modal.reject")}
               </button>
               <button
                 ref={approveRef}
@@ -327,7 +374,7 @@ function ConfirmModal({
                 onClick={handleApprove}
                 className="border border-primary bg-primary px-4 py-2 text-xs font-mono font-bold uppercase text-bg hover:brightness-110"
               >
-                {edits ? "Approve edited" : "Approve"}
+                {edits ? t("confirm.modal.approveEdited") : t("confirm.modal.approve")}
               </button>
             </div>
           </div>

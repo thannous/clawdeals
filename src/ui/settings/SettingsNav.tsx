@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { clearStoredOwnerAuth } from "../auth/ownerAuth";
 import { clearStoredApiKey, clearStoredLastEventId } from "../developer/storage";
 
-type SettingsNavCurrent = "profile" | "account" | "identities" | "connected-apps" | "start";
+type SettingsNavCurrent = "profile" | "account" | "policy" | "identities" | "connected-apps" | "start";
 
 type NavItem = {
   key: SettingsNavCurrent;
@@ -17,6 +17,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { key: "profile", href: "/settings/profile", labelKey: "nav.profile" },
   { key: "account", href: "/settings/account", labelKey: "nav.account" },
+  { key: "policy", href: "/settings/policy", labelKey: "nav.policy" },
   { key: "identities", href: "/settings/identities", labelKey: "nav.identities" },
   { key: "connected-apps", href: "/settings/connected-apps", labelKey: "nav.connectedApps" },
   { key: "start", href: "/start", labelKey: "nav.connect" }

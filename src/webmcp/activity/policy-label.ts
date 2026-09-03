@@ -1,5 +1,6 @@
 export type PolicyChip = {
-  label: string;
+  labelKey: string;
+  values?: Record<string, string | number>;
   tone: "neutral" | "ok" | "warn" | "error";
 };
 
@@ -15,27 +16,30 @@ export function describePolicyDecision(policy: unknown): PolicyChip {
 
   switch (decision) {
     case "read_completed":
-      return { label: "Read", tone: "neutral" };
+      return { labelKey: "activity.policy.read", tone: "neutral" };
     case "allowed":
-      return { label: "Allowed", tone: "neutral" };
+      return { labelKey: "activity.policy.allowed", tone: "neutral" };
     case "awaiting_human_confirmation":
-      return { label: "Awaiting your confirmation", tone: "warn" };
+      return { labelKey: "activity.policy.awaitingConfirmation", tone: "warn" };
     case "human_approved":
-      return { label: "Approved by you · executing", tone: "ok" };
+      return { labelKey: "activity.policy.humanApproved", tone: "ok" };
     case "server_accepted":
-      return { label: "Server accepted", tone: "ok" };
+      return { labelKey: "activity.policy.serverAccepted", tone: "ok" };
     case "human_approved_and_server_accepted":
-      return { label: "Approved by you · server accepted", tone: "ok" };
+      return { labelKey: "activity.policy.humanAndServerAccepted", tone: "ok" };
     case "human_denied":
-      return { label: "Rejected by you", tone: "warn" };
+      return { labelKey: "activity.policy.humanDenied", tone: "warn" };
     case "server_rejected":
       return {
-        label: errorCode === "APPROVAL_REQUIRED" ? "Policy stop · owner approval required" : `Server rejected${errorCode ? ` · ${errorCode}` : ""}`,
+        labelKey: errorCode === "APPROVAL_REQUIRED" ? "activity.policy.approvalRequired" : "activity.policy.serverRejected",
+        values: errorCode ? { errorCode } : undefined,
         tone: errorCode === "APPROVAL_REQUIRED" ? "warn" : "error"
       };
     case "outcome_unknown":
-      return { label: "Outcome unknown · reconcile before retrying", tone: "error" };
+      return { labelKey: "activity.policy.outcomeUnknown", tone: "error" };
     default:
-      return { label: decision ? decision.replace(/_/g, " ") : "No policy decision", tone: "neutral" };
+      return decision
+        ? { labelKey: "activity.policy.unknown", values: { decision: decision.replace(/_/g, " ") }, tone: "neutral" }
+        : { labelKey: "activity.policy.none", tone: "neutral" };
   }
 }

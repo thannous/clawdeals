@@ -52,16 +52,13 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
       longitude: toNumber(single(router.query.lng))
     });
   }, [router.isReady, router.query]);
-  const contextualTools = useMemo(
-    () => {
-      if (registeredToolNames.length === 0) {
-        return getToolsForRoute(router.pathname || "/webmcp");
-      }
-      const registered = new Set(registeredToolNames);
-      return WEBMCP_TOOLS.filter((tool) => registered.has(tool.name));
-    },
-    [registeredToolNames, router.pathname]
-  );
+  const contextualTools = useMemo(() => {
+    if (registeredToolNames.length === 0) {
+      return getToolsForRoute(router.pathname || "/webmcp");
+    }
+    const registered = new Set(registeredToolNames);
+    return WEBMCP_TOOLS.filter((tool) => registered.has(tool.name));
+  }, [registeredToolNames, router.pathname]);
 
   const {
     listings,
@@ -119,7 +116,15 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
             <p className="text-xs font-mono text-muted" data-testid="webmcp-demo-registered">
               {t("status.registered")}: {registered ? t("yes") : t("no")} ({registeredToolNames.length})
             </p>
-            {lastRegisterError ? <p className="text-xs font-mono text-error">{lastRegisterError}</p> : null}
+            {lastRegisterError ? (
+              <p className="text-xs font-mono text-error">
+                {lastRegisterError.kind === "partial"
+                  ? t("status.registrationPartial", {
+                      count: lastRegisterError.count
+                    })
+                  : t("status.registrationFailed")}
+              </p>
+            ) : null}
             <p className="text-xs font-mono text-subtle">{t("status.hint")}</p>
             <div className="border-t border-border pt-3">
               <AgentKeyConnect compact />
@@ -148,7 +153,10 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
           </section>
         </div>
 
-        <BuyMissionPanel key={missionPrefill ? `prefill-${String(router.query.listing)}` : "default"} prefill={missionPrefill} />
+        <BuyMissionPanel
+          key={missionPrefill ? `prefill-${String(router.query.listing)}` : "default"}
+          prefill={missionPrefill}
+        />
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <DealRoomPanel />
@@ -164,10 +172,9 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
               <div key={tool.name} className="border border-border bg-surface rounded clip-corner p-3">
                 <div className="text-xs font-mono font-bold text-text">{tool.name}</div>
                 <div className="text-[10px] font-mono uppercase tracking-widest text-subtle mt-1">
-                  {tool.scope}
+                  {t(`tools.${tool.scope}`)}
                   {tool.requiresConfirmation ? ` · ${t("tools.confirm")}` : ""}
                 </div>
-                <p className="text-xs font-mono text-muted mt-2 leading-relaxed">{tool.description}</p>
               </div>
             ))}
           </div>

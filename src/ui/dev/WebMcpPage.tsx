@@ -99,7 +99,9 @@ export default function WebMcpPage() {
             Registered tools: <span data-testid="webmcp-registered-count">{registeredToolNames.length}</span>
           </div>
           {lastRegisterError ? (
-            <div className="text-xs font-mono text-error">Register error: {lastRegisterError}</div>
+            <div className="text-xs font-mono text-error">
+              Register error: {lastRegisterError.kind === "partial" ? `${lastRegisterError.count} tool(s)` : "failed"}
+            </div>
           ) : null}
           <div className="text-xs font-mono text-subtle">
             This page can run tool handlers locally to validate strict schemas, confirmation gate, redaction, and output caps.

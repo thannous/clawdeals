@@ -6,7 +6,12 @@ import { errorPayload } from "../http/errors";
 export async function enforceAllowlist({ ownerId, agentId, ctx, policyRecord }: any = {}) {
   if (!ownerId) {
     if (ctx) {
-      ctx.policy = { decision: "N_A", policy_version: null, approval_id: null };
+      ctx.policy = {
+        decision: "N_A",
+        policy_version: null,
+        approval_id: null,
+        owner_id: null
+      };
     }
     return null;
   }
@@ -21,7 +26,8 @@ export async function enforceAllowlist({ ownerId, agentId, ctx, policyRecord }: 
       ctx.policy = {
         decision: "DENIED",
         policy_version: result.policy_version,
-        approval_id: null
+        approval_id: null,
+        owner_id: ownerId
       };
       ctx.outcome = { type: "BLOCKED", reason: "policy" };
     }
@@ -32,7 +38,8 @@ export async function enforceAllowlist({ ownerId, agentId, ctx, policyRecord }: 
     ctx.policy = {
       decision: "AUTO_APPROVED",
       policy_version: result.policy_version,
-      approval_id: null
+      approval_id: null,
+      owner_id: ownerId
     };
   }
 

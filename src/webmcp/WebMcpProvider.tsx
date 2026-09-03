@@ -38,7 +38,7 @@ type WebMcpContextValue = {
   supported: boolean;
   registered: boolean;
   registeredToolNames: string[];
-  lastRegisterError: string | null;
+  lastRegisterError: RegistrationError | null;
   executeTool: (name: string, args: unknown, options?: { signal?: AbortSignal }) => Promise<StableToolResult>;
 };
 
@@ -47,12 +47,16 @@ const WebMcpContext = createContext<WebMcpContextValue | null>(null);
 type RegistrationState = {
   registered: boolean;
   registeredToolNames: string[];
-  lastRegisterError: string | null;
+  lastRegisterError: RegistrationError | null;
 };
+
+export type RegistrationError =
+  | { kind: "partial"; count: number }
+  | { kind: "failed" };
 
 type RegistrationAction =
   | { type: "register/success"; registeredCount: number; errorCount: number; toolNames: string[] }
-  | { type: "register/failure"; message: string }
+  | { type: "register/failure" }
   | { type: "register/reset" };
 
 const INITIAL_REGISTRATION_STATE: RegistrationState = {
@@ -168,12 +172,12 @@ function registrationReducer(state: RegistrationState, action: RegistrationActio
       return {
         registered: action.registeredCount > 0,
         registeredToolNames: action.toolNames,
-        lastRegisterError: action.errorCount > 0 ? `${action.errorCount} tool(s) failed to register` : null
+        lastRegisterError: action.errorCount > 0 ? { kind: "partial", count: action.errorCount } : null
       };
     case "register/failure":
       return {
         ...state,
-        lastRegisterError: action.message
+        lastRegisterError: { kind: "failed" }
       };
     case "register/reset":
       return INITIAL_REGISTRATION_STATE;
@@ -422,9 +426,9 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
           toolNames: result.registeredToolNames
         });
       })
-      .catch((error: any) => {
+      .catch(() => {
         if (!alive) return;
-        dispatchRegistration({ type: "register/failure", message: error?.message || "Tool registration failed" });
+        dispatchRegistration({ type: "register/failure" });
       });
 
     return () => {

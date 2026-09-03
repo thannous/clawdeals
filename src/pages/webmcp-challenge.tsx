@@ -51,7 +51,16 @@ export function resolveDeploySha(env: Record<string, string | undefined>): strin
   return null;
 }
 
-export const getServerSideProps: GetServerSideProps<ChallengePageProps> = async ({ locale, req, res }) => {
+export const getServerSideProps: GetServerSideProps<ChallengePageProps> = async ({ locale, query, req, res }) => {
+  const requestedLocale = Array.isArray(query.locale) ? query.locale[0] : query.locale;
+  if (requestedLocale === "en" || requestedLocale === "fr" || requestedLocale === "es") {
+    return {
+      redirect: {
+        destination: requestedLocale === "en" ? "/webmcp-challenge" : `/${requestedLocale}/webmcp-challenge`,
+        permanent: false
+      }
+    };
+  }
   const resolvedLocale = locale || "en";
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);
   res?.setHeader("Cache-Control", isPreviewHost ? "no-store" : "public, max-age=0, s-maxage=300");
@@ -62,7 +71,7 @@ export const getServerSideProps: GetServerSideProps<ChallengePageProps> = async 
       baseUrl: marketingBaseUrlFromRequest(req),
       isPreviewHost,
       deploySha: resolveDeploySha(process.env),
-      messages: await loadMessages(resolvedLocale, { namespaces: ["landing", "nav", "footer"] })
+      messages: await loadMessages(resolvedLocale, { namespaces: ["landing", "nav", "footer", "webmcp"] })
     } as ChallengePageProps
   };
 };

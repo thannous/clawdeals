@@ -29,7 +29,10 @@ async function setupPolicy(request: any, ownerId: string) {
     data: {
       budgets: { max_offer: 1000, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
-      auto_approve: { message_types: [], actions: ["listing.create", "thread.create", "offer.accept"] },
+      auto_approve: {
+        message_types: [],
+        actions: ["listing.create", "thread.create", "offer.accept"]
+      },
       allowlist_agent_ids: [],
       denylist_agent_ids: []
     }
@@ -50,15 +53,21 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     await setupPolicy(request, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Offer accept listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Offer accept listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -66,13 +75,19 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const buyerSse = await openSse(
       `/api/v1/events/stream?heartbeat=1&types=${encodeURIComponent("offer.accepted,transaction.created")}`,
       {
-        headers: { Authorization: `Bearer ${buyerApiKey}`, Accept: "text/event-stream" }
+        headers: {
+          Authorization: `Bearer ${buyerApiKey}`,
+          Accept: "text/event-stream"
+        }
       }
     );
     const sellerSse = await openSse(
       `/api/v1/events/stream?heartbeat=1&types=${encodeURIComponent("offer.accepted,transaction.created")}`,
       {
-        headers: { Authorization: `Bearer ${sellerApiKey}`, Accept: "text/event-stream" }
+        headers: {
+          Authorization: `Bearer ${sellerApiKey}`,
+          Accept: "text/event-stream"
+        }
       }
     );
 
@@ -104,7 +119,9 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
 
       const auditStart = new Date().toISOString();
 
-      const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+      const acceptRes = await acceptOffer(request, sellerApiKey, offerId, {
+        idempotencyKey: randomId()
+      });
       await expectStatus(acceptRes, 200);
       const acceptBody = await acceptRes.json();
 
@@ -141,7 +158,9 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
 
       const { data: txRow, error: txErr } = await supabase
         .from("transactions")
-        .select("tx_id,listing_id,thread_id,accepted_offer_id,buyer_agent_id,seller_agent_id,status,contact_reveal_state")
+        .select(
+          "tx_id,listing_id,thread_id,accepted_offer_id,buyer_agent_id,seller_agent_id,status,contact_reveal_state"
+        )
         .eq("tx_id", txId)
         .maybeSingle();
       if (txErr) throw txErr;
@@ -219,15 +238,21 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     await setupPolicy(request, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Offer accept perm listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Offer accept perm listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -244,7 +269,9 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const offerBody = await offerRes.json();
     const offerId = offerBody.offer_id;
 
-    const acceptRes = await acceptOffer(request, buyerApiKey, offerId, { idempotencyKey: randomId() });
+    const acceptRes = await acceptOffer(request, buyerApiKey, offerId, {
+      idempotencyKey: randomId()
+    });
     await expectStatus(acceptRes, 409);
     const acceptBody = await acceptRes.json();
     expect(acceptBody?.error?.code).toBe("OFFER_NOT_ACTIONABLE");
@@ -259,15 +286,21 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     await setupPolicy(request, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Offer decline listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Offer decline listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -286,7 +319,10 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const threadId = offerBody.thread_id;
 
     const buyerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${encodeURIComponent("offer.declined")}`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
 
     try {
@@ -297,7 +333,9 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
       });
 
       const auditStart = new Date().toISOString();
-      const declineRes = await declineOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+      const declineRes = await declineOffer(request, sellerApiKey, offerId, {
+        idempotencyKey: randomId()
+      });
       await expectStatus(declineRes, 200);
       const declineBody = await declineRes.json();
       expect(declineBody.offer_id).toBe(offerId);
@@ -346,7 +384,9 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
       const offer2Id = offer2Body.offer_id;
 
       const cancelStart = new Date().toISOString();
-      const cancelRes = await cancelOffer(request, buyerApiKey, offer2Id, { idempotencyKey: randomId() });
+      const cancelRes = await cancelOffer(request, buyerApiKey, offer2Id, {
+        idempotencyKey: randomId()
+      });
       await expectStatus(cancelRes, 200);
       const cancelBody = await cancelRes.json();
       expect(cancelBody.offer_id).toBe(offer2Id);
@@ -375,15 +415,21 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     await setupPolicy(request, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Offer accept idem listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Offer accept idem listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -401,13 +447,17 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const offerId = offerBody.offer_id;
 
     const idemKey = randomId();
-    const first = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: idemKey });
+    const first = await acceptOffer(request, sellerApiKey, offerId, {
+      idempotencyKey: idemKey
+    });
     await expectStatus(first, 200);
     const firstBody = await first.json();
     const txId = firstBody.transaction?.tx_id;
     expect(txId).toBeTruthy();
 
-    const replay = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: idemKey });
+    const replay = await acceptOffer(request, sellerApiKey, offerId, {
+      idempotencyKey: idemKey
+    });
     await expectStatus(replay, 200);
     expect(replay.headers()["idempotency-replayed"]).toBe("true");
     const replayBody = await replay.json();
@@ -422,20 +472,31 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     await setupPolicy(request, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerA = randomId();
     await ensureOwnerDb(supabase, buyerOwnerA);
-    const buyerA = await createAgentDbWithOverrides(supabase, buyerOwnerA, { createdAt: agedCreatedAt });
+    await setupPolicy(request, buyerOwnerA);
+    const buyerA = await createAgentDbWithOverrides(supabase, buyerOwnerA, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: buyerApiKeyA } = await createActiveApiKeyDb(supabase, buyerA.id);
 
     const buyerOwnerB = randomId();
     await ensureOwnerDb(supabase, buyerOwnerB);
-    const buyerB = await createAgentDbWithOverrides(supabase, buyerOwnerB, { createdAt: agedCreatedAt });
+    await setupPolicy(request, buyerOwnerB);
+    const buyerB = await createAgentDbWithOverrides(supabase, buyerOwnerB, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: buyerApiKeyB } = await createActiveApiKeyDb(supabase, buyerB.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Offer accept race listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Offer accept race listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -464,8 +525,12 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const offerBId = offerBBody.offer_id;
 
     const [res1, res2] = await Promise.all([
-      acceptOffer(request, sellerApiKey, offerAId, { idempotencyKey: randomId() }),
-      acceptOffer(request, sellerApiKey, offerBId, { idempotencyKey: randomId() })
+      acceptOffer(request, sellerApiKey, offerAId, {
+        idempotencyKey: randomId()
+      }),
+      acceptOffer(request, sellerApiKey, offerBId, {
+        idempotencyKey: randomId()
+      })
     ]);
 
     const statuses = [res1.status(), res2.status()].sort();
@@ -506,15 +571,21 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     await setupPolicy(request, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Offer expire listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Offer expire listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -543,11 +614,17 @@ test.describe.serial("Integration: Offer actions (TI-201)", () => {
     const createdAt = createdRow?.created_at;
     if (!createdAt) throw new Error("Missing created_at for offer");
     const expiresAtPastButValid = new Date(new Date(createdAt).getTime() + 1).toISOString();
-    const { error: updateErr } = await supabase.from("offers").update({ expires_at: expiresAtPastButValid }).eq("offer_id", offerId);
+    const { error: updateErr } = await supabase
+      .from("offers")
+      .update({ expires_at: expiresAtPastButValid })
+      .eq("offer_id", offerId);
     if (updateErr) throw updateErr;
 
     const buyerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${encodeURIComponent("offer.expired")}`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
 
     try {

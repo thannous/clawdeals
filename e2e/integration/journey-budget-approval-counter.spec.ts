@@ -1,6 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 
-import { assertIntegrationEnv } from "./helpers/env";
+import { assertIntegrationEnv, getApiBaseUrl } from "./helpers/env";
 import { randomId } from "./helpers/ids";
 import { createListing, createOffer, createCounterOffer, acceptOffer, expectStatus } from "./helpers/http";
 import {
@@ -11,6 +11,28 @@ import {
 } from "./helpers/supabase";
 
 assertIntegrationEnv();
+
+async function loginOwner(api: APIRequestContext, supabase: ReturnType<typeof createSupabaseAdmin>, ownerId: string) {
+  const email = `itest+budget-approval+${ownerId.slice(0, 8)}@example.com`;
+  const { error } = await supabase
+    .from("owners")
+    .update({ email, updated_at: new Date().toISOString() })
+    .eq("owner_id", ownerId);
+  if (error) throw error;
+
+  const start = await api.post("/api/v1/auth/login:start", { data: { email } });
+  await expectStatus(start, 201);
+  const started = await start.json();
+
+  const confirm = await api.post("/api/v1/auth/login:confirm", {
+    data: {
+      session_id: started.data.session_id,
+      token: started.data.session_token
+    }
+  });
+  await expectStatus(confirm, 200);
+  expect(started.data.owner_id).toBe(ownerId);
+}
 
 function extractApprovalId(body: any): string | null {
   if (!body || typeof body !== "object") return null;
@@ -28,7 +50,10 @@ async function setupPolicy(request: any, ownerId: string) {
     data: {
       budgets: { max_offer: 400, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-      auto_approve: { message_types: ["question", "answer", "info"], actions: ["listing.create", "thread.create", "offer.accept"] },
+      auto_approve: {
+        message_types: ["question", "answer", "info"],
+        actions: ["listing.create", "thread.create", "offer.accept"]
+      },
       allowlist_agent_ids: [],
       denylist_agent_ids: []
     }
@@ -56,6 +81,7 @@ test.describe.serial("Integration journey: Budget approval + counter + accept (T
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
       createdAt: agedCreatedAt,
       trustScore: 90,
@@ -76,7 +102,10 @@ test.describe.serial("Integration journey: Budget approval + counter + accept (T
 
     // Create a thread explicitly so we can find the approved offer deterministically.
     const threadRes = await request.post(`/api/v1/listings/${encodeURIComponent(listingId)}/threads`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(threadRes, 201);
@@ -108,10 +137,14 @@ test.describe.serial("Integration journey: Budget approval + counter + accept (T
     expect(approvalRow?.approval_id).toBe(approvalId);
     expect(approvalRow?.action_type).toBe("offer_over_budget");
     expect(approvalRow?.state).toBe("PENDING");
-    expect(approvalRow?.owner_id).toBe(sellerOwnerId);
+    expect(approvalRow?.owner_id).toBe(buyerOwnerId);
 
+    await loginOwner(request, supabase, buyerOwnerId);
     const approveRes = await request.post(`/api/v1/approvals/${approvalId}:approve`, {
-      headers: { "x-owner-id": sellerOwnerId, "Idempotency-Key": randomId() },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(approveRes, 200);
@@ -155,7 +188,9 @@ test.describe.serial("Integration journey: Budget approval + counter + accept (T
     const buyerCounterBody = await buyerCounterRes.json();
     const finalOfferId = buyerCounterBody.offer_id;
 
-    const acceptRes = await acceptOffer(request, sellerApiKey, finalOfferId, { idempotencyKey: randomId() });
+    const acceptRes = await acceptOffer(request, sellerApiKey, finalOfferId, {
+      idempotencyKey: randomId()
+    });
     await expectStatus(acceptRes, 200);
     const acceptBody = await acceptRes.json();
     expect(acceptBody.offer_id).toBe(finalOfferId);
@@ -174,4 +209,3 @@ test.describe.serial("Integration journey: Budget approval + counter + accept (T
     expect(listingRow?.reserved_at).toBeTruthy();
   });
 });
-

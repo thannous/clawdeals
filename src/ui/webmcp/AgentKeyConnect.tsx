@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { ArrowLeftRight, Eye, EyeOff, KeyRound, LogOut, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { apiRequest, maskApiKey } from "../developer/api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey, subscribeStoredApiKey } from "../developer/storage";
@@ -14,7 +15,6 @@ import {
   type RoleKeys
 } from "./role-keys";
 
-const ROLE_LABEL: Record<AgentRole, string> = { buyer: "Buyer", seller: "Seller" };
 const SERVER_ROLE_KEYS: RoleKeys = {};
 const getServerRoleKeys = () => SERVER_ROLE_KEYS;
 
@@ -25,6 +25,8 @@ type ConnectState = "idle" | "checking" | "error";
  * hunting for the developer console, and switch role in one click once both keys are known.
  */
 export default function AgentKeyConnect({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations("webmcp");
+  const roleLabel = useCallback((role: AgentRole) => t(`agentKey.roles.${role}`), [t]);
   const apiKey = useSyncExternalStore(subscribeStoredApiKey, getStoredApiKey, () => null);
   const roleKeys = useSyncExternalStore(subscribeRoleKeys, getRoleKeys, getServerRoleKeys);
   const activeRole = useMemo(() => roleForKey(apiKey, roleKeys), [apiKey, roleKeys]);
@@ -55,9 +57,9 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
         setMessage(
           error?.status === 401 || error?.status === 403
             ? onSandboxHost
-              ? "This key was rejected. Check that you pasted the full synthetic key."
-              : "This key was rejected here. Judge keys only work on sandbox.clawdeals.com — open the same page there."
-            : error?.message || "Could not verify the key on this host."
+              ? t("agentKey.errors.rejectedSandbox")
+              : t("agentKey.errors.rejectedHost")
+            : t("agentKey.errors.verify")
         );
         return;
       }
@@ -67,23 +69,27 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
       setAdding(false);
       setReveal(false);
       setState("idle");
-      setMessage(`${ROLE_LABEL[draftRole]} key connected. The registry now exposes the authenticated tools.`);
+      setMessage(t("agentKey.connected", { role: roleLabel(draftRole) }));
     },
-    [draft, draftRole]
+    [draft, draftRole, roleLabel, t]
   );
 
   const switchRole = useCallback(() => {
     if (!switchKey) return;
     setStoredApiKey(switchKey);
-    setMessage(`Switched to the ${switchTarget ? ROLE_LABEL[switchTarget].toLowerCase() : "other"} key.`);
-  }, [switchKey, switchTarget]);
+    setMessage(
+      t("agentKey.switched", {
+        role: switchTarget ? roleLabel(switchTarget).toLocaleLowerCase() : t("agentKey.roles.other")
+      })
+    );
+  }, [roleLabel, switchKey, switchTarget, t]);
 
   const disconnect = useCallback(() => {
     clearStoredApiKey();
     clearRoleKeys();
     setAdding(false);
-    setMessage("Disconnected. Only the five public tools remain registered.");
-  }, []);
+    setMessage(t("agentKey.disconnected"));
+  }, [t]);
 
   return (
     <div data-testid="agent-key-connect" className={compact ? "space-y-2" : "space-y-3"}>
@@ -91,7 +97,8 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
         <div className="flex flex-wrap items-center gap-2" data-testid="agent-key-connected">
           <span className="inline-flex items-center gap-1.5 border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-[11px] text-success">
             <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
-            {activeRole ? `${ROLE_LABEL[activeRole]} key` : "Agent key"} · {maskApiKey(apiKey)}
+            {activeRole ? t("agentKey.roleKey", { role: roleLabel(activeRole) }) : t("agentKey.agentKey")} ·{" "}
+            {maskApiKey(apiKey)}
           </span>
           {switchKey && switchTarget ? (
             <button
@@ -101,7 +108,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
               className="inline-flex items-center gap-1.5 border border-primary px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-primary hover:bg-primary hover:text-bg"
             >
               <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" />
-              Switch to {ROLE_LABEL[switchTarget].toLowerCase()}
+              {t("agentKey.switchTo", { role: roleLabel(switchTarget).toLocaleLowerCase() })}
             </button>
           ) : activeRole && !adding ? (
             <button
@@ -114,7 +121,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
               className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-muted hover:border-primary hover:text-primary"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              Add {ROLE_LABEL[otherRole(activeRole)].toLowerCase()} key
+              {t("agentKey.addRole", { role: roleLabel(otherRole(activeRole)).toLocaleLowerCase() })}
             </button>
           ) : null}
           <button
@@ -124,7 +131,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
             className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-muted hover:border-error hover:text-error"
           >
             <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-            Disconnect
+            {t("agentKey.disconnect")}
           </button>
         </div>
       ) : null}
@@ -133,7 +140,9 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
         <form onSubmit={connect} className="flex flex-wrap items-end gap-2" data-testid="agent-key-form">
           <label className="flex min-w-[10rem] flex-1 flex-col gap-1">
             <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
-              {apiKey ? `Paste the ${ROLE_LABEL[draftRole].toLowerCase()} key` : "Paste a synthetic agent key"}
+              {apiKey
+                ? t("agentKey.pasteRole", { role: roleLabel(draftRole).toLocaleLowerCase() })
+                : t("agentKey.paste")}
             </span>
             <div className="flex items-stretch border border-border bg-bg focus-within:border-primary">
               <input
@@ -148,7 +157,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
               />
               <button
                 type="button"
-                aria-label={reveal ? "Hide key" : "Show key"}
+                aria-label={reveal ? t("agentKey.hide") : t("agentKey.show")}
                 onClick={() => setReveal((value) => !value)}
                 className="px-2 text-subtle hover:text-text"
               >
@@ -157,15 +166,15 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
             </div>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">Role</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("agentKey.role")}</span>
             <select
               data-testid="agent-key-role"
               value={draftRole}
               onChange={(event) => setDraftRole(event.target.value as AgentRole)}
               className="border border-border bg-bg px-3 py-2 font-mono text-xs text-text"
             >
-              <option value="buyer">Buyer</option>
-              <option value="seller">Seller</option>
+              <option value="buyer">{t("agentKey.roles.buyer")}</option>
+              <option value="seller">{t("agentKey.roles.seller")}</option>
             </select>
           </label>
           <button
@@ -174,7 +183,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
             disabled={state === "checking" || !draft.trim()}
             className="h-[34px] border border-primary bg-primary px-4 font-mono text-[11px] font-bold uppercase tracking-wider text-bg disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {state === "checking" ? "Checking…" : "Connect"}
+            {state === "checking" ? t("agentKey.checking") : t("agentKey.connect")}
           </button>
           {apiKey ? (
             <button
@@ -185,7 +194,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
               }}
               className="h-[34px] border border-border px-3 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-text"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           ) : null}
         </form>
@@ -201,9 +210,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
         </p>
       ) : null}
       {!apiKey && !message ? (
-        <p className="font-mono text-[11px] leading-relaxed text-subtle">
-          Judge keys are supplied privately and only work on the isolated sandbox. Nothing is sent to production.
-        </p>
+        <p className="font-mono text-[11px] leading-relaxed text-subtle">{t("agentKey.hint")}</p>
       ) : null}
     </div>
   );

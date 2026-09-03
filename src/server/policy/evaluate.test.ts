@@ -45,6 +45,44 @@ describe("evaluatePolicyAction", () => {
     expect(decision.reason).toBe("currency_mismatch");
   });
 
+  it("requires approval when offers are outside the configured autonomy", () => {
+    const decision = evaluatePolicyAction({
+      policy: {
+        ...basePolicy,
+        mission_defaults: { radius_km: 25, autonomous_actions: ["search"] }
+      },
+      action: "offer.create",
+      offerAmount: 200,
+      offerCurrency: "EUR"
+    });
+    expect(decision).toMatchObject({
+      decision: POLICY_DECISION.REQUIRES_APPROVAL,
+      reason: "offer_autonomy_disabled"
+    });
+  });
+
+  it("requires approval during overnight quiet hours", () => {
+    const decision = evaluatePolicyAction({
+      policy: {
+        ...basePolicy,
+        quiet_hours: {
+          enabled: true,
+          start: "22:00",
+          end: "08:00",
+          timezone: "Europe/Paris"
+        }
+      },
+      action: "offer.create",
+      offerAmount: 200,
+      offerCurrency: "EUR",
+      now: new Date("2026-09-03T21:30:00.000Z")
+    });
+    expect(decision).toMatchObject({
+      decision: POLICY_DECISION.REQUIRES_APPROVAL,
+      reason: "quiet_hours_active"
+    });
+  });
+
   it("auto-approves allowlisted message types", () => {
     const decision = evaluatePolicyAction({
       policy: basePolicy,

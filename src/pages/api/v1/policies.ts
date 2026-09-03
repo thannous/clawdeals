@@ -37,7 +37,7 @@ export async function handler(req, res, ctx) {
   if (req.method === "GET") {
     try {
       const policy = await getPolicyOrDefault(ownerId);
-      return jsonResponse(200, { data: policy.policy_json });
+      return jsonResponse(200, { data: policy.policy_json }, { "Cache-Control": "no-store" });
     } catch (error) {
       return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
     }
@@ -66,7 +66,7 @@ export async function handler(req, res, ctx) {
           policy_version: policy.version
         };
       }
-      return jsonResponse(200, { data: policy.policy_json });
+      return jsonResponse(200, { data: policy.policy_json }, { "Cache-Control": "no-store" });
     } catch (error) {
       return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
     }

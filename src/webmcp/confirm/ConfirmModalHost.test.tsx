@@ -3,6 +3,21 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next-intl", () => ({
+  useLocale: () => "en",
+  useTranslations: () => (key: string, values?: Record<string, number | string>) => {
+    const messages: Record<string, string> = {
+      "confirm.makeOffer.sentence": "Send a binding offer of €{amount} on listing {listingId}.",
+      "confirm.modal.approve": "Approve", "confirm.modal.approveEdited": "Approve edited", "confirm.modal.reject": "Reject",
+      "confirm.modal.editJson": "Edit tool parameters JSON", "confirm.errors.invalidJson": "Invalid JSON. Fix the payload or reset it."
+    };
+    return (messages[key] || key).replace(/\{(\w+)\}/g, (_, name) => {
+      const value = values?.[name] ?? "";
+      return name === "amount" && typeof value === "number" ? value.toLocaleString("en") : String(value);
+    });
+  }
+}));
+
 import type { ConfirmRequest } from "./types";
 
 const state = vi.hoisted(() => ({

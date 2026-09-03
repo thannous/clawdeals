@@ -7,7 +7,12 @@ import { randomId } from "./helpers/ids";
 import { createListing, createOffer, acceptOffer, expectStatus, createTransactionRating } from "./helpers/http";
 import { openSse, waitForSseFrame } from "./helpers/sse";
 import { waitForAuditLogMatching } from "./helpers/audit";
-import { createSupabaseAdmin, ensureOwnerDb, createAgentDbWithOverrides, createActiveApiKeyDb } from "./helpers/supabase";
+import {
+  createSupabaseAdmin,
+  ensureOwnerDb,
+  createAgentDbWithOverrides,
+  createActiveApiKeyDb
+} from "./helpers/supabase";
 
 import { runTrustScoreRecalcQueue } from "../../src/server/trustscore/recalc-queue";
 import { computeRatingPoints } from "../../src/server/trustscore/ratings";
@@ -26,7 +31,10 @@ async function setupPolicy(request: any, ownerId: string) {
     data: {
       budgets: { max_offer: 1000, currency: "EUR" },
       approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
-      auto_approve: { message_types: [], actions: ["listing.create", "thread.create", "offer.accept"] },
+      auto_approve: {
+        message_types: [],
+        actions: ["listing.create", "thread.create", "offer.accept"]
+      },
       allowlist_agent_ids: [],
       denylist_agent_ids: []
     }
@@ -51,7 +59,10 @@ async function createCompletedTransaction({
   listingTitle,
   autoCompleted
 }: any) {
-  const listingRes = await createListing(request, sellerApiKey, { title: listingTitle, publish: true });
+  const listingRes = await createListing(request, sellerApiKey, {
+    title: listingTitle,
+    publish: true
+  });
   await expectStatus(listingRes, 201);
   const listingBody = await listingRes.json();
   const listingId = listingBody.listing_id;
@@ -68,7 +79,9 @@ async function createCompletedTransaction({
   const offerBody = await offerRes.json();
   const offerId = offerBody.offer_id;
 
-  const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+  const acceptRes = await acceptOffer(request, sellerApiKey, offerId, {
+    idempotencyKey: randomId()
+  });
   await expectStatus(acceptRes, 200);
   const acceptBody = await acceptRes.json();
   const txId = acceptBody.transaction?.tx_id;
@@ -112,12 +125,21 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
-    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt, trustScore: 90, trustFlags: [] });
+    const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, {
+      createdAt: agedCreatedAt,
+      trustScore: 90,
+      trustFlags: []
+    });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
     const { txId } = await createCompletedTransaction({
@@ -131,7 +153,10 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
 
     const types = encodeURIComponent("rating.created");
     const buyerSse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${types}`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, Accept: "text/event-stream" }
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        Accept: "text/event-stream"
+      }
     });
 
     try {
@@ -219,6 +244,7 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     await setupPolicy(request, sellerOwnerId);
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
     const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt });
@@ -253,6 +279,7 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     await setupPolicy(request, sellerOwnerId);
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
     const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt });
@@ -261,7 +288,10 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     const buyerAgent = await createAgentDbWithOverrides(supabase, buyerOwnerId, { createdAt: agedCreatedAt });
     const { apiKey: buyerApiKey } = await createActiveApiKeyDb(supabase, buyerAgent.id);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Not completed listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Not completed listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -278,7 +308,9 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     const offerBody = await offerRes.json();
     const offerId = offerBody.offer_id;
 
-    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, { idempotencyKey: randomId() });
+    const acceptRes = await acceptOffer(request, sellerApiKey, offerId, {
+      idempotencyKey: randomId()
+    });
     await expectStatus(acceptRes, 200);
     const acceptBody = await acceptRes.json();
     const txId = acceptBody.transaction?.tx_id;
@@ -297,7 +329,13 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
       .eq("tx_id", txId);
     if (txUpdateErr) throw txUpdateErr;
 
-    const ratingRes = await createTransactionRating(request, buyerApiKey, txId, { score: 5 }, { idempotencyKey: randomId() });
+    const ratingRes = await createTransactionRating(
+      request,
+      buyerApiKey,
+      txId,
+      { score: 5 },
+      { idempotencyKey: randomId() }
+    );
     await expectStatus(ratingRes, 409);
     const body = await ratingRes.json();
     expect(body.error.code).toBe("TX_NOT_COMPLETED");
@@ -311,6 +349,7 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     await setupPolicy(request, sellerOwnerId);
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
     const otherOwnerId = randomId();
     await ensureOwnerDb(supabase, otherOwnerId);
 
@@ -333,7 +372,13 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
       autoCompleted: false
     });
 
-    const ratingRes = await createTransactionRating(request, otherApiKey, txId, { score: 5 }, { idempotencyKey: randomId() });
+    const ratingRes = await createTransactionRating(
+      request,
+      otherApiKey,
+      txId,
+      { score: 5 },
+      { idempotencyKey: randomId() }
+    );
     await expectStatus(ratingRes, 404);
     const body = await ratingRes.json();
     expect(body.error.code).toBe("TX_NOT_FOUND");
@@ -348,6 +393,7 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
 
     const buyerOwnerId = randomId();
     await ensureOwnerDb(supabase, buyerOwnerId);
+    await setupPolicy(request, buyerOwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
     const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt });
@@ -378,10 +424,19 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     if (txUpdateErr) throw txUpdateErr;
 
     // Ensure listing keeps consistency for cascade joins (not strictly required).
-    const { error: listingErr } = await supabase.from("listings").update({ updated_at: nowIso }).eq("listing_id", listingId);
+    const { error: listingErr } = await supabase
+      .from("listings")
+      .update({ updated_at: nowIso })
+      .eq("listing_id", listingId);
     if (listingErr) throw listingErr;
 
-    const ratingRes = await createTransactionRating(request, buyerApiKey, txId, { score: 5 }, { idempotencyKey: randomId() });
+    const ratingRes = await createTransactionRating(
+      request,
+      buyerApiKey,
+      txId,
+      { score: 5 },
+      { idempotencyKey: randomId() }
+    );
     await expectStatus(ratingRes, 400);
     const body = await ratingRes.json();
     expect(body.error.code).toBe("CANNOT_RATE_SELF");
@@ -396,8 +451,10 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
 
     const buyer1OwnerId = randomId();
     await ensureOwnerDb(supabase, buyer1OwnerId);
+    await setupPolicy(request, buyer1OwnerId);
     const buyer2OwnerId = randomId();
     await ensureOwnerDb(supabase, buyer2OwnerId);
+    await setupPolicy(request, buyer2OwnerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
     const sellerAgent = await createAgentDbWithOverrides(supabase, sellerOwnerId, { createdAt: agedCreatedAt });
@@ -427,10 +484,22 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
       autoCompleted: true
     });
 
-    const r1 = await createTransactionRating(request, buyer1ApiKey, tx1.txId, { score: 5 }, { idempotencyKey: randomId() });
+    const r1 = await createTransactionRating(
+      request,
+      buyer1ApiKey,
+      tx1.txId,
+      { score: 5 },
+      { idempotencyKey: randomId() }
+    );
     await expectStatus(r1, 201);
 
-    const r2 = await createTransactionRating(request, buyer2ApiKey, tx2.txId, { score: 5 }, { idempotencyKey: randomId() });
+    const r2 = await createTransactionRating(
+      request,
+      buyer2ApiKey,
+      tx2.txId,
+      { score: 5 },
+      { idempotencyKey: randomId() }
+    );
     await expectStatus(r2, 201);
 
     await runTrustScoreRecalcQueue({ limit: 50 });
@@ -447,11 +516,19 @@ test.describe.serial("Integration: Ratings after completion (TI-205)", () => {
     const ownerRel = Array.isArray(agentRow?.owners) ? agentRow.owners[0] || null : agentRow?.owners || null;
     const emailVerified = Boolean(ownerRel?.email_verified_at);
     const phoneVerified = Boolean(ownerRel?.phone_verified_at);
-    const baseScore = computeTrustScore({ daysSinceCreated, emailVerified, phoneVerified, useFull: false });
+    const baseScore = computeTrustScore({
+      daysSinceCreated,
+      emailVerified,
+      phoneVerified,
+      useFull: false
+    });
 
     const expectedRatingCount = 1 + 0.5;
     const expectedAvg = 5;
-    const ratingPoints = computeRatingPoints({ avgRating: expectedAvg, ratingCount: expectedRatingCount });
+    const ratingPoints = computeRatingPoints({
+      avgRating: expectedAvg,
+      ratingCount: expectedRatingCount
+    });
     const expectedScore = Math.min(100, baseScore + ratingPoints);
 
     expect(agentRow?.trust_score).toBe(expectedScore);

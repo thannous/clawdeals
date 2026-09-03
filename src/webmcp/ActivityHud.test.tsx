@@ -3,6 +3,19 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next-intl", () => ({
+  useLocale: () => "en",
+  useTranslations: () => (key: string, values?: Record<string, number | string>) => {
+    const messages: Record<string, string> = {
+      "activity.policy.humanAndServerAccepted": "Approved by you · server accepted", "activity.openRelated": "Open related view",
+      "activity.outcomes.success": "success",
+      "common.copied": "Copied", "common.copyFailed": "Copy failed", "activity.minimize": "Minimize", "activity.expand": "Expand",
+      "activity.receiptCount": "{count} redacted receipt", "activity.newCount": "{count} new"
+    };
+    return (messages[key] || key).replace(/\{(\w+)\}/g, (_, name) => String(values?.[name] ?? ""));
+  }
+}));
+
 const state = vi.hoisted(() => {
   const receipt = {
     receipt_version: "1",

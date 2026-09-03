@@ -1,11 +1,39 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 
-import { assertIntegrationEnv } from "./helpers/env";
+import { assertIntegrationEnv, getApiBaseUrl } from "./helpers/env";
 import { randomId } from "./helpers/ids";
 import { createListing, expectStatus } from "./helpers/http";
-import { createSupabaseAdmin, ensureOwnerDb, createAgentDbWithOverrides, createActiveApiKeyDb, setupAgent } from "./helpers/supabase";
+import {
+  createSupabaseAdmin,
+  ensureOwnerDb,
+  createAgentDbWithOverrides,
+  createActiveApiKeyDb,
+  setupAgent
+} from "./helpers/supabase";
 
 assertIntegrationEnv();
+
+async function loginOwner(api: APIRequestContext, supabase: ReturnType<typeof createSupabaseAdmin>, ownerId: string) {
+  const email = `itest+approvals+${ownerId.slice(0, 8)}@example.com`;
+  const { error } = await supabase
+    .from("owners")
+    .update({ email, updated_at: new Date().toISOString() })
+    .eq("owner_id", ownerId);
+  if (error) throw error;
+
+  const start = await api.post("/api/v1/auth/login:start", { data: { email } });
+  await expectStatus(start, 201);
+  const started = await start.json();
+
+  const confirm = await api.post("/api/v1/auth/login:confirm", {
+    data: {
+      session_id: started.data.session_id,
+      token: started.data.session_token
+    }
+  });
+  await expectStatus(confirm, 200);
+  expect(started.data.owner_id).toBe(ownerId);
+}
 
 test.describe.serial("Integration: Approvals", () => {
   test.setTimeout(60000);
@@ -15,7 +43,9 @@ test.describe.serial("Integration: Approvals", () => {
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
     const { apiKey: buyerApiKey, agent: buyerAgent } = await setupAgent(supabase);
 
@@ -31,13 +61,19 @@ test.describe.serial("Integration: Approvals", () => {
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Approval listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Approval listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(threadRes, 202);
@@ -52,8 +88,12 @@ test.describe.serial("Integration: Approvals", () => {
     const pendingIds = approvalsBody.data.approvals.map((item: any) => item.approval_id);
     expect(pendingIds).toContain(threadApprovalId);
 
+    await loginOwner(request, supabase, ownerId);
     const approveThreadRes = await request.post(`/api/v1/approvals/${threadApprovalId}:approve`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(approveThreadRes, 200);
@@ -72,7 +112,10 @@ test.describe.serial("Integration: Approvals", () => {
     expect(threads[0].buyer_agent_id).toBe(buyerAgent.id);
 
     const msgRes = await request.post(`/api/v1/threads/${threadId}/messages`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        "Idempotency-Key": randomId()
+      },
       data: { type: "question", text: "hello approval" }
     });
     await expectStatus(msgRes, 202);
@@ -80,7 +123,10 @@ test.describe.serial("Integration: Approvals", () => {
     const msgApprovalId = msgApprovalBody.data.approval_id;
 
     const approveMsgRes = await request.post(`/api/v1/approvals/${msgApprovalId}:approve`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(approveMsgRes, 200);
@@ -105,7 +151,9 @@ test.describe.serial("Integration: Approvals", () => {
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
     const { apiKey: buyerApiKey } = await setupAgent(supabase);
 
@@ -121,21 +169,31 @@ test.describe.serial("Integration: Approvals", () => {
     });
     await expectStatus(policyRes, 200);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Deny test listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Deny test listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(threadRes, 202);
     const threadApprovalBody = await threadRes.json();
     const threadApprovalId = threadApprovalBody.data.approval_id;
 
+    await loginOwner(request, supabase, ownerId);
     const denyRes = await request.post(`/api/v1/approvals/${threadApprovalId}:deny`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(denyRes, 200);
@@ -151,7 +209,9 @@ test.describe.serial("Integration: Approvals", () => {
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     await request.put("/api/v1/policies", {
@@ -165,7 +225,10 @@ test.describe.serial("Integration: Approvals", () => {
       }
     });
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Pagination listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Pagination listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -173,7 +236,10 @@ test.describe.serial("Integration: Approvals", () => {
     for (let i = 0; i < 2; i += 1) {
       const { apiKey: freshApiKey } = await setupAgent(supabase);
       await request.post(`/api/v1/listings/${listingId}/threads`, {
-        headers: { Authorization: `Bearer ${freshApiKey}`, "Idempotency-Key": randomId() },
+        headers: {
+          Authorization: `Bearer ${freshApiKey}`,
+          "Idempotency-Key": randomId()
+        },
         data: {}
       });
     }
@@ -200,7 +266,9 @@ test.describe.serial("Integration: Approvals", () => {
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
     const { apiKey: buyerApiKey } = await setupAgent(supabase);
 
@@ -215,28 +283,41 @@ test.describe.serial("Integration: Approvals", () => {
       }
     });
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Idem approval listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Idem approval listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
 
     const threadRes = await request.post(`/api/v1/listings/${listingId}/threads`, {
-      headers: { Authorization: `Bearer ${buyerApiKey}`, "Idempotency-Key": randomId() },
+      headers: {
+        Authorization: `Bearer ${buyerApiKey}`,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(threadRes, 202);
     const threadApprovalBody = await threadRes.json();
     const approvalId = threadApprovalBody.data.approval_id;
 
+    await loginOwner(request, supabase, ownerId);
     const idemKey = randomId();
     const first = await request.post(`/api/v1/approvals/${approvalId}:approve`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": idemKey },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": idemKey
+      },
       data: {}
     });
     await expectStatus(first, 200);
 
     const replay = await request.post(`/api/v1/approvals/${approvalId}:approve`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": idemKey },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": idemKey
+      },
       data: {}
     });
     await expectStatus(replay, 200);

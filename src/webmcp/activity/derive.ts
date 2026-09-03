@@ -15,8 +15,8 @@ export type MilestoneState = "pending" | "done";
 
 export type Milestone = {
   id: MilestoneId;
-  label: string;
-  detail: string;
+  labelKey: string;
+  detailKey: string;
   state: MilestoneState;
   requestId: string | null;
   timestamp: string | null;
@@ -51,18 +51,6 @@ export type DealRoom = {
   messagesSent: number;
   approvalIds: string[];
   updatedAt: string | null;
-};
-
-const MILESTONE_COPY: Record<MilestoneId, { label: string; detail: string }> = {
-  mission_created: { label: "Mission created", detail: "Budget, radius and requirements are now enforced server-side." },
-  candidates_ranked: { label: "Candidates ranked", detail: "Each listing carries an explicit policy_fit verdict." },
-  thread_opened: { label: "Negotiation opened", detail: "Seller text is treated as untrusted content." },
-  offer_prepared: { label: "Offer confirmed by you", detail: "The agent stopped for an editable confirmation." },
-  policy_stop: { label: "Policy stop", detail: "An amount above the hard budget was refused, not bypassed." },
-  human_approval: { label: "Owner decision recorded", detail: "Only the owner page could resolve the approval." },
-  reserved: { label: "Listing reserved", detail: "Acceptance reserved the listing atomically." },
-  consent_pending: { label: "Consent requested", detail: "One consent reveals nothing; both owners must agree." },
-  receipt_verified: { label: "Receipt re-read", detail: "The redacted receipt was fetched back by request ID." }
 };
 
 const MILESTONE_ORDER: MilestoneId[] = [
@@ -180,8 +168,8 @@ export function deriveMilestones(receipts: readonly ActionReceipt[]): Milestone[
     const receipt = done.get(id) || null;
     return {
       id,
-      label: MILESTONE_COPY[id].label,
-      detail: MILESTONE_COPY[id].detail,
+      labelKey: `milestones.items.${id}.label`,
+      detailKey: `milestones.items.${id}.detail`,
       state: receipt ? "done" : "pending",
       requestId: receipt?.request_id ?? null,
       timestamp: receipt?.timestamp ?? null
@@ -329,10 +317,10 @@ export function deriveDealRoom(receipts: readonly ActionReceipt[]): DealRoom | n
   return room;
 }
 
-export function formatAmount(amount: number | null, currency: string | null): string | null {
+export function formatAmount(amount: number | null, currency: string | null, locale = "en"): string | null {
   if (amount === null) return null;
   try {
-    return new Intl.NumberFormat("en", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currency || "EUR",
       maximumFractionDigits: 0

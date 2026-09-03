@@ -1,4 +1,5 @@
 import { RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import type { useJudgeReset } from "./useJudgeReset";
 
@@ -17,6 +18,7 @@ export default function JudgeResetButton({
   testIdPrefix = "webmcp-challenge",
   fullWidth = true
 }: JudgeResetProps) {
+  const t = useTranslations("webmcp");
   return (
     <>
       <button
@@ -35,12 +37,15 @@ export default function JudgeResetButton({
         {statusText}
         {resetState === "done" && resetResult?.counts ? (
           <span className="mt-2 block text-success" data-testid={`${testIdPrefix}-reset-result`}>
-            Ready: {resetResult.counts.listings || 0} listings · {resetResult.counts.threads || 0} thread ·{" "}
-            {resetResult.counts.messages || 0} message.
+            {t("judgeReset.ready", {
+              listings: resetResult.counts.listings || 0,
+              threads: resetResult.counts.threads || 0,
+              messages: resetResult.counts.messages || 0
+            })}
           </span>
         ) : null}
         {resetState === "failed" ? (
-          <span className="mt-2 block text-error">Reset rejected. Verify the isolated host and judge key.</span>
+          <span className="mt-2 block text-error">{t("judgeReset.rejected")}</span>
         ) : null}
       </div>
     </>

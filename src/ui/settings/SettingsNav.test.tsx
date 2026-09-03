@@ -59,6 +59,7 @@ describe("SettingsNav logout", () => {
 
   it("logs out via API, clears Supabase session, and redirects to login", async () => {
     render(<SettingsNav current="account" />);
+    expect(screen.getByRole("link", { name: "nav.policy" }).getAttribute("href")).toBe("/settings/policy");
     expect(mocks.getBrowserSupabaseClient).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByTestId("settings-logout"));

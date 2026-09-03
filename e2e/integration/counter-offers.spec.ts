@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 
-import { assertIntegrationEnv } from "./helpers/env";
+import { assertIntegrationEnv, getApiBaseUrl } from "./helpers/env";
 import { randomId } from "./helpers/ids";
 import { createListing, createOffer, createCounterOffer, expectStatus } from "./helpers/http";
 import { openSse, waitForSseFrame } from "./helpers/sse";
@@ -32,6 +32,40 @@ function extractApprovalId(body: any): string | null {
   return null;
 }
 
+async function loginOwner(api: APIRequestContext, email: string) {
+  const start = await api.post("/api/v1/auth/login:start", { data: { email } });
+  await expectStatus(start, 201);
+  const started = await start.json();
+  const confirm = await api.post("/api/v1/auth/login:confirm", {
+    data: {
+      session_id: started.data.session_id,
+      token: started.data.session_token
+    }
+  });
+  await expectStatus(confirm, 200);
+  return started.data.owner_id as string;
+}
+
+async function setupPolicy(request: any, ownerId: string, maxOffer: number) {
+  const policyRes = await request.put("/api/v1/policies", {
+    headers: { "x-owner-id": ownerId },
+    data: {
+      budgets: { max_offer: maxOffer, currency: "EUR" },
+      approval_thresholds: {
+        offer_amount_gt: maxOffer,
+        contact_reveal: "always"
+      },
+      auto_approve: {
+        message_types: [],
+        actions: ["listing.create", "thread.create"]
+      },
+      allowlist_agent_ids: [],
+      denylist_agent_ids: []
+    }
+  });
+  await expectStatus(policyRes, 200);
+}
+
 test.describe.serial("Integration: Counter offers (TI-200)", () => {
   test.skip(!counterRouteExists, "TI-200 counter offer endpoint not implemented in this branch");
 
@@ -41,9 +75,10 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
-
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -54,16 +89,23 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     const policyRes = await request.put("/api/v1/policies", {
       headers: { "x-owner-id": ownerId },
       data: {
-        budgets: { max_offer: 400, currency: "EUR" },
-        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        budgets: { max_offer: 360, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 360, contact_reveal: "always" },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 400);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter offer listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter offer listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -82,12 +124,15 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     const offerId = offerBody.offer_id;
     const threadId = offerBody.thread_id;
 
-    const sse = await openSse(`/api/v1/events/stream?heartbeat=1&types=${encodeURIComponent("offer.countered,offer.created")}`, {
-      headers: {
-        Authorization: `Bearer ${sellerApiKey}`,
-        Accept: "text/event-stream"
+    const sse = await openSse(
+      `/api/v1/events/stream?heartbeat=1&types=${encodeURIComponent("offer.countered,offer.created")}`,
+      {
+        headers: {
+          Authorization: `Bearer ${sellerApiKey}`,
+          Accept: "text/event-stream"
+        }
       }
-    });
+    );
 
     try {
       expect(sse.res.status).toBe(200);
@@ -180,13 +225,23 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     }
   });
 
-  test("over budget => 409 APPROVAL_REQUIRED; approve counters old + creates new + counter_offer message", async ({ request }) => {
+  test("over budget => 409 APPROVAL_REQUIRED; approve counters old + creates new + counter_offer message", async ({
+    request
+  }) => {
     const supabase = createSupabaseAdmin();
     const ownerId = randomId();
     await ensureOwnerDb(supabase, ownerId);
+    const sellerEmail = `itest+counter-owner+${ownerId.slice(0, 8)}@example.com`;
+    const { error: ownerError } = await supabase
+      .from("owners")
+      .update({ email: sellerEmail, updated_at: new Date().toISOString() })
+      .eq("owner_id", ownerId);
+    if (ownerError) throw ownerError;
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -199,14 +254,21 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 400);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter over budget listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter over budget listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -247,8 +309,12 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     expect(approvalRow?.action_type).toBe("offer_over_budget");
     expect(approvalRow?.state).toBe("PENDING");
 
+    expect(await loginOwner(request, sellerEmail)).toBe(ownerId);
     const approveRes = await request.post(`/api/v1/approvals/${approvalId}:approve`, {
-      headers: { "x-owner-id": ownerId, "Idempotency-Key": randomId() },
+      headers: {
+        Origin: new URL(getApiBaseUrl()).origin,
+        "Idempotency-Key": randomId()
+      },
       data: {}
     });
     await expectStatus(approveRes, 200);
@@ -298,7 +364,9 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     await ensureOwnerDb(supabase, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -311,14 +379,21 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 400);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter idempotency listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter idempotency listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -383,7 +458,9 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     await ensureOwnerDb(supabase, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -401,14 +478,21 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 400);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter non-party listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter non-party listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -443,7 +527,9 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     await ensureOwnerDb(supabase, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -456,14 +542,21 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
       data: {
         budgets: { max_offer: 400, currency: "EUR" },
         approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 400);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter not counterable listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter not counterable listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -502,7 +595,9 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     await ensureOwnerDb(supabase, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -513,16 +608,23 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     const policyRes = await request.put("/api/v1/policies", {
       headers: { "x-owner-id": ownerId },
       data: {
-        budgets: { max_offer: 400, currency: "EUR" },
-        approval_thresholds: { offer_amount_gt: 400, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        budgets: { max_offer: 360, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 360, contact_reveal: "always" },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 400);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter chain listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter chain listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingBody = await listingRes.json();
     const listingId = listingBody.listing_id;
@@ -593,7 +695,9 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
     await ensureOwnerDb(supabase, ownerId);
 
     const agedCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, { createdAt: agedCreatedAt });
+    const sellerAgent = await createAgentDbWithOverrides(supabase, ownerId, {
+      createdAt: agedCreatedAt
+    });
     const { apiKey: sellerApiKey } = await createActiveApiKeyDb(supabase, sellerAgent.id);
 
     const buyerOwnerId = randomId();
@@ -605,15 +709,25 @@ test.describe.serial("Integration: Counter offers (TI-200)", () => {
       headers: { "x-owner-id": ownerId },
       data: {
         budgets: { max_offer: 1000, currency: "EUR" },
-        approval_thresholds: { offer_amount_gt: 1000, contact_reveal: "always" },
-        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        approval_thresholds: {
+          offer_amount_gt: 1000,
+          contact_reveal: "always"
+        },
+        auto_approve: {
+          message_types: [],
+          actions: ["listing.create", "thread.create"]
+        },
         allowlist_agent_ids: [],
         denylist_agent_ids: []
       }
     });
     await expectStatus(policyRes, 200);
+    await setupPolicy(request, buyerOwnerId, 1000);
 
-    const listingRes = await createListing(request, sellerApiKey, { title: `Counter race listing ${randomId()}`, publish: true });
+    const listingRes = await createListing(request, sellerApiKey, {
+      title: `Counter race listing ${randomId()}`,
+      publish: true
+    });
     await expectStatus(listingRes, 201);
     const listingId = (await listingRes.json()).listing_id;
 

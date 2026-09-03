@@ -94,9 +94,14 @@ function ListingCard({
   policyFit?: ListingPolicyFit | null;
 }) {
   const t = useTranslations("browse");
+  const webMcpT = useTranslations("webmcp");
   const { locale } = useRouter();
   const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
   const policyBadge = policyFit ? describePolicyFit(policyFit) : null;
+  const policyBadgeLabel = policyBadge ? webMcpT(policyBadge.labelKey, policyBadge.labelValues) : null;
+  const policyBadgeDetails = policyBadge
+    ? policyBadge.details.map((detail) => webMcpT(detail.key, detail.values)).join(" · ")
+    : "";
   const conditionClasses =
     CONDITION_CLASSES[listing.condition] || "text-muted border-border bg-surface-alt";
   const ConditionIcon = CONDITION_ICONS[listing.condition];
@@ -161,10 +166,10 @@ function ListingCard({
             <span
               data-testid="listing-policy-fit"
               data-tone={policyBadge.tone}
-              title={policyBadge.details.join(" · ") || policyBadge.label}
+              title={policyBadgeDetails || policyBadgeLabel || undefined}
               className={`self-start text-[11px] font-mono font-bold uppercase px-2 py-0.5 border rounded whitespace-nowrap ${POLICY_FIT_CLASSES[policyBadge.tone]}`}
             >
-              {policyBadge.label}
+              {policyBadgeLabel}
             </span>
           )}
 
