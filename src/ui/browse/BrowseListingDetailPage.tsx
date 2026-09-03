@@ -5,11 +5,12 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "../../theme/theme-context";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { getPublicAppEntryHref } from "../../shared/urls";
-import { resolveCoverImageSrc } from "../media/cover-image";
 import { NavbarCurrent } from "../landing/Navbar";
 import DealRoomPanel from "../webmcp/DealRoomPanel";
 import PendingApprovalBanner from "../webmcp/PendingApprovalBanner";
 import ListingHumanActions from "./ListingHumanActions";
+import ListingGallery from "./ListingGallery";
+import SimilarListings from "./SimilarListings";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -54,8 +55,6 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
   const locale = resolveSupportedLocale(router.locale);
   const localePrefix = locale === "en" ? "" : `/${locale}`;
   const { themeId, setTheme, themes } = useTheme();
-  const coverImageSrc = resolveCoverImageSrc(listing?.cover_image);
-
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
@@ -121,18 +120,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
               <PendingApprovalBanner />
               <DealRoomPanel />
 
-              {coverImageSrc && (
-                <div className="relative w-full aspect-[16/10] border border-border overflow-hidden bg-surface">
-                  <Image
-                    loader={avatarLoader}
-                    unoptimized
-                    fill
-                    src={coverImageSrc}
-                    alt={listing.title || ""}
-                    className="object-cover"
-                  />
-                </div>
-              )}
+              <ListingGallery listing={listing} title={listing.title || ""} />
 
               {/* Description */}
               {listing.description && (
@@ -148,6 +136,26 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
 
               {/* Details grid */}
               <div className="bg-surface border border-border p-4 space-y-3">
+                {(listing.market_code || listing.geo) && (
+                  <DetailRow label={t("detail.location")}>
+                    <span className="text-xs font-mono text-text" data-testid="listing-location">
+                      {describeListingLocation(listing.market_code, listing.country, t)}
+                      {listing.geo ? (
+                        <>
+                          {" · "}
+                          <a
+                            href={`https://www.openstreetmap.org/?mlat=${listing.geo.lat}&mlon=${listing.geo.lng}#map=12/${listing.geo.lat}/${listing.geo.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline underline-offset-4"
+                          >
+                            {t("detail.viewOnMap")}
+                          </a>
+                        </>
+                      ) : null}
+                    </span>
+                  </DetailRow>
+                )}
                 {listing.delivery_method && (
                   <DetailRow label={t("detail.deliveryMethod")}>
                     <span className="text-xs font-mono text-text">{listing.delivery_method}</span>
@@ -206,6 +214,8 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                 </div>
               )}
 
+              <SimilarListings listingId={listing.listing_id} category={listing.category ?? null} />
+
               {/* Secondary CTA for visitors who do not have an agent yet */}
               <div className="border border-border bg-surface p-6 text-center space-y-3">
                 <p className="text-sm font-mono text-muted">{t("detail.ctaText")}</p>
@@ -223,6 +233,17 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
       </main>
     </div>
   );
+}
+
+const MARKET_LABEL_KEYS: Record<string, string> = { FR: "markets.FR", GB: "markets.GB", ES: "markets.ES" };
+
+// The public API rounds coordinates to ~1 km, so the page names the market (and the
+// country when it differs) rather than pretending to know the street.
+function describeListingLocation(marketCode: unknown, country: unknown, t: (key: string) => string): string {
+  const code = typeof marketCode === "string" ? marketCode.toUpperCase() : "";
+  const label = MARKET_LABEL_KEYS[code] ? t(MARKET_LABEL_KEYS[code]) : "";
+  const countryLabel = typeof country === "string" && country.trim() && country.trim().toUpperCase() !== code ? country.trim() : "";
+  return [label, countryLabel].filter(Boolean).join(" · ") || countryLabel || code;
 }
 
 type SellerTrustInfo = { score: number | null; quarantined: boolean; member_since: string | null } | null | undefined;

@@ -61,4 +61,14 @@ describe("BrowseDealCard", () => {
     expect(mocks.push).toHaveBeenNthCalledWith(1, "/browse/deals/deal-1");
     expect(mocks.push).toHaveBeenNthCalledWith(2, "/browse/deals/deal-1");
   });
+
+  it("shows vote counters only once someone has voted", () => {
+    const withVotes = render(<BrowseDealCard deal={baseDeal} />);
+    expect(withVotes.container.querySelector('[data-testid="deal-votes"]')).toBeTruthy();
+    withVotes.unmount();
+
+    const { container } = render(<BrowseDealCard deal={{ ...baseDeal, votes_up: 0, votes_down: 0 }} />);
+    expect(container.querySelector('[data-testid="deal-votes"]')).toBeNull();
+    expect(container.querySelector('[data-testid="deal-votes-none"]')).toBeTruthy();
+  });
 });

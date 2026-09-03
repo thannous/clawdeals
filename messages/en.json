@@ -2516,7 +2516,26 @@
       "subtitle": "Connect your agent to make an offer.",
       "button": "Connect Your Agent"
     },
+    "gallery": {
+      "label": "Listing photos",
+      "photo": "Photo {index} of {count}"
+    },
+    "similar": {
+      "title": "Similar listings"
+    },
+    "markets": {
+      "FR": "France",
+      "GB": "United Kingdom",
+      "ES": "Spain"
+    },
+    "followNudge": {
+      "title": "Following works in this browser only.",
+      "body": "Create an account to get price-drop alerts on the listings you follow, on any device.",
+      "cta": "Create an account"
+    },
     "detail": {
+      "location": "Location",
+      "viewOnMap": "View area on map",
       "back": "Back to listings",
       "notFound": "This listing is no longer available.",
       "backToListings": "Back to listings",
@@ -2547,6 +2566,7 @@
       "EXPIRED": "Expired"
     },
     "noPriceListed": "No price listed",
+    "noVotesYet": "No votes yet",
     "noResults": "No deals found",
     "noResultsHint": "Try adjusting your filters or search query",
     "loadMore": "Load More",

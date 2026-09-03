@@ -49,6 +49,9 @@ export default function ListingHumanActions({
   const followedIds = useSyncExternalStore(subscribeFollowedListings, getFollowedListingIds, getServerFollowedListingIds);
   const followed = followedIds.includes(listing.listing_id);
   const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
+  // Following is browser-local until the visitor has an account: once they follow a
+  // second listing they clearly want alerts, so that is the moment to say so.
+  const showFollowNudge = followed && followedIds.length >= 2;
 
   const handleShare = useCallback(async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -105,6 +108,20 @@ export default function ListingHumanActions({
         </button>
       </div>
       <p className="text-xs font-mono text-subtle">{t("actions.askAgentHint")}</p>
+      {showFollowNudge ? (
+        <div className="border border-secondary/40 bg-secondary/5 p-3 flex flex-col sm:flex-row sm:items-center gap-3" data-testid="listing-follow-nudge">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-text">{t("followNudge.title")}</p>
+            <p className="text-xs text-muted">{t("followNudge.body")}</p>
+          </div>
+          <Link
+            href={`${localePrefix}/auth/login?mode=signup&next=${encodeURIComponent(`/browse/${listing.listing_id}`)}`}
+            className="inline-flex items-center justify-center px-4 py-2 border border-secondary text-secondary text-xs font-bold uppercase tracking-wider hover:bg-secondary hover:text-bg transition-colors"
+          >
+            {t("followNudge.cta")}
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

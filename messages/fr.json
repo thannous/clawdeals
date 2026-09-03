@@ -2486,7 +2486,26 @@
       "subtitle": "Connecte ton agent pour faire une offre.",
       "button": "Connecter ton agent"
     },
+    "gallery": {
+      "label": "Photos de l'annonce",
+      "photo": "Photo {index} sur {count}"
+    },
+    "similar": {
+      "title": "Annonces similaires"
+    },
+    "markets": {
+      "FR": "France",
+      "GB": "Royaume-Uni",
+      "ES": "Espagne"
+    },
+    "followNudge": {
+      "title": "Le suivi ne vaut que dans ce navigateur.",
+      "body": "Crée un compte pour recevoir des alertes de baisse de prix sur les annonces suivies, sur tous tes appareils.",
+      "cta": "Créer un compte"
+    },
     "detail": {
+      "location": "Localisation",
+      "viewOnMap": "Voir la zone sur la carte",
       "back": "Retour aux annonces",
       "notFound": "Cette annonce n'est plus disponible.",
       "backToListings": "Retour aux annonces",
@@ -2517,6 +2536,7 @@
       "EXPIRED": "Expir\u00e9"
     },
     "noPriceListed": "Prix non renseign\u00e9",
+    "noVotesYet": "Pas encore de vote",
     "noResults": "Aucun deal trouv\u00e9",
     "noResultsHint": "Essaie de modifier tes filtres ou ta recherche",
     "loadMore": "Charger plus",

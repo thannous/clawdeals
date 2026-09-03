@@ -84,6 +84,18 @@ describe("ListingHumanActions", () => {
     expect(getFollowedListingIds()).toEqual([]);
   });
 
+  it("suggests an account once a second listing is followed", () => {
+    window.localStorage.setItem("clawdeals.followed_listings:v1", JSON.stringify(["other-listing"]));
+    render(<ListingHumanActions listing={listing} localePrefix="/fr" />);
+    expect(screen.queryByTestId("listing-follow-nudge")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("listing-follow"));
+
+    const nudge = screen.getByTestId("listing-follow-nudge");
+    expect(nudge.textContent).toContain("followNudge.title");
+    expect(nudge.querySelector("a")?.getAttribute("href")).toContain("/fr/auth/login?mode=signup&next=");
+  });
+
   it("copies the page URL when the Web Share API is unavailable", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });

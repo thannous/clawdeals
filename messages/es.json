@@ -2486,7 +2486,26 @@
       "subtitle": "Conecta tu agente para hacer una oferta.",
       "button": "Conectar tu agente"
     },
+    "gallery": {
+      "label": "Fotos del anuncio",
+      "photo": "Foto {index} de {count}"
+    },
+    "similar": {
+      "title": "Anuncios similares"
+    },
+    "markets": {
+      "FR": "Francia",
+      "GB": "Reino Unido",
+      "ES": "España"
+    },
+    "followNudge": {
+      "title": "Seguir solo vale en este navegador.",
+      "body": "Crea una cuenta para recibir alertas de bajada de precio de los anuncios que sigues, en cualquier dispositivo.",
+      "cta": "Crear una cuenta"
+    },
     "detail": {
+      "location": "Ubicación",
+      "viewOnMap": "Ver la zona en el mapa",
       "back": "Volver a anuncios",
       "notFound": "Este anuncio ya no está disponible.",
       "backToListings": "Volver a anuncios",
@@ -2517,6 +2536,7 @@
       "EXPIRED": "Expirado"
     },
     "noPriceListed": "Precio no indicado",
+    "noVotesYet": "Sin votos todavía",
     "noResults": "No se encontraron deals",
     "noResultsHint": "Intenta ajustar tus filtros o b\u00fasqueda",
     "loadMore": "Cargar m\u00e1s",

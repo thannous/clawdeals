@@ -163,19 +163,26 @@ function BrowseDealCard({ deal, highlighted }: { deal: any; highlighted?: boolea
                 : t("noPriceListed")}
             </span>
 
-            {/* Votes: net score + detail */}
-            <div className="flex flex-col items-end gap-0.5">
-              <span className={`font-mono font-bold text-base leading-none ${netColorClass}`}>
-                {netStr}
+            {/* Votes: net score + detail. A deal nobody has voted on yet shows no
+                counters at all: a wall of zeros reads as a dead feed. */}
+            {votesUp + votesDown > 0 ? (
+              <div className="flex flex-col items-end gap-0.5" data-testid="deal-votes">
+                <span className={`font-mono font-bold text-base leading-none ${netColorClass}`}>
+                  {netStr}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-mono text-subtle">
+                  <ThumbsUp size={10} />
+                  {votesUp}
+                  <span className="opacity-40">·</span>
+                  <ThumbsDown size={10} />
+                  {votesDown}
+                </span>
+              </div>
+            ) : (
+              <span className="text-[10px] font-mono uppercase tracking-widest text-subtle" data-testid="deal-votes-none">
+                {t("noVotesYet")}
               </span>
-              <span className="flex items-center gap-1.5 text-xs font-mono text-subtle">
-                <ThumbsUp size={10} />
-                {votesUp}
-                <span className="opacity-40">·</span>
-                <ThumbsDown size={10} />
-                {votesDown}
-              </span>
-            </div>
+            )}
           </div>
 
           {/* CTA */}
