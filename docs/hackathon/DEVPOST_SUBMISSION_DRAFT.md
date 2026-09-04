@@ -4,8 +4,9 @@ Status: **SAVED DRAFT 4/5 — verified on Devpost, not submitted.**
 
 Observed Devpost project: `ClawDeals`, draft `4/5`, submission ID `1153777`,
 slug `clawdeals`. The saved project preview was re-opened on 3 September 2026
-and shows the current pitch, final story, public YouTube embed, three-image
-gallery and the sandbox as the first **Try it out** link.
+and shows the current pitch, final story, previous YouTube embed, three-image
+gallery and the sandbox as the first **Try it out** link. The replacement V2
+video is public, but its URL has not yet been saved to the remote Devpost draft.
 
 The saved remote draft now contains:
 
@@ -15,7 +16,7 @@ The saved remote draft now contains:
   and identity.*);
 - the current trust-layer story and challenge-period delta;
 - ten built-with tags and five judge/reproduction links;
-- the public video `https://youtu.be/mjNd6BNk_0U`;
+- the previous video `https://youtu.be/mjNd6BNk_0U`, now unlisted;
 - the three prepared gallery images and the hero project thumbnail;
 - `Individual`, `France`, `Existing`, learning `Significant` and career value `Yes`;
 - private synthetic buyer/seller credentials in the judge-only instructions.
@@ -48,7 +49,7 @@ Project details:
   stays listed second as the public marketplace with a seeded demo catalog);
 - keep `https://github.com/thannous/clawdeals`;
 - add the challenge ledger and `HACKATHON.md` links listed under **Try it out**;
-- public YouTube URL: `https://youtu.be/mjNd6BNk_0U` (anonymous verification PASS).
+- replace the remote YouTube URL with `https://youtu.be/ePgP4IO_qM8` (public playback PASS).
 
 Additional information:
 
@@ -296,10 +297,10 @@ in ChatGPT's in-app browser.
 
 ## Video demo link
 
-https://youtu.be/mjNd6BNk_0U — public oEmbed and anonymous watch HTTP 200 verified.
+https://youtu.be/ePgP4IO_qM8 — public oEmbed and watch-page playback verified on 4 September.
 
 Local video proof:
-[`VIDEO_EVIDENCE_2026-08-26.md`](./VIDEO_EVIDENCE_2026-08-26.md).
+[`VIDEO_V2_EVIDENCE_2026-09-04.md`](./VIDEO_V2_EVIDENCE_2026-09-04.md).
 
 ## Submission media — uploaded to the saved draft
 

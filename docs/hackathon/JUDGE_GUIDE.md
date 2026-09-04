@@ -87,10 +87,10 @@ Judges are not required to build the repo. If a live WebMCP browser is available
 12. `request_contact_reveal` creates two independent owner consents. One consent reveals nothing.
 13. `get_action_receipt` shows a redacted receipt. Agent Activity on the page should match that receipt.
 
-If the browser has no WebMCP, follow the [demo script](./DEMO_SCRIPT.md). A
-160-second 1080p H.264/AAC MP4 is present in the current workspace and was
-independently verified on 30 August. The public demo is available at
-https://youtu.be/mjNd6BNk_0U.
+If the browser has no WebMCP, follow the [V2 recording brief](./DEMO_VIDEO_V2.md). A
+138-second 1080p H.264/AAC MP4 is present in the current workspace and was
+independently verified on 4 September. The public demo is available at
+https://youtu.be/ePgP4IO_qM8.
 
 ## What must not happen
 
@@ -127,7 +127,7 @@ Journey and security stages need the isolated sandbox in `docs/sandbox-getting-s
 | PUBLIC authenticated sandbox | PASS on `deb00e3` | Playwright buyer/seller journey: eleven tools, 1,150 EUR listing-price offer, atomic `RESERVED` and redacted receipt. The copyable mission asks for 1,100 EUR; both amounts are in-policy. Explicit compatibility injection; not native Chrome/ChatGPT proof. |
 | CHROME | PARTIAL PASS on `23af2a7` | Chrome 151 with `enable-webmcp-testing` reported the native runtime, Browser API support and the exact eleven-tool authenticated registry. The Inspector was not installed, so a Chrome-selected tool invocation and request ID remain pending. |
 | CHATGPT | NOT RUN | Real ChatGPT in-app WebMCP remains `NOT RUN` in `evals/webmcp/LIVE-BROWSER-EVIDENCE.md`. |
-| VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Regenerated and packaged on 30 August: 160-second H.264 1080p + AAC, capture 1/1; SHA-256 `ee591d843231215d28ff93a64ca806a59d3a559b4ab9c322009e525b1bd34693`. |
-| VIDEO PUBLIC / DEVPOST | VIDEO PASS; DEVPOST DRAFT 4/5 | YouTube is public and anonymously reachable. Devpost fields, media and private judge instructions are saved and previewed; final submission is not complete. |
+| VIDEO LOCAL | PASS / DURABLE PACKAGE PRESENT | Packaged on 4 September: 138-second H.264 1080p + AAC, 9 production read-only frames plus isolated sandbox write proof; SHA-256 `2d316d578f752e41117bf5b690d6b15834ce59d3b9ab53265994e86ba36dd173`. |
+| VIDEO PUBLIC / DEVPOST | VIDEO PASS; DEVPOST DRAFT 4/5 | The V2 YouTube video is public and playable; the previous video is unlisted. Devpost fields, media and private judge instructions are saved and previewed, but its remote embed still needs the V2 URL and final submission is not complete. |
 
 Exact links and boundaries: [`RELEASE_EVIDENCE_2026-08-26.md`](./RELEASE_EVIDENCE_2026-08-26.md). Do not treat HTTP, injected authenticated proof or Chrome registry discovery as a Chrome/ChatGPT-selected tool invocation or Devpost acceptance.

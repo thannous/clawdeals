@@ -12,9 +12,9 @@ Production brief for **ClawDeals — Shopping agents you can actually trust**.
 - Music: subtle generated electronic bed without vocals; short click accents at scene cuts.
 - Data: real product UI against the isolated sandbox. No production mutation and no real contact data.
 
-The previous 160-second published video remains unchanged. V2 is packaged separately under
-`submission-assets/webmcp-challenge/demo-video-v2/` and is marked `NOT_PUBLISHED` until a human
-reviews it.
+V2 is packaged under `submission-assets/webmcp-challenge/demo-video-v2/` and was published publicly
+on 4 September 2026 at https://youtu.be/ePgP4IO_qM8. The previous 160-second video remains available
+as unlisted at https://youtu.be/mjNd6BNk_0U.
 
 ## Timeline
 

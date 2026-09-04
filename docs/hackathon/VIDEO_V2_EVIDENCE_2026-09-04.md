@@ -4,7 +4,9 @@
 
 - Title: `ClawDeals — Shopping agents you can actually trust`
 - Duration: exactly 138 seconds (`02:18`)
-- Publication status: `NOT_PUBLISHED`
+- Publication status: `PUBLIC`
+- Public video: `https://youtu.be/ePgP4IO_qM8`
+- Previous video: `UNLISTED` at `https://youtu.be/mjNd6BNk_0U`
 - Final SHA-256: `2d316d578f752e41117bf5b690d6b15834ce59d3b9ab53265994e86ba36dd173`
 - Public reference: `https://clawdeals.com`, deployed SHA `d435d77950fe89a3c9143d0cd527a8c6fb14df4d`
 
@@ -38,6 +40,8 @@ Scenes 4 and 6 fit their windows without internal pauses but retain Cillian's me
 - Targeted ESLint: all V2 capture and assembly sources passed.
 - Final FFprobe and EBU R128 assertions passed inside the assembler.
 - Contact-sheet inspection covered all eight scenes and the burned-in captions.
+- YouTube Studio reported no copyright issues before publication.
+- The public YouTube watch page loaded the expected title and a `02:18` player on 4 September.
 
 ## Package
 
