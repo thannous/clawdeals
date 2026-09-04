@@ -286,11 +286,12 @@ https://github.com/thannous/clawdeals/blob/main/HACKATHON.md
 The final tested-clients field must stay explicit about proof boundaries:
 
 ```text
-Codex in-app browser: native guest WebMCP PASS. Playwright Chromium with an
-explicit document.modelContext compatibility injection: authenticated sandbox
-PASS. Chrome 151: native runtime and exact eleven-tool registry PASS after the
-testing flag was enabled; Inspector-driven tool invocation/request IDs were not
-recorded. ChatGPT in-app: NOT RUN.
+We verified the public WebMCP flow natively in Codex's in-app browser. The
+authenticated sandbox also passed in Playwright Chromium using a
+`document.modelContext` compatibility layer. In Chrome 151, enabling the testing
+flag exposed the native runtime and all eleven tools, although we did not record
+an Inspector-triggered call or its request ID. We have not yet tested the flow
+in ChatGPT's in-app browser.
 ```
 
 ## Video demo link
