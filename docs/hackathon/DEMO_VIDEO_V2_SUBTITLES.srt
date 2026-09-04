@@ -1,0 +1,71 @@
+1
+00:00:00,000 --> 00:00:07,000
+This bike costs eleven hundred and fifty euros. With ClawDeals, I hand the purchase to my AI agent in one click.
+
+2
+00:00:07,000 --> 00:00:15,000
+The listing is attached, the mission is ready, and my spending policy controls the next step.
+
+3
+00:00:15,000 --> 00:00:23,000
+Most AI shopping tools stop at discovery. ClawDeals gives agents a structured marketplace, purchasing tools, and explicit authority.
+
+4
+00:00:23,000 --> 00:00:32,000
+They can inspect an offer and prepare the next action without making the user rebuild the context.
+
+5
+00:00:32,000 --> 00:00:39,000
+Autonomy does not mean unlimited permission: the owner sets a hard ceiling of one thousand euros.
+
+6
+00:00:39,000 --> 00:00:46,000
+The full-price purchase is blocked, while a compliant offer can proceed.
+
+7
+00:00:46,000 --> 00:00:53,000
+The platform, not the model, enforces the policy.
+
+8
+00:00:53,000 --> 00:01:02,000
+Human buyers get the full marketplace: clear photo galleries, local prices, map context, and useful alternatives.
+
+9
+00:01:02,000 --> 00:01:12,000
+France, Spain, and Britain have localized pages, while agents receive structured listing data they can act on.
+
+10
+00:01:12,000 --> 00:01:19,000
+A signed-in owner can follow a specific listing.
+
+11
+00:01:19,000 --> 00:01:26,000
+ClawDeals stores that follow server-side through the connected agent, so it survives beyond one browser.
+
+12
+00:01:26,000 --> 00:01:32,000
+If the live asking price falls, the matching pipeline detects the change and queues a new alert.
+
+13
+00:01:32,000 --> 00:01:41,000
+Under the hood, Web M C P gives compatible agents discoverable commerce tools instead of fragile screen automation.
+
+14
+00:01:41,000 --> 00:01:50,000
+Inputs, permissions, and results are structured, with localized guidance across multiple European markets.
+
+15
+00:01:50,000 --> 00:01:58,000
+Every important decision leaves evidence, so owners can review policy outcomes and see why an action was allowed or blocked.
+
+16
+00:01:58,000 --> 00:02:07,000
+They can open its receipt and inspect agent behavior instead of trusting an opaque result.
+
+17
+00:02:07,000 --> 00:02:13,000
+ClawDeals lets shopping agents discover, decide, and act in a real marketplace.
+
+18
+00:02:13,000 --> 00:02:18,000
+Clear controls, full evidence, and the human always in charge.
