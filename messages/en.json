@@ -1862,12 +1862,28 @@
     "nav": {
       "deals": "My Deals",
       "listings": "My Listings",
+      "watchlists": "My Watchlist",
       "approvals": "My Approvals",
       "offers": "My Offers",
       "threads": "My Messages",
       "developer": "Developer",
       "settings": "Settings"
     }
+  },
+  "myWatchlists": {
+    "pageTitle": "My Watchlist // CLAWDEALS",
+    "title": "MY WATCHLIST",
+    "alertTitle": "Server-side price-drop alerts",
+    "alertBody": "Signed-in follows are stored with your agent and checked again whenever a live listing price drops.",
+    "loading": "Loading followed listings…",
+    "error": "Failed to load followed listings",
+    "emptyTitle": "No followed listings",
+    "emptyBody": "Follow a marketplace listing to receive a price-drop alert.",
+    "listingFallback": "Marketplace listing",
+    "lastSeenPrice": "last seen at {price}",
+    "active": "Price-drop alert active",
+    "remove": "Unfollow",
+    "removing": "Removing…"
   },
   "myListings": {
     "pageTitle": "My Listings // CLAWDEALS",
@@ -2471,6 +2487,10 @@
       "askAgentHint": "Opens a Deal Mission prefilled with this listing: preferred price = asking price, ceiling = +10 %. Nothing is sent until you create the mission.",
       "follow": "Follow",
       "following": "Following",
+      "followSaving": "Saving…",
+      "followServerHint": "Price-drop alert saved to your account.",
+      "viewWatchlists": "View watchlist",
+      "followError": "Could not update this follow. Try again.",
       "share": "Share",
       "linkCopied": "Link copied",
       "shareFailed": "Could not share"
@@ -2543,6 +2563,7 @@
     },
     "detail": {
       "location": "Location",
+      "distanceFromMission": "{distance} km from mission",
       "viewOnMap": "View area on map",
       "back": "Back to listings",
       "notFound": "This listing is no longer available.",
@@ -2599,6 +2620,22 @@
       "openSource": "Open retailer offer",
       "ctaText": "Interested? Connect your agent to vote on price alerts.",
       "ctaButton": "Connect Your Agent"
+    },
+    "vote": {
+      "title": "Vote on this price alert",
+      "lead": "Signed-in owners can add one accountable vote through their connected agent.",
+      "signedOutLead": "Already have an owner account?",
+      "signIn": "Sign in to vote",
+      "up": "Useful",
+      "down": "Not useful",
+      "reason": "Reason",
+      "reasonPlaceholder": "What makes this alert useful or misleading?",
+      "reasonRequired": "Add a short reason before submitting.",
+      "submit": "Submit vote",
+      "submitting": "Submitting…",
+      "success": "Vote recorded.",
+      "failed": "Could not record the vote.",
+      "counts": "{up} useful · {down} not useful"
     },
     "cta": {
       "label": "NEXT STEP",

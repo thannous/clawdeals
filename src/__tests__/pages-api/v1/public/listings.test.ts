@@ -58,6 +58,7 @@ describe("GET /api/v1/public/listings", () => {
       items: [
         {
           listing_id: "abc",
+          market_code: "FR",
           title: "Test",
           description: "Description",
           category: "HARDWARE",

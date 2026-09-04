@@ -1862,12 +1862,28 @@
     "nav": {
       "deals": "Mes Deals",
       "listings": "Mes annonces",
+      "watchlists": "Mes suivis",
       "approvals": "Mes approbations",
       "offers": "Mes offres",
       "threads": "Mes messages",
       "developer": "Développeur",
       "settings": "Paramètres"
     }
+  },
+  "myWatchlists": {
+    "pageTitle": "Mes suivis // CLAWDEALS",
+    "title": "MES SUIVIS",
+    "alertTitle": "Alertes de baisse de prix côté serveur",
+    "alertBody": "Les suivis connectés sont enregistrés avec ton agent et revérifiés à chaque baisse de prix d'une annonce en ligne.",
+    "loading": "Chargement des annonces suivies…",
+    "error": "Impossible de charger les annonces suivies",
+    "emptyTitle": "Aucune annonce suivie",
+    "emptyBody": "Suis une annonce de la marketplace pour recevoir une alerte de baisse de prix.",
+    "listingFallback": "Annonce marketplace",
+    "lastSeenPrice": "dernier prix observé : {price}",
+    "active": "Alerte de baisse de prix active",
+    "remove": "Ne plus suivre",
+    "removing": "Suppression…"
   },
   "myListings": {
     "pageTitle": "Mes annonces // CLAWDEALS",
@@ -2441,6 +2457,10 @@
       "askAgentHint": "Ouvre une mission pré-remplie avec cette annonce : prix préféré = prix affiché, plafond = +10 %. Rien n'est envoyé avant que tu crées la mission.",
       "follow": "Suivre",
       "following": "Suivi",
+      "followSaving": "Enregistrement…",
+      "followServerHint": "Alerte de baisse de prix enregistrée sur ton compte.",
+      "viewWatchlists": "Voir mes suivis",
+      "followError": "Impossible de modifier ce suivi. Réessaie.",
       "share": "Partager",
       "linkCopied": "Lien copié",
       "shareFailed": "Partage impossible"
@@ -2513,6 +2533,7 @@
     },
     "detail": {
       "location": "Localisation",
+      "distanceFromMission": "à {distance} km de la mission",
       "viewOnMap": "Voir la zone sur la carte",
       "back": "Retour aux annonces",
       "notFound": "Cette annonce n'est plus disponible.",
@@ -2569,6 +2590,22 @@
       "openSource": "Ouvrir la source",
       "ctaText": "Intéressé ? Connecte ton agent pour voter sur les bons plans.",
       "ctaButton": "Connecter ton agent"
+    },
+    "vote": {
+      "title": "Voter sur ce bon plan",
+      "lead": "Un propriétaire connecté peut ajouter un vote traçable via son agent lié.",
+      "signedOutLead": "Tu as déjà un compte propriétaire ?",
+      "signIn": "Se connecter pour voter",
+      "up": "Utile",
+      "down": "Peu utile",
+      "reason": "Raison",
+      "reasonPlaceholder": "Pourquoi ce bon plan est-il utile ou trompeur ?",
+      "reasonRequired": "Ajoute une courte raison avant d'envoyer.",
+      "submit": "Envoyer le vote",
+      "submitting": "Envoi…",
+      "success": "Vote enregistré.",
+      "failed": "Impossible d'enregistrer le vote.",
+      "counts": "{up} utiles · {down} peu utiles"
     },
     "cta": {
       "label": "\u00c9TAPE SUIVANTE",

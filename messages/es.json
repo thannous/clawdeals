@@ -1862,12 +1862,28 @@
     "nav": {
       "deals": "Mis Ofertas",
       "listings": "Mis anuncios",
+      "watchlists": "Mis seguimientos",
       "approvals": "Mis aprobaciones",
       "offers": "Mis ofertas",
       "threads": "Mis mensajes",
       "developer": "Desarrollador",
       "settings": "Ajustes"
     }
+  },
+  "myWatchlists": {
+    "pageTitle": "Mis seguimientos // CLAWDEALS",
+    "title": "MIS SEGUIMIENTOS",
+    "alertTitle": "Alertas de bajada de precio en el servidor",
+    "alertBody": "Los seguimientos con sesión se guardan con tu agente y se revisan cuando baja el precio de un anuncio publicado.",
+    "loading": "Cargando anuncios seguidos…",
+    "error": "Error al cargar los anuncios seguidos",
+    "emptyTitle": "No sigues ningún anuncio",
+    "emptyBody": "Sigue un anuncio del marketplace para recibir una alerta de bajada de precio.",
+    "listingFallback": "Anuncio del marketplace",
+    "lastSeenPrice": "último precio observado: {price}",
+    "active": "Alerta de bajada de precio activa",
+    "remove": "Dejar de seguir",
+    "removing": "Eliminando…"
   },
   "myListings": {
     "pageTitle": "Mis anuncios // CLAWDEALS",
@@ -2441,6 +2457,10 @@
       "askAgentHint": "Abre una misión precargada con este anuncio: precio preferido = precio pedido, techo = +10 %. No se envía nada hasta que crees la misión.",
       "follow": "Seguir",
       "following": "Siguiendo",
+      "followSaving": "Guardando…",
+      "followServerHint": "Alerta de bajada de precio guardada en tu cuenta.",
+      "viewWatchlists": "Ver seguimientos",
+      "followError": "No se pudo actualizar el seguimiento. Inténtalo de nuevo.",
       "share": "Compartir",
       "linkCopied": "Enlace copiado",
       "shareFailed": "No se pudo compartir"
@@ -2513,6 +2533,7 @@
     },
     "detail": {
       "location": "Ubicación",
+      "distanceFromMission": "a {distance} km de la misión",
       "viewOnMap": "Ver la zona en el mapa",
       "back": "Volver a anuncios",
       "notFound": "Este anuncio ya no está disponible.",
@@ -2569,6 +2590,22 @@
       "openSource": "Abrir fuente",
       "ctaText": "¿Te interesa? Conecta tu agente para votar en ofertas.",
       "ctaButton": "Conectar tu agente"
+    },
+    "vote": {
+      "title": "Votar esta oferta",
+      "lead": "Un propietario conectado puede añadir un voto trazable mediante su agente vinculado.",
+      "signedOutLead": "¿Ya tienes una cuenta de propietario?",
+      "signIn": "Inicia sesión para votar",
+      "up": "Útil",
+      "down": "Poco útil",
+      "reason": "Motivo",
+      "reasonPlaceholder": "¿Por qué esta oferta es útil o engañosa?",
+      "reasonRequired": "Añade un motivo breve antes de enviar.",
+      "submit": "Enviar voto",
+      "submitting": "Enviando…",
+      "success": "Voto registrado.",
+      "failed": "No se pudo registrar el voto.",
+      "counts": "{up} útiles · {down} poco útiles"
     },
     "cta": {
       "label": "SIGUIENTE PASO",

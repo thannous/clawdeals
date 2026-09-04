@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
@@ -12,6 +12,12 @@ vi.mock("next/link", () => ({
       {children}
     </a>
   )
+}));
+
+const { sessionGateMock } = vi.hoisted(() => ({ sessionGateMock: vi.fn() }));
+
+vi.mock("../auth/useOwnerSessionGate", () => ({
+  useOwnerSessionGate: () => sessionGateMock()
 }));
 
 import ListingHumanActions, { buildAskMyAgentHref } from "./ListingHumanActions";
@@ -56,10 +62,12 @@ describe("buildAskMyAgentHref", () => {
 describe("ListingHumanActions", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    sessionGateMock.mockReturnValue("anonymous");
   });
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it("renders the three human actions and links Ask my agent to the prefilled mission", () => {
@@ -81,6 +89,31 @@ describe("ListingHumanActions", () => {
 
     fireEvent.click(follow);
     expect(follow.getAttribute("aria-pressed")).toBe("false");
+    expect(getFollowedListingIds()).toEqual([]);
+  });
+
+  it("persists a signed-in follow as an owner watchlist", async () => {
+    sessionGateMock.mockReturnValue("authenticated");
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { watchlists: [] } })
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { watchlist: { watchlist_id: "watchlist-1" } } })
+      } as Response);
+
+    render(<ListingHumanActions listing={listing} localePrefix="" />);
+    await waitFor(() => expect(screen.getByTestId("listing-follow").hasAttribute("disabled")).toBe(false));
+    fireEvent.click(screen.getByTestId("listing-follow"));
+
+    await screen.findByTestId("listing-follow-server-hint");
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/owner/watchlists",
+      expect.objectContaining({ method: "POST", credentials: "include" })
+    );
     expect(getFollowedListingIds()).toEqual([]);
   });
 

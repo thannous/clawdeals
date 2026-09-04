@@ -4,29 +4,41 @@ import { useTranslations } from "next-intl";
 import ListingCard from "./ListingCard";
 
 /**
- * Three other live listings from the same category. Loaded client-side so the
+ * Three other live listings from the same category and market. Loaded client-side so the
  * detail page keeps its single server round-trip.
  */
-export default function SimilarListings({ listingId, category }: { listingId: string; category: string | null }) {
+export default function SimilarListings({
+  listingId,
+  category,
+  marketCode
+}: {
+  listingId: string;
+  category: string | null;
+  marketCode: string | null;
+}) {
   const t = useTranslations("browse");
   const [items, setItems] = useState<any[] | null>(null);
 
   useEffect(() => {
-    if (!category) return;
+    if (!category || !marketCode) return;
     const controller = new AbortController();
-    const params = new URLSearchParams({ category, limit: "6", sort: "recent" });
+    const params = new URLSearchParams({ category, limit: "30", sort: "recent" });
     fetch(`/api/v1/public/listings?${params}`, { signal: controller.signal })
       .then(async (resp) => (resp.ok ? resp.json() : null))
       .then((body) => {
         if (controller.signal.aborted) return;
         const list = Array.isArray(body?.data) ? body.data : [];
-        setItems(list.filter((item: any) => item?.listing_id !== listingId).slice(0, 3));
+        setItems(
+          list
+            .filter((item: any) => item?.listing_id !== listingId && item?.market_code === marketCode)
+            .slice(0, 3)
+        );
       })
       .catch(() => {
         if (!controller.signal.aborted) setItems([]);
       });
     return () => controller.abort();
-  }, [category, listingId]);
+  }, [category, listingId, marketCode]);
 
   if (!items || items.length === 0) return null;
 

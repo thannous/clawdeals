@@ -23,6 +23,7 @@ export function mapPublicListingRow(row: any, sellerInfo?: { display_name: strin
   });
   return {
     listing_id: row.listing_id,
+    market_code: row.market_code ?? null,
     title: row.title,
     description: desc
       ? desc.length > 200

@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image, { type ImageLoaderProps } from "next/image";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "../../theme/theme-context";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { getPublicAppEntryHref } from "../../shared/urls";
@@ -11,6 +12,8 @@ import PendingApprovalBanner from "../webmcp/PendingApprovalBanner";
 import ListingHumanActions from "./ListingHumanActions";
 import ListingGallery from "./ListingGallery";
 import SimilarListings from "./SimilarListings";
+import { getActiveBuyMission, subscribeActiveBuyMission } from "../../webmcp/ui-bridge";
+import { distanceBetweenKm, resolveListingLocation } from "./listing-location";
 
 function formatPrice(amount: number, currency: string, locale: string): string {
   try {
@@ -55,6 +58,14 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
   const locale = resolveSupportedLocale(router.locale);
   const localePrefix = locale === "en" ? "" : `/${locale}`;
   const { themeId, setTheme, themes } = useTheme();
+  const activeMission = useSyncExternalStore(subscribeActiveBuyMission, getActiveBuyMission, () => null);
+  const missionDistance =
+    listing?.geo && activeMission?.location
+      ? distanceBetweenKm(
+          { lat: listing.geo.lat, lng: listing.geo.lng },
+          { lat: activeMission.location.lat, lng: activeMission.location.lon }
+        )
+      : null;
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
@@ -139,7 +150,10 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                 {(listing.market_code || listing.geo) && (
                   <DetailRow label={t("detail.location")}>
                     <span className="text-xs font-mono text-text" data-testid="listing-location">
-                      {describeListingLocation(listing.market_code, listing.country, t)}
+                      {resolveListingLocation(listing.market_code, listing.geo)}
+                      {missionDistance !== null ? (
+                        <> · {t("detail.distanceFromMission", { distance: missionDistance.toFixed(1) })}</>
+                      ) : null}
                       {listing.geo ? (
                         <>
                           {" · "}
@@ -214,7 +228,11 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                 </div>
               )}
 
-              <SimilarListings listingId={listing.listing_id} category={listing.category ?? null} />
+              <SimilarListings
+                listingId={listing.listing_id}
+                category={listing.category ?? null}
+                marketCode={listing.market_code ?? null}
+              />
 
               {/* Secondary CTA for visitors who do not have an agent yet */}
               <div className="border border-border bg-surface p-6 text-center space-y-3">
@@ -233,17 +251,6 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
       </main>
     </div>
   );
-}
-
-const MARKET_LABEL_KEYS: Record<string, string> = { FR: "markets.FR", GB: "markets.GB", ES: "markets.ES" };
-
-// The public API rounds coordinates to ~1 km, so the page names the market (and the
-// country when it differs) rather than pretending to know the street.
-function describeListingLocation(marketCode: unknown, country: unknown, t: (key: string) => string): string {
-  const code = typeof marketCode === "string" ? marketCode.toUpperCase() : "";
-  const label = MARKET_LABEL_KEYS[code] ? t(MARKET_LABEL_KEYS[code]) : "";
-  const countryLabel = typeof country === "string" && country.trim() && country.trim().toUpperCase() !== code ? country.trim() : "";
-  return [label, countryLabel].filter(Boolean).join(" · ") || countryLabel || code;
 }
 
 type SellerTrustInfo = { score: number | null; quarantined: boolean; member_since: string | null } | null | undefined;

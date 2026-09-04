@@ -14,12 +14,13 @@ import AppNav from "./AppNav";
 afterEach(cleanup);
 
 describe("AppNav", () => {
-  it("renders 7 nav items including deals and offers", () => {
+  it("renders 8 nav items including deals, watchlists, and offers", () => {
     render(<AppNav current="listings" />);
 
     const nav = screen.getByTestId("app-nav");
     const links = nav.querySelectorAll("a");
-    expect(links.length).toBe(7);
+    expect(links.length).toBe(8);
+    expect(screen.getByText("nav.watchlists").getAttribute("href")).toBe("/my/watchlists");
   });
 
   it("renders deals link pointing to /my/deals", () => {

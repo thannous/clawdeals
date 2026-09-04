@@ -113,6 +113,7 @@ describe("mapPublicListingRow", () => {
     const result = mapPublicListingRow(row);
     expect(result).toEqual({
       listing_id: "abc-123",
+      market_code: null,
       title: "Test Item",
       description: "A short description",
       category: "electronics",

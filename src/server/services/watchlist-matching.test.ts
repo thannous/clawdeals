@@ -23,7 +23,7 @@ import { matchDealToWatchlists, matchListingToWatchlists } from "./watchlist-mat
 
 type Filter = {
   column: string;
-  operator: "eq" | "is" | "not-is" | "overlaps" | "gte" | "in";
+  operator: "eq" | "is" | "not-is" | "overlaps" | "gte" | "in" | "contains";
   value: any;
 };
 
@@ -48,6 +48,7 @@ class MatchingQuery {
   private operation: "select" | "upsert" | "update" | null = null;
   private filters: Filter[] = [];
   private rows: any[] = [];
+  private patch: any = null;
 
   constructor(client: MatchingClient, table: string) {
     this.client = client;
@@ -65,8 +66,9 @@ class MatchingQuery {
     return this;
   }
 
-  update(_patch: any) {
+  update(patch: any) {
     this.operation = "update";
+    this.patch = patch;
     return this;
   }
 
@@ -88,6 +90,11 @@ class MatchingQuery {
 
   overlaps(column: string, value: any[]) {
     this.filters.push({ column, operator: "overlaps", value });
+    return this;
+  }
+
+  contains(column: string, value: Record<string, any>) {
+    this.filters.push({ column, operator: "contains", value });
     return this;
   }
 
@@ -127,6 +134,10 @@ class MatchingQuery {
       if (filter.operator === "gte") {
         return Number(row?.[filter.column]) >= filter.value;
       }
+      if (filter.operator === "contains") {
+        const record = row?.[filter.column];
+        return record && typeof record === "object" && Object.entries(filter.value).every(([key, value]) => record[key] === value);
+      }
       return filter.value.includes(row?.[filter.column]);
     });
   }
@@ -158,6 +169,13 @@ class MatchingQuery {
       return { data: null, error: null };
     }
 
+    if (this.table === "watchlists" && this.operation === "update") {
+      for (const row of this.client.watchlists.filter((candidate) => this.rowMatches(candidate))) {
+        Object.assign(row, this.patch);
+      }
+      return { data: null, error: null };
+    }
+
     return { data: null, error: new Error(`Unexpected ${this.operation} on ${this.table}`) };
   }
 }
@@ -183,6 +201,7 @@ function watchlist(overrides: any) {
 
 describe("watchlist matching service", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(rateLimitMiddleware).mockResolvedValue(null as any);
     vi.mocked(publishSseEvent).mockResolvedValue({ ok: true } as any);
     vi.mocked(enqueueWatchlistMatchOutbox).mockResolvedValue({ ok: true } as any);
@@ -327,6 +346,60 @@ describe("watchlist matching service", () => {
       "watchlist.match_sse_failed",
       expect.objectContaining({ agent_id: "agent-gb", listing_id: "listing-gb", market_code: "GB" })
     );
+  });
+
+  it("emits a fresh match for each real price drop on an exact owner follow", async () => {
+    const client = new MatchingClient([
+      watchlist({
+        watchlist_id: "wl-follow",
+        agent_id: "agent-owner",
+        query_text: null,
+        tags: [],
+        price_max: null,
+        criteria: {
+          kind: "listing_follow",
+          listing_id: "listing-followed",
+          listing_title: "Followed bike",
+          last_price: 1200
+        }
+      })
+    ]);
+    const listing = {
+      listing_id: "listing-followed",
+      title: "Followed bike",
+      category: "cycling",
+      price_amount: 1100,
+      currency: "EUR",
+      market_code: "FR",
+      geo_lat: null,
+      geo_lng: null
+    };
+
+    const first = await matchListingToWatchlists({ client, listing, now: new Date("2026-09-04T09:00:00.000Z") });
+    expect(first).toMatchObject({ matched_count: 1, inserted_count: 1 });
+    expect(client.insertedMatches[0].reason).toMatchObject({
+      listing_ok: true,
+      price_drop: true,
+      previous_price: 1200,
+      current_price: 1100
+    });
+    expect(client.watchlists[0].criteria.last_price).toBe(1100);
+
+    const unchanged = await matchListingToWatchlists({
+      client,
+      listing,
+      now: new Date("2026-09-04T09:05:00.000Z")
+    });
+    expect(unchanged).toMatchObject({ matched_count: 0, inserted_count: 0 });
+
+    const second = await matchListingToWatchlists({
+      client,
+      listing: { ...listing, price_amount: 1050 },
+      now: new Date("2026-09-04T09:10:00.000Z")
+    });
+    expect(second).toMatchObject({ matched_count: 1, inserted_count: 1 });
+    expect(client.watchlists[0].criteria.last_price).toBe(1050);
+    expect(enqueueWatchlistMatchOutbox).toHaveBeenCalledTimes(2);
   });
 
   it.each([

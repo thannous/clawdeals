@@ -144,6 +144,13 @@ async function fetchCandidateWatchlistsForListing({ listing, client }) {
     queries.push(baseQuery().not("geo_lat", "is", null).not("geo_lon", "is", null).not("distance_km", "is", null).limit(5000));
   }
 
+  // Owner follows are exact-listing watchlists. They intentionally have no broad
+  // query/tag filter, so pull them by their JSON criterion when this listing is
+  // re-queued after a price drop.
+  if (listing?.listing_id) {
+    queries.push(baseQuery().contains("criteria", { kind: "listing_follow", listing_id: listing.listing_id }).limit(5000));
+  }
+
   const results = await Promise.all(
     queries.map(async (q) => {
       const { data, error } = await q;
@@ -163,12 +170,13 @@ async function fetchCandidateWatchlistsForListing({ listing, client }) {
   return Array.from(unique.values());
 }
 
-async function upsertMatches({ client, rows }) {
+async function upsertMatches({ client, rows, ignoreDuplicates = true }) {
+  if (!rows.length) return [];
   const { data, error } = await client
     .from("watchlist_matches")
     .upsert(rows, {
       onConflict: "watchlist_id,entity_type,entity_id",
-      ignoreDuplicates: true
+      ignoreDuplicates
     })
     .select("watchlist_match_id,watchlist_id,agent_id");
 
@@ -177,6 +185,25 @@ async function upsertMatches({ client, rows }) {
   }
 
   return Array.isArray(data) ? data : [];
+}
+
+async function advanceListingFollowBaselines({ client, matches, listing, matchedAt }) {
+  const price = toNumber(listing?.price_amount);
+  if (!Number.isFinite(price)) return;
+  const follows = matches.filter(({ watchlist }) => watchlist?.criteria?.kind === "listing_follow");
+
+  for (const { watchlist } of follows) {
+    const criteria = watchlist.criteria && typeof watchlist.criteria === "object" ? watchlist.criteria : {};
+    const { error } = await client
+      .from("watchlists")
+      .update({
+        criteria: { ...criteria, last_price: price, last_price_seen_at: matchedAt },
+        updated_at: matchedAt
+      })
+      .eq("watchlist_id", watchlist.watchlist_id)
+      .eq("agent_id", watchlist.agent_id);
+    if (error) mapError(error);
+  }
 }
 
 async function markDelivered({ client, matchIds, deliveredAt }) {
@@ -402,7 +429,23 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     reason: reason && typeof reason === "object" && Object.keys(reason).length > 0 ? reason : null
   }));
 
-  const inserted = await upsertMatches({ client: supabase, rows });
+  const exactFollowIds = new Set(
+    matches
+      .filter(({ watchlist }) => watchlist?.criteria?.kind === "listing_follow")
+      .map(({ watchlist }) => watchlist.watchlist_id)
+  );
+  const inserted = [
+    ...(await upsertMatches({
+      client: supabase,
+      rows: rows.filter((row) => !exactFollowIds.has(row.watchlist_id)),
+      ignoreDuplicates: true
+    })),
+    ...(await upsertMatches({
+      client: supabase,
+      rows: rows.filter((row) => exactFollowIds.has(row.watchlist_id)),
+      ignoreDuplicates: false
+    }))
+  ];
 
   if (inserted.length === 0) {
     console.info("watchlist.match.duplicate_suppressed", { listing_id: listing.listing_id });
@@ -414,6 +457,8 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
       inserted_count: 0
     };
   }
+
+  await advanceListingFollowBaselines({ client: supabase, matches, listing, matchedAt });
 
   const insertedByAgent = new Map();
   for (const row of inserted) {

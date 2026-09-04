@@ -104,6 +104,16 @@ describe("route groups", () => {
     expect(matchRouteGroup("DELETE", `/api/v1/deals/${id}`, sp)).toBe("deals.delete");
   });
 
+  it("matches owner marketplace actions (TI-510)", () => {
+    const sp = new URLSearchParams();
+    const id = "00000000-0000-4000-a000-000000000123";
+
+    expect(matchRouteGroup("GET", "/api/v1/owner/watchlists", sp)).toBe("owner.watchlists.read");
+    expect(matchRouteGroup("POST", "/api/v1/owner/watchlists", sp)).toBe("owner.watchlists.write");
+    expect(matchRouteGroup("DELETE", `/api/v1/owner/watchlists/${id}`, sp)).toBe("owner.watchlists.write");
+    expect(matchRouteGroup("POST", `/api/v1/owner/deals/${id}/vote`, sp)).toBe("owner.deals.vote");
+  });
+
   it("matches contact reveal + installation scopes upgrade route groups (TI-331/TI-332)", () => {
     const sp = new URLSearchParams();
     const id = "00000000-0000-4000-a000-000000000123";

@@ -9,6 +9,7 @@ import { getPublicAppEntryHref } from "../../shared/urls";
 import { resolveCoverImageSrc } from "../media/cover-image";
 import StatusBadge from "../deals/StatusBadge";
 import { NavbarCurrent } from "../landing/Navbar";
+import OwnerDealVote from "./OwnerDealVote";
 
 function formatPrice(amount: number | null, currency: string | null, locale: string): string {
   if (amount === null || amount === undefined || !currency) return "—";
@@ -100,6 +101,8 @@ export default function BrowseDealDetailPage({ deal }: BrowseDealDetailPageProps
                   </a>
                 )}
               </div>
+
+              <OwnerDealVote deal={deal} localePrefix={localePrefix} />
 
               {coverImageSrc && (
                 <div className="relative w-full aspect-[16/10] border border-border overflow-hidden bg-surface">

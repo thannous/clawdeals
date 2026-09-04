@@ -258,6 +258,26 @@ export function evaluateWatchlistMatchListing({
   }
   reason.market_ok = true;
 
+  const followedListingId = coerceString(watchlist?.criteria?.listing_id);
+  if (followedListingId) {
+    if (coerceString(listing.listing_id) !== followedListingId) {
+      return { matched: false, reason: { ...reason, listing_ok: false } };
+    }
+    reason.listing_ok = true;
+
+    const previousPrice = toNumber(watchlist?.criteria?.last_price);
+    const currentPrice = toNumber(listing.price_amount);
+    if (!Number.isFinite(previousPrice) || !Number.isFinite(currentPrice)) {
+      return { matched: false, reason: { ...reason, price_drop_invalid: true } };
+    }
+    if (currentPrice >= previousPrice) {
+      return { matched: false, reason: { ...reason, price_drop: false } };
+    }
+    reason.price_drop = true;
+    reason.previous_price = previousPrice;
+    reason.current_price = currentPrice;
+  }
+
   const tokens = Array.isArray(entityTokens) ? entityTokens : buildEntityTokensFromListing(listing);
   const tokenSet = new Set(tokens.map((t) => String(t || "").toLowerCase()).filter(Boolean));
 

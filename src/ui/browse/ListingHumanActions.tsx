@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Bot, Bookmark, BookmarkCheck, Check, Share2 } from "lucide-react";
 
@@ -9,6 +9,7 @@ import {
   subscribeFollowedListings,
   toggleFollowedListing
 } from "./followed-listings";
+import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 
 export type ListingActionTarget = {
   listing_id: string;
@@ -46,12 +47,75 @@ export default function ListingHumanActions({
   localePrefix: string;
 }) {
   const t = useTranslations("browse");
+  const sessionGate = useOwnerSessionGate();
   const followedIds = useSyncExternalStore(subscribeFollowedListings, getFollowedListingIds, getServerFollowedListingIds);
-  const followed = followedIds.includes(listing.listing_id);
+  const [serverFollow, setServerFollow] = useState<{ watchlist_id: string } | null>(null);
+  const [followState, setFollowState] = useState<"idle" | "loading" | "error">("idle");
+  const localFollowed = followedIds.includes(listing.listing_id);
+  const followed = sessionGate === "authenticated" ? Boolean(serverFollow) : localFollowed;
   const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
   // Following is browser-local until the visitor has an account: once they follow a
   // second listing they clearly want alerts, so that is the moment to say so.
-  const showFollowNudge = followed && followedIds.length >= 2;
+  const showFollowNudge = sessionGate !== "authenticated" && followed && followedIds.length >= 2;
+
+  useEffect(() => {
+    if (sessionGate !== "authenticated") {
+      setServerFollow(null);
+      setFollowState("idle");
+      return;
+    }
+    const controller = new AbortController();
+    setFollowState("loading");
+    fetch(`/api/v1/owner/watchlists?listing_id=${encodeURIComponent(listing.listing_id)}`, {
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.json();
+        const watchlist = Array.isArray(body?.data?.watchlists) ? body.data.watchlists[0] : null;
+        if (!controller.signal.aborted) {
+          setServerFollow(watchlist?.watchlist_id ? watchlist : null);
+          setFollowState("idle");
+        }
+      })
+      .catch((error) => {
+        if (error?.name !== "AbortError" && !controller.signal.aborted) setFollowState("error");
+      });
+    return () => controller.abort();
+  }, [listing.listing_id, sessionGate]);
+
+  const handleFollow = useCallback(async () => {
+    if (sessionGate !== "authenticated") {
+      toggleFollowedListing(listing.listing_id);
+      return;
+    }
+    if (followState === "loading") return;
+
+    setFollowState("loading");
+    const idempotencyKey = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${listing.listing_id}`;
+    try {
+      const response = serverFollow
+        ? await fetch(`/api/v1/owner/watchlists/${encodeURIComponent(serverFollow.watchlist_id)}`, {
+            method: "DELETE",
+            credentials: "include",
+            headers: { "Idempotency-Key": idempotencyKey }
+          })
+        : await fetch("/api/v1/owner/watchlists", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+            body: JSON.stringify({ listing_id: listing.listing_id })
+          });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const body = await response.json();
+      setServerFollow(serverFollow ? null : body?.data?.watchlist || null);
+      setFollowState("idle");
+    } catch {
+      setFollowState("error");
+    }
+  }, [followState, listing.listing_id, serverFollow, sessionGate]);
 
   const handleShare = useCallback(async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -85,7 +149,8 @@ export default function ListingHumanActions({
         </Link>
         <button
           type="button"
-          onClick={() => toggleFollowedListing(listing.listing_id)}
+          onClick={handleFollow}
+          disabled={sessionGate === "pending" || followState === "loading"}
           aria-pressed={followed}
           data-testid="listing-follow"
           className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 font-bold uppercase tracking-wider text-xs border transition-colors ${
@@ -95,7 +160,7 @@ export default function ListingHumanActions({
           }`}
         >
           {followed ? <BookmarkCheck className="w-4 h-4" aria-hidden="true" /> : <Bookmark className="w-4 h-4" aria-hidden="true" />}
-          {followed ? t("actions.following") : t("actions.follow")}
+          {followState === "loading" ? t("actions.followSaving") : followed ? t("actions.following") : t("actions.follow")}
         </button>
         <button
           type="button"
@@ -108,6 +173,17 @@ export default function ListingHumanActions({
         </button>
       </div>
       <p className="text-xs font-mono text-subtle">{t("actions.askAgentHint")}</p>
+      {sessionGate === "authenticated" && followed ? (
+        <p className="text-xs font-mono text-secondary" data-testid="listing-follow-server-hint">
+          {t("actions.followServerHint")} {" "}
+          <Link href={`${localePrefix}/my/watchlists`} className="underline underline-offset-4">
+            {t("actions.viewWatchlists")}
+          </Link>
+        </p>
+      ) : null}
+      {followState === "error" ? (
+        <p className="text-xs font-mono text-error" role="status">{t("actions.followError")}</p>
+      ) : null}
       {showFollowNudge ? (
         <div className="border border-secondary/40 bg-secondary/5 p-3 flex flex-col sm:flex-row sm:items-center gap-3" data-testid="listing-follow-nudge">
           <div className="flex-1">

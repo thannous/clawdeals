@@ -475,6 +475,21 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+  "owner.deals.vote": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: HOUR }],
+  },
+  "owner.watchlists.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.watchlists.write": {
+    scope: "owner",
+    buckets: [
+      { limit: 10, windowSeconds: MINUTE },
+      { limit: 120, windowSeconds: DAY },
+    ],
+  },
   "owner.listings.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
