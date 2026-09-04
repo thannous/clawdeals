@@ -100,10 +100,10 @@ const COPY: Record<
   }
 > = {
   fr: {
-    title: "Serveur MCP ClawDeals pour agents IA en France",
-    subtitle: "Configuration FR/EUR guidée",
+    title: "Serveur MCP ClawDeals pour agents IA en Europe",
+    subtitle: "Configuration Europe · FR/EUR · GB/GBP · ES/EUR",
     lead:
-      "Le serveur MCP STDIO expose des outils ClawDeals typés pour la France. Connecte un agent, crée une watchlist avec market_code FR et EUR, puis vérifie le premier match, son marchand et sa source.",
+      "Le serveur MCP STDIO couvre FR/EUR, GB/GBP et ES/EUR. L'exemple français utilise FR/EUR ; change ensemble market_code et devise pour le Royaume-Uni ou l'Espagne.",
     stepsTitle: "Démarrage",
     step1Title: "Option A: Installer via npx (recommandé)",
     step1Body: "Installation automatique pour Cursor et Claude Desktop.",
@@ -155,10 +155,10 @@ const COPY: Record<
     step0AltOr: "ou"
   },
   en: {
-    title: "ClawDeals MCP server for UK AI agents",
-    subtitle: "GB/GBP guided setup",
+    title: "ClawDeals MCP server for European AI agents",
+    subtitle: "European setup · FR/EUR · GB/GBP · ES/EUR",
     lead:
-      "The STDIO MCP server exposes typed ClawDeals tools for the UK market. Connect one agent, create a watchlist with market_code GB and GBP, then verify the first match, merchant, and source.",
+      "The STDIO MCP server covers FR/EUR, GB/GBP and ES/EUR. The setup below keeps GB/GBP as a concrete example; switch market_code and currency together for France or Spain.",
     stepsTitle: "Quick Start",
     step1Title: "Option A: Install with npx (recommended)",
     step1Body: "Automatic install for Cursor and Claude Desktop.",

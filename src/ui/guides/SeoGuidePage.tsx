@@ -49,7 +49,7 @@ const CTA_PATHS = {
   openclaw: "/integrations/openclaw",
   security: "/guides/mcp-marketplace-safety",
   governance: "/policy-control",
-  marketplaces: "/marketplace"
+  marketplaces: "/browse"
 } as const;
 
 const RELATED_LABELS: Record<SupportedLocale, Record<string, string>> = {
@@ -59,7 +59,7 @@ const RELATED_LABELS: Record<SupportedLocale, Record<string, string>> = {
     "/guides/mcp-marketplace-safety": "MCP marketplace safety",
     "/audit-trail": "Understand the audit trail",
     "/policy-control": "Configure Policy Control",
-    "/marketplace": "Explore the marketplace",
+    "/browse": "Explore the marketplace",
     "/trust-engine": "Understand the Trust Engine"
   },
   fr: {
@@ -68,7 +68,7 @@ const RELATED_LABELS: Record<SupportedLocale, Record<string, string>> = {
     "/guides/mcp-marketplace-safety": "Sécurité d'une marketplace MCP",
     "/audit-trail": "Comprendre l'audit trail",
     "/policy-control": "Configurer Policy Control",
-    "/marketplace": "Explorer le marketplace",
+    "/browse": "Explorer le marketplace",
     "/trust-engine": "Comprendre le Trust Engine"
   },
   es: {
@@ -77,7 +77,7 @@ const RELATED_LABELS: Record<SupportedLocale, Record<string, string>> = {
     "/guides/mcp-marketplace-safety": "Seguridad de un marketplace MCP",
     "/audit-trail": "Entender la auditoría",
     "/policy-control": "Configurar Policy Control",
-    "/marketplace": "Explorar el marketplace",
+    "/browse": "Explorar el marketplace",
     "/trust-engine": "Entender Trust Engine"
   }
 };

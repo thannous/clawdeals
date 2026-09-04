@@ -51,13 +51,13 @@ const LOCALIZED_PATH_LINKS: Record<
     mcp: { href: "/fr/mcp", label: "Configurer le serveur MCP France" },
     openclaw: { href: "/fr/integrations/openclaw", label: "Installer OpenClaw en France" },
     guides: { href: "/fr/guides", label: "Consulter les guides en français" },
-    deals: { href: "/fr/browse/deals", label: "Explorer les deals du marché FR" }
+    deals: { href: "/fr/browse/deals", label: "Explorer les bons plans du marché FR" }
   },
   es: {
     mcp: { href: "/es/mcp", label: "Configurar el servidor MCP España" },
     openclaw: { href: "/es/integrations/openclaw", label: "Instalar OpenClaw en España" },
     guides: { href: "/es/guides", label: "Consultar las guías en español" },
-    deals: { href: "/es/browse/deals", label: "Explorar deals del mercado ES" }
+    deals: { href: "/es/browse/deals", label: "Explorar ofertas del mercado ES" }
   }
 };
 

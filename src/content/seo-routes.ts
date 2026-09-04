@@ -9,7 +9,7 @@ const STATIC_SEO_ROUTES: readonly SeoSitemapRoute[] = [
   { path: "/", lastmod: "2026-07-29" },
   { path: "/browse", lastmod: "2026-07-29" },
   { path: "/browse/deals", lastmod: "2026-07-29" },
-  { path: "/marketplace", lastmod: "2026-07-29" },
+  // /marketplace permanently redirects to /browse and must not compete with it.
   // /explore/* is retired and redirects home. Keep it out of the public sitemap.
   { path: "/trust-engine", lastmod: "2026-07-29" },
   { path: "/policy-control", lastmod: "2026-07-29" },

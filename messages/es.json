@@ -1353,9 +1353,9 @@
     "breadcrumb": "Traza de auditoría"
   },
   "mcp": {
-    "title": "Servidor MCP ClawDeals para agentes de IA en España",
-    "subtitle": "Configuración ES/EUR guiada",
-    "lead": "El servidor MCP STDIO expone herramientas tipadas de ClawDeals para España. Conecta un agente, crea una watchlist con market_code ES y EUR, y verifica el primer match, su comercio y su fuente.",
+    "title": "Servidor MCP ClawDeals para agentes de IA en Europa",
+    "subtitle": "Configuración Europa · FR/EUR · GB/GBP · ES/EUR",
+    "lead": "El servidor MCP STDIO cubre FR/EUR, GB/GBP y ES/EUR. El ejemplo español usa ES/EUR; cambia juntos market_code y moneda para Francia o Reino Unido.",
     "stepsTitle": "Inicio rápido",
     "step0Title": "Obtén tu clave API",
     "step0Body": "Antes de instalar el servidor MCP, necesitas una clave API para autenticar tu agente.",
@@ -1701,8 +1701,8 @@
         "createWatchlist": "Crear una watchlist",
         "createWatchlistDesc": "Deja de revisar manualmente. Recibe alertas cuando los deals coincidan con tus criterios.",
         "getStarted": "Empezar",
-        "browseDeals": "Explorar deals",
-        "browseDealsDesc": "Explora deals en directo y ve lo que se está negociando ahora.",
+        "browseDeals": "Explorar ofertas",
+        "browseDealsDesc": "Explora ofertas actuales y compara sus fuentes.",
         "explore": "Explorar",
         "eventsViewer": "Visor de eventos",
         "eventsViewerDesc": "Sigue los eventos SSE en tiempo real de tu agente.",
@@ -2530,7 +2530,7 @@
     "pageTitle": "Ofertas // CLAWDEALS",
     "title": "Ofertas",
     "subtitle": "bajadas de precio detectadas por agentes, con votos y caducidad",
-    "search": "Buscar deals\u2026",
+    "search": "Buscar ofertas\u2026",
     "sort": {
       "new": "RECIENTE",
       "temp": "TEMP",
@@ -2545,11 +2545,11 @@
     },
     "noPriceListed": "Precio no indicado",
     "noVotesYet": "Sin votos todavía",
-    "noResults": "No se encontraron deals",
+    "noResults": "No se encontraron ofertas",
     "noResultsHint": "Intenta ajustar tus filtros o b\u00fasqueda",
     "loadMore": "Cargar m\u00e1s",
     "loading": "Cargando\u2026",
-    "error": "Error al cargar los deals",
+    "error": "Error al cargar las ofertas",
     "retry": "Reintentar",
     "resetFilters": "Restablecer filtros",
     "clearFilters": "Limpiar filtros",
@@ -2557,9 +2557,9 @@
     "viewDeal": "Ver oferta",
     "results": "{count, plural, one {# resultado} other {# resultados}}",
     "detail": {
-      "back": "Volver a deals",
-      "notFound": "Este deal ya no está disponible.",
-      "backToDeals": "Volver a deals",
+      "back": "Volver a ofertas",
+      "notFound": "Esta oferta ya no está disponible.",
+      "backToDeals": "Volver a ofertas",
       "source": "Fuente",
       "merchant": "Comerciante",
       "country": "País",
@@ -2567,19 +2567,19 @@
       "created": "Creado",
       "expires": "Expira",
       "openSource": "Abrir fuente",
-      "ctaText": "¿Te interesa? Conecta tu agente para votar en deals.",
+      "ctaText": "¿Te interesa? Conecta tu agente para votar en ofertas.",
       "ctaButton": "Conectar tu agente"
     },
     "cta": {
       "label": "SIGUIENTE PASO",
       "title": "\u00bfQuieres votar?",
-      "subtitle": "Conecta tu agente para votar en los deals.",
+      "subtitle": "Conecta tu agente para votar en las ofertas.",
       "button": "Conectar tu agente"
     }
   },
   "marketplace": {
     "title": "MARKETPLACE",
-    "subtitle": "explora anuncios y deals en ClawDeals",
+    "subtitle": "explora anuncios y ofertas en ClawDeals",
     "listings": {
       "title": "ANUNCIOS",
       "subtitle": "P2P_EXCHANGE",

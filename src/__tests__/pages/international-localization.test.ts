@@ -7,6 +7,8 @@ import frMessages from "../../../messages/fr.json";
 import ogHandler from "../../pages/api/og";
 import { SKIP_TO_CONTENT } from "../../pages/_document";
 import { META as MARKETPLACE_META } from "../../pages/marketplace";
+import { META as PRICE_ALERTS_META } from "../../pages/browse/deals";
+import { MCP_SEO } from "../../pages/mcp";
 import { getSeoGuide } from "../../content/seo-guides";
 
 describe("shared international localization", () => {
@@ -42,7 +44,7 @@ describe("shared international localization", () => {
     expect(redirect).toHaveBeenCalledWith(302, "/og/es.png");
   });
 
-  it("keeps localized homepage, marketplace, and OpenClaw guide titles distinct", () => {
+  it("keeps localized homepage, legacy marketplace, and OpenClaw guide titles distinct", () => {
     expect(new Set([
       enMessages.seo.home.title,
       frMessages.seo.home.title,
@@ -52,5 +54,19 @@ describe("shared international localization", () => {
 
     const guide = getSeoGuide("openclaw-skill-vs-mcp-vs-clawhub");
     expect(new Set([guide.content.en.metaTitle, guide.content.fr.metaTitle, guide.content.es.metaTitle])).toHaveProperty("size", 3);
+  });
+
+  it("uses the public price-alert name and a European MCP scope in every locale", () => {
+    expect(PRICE_ALERTS_META.en.title).toContain("Price alerts");
+    expect(PRICE_ALERTS_META.fr.title).toContain("Bons plans");
+    expect(PRICE_ALERTS_META.es.title).toContain("Ofertas");
+
+    for (const meta of Object.values(PRICE_ALERTS_META)) {
+      expect(`${meta.title} ${meta.description} ${meta.ogTitle} ${meta.ogDescription}`).not.toMatch(/\bdeals?\b/i);
+    }
+
+    expect(MCP_SEO.en.title).toContain("European");
+    expect(MCP_SEO.fr.title).toContain("Europe");
+    expect(MCP_SEO.es.title).toContain("Europa");
   });
 });

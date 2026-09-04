@@ -412,7 +412,7 @@ const marketplaceGuide: SeoGuideDefinition = {
   updatedAt: "2026-07-29",
   author: "ClawDeals Editorial Team",
   category: "marketplaces",
-  relatedGuides: ["/marketplace", "/trust-engine", "/guides/mcp-marketplace-safety"],
+  relatedGuides: ["/browse", "/trust-engine", "/guides/mcp-marketplace-safety"],
   schemaType: "Article",
   market: ["FR", "GB", "ES"],
   content: {

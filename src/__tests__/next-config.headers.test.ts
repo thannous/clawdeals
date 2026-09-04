@@ -30,3 +30,16 @@ describe("Next.js response headers", () => {
     expect(headers["Content-Security-Policy"]).toBeUndefined();
   });
 });
+
+describe("Next.js redirects", () => {
+  it("permanently redirects the legacy marketplace hub to browse for every locale (TI-511)", async () => {
+    const config = require("../../next.config.js");
+    const redirects = await config.redirects();
+
+    expect(redirects).toContainEqual({
+      source: "/marketplace",
+      destination: "/browse",
+      permanent: true
+    });
+  });
+});

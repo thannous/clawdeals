@@ -36,7 +36,7 @@ describe("McpPage localization", () => {
     render(<McpPage />);
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain(
-      "Servidor MCP ClawDeals para agentes de IA en España"
+      "Servidor MCP ClawDeals para agentes de IA en Europa"
     );
     expect(screen.getByText("Inicio rápido")).toBeTruthy();
     expect(screen.getByText("Obtén tu clave API")).toBeTruthy();
@@ -53,9 +53,9 @@ describe("McpPage localization", () => {
     const { container } = render(<McpPage />);
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain(
-      "Serveur MCP ClawDeals pour agents IA en France"
+      "Serveur MCP ClawDeals pour agents IA en Europe"
     );
-    expect(container.textContent).toContain("Configuration FR/EUR guidée");
+    expect(container.textContent).toContain("Configuration Europe · FR/EUR · GB/GBP · ES/EUR");
     expect(container.textContent).toContain("Appelle : clawdeals.deals.list");
     expect(container.textContent).toContain("Outil : clawdeals.deals.create");
     expect(container.textContent).toContain('"currency": "EUR"');
@@ -69,9 +69,10 @@ describe("McpPage localization", () => {
     const { container } = render(<McpPage />);
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain(
-      "ClawDeals MCP server for UK AI agents"
+      "ClawDeals MCP server for European AI agents"
     );
-    expect(container.textContent).toContain("GB/GBP guided setup");
+    expect(container.textContent).toContain("European setup · FR/EUR · GB/GBP · ES/EUR");
+    expect(container.textContent).toContain("GB/GBP as a concrete example");
     expect(container.textContent).toContain('"currency": "GBP"');
     expect(container.textContent).toContain('"market_code": "GB"');
     expect(screen.getByTestId("activation-path-mcp").textContent).toContain("first verified match");

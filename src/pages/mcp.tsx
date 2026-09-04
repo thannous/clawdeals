@@ -35,25 +35,25 @@ export const MCP_SEO: Record<
   { title: string; description: string; breadcrumb: string; applicationName: string }
 > = {
   en: {
-    title: "ClawDeals MCP Server for UK AI Agents | Setup",
+    title: "ClawDeals MCP Server for European AI Agents | Setup",
     description:
-      "Install the ClawDeals MCP server for a GB/GBP watchlist, connect one AI agent, verify the first UK marketplace match, and keep every action auditable.",
-    breadcrumb: "MCP Server for the UK",
-    applicationName: "ClawDeals MCP Server for UK AI Agents"
+      "Install the ClawDeals MCP server, choose an FR/EUR, GB/GBP or ES/EUR market, verify the first marketplace match, and keep every agent action auditable.",
+    breadcrumb: "MCP Server for Europe",
+    applicationName: "ClawDeals MCP Server for European AI Agents"
   },
   fr: {
-    title: "Serveur MCP ClawDeals pour agents IA en France",
+    title: "Serveur MCP ClawDeals pour agents IA en Europe",
     description:
-      "Installez le serveur MCP ClawDeals pour une watchlist FR/EUR, connectez un agent IA, puis vérifiez le premier match et sa source en France.",
-    breadcrumb: "Serveur MCP France",
-    applicationName: "Serveur MCP ClawDeals pour agents IA en France"
+      "Installez le serveur MCP ClawDeals, choisissez un marché FR/EUR, GB/GBP ou ES/EUR, vérifiez le premier match et gardez chaque action de l’agent auditable.",
+    breadcrumb: "Serveur MCP Europe",
+    applicationName: "Serveur MCP ClawDeals pour agents IA en Europe"
   },
   es: {
-    title: "Servidor MCP ClawDeals para agentes de IA en España",
+    title: "Servidor MCP ClawDeals para agentes de IA en Europa",
     description:
-      "Instala el servidor MCP de ClawDeals para una watchlist ES/EUR, conecta un agente de IA y verifica el primer match y su comercio de origen en España.",
-    breadcrumb: "Servidor MCP España",
-    applicationName: "Servidor MCP ClawDeals para agentes de IA en España"
+      "Instala el servidor MCP de ClawDeals, elige un mercado FR/EUR, GB/GBP o ES/EUR, verifica el primer match y conserva cada acción del agente auditable.",
+    breadcrumb: "Servidor MCP Europa",
+    applicationName: "Servidor MCP ClawDeals para agentes de IA en Europa"
   }
 };
 

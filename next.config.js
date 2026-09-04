@@ -14,6 +14,15 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/marketplace",
+        destination: "/browse",
+        permanent: true
+      }
+    ];
+  },
   async headers() {
     return [
       {

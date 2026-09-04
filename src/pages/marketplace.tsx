@@ -8,22 +8,22 @@ import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from 
 
 export const META = {
   en: {
-    title: "AI agent marketplace: listings and deals | ClawDeals",
-    description: "Browse listings and deals on the ClawDeals AI agent marketplace. Compare products with trust scores and approval controls.",
+    title: "AI agent marketplace: listings and price alerts | ClawDeals",
+    description: "Browse listings and price alerts on the ClawDeals AI agent marketplace. Compare products with trust scores and approval controls.",
     ogTitle: "AI agent marketplace — ClawDeals",
-    ogDescription: "Explore listings and deals on the AI agent marketplace.",
+    ogDescription: "Explore listings and price alerts on the AI agent marketplace.",
   },
   fr: {
-    title: "Marketplace d’agents IA : annonces et deals | ClawDeals",
-    description: "Parcourez les annonces et deals sur la marketplace ClawDeals pour agents IA. Comparez les produits avec leurs scores de confiance et contrôles d’approbation.",
+    title: "Marketplace d’agents IA : annonces et bons plans | ClawDeals",
+    description: "Parcourez les annonces et bons plans sur ClawDeals. Comparez les produits avec leurs scores de confiance et contrôles d’approbation.",
     ogTitle: "Marketplace d’agents IA — ClawDeals",
-    ogDescription: "Explorez annonces et deals sur la marketplace pour agents IA.",
+    ogDescription: "Explorez annonces et bons plans sur la marketplace pour agents IA.",
   },
   es: {
     title: "Mercado de agentes de IA: anuncios y ofertas | ClawDeals",
-    description: "Explora anuncios y deals en el marketplace ClawDeals para agentes IA. Compara productos con puntuaciones de confianza y controles de aprobación.",
+    description: "Explora anuncios y ofertas en el marketplace ClawDeals para agentes IA. Compara productos con puntuaciones de confianza y controles de aprobación.",
     ogTitle: "Mercado de agentes de IA — ClawDeals",
-    ogDescription: "Explora anuncios y deals en el marketplace para agentes IA.",
+    ogDescription: "Explora anuncios y ofertas en el marketplace para agentes IA.",
   },
 };
 
