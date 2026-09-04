@@ -38,7 +38,7 @@ const HACKATHON_DOC_URL = `${REPO_URL}/blob/main/HACKATHON.md`;
 const JUDGE_GUIDE_URL = `${REPO_URL}/blob/main/docs/hackathon/JUDGE_GUIDE.md`;
 const EVALS_URL = `${REPO_URL}/tree/main/evals/webmcp`;
 const PLAN_URL = `${REPO_URL}/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md`;
-const VIDEO_URL = "https://youtu.be/mjNd6BNk_0U";
+const VIDEO_URL = "https://youtu.be/ePgP4IO_qM8";
 const SANDBOX_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 const CHROME_WEBMCP_DOCS_URL = "https://developer.chrome.com/docs/ai/webmcp";
 

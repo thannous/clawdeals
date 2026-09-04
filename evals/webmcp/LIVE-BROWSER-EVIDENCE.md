@@ -77,7 +77,19 @@ separate in-app runtime.**
 If the in-app browser does not expose WebMCP, record **INDETERMINATE** with the
 observed capability result. Do not convert lack of access into a pass or fail.
 
-## Chrome WebMCP
+## Chrome WebMCP — current verification
+
+Status: **PASS for public native discovery, execution and cross-route receipt on Chrome 152,
+4 September 2026, deployment `afce003aaf8d`.**
+
+Native `document.modelContext.executeTool()` executed `get_page_context`, `search_listings`
+and `get_action_receipt` after the search navigated to `/browse?q=e-bike`. No runtime injection
+or agent key was used. The calls were driven through browser CDP, not through the Inspector
+extension. Request IDs, screenshot provenance and method are in
+[`POST_HACKATHON_CLOSEOUT_2026-09-04.md`](../../docs/hackathon/POST_HACKATHON_CLOSEOUT_2026-09-04.md#native-chrome-execution--ti-479).
+Authenticated Chrome writes and ChatGPT in-app remain untested.
+
+## Chrome WebMCP — historical 3 September snapshot
 
 Status: **PARTIAL PASS — Chrome 151 exposes the native WebMCP runtime and exact
 eleven-tool authenticated registry; Inspector-driven execution is pending.**
@@ -115,5 +127,6 @@ tool invocation.
   wiring and UI behavior.
 - Isolated Playwright plus Supabase proves the synthetic marketplace workflow.
 - Only the completed Codex section proves native in-app WebMCP behavior here.
-  ChatGPT is not run. Chrome separately proves native runtime and registry
-  discovery, not Inspector-selected execution.
+  ChatGPT is not run. The 4 September Chrome verification also proves public native execution
+  and cross-route receipt retrieval through the browser API; Inspector-selected execution and
+  authenticated Chrome writes are not claimed.

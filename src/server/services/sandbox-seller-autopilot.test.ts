@@ -101,7 +101,7 @@ describe("runSandboxSellerTurn", () => {
 
   it("accepts atomically at or above the floor and reports RESERVED", async () => {
     db.latestOffer = { ...baseOffer, amount: 1250 };
-    vi.mocked(acceptOffer).mockResolvedValue({ status: "ACCEPTED", listing_status: "RESERVED", transaction: { tx_id: "tx1", status: "PENDING_CONTACT" } });
+    vi.mocked(acceptOffer).mockResolvedValue({ offer_status: "ACCEPTED", listing_status: "RESERVED", tx_id: "tx1", tx_status: "PENDING_CONTACT" });
     const result = await runSandboxSellerTurn({ buyerAgentId: "judge-agent", judgeAgentId: "judge-agent" });
     expect(acceptOffer).toHaveBeenCalledWith({ offerId: "o1", actorAgentId: "seller-1" });
     expect(result).toMatchObject({ action: "accept", listing_status: "RESERVED", transaction: { tx_id: "tx1" } });

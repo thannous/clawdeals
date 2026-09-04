@@ -36,7 +36,7 @@ type BrowsePageProps = {
   initialListings: any[];
   initialNextCursor: string | null;
 };
-const BROWSE_LISTINGS_I18N_NAMESPACES = ["browse", "landing", "nav", "footer"] as const;
+const BROWSE_LISTINGS_I18N_NAMESPACES = ["browse", "landing", "nav", "footer", "webmcp"] as const;
 
 export const getServerSideProps: GetServerSideProps<BrowsePageProps> = async ({ locale, req, res }) => {
   const resolvedLocale = locale || "en";

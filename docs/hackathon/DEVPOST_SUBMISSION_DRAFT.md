@@ -1,6 +1,11 @@
 # Devpost submission draft — ClawDeals
 
-Status: **SAVED DRAFT 4/5 — verified on Devpost, not submitted.**
+Status: **ARCHIVED CONTEST DRAFT — hackathon ended; last recorded remote state: saved draft 4/5.**
+
+Post-hackathon decision (4 September): the owner requested closure of the remaining backlog.
+The historical submission checklist below is retained as a record, not an active request to
+submit after the deadline. No successful submission is claimed. See
+[`POST_HACKATHON_CLOSEOUT_2026-09-04.md`](./POST_HACKATHON_CLOSEOUT_2026-09-04.md).
 
 Observed Devpost project: `ClawDeals`, draft `4/5`, submission ID `1153777`,
 slug `clawdeals`. The saved project preview was re-opened on 3 September 2026

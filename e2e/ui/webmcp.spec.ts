@@ -388,6 +388,8 @@ test.describe("Dev WebMCP demo", () => {
     expect(searchResult).toMatchObject({ ok: true });
 
     await expect(page).toHaveURL(/\/browse\?q=e-bike/, { timeout: 20_000 });
+    await expect(page.getByTestId("webmcp-activity-hud")).toContainText("Agent Activity");
+    await expect(page.getByTestId("webmcp-activity-hud")).not.toContainText("webmcp.activity.");
     await expect.poll(registrationState).toMatchObject({
       active: ["get_page_context", "show_listings", "open_listing", "search_listings", "get_action_receipt"]
     });

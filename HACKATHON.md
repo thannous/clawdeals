@@ -10,22 +10,25 @@ ClawDeals lets buyer and seller agents negotiate a real deal while humans keep c
 2. **The server enforces human limits** — hard budgets, owner-only approvals and bilateral consent are re-checked server-side.
 3. **Every action stays verifiable** — each protected step leaves a redacted receipt with a request ID and a policy decision.
 
-## Current state — 3 September 2026, `23af2a7`
+## Current state — post-hackathon closeout, 4 September 2026
 
-This block is the single source of truth for "where things are". Everything below it is reference material; dated history lives in the collapsed section at the end.
+The owner confirmed that the hackathon is over and requested closure of the remaining backlog.
+The [closeout record](docs/hackathon/POST_HACKATHON_CLOSEOUT_2026-09-04.md) separates completed
+product work from retired contest requirements. Historical submission plans below are not
+instructions to submit after the deadline. No successful Devpost submission is claimed.
 
 | Layer | Status | Where to verify |
 | --- | --- | --- |
 | Primary judge URL | [`sandbox.clawdeals.com/webmcp-challenge`](https://sandbox.clawdeals.com/webmcp-challenge) — 11 tools with the judge key, deterministic reset, synthetic seller | hub "What the browser sees" card |
 | Production hub | [`clawdeals.com/webmcp-challenge`](https://clawdeals.com/webmcp-challenge) — 5 public tools on a seeded synthetic catalog (33 listings, 10 deals, 6 sellers) | `/browse` |
-| Deployed SHA | `23af2a7` on both Vercel production and the isolated sandbox | footer `DEPLOY:` on the landing |
-| CI | PASS on `23af2a7` — [run `33761431704`](https://github.com/thannous/clawdeals/actions/runs/33761431704) | GitHub Actions |
+| Deployed SHA at native verification | Production `afce003aaf8d` at 21:16 UTC; final closeout deployment evidence is recorded in Linear | footer `DEPLOY:` on the landing |
+| CI before closeout changes | PASS on `afce003` — [run `33854692752`](https://github.com/thannous/clawdeals/actions/runs/33854692752) | GitHub Actions; final change checks in Linear |
 | Local gate | typecheck, lint, 391 Vitest files, `eval:webmcp:contracts`, `eval:webmcp:ui` PASS | `npm run eval:webmcp:gate` |
-| Native WebMCP | Chrome 151 runtime + exact 11-tool registry PASS; Inspector-driven invocation pending; ChatGPT in-app `NOT RUN` | [`NATIVE_WEBMCP_EVIDENCE_2026-08-26.md`](docs/hackathon/NATIVE_WEBMCP_EVIDENCE_2026-08-26.md) |
+| Native WebMCP | Chrome 152 public context → search → cross-route receipt PASS through the native browser API; authenticated Chrome writes and ChatGPT in-app `NOT RUN` | [Native execution evidence](docs/hackathon/POST_HACKATHON_CLOSEOUT_2026-09-04.md#native-chrome-execution--ti-479) |
 | Public sandbox journey | PASS under Playwright compatibility injection: reset, offer, seller acceptance, atomic `RESERVED`, redacted receipt, idempotent replay | [`PUBLIC_SMOKE_2026-08-26.md`](docs/hackathon/PUBLIC_SMOKE_2026-08-26.md) |
-| Video | Public, anonymous playback PASS — [youtu.be/mjNd6BNk_0U](https://youtu.be/mjNd6BNk_0U) (160 s) | [`VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md) |
-| Devpost | Draft saved and previewed (4/5); **final submission and post-submission freeze pending** | [`DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) |
-| Challenge tickets | 10 of 12 sub-tickets done; open: TI-478 (video re-narration), TI-479 (native client proof) | Linear TI-366 |
+| Video | V2 public — [youtu.be/ePgP4IO_qM8](https://youtu.be/ePgP4IO_qM8) (138 s); old video unlisted | [`VIDEO_V2_EVIDENCE_2026-09-04.md`](docs/hackathon/VIDEO_V2_EVIDENCE_2026-09-04.md) |
+| Devpost | Archived contest administration; last observed saved draft 4/5, no submission proof | [`DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) |
+| Challenge tickets | Post-hackathon closure, with proof and retired requirements recorded per ticket | [TI-366](https://linear.app/ti-max/issue/TI-366) and [closeout mapping](docs/hackathon/POST_HACKATHON_CLOSEOUT_2026-09-04.md#closure-mapping) |
 
 ## Judge in 60 seconds
 
@@ -50,8 +53,8 @@ ClawDeals existed before the challenge as an agent-native marketplace with REST 
 - WebMCP architecture and tool catalog: [`docs/hackathon/WEBMCP_ARCHITECTURE.md`](docs/hackathon/WEBMCP_ARCHITECTURE.md)
 - Evals and security: [`docs/hackathon/EVALS.md`](docs/hackathon/EVALS.md), [`docs/hackathon/SECURITY_MODEL.md`](docs/hackathon/SECURITY_MODEL.md)
 - Secret audit: [`docs/hackathon/SECRET_AUDIT_2026-08-26.md`](docs/hackathon/SECRET_AUDIT_2026-08-26.md)
-- Public video: [YouTube](https://youtu.be/mjNd6BNk_0U) and [`docs/hackathon/DEMO_SCRIPT.md`](docs/hackathon/DEMO_SCRIPT.md) — publication and anonymous playback PASS
-- Video evidence: [`docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md`](docs/hackathon/VIDEO_EVIDENCE_2026-08-26.md)
+- Public video: [YouTube V2](https://youtu.be/ePgP4IO_qM8) and [`docs/hackathon/DEMO_VIDEO_V2.md`](docs/hackathon/DEMO_VIDEO_V2.md) — public playback PASS
+- Video evidence: [`docs/hackathon/VIDEO_V2_EVIDENCE_2026-09-04.md`](docs/hackathon/VIDEO_V2_EVIDENCE_2026-09-04.md)
 - Devpost final copy: [`docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md`](docs/hackathon/DEVPOST_SUBMISSION_DRAFT.md) — saved draft 4/5, not submitted
 - Reproducible release runbook: [`docs/hackathon/release-candidate-runbook.md`](docs/hackathon/release-candidate-runbook.md)
 - Release evidence: [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md)

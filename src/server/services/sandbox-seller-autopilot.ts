@@ -140,16 +140,15 @@ export async function runSandboxSellerTurn({
 
   if (decision.action === "accept") {
     const accepted: any = await acceptOffer({ offerId: String(latest.offer_id), actorAgentId: sellerAgentId });
-    const transaction = accepted?.transaction || {};
     return {
       action: "accept",
       idempotent: false,
       reason: `amount_at_or_above_floor_${SANDBOX_SELLER_FLOOR_AMOUNT}`,
-      offer: compactOffer({ ...latest, status: accepted?.status || "ACCEPTED" }),
+      offer: compactOffer({ ...latest, status: accepted?.offer_status || "ACCEPTED" }),
       listing_status: accepted?.listing_status ? String(accepted.listing_status) : "RESERVED",
       transaction: {
-        tx_id: transaction.tx_id ? String(transaction.tx_id) : null,
-        status: transaction.status ? String(transaction.status) : null
+        tx_id: accepted?.tx_id ? String(accepted.tx_id) : null,
+        status: accepted?.tx_status ? String(accepted.tx_status) : null
       }
     };
   }

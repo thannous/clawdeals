@@ -16,7 +16,7 @@ type PageProps = {
   deal: any;
   locale: string;
 };
-const BROWSE_DEAL_DETAIL_I18N_NAMESPACES = ["browseDeals", "landing", "nav", "footer"] as const;
+const BROWSE_DEAL_DETAIL_I18N_NAMESPACES = ["browseDeals", "landing", "nav", "footer", "webmcp"] as const;
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ params, locale, res }) => {
   const dealId = Array.isArray(params?.dealId) ? params.dealId[0] : params?.dealId;
