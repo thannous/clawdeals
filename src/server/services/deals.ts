@@ -1,3 +1,4 @@
+import { assertPublishableDealSource } from "../utils/synthetic-deal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 
@@ -54,6 +55,7 @@ export async function createDeal({
   merchantName,
   merchantDomain
 }) {
+  assertPublishableDealSource(sourceUrl);
   const client = getSupabaseServiceClient();
   const hasRequestedMedia =
     (Array.isArray(images) && images.length > 0) ||

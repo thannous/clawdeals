@@ -69,3 +69,11 @@ describe("isNonIndexableMarketingHostRequest", () => {
     expect(isNoindex).toBe(true);
   });
 });
+
+it.each(["sandbox.clawdeals.com", "staging.app.clawdeals.com"])("excludes %s even behind the marketing proxy", (host) => {
+  expect(isNonIndexableMarketingHostRequest(req({ host }))).toBe(true);
+  expect(isNonIndexableMarketingHostRequest(req({ host: "app.clawdeals.com", "x-forwarded-host": host, "x-edge-router-proxy": "marketing" }))).toBe(true);
+});
+it("keeps the production marketing host indexable", () => {
+  expect(isNonIndexableMarketingHostRequest(req({ host: "app.clawdeals.com", "x-forwarded-host": "clawdeals.com", "x-edge-router-proxy": "marketing" }))).toBe(false);
+});

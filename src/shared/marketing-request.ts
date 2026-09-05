@@ -85,6 +85,12 @@ export function isAppHostRequest(req: any): boolean {
   return typeof host === "string" && host.startsWith("app.");
 }
 
+export function isSandboxHostRequest(req: any): boolean {
+  // Inspect the original hosts too: an edge marker may resolve to the apex.
+  return [effectiveRequestHost(req), normalizeHost(readHeader(req, "host")), normalizeHost(readHeader(req, "x-forwarded-host"))]
+    .some((host) => host === "sandbox.clawdeals.com" || host === "staging.app.clawdeals.com");
+}
+
 export function isNonIndexableMarketingHostRequest(req: any): boolean {
-  return isWorkersDevRequest(req) || isAppHostRequest(req);
+  return isSandboxHostRequest(req) || isWorkersDevRequest(req) || isAppHostRequest(req);
 }

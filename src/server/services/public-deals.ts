@@ -1,3 +1,4 @@
+import { isSyntheticDealSource } from "../utils/synthetic-deal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { normalizeReadMedia } from "../media/images";
@@ -66,7 +67,7 @@ export async function getPublicDeal(dealId: string): Promise<PublicDeal | null> 
   }
 
   if (error) mapError(error);
-  if (!data) return null;
+  if (!data || isSyntheticDealSource(data.source_url)) return null;
   if (!PUBLIC_DEAL_STATUSES.has(data.status)) return null;
 
   const { data: moderationState, error: moderationError } = await client

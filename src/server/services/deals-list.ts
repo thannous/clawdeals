@@ -1,5 +1,6 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { isSyntheticDealSource } from "../utils/synthetic-deal";
 import { encodeDealsCursor } from "./deals-cursor";
 import { normalizeReadMedia } from "../media/images";
 
@@ -86,7 +87,24 @@ async function enrichDealMediaRows({ client, rows }: any = {}) {
   });
 }
 
-export async function listDeals({
+// Filter after RPC pagination, then refill from its cursor so hidden fixtures
+// cannot create an empty first page or cause real offers to be skipped.
+export async function listDeals(options: any = {}) {
+  const limit = Math.max(1, Math.min(MAX_LIMIT, typeof options.limit === "number" ? options.limit : DEFAULT_LIMIT));
+  const items: any[] = [];
+  let cursor = options.cursor;
+  let nextCursor: string | null = null;
+  do {
+    const page = await listDealsPage({ ...options, limit: limit - items.length, cursor });
+    items.push(...page.items.filter((row: any) => !isSyntheticDealSource(row.source_url)));
+    nextCursor = page.nextCursor;
+    if (!nextCursor || items.length >= limit) break;
+    cursor = JSON.parse(Buffer.from(nextCursor, "base64").toString("utf8"));
+  } while (true);
+  return { items, nextCursor };
+}
+
+async function listDealsPage({
   sort = "new",
   statuses,
   q,

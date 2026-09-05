@@ -67,3 +67,11 @@ describe("robots.txt", () => {
     expect(res.body).toContain("Disallow: /");
   });
 });
+
+it("lets crawlers read sandbox noindex without advertising its sitemap", async () => {
+  const res = createMockRes();
+  await getServerSideProps({ req: { headers: { host: "sandbox.clawdeals.com" } }, res } as any);
+  expect(res.getHeader("X-Robots-Tag")).toBe("noindex, follow");
+  expect(res.body).toBe("User-agent: *\nAllow: /\n");
+  expect(res.body).not.toContain("Sitemap:");
+});
