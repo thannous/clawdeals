@@ -141,16 +141,14 @@ describe("skills/clawdeals skill pack docs", () => {
     expect(changelog).toContain(version);
   });
 
-  it("SKILL.md includes required sections, links, and 6 workflows with curl+response+errors", () => {
+  it("skill entrypoint routes to required reference sections and complete workflows", () => {
     const md = readFile("skills/clawdeals/SKILL.md");
 
     const requiredHeadings = [
       "## 1) Quickstart",
       "## 2) Safety rules (non negotiable)",
       "## 3) Headers & contracts",
-      "## 4) Endpoints MVP (table)",
-      "## 5) Typed messages examples",
-      "## 6) Workflows (copy/paste)",
+      "## Reference routing",
       "## 7) Troubleshooting"
     ];
 
@@ -166,7 +164,21 @@ describe("skills/clawdeals skill pack docs", () => {
     expect(md).toContain("(./POLICIES.md)");
     expect(md.toLowerCase()).toContain("supply-chain warning");
 
-    const workflows = md.split(/^### Workflow \d+:/m).slice(1);
+    expect(md).toContain("(./reference.md)");
+    const reference = readFile("skills/clawdeals/reference.md");
+    const referenceHeadings = [
+      "## 4) Endpoints MVP (table)",
+      "## 5) Typed messages examples",
+      "## 6) Workflow examples (illustrative)"
+    ];
+    let lastReferenceIndex = -1;
+    for (const heading of referenceHeadings) {
+      const idx = reference.indexOf(heading);
+      expect(idx, `missing reference heading: ${heading}`).toBeGreaterThan(lastReferenceIndex);
+      lastReferenceIndex = idx;
+    }
+
+    const workflows = reference.split(/^### Workflow \d+:/m).slice(1);
     expect(workflows.length).toBeGreaterThanOrEqual(6);
 
     for (const [i, section] of workflows.slice(0, 6).entries()) {
@@ -201,8 +213,10 @@ describe("skills/clawdeals skill pack docs", () => {
     }
   });
 
-  it("SKILL.md write examples include Idempotency-Key", () => {
-    const md = readFile("skills/clawdeals/SKILL.md");
+  it("skill and reference write examples include Idempotency-Key", () => {
+    const md = ["SKILL.md", "reference.md"]
+      .map((filename) => readFile(`skills/clawdeals/${filename}`))
+      .join("\n");
     const blocks = extractFencedBlocks(md).filter((b) => b.info === "bash");
 
     for (const block of blocks) {
