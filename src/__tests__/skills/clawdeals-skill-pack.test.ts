@@ -141,16 +141,14 @@ describe("skills/clawdeals skill pack docs", () => {
     expect(changelog).toContain(version);
   });
 
-  it("SKILL.md includes required sections, links, and 6 workflows with curl+response+errors", () => {
+  it("SKILL.md includes required sections and links to companion docs", () => {
     const md = readFile("skills/clawdeals/SKILL.md");
 
     const requiredHeadings = [
       "## 1) Quickstart",
       "## 2) Safety rules (non negotiable)",
       "## 3) Headers & contracts",
-      "## 4) Endpoints MVP (table)",
-      "## 5) Typed messages examples",
-      "## 6) Workflows (copy/paste)",
+      "## Reference routing",
       "## 7) Troubleshooting"
     ];
 
@@ -162,9 +160,29 @@ describe("skills/clawdeals skill pack docs", () => {
       lastIndex = idx;
     }
 
+    expect(md).toContain("(./reference.md)");
+    expect(md).toContain("(./examples.md)");
     expect(md).toContain("(./HEARTBEAT.md)");
     expect(md).toContain("(./POLICIES.md)");
     expect(md.toLowerCase()).toContain("supply-chain warning");
+  });
+
+  it("reference.md includes endpoints, typed messages, and 6 workflows with curl+response+errors", () => {
+    const md = readFile("skills/clawdeals/reference.md");
+
+    const requiredHeadings = [
+      "## 4) Endpoints MVP (table)",
+      "## 5) Typed messages examples",
+      "## 6) Workflow examples (illustrative)"
+    ];
+
+    let lastIndex = -1;
+    for (const heading of requiredHeadings) {
+      const idx = md.indexOf(heading);
+      expect(idx, `missing heading: ${heading}`).toBeGreaterThan(-1);
+      expect(idx, `heading order wrong: ${heading}`).toBeGreaterThan(lastIndex);
+      lastIndex = idx;
+    }
 
     const workflows = md.split(/^### Workflow \d+:/m).slice(1);
     expect(workflows.length).toBeGreaterThanOrEqual(6);
@@ -201,19 +219,21 @@ describe("skills/clawdeals skill pack docs", () => {
     }
   });
 
-  it("SKILL.md write examples include Idempotency-Key", () => {
-    const md = readFile("skills/clawdeals/SKILL.md");
-    const blocks = extractFencedBlocks(md).filter((b) => b.info === "bash");
+  it("write curl examples include Idempotency-Key", () => {
+    for (const filename of ["skills/clawdeals/SKILL.md", "skills/clawdeals/reference.md"]) {
+      const md = readFile(filename);
+      const blocks = extractFencedBlocks(md).filter((b) => b.info === "bash");
 
-    for (const block of blocks) {
-      const content = block.content;
-      const isWrite =
-        /\bcurl\b/.test(content) &&
-        (/-X POST\b/.test(content) || /-X PUT\b/.test(content) || /-X PATCH\b/.test(content) || /-X DELETE\b/.test(content));
+      for (const block of blocks) {
+        const content = block.content;
+        const isWrite =
+          /\bcurl\b/.test(content) &&
+          (/-X POST\b/.test(content) || /-X PUT\b/.test(content) || /-X PATCH\b/.test(content) || /-X DELETE\b/.test(content));
 
-      if (!isWrite) continue;
+        if (!isWrite) continue;
 
-      expect(content, "write curl block missing Idempotency-Key").toMatch(/Idempotency-Key:/);
+        expect(content, `${filename} write curl block missing Idempotency-Key`).toMatch(/Idempotency-Key:/);
+      }
     }
   });
 
