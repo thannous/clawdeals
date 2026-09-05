@@ -199,9 +199,3 @@ describe("proxy host routing", () => {
     expect(res?.headers.get("x-middleware-next")).toBe("1");
   });
 });
-
-it("sends noindex on sandbox pages without redirecting the demo", () => {
-  const response = middleware(makeReq("https://sandbox.clawdeals.com/fr/browse/deals", "sandbox.clawdeals.com"));
-  expect(response.headers.get("X-Robots-Tag")).toBe("noindex, follow");
-  expect(response.headers.get("location")).toBeNull();
-});

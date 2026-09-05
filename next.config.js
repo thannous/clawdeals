@@ -25,6 +25,12 @@ const nextConfig = {
   },
   async headers() {
     return [
+      ...["sandbox.clawdeals.com", "staging.app.clawdeals.com"].map((host) => ({
+        source: "/:path*",
+        locale: false,
+        has: [{ type: "host", value: host.replaceAll(".", "\\.") }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }]
+      })),
       {
         // `/:path*` with `locale: false` also matches `/` and `/fr`, which the
         // locale-prefixed `/(.*)` form silently skipped.

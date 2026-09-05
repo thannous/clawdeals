@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { isSandboxHostRequest } from "./src/shared/marketing-request";
 
 type SupportedLocale = "fr" | "en" | "es";
 
@@ -145,11 +144,6 @@ function resolveLocalePrefix(request: NextRequest, localePrefix: string): string
 }
 
 export function proxy(request: NextRequest) {
-  if (isSandboxHostRequest(request)) {
-    const response = NextResponse.next();
-    response.headers.set("X-Robots-Tag", "noindex, follow");
-    return response;
-  }
   const url = request.nextUrl;
   const hostname = normalizeHost(url.hostname || request.headers.get("host") || "");
   const forwardedHost = normalizeHost(request.headers.get("x-forwarded-host") || "");
