@@ -13,6 +13,10 @@ A structured repository for creating and maintaining React Best Practices optimi
 - __`AGENTS.md`__ - Compiled output (generated)
 - __`test-cases.json`__ - Test cases for LLM evaluation (generated)
 
+## Upstream maintainer workflow
+
+The commands below belong to the upstream [Vercel agent-skills repository](https://github.com/vercel-labs/agent-skills), not this vendored directory or the ClawDeals application root. This copy does not include the build package. For a local rule correction, keep the corresponding compiled AGENTS.md passage consistent and record the diff; do not run unrelated app build commands to regenerate it.
+
 ## Getting Started
 
 1. Install dependencies:

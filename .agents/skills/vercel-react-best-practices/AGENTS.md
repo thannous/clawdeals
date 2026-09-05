@@ -97,7 +97,7 @@ Comprehensive performance optimization guide for React and Next.js applications,
    - 8.1 [Do Not Put Effect Events in Dependency Arrays](#81-do-not-put-effect-events-in-dependency-arrays)
    - 8.2 [Initialize App Once, Not Per Mount](#82-initialize-app-once-not-per-mount)
    - 8.3 [Store Event Handlers in Refs](#83-store-event-handlers-in-refs)
-   - 8.4 [useEffectEvent for Stable Callback Refs](#84-useeffectevent-for-stable-callback-refs)
+   - 8.4 [useEffectEvent for Latest Values in Effects](#84-useeffectevent-for-latest-values-in-effects)
 
 ---
 
@@ -113,7 +113,7 @@ Waterfalls are the #1 performance killer. Each sequential await adds full networ
 
 When a branch uses `await` for a flag or remote value and also requires a **cheap synchronous** condition (local props, request metadata, already-loaded state), evaluate the cheap condition **first**. Otherwise you pay for the async call even when the compound condition can never be true.
 
-This is a specialization of [Defer Await Until Needed](./async-defer-await.md) for `flag && cheapCondition` style checks.
+This is a specialization of [Defer Await Until Needed](./rules/async-defer-await.md) for `flag && cheapCondition` style checks.
 
 **Incorrect:**
 
@@ -216,13 +216,13 @@ async function updateResource(resourceId: string, userId: string) {
 
 This optimization is especially valuable when the skipped branch is frequently taken, or when the deferred operation is expensive.
 
-For `await getFlag()` combined with a cheap synchronous guard (`flag && someCondition`), see [Check Cheap Conditions Before Async Flags](./async-cheap-condition-before-await.md).
+For `await getFlag()` combined with a cheap synchronous guard (`flag && someCondition`), see [Check Cheap Conditions Before Async Flags](./rules/async-cheap-condition-before-await.md).
 
 ### 1.3 Dependency-Based Parallelization
 
 **Impact: CRITICAL (2-10× improvement)**
 
-For operations with partial dependencies, use `better-all` to maximize parallelism. It automatically starts each task at the earliest possible moment.
+Start independent promises early and chain dependent work. Prefer the native Promise example below; `better-all` is optional when already adopted or its addition is justified within the task.
 
 **Incorrect: profile waits for config unnecessarily**
 
@@ -889,7 +889,7 @@ Safe exceptions:
 
 - Process-wide singletons that do not store request- or user-specific mutable data
 
-For static assets and config, see [Hoist Static I/O to Module Level](./server-hoist-static-io.md).
+For static assets and config, see [Hoist Static I/O to Module Level](./rules/server-hoist-static-io.md).
 
 ### 3.4 Cross-Request LRU Caching
 
@@ -3760,9 +3760,9 @@ function useWindowEvent(event: string, handler: (e) => void) {
 
 **Alternative: use `useEffectEvent` if you're on latest React:**
 
-`useEffectEvent` provides a cleaner API for the same pattern: it creates a stable function reference that always calls the latest version of the handler.
+`useEffectEvent` provides a cleaner API for the same pattern: it reads the latest handler without making that handler a reactive dependency. Do not assume stable Effect Event identity or include it in effect dependencies; use it only in supported effect contexts.
 
-### 8.4 useEffectEvent for Stable Callback Refs
+### 8.4 useEffectEvent for Latest Values in Effects
 
 **Impact: LOW (prevents effect re-runs)**
 

@@ -2,6 +2,12 @@
 
 This file keeps a human-readable version history of the **docs-only** ClawHub bundle.
 
+## Unreleased — instruction maintenance
+
+- Route detailed workflows and staging-only operator validation to existing shipped references.
+- Preserve registry metadata, credential allowlists, docs-only execution and approval boundaries.
+- Reject production targets in the documented smoke example; no production validation was run.
+
 ## 0.1.15 - 2026-02-14
 
 - Publish additional metadata key aliases for stricter registry parsers:

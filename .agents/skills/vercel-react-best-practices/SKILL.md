@@ -1,6 +1,6 @@
 ---
 name: vercel-react-best-practices
-description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+description: Diagnose or improve React/Next.js rendering, data-fetching and bundle performance; load rules relevant to the issue or changed code.
 license: MIT
 metadata:
   author: vercel
@@ -13,12 +13,7 @@ Comprehensive performance optimization guide for React and Next.js applications,
 
 ## When to Apply
 
-Reference these guidelines when:
-- Writing new React components or Next.js pages
-- Implementing data fetching (client or server-side)
-- Reviewing code for performance issues
-- Refactoring existing React/Next.js code
-- Optimizing bundle size or load times
+Use these references for a performance investigation or a relevant implementation concern, not as a checklist for every React edit. Check installed versions and router architecture first: ClawDeals uses Pages Router, so App Router/RSC examples may not apply. Preserve authentication, request isolation and existing behavior while optimizing. Prefer existing dependencies and measured improvements over unrelated refactors.
 
 ## Rule Categories by Priority
 
@@ -40,7 +35,7 @@ Reference these guidelines when:
 - `async-cheap-condition-before-await` - Check cheap sync conditions before awaiting flags or remote values
 - `async-defer-await` - Move await into branches where actually used
 - `async-parallel` - Use Promise.all() for independent operations
-- `async-dependencies` - Use better-all for partial dependencies
+- `async-dependencies` - Chain native promises for partial dependencies; better-all is optional
 - `async-api-routes` - Start promises early, await late in API routes
 - `async-suspense-boundaries` - Use Suspense to stream content
 

@@ -52,4 +52,4 @@ function useWindowEvent(event: string, handler: (e) => void) {
 }
 ```
 
-`useEffectEvent` provides a cleaner API for the same pattern: it creates a stable function reference that always calls the latest version of the handler.
+`useEffectEvent` provides a cleaner API for the same pattern: it reads the latest handler without making that handler a reactive dependency. Do not assume stable Effect Event identity or include it in effect dependencies; use it only in supported effect contexts.

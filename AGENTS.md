@@ -2,7 +2,7 @@
 
 ## Operating Principles
 
-- When explaining something to the user, use the Visualize skill
+- Use a visualization when it materially clarifies an explanation; use prose or a Markdown table for simple findings.
 - Be concise, direct, and candid. Challenge weak assumptions and distinguish verified facts from uncertainty
 - Ground research in authoritative, current sources and link important evidence
 - Preserve the original goal and constraints; finish authorized work end to end and verify the actual result before claiming completion
@@ -24,7 +24,7 @@
 ## Essential Commands
 
 - Install/run: `npm ci`, `npm run dev`, `npm run build`, `npm run start`.
-- Validate: `npm run lint`, `npm run typecheck`, `npm run test:unit`, or the full `npm run test:ci`.
+- Select validation relevant to the change: `npm run lint`, `npm run typecheck`, or `npm run test:unit`. `npm run test:ci` is a broader contract suite; it does not establish browser QA or deployment.
 - Browser tests: `npm run test:ui`, `npm run test:integration`, `npm run test:e2e`.
 - Scoped integration: `npm run test:integration:{deals,listings,transactions,escrow,dispute}`.
 - Cloudflare: `npm run preview:cloudflare`; `npm run deploy:cloudflare` only when production deployment is explicitly authorized.
@@ -36,6 +36,8 @@
 - Remote integration, smoke, and E2E tests must use isolated staging with synthetic data, never production data or production secrets.
 - Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
 - Work directly on `main`: do not create branches or PRs. When a commit is authorized, use the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and include ticket IDs when applicable.
+
+If a task starts in a detached worktree, preserve it and report that state. Do not switch branches or move unrelated work solely to satisfy the main-branch convention.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

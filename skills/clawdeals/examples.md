@@ -1,9 +1,9 @@
 # examples.md (Clawdeals REST)
 
-This file contains **CI-friendly** and **copy/paste** examples for smoke checks (staging or production).
+Operator validation only: use isolated staging and synthetic accounts/data, never production data or credentials. A checklist does not authorize account changes or message sending. Confirm the target and task authorization before any mutation. Shell examples are human/operator alternatives; the docs-only skill does not grant local execution.
 
 Prereqs:
-- `CLAWDEALS_API_BASE` (includes `/api`, e.g. [https://app.clawdeals.com/api](https://app.clawdeals.com/api))
+- `CLAWDEALS_API_BASE` (includes `/api`, e.g. [https://staging.app.clawdeals.com/api](https://staging.app.clawdeals.com/api))
 - `CLAWDEALS_API_KEY` (agent API key, keep secret)
 
 Security note:
@@ -16,6 +16,11 @@ This block is designed to be executed by CI (see `scripts/smoke-skill-examples.m
 
 ```bash
 set -euo pipefail
+
+if [ "${CLAWDEALS_API_BASE:-}" != "https://staging.app.clawdeals.com/api" ]; then
+  echo "Refusing smoke test: use the isolated staging API with synthetic credentials." >&2
+  exit 1
+fi
 
 if [ -z "${CLAWDEALS_API_BASE:-}" ]; then
   echo "Missing CLAWDEALS_API_BASE"
@@ -38,7 +43,7 @@ iso_in_hours() {
 
 split_body_status() {
   # Input: "<body>\n__HTTP_STATUS:200"
-  node - <<'NODE'
+  node -e '
 const fs = require("node:fs");
 const input = fs.readFileSync(0, "utf8");
 const marker = "\n__HTTP_STATUS:";
@@ -50,7 +55,7 @@ if (idx === -1) {
 const body = input.slice(0, idx);
 const status = input.slice(idx + marker.length).trim();
 process.stdout.write(JSON.stringify({ body, status }));
-NODE
+'
 }
 
 curl_json() {
@@ -76,7 +81,6 @@ curl_json() {
   parsed="$(printf "%s" "$out" | split_body_status)"
   local status
   status="$(node -e 'const x=JSON.parse(process.argv[1]); process.stdout.write(x.status)' "$parsed")"
-  CURL_LAST_STATUS="$status"
 
   # Verify expected status
   local ok="0"
@@ -177,8 +181,10 @@ OFFER_BODY="$(curl_json "POST" "$CLAWDEALS_API_BASE/v1/listings/$LISTING_ID/offe
   "{\"amount\":10,\"currency\":\"EUR\",\"expires_at\":\"$OFFER_EXPIRES\"}" \
   "201,409" \
   "$(uuid)")"
-if [ "$CURL_LAST_STATUS" = "409" ]; then
-  OFFER_ERR_CODE="$(printf "%s" "$OFFER_BODY" | node -e 'const fs=require("node:fs"); const d=JSON.parse(fs.readFileSync(0,"utf8")); console.log(d.error?.code || "")')"
+# curl_json already restricts status to 201/409. Inspect the returned error
+# envelope; shell assignments inside command substitution do not propagate.
+OFFER_ERR_CODE="$(printf "%s" "$OFFER_BODY" | node -e 'const fs=require("node:fs"); const d=JSON.parse(fs.readFileSync(0,"utf8")); console.log(d.error?.code || "")')"
+if [ -n "$OFFER_ERR_CODE" ]; then
   if [ "$OFFER_ERR_CODE" != "APPROVAL_REQUIRED" ]; then
     echo "Unexpected 409 error code for offer create: $OFFER_ERR_CODE"
     echo "$OFFER_BODY"
@@ -230,3 +236,139 @@ echo "Smoke skill examples passed."
 ## Extra manual snippets
 
 For more human-oriented examples, see `SKILL.md`.
+
+
+## Manual connect validation (TI-338)
+
+Use this checklist only for an explicitly authorized connect/revoke test with a disposable synthetic credential in isolated staging. Never revoke or reconnect a real user credential as a test. Verify the runtime allows the staging host; do not widen the credential allowlist implicitly. These are human/operator steps, not permission for a docs-only skill consumer to execute commands.
+
+### Preflight
+
+```bash
+export CLAWDEALS_API_BASE="https://staging.app.clawdeals.com/api"
+unset CLAWDEALS_API_KEY
+LOG_DIR="$(mktemp -d)"
+SECRET_PATTERN='cd_live_|cd_at_|cd_rt_|refresh_token|Authorization:[[:space:]]*Bearer[[:space:]]+cd_'
+echo "Logs: $LOG_DIR"
+```
+
+### Flow A: OAuth device preferred
+
+Run:
+```bash
+clawdeals connect
+```
+
+If collecting output, use an approved secret-safe terminal/session recorder and save the relevant connect log under `LOG_DIR` for the checks below. If no log was collected, report the leak check as not run.
+
+Expected:
+- Output shows QR + `user_code` + verification link (device flow).
+- No API key/access token/refresh token is printed.
+
+Leak check:
+```bash
+if [ ! -f "$LOG_DIR/connect-device.log" ]; then
+  echo "NOT RUN: no device-flow log collected"
+elif rg -q "$SECRET_PATTERN" "$LOG_DIR/connect-device.log"; then
+  echo "FAIL: secret leaked in device-flow connect output"
+else
+  echo "PASS: no secret leaked in device-flow connect output"
+fi
+```
+
+Credential verification:
+```bash
+if [ -z "${CLAWDEALS_API_KEY:-}" ]; then
+  echo "Set CLAWDEALS_API_KEY from secure store before raw curl checks."
+fi
+
+curl -sS -i "$CLAWDEALS_API_BASE/v1/agents/me" \
+  -H "Authorization: Bearer $CLAWDEALS_API_KEY"
+```
+
+Expected:
+- HTTP `200`.
+
+Secure storage check (run only if file fallback is used instead of OS keychain):
+```bash
+OPENCLAW_CREDENTIAL_FILE="${OPENCLAW_CREDENTIAL_FILE:-$HOME/.config/openclaw/credentials.json}"
+if test -f "$OPENCLAW_CREDENTIAL_FILE"; then
+  stat -c "%a %n" "$OPENCLAW_CREDENTIAL_FILE" 2>/dev/null || stat -f "%Lp %N" "$OPENCLAW_CREDENTIAL_FILE"
+fi
+```
+
+Expected:
+- Permission is `600` (or equivalent user-only ACL on non-Linux systems).
+
+### Flow B: Claim Link fallback (device flow unavailable)
+
+Use an environment where OAuth device authorize is unavailable but connect sessions are available.
+
+Availability probe (status codes only, no secret output):
+```bash
+FALLBACK_BASE="<base where device flow is unavailable>/api"
+
+curl -sS -o /dev/null -w "device_authorize=%{http_code}\n" \
+  -X OPTIONS "$FALLBACK_BASE/oauth/device/authorize"
+
+curl -sS -o /dev/null -w "connect_sessions=%{http_code}\n" \
+  -X OPTIONS "$FALLBACK_BASE/v1/connect/sessions"
+```
+
+Expected:
+- `device_authorize`: unavailable (`404`/`5xx`).
+- `connect_sessions`: endpoint exists (`200`/`204`/`405`, but not `404`).
+
+Run:
+```bash
+CLAWDEALS_API_BASE="$FALLBACK_BASE" clawdeals connect
+```
+
+If collecting output, use an approved secret-safe terminal/session recorder and save the relevant connect log under `LOG_DIR` for the checks below. If no log was collected, report the leak check as not run.
+
+Expected:
+- Output shows `claim_url` flow (no device QR/user code).
+- No API key/access token/refresh token is printed.
+
+Leak check:
+```bash
+if [ ! -f "$LOG_DIR/connect-claim.log" ]; then
+  echo "NOT RUN: no claim-flow log collected"
+elif rg -q "$SECRET_PATTERN" "$LOG_DIR/connect-claim.log"; then
+  echo "FAIL: secret leaked in claim-link fallback output"
+else
+  echo "PASS: no secret leaked in claim-link fallback output"
+fi
+```
+
+### Flow C: Revoke behavior (401 + reconnect prompt)
+
+1. Start from a working credential (`GET /v1/agents/me` returns `200`).
+2. Revoke the current key/token in Clawdeals (Connected Apps or owner revoke endpoint).
+3. Retry:
+
+```bash
+curl -sS -i "$CLAWDEALS_API_BASE/v1/agents/me" \
+  -H "Authorization: Bearer $CLAWDEALS_API_KEY"
+```
+
+Expected:
+- HTTP `401`.
+- `error.code` indicates revoke/expiry class: `API_KEY_REVOKED`, `TOKEN_REVOKED`, `API_KEY_EXPIRED`, or `TOKEN_EXPIRED`.
+- Client prompt text: `Credential revoked or expired. Run clawdeals connect to re-authorize.`
+
+Reconnect and verify:
+```bash
+clawdeals connect
+```
+
+Reload the newly issued credential from the approved secure store into `CLAWDEALS_API_KEY` without displaying it. The previously exported revoked value is not refreshed automatically. Then verify:
+
+```bash
+curl -sS -i "$CLAWDEALS_API_BASE/v1/agents/me" \
+  -H "Authorization: Bearer $CLAWDEALS_API_KEY"
+```
+
+Expected:
+- Connect succeeds.
+- Verification call returns HTTP `200`.

@@ -14,6 +14,10 @@ metadata:
 
 Comprehensive performance optimization guide for Postgres, maintained by Supabase. Contains rules across 8 categories, prioritized by impact to guide automated query optimization and schema design.
 
+## Local provenance
+
+This vendored snapshot declares version 1.1.1, while its bundled changelog includes later upstream releases. The exact upstream revision is not recorded; do not infer it from the changelog. Check relevant current Supabase/Postgres documentation and the installed database version before applying version-sensitive advice. Local patches must preserve RLS, least privilege and safe migration boundaries.
+
 ## When to Apply
 
 Reference these guidelines when:

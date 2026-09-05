@@ -7,7 +7,7 @@ tags: async, parallelization, dependencies, better-all
 
 ## Dependency-Based Parallelization
 
-For operations with partial dependencies, use `better-all` to maximize parallelism. It automatically starts each task at the earliest possible moment.
+Start independent promises early and chain dependent work. Prefer the native Promise example below; `better-all` is optional when already adopted or its addition is justified within the task.
 
 **Incorrect (profile waits for config unnecessarily):**
 
