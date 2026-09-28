@@ -1,48 +1,30 @@
 # Repository Guidelines
 
-## Operating Principles
+## Scope and references
 
-- Use a visualization when it materially clarifies an explanation; use prose or a Markdown table for simple findings.
-- Be concise, direct, and candid. Challenge weak assumptions and distinguish verified facts from uncertainty
-- Ground research in authoritative, current sources and link important evidence
-- Preserve the original goal and constraints; finish authorized work end to end and verify the actual result before claiming completion
-- Ask questions only when a decision is materially ambiguous, risky, or requires approval
-- Use relevant skills; spawn subagents only for genuinely independent work and synthesize their findings
-- Keep changes focused and simple. Avoid unrelated edits, unnecessary abstractions, and low-signal tests
-- Test observable behavior, review substantial changes, and validate user-facing work in the real interface when applicable
-- Preserve unrelated work and never take destructive, production, or external actions beyond what the user authorized
-- Report meaningful blockers, outcomes, and evidence without noisy progress
+Read only the code and documentation needed for the task. Documentation-only or copy-only edits do not require application test suites.
 
-## Project Map
+- This app uses Next.js Pages Router: UI in `src/pages/`, APIs in `src/pages/api/`, server code in `src/server/`.
+- For Next.js API, routing, or configuration changes, consult the relevant guide in `node_modules/next/dist/docs/`. This is the scope of the generated Next.js guidance below; it is not a prerequisite for unrelated edits.
+- For local database or integration-test setup, use `docs/local-supabase-development.md` and `playwright.config.ts`.
+- For hosting or deployment changes, use `docs/hosting-cloudflare-vercel.md`: `clawdeals.com` uses `workers/edge-router.ts`; `app.clawdeals.com` uses Vercel Git integration.
+- Find other task-specific references in `docs/`; commands are defined in `package.json`. Update affected documentation when behavior or workflows change.
 
-- Next.js Pages Router: UI in `src/pages/`, APIs in `src/pages/api/`; server code in `src/server/`.
-- Shared UI/theme/styles: `src/ui/`, `src/theme/`, `src/styles/` (Tailwind CSS).
-- Tests: Vitest in `src/__tests__/` and `src/**/*.test.{ts,tsx}`; Playwright in `e2e/ui/` and `e2e/integration/`.
-- Operations: assets in `public/`, migrations in `supabase/migrations/`, scripts in `scripts/`, runbooks/specs in `docs/`.
-- Production topology: `clawdeals.com` is routed by `workers/edge-router.ts`; `app.clawdeals.com` is deployed through Vercel Git integration. See `docs/hosting-cloudflare-vercel.md`.
+## Validation and autonomy
 
-## Essential Commands
+- Choose checks for the changed behavior and risk. Do not run broad suites solely because a file changed. Available checks include `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run test:ui`, and `npm run test:integration`. Scoped integration scripts cover deals, listings, transactions, escrow, and dispute.
+- Prefer E2E coverage for behavior changes. Add an isolation test only for a documented failure that E2E coverage misses; identify that failure and write the test before implementation. Avoid tests that merely repeat copy, implementation details, or mocked calls.
+- Once a test workflow is confirmed to use disposable fixtures and no production access, run it, fix failures caused by the requested change, and rerun affected checks without asking for approval at each step.
+- Playwright loads `.env.local`; a local app URL alone does not establish isolation. Use local services or isolated staging with synthetic data and no production secrets for integration, smoke, and E2E tests. Keep production-target guards enabled.
+- For E2E runs, retain a report or trace and provide the exact rerun command, safe target, fixture prerequisites, and results, including skipped or blocked checks. `npm run test:ci` is a contract suite, not evidence of browser QA or deployment.
 
-- Install/run: `npm ci`, `npm run dev`, `npm run build`, `npm run start`.
-- Select validation relevant to the change: `npm run lint`, `npm run typecheck`, or `npm run test:unit`. `npm run test:ci` is a broader contract suite; it does not establish browser QA or deployment.
-- Browser tests: `npm run test:ui`, `npm run test:integration`, `npm run test:e2e`.
-- Scoped integration: `npm run test:integration:{deals,listings,transactions,escrow,dispute}`.
-- Cloudflare: `npm run preview:cloudflare`; `npm run deploy:cloudflare` only when production deployment is explicitly authorized.
+## Changes and release
 
-## Code, Tests, and Release
-
-- Never write unit tests after you write code.
-- Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work. At the end of E2E tests, produce a verifiable and repeatable artifact.
-- If you must test a system in isolation, first write down all the ways it could fail, then write the code.
-- Keep an isolation test only for a concrete failure that the existing E2E tests miss; document that coverage gap. Avoid assertions that merely repeat implementation details, copy, or mocked calls.
-- E2E evidence must include the exact rerun command, safe target and fixture prerequisites, results, and a saved report or trace. Report skipped or blocked checks explicitly.
-- Use TypeScript/React patterns already present: 2-space indentation, semicolons, double quotes; components `PascalCase.tsx`, utilities `camelCase.ts`, tests `*.test.ts(x)`, E2E `*.spec.ts`.
-- Vitest uses Node by default and `jsdom` for `src/ui/**`. Playwright starts the app unless `E2E_BASE_URL` is set; useful overrides include `E2E_DEV_PORT` and `API_BASE_URL`.
-- Remote integration, smoke, and E2E tests must use isolated staging with synthetic data, never production data or production secrets.
-- Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
-- Work directly on `main`: do not create branches or PRs. When a commit is authorized, use the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and include ticket IDs when applicable.
-
-If a task starts in a detached worktree, preserve it and report that state. Do not switch branches or move unrelated work solely to satisfy the main-branch convention.
+- Follow existing TypeScript/React conventions: 2-space indentation, semicolons, double quotes; components `PascalCase.tsx`, utilities `camelCase.ts`, tests `*.test.ts(x)`, E2E `*.spec.ts`.
+- Preserve unrelated work. Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
+- Work directly on `main`; do not create branches or PRs. If starting in a detached worktree, preserve and report that state rather than switching branches or moving unrelated work.
+- Commit only when authorized, using the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and ticket IDs when applicable.
+- Production deployment requires explicit authorization, including `npm run deploy:cloudflare`. Destructive or external actions must stay within the user's authorized scope.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
