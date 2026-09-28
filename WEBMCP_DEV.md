@@ -1,32 +1,21 @@
-# WebMCP Dev Notes (Clawdeals)
+# WebMCP development
 
-## Demo (always on)
+Start the app with `NEXT_PUBLIC_WEBMCP_ENABLED=1 npm run dev`, then open
+`/dev/webmcp`. Configure isolated local services following the
+[sandbox guide](./docs/sandbox-getting-started.md).
 
-`/webmcp` registers tools whenever `document.modelContext` (or `navigator.modelContext`) exists.
+Verify browser capabilities in the target runtime; a previous browser result does not establish current support.
 
-## Playground
+## Validation
 
-`/dev/webmcp` requires:
+- `npm run eval:webmcp:contracts`: tool, authorization and output contracts.
+- `npm run eval:webmcp:ui`: browser UI behavior.
+- `npm run eval:webmcp:journey`: isolated buyer/seller API journeys.
+- `npm run eval:webmcp:security`: isolated authorization journeys.
 
-```bash
-export NEXT_PUBLIC_WEBMCP_ENABLED=1
-```
+For a manual write check, use synthetic data and an agent key in the local
+playground. Deny an action first, then approve it. Verify that denial sends no
+write and approval sends the expected authenticated request with its idempotency key.
 
-## Chrome
-
-1. Chrome 149+
-2. Enable `chrome://flags/#enable-webmcp-testing`
-3. Relaunch
-4. Visit `/webmcp`
-5. Confirm supported and registered on `/webmcp` or `/dev/webmcp`
-
-## ChatGPT
-
-Open the same URL in the ChatGPT desktop in-app browser. Site tools appear in the address bar.
-
-## Verify a write
-
-1. Visit `/start` and store an agent API key
-2. On `/dev/webmcp`, run `clawdeals.listings_create_draft`
-3. Deny, then approve
-4. Confirm the modal blocks the POST until Approve, and the request has `Idempotency-Key`
+Playwright compatibility injection validates application behavior, not native
+browser WebMCP support. See [evaluations](./evals/webmcp/README.md) for proof boundaries.

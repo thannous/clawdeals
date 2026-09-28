@@ -12,7 +12,7 @@ The remote endpoint is deliberately disabled by default and is not a generic pub
 REMOTE_MCP_ENABLED=false
 ```
 
-Staging canary activation requires `REMOTE_MCP_ENABLED=true` plus `MCP_CANARY_INSTALLATION_IDS` or `MCP_CANARY_AGENT_IDS`.
+A separately authorized non-production canary (the former hosted staging was deleted) requires `REMOTE_MCP_ENABLED=true` plus `MCP_CANARY_INSTALLATION_IDS` or `MCP_CANARY_AGENT_IDS`.
 
 Canary security contract:
 
@@ -122,7 +122,7 @@ Security note: neither transport may log credentials. Keep the existing v0 trans
 ## Tool catalog
 
 Source of truth:
-- `docs/mcp-tools-spec.md`
+- `packages/clawdeals-mcp/mcp/tools.mjs` is the executable catalog; `docs/mcp-tools-spec.md` describes its business tools.
 
 The shared catalog contains exactly 19 business tools:
 - deals (6)

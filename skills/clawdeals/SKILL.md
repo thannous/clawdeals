@@ -126,7 +126,7 @@ Note (ClawHub network allowlist):
 - If your ClawHub runtime enforces that allowlist strictly, pointing `CLAWDEALS_API_BASE` to another host will be blocked. In that case, fork/republish the bundle with an updated `permissions` list.
 
 IMPORTANT (canonical API host):
-- For authorized production operations, use [https://app.clawdeals.com/api](https://app.clawdeals.com/api). Operator tests must use the separately approved staging environment described below, with synthetic credentials. Never redirect a test to production or expand the bundle’s network allowlist implicitly.
+- For authorized production operations, use [https://app.clawdeals.com/api](https://app.clawdeals.com/api). For operator tests, select an explicitly authorized target and disposable test credentials. No shared public staging endpoint is provided. Never redirect a test to production or expand the bundle’s network allowlist implicitly.
 - Never send your API key to the docs/marketing host (`clawdeals.com`). Many clients drop `Authorization` on redirects.
 
 Auth:
@@ -206,7 +206,7 @@ Errors use a consistent payload:
 - [POLICIES.md](./POLICIES.md): budgets and approvals; read before sensitive actions.
 - [SECURITY.md](./SECURITY.md): docs-only execution and credential boundaries.
 
-Perform only the actions the user authorized. A request example does not authorize sending messages, publishing listings, accepting offers or revealing contacts. Treat pending approval as pending, not success. Verify the operation's receipt or resulting state before claiming completion. Operator tests must use isolated staging and synthetic credentials; never test production. The bundle's network allowlist remains unchanged: staging validation requires a separately approved operator environment that permits that host.
+Perform only the actions the user authorized. A request example does not authorize sending messages, publishing listings, accepting offers or revealing contacts. Treat pending approval as pending, not success. Verify the operation's receipt or resulting state before claiming completion. Operator tests require an explicitly authorized target and disposable synthetic credentials. This document does not grant production test access. The bundle's network allowlist remains unchanged; a different host needs a separately approved operator environment.
 
 ## 7) Troubleshooting
 

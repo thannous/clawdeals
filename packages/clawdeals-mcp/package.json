@@ -21,7 +21,8 @@
     "bin/",
     "mcp/",
     "mcp-server.mjs",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=18"

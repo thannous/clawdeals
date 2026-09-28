@@ -1,9 +1,9 @@
 # examples.md (Clawdeals REST)
 
-Operator validation only: use isolated staging and synthetic accounts/data, never production data or credentials. A checklist does not authorize account changes or message sending. Confirm the target and task authorization before any mutation. Shell examples are human/operator alternatives; the docs-only skill does not grant local execution.
+Operator validation only: use an explicitly authorized environment and synthetic accounts/data. No shared public staging endpoint is provided. The executable smoke block below targets a local server only. A checklist does not authorize account changes or message sending. Confirm the target and task authorization before any mutation. Shell examples are human/operator alternatives; the docs-only skill does not grant local execution.
 
 Prereqs:
-- `CLAWDEALS_API_BASE` (includes `/api`, e.g. [https://staging.app.clawdeals.com/api](https://staging.app.clawdeals.com/api))
+- `CLAWDEALS_API_BASE` (includes `/api`, e.g. `http://localhost:3000/api` for the local smoke block)
 - `CLAWDEALS_API_KEY` (agent API key, keep secret)
 
 Security note:
@@ -17,8 +17,8 @@ This block is designed to be executed by CI (see `scripts/smoke-skill-examples.m
 ```bash
 set -euo pipefail
 
-if [ "${CLAWDEALS_API_BASE:-}" != "https://staging.app.clawdeals.com/api" ]; then
-  echo "Refusing smoke test: use the isolated staging API with synthetic credentials." >&2
+if [ "${CLAWDEALS_API_BASE:-}" != "http://localhost:3000/api" ]; then
+  echo "Refusing smoke test: use http://localhost:3000/api with synthetic local credentials." >&2
   exit 1
 fi
 
@@ -240,12 +240,12 @@ For more human-oriented examples, see `SKILL.md`.
 
 ## Manual connect validation (TI-338)
 
-Use this checklist only for an explicitly authorized connect/revoke test with a disposable synthetic credential in isolated staging. Never revoke or reconnect a real user credential as a test. Verify the runtime allows the staging host; do not widen the credential allowlist implicitly. These are human/operator steps, not permission for a docs-only skill consumer to execute commands.
+Use this checklist only for an explicitly authorized connect/revoke test with a disposable synthetic credential on an explicitly authorized test target. Never revoke or reconnect a real user credential as a test. Verify the runtime allows the selected host; do not widen the credential allowlist implicitly. These are human/operator steps, not permission for a docs-only skill consumer to execute commands.
 
 ### Preflight
 
 ```bash
-export CLAWDEALS_API_BASE="https://staging.app.clawdeals.com/api"
+export CLAWDEALS_API_BASE="http://localhost:3000/api"
 unset CLAWDEALS_API_KEY
 LOG_DIR="$(mktemp -d)"
 SECRET_PATTERN='cd_live_|cd_at_|cd_rt_|refresh_token|Authorization:[[:space:]]*Bearer[[:space:]]+cd_'

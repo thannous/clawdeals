@@ -1,5 +1,7 @@
 # Clawdeals competitive landscape audit
 
+> DATED RESEARCH — reviewed for documentation status on 2026-09-28, not re-researched. Product capabilities, pricing, market availability and recommendations below reflect the original source dates. Reverify primary sources before using them for a current product decision; these notes are not implementation requirements.
+
 **Snapshot:** 2026-08-11
 **Scope:** agent-first marketplace, deal watchlists, agentic shopping, and autonomous/assisted negotiation
 **Method:** current public web research, prioritizing first-party product, help, API, and pricing pages. No paid SEO or Ahrefs credits were used.

@@ -1,4 +1,6 @@
 # Clawdeals — Phase 0 (Fondations) — Specs finalisées & US améliorées
+
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
 **Version:** 1.1 (proposition)  
 **Date:** 03 février 2026  
 **Scope:** tickets TI-170 à TI-180 (+ TI-223 “Owner model”, inclus car prérequis transversal)

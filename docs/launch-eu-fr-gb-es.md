@@ -1,6 +1,6 @@
 # EU Launch Infrastructure: FR, GB, ES
 
-This runbook is the source of truth for the first European launch. It records
+This runbook describes the repository configuration for the European markets. It records
 what is durable in the repository and what still requires authenticated service
 access. It contains no credentials.
 
@@ -34,26 +34,13 @@ This prevents EUR price thresholds from being applied to GBP amounts. Existing
 USD data is preserved as historical `INTL` data by the migration; no FX rewrite
 is performed.
 
-## Isolated staging
+## Development environment
 
-Staging is a separate service boundary, not merely another Vercel environment
-pointing at production data:
-
-- Vercel project: `clawdeals-staging`, connected to the same repository without creating a repository branch.
-- Domain: `staging.app.clawdeals.com`.
-- Supabase: a separate project in a European region, with synthetic data only.
-- Upstash: a separate Redis database with separate credentials and keyspace.
-- Cloudflare: DNS-only staging app record; no production Worker route is required.
-- Tests: `E2E_BASE_URL` and `API_BASE_URL` must target staging, never production.
-
-The staging Vercel project must have automatic production-domain assignment
-disabled for `app.clawdeals.com`. Its environment variables must reference only
-the staging Supabase and Upstash resources.
+Updated 2026-09-28: `clawdeals-staging` was deleted. Use the [current environment policy](./release-environments.md): direct `main` deployment, optional local fixtures, and owner-authorized disposable production test data. Region, DNS, database and billing facts must be read from their services before changing infrastructure; repository configuration is not live-state proof.
 
 ## Expected variables
 
-Set distinct values in each Vercel project. Never copy values between staging
-and production.
+Configure the selected backend and keep secrets outside Git. Do not restore the retired staging project merely to follow this document.
 
 ```text
 APP_HOST
@@ -74,9 +61,7 @@ AUDIT_HMAC_SECRET
 CONSOLE_OPS_ENABLED
 ```
 
-Production values use `https://app.clawdeals.com`; staging values use
-`https://staging.app.clawdeals.com`. `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` must
-remain unset in both hosted environments.
+App URLs use `https://app.clawdeals.com`. `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` must remain unset on the hosted app.
 
 ## Regional alignment procedure
 
@@ -139,16 +124,8 @@ The minimum launch signals are:
 Both observability views are service-role only. They must never be granted to
 `anon` or `authenticated`.
 
-## Deployment gate
+## Verification when changing market infrastructure
 
-1. Reset the local Supabase database and apply all migrations.
-2. Run market/matching/migration unit tests, typecheck, lint, and relevant integration suites.
-3. Apply migrations to isolated staging.
-4. Run staging watchlist/listing/deal integrations, including a GB/GBP match.
-5. Verify `x-vercel-id` shows `dub1` for an uncached API invocation.
-6. Verify `app.clawdeals.com` resolves to Vercel without a Cloudflare `cf-ray` response header.
-7. Open an SSE stream for longer than the normal client reconnect window and confirm events/replay.
-8. Obtain the release approval before applying the additive migration to production.
+Select relevant market/matching integration checks, including GB/GBP behavior. Verify the deployed SHA, actual region, DNS/proxy routing and SSE behavior when those layers change. Database migrations are separate from Vercel app deployment. Do not reset a database or rerun all tests as a prerequisite for unrelated edits.
 
-No production region migration, resource creation, paid-plan change, or DNS
-cutover is implicit in this runbook.
+See [release procedure](./release-staging-to-prod.md). The cron schedules above are verified against `vercel.json`, `wrangler.jsonc` and `workers/edge-router.ts`; actual scheduler execution and provider plans require live verification.

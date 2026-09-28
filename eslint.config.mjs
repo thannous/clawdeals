@@ -11,6 +11,7 @@ const config = [
       "dist/**",
       "coverage/**",
       "test-results/**",
+      "playwright-report/**",
       "maquette.jsx",
       "sdk/**/generated/**",
       "sdk/**/dist/**",

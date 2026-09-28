@@ -1,36 +1,25 @@
-# WebMCP (In-Browser Tools) — Clawdeals
+# WebMCP — ClawDeals
 
-Clawdeals registers in-page tools on `document.modelContext` so an agent can act on the **same live marketplace UI** a human is looking at.
+ClawDeals registers contextual tools on the current marketplace page.
 
-## Surfaces
+## Runtime and tool registry
 
-| Route | Registers tools | Notes |
-|---|---|---|
-| `/webmcp` | always | Judge / demo copilot |
-| `/browse`, `/browse/deals`, `/marketplace` | always | Product UI updates |
-| `/dev/webmcp` | `NEXT_PUBLIC_WEBMCP_ENABLED=1` | Local invoke playground |
+Demo routes (`/webmcp`, `/webmcp-challenge`) and marketplace surfaces enable the
+runtime without a feature flag. Developer routes require
+`NEXT_PUBLIC_WEBMCP_ENABLED=1`. Browser API support is still required.
 
-## Tools
+The maintained route rules are in [config.ts](./src/webmcp/config.ts).
+The contextual catalog is in [tools/index.ts](./src/webmcp/tools/index.ts);
+available tools depend on the page and whether an agent key is present.
+The full catalog is not exposed on every page.
 
-Collaboration (guest-readable, update UI):
+## Controls
 
-- `get_page_context`
-- `search_listings` / `search_deals`
-- `show_listings`
-- `open_listing` / `open_deal`
+- Public search tools work without an agent key.
+- Authenticated actions retain API authorization and confirmation controls.
+- Owner approval tools are scoped to owner approval pages.
+- Tool output is sanitized and capped at 1,500 bytes by
+  [output-cap.ts](./src/webmcp/security/output-cap.ts).
+- Requests carry `X-Client-Channel: webmcp`.
 
-REST-compatible (same confirm/redaction path as v0):
-
-- `clawdeals.deals_search` / `clawdeals.deals_get`
-- `clawdeals.listings_search` / `clawdeals.listings_get`
-- `clawdeals.approvals_list` / `clawdeals.approvals_get`
-- `clawdeals.listings_create_draft` (confirm, DRAFT only)
-- `clawdeals.approvals_resolve` (confirm)
-
-## Safety
-
-- Write/admin tools require the confirmation modal.
-- Outputs are sanitized and capped at 16KB.
-- Requests send `X-Client-Channel: webmcp`.
-- Public search tools do not require an API key.
-- Authenticated writes still require the key from `/start`.
+See the [development notes](./WEBMCP_DEV.md) and [evaluations](./evals/webmcp/README.md).

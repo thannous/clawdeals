@@ -23,6 +23,8 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
 
 ## Release Procedure
 
+Publication and tag pushes require authorization; these instructions are not permission to publish. Check that the selected version/tag is unused.
+
 1. Bump package version in `packages/clawdeals-mcp/package.json`.
 2. Keep CLI version output in sync in `packages/clawdeals-mcp/bin/clawdeals-mcp.mjs`.
 3. Validate locally:
@@ -36,8 +38,9 @@ npm pack ./packages/clawdeals-mcp --dry-run
 5. Create and push the release tag:
 
 ```bash
-git tag mcp-v0.1.4
-git push origin mcp-v0.1.4
+MCP_RELEASE_VERSION="$(node -p 'require("./packages/clawdeals-mcp/package.json").version')"
+git tag "mcp-v${MCP_RELEASE_VERSION}"
+git push origin "mcp-v${MCP_RELEASE_VERSION}"
 ```
 
 6. Watch the workflow:

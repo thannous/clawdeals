@@ -1,5 +1,7 @@
 # QA Verification Report: Console Approvals Module (TI-249 + TI-250)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](../README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 **Environment**: http://localhost:3000/console/approvals
 **Date**: 2026-02-08
 **Overall Status**: NEEDS FIXES

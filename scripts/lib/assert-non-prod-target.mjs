@@ -69,7 +69,7 @@ function buildFailureMessage({
     lines.push(`[guardrail] Production API target(s): ${offendingApi.join(", ")}`);
   }
 
-  lines.push("[guardrail] Use staging/local credentials and endpoints before retrying.");
+  lines.push("[guardrail] Use local credentials, or the documented ClawDeals disposable-production test opt-in for supported test commands.");
   return lines.join("\n");
 }
 
@@ -92,6 +92,7 @@ export function assertNonProdFromEnv(
   envInput,
   {
     context = "",
+    allowDisposableProduction = false,
     supabaseKeys = DEFAULT_SUPABASE_KEYS,
     apiKeys = DEFAULT_API_KEYS
   } = {}
@@ -99,6 +100,29 @@ export function assertNonProdFromEnv(
   const env = envInput || process.env;
   const supabaseTargets = supabaseKeys.map((key) => ({ label: key, value: env?.[key] }));
   const apiTargets = apiKeys.map((key) => ({ label: key, value: env?.[key] }));
+  // Explicitly enabled only by test entrypoints. Exporters, cleanup and sandbox
+  // fixture endpoints retain their own strict guards.
+  if (
+    allowDisposableProduction &&
+    env.CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS === PRODUCTION_SUPABASE_REF &&
+    env.VERCEL !== "1"
+  ) {
+    const localHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+    const permitted = (entry, database) => {
+      if (!normalizeString(entry.value)) return true;
+      const url = parseUrl(entry.value);
+      if (!url || url.username || url.password) return false;
+      if (localHosts.has(url.hostname)) return url.protocol === "http:" || url.protocol === "https:";
+      return url.protocol === "https:" && (database
+        ? isProductionSupabaseTarget(entry.value)
+        : PRODUCTION_API_HOSTS.has(url.hostname));
+    };
+    if (!supabaseTargets.every((entry) => permitted(entry, true)) ||
+        !apiTargets.every((entry) => permitted(entry, false))) {
+      throw new Error("[guardrail] Disposable-production tests must target only the ClawDeals project or local services.");
+    }
+    return;
+  }
   assertNonProdTarget({ context, supabaseTargets, apiTargets });
 }
 

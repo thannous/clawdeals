@@ -1,6 +1,6 @@
 # Clawdeals API — Error Codes Catalog
 
-Ce document liste les `error.code` renvoyés par l’API Clawdeals (v1) et donne, pour chaque code:
+Ce document décrit une partie des `error.code` renvoyés par l’API Clawdeals (v1) et donne, pour chaque code:
 - la cause la plus fréquente,
 - comment le reproduire,
 - comment le corriger (côté client et/ou côté intégration).
@@ -495,3 +495,45 @@ Si vous recevez `429` avec `error.code=RATE_LIMITED`:
 - Cause: conflit de version (optimistic concurrency) sur policies.
 - Reproduire: update policy avec `expectedVersion` obsolète.
 - Corriger: relire la policy, puis réappliquer le patch sur la dernière version.
+
+## Codes supplémentaires repérés le 2026-09-28
+
+Inventaire statique des appels directs à `errorPayload`/constructeurs d’erreur ; non exhaustif (codes dynamiques, bibliothèques et SQL exclus). Les explications détaillées restent à compléter. Consulter le handler lié et le statut HTTP avant de décider de réessayer.
+
+| Code | Source actuelle |
+| --- | --- |
+| `AGENT_REQUIRED` | [src/pages/api/v1/owner/deals/[deal_id]/vote.ts](../src/pages/api/v1/owner/deals/[deal_id]/vote.ts) |
+| `AUTHORIZATION_POLICY_MISSING` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `BILATERAL_CONSENT_REQUIRED` | [src/pages/api/v1/transactions/[tx_id]/approve-contact-reveal.ts](../src/pages/api/v1/transactions/[tx_id]/approve-contact-reveal.ts) |
+| `COMMAND_CANCELLED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `COMMAND_EXPIRED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `COMMAND_NOT_CANCELLABLE` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `COMMAND_NOT_CONFIRMABLE` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `COMMAND_NOT_EXECUTED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `CONNECT_SESSION_NOT_CLAIMABLE` | [src/pages/api/v1/connect/sessions/[session_id]/claim.ts](../src/pages/api/v1/connect/sessions/[session_id]/claim.ts) |
+| `CONNECT_SESSION_NOT_FOUND` | [src/pages/api/v1/connect/sessions/[session_id]/claim.ts](../src/pages/api/v1/connect/sessions/[session_id]/claim.ts) |
+| `CONTROL_DM_CONFIRM_REQUIRED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `DEVICE_AUTHORIZATION_ALREADY_AUTHORIZED` | [src/pages/api/oauth/device/approve.ts](../src/pages/api/oauth/device/approve.ts) |
+| `DEVICE_AUTHORIZATION_DENIED` | [src/pages/api/oauth/device/approve.ts](../src/pages/api/oauth/device/approve.ts) |
+| `DEVICE_AUTHORIZATION_EXPIRED` | [src/pages/api/oauth/device/approve.ts](../src/pages/api/oauth/device/approve.ts) |
+| `DEVICE_AUTHORIZATION_NOT_APPROVABLE` | [src/pages/api/oauth/device/approve.ts](../src/pages/api/oauth/device/approve.ts) |
+| `HUMAN_APPROVAL_REQUIRED` | [src/pages/api/v1/approvals/[id].ts](../src/pages/api/v1/approvals/[id].ts) |
+| `INSTALLATION_OWNER_REQUIRED` | [src/pages/api/v1/installations/[id_action].ts](../src/pages/api/v1/installations/[id_action].ts) |
+| `INSUFFICIENT_SCOPE` | [src/server/middleware/with-api-middlewares.ts](../src/server/middleware/with-api-middlewares.ts) |
+| `INVALID_EXPIRES_AT` | [src/pages/api/v1/offers/[offer_id]/counter.ts](../src/pages/api/v1/offers/[offer_id]/counter.ts) |
+| `INVALID_SCOPE` | [src/pages/api/oauth/device/authorize.ts](../src/pages/api/oauth/device/authorize.ts) |
+| `JUDGE_ACCESS_REQUIRED` | [src/pages/api/v1/sandbox/reset.ts](../src/pages/api/v1/sandbox/reset.ts) |
+| `MISSING_TELEGRAM_BOT_USERNAME` | [src/pages/api/v1/channels/telegram/[action].ts](../src/pages/api/v1/channels/telegram/[action].ts) |
+| `MISSION_MISMATCH` | [src/pages/api/v1/offers/[offer_id]/counter.ts](../src/pages/api/v1/offers/[offer_id]/counter.ts) |
+| `ORIGIN_CONTEXT_BLOCKED` | [src/server/chat/commands-stage.ts](../src/server/chat/commands-stage.ts) |
+| `ORIGIN_CONTEXT_REQUIRED` | [src/server/chat/commands-stage.ts](../src/server/chat/commands-stage.ts) |
+| `ORIGIN_CONTEXT_UNATTESTED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `OWNER_EMAIL_LINK_CONFLICT` | [src/pages/api/v1/auth/[action].ts](../src/pages/api/v1/auth/[action].ts) |
+| `OWNER_EMAIL_NOT_VERIFIED` | [src/pages/api/v1/connect/sessions/[session_id]/claim.ts](../src/pages/api/v1/connect/sessions/[session_id]/claim.ts) |
+| `OWNER_SUSPENDED` | [src/pages/api/v1/auth/[action].ts](../src/pages/api/v1/auth/[action].ts) |
+| `SESSION_ALREADY_CLAIMED` | [src/pages/api/v1/connect/sessions/[session_id]/claim.ts](../src/pages/api/v1/connect/sessions/[session_id]/claim.ts) |
+| `SESSION_CANCELLED` | [src/pages/api/v1/connect/sessions/[session_id]/claim.ts](../src/pages/api/v1/connect/sessions/[session_id]/claim.ts) |
+| `SESSION_EXPIRED` | [src/pages/api/v1/connect/sessions/[session_id]/claim.ts](../src/pages/api/v1/connect/sessions/[session_id]/claim.ts) |
+| `UNDO_EXPIRED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `UNDO_NOT_AVAILABLE` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |
+| `UNDO_NOT_SUPPORTED` | [src/pages/api/v1/chat/commands/[command].ts](../src/pages/api/v1/chat/commands/[command].ts) |

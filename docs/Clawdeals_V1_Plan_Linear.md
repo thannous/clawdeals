@@ -1,4 +1,6 @@
 # Clawdeals — V1 Plan (post-MVP) — Backlog Linear-ready
+
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
 **Date:** 09 février 2026  
 **Scope:** V1 (après Phases 0→5 MVP)  
 **Source of truth:** `Clawdeals_Document_Fonctionnel_Valeur_Marche.md` + tickets MVP déjà rédigés

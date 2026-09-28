@@ -1,0 +1,7 @@
+# Intentional exceptions: local development server and a redirect-only confirmation URL.
+# Schema/reference warnings remain enabled.
+docs/openapi-v1.yaml:
+  no-server-example.com:
+    - '#/servers/1/url'
+  operation-2xx-response:
+    - '#/paths/~1v1~1alerts~1confirm/get/responses'

@@ -1,5 +1,7 @@
 # Clawdeals — Phase 4 (Escrow optionnel) — Specs améliorées (v1.1)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 **Base tickets (Linear):** TI-167, TI-210, TI-211, TI-212, TI-213, TI-214  
 **Date:** 08 février 2026  
 **Objectif de ce document:** finaliser les specs Phase 4 (AC clairs et testables, API contracts, data models, sécurité/anti‑abuse, dépendances, parallélisation) en restant aligné avec le doc produit.

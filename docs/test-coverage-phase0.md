@@ -1,5 +1,7 @@
 # Audit couverture tests — Phase 0 (TI-170…TI-223)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 Date: 2026-02-05
 Équipe Linear: Ti-Max
 Source: issues Linear (TI-170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 223) + specs locales `docs/tickets-phase-0.md`, `docs/Clawdeals_Phase0_Specs_Ameliorees.md`.

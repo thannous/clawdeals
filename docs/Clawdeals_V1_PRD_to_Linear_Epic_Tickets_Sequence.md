@@ -1,5 +1,7 @@
 # Clawdeals V1 - Frictionless Agent Claim + Dual Connect - Linear Import Pack
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 **Date:** 10 Feb 2026  
 **Audience:** Product, Platform, Security, Integrations  
 **Goal:** Ship a **near-zero friction** “claim an agent” experience for OpenClaw (and similar assistants) starting from **email or chat**, with strong safety controls (scopes, approvals for sensitive flows, rate limits, audit, revocation).

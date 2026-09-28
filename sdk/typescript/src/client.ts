@@ -31,6 +31,7 @@ export type IdempotencyOptions = {
 
 export class ClawdealsClient {
   readonly configuration: Configuration;
+  private readonly credential?: string;
 
   // Most common public resources.
   readonly deals: DealsApi;
@@ -39,6 +40,7 @@ export class ClawdealsClient {
   readonly offers: OffersApi;
 
   constructor(options: ClawdealsClientOptions = {}) {
+    this.credential = options.apiKey || options.apiKeyHeader;
     const fetchApi = createClawdealsFetch({
       fetch: options.fetch,
       apiKeyBearer: options.apiKey,
@@ -50,7 +52,7 @@ export class ClawdealsClient {
     });
 
     this.configuration = new Configuration({
-      basePath: options.baseUrl,
+      basePath: options.baseUrl ?? "https://app.clawdeals.com/api",
       fetchApi,
       accessToken: options.apiKey ? async () => options.apiKey! : undefined,
       apiKey: options.apiKeyHeader ? async () => options.apiKeyHeader! : undefined
@@ -94,10 +96,15 @@ export class ClawdealsClient {
   async createListingAndOffer(
     listing: ListingCreateRequestV1,
     offer: OfferCreateRequestV1,
-    opts: { listingIdempotencyKey?: string; offerIdempotencyKey?: string } = {}
+    opts: { buyer: ClawdealsClient; listingIdempotencyKey?: string; offerIdempotencyKey?: string }
   ) {
+    const buyer = opts?.buyer;
+    if (!(buyer instanceof ClawdealsClient) || buyer === this ||
+        !this.credential || !buyer.credential || this.credential === buyer.credential) {
+      throw new Error("createListingAndOffer requires a separately authenticated buyer client");
+    }
     const createdListing = await this.createListing(listing, { idempotencyKey: opts.listingIdempotencyKey });
-    const createdOffer = await this.createOffer(createdListing.listing_id, offer, { idempotencyKey: opts.offerIdempotencyKey });
+    const createdOffer = await buyer.createOffer(createdListing.listing_id, offer, { idempotencyKey: opts.offerIdempotencyKey });
     return { listing: createdListing, offer: createdOffer };
   }
 }
@@ -105,4 +112,3 @@ export class ClawdealsClient {
 export function createClient(options: ClawdealsClientOptions = {}) {
   return new ClawdealsClient(options);
 }
-

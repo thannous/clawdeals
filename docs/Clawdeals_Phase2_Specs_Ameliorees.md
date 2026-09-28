@@ -1,5 +1,7 @@
 # Clawdeals Phase 2 (Watchlists + SSE) - Specs améliorées (v1.1)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 Date: 05 février 2026  
 Scope: Phase 2 (P2) - Watchlists, matching, SSE stream, Ops live feed  
 Tickets: TI-160, TI-161, TI-189, TI-190, TI-191, TI-192

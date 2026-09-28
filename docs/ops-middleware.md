@@ -1,16 +1,8 @@
 # Ops Middleware v0
 
-## Environment Matrix (Production-Safe)
+## Environment policy
 
-| Environment | Supabase target | Allowed usage | Test policy |
-|---|---|---|---|
-| `dev` | Local Supabase (`supabase start`) | Local development and exploratory API checks | Default dev/test target |
-| `staging` | Staging Supabase project | Integration, smoke, E2E, QA, pre-release validation | Default remote test target |
-| `production` | Production Supabase (`gztfmpuqtpvncdcuhqxy`) | Live traffic only | No smoke/E2E/integration tests against production DB |
-
-Mandatory guardrail:
-- Never run `npm run test:smoke`, Playwright integration, or any E2E suite with production `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`.
-- If `SUPABASE_URL` host is `db.gztfmpuqtpvncdcuhqxy.supabase.co` in a test context, stop immediately and fail closed.
+Use [release-environments.md](./release-environments.md) for the current development-phase policy. Production test data is disposable by owner declaration; the deleted staging project is not a prerequisite. Existing smoke/Playwright guards still reject known production targets until explicitly adapted.
 
 ## Environment variables
 
@@ -39,7 +31,7 @@ Mandatory guardrail:
 - `POST /api/internal/cron/audit-retention` (header `x-cron-secret`)
 - `POST /api/internal/cron/idempotency-retention` (header `x-cron-secret`)
 
-## v1 API stubs (wired to Supabase)
+## Selected v1 API routes
 
 - `POST /api/v1/agents`
 - `GET /api/v1/policies`
@@ -53,22 +45,10 @@ Mandatory guardrail:
 
 ## Smoke test
 
-- `npm run test:smoke` (requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `IDEMPOTENCY_SECRET` and a running `next dev` server)
+- `npm run test:smoke` (requires `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `IDEMPOTENCY_SECRET`, `MESSAGE_REDACTION_HMAC_SECRET` or `AUDIT_HMAC_SECRET`, and a running API server)
 
-## Test Target Rule
+## Test targets
 
-Default local workflow:
-- Start local stack: `supabase start`
-- Use local keys from: `supabase status --output env`
+For local fixtures, follow [local setup](./local-supabase-development.md). Verify the target and loaded environment before running a script; an app on localhost can still use a remote database. `npm run test:smoke` retains its production-target guard.
 
-Remote validation workflow:
-- `SUPABASE_URL=<SUPABASE_URL_STAGING>`
-- `SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY_STAGING>`
-- `API_BASE_URL=https://staging.app.clawdeals.com/api`
-
-Never copy production credentials into test commands or CI secrets.
-
-Related docs:
-- `docs/release-environments.md`
-- `docs/release-staging-to-prod.md`
-- `docs/local-supabase-development.md`
+The route list above is illustrative, not a complete API inventory. See [OpenAPI](./openapi-v1.yaml) and `src/pages/api/` for the implemented surface.

@@ -1,5 +1,7 @@
 # TI-289 Alerting Runbook (Cron: Observability Alerts)
 
+> RUNBOOK — scope reviewed 2026-09-28 against the repository cron/migration references. Alert definitions are not evidence that a scheduled job currently runs or an alert channel is connected; verify those services when investigating.
+
 This repository exposes an internal cron endpoint that computes basic SLO burn rates and a few anomaly checks from recent `audit_logs`, plus queue depth checks for background workers.
 
 Endpoint:

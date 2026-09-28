@@ -102,7 +102,6 @@ test.describe("WebMCP Challenge judge entry", () => {
     expect(copied).toContain("hard budget is 1,300 EUR");
     expect(copied).toContain("bilateral approval");
 
-    await expect(page.getByRole("link", { name: "Full eligibility ledger" })).toHaveAttribute("href", /HACKATHON\.md$/);
     await expect(page.getByRole("link", { name: "WebMCP evals" })).toHaveAttribute("href", /evals\/webmcp$/);
     await expect(page.getByText("00880457964929c0773237a9c724704f5da651f0")).toBeVisible();
     await expect(page.getByTestId("webmcp-challenge-deploy-sha")).toHaveText(/^[0-9a-f]{7,12}$|^unavailable$/);

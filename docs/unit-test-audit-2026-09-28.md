@@ -1,5 +1,7 @@
 # Unit-test audit — 2026-09-28
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 Reviewed all 413 original test files with three parallel agents and a cross-review. Deleted 197 files, pruned 158 retained files, and kept 58 intact. 216 files remain (215 Vitest files and one Python SDK test). No application code or E2E spec was changed. Existing unrelated working-tree changes were preserved; nothing was committed or deployed.
 
 ## Decision rule
@@ -30,7 +32,7 @@ The three requested rules are copied verbatim into `AGENTS.md`, followed by the 
 - Python SDK redaction: retained, but cannot run here: pytest and the generated `clawdeals_sdk_generated` package are absent.
 - Initial browser attempts were blocked by filesystem watcher limits, a missing Chromium binary, then macOS sandbox Mach-port permissions. Polling, a temporary browser installation and permissioned execution resolved these; only the final 19/19 run is counted as browser proof.
 
-Local artifacts (ignored by Git): [browser report](../playwright-report/test-audit/index.html), [browser JSON](../test-results/test-audit-ui.json), per-test `trace.zip` files under `test-results/`, and [unit/check logs](../test-results/unit-test-audit/). Preserve these before another Playwright run, which may clear `test-results/`.
+Historical local artifact paths (ignored by Git; these files are not present in the current checkout): `playwright-report/test-audit/index.html`, `test-results/test-audit-ui.json`, per-test `trace.zip` files under `test-results/`, and `test-results/unit-test-audit/`. Preserve these before another Playwright run, which may clear `test-results/`.
 
 ## Repeat the checks
 

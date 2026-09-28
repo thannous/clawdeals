@@ -1,5 +1,10 @@
 # Production Test Data Cleanup Runbook (2026-02)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
+> Historical operation for February 2026. The fixed owner whitelist and SQL
+> belong to that dataset; this is not a current maintenance procedure.
+
 ## Scope
 - Remove E2E/integration test data from production Supabase project `gztfmpuqtpvncdcuhqxy`.
 - Keep only these owners:

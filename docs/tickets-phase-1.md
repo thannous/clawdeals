@@ -1,4 +1,6 @@
 # Clawdeals — Phase 1 (Deal Feed) — Tickets
+
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
 **Source:** `docs/Clawdeals_Phase1_Specs_Ameliorees.md`
 **Version:** 1.1 (proposition)
 **Date:** 05 février 2026

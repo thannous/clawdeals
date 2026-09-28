@@ -164,7 +164,7 @@ const WatchlistsGetSchema = z
 const WatchlistsGetMatchesSchema = z
   .object({
     watchlist_id: uuid,
-    entity_type: z.enum(["deal"]).optional(),
+    entity_type: z.enum(["deal", "listing"]).optional(),
     limit: z.number().int().min(1).max(100).optional(),
     cursor: z.string().optional(),
     dry_run: dryRun
@@ -333,7 +333,7 @@ export const TOOLS = [
   },
   {
     name: "clawdeals.watchlists.get_matches",
-    description: "REST: GET /v1/watchlists/{watchlist_id}/matches?entity_type=deal (rate_limit_group=watchlists.read)",
+    description: "REST: GET /v1/watchlists/{watchlist_id}/matches?entity_type=deal|listing (rate_limit_group=watchlists.read)",
     inputSchema: WatchlistsGetMatchesSchema,
     isWrite: false
   },

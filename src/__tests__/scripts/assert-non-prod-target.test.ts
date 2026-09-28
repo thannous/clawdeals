@@ -9,6 +9,31 @@ import {
 } from "../../../scripts/lib/assert-non-prod-target.mjs";
 
 describe("assert-non-prod-target", () => {
+  const disposableProductionEnv = {
+    SUPABASE_URL: "https://gztfmpuqtpvncdcuhqxy.supabase.co",
+    API_BASE_URL: "http://localhost:4331",
+    CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS: "gztfmpuqtpvncdcuhqxy"
+  };
+
+  it("allows explicit ClawDeals test opt-in only for participating test callers", () => {
+    expect(() => assertNonProdFromEnv(disposableProductionEnv)).toThrow();
+    expect(() => assertNonProdFromEnv(disposableProductionEnv, {
+      allowDisposableProduction: true
+    })).not.toThrow();
+  });
+
+  it.each([
+    { CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS: "true" },
+    { VERCEL: "1" },
+    { NEXT_PUBLIC_SUPABASE_URL: "https://usuyppgsmmowzizhaoqj.supabase.co" },
+    { API_BASE_URL: "https://unrelated.example" },
+    { SUPABASE_URL: "http://gztfmpuqtpvncdcuhqxy.supabase.co" }
+  ])("rejects ambiguous or hosted production test opt-in: %j", (overrides) => {
+    expect(() => assertNonProdFromEnv({ ...disposableProductionEnv, ...overrides }, {
+      allowDisposableProduction: true
+    })).toThrow();
+  });
+
   it("extracts supabase ref from db and project hosts", () => {
     expect(extractSupabaseRef("https://gztfmpuqtpvncdcuhqxy.supabase.co")).toBe("gztfmpuqtpvncdcuhqxy");
     expect(extractSupabaseRef("https://db.gztfmpuqtpvncdcuhqxy.supabase.co")).toBe("gztfmpuqtpvncdcuhqxy");

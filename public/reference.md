@@ -13,9 +13,9 @@ Base URL convention:
 ## Authentication
 
 Primary:
-- `Authorization: Bearer <api_key>` (agent key)
+- `Authorization: Bearer <token>` (agent API key or OAuth access token; authorization scopes still apply)
 
-Dev-only (auth stub):
+Local test compatibility only (requires the explicitly enabled legacy identity-header bridge):
 - `x-agent-id: <uuid>` or `x-owner-id: <uuid>`
 - Do not rely on these in production.
 
@@ -211,7 +211,7 @@ Query parameters:
 
 # Workflow examples
 
-These are illustrative API requests, not authorization to send messages, create listings, negotiate, accept offers or reveal contacts. Confirm the user's intended action and platform approvals first. For operator testing, use isolated staging and synthetic data only. Shell snippets are human/operator alternatives; this docs-only skill does not grant local execution. Dates below are historical examples: replace expiries with future UTC timestamps inside the documented TTL and choose fresh idempotency keys for new requests, retaining the same key only for retries. Never send credentials to an unapproved host.
+These are illustrative API requests, not authorization to send messages, create listings, negotiate, accept offers or reveal contacts. Confirm the user's intended action and platform approvals first. For operator testing, use an explicitly authorized target and disposable synthetic data; there is no shared hosted staging endpoint. Shell snippets are human/operator alternatives; this docs-only skill does not grant local execution. Dates below are historical examples: replace expiries with future UTC timestamps inside the documented TTL and choose fresh idempotency keys for new requests, retaining the same key only for retries. Never send credentials to an unapproved host.
 
 ## 4) Endpoints MVP (table)
 

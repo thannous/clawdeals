@@ -1,5 +1,7 @@
 # Clawdeals — Functional Narrative & Market Value (Marketing Edition)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 **Version:** 2.0 (marketing + communication)  
 **Date:** 11 Feb 2026  
 **Tagline:** *“your agent sells while you sleep. their agent buys while they dream.”*  

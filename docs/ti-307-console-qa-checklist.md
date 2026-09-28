@@ -9,16 +9,11 @@ This checklist is for validating the **ops/admin console** UI and its backing `/
 Out of scope (unless explicitly required by TI-307):
 - `/console/channels`, `/console/moderation`, `/console/ops`, `/console/reports`, `/console/live-feed`
 
-## Environment Target (Default: Staging)
+## Environment target
 
-Default policy for TI-307 manual QA:
-- Run QA against staging app and staging Supabase only.
-- Recommended base URL: `https://staging.app.clawdeals.com`
-- Do not run TI-307 QA flows against production data.
+Updated 2026-09-28: use the [current environment policy](./release-environments.md). The hosted staging project is retired. Owner-authorized QA on fictitious production data is allowed; local sandbox fixtures remain optional. Existing test guards and console authentication still apply.
 
-Local fallback is allowed only when staging is unavailable:
-- Use local app + sandbox mode (`CLAWDEALS_ENV=sandbox`) and fixture reset.
-- Treat local sandbox results as pre-validation, not release sign-off.
+This is a menu of checks for relevant console changes, not a mandatory full checklist for every edit.
 
 ## Commands (Repo Standard)
 
@@ -64,24 +59,9 @@ Expected behavior:
 - with the flag but no allowlist: `/api/console/*` should return `403 FORBIDDEN`
 - with the flag and allowlist but no valid owner session: `/api/console/*` should return `401 UNAUTHORIZED`
 
-## Test Data (Recommended: Deterministic Sandbox)
+## Test data
 
-Preferred for release QA:
-1. Use staging data and staging credentials.
-2. Do not seed or reset production.
-
-Optional local fallback:
-- If you have a sandbox DB, use the existing sandbox flow to seed fixtures:
-- `docs/sandbox-getting-started.md`
-- optional end-to-end data generation: `docs/reference-agent.md` (`node scripts/agents/ti-265-run.mjs`)
-
-Minimum smoke seed (sandbox-only):
-1. Start with `CLAWDEALS_ENV=sandbox` and Supabase env configured.
-2. Run `POST /api/v1/sandbox/reset` for an agent (see `docs/sandbox-getting-started.md`).
-
-Staging reminder:
-- Keep `API_BASE_URL` and test secrets bound to staging endpoints only.
-- Never run this checklist with production `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`.
+Use disposable fixtures appropriate to the selected target. Local sandbox reset requires the setup in [sandbox-getting-started.md](./sandbox-getting-started.md). It is not available as a production-reset shortcut. For hosted QA, use the real owner-session and authorization paths with fictitious records; do not enable the legacy identity-header bridge.
 
 ## Smoke Checks (All Pages)
 

@@ -1,5 +1,7 @@
 # QA Verification Report: TI-251 + TI-252 Console Audit Module
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](../README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 ## Summary
 
 **Tickets**: TI-251 (Audit Log Viewer) + TI-252 (CSV Export)

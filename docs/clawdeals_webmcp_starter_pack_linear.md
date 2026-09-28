@@ -1,6 +1,10 @@
 # Clawdeals — WebMCP Starter Pack (Linear import)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 Objectif: rendre l’app web Clawdeals « agent-friendly » **dans le navigateur** via **WebMCP** (tools déclarés/structurés), pour éviter l’automation DOM fragile et garder un contrôle humain (preview/confirm, policies, audit).
+
+Current implementation note (2026-09-28): the maintained adapter uses `document.modelContext`; the `navigator.modelContext` references below are historical design assumptions, not code guidance. See [WEBMCP.md](../WEBMCP.md).
 
 ## Références (contexte)
 - WebMCP (proposition): https://github.com/webmachinelearning/webmcp

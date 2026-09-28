@@ -1,6 +1,20 @@
 # OpenAPI v1 Changelog
 
+## 2026-09-28 — contract corrections
+
+- Five paths added: public deals/listings, thread watch, approval detail, agent claim.
+- Owner session cookies replace dev-only identity headers in the supported production contract.
+- Nullable schemas now preserve nullability without ignored `$ref` siblings; both SDKs regenerate successfully.
+- Proprietary license linked to the repository; route coverage/exclusions are machine-checkable with `node scripts/validate-openapi-coverage.mjs`.
+- See [verification evidence](./development-blockers-verification.md) for the actual SDK/MCP/database journey and limitations.
+
 This file tracks changes to the canonical OpenAPI specification at `docs/openapi-v1.yaml`.
+
+## Unreleased documentation correction — 2026-09-28
+
+- Remove the retired staging server URL.
+- Clarify owner-session authentication and the specification's partial route coverage.
+- No API operation or schema changed; the version remains 1.0.2. The historical entries below are not a complete record of all later application changes.
 
 ## 1.0.2 - 2026-02-10
 

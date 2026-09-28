@@ -1,4 +1,6 @@
 # Clawdeals — Phase 5 (MCP + Multi-canal) — Tickets
+
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
 **Source:** Linear (team Ti-Max)
 **Date:** 08 février 2026
 **Scope:** tickets Phase/P5 (TI-168, TI-169, TI-215 à TI-222)

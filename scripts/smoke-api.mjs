@@ -38,6 +38,7 @@ if (missing.length) {
 
 try {
   assertNonProdFromEnv(process.env, {
+    allowDisposableProduction: true,
     context: "smoke tests",
     supabaseKeys: ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
     apiKeys: ["SMOKE_BASE_URL", "API_BASE_URL", "E2E_BASE_URL"]

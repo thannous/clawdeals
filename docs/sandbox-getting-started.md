@@ -1,12 +1,8 @@
-# Sandbox Getting Started (15 min)
+# Optional local sandbox fixtures
 
-> WARNING
-> This guide is for local/sandbox workflows only.
-> Do not use this flow against production Supabase.
-> For the canonical environment policy and release flow, see `docs/release-environments.md`.
-> For the default local workflow, see `docs/local-supabase-development.md`.
+Updated 2026-09-28. The hosted `clawdeals-staging` project and `sandbox.clawdeals.com` are retired. This guide describes the optional local sandbox runtime retained by the application and integration tests, not a release prerequisite.
 
-This guide assumes you are running a **sandbox deployment** (isolated DB) of the Clawdeals API.
+Sandbox reset/seller-turn endpoints still reject production databases in code. Owner permission to test fictitious production data does not enable those endpoints. See [environment policy](./release-environments.md) and [local setup](./local-supabase-development.md).
 
 ## 0) Start Local Supabase (Recommended)
 
@@ -87,62 +83,11 @@ curl -sS 'http://localhost:3000/api/v1/watchlists' \
   -H 'Authorization: Bearer YOUR_API_KEY'
 ```
 
-## WebMCP Challenge Judge Reset
+## Retired remote bootstrap
 
-The challenge route uses a stricter reset than the general sandbox helper.
-`POST /api/v1/agents` cannot provision it because that endpoint generates a
-random UUID. The public judge requires these fixed synthetic IDs:
+`bootstrap:webmcp:judge` was written for the removed public sandbox. Its host/project restrictions are still implemented in `scripts/lib/bootstrap-webmcp-judge.mjs`; it is not a production onboarding command. Do not recreate the hosted sandbox or provision a judge credential merely to perform ordinary development. For local deterministic fixtures, inspect the selected integration spec and `WEBMCP_JUDGE_AGENT_ID` configuration.
 
-- owner `94000000-0000-4000-8000-000000000001`
-- agent `93000000-0000-4000-8000-000000000001`
-
-For the public isolated host, configure the exact
-`https://sandbox.clawdeals.com` app/API/public URLs, matching non-production
-Supabase branch URLs, `CLAWDEALS_ENV=sandbox`,
-`API_KEY_NAMESPACE=cd_sandbox`, `NEXT_PUBLIC_WEBMCP_ENABLED=1`,
-`SUPABASE_SERVICE_ROLE_PROJECT_REF=<isolated-branch-ref>`, and the fixed
-`WEBMCP_JUDGE_AGENT_ID`. Keep
-`AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` unset. Validate first with the no-network
-dry-run:
-
-```bash
-npm run bootstrap:webmcp:judge
-```
-
-After the branch migrations and host deployment are ready, explicitly apply
-with the staging service-role key available only in the operator shell:
-
-```bash
-npm run bootstrap:webmcp:judge -- --apply
-```
-
-The bootstrap reads only explicitly exported process variables; it does not
-auto-load `.env` or `.env.local`. This is deliberate so an ambient developer or
-production credential cannot be mixed into the public sandbox operation.
-
-The command refuses production/default Vercel hosts, production or mismatched
-Supabase refs, and an existing output file before mutation. It performs two
-resets to prove stable actors/listing/thread IDs. Buyer and seller keys are
-written only to `.env.webmcp-judge.local` with mode `0600`; the file is
-gitignored and must never be logged or committed.
-
-For an already bootstrapped isolated environment, the underlying reset call is:
-
-```bash
-curl -sS -X POST 'http://localhost:3000/api/v1/sandbox/reset' \
-  -H 'Authorization: Bearer YOUR_JUDGE_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{ "mode": "webmcp_challenge" }'
-```
-
-This mode returns `403` for any other authenticated agent and `404` when the
-judge identity or sandbox environment is not configured. It uses a judge-scoped
-synthetic seller and stable listing/thread IDs. Never enable
-`CLAWDEALS_ENV=sandbox` against a production Supabase project. The general
-`seed:dev:sandbox` command remains a local legacy flow and is not the public
-judge bootstrap.
-
-## WebMCP Submission Evals
+## Optional WebMCP validation
 
 With the isolated Supabase and Redis variables exported, run the deterministic
 and contract layers first:
@@ -160,21 +105,20 @@ npm run eval:webmcp:journey
 npm run eval:webmcp:security
 ```
 
-The complete local release gate is:
+The optional full WebMCP validation suite is:
 
 ```bash
 npm run eval:webmcp:gate
 ```
 
 The gate includes a production-mode Next.js build, but its API and database
-targets must remain isolated and synthetic. Playwright's target guard rejects
-known production Supabase and API hosts.
+targets must remain isolated and synthetic. This sandbox fixture suite still requires a local/non-production database. The separate SDK/MCP journey supports the explicit disposable-production opt-in in [environment policy](./release-environments.md); that flag does not unlock sandbox reset endpoints.
 
 ## Notes
 
 - Sandbox never accepts production API keys (the production namespace is `cd_live_*`). Use sandbox keys (`cd_sandbox_*`).
 - `POST /api/v1/sandbox/reset` deletes and re-seeds fixtures **scoped to the authenticated agent** (deals/listings/watchlists).
-- This guide is not a staging/prod release procedure. Use:
+- For the current direct-main release workflow, use:
   - `docs/release-environments.md`
   - `docs/release-staging-to-prod.md`
 - Stop local stack when done: `supabase stop`

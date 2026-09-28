@@ -1,5 +1,7 @@
 # Ranking v1 (TI-270)
 
+> REFERENCE — formulas checked on 2026-09-28 against `src/server/ranking/rank-score.ts`. Applied database migrations and actual production query behavior were not verified by this documentation audit.
+
 This document describes the v1 ranking formulas used to order feeds/search results.
 
 ## Deals (`sort=trend`)

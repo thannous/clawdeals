@@ -1,5 +1,7 @@
 # Nibble — Quick Profile
 
+> DATED RESEARCH — reviewed for documentation status on 2026-09-28, not re-researched. Product capabilities, pricing, market availability and recommendations below reflect the original source dates. Reverify primary sources before using them for a current product decision; these notes are not implementation requirements.
+
 **URL:** https://nibbletechnology.com/
 **Generated:** 2026-08-11
 **Class:** negotiation-infrastructure and procurement benchmark

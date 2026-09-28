@@ -1,5 +1,7 @@
 # Clawdeals - V1 - OpenClaw / ClawdBot Connect (Dual Flow) - Linear import style
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 **Date**: 10 février 2026  
 **Source**: Specs générées (pré-import Linear)  
 **Scope**: TI-297 à TI-305 (Dual Connect: Claim Link + OAuth Device Code)

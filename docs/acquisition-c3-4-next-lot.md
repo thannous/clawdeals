@@ -1,5 +1,7 @@
 # C3.4 — Activation conversion decision lot
 
+> PLANNING SNAPSHOT — 2026-09-28 review: the counts and sample gates below belong to the C3 experiment. They do not establish current traffic and must not block unrelated development. The owner now reports no real users; refresh aggregate measurements before resuming this experiment.
+
 ## Baseline
 
 - Publication C3.1: `8a7c6a7160e0e41a9060f93e2fc983aee6fe5d47`, 2026-07-27 18:58:02 UTC.

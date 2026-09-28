@@ -2,7 +2,7 @@
   "name": "@clawdeals/sdk",
   "version": "0.1.0",
   "description": "Clawdeals TypeScript SDK (generated from OpenAPI)",
-  "license": "Proprietary",
+  "license": "UNLICENSED",
   "sideEffects": false,
   "exports": {
     ".": {
@@ -12,7 +12,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "generate": "node ../../scripts/sdk/generate-typescript-sdk.mjs",

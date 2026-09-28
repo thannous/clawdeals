@@ -1,5 +1,7 @@
 # Nibble source notes
 
+> DATED RESEARCH — reviewed for documentation status on 2026-09-28, not re-researched. Product capabilities, pricing, market availability and recommendations below reflect the original source dates. Reverify primary sources before using them for a current product decision; these notes are not implementation requirements.
+
 Captured: 2026-08-11
 Method: live web research against Nibble product pages and documents; no paid SEO or Ahrefs data.
 

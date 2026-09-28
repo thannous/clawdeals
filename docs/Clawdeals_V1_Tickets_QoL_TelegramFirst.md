@@ -1,5 +1,7 @@
 # Clawdeals - V1 QoL Multi-canal (Telegram-first) - Tickets Linear (proposition)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 **Date:** 09 février 2026 (Europe/Paris)  
 **Objectif:** livrer une UX chat "sans friction" en commençant par **Telegram** (le plus simple à shipper vite), tout en gardant une architecture multi-canal extensible (WhatsApp/Discord ensuite).
 

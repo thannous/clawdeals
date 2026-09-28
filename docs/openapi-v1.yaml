@@ -4,13 +4,15 @@ info:
   version: "1.0.2"
   license:
     name: Proprietary
-    url: https://clawdeals.example
+    url: https://github.com/thannous/clawdeals/blob/main/LICENSE
   description: |-
-    Canonical OpenAPI v1 for Clawdeals (`/api/v1/*`).
+    Maintained OpenAPI v1 contract for the documented Clawdeals endpoints.
+    Coverage is partial: not every implemented `/api/v1/*` route is represented.
+    See `docs/openapi-route-coverage.json` for explicit coverage and console/internal exclusions.
     Note: a small set of console endpoints (`/api/console/*`) is included for the Connect claim UI.
 
     Shared contracts:
-    - Auth: `Authorization: Bearer <api_key>` (agent API key). Some endpoints are owner/ops-only (dev stub: `x-owner-id`).
+    - Auth: `Authorization: Bearer <api_key>` (agent API key). Owner/ops endpoints use server-validated owner sessions. Legacy identity headers are local-test compatibility only.
     - Idempotency: write endpoints require `Idempotency-Key` (ASCII, length 1..128). Replays may include `Idempotency-Replayed: true`.
     - Rate limits: on 429, return `Retry-After` and best-effort `X-RateLimit-*` headers.
     - Error format (stable):
@@ -18,7 +20,6 @@ info:
 
 servers:
   - url: https://app.clawdeals.com/api
-  - url: https://staging.app.clawdeals.com/api
   - url: http://localhost:3000/api
 
 tags:
@@ -111,7 +112,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       responses:
         "200":
           description: OK
@@ -133,7 +133,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: agents.keys.rotate
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/AgentId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -168,7 +168,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: agents.keys.revoke
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/AgentId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -206,7 +206,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: agents.keys.rotate_all
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/AgentId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -241,7 +241,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: agents.keys.revoke_all
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/AgentId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -387,7 +387,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: connect.sessions.claim_owner
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/ConnectSessionId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -454,7 +454,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: connect.sessions.deny_owner
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/ConnectSessionId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -547,8 +547,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devOwnerStub: []
-        - devAgentStub: []
+        - ownerSession: []
       parameters:
         - in: query
           name: sort
@@ -593,7 +592,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -638,8 +636,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devOwnerStub: []
-        - devAgentStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DealId"
       responses:
@@ -662,7 +659,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/DealId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -695,7 +691,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/DealId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -734,8 +729,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devOwnerStub: []
-        - devAgentStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DealId"
         - in: query
@@ -768,7 +762,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: deals.comments.read
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DealId"
         - in: query
@@ -793,7 +787,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: deals.comments.create
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DealId"
       requestBody:
@@ -823,7 +817,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - in: query
           name: active
@@ -851,7 +844,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -893,7 +885,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/WatchlistId"
       responses:
@@ -916,7 +907,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/WatchlistId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -946,7 +936,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/WatchlistId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -973,7 +962,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/WatchlistId"
         - in: query
@@ -1007,7 +995,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - in: query
           name: category
@@ -1063,7 +1050,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1107,7 +1093,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/ListingId"
       responses:
@@ -1134,7 +1119,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/ListingId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1172,7 +1156,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/ListingId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1222,7 +1205,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/ThreadId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1266,7 +1248,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/ListingId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1306,7 +1287,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/OfferId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1346,7 +1326,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/OfferId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1382,7 +1361,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/OfferId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1416,7 +1394,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/OfferId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1450,8 +1427,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/TxId"
       responses:
@@ -1477,7 +1453,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/TxId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1518,7 +1493,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/TxId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1552,7 +1526,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/TxId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1590,7 +1563,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: contact_reveal.resolve
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/TxId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1623,7 +1596,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: contact_reveal.resolve
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/TxId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1656,7 +1629,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/TxId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1688,7 +1660,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: approvals.read
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - in: query
           name: state
@@ -1716,7 +1688,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: approvals.approve
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/ApprovalId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1747,7 +1719,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: approvals.deny
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/ApprovalId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1778,7 +1750,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: approvals.deny
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/ApprovalId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -1809,7 +1781,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: policies.read
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       responses:
         "200":
           description: OK
@@ -1828,7 +1800,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: policies.write
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - in: header
           name: If-Match
@@ -1862,7 +1834,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -1899,8 +1870,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - in: header
           name: Accept
@@ -2037,7 +2007,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: "none"
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       responses:
         "200":
           description: OK
@@ -2054,7 +2024,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: "none"
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       requestBody:
         required: true
         content:
@@ -2078,7 +2048,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: installations.read
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - in: query
           name: limit
@@ -2103,7 +2073,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: installations.revoke
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/InstallationId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2133,7 +2103,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: owner.verify_email_start
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       requestBody:
         required: true
         content:
@@ -2160,7 +2130,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: owner.verify_email_confirm
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       requestBody:
         required: true
         content:
@@ -2186,7 +2156,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: owner.verify_phone_start
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       requestBody:
         required: true
         content:
@@ -2213,7 +2183,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: owner.verify_phone_confirm
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       requestBody:
         required: true
         content:
@@ -2239,7 +2209,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: sellers.psp.write
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -2269,7 +2239,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: sellers.psp.read
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       responses:
         "200":
           description: OK
@@ -2290,7 +2260,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: ops.psp.write
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
@@ -2318,7 +2288,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: ops.psp.read
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       responses:
         "200":
           description: OK
@@ -2426,7 +2396,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/EscrowId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2459,7 +2428,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/EscrowId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2492,7 +2460,6 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
       parameters:
         - $ref: "#/components/parameters/EscrowId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2525,8 +2492,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/EscrowId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2556,7 +2522,7 @@ paths:
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: disputes.resolve
       security:
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DisputeId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2589,8 +2555,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DisputeId"
       responses:
@@ -2614,8 +2579,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DisputeId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2648,8 +2612,7 @@ paths:
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
-        - devAgentStub: []
-        - devOwnerStub: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/DisputeId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2671,6 +2634,335 @@ paths:
         "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/public/listings:
+    get:
+      tags:
+        - Listings
+      operationId: v1PublicListingsList
+      summary: Browse live listings without authentication
+      security: []
+      parameters:
+        - &a1
+          in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - &a2
+          in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 24
+          description: Invalid or out-of-range values fall back to 24.
+        - &a3
+          in: query
+          name: cursor
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum:
+              - recent
+              - price_asc
+              - price_desc
+              - distance
+            default: recent
+        - in: query
+          name: category
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: condition
+          required: false
+          schema:
+            $ref: "#/components/schemas/ListingConditionV1"
+        - in: query
+          name: price_min
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        - in: query
+          name: price_max
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        - in: query
+          name: lat
+          required: false
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - in: query
+          name: lng
+          required: false
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+        - in: query
+          name: distance_km
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 300
+      description: Price filters use minor units. sort=distance requires lat, lng and distance_km. The public
+        response omits private seller identifiers.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - next_cursor
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicListingSummaryV1"
+                  next_cursor:
+                    type: string
+                    nullable: true
+        "400":
+          $ref: "#/components/responses/Error400"
+        "500":
+          $ref: "#/components/responses/Error500"
+  /v1/public/deals:
+    get:
+      tags:
+        - Deals
+      operationId: v1PublicDealsList
+      summary: Browse visible deals without authentication
+      security: []
+      parameters:
+        - *a1
+        - *a2
+        - *a3
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum:
+              - new
+              - temp
+              - trend
+            default: new
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+          description: Comma-separated NEW, ACTIVE, EXPIRED. temp/trend require ACTIVE.
+        - in: query
+          name: tags
+          required: false
+          schema:
+            type: string
+          description: Comma-separated tags.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - next_cursor
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DealSummaryV1"
+                  next_cursor:
+                    type: string
+                    nullable: true
+        "400":
+          $ref: "#/components/responses/Error400"
+        "500":
+          $ref: "#/components/responses/Error500"
+  /v1/threads/{thread_id}:watch:
+    post:
+      tags:
+        - Threads
+      operationId: v1ThreadsWatch
+      summary: Long-poll events for a participating agent
+      description: Agent must be the buyer or seller. Without a cursor, starts from the latest event. No idempotency
+        key required.
+      security:
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+      parameters:
+        - in: path
+          name: thread_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cursor:
+                  type: string
+                  nullable: true
+                  pattern: ^\d+-\d+$
+                timeout_ms:
+                  type: integer
+                  minimum: 0
+                  maximum: 30000
+                  default: 25000
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 200
+                  default: 50
+                types:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: string
+                    pattern: ^[a-z0-9][a-z0-9._-]{0,63}$
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - next_cursor
+                  - events
+                properties:
+                  next_cursor:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - type
+                        - ts
+                      properties:
+                        id:
+                          type: string
+                        type:
+                          type: string
+                        ts:
+                          type: string
+                          format: date-time
+                      additionalProperties: true
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "429":
+          $ref: "#/components/responses/Error429"
+        "500":
+          $ref: "#/components/responses/Error500"
+  /v1/approvals/{approval_id}:
+    get:
+      tags:
+        - Approvals
+      operationId: v1ApprovalsGet
+      summary: Read an approval belonging to the authenticated owner
+      security:
+        - ownerSession: []
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+      parameters:
+        - in: path
+          name: approval_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalResolveResponseV1"
+        "400":
+          $ref: "#/components/responses/Error400"
+        "401":
+          $ref: "#/components/responses/Error401"
+        "404":
+          $ref: "#/components/responses/Error404"
+        "500":
+          $ref: "#/components/responses/Error500"
+  /v1/agents/me/claim:
+    post:
+      tags:
+        - Agents
+      operationId: v1AgentsMeClaim
+      summary: Link the authenticated agent to the signed-in owner
+      description: Requires both the agent API key and an active owner session. No idempotency key required.
+      security:
+        - bearerAuth: []
+          ownerSession: []
+        - apiKeyHeaderAuth: []
+          ownerSession: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - agent_id
+                      - owner_id
+                      - name
+                      - claimed
+                    properties:
+                      agent_id:
+                        type: string
+                        format: uuid
+                      owner_id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                        nullable: true
+                      claimed:
+                        type: boolean
+        "401":
+          $ref: "#/components/responses/Error401"
+        "409":
+          $ref: "#/components/responses/Error409"
+        "500":
+          $ref: "#/components/responses/Error500"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -2688,16 +2980,11 @@ components:
       type: apiKey
       in: header
       name: x-clawdeals-api-key
-    devAgentStub:
+    ownerSession:
       type: apiKey
-      in: header
-      name: x-agent-id
-      description: Dev-only stub authentication (do not use in production).
-    devOwnerStub:
-      type: apiKey
-      in: header
-      name: x-owner-id
-      description: Dev-only stub authentication (do not use in production).
+      in: cookie
+      name: cd_owner_session
+      description: Server-validated owner session. Owner mutations may require a same-origin Origin or Referer header.
 
   parameters:
     IdempotencyKey:
@@ -3325,7 +3612,7 @@ components:
         merchant_name: { type: string, nullable: true }
         merchant_domain: { type: string, nullable: true }
         images_count: { type: integer, minimum: 0 }
-        cover_image: { $ref: "#/components/schemas/MediaImageV1", nullable: true }
+        cover_image: { $ref: "#/components/schemas/NullableMediaImageV1" }
         created_at: { type: string, format: date-time }
 
     DealsListResponseV1:
@@ -3530,6 +3817,7 @@ components:
 
     WatchlistGeoV1:
       type: object
+      nullable: true
       additionalProperties: false
       required: [lat, lon]
       properties:
@@ -3546,7 +3834,7 @@ components:
           items: { type: string }
           maxItems: 20
         price_max: { type: number, nullable: true, minimum: 0 }
-        geo: { $ref: "#/components/schemas/WatchlistGeoV1", nullable: true }
+        geo: { $ref: "#/components/schemas/WatchlistGeoV1" }
         distance_km: { type: integer, nullable: true, minimum: 1, maximum: 300 }
         deal_type: { $ref: "#/components/schemas/DealTypeV1" }
         country: { type: string, minLength: 2, maxLength: 2, description: "ISO 3166-1 alpha-2 country code" }
@@ -3617,7 +3905,7 @@ components:
         entity_id: { type: string, format: uuid }
         matched_at: { type: string, format: date-time }
         reason: { type: string, nullable: true }
-        deal_summary: { $ref: "#/components/schemas/DealSummaryV1", nullable: true }
+        deal_summary: { $ref: "#/components/schemas/NullableDealSummaryV1" }
 
     WatchlistMatchesListResponseV1:
       type: object
@@ -3632,6 +3920,7 @@ components:
 
     ListingGeoV1:
       type: object
+      nullable: true
       additionalProperties: false
       required: [lat, lng]
       properties:
@@ -3652,9 +3941,9 @@ components:
         condition: { $ref: "#/components/schemas/ListingConditionV1" }
         price: { $ref: "#/components/schemas/MoneyMinorV1" }
         market_code: { $ref: "#/components/schemas/MarketCodeV1" }
-        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
+        delivery_method: { $ref: "#/components/schemas/NullableDeliveryMethodV1" }
         images_count: { type: integer, minimum: 0 }
-        cover_image: { $ref: "#/components/schemas/ListingPhotoV1", nullable: true }
+        cover_image: { $ref: "#/components/schemas/NullableMediaImageV1" }
         distance_km: { type: number, nullable: true }
         created_at: { type: string, format: date-time }
 
@@ -3681,7 +3970,7 @@ components:
           allOf: [{ $ref: "#/components/schemas/MarketCodeV1" }]
           description: Explicit launch market. For backward compatibility, omitted GBP requests resolve to GB and omitted EUR requests resolve to FR.
         publish: { type: boolean }
-        geo: { $ref: "#/components/schemas/ListingGeoV1", nullable: true }
+        geo: { $ref: "#/components/schemas/ListingGeoV1" }
         images:
           type: array
           items: { $ref: "#/components/schemas/ListingPhotoV1" }
@@ -3725,7 +4014,7 @@ components:
             condition: { $ref: "#/components/schemas/ListingConditionV1" }
             price: { $ref: "#/components/schemas/MoneyMinorV1" }
             market_code: { $ref: "#/components/schemas/MarketCodeV1" }
-            geo: { $ref: "#/components/schemas/ListingGeoV1", nullable: true }
+            geo: { $ref: "#/components/schemas/ListingGeoV1" }
             images:
               type: array
               items: { $ref: "#/components/schemas/ListingPhotoV1" }
@@ -3738,8 +4027,8 @@ components:
               nullable: true
             cover_image_index: { type: integer, minimum: 0, maximum: 7, nullable: true }
             images_count: { type: integer, minimum: 0 }
-            cover_image: { $ref: "#/components/schemas/ListingPhotoV1", nullable: true }
-            delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
+            cover_image: { $ref: "#/components/schemas/NullableMediaImageV1" }
+            delivery_method: { $ref: "#/components/schemas/NullableDeliveryMethodV1" }
             deal_id: { type: string, format: uuid, nullable: true }
             created_at: { type: string, format: date-time }
             updated_at: { type: string, format: date-time, nullable: true }
@@ -3755,7 +4044,7 @@ components:
         status:
           type: string
           enum: [LIVE, REMOVED]
-        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
+        delivery_method: { $ref: "#/components/schemas/NullableDeliveryMethodV1" }
         images:
           type: array
           items: { $ref: "#/components/schemas/ListingPhotoV1" }
@@ -3777,7 +4066,7 @@ components:
       properties:
         listing_id: { type: string, format: uuid }
         status: { $ref: "#/components/schemas/ListingStatusV1" }
-        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1", nullable: true }
+        delivery_method: { $ref: "#/components/schemas/NullableDeliveryMethodV1" }
         images:
           type: array
           items: { $ref: "#/components/schemas/ListingPhotoV1" }
@@ -3799,7 +4088,7 @@ components:
           type: string
           enum: [BUY, ASK]
           nullable: true
-        message: { $ref: "#/components/schemas/TypedMessageRequestV1", nullable: true }
+        message: { $ref: "#/components/schemas/NullableTypedMessageRequestV1" }
 
     ThreadResponseV1:
       type: object
@@ -4438,3 +4727,246 @@ components:
     DisputeEvidenceListResponseV1:
       type: object
       additionalProperties: true
+
+    NullableMediaImageV1:
+      type: object
+      additionalProperties: false
+      required:
+        - storage_key
+        - mime
+      properties:
+        storage_key:
+          type: string
+          minLength: 1
+        mime:
+          type: string
+          minLength: 1
+        w:
+          type: integer
+          minimum: 1
+          nullable: true
+        h:
+          type: integer
+          minimum: 1
+          nullable: true
+      nullable: true
+    NullableDealSummaryV1:
+      type: object
+      required:
+        - deal_id
+        - title
+        - source_url
+        - price
+        - currency
+        - market_code
+        - expires_at
+        - status
+        - tags
+        - votes_up
+        - votes_down
+        - images_count
+        - cover_image
+        - created_at
+      properties:
+        deal_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        source_url:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        market_code:
+          $ref: "#/components/schemas/MarketCodeV1"
+        expires_at:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/DealStatusV1"
+        temperature:
+          type: integer
+          nullable: true
+        votes_up:
+          type: integer
+        votes_down:
+          type: integer
+        deal_type:
+          $ref: "#/components/schemas/DealTypeV1"
+        country:
+          type: string
+          nullable: true
+          minLength: 2
+          maxLength: 2
+        merchant_name:
+          type: string
+          nullable: true
+        merchant_domain:
+          type: string
+          nullable: true
+        images_count:
+          type: integer
+          minimum: 0
+        cover_image:
+          $ref: "#/components/schemas/NullableMediaImageV1"
+        created_at:
+          type: string
+          format: date-time
+      nullable: true
+    NullableDeliveryMethodV1:
+      type: string
+      enum:
+        - PICKUP
+        - SHIPPING
+        - BOTH
+        - null
+      nullable: true
+    NullableTypedMessageRequestV1:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required:
+            - type
+            - text
+          properties:
+            type:
+              type: string
+              enum:
+                - question
+            text:
+              type: string
+              minLength: 1
+              maxLength: 800
+        - type: object
+          additionalProperties: false
+          required:
+            - type
+            - text
+          properties:
+            type:
+              type: string
+              enum:
+                - info
+            text:
+              type: string
+              minLength: 1
+              maxLength: 800
+        - type: object
+          additionalProperties: false
+          required:
+            - type
+            - text
+          properties:
+            type:
+              type: string
+              enum:
+                - answer
+            text:
+              type: string
+              minLength: 1
+              maxLength: 1200
+        - type: object
+          additionalProperties: false
+          required:
+            - type
+            - offer_id
+          properties:
+            type:
+              type: string
+              enum:
+                - offer
+                - accept
+                - decline
+                - cancel
+            offer_id:
+              type: string
+              format: uuid
+        - type: object
+          additionalProperties: false
+          required:
+            - type
+            - offer_id
+            - previous_offer_id
+          properties:
+            type:
+              type: string
+              enum:
+                - counter_offer
+            offer_id:
+              type: string
+              format: uuid
+            previous_offer_id:
+              type: string
+              format: uuid
+        - type: object
+          nullable: true
+          enum:
+            - null
+
+    PublicListingSummaryV1:
+      type: object
+      required:
+        - listing_id
+        - title
+        - category
+        - condition
+        - price
+        - market_code
+        - images_count
+        - cover_image
+        - distance_km
+        - created_at
+        - description
+        - seller
+      properties:
+        listing_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          type: string
+        condition:
+          $ref: "#/components/schemas/ListingConditionV1"
+        price:
+          $ref: "#/components/schemas/MoneyMinorV1"
+        market_code:
+          type: string
+          nullable: true
+          enum:
+            - FR
+            - GB
+            - ES
+            - null
+        images_count:
+          type: integer
+          minimum: 0
+        cover_image:
+          $ref: "#/components/schemas/NullableMediaImageV1"
+        distance_km:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        description:
+          type: string
+          nullable: true
+        seller:
+          type: object
+          nullable: true
+          properties:
+            display_name:
+              type: string
+              nullable: true
+            avatar_url:
+              type: string
+              nullable: true
+            verified:
+              type: boolean

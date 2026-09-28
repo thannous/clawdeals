@@ -1,5 +1,7 @@
 # Migration Supabase vers Neon PostgreSQL, Neon Auth et Vercel Blob
 
+> MIGRATION RECORD — 2026-09-28 review: this is a dated assessment and rehearsal, not proof of a completed migration or current remote resources. Default backend selectors still use Supabase (`src/server/config/backends.ts`); `package.json` now pins Supabase JS 2.112.4. Old worktree, dependency counts and external-state statements below describe their original snapshot. Current test-target policy is [here](./release-environments.md); export/cutover operations and existing exporter guards remain separate.
+
 Statut : audit initial et première couture réversible. Aucune ressource Supabase
 externe n'a été modifiée, et aucun export de production n'a été exécuté.
 

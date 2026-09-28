@@ -2,7 +2,7 @@
 
 This runbook describes the lightweight Cloudflare deployment used for `clawdeals.com`.
 
-The Worker entrypoint is `workers/edge-router.ts`. It only handles host/path routing and upstream proxying.
+The Worker entrypoint is `workers/edge-router.ts`. It handles host/path routing, upstream proxying, scheduled internal cron calls and the disabled-by-default remote MCP endpoint.
 
 ## Environment Variables
 
@@ -10,7 +10,7 @@ Required in `wrangler.jsonc` (or per-environment secrets/vars):
 
 - `MARKETING_HOST`: canonical marketing host (default: `clawdeals.com`)
 - `APP_ORIGIN`: app upstream origin (example: `https://app.clawdeals.com`)
-- `MARKETING_ORIGIN`: marketing upstream origin (example: `https://clawdeals.vercel.app`)
+- `MARKETING_ORIGIN`: marketing upstream origin (checked-in value: `https://app.clawdeals.com`)
 
 Important:
 - `MARKETING_ORIGIN` must not point to `https://clawdeals.com` (would create a proxy loop).
@@ -19,7 +19,7 @@ Important:
 
 1. `/en/*` on the marketing hosts -> `308` to the canonical English URL without the locale prefix
 2. `www.clawdeals.com/*` -> `308` to `https://clawdeals.com/*`
-3. `clawdeals.com/api/*` -> proxy to `APP_ORIGIN/api/*`
+3. Exact `/api/mcp` is handled by the Worker and disabled unless `REMOTE_MCP_ENABLED=true`; other `clawdeals.com/api/*` paths proxy to `APP_ORIGIN/api/*`.
 4. App sections on `clawdeals.com` (`/deals`, `/console`, `/start`, `/settings`, `/auth`, `/developer`, `/dev`, `/claim`, `/device`, `/pair`) -> `308` to `APP_ORIGIN`
 5. Remaining `clawdeals.com/*` -> proxy to `MARKETING_ORIGIN`
 

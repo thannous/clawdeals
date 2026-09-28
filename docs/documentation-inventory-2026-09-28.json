@@ -1,0 +1,2054 @@
+{
+  "date": "2026-09-28",
+  "scope": "Documentation repository audit; excluded dependencies/build outputs and deleted event files. Static checks do not certify every business assertion.",
+  "project_markdown": [
+    {
+      "path": "AGENTS.md",
+      "lines": 38,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "README.md",
+      "lines": 49,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "WEBMCP.md",
+      "lines": 25,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "WEBMCP_DEV.md",
+      "lines": 21,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "competitor-profiles/_summary.md",
+      "lines": 106,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/agents-bay.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/amazon-alexa-shopping.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/google-shopping.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/hcap.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/idealo.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/nibble.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/pepper-deal-communities.md",
+      "lines": 20,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/agents-bay/2026-08-11/scrapes/source-notes.md",
+      "lines": 30,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/amazon-alexa-shopping/2026-08-11/scrapes/source-notes.md",
+      "lines": 27,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/google-shopping/2026-08-11/scrapes/source-notes.md",
+      "lines": 28,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/hcap/2026-08-11/scrapes/source-notes.md",
+      "lines": 21,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/idealo/2026-08-11/scrapes/source-notes.md",
+      "lines": 30,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/nibble/2026-08-11/scrapes/source-notes.md",
+      "lines": 30,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "competitor-profiles/raw/pepper-deal-communities/2026-08-11/scrapes/source-notes.md",
+      "lines": 30,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Recherche datée",
+      "review_scope": "Avertissement ajouté ; faits externes/prix non réactualisés."
+    },
+    {
+      "path": "docs/Clawdeals_Document_Fonctionnel_Valeur_Marche.md",
+      "lines": 395,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Document_Fonctionnel_Valeur_Marche_v2_Marketing.md",
+      "lines": 360,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Phase0_Specs_Ameliorees.md",
+      "lines": 1010,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Phase1_Specs_Ameliorees.md",
+      "lines": 945,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Phase2_Specs_Ameliorees.md",
+      "lines": 818,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Phase3_Specs_Ameliorees.md",
+      "lines": 928,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Phase4_Specs_Ameliorees.md",
+      "lines": 640,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_Phase5_Specs_Ameliorees.md",
+      "lines": 729,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_V1_OpenClaw_DualConnect_LinearImportStyle.md",
+      "lines": 759,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_V1_PRD_to_Linear_Epic_Tickets_Sequence.md",
+      "lines": 674,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_V1_Plan_Linear.md",
+      "lines": 609,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/Clawdeals_V1_Tickets_QoL_TelegramFirst.md",
+      "lines": 580,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/README.md",
+      "lines": 28,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/acquisition-c3-4-next-lot.md",
+      "lines": 49,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Plan / état daté",
+      "review_scope": "Portée clarifiée ; état externe et priorités non certifiés."
+    },
+    {
+      "path": "docs/agent-platform-90-day-execution.md",
+      "lines": 170,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Plan / état daté",
+      "review_scope": "Portée clarifiée ; état externe et priorités non certifiés."
+    },
+    {
+      "path": "docs/clawdeals_webmcp_starter_pack_linear.md",
+      "lines": 428,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/deploy-edge-router.md",
+      "lines": 58,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/error-codes.md",
+      "lines": 539,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/hosting-cloudflare-vercel.md",
+      "lines": 142,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/launch-eu-fr-gb-es.md",
+      "lines": 131,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/local-supabase-development.md",
+      "lines": 82,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/mcp-release.md",
+      "lines": 96,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/mcp-server.md",
+      "lines": 141,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/mcp-tools-spec.md",
+      "lines": 634,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/migration-supabase-to-neon-vercel-blob.md",
+      "lines": 327,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Plan / état daté",
+      "review_scope": "Portée clarifiée ; état externe et priorités non certifiés."
+    },
+    {
+      "path": "docs/observability/ti-289-alerting-runbook.md",
+      "lines": 201,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "docs/openapi-v1-CHANGELOG.md",
+      "lines": 37,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/ops-middleware.md",
+      "lines": 54,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/ops-slo-sli-v1.md",
+      "lines": 331,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "docs/prod-test-data-cleanup-runbook-2026-02.md",
+      "lines": 176,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/console-qa-approvals-report.md",
+      "lines": 163,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/console-qa-audit-report.md",
+      "lines": 125,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/console-qa-lifecycle-report.md",
+      "lines": 86,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/console-qa-listings-report.md",
+      "lines": 163,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/console-qa-security-report.md",
+      "lines": 115,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/console-qa-threads-report.md",
+      "lines": 166,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/ti-255-deal-feed-journey-report.md",
+      "lines": 61,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/qa/ti-293-journeys.md",
+      "lines": 62,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [
+        "supabase/migrations/20260209171000_moderation_v1.sql"
+      ],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/ranking-v1.md",
+      "lines": 79,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/reference-agent.md",
+      "lines": 75,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/release-environments.md",
+      "lines": 47,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/release-notes-2026-02-14-to-2026-02-16.md",
+      "lines": 99,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [
+        "supabase/migrations/20260216120000_owner_profile_fields.sql"
+      ],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/release-staging-to-prod.md",
+      "lines": 25,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/sandbox-getting-started.md",
+      "lines": 124,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/seo-content-plan-fr-gb-es.md",
+      "lines": 74,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Plan / état daté",
+      "review_scope": "Portée clarifiée ; état externe et priorités non certifiés."
+    },
+    {
+      "path": "docs/test-coverage-phase0.md",
+      "lines": 266,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [
+        "e2e/api.integration.spec.js",
+        "src/pages/api/v1/agents.test.js",
+        "src/pages/api/v1/agents/[id]/action.test.js",
+        "src/pages/api/v1/deals.test.js",
+        "src/pages/api/v1/deals/[deal_id]/vote.test.js",
+        "src/pages/api/v1/owner/[action].js",
+        "src/pages/api/v1/owner/index.js",
+        "src/pages/api/v1/policies.test.js",
+        "src/pages/api/v1/reports.js",
+        "src/server/audit/redaction.test.js",
+        "src/server/idempotency/crypto.test.js",
+        "src/server/policy/allowlist.test.js",
+        "src/server/policy/enforce-allowlist.test.js",
+        "src/server/policy/evaluate.test.js",
+        "src/server/rate-limit/config.test.js",
+        "src/server/services/approvals.test.js",
+        "src/server/services/reports.test.js",
+        "src/server/trustscore/compute.test.js",
+        "src/server/trustscore/quarantine.test.js",
+        "src/server/utils/canonical-json.test.js",
+        "src/server/utils/owner-verification.test.js"
+      ],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/test-coverage-telegram-qol.md",
+      "lines": 254,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [
+        "e2e/integration/telegram-attachments-location.spec.ts",
+        "src/__tests__/pages-api/v1/approvals/index.test.ts",
+        "src/server/channels/cards/telegram.test.ts",
+        "src/server/channels/commands/approvals-cursor.test.ts",
+        "src/server/channels/commands/execute.menu.test.ts",
+        "src/server/channels/commands/parser.test.ts",
+        "src/server/routes/route-groups.test.ts",
+        "src/server/services/notification-preferences.test.ts"
+      ],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/ti-307-console-qa-checklist.md",
+      "lines": 245,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "docs/tickets-phase-0.md",
+      "lines": 894,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/tickets-phase-1.md",
+      "lines": 959,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/tickets-phase-2.md",
+      "lines": 701,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/tickets-phase-3.md",
+      "lines": 2230,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/tickets-phase-4.md",
+      "lines": 668,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/tickets-phase-5.md",
+      "lines": 806,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "docs/unit-test-audit-2026-09-28.md",
+      "lines": 516,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [
+        "src/__tests__/legal-terms-odr.test.ts",
+        "src/__tests__/migrations/acquisition-revenue-attribution.test.ts",
+        "src/__tests__/migrations/approval-side-effects-execute-hardening.test.ts",
+        "src/__tests__/migrations/generic-auth-identities.test.ts",
+        "src/__tests__/migrations/offer-accept-rpc-execute-hardening.test.ts",
+        "src/__tests__/migrations/public-api-rls-hardening.test.ts",
+        "src/__tests__/migrations/ti-367-offer-buy-mission-accept.test.ts",
+        "src/__tests__/migrations/ti-377-offer-accept-lock-order.test.ts",
+        "src/__tests__/migrations/ti-510-owner-listing-follows.test.ts",
+        "src/__tests__/next-config.headers.test.ts",
+        "src/__tests__/pages-api/console/approvals/bulk.test.ts",
+        "src/__tests__/pages-api/console/approvals/index.test.ts",
+        "src/__tests__/pages-api/console/audit.test.ts",
+        "src/__tests__/pages-api/console/audit/export.test.ts",
+        "src/__tests__/pages-api/console/deals.test.ts",
+        "src/__tests__/pages-api/console/deals/[deal_id]/comments.test.ts",
+        "src/__tests__/pages-api/console/deals/[deal_id]/index.test.ts",
+        "src/__tests__/pages-api/console/deals/[deal_id]/vote.test.ts",
+        "src/__tests__/pages-api/console/deals/[deal_id]/votes.test.ts",
+        "src/__tests__/pages-api/console/events/stream.test.ts",
+        "src/__tests__/pages-api/console/listings.test.ts",
+        "src/__tests__/pages-api/console/moderation/hide.test.ts",
+        "src/__tests__/pages-api/console/moderation/suspend.test.ts",
+        "src/__tests__/pages-api/console/ops.test.ts",
+        "src/__tests__/pages-api/console/reports/index.test.ts",
+        "src/__tests__/pages-api/console/risk-rules/[rule_id].test.ts",
+        "src/__tests__/pages-api/console/risk-rules/index.test.ts",
+        "src/__tests__/pages-api/console/risk-rules/run.test.ts",
+        "src/__tests__/pages-api/console/risk-rules/unflag.test.ts",
+        "src/__tests__/pages-api/console/threads.test.ts",
+        "src/__tests__/pages-api/console/threads/[thread_id]/index.test.ts",
+        "src/__tests__/pages-api/console/threads/[thread_id]/messages.test.ts",
+        "src/__tests__/pages-api/console/timeline.test.ts",
+        "src/__tests__/pages-api/console/timeline/replay.test.ts",
+        "src/__tests__/pages-api/oauth/device/requests.test.ts",
+        "src/__tests__/pages-api/v1/approvals/index.test.ts",
+        "src/__tests__/pages-api/v1/connect/sessions.poll.test.ts",
+        "src/__tests__/pages-api/v1/deals/[deal_id]/comments.test.ts",
+        "src/__tests__/pages-api/v1/deals/[deal_id]/vote.test.ts",
+        "src/__tests__/pages-api/v1/escrows/confirm-received-approval.test.ts",
+        "src/__tests__/pages-api/v1/installations/revoke.test.ts",
+        "src/__tests__/pages-api/v1/listings/threads.test.ts",
+        "src/__tests__/pages-api/v1/offers/actions.test.ts",
+        "src/__tests__/pages-api/v1/ops/psp/status.test.ts",
+        "src/__tests__/pages-api/v1/owner/agents.test.ts",
+        "src/__tests__/pages-api/v1/owner/claims.test.ts",
+        "src/__tests__/pages-api/v1/owner/deal-vote.test.ts",
+        "src/__tests__/pages-api/v1/owner/deals.test.ts",
+        "src/__tests__/pages-api/v1/owner/identities.test.ts",
+        "src/__tests__/pages-api/v1/owner/installations.test.ts",
+        "src/__tests__/pages-api/v1/owner/watchlists.test.ts",
+        "src/__tests__/pages-api/v1/policies.test.ts",
+        "src/__tests__/pages-api/v1/reports.test.ts",
+        "src/__tests__/pages-api/v1/transactions/approve-contact-reveal.test.ts",
+        "src/__tests__/pages-api/v1/transactions/deny-contact-reveal.test.ts",
+        "src/__tests__/pages-api/v1/transactions/escrow-create-approval.test.ts",
+        "src/__tests__/pages-api/v1/transactions/id.test.ts",
+        "src/__tests__/pages-api/v1/transactions/mark-completed.test.ts",
+        "src/__tests__/pages-api/v1/transactions/ratings.test.ts",
+        "src/__tests__/pages-api/v1/watchlists/[watchlist_id]/matches.test.ts",
+        "src/__tests__/pages/c2-content.test.ts",
+        "src/__tests__/pages/explore-indexability.test.ts",
+        "src/__tests__/pages/openclaw-content.test.ts",
+        "src/__tests__/pages/seo-spanish-localization.test.ts",
+        "src/__tests__/public/agent-readable-files.test.ts",
+        "src/__tests__/security/launch-markets-migration.test.ts",
+        "src/__tests__/security/offer-invariants-migration.test.ts",
+        "src/__tests__/services/moderation.test.ts",
+        "src/__tests__/services/reports-retention.test.ts",
+        "src/__tests__/skills/clawdeals-skill-pack.test.ts",
+        "src/content/legacy-guide-enhancements.test.ts",
+        "src/content/seo-guide-enhancements.test.ts",
+        "src/content/seo-guide-schema.test.ts",
+        "src/content/seo-guides.test.ts",
+        "src/server/audit/supabase-writer.test.ts",
+        "src/server/channels/cards/telegram.test.ts",
+        "src/server/channels/commands/approvals-cursor.test.ts",
+        "src/server/channels/commands/execute.menu.test.ts",
+        "src/server/channels/commands/parser.menu.test.ts",
+        "src/server/channels/commands/parser.test.ts",
+        "src/server/channels/telegram/keyboard.test.ts",
+        "src/server/config/backends.test.ts",
+        "src/server/db/neon.test.ts",
+        "src/server/idempotency/crypto.test.ts",
+        "src/server/middleware/with-api-middlewares.audit-fields.test.ts",
+        "src/server/middleware/with-api-middlewares.channel-id.test.ts",
+        "src/server/middleware/with-api-middlewares.mcp-auth.test.ts",
+        "src/server/middleware/with-api-middlewares.origin.test.ts",
+        "src/server/policy/allowlist.test.ts",
+        "src/server/policy/buy-mission-approval.test.ts",
+        "src/server/policy/enforce-allowlist.test.ts",
+        "src/server/psp/mock-psp-adapter.test.ts",
+        "src/server/rate-limit/config.test.ts",
+        "src/server/rate-limit/middleware.channel-scope.test.ts",
+        "src/server/rate-limit/upstash.test.ts",
+        "src/server/routes/route-groups.test.ts",
+        "src/server/services/agents.test.ts",
+        "src/server/services/api-keys.auth-state.test.ts",
+        "src/server/services/api-keys.global-revoke.test.ts",
+        "src/server/services/approvals.test.ts",
+        "src/server/services/audit-cursor.test.ts",
+        "src/server/services/channel-identities.service.test.ts",
+        "src/server/services/connect-sessions.lifecycle.test.ts",
+        "src/server/services/connect-sessions.secret.test.ts",
+        "src/server/services/deal-lifecycle.test.ts",
+        "src/server/services/deal-remove.test.ts",
+        "src/server/services/deals-cursor.test.ts",
+        "src/server/services/deals-list.test.ts",
+        "src/server/services/disputes.test.ts",
+        "src/server/services/escrows.behavior.test.ts",
+        "src/server/services/escrows.test.ts",
+        "src/server/services/evidence.migration.test.ts",
+        "src/server/services/evidence.test.ts",
+        "src/server/services/listings-cursor.test.ts",
+        "src/server/services/notification-preferences.test.ts",
+        "src/server/services/offers-actions.test.ts",
+        "src/server/services/owner-listing-follows.test.ts",
+        "src/server/services/owner-sessions.test.ts",
+        "src/server/services/owners.test.ts",
+        "src/server/services/psp-webhook-events.test.ts",
+        "src/server/services/sandbox-seller-autopilot.test.ts",
+        "src/server/services/watchlist-matches-cursor.test.ts",
+        "src/server/services/watchlist-pagination.test.ts",
+        "src/server/services/watchlists-cursor.test.ts",
+        "src/server/utils/api-keys.test.ts",
+        "src/server/utils/canonical-json.test.ts",
+        "src/server/utils/channel-fingerprint.test.ts",
+        "src/server/utils/contact-masking.test.ts",
+        "src/server/utils/owner-verification.test.ts",
+        "src/server/utils/session-tokens.test.ts",
+        "src/server/utils/url-normalization.test.ts",
+        "src/shared/i18n.test.ts",
+        "src/shared/meta-descriptions.test.ts",
+        "src/shared/seo.test.ts",
+        "src/shared/urls.test.ts",
+        "src/ui/Landing.test.tsx",
+        "src/ui/auth/browser-auth-client.test.ts",
+        "src/ui/browse/BrowseDealCard.test.tsx",
+        "src/ui/browse/BrowseDealDetailPage.test.tsx",
+        "src/ui/browse/BrowseDealsI18n.test.ts",
+        "src/ui/browse/ListingCard.test.tsx",
+        "src/ui/browse/ListingCardGrid.test.tsx",
+        "src/ui/browse/OwnerDealVote.test.tsx",
+        "src/ui/browse/SimilarListings.test.tsx",
+        "src/ui/browse/listing-location.test.ts",
+        "src/ui/browse/policy-fit-label.test.ts",
+        "src/ui/claim/ClaimPage.test.tsx",
+        "src/ui/claim/ClaimStatusBadge.test.tsx",
+        "src/ui/claim/api.test.ts",
+        "src/ui/console/EventRow.test.ts",
+        "src/ui/console/channels/ChannelsToolbar.test.tsx",
+        "src/ui/console/timeline/TimelinePage.test.tsx",
+        "src/ui/deals/DealCard.test.tsx",
+        "src/ui/deals/TemperatureGauge.test.tsx",
+        "src/ui/deals/detailNavigation.test.ts",
+        "src/ui/developer/DeveloperDashboard.test.tsx",
+        "src/ui/developer/connect/ConnectWizard.test.tsx",
+        "src/ui/developer/connect/FirstMissionCard.test.tsx",
+        "src/ui/developer/connect/StepConnect.test.tsx",
+        "src/ui/developer/connect/StepFirstWin.test.tsx",
+        "src/ui/developer/connect/StepVerify.test.tsx",
+        "src/ui/developer/storage.test.ts",
+        "src/ui/device/DevicePage.test.tsx",
+        "src/ui/device/DeviceStatusBadge.test.tsx",
+        "src/ui/device/api.test.ts",
+        "src/ui/explore/copy/loadExploreCopy.test.ts",
+        "src/ui/landing/Navbar.test.tsx",
+        "src/ui/landing/ShareButton.test.tsx",
+        "src/ui/marketplace/MarketplaceHub.test.tsx",
+        "src/ui/mcp/McpPage.test.tsx",
+        "src/ui/my-approvals/MyApprovalDetailPage.test.tsx",
+        "src/ui/my-offers/MyOffersPage.test.tsx",
+        "src/ui/my-threads/MyThreadsPage.test.tsx",
+        "src/ui/my-watchlists/MyWatchlistsPage.test.tsx",
+        "src/ui/seo/LocalizedMarketContext.test.tsx",
+        "src/ui/settings/AccountPage.test.tsx",
+        "src/ui/settings/ConnectedAppsPage.test.tsx",
+        "src/ui/settings/PolicyEditorLink.test.tsx",
+        "src/ui/settings/ProfilePage.test.tsx",
+        "src/ui/settings/SettingsNav.test.tsx",
+        "src/ui/shared/AgentDropdown.test.tsx",
+        "src/ui/shared/AppNav.test.tsx",
+        "src/ui/shared/PageHeader.test.tsx",
+        "src/ui/shared/useOwnerAgents.test.ts",
+        "src/ui/webmcp/derived-panels.test.tsx",
+        "src/webmcp/ActivityHud.test.tsx",
+        "src/webmcp/activity/policy-label.test.ts",
+        "src/webmcp/config.test.ts",
+        "src/webmcp/evals/reference-selection.test.ts",
+        "src/webmcp/origin-trial.test.ts",
+        "src/webmcp/tools/activity-tools.test.ts",
+        "src/webmcp/tools/approval-tools.test.ts",
+        "src/webmcp/tools/mission-tools.test.ts",
+        "src/webmcp/tools/negotiation-tools.test.ts",
+        "src/webmcp/tools/read-tools.test.ts",
+        "src/webmcp/ui-bridge.test.ts"
+      ],
+      "status": "Archive signalée",
+      "review_scope": "Statut, références et risque de réutilisation ; résultats historiques non rejoués."
+    },
+    {
+      "path": "evals/webmcp/README.md",
+      "lines": 41,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "evals/webmcp/SECURITY-MATRIX.md",
+      "lines": 28,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "packages/clawdeals-mcp/README.md",
+      "lines": 103,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "public/changelog.md",
+      "lines": 101,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "public/examples.md",
+      "lines": 374,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "public/heartbeat.md",
+      "lines": 26,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "public/policies.md",
+      "lines": 204,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "public/pricing.md",
+      "lines": 19,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "public/reference.md",
+      "lines": 608,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "public/security.md",
+      "lines": 28,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "public/skill.md",
+      "lines": 230,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Copie générée",
+      "review_scope": "Synchronisation avec skills/clawdeals vérifiée."
+    },
+    {
+      "path": "sdk/python/README.md",
+      "lines": 117,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "sdk/typescript/README.md",
+      "lines": 101,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "skills/clawdeals/CHANGELOG.md",
+      "lines": 101,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "skills/clawdeals/HEARTBEAT.md",
+      "lines": 26,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "skills/clawdeals/POLICIES.md",
+      "lines": 204,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "skills/clawdeals/SECURITY.md",
+      "lines": 28,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Référence conservée",
+      "review_scope": "Liens/commandes/statut contrôlés ; contenu métier ou mesures live non certifiés."
+    },
+    {
+      "path": "skills/clawdeals/SKILL.md",
+      "lines": 230,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "skills/clawdeals/examples.md",
+      "lines": 374,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    },
+    {
+      "path": "skills/clawdeals/reference.md",
+      "lines": 608,
+      "missing_links": [],
+      "missing_commands": [],
+      "missing_code_refs": [],
+      "status": "Guide actif contrôlé",
+      "review_scope": "Consignes/commandes et sources pertinentes contrôlées ; pas de certification runtime."
+    }
+  ],
+  "imported_skill_markdown": [
+    {
+      "path": ".agents/skills/web-design-guidelines/SKILL.md",
+      "lines": 39,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/find-skills/SKILL.md",
+      "lines": 12,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/CHANGELOG.md",
+      "lines": 43,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/SKILL.md",
+      "lines": 68,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-pooling.md",
+      "lines": 41,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_contributing.md",
+      "lines": 170,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-rls-basics.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-rls-performance.md",
+      "lines": 63,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-pagination.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_template.md",
+      "lines": 34,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-prepared-statements.md",
+      "lines": 46,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-advisory.md",
+      "lines": 56,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-short-transactions.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/security-privileges.md",
+      "lines": 54,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/advanced-jsonb-indexing.md",
+      "lines": 49,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-covering-indexes.md",
+      "lines": 40,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-missing-indexes.md",
+      "lines": 43,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-skip-locked.md",
+      "lines": 54,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-composite-indexes.md",
+      "lines": 44,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-partial-indexes.md",
+      "lines": 45,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-idle-timeout.md",
+      "lines": 46,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-data-types.md",
+      "lines": 46,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-pg-stat-statements.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/query-index-types.md",
+      "lines": 48,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-upsert.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-batch-inserts.md",
+      "lines": 54,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-partitioning.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/conn-limits.md",
+      "lines": 44,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-vacuum-analyze.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/data-n-plus-one.md",
+      "lines": 53,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/_sections.md",
+      "lines": 39,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-lowercase-identifiers.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-primary-keys.md",
+      "lines": 61,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/monitor-explain-analyze.md",
+      "lines": 45,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/advanced-full-text-search.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-constraints.md",
+      "lines": 80,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/schema-foreign-key-indexes.md",
+      "lines": 59,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/supabase-postgres-best-practices/references/lock-deadlock-prevention.md",
+      "lines": 68,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/guide.md",
+      "lines": 181,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/SKILL.md",
+      "lines": 21,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/migrations/from-redis-node.md",
+      "lines": 205,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/migrations/from-ioredis.md",
+      "lines": 163,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/sorted-sets.md",
+      "lines": 126,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/strings.md",
+      "lines": 73,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/hashes.md",
+      "lines": 71,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/json.md",
+      "lines": 133,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/sets.md",
+      "lines": 87,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/streams.md",
+      "lines": 196,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/data-structures/lists.md",
+      "lines": 72,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/patterns/caching.md",
+      "lines": 58,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/patterns/distributed-locks.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/patterns/rate-limiting.md",
+      "lines": 187,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/patterns/leaderboard.md",
+      "lines": 134,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/patterns/session-management.md",
+      "lines": 217,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/search/overview.md",
+      "lines": 155,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/search/adapters.md",
+      "lines": 99,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/search/commands/aggregating.md",
+      "lines": 234,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/search/commands/aliases.md",
+      "lines": 76,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/search/commands/querying.md",
+      "lines": 278,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/search/commands/index-management.md",
+      "lines": 124,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/advanced-features/auto-pipeline.md",
+      "lines": 49,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/advanced-features/pipeline-and-transactions.md",
+      "lines": 43,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/advanced-features/scripting.md",
+      "lines": 124,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/performance/redis-replicas.md",
+      "lines": 14,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/performance/ttl-expiration.md",
+      "lines": 32,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/performance/data-serialization.md",
+      "lines": 133,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/performance/batching-operations.md",
+      "lines": 76,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/performance/pipeline-optimization.md",
+      "lines": 105,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/redis-js/performance/error-handling.md",
+      "lines": 82,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/frontend-design/SKILL.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/README.md",
+      "lines": 127,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/SKILL.md",
+      "lines": 144,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/AGENTS.md",
+      "lines": 3810,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-cache-storage.md",
+      "lines": 70,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-conditional.md",
+      "lines": 31,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-preload.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-memo-with-default-value.md",
+      "lines": 38,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-request-idle-callback.md",
+      "lines": 105,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-combine-iterations.md",
+      "lines": 32,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-no-shared-module-state.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-use-latest.md",
+      "lines": 39,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-length-check-first.md",
+      "lines": 49,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/_template.md",
+      "lines": 28,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-derived-state-no-effect.md",
+      "lines": 40,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-derived-state.md",
+      "lines": 29,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-cheap-condition-before-await.md",
+      "lines": 37,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-defer-await.md",
+      "lines": 82,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-suspense-boundaries.md",
+      "lines": 99,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-no-inline-components.md",
+      "lines": 82,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-resource-hints.md",
+      "lines": 85,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-activity.md",
+      "lines": 26,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-dedup-props.md",
+      "lines": 65,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-script-defer-async.md",
+      "lines": 68,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-move-effect-to-event.md",
+      "lines": 45,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-defer-reads.md",
+      "lines": 39,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-api-routes.md",
+      "lines": 38,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-use-deferred-value.md",
+      "lines": 59,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-hydration-suppress-warning.md",
+      "lines": 30,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-dependencies.md",
+      "lines": 45,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-set-map-lookups.md",
+      "lines": 24,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-defer-third-party.md",
+      "lines": 49,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-hoist-static-io.md",
+      "lines": 149,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-hoist-jsx.md",
+      "lines": 46,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-dependencies.md",
+      "lines": 51,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-use-ref-transient-values.md",
+      "lines": 73,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-min-max-loop.md",
+      "lines": 82,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-cache-property-access.md",
+      "lines": 28,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-animate-svg-wrapper.md",
+      "lines": 47,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-early-exit.md",
+      "lines": 50,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-flatmap-filter.md",
+      "lines": 60,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-index-maps.md",
+      "lines": 37,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-parallel-fetching.md",
+      "lines": 83,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-cache-lru.md",
+      "lines": 41,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-passive-event-listeners.md",
+      "lines": 48,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-usetransition-loading.md",
+      "lines": 75,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-parallel-nested-fetching.md",
+      "lines": 34,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-functional-setstate.md",
+      "lines": 74,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-lazy-state-init.md",
+      "lines": 58,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-event-handler-refs.md",
+      "lines": 55,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-after-nonblocking.md",
+      "lines": 73,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-event-listeners.md",
+      "lines": 74,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-transitions.md",
+      "lines": 40,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-tosorted-immutable.md",
+      "lines": 57,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/_sections.md",
+      "lines": 46,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-swr-dedup.md",
+      "lines": 56,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-cache-react.md",
+      "lines": 76,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-dynamic-imports.md",
+      "lines": 35,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-hydration-no-flicker.md",
+      "lines": 82,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-serialization.md",
+      "lines": 38,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-svg-precision.md",
+      "lines": 28,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-memo.md",
+      "lines": 44,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-init-once.md",
+      "lines": 42,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-content-visibility.md",
+      "lines": 38,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-analyzable-paths.md",
+      "lines": 63,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/async-parallel.md",
+      "lines": 28,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-split-combined-hooks.md",
+      "lines": 64,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-batch-dom-css.md",
+      "lines": 107,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/server-auth-actions.md",
+      "lines": 96,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-cache-function-results.md",
+      "lines": 80,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/js-hoist-regexp.md",
+      "lines": 45,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/advanced-effect-event-deps.md",
+      "lines": 56,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rendering-conditional-render.md",
+      "lines": 40,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/client-localstorage-schema.md",
+      "lines": 71,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/bundle-barrel-imports.md",
+      "lines": 60,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-react-best-practices/rules/rerender-simple-expression-in-memo.md",
+      "lines": 35,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/README.md",
+      "lines": 60,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/SKILL.md",
+      "lines": 89,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/AGENTS.md",
+      "lines": 946,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/state-context-interface.md",
+      "lines": 191,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/state-decouple-implementation.md",
+      "lines": 113,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/_template.md",
+      "lines": 24,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/react19-no-forwardref.md",
+      "lines": 42,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/state-lift-state.md",
+      "lines": 125,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/architecture-avoid-boolean-props.md",
+      "lines": 100,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/patterns-explicit-variants.md",
+      "lines": 100,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/patterns-children-over-render-props.md",
+      "lines": 87,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/_sections.md",
+      "lines": 29,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/vercel-composition-patterns/rules/architecture-compound-components.md",
+      "lines": 112,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/tailwind-design-system/SKILL.md",
+      "lines": 56,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/tailwind-design-system/references/advanced-patterns.md",
+      "lines": 319,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/tailwind-design-system/references/details.md",
+      "lines": 385,
+      "missing_links": []
+    },
+    {
+      "path": ".agents/skills/tailwind-design-system/references/quick-start.md",
+      "lines": 136,
+      "missing_links": []
+    }
+  ],
+  "other_reviewed": [
+    "docs/openapi-v1.yaml",
+    "public/llms.txt",
+    "public/pricing.txt",
+    "public/skill.json"
+  ],
+  "openapi_candidate_gaps": [
+    {
+      "file": "src/pages/api/v1/channels/[id_action].ts",
+      "path": "/v1/channels/{id_action}"
+    },
+    {
+      "file": "src/pages/api/v1/channels/index.ts",
+      "path": "/v1/channels"
+    },
+    {
+      "file": "src/pages/api/v1/channels/telegram/[action].ts",
+      "path": "/v1/channels/telegram/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/sellers/[action].ts",
+      "path": "/v1/sellers/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/approvals/[id].ts",
+      "path": "/v1/approvals/{id}"
+    },
+    {
+      "file": "src/pages/api/v1/sandbox/seller-turn.ts",
+      "path": "/v1/sandbox/seller-turn"
+    },
+    {
+      "file": "src/pages/api/v1/sandbox/reset.ts",
+      "path": "/v1/sandbox/reset"
+    },
+    {
+      "file": "src/pages/api/v1/threads/[id].ts",
+      "path": "/v1/threads/{id}"
+    },
+    {
+      "file": "src/pages/api/v1/public/listings.ts",
+      "path": "/v1/public/listings"
+    },
+    {
+      "file": "src/pages/api/v1/public/deals.ts",
+      "path": "/v1/public/deals"
+    },
+    {
+      "file": "src/pages/api/v1/transactions/[tx_id]/[action].ts",
+      "path": "/v1/transactions/{tx_id}/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/installations/[id_action].ts",
+      "path": "/v1/installations/{id_action}"
+    },
+    {
+      "file": "src/pages/api/v1/agents/[id]/[action].ts",
+      "path": "/v1/agents/{id}/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/agents/me/claim.ts",
+      "path": "/v1/agents/me/claim"
+    },
+    {
+      "file": "src/pages/api/v1/disputes/[dispute_id]/[action].ts",
+      "path": "/v1/disputes/{dispute_id}/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/acquisition/events.ts",
+      "path": "/v1/acquisition/events"
+    },
+    {
+      "file": "src/pages/api/v1/auth/me.ts",
+      "path": "/v1/auth/me"
+    },
+    {
+      "file": "src/pages/api/v1/auth/session.ts",
+      "path": "/v1/auth/session"
+    },
+    {
+      "file": "src/pages/api/v1/auth/[action].ts",
+      "path": "/v1/auth/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/chat/[command].ts",
+      "path": "/v1/chat/{command}"
+    },
+    {
+      "file": "src/pages/api/v1/chat/commands/[command].ts",
+      "path": "/v1/chat/commands/{command}"
+    },
+    {
+      "file": "src/pages/api/v1/owner/listings.ts",
+      "path": "/v1/owner/listings"
+    },
+    {
+      "file": "src/pages/api/v1/owner/deals.ts",
+      "path": "/v1/owner/deals"
+    },
+    {
+      "file": "src/pages/api/v1/owner/identities/index.ts",
+      "path": "/v1/owner/identities"
+    },
+    {
+      "file": "src/pages/api/v1/owner/identities/[identity_id].ts",
+      "path": "/v1/owner/identities/{identity_id}"
+    },
+    {
+      "file": "src/pages/api/v1/owner/activity.ts",
+      "path": "/v1/owner/activity"
+    },
+    {
+      "file": "src/pages/api/v1/owner/claims.ts",
+      "path": "/v1/owner/claims"
+    },
+    {
+      "file": "src/pages/api/v1/owner/agents.ts",
+      "path": "/v1/owner/agents"
+    },
+    {
+      "file": "src/pages/api/v1/owner/offers.ts",
+      "path": "/v1/owner/offers"
+    },
+    {
+      "file": "src/pages/api/v1/owner/threads.ts",
+      "path": "/v1/owner/threads"
+    },
+    {
+      "file": "src/pages/api/v1/owner/watchlists/index.ts",
+      "path": "/v1/owner/watchlists"
+    },
+    {
+      "file": "src/pages/api/v1/owner/policy-decisions.ts",
+      "path": "/v1/owner/policy-decisions"
+    },
+    {
+      "file": "src/pages/api/v1/installations.ts",
+      "path": "/v1/installations"
+    },
+    {
+      "file": "src/pages/api/v1/owner/[action].ts",
+      "path": "/v1/owner/{action}"
+    },
+    {
+      "file": "src/pages/api/v1/owner/watchlists/[watchlist_id].ts",
+      "path": "/v1/owner/watchlists/{watchlist_id}"
+    },
+    {
+      "file": "src/pages/api/v1/owner/listings/[id].ts",
+      "path": "/v1/owner/listings/{id}"
+    },
+    {
+      "file": "src/pages/api/v1/owner/deals/[deal_id]/vote.ts",
+      "path": "/v1/owner/deals/{deal_id}/vote"
+    }
+  ],
+  "remediation_evidence": "docs/development-blockers-verification.md",
+  "openapi_coverage": "docs/openapi-route-coverage.json"
+}

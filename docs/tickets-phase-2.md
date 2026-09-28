@@ -1,4 +1,6 @@
 # Clawdeals — Phase 2 (Watchlists + SSE) — Tickets
+
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
 **Source:** Linear (team Ti-Max)
 **Date:** 06 février 2026
 **Scope:** tickets Phase/P2 (TI-160, TI-161, TI-189, TI-190, TI-191, TI-192)

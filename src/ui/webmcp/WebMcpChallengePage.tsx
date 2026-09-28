@@ -34,12 +34,7 @@ import SellerTurnButton from "./SellerTurnButton";
 import { useJudgeReset } from "./useJudgeReset";
 
 const REPO_URL = "https://github.com/thannous/clawdeals";
-const HACKATHON_DOC_URL = `${REPO_URL}/blob/main/HACKATHON.md`;
-const JUDGE_GUIDE_URL = `${REPO_URL}/blob/main/docs/hackathon/JUDGE_GUIDE.md`;
 const EVALS_URL = `${REPO_URL}/tree/main/evals/webmcp`;
-const PLAN_URL = `${REPO_URL}/blob/main/docs/hackathon/plan-de-victoire-webmcp-challenge.md`;
-const VIDEO_URL = "https://youtu.be/ePgP4IO_qM8";
-const SANDBOX_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 const CHROME_WEBMCP_DOCS_URL = "https://developer.chrome.com/docs/ai/webmcp";
 
 function statusTone(active: boolean) {
@@ -138,15 +133,6 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
                 {copyState === "copied" ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
                 {copyState === "copied" ? t("challenge.promptCopied") : copyState === "failed" ? t("common.copyFailed") : t("challenge.copyJudgePrompt")}
               </button>
-              <a
-                href={VIDEO_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-12 items-center gap-2 border border-border px-5 font-mono text-xs font-bold uppercase tracking-widest text-muted transition hover:border-primary hover:text-primary"
-              >
-                {t("challenge.watchDemo")}
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
             </div>
           </div>
 
@@ -188,8 +174,6 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
                 </h2>
               </div>
               <div className="flex flex-wrap gap-4">
-                <EvidenceLink href={SANDBOX_URL} label={t("challenge.links.sandbox")} />
-                <EvidenceLink href={JUDGE_GUIDE_URL} label={t("challenge.links.guide")} />
                 <EvidenceLink href={CHROME_WEBMCP_DOCS_URL} label={t("challenge.links.chromeDocs")} />
               </div>
             </div>
@@ -325,7 +309,6 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
               <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("challenge.eligibility.eyebrow")}</p>
               <h2 className="mt-2 text-3xl font-bold uppercase">{t("challenge.eligibility.title")}</h2>
             </div>
-            <EvidenceLink href={HACKATHON_DOC_URL} label={t("challenge.links.ledger")} />
           </div>
           <p className="mt-4 max-w-4xl text-sm leading-relaxed text-muted">
             {t("challenge.eligibility.description")}
@@ -347,7 +330,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
         </section>
 
         <section className="mx-auto mt-16 max-w-[1440px] px-4 sm:px-6">
-          <div className="grid gap-4 border border-border bg-surface p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-4">
+          <div className="grid gap-4 border border-border bg-surface p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
             <div>
               <LockKeyhole className="h-5 w-5 text-primary" aria-hidden="true" />
               <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.evidence.baseline")}</p>
@@ -363,12 +346,6 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
                 <EvidenceLink href={REPO_URL} label={t("challenge.links.repository")} />
                 <br />
                 <EvidenceLink href={EVALS_URL} label={t("challenge.links.evals")} />
-              </div>
-            </div>
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.evidence.strategy")}</p>
-              <div className="mt-3">
-                <EvidenceLink href={PLAN_URL} label={t("challenge.links.plan")} />
               </div>
             </div>
             <div>

@@ -8,7 +8,7 @@ This repo includes runnable Node scripts that exercise the Clawdeals v1 REST API
 Scripts live under `scripts/agents/`.
 
 ## Prereqs
-- Node 18+ (uses built-in `fetch`)
+- Repository Node/npm versions from `package.json` (`.nvmrc` pins Node).
 - A running API (local or remote)
 
 The API base must include `/api`:

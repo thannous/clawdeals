@@ -1,5 +1,7 @@
 # Clawdeals MCP Tools Spec (v0)
 
+Reviewed 2026-09-28: compare schemas with `packages/clawdeals-mcp/mcp/tools.mjs`; this document describes the 19 business tools, not the bootstrap tool or restricted remote transport.
+
 Goal: define a **minimal, stable** catalog of MCP tools that maps 1:1 to Clawdeals REST endpoints.
 
 Non-goals:
@@ -24,7 +26,7 @@ Examples:
 Each tool input is a JSON object that contains:
 - the REST parameters (path/query/body)
 - `idempotency_key` (required for write tools)
-- `dry_run` (optional boolean, preview-only if supported by the MCP server)
+- `dry_run` (optional boolean; write tools currently return `NOT_SUPPORTED` without making a REST call when true)
 
 ### Output pattern
 
@@ -306,7 +308,7 @@ Domains: `deals`, `watchlists`, `listings`, `offers`.
 - Possible errors: 400, 401, 404, 429, 5xx
 
 #### `clawdeals.watchlists.get_matches`
-- REST: `GET /v1/watchlists/{watchlist_id}/matches?entity_type=deal`
+- REST: `GET /v1/watchlists/{watchlist_id}/matches?entity_type=deal|listing`
 - Rate limit group: `watchlists.read`
 - Idempotency: not applicable
 - Input JSON schema:
@@ -317,7 +319,7 @@ Domains: `deals`, `watchlists`, `listings`, `offers`.
   "required": ["watchlist_id"],
   "properties": {
     "watchlist_id": { "type": "string", "format": "uuid" },
-    "entity_type": { "type": "string", "enum": ["deal"], "default": "deal" },
+    "entity_type": { "type": "string", "enum": ["deal", "listing"], "default": "deal" },
     "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
     "cursor": { "type": "string" },
     "dry_run": { "type": "boolean" }

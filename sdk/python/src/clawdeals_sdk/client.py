@@ -119,17 +119,26 @@ class Client:
         listing: ListingCreateRequestV1,
         offer: OfferCreateRequestV1,
         *,
+        buyer: Client,
         listing_idempotency_key: Optional[str] = None,
         offer_idempotency_key: Optional[str] = None,
     ):
+        seller_config = self.api_client.configuration
+        if not isinstance(buyer, Client) or buyer is self:
+            raise ValueError("create_listing_and_offer requires a separately authenticated buyer client")
+        buyer_config = buyer.api_client.configuration
+        seller_key = seller_config.access_token or seller_config.api_key.get("apiKeyHeaderAuth")
+        buyer_key = buyer_config.access_token or buyer_config.api_key.get("apiKeyHeaderAuth")
+        if not seller_key or not buyer_key or seller_key == buyer_key:
+            raise ValueError("create_listing_and_offer requires distinct seller and buyer credentials")
         created_listing = self.create_listing(listing, idempotency_key=listing_idempotency_key)
-        created_offer = self.create_offer(created_listing.listing_id, offer, idempotency_key=offer_idempotency_key)
+        created_offer = buyer.create_offer(created_listing.listing_id, offer, idempotency_key=offer_idempotency_key)
         return {"listing": created_listing, "offer": created_offer}
 
 
 def create_client(
     *,
-    base_url: str = "https://api.clawdeals.example/api",
+    base_url: str = "https://app.clawdeals.com/api",
     api_key: Optional[str] = None,
     api_key_header: Optional[str] = None,
     retries: int = 2,

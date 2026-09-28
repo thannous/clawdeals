@@ -1,5 +1,7 @@
 # Plan éditorial SEO — France, Royaume-Uni, Espagne
 
+> PLAN — 2026-09-28 review: the July wave ordering is not a current backlog. Check `src/content/` and current analytics before selecting work. Publication/distribution ideas do not authorize third-party messages, paid services or indexing actions.
+
 Dernière mise à jour : 2026-07-18
 
 ## Objectif

@@ -12,10 +12,11 @@ Read only the code and documentation needed for the task. Documentation-only or 
 
 ## Validation and autonomy
 
+- Current development phase (owner-confirmed 2026-09-28): production has no real users and contains fictitious, disposable data. Production is an authorized target for development validation, including integration, smoke, and E2E tests that create, modify, or delete test data. The Vercel project `clawdeals-staging` was deleted on 2026-09-28; its former `sandbox.clawdeals.com` endpoint is retired. A separate sandbox/staging environment is not a prerequisite. Revisit this policy when real users or real data are introduced.
 - Choose checks for the changed behavior and risk. Do not run broad suites solely because a file changed. Available checks include `npm run lint`, `npm run typecheck`, `npm run test:unit`, `npm run test:ui`, and `npm run test:integration`. Scoped integration scripts cover deals, listings, transactions, escrow, and dispute.
 - Prefer E2E coverage for behavior changes. Add an isolation test only for a documented failure that E2E coverage misses; identify that failure and write the test before implementation. Avoid tests that merely repeat copy, implementation details, or mocked calls.
-- Once a test workflow is confirmed to use disposable fixtures and no production access, run it, fix failures caused by the requested change, and rerun affected checks without asking for approval at each step.
-- Playwright loads `.env.local`; a local app URL alone does not establish isolation. Use local services or isolated staging with synthetic data and no production secrets for integration, smoke, and E2E tests. Keep production-target guards enabled.
+- Run relevant tests, fix failures caused by the requested change, and rerun affected checks without asking for approval at each step, including against production during the development phase above. This permission covers test-data operations, not unrelated destructive infrastructure changes, real payments, or messages to third parties.
+- Playwright loads `.env.local`; verify the actual target rather than inferring it from the local app URL. Playwright, integration helpers and smoke support `CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy` on local test commands. Other projects, hosted Vercel runtimes, migration exporters and sandbox resets remain protected. Use fixtures appropriate to the selected target; see `docs/release-environments.md`.
 - For E2E runs, retain a report or trace and provide the exact rerun command, safe target, fixture prerequisites, and results, including skipped or blocked checks. `npm run test:ci` is a contract suite, not evidence of browser QA or deployment.
 
 ## Changes and release
@@ -24,7 +25,7 @@ Read only the code and documentation needed for the task. Documentation-only or 
 - Preserve unrelated work. Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
 - Work directly on `main`; do not create branches or PRs. If starting in a detached worktree, preserve and report that state rather than switching branches or moving unrelated work.
 - Commit only when authorized, using the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and ticket IDs when applicable.
-- Production deployment requires explicit authorization, including `npm run deploy:cloudflare`. Destructive or external actions must stay within the user's authorized scope.
+- The current release workflow is a direct push to `main`, followed by automatic Vercel production deployment; no staging promotion is required. An authorized push includes that automatic deployment. Manual deployments, including `npm run deploy:cloudflare`, and unrelated destructive or external actions still require authorization.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

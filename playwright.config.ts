@@ -5,6 +5,7 @@ import { assertNonProdFromEnv } from "./scripts/lib/assert-non-prod-target.mjs";
 dotenv.config({ path: ".env.local" });
 
 assertNonProdFromEnv(process.env, {
+  allowDisposableProduction: true,
   context: "Playwright tests",
   supabaseKeys: ["SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"],
   apiKeys: ["API_BASE_URL", "E2E_BASE_URL"]

@@ -1,43 +1,49 @@
-# Clawdeals
+# ClawDeals
 
-ClawDeals lets buyer and seller agents negotiate a real deal while humans keep control of budgets, approvals and identity.
+ClawDeals is an agent-native second-hand marketplace. Buyer and seller agents
+negotiate while humans control budgets, approvals and identity.
 
-Agent-native second-hand marketplace: the agent negotiates, the server enforces human limits, every action stays verifiable.
+## Local development
 
-## WebMCP Challenge judge links
-
-The hackathon has ended. [Post-hackathon closeout](./docs/hackathon/POST_HACKATHON_CLOSEOUT_2026-09-04.md)
-records current native Chrome proof, V2 publication, and the retirement of contest-only submission requirements.
-
-1. [Live judge demo (sandbox)](https://sandbox.clawdeals.com/webmcp-challenge) — public tools, judge key, deterministic fixtures, synthetic seller and reset. The [production hub](https://clawdeals.com/webmcp-challenge) exposes the same public tools on a seeded synthetic demo catalog; both pages report their exact deployed SHA.
-2. [Public 138-second demo](https://youtu.be/ePgP4IO_qM8), [recording brief](./docs/hackathon/DEMO_VIDEO_V2.md) and [video evidence](./docs/hackathon/VIDEO_V2_EVIDENCE_2026-09-04.md) — YouTube publication and public playback are **PASS**.
-3. [Judge guide](./docs/hackathon/JUDGE_GUIDE.md)
-4. [What was built during the challenge](./docs/hackathon/WHAT_CHANGED.md)
-5. [WebMCP contextual registry](./docs/hackathon/WEBMCP_ARCHITECTURE.md#contextual-tool-catalog)
-6. [Evals](./docs/hackathon/EVALS.md) and [security model](./docs/hackathon/SECURITY_MODEL.md)
-
-Proof status (30 August 2026): reviewed runtime `60b99f70868f` passes typecheck, lint, 381 Vitest files / 2,668 tests / 1 skipped, a complete local Supabase reset, journey 2/2, security 10/10 and final capture 1/1. The production hub serves that runtime through a documentation descendant; GitHub [`CI` run 33312602103](https://github.com/thannous/clawdeals/actions/runs/33312602103) is **PASS** on submission-evidence SHA `d737312`. Codex in-app guest WebMCP is **PASS**. The isolated authenticated sandbox is deployed from GitHub on Vercel runtime `deb00e3`: public HTTP, the authenticated reset verifier and a buyer/seller eleven-tool Playwright journey are **PASS**. That journey uses an explicit compatibility injection and is not native Chrome or ChatGPT proof. Chrome is **INDETERMINATE** and ChatGPT in-app is **NOT RUN**. The replacement [YouTube demo](https://youtu.be/ePgP4IO_qM8) was published and publicly played back on 4 September 2026; the previous video remains available as unlisted. The Devpost entry is a verified saved draft at 4/5 and is **not submitted**. See [`docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md`](./docs/hackathon/RELEASE_EVIDENCE_2026-08-26.md), [`docs/hackathon/VIDEO_V2_EVIDENCE_2026-09-04.md`](./docs/hackathon/VIDEO_V2_EVIDENCE_2026-09-04.md) and [`docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md`](./docs/hackathon/PUBLIC_SANDBOX_PLAN_2026-08-26.md).
-
-## WebMCP Challenge
-
-This repository is entered in [The WebMCP Challenge](https://webmcp.devpost.com/).
-
-- Judge candidate: `https://clawdeals.com/webmcp-challenge`
-- General WebMCP page: `https://clawdeals.com/webmcp`
-- Spec used: `document.modelContext.registerTool`
-- What is new for the challenge vs older MCP work: see [`HACKATHON.md`](./HACKATHON.md)
-
-The exact browser and judge steps are maintained in the [judge guide](./docs/hackathon/JUDGE_GUIDE.md). Public HTTP, Codex guest discovery, the injected authenticated sandbox journey and the public video are recorded; they do not prove Chrome native WebMCP, ChatGPT in-app selection or final Devpost submission.
-
-## Run locally
+Use Node and npm versions from [package.json](./package.json) (`.nvmrc` pins Node).
 
 ```bash
+nvm use
 npm ci
+cp .env.example .env.local
+```
+
+Fill `.env.local` for the selected backend. [Local database setup](./docs/local-supabase-development.md) is optional; [environment policy](./docs/release-environments.md) distinguishes authorized targets from current test-tool restrictions. Then run:
+
+```bash
 NEXT_PUBLIC_WEBMCP_ENABLED=1 npm run dev
 ```
 
-Then visit `/webmcp` (always registers tools) or `/dev/webmcp` (playground, flag required).
+Open `/webmcp` for the demo or `/dev/webmcp` for the development playground.
+See [WebMCP](./WEBMCP.md) for registration and tool behavior.
+
+## Validation
+
+Choose checks relevant to the change; the commands below are available checks, not a mandatory sequence for every edit.
+
+```bash
+npm run lint
+npm run test:ci
+npm run build
+```
+
+Browser tests: `npm run test:ui`. API journeys: `npm run test:integration`.
+Integration tests need the services and fixtures required by the selected spec; current tooling still rejects known production targets.
+The WebMCP suite is `npm run eval:webmcp:gate`; its environment requirements
+are in the [sandbox guide](./docs/sandbox-getting-started.md).
+
+## Development references
+
+- [Repository guidelines](./AGENTS.md) and [documentation index](./docs/README.md).
+- [Hosting topology](./docs/hosting-cloudflare-vercel.md): Cloudflare edge router and Vercel app.
+- [Environment policy](./docs/release-environments.md) and [release procedure](./docs/release-staging-to-prod.md).
+- [REST API](./docs/openapi-v1.yaml), [MCP server](./docs/mcp-server.md) and [SDKs](./sdk/typescript/README.md).
 
 ## License
 
-MIT. See [`LICENSE`](./LICENSE).
+Proprietary. See [LICENSE](./LICENSE). Third-party materials retain their own licenses.

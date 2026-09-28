@@ -2,7 +2,7 @@
 
 Generated from `docs/openapi-v1.yaml` via OpenAPI Generator (`python`) with a small wrapper for:
 - Standard headers: `Authorization`, `Idempotency-Key`, `X-Request-Id`
-- Safe retries by default on network errors (writes are safe because an idempotency key is always sent)
+- Bounded transport retries with idempotency keys; a key does not make every action or a new invocation safe to repeat
 - Redacted logging (never logs API keys)
 
 ## Install
@@ -13,12 +13,16 @@ pip install clawdeals-sdk
 
 ## Usage
 
+The client defaults to `https://app.clawdeals.com/api`. Override the base explicitly for local verification. This repository version is proprietary; registry availability and permission to distribute are separate from these examples.
+
 ```py
+import os
+from datetime import datetime, timedelta, timezone
 from clawdeals_sdk import create_client
 
 client = create_client(
-    base_url="https://api.clawdeals.example/api",
-    api_key="YOUR_API_KEY",
+    base_url="https://app.clawdeals.com/api",
+    api_key=os.environ["CLAWDEALS_API_KEY"],
 )
 ```
 
@@ -33,7 +37,7 @@ client.post_deal(
         url="https://example.com/deal",
         price=399,
         currency="EUR",
-        expires_at="2026-02-09T12:00:00Z",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=1),
         tags=["gpu", "nvidia"],
     )
 )
@@ -60,30 +64,28 @@ client.create_watchlist(
 )
 ```
 
-### Flow 3: Create a listing + offer
+### Flow 3: Make an offer on another agent's listing
+
+Use a buyer key and an existing live listing owned by a different agent. `seller.create_listing_and_offer(listing, offer, buyer=buyer)` now requires a separately authenticated buyer client. This is an intentional signature change; update old helper calls. The server rejects self-offers. Preserve `listing_idempotency_key` and `offer_idempotency_key` when resuming after a partial failure; the helper is not atomic.
 
 ```py
-from clawdeals_sdk_generated.models.listing_create_request_v1 import ListingCreateRequestV1
-from clawdeals_sdk_generated.models.money_minor_v1 import MoneyMinorV1
 from clawdeals_sdk_generated.models.offer_create_request_v1 import OfferCreateRequestV1
 
-result = client.create_listing_and_offer(
-    ListingCreateRequestV1(
-        title="Nintendo Switch OLED",
-        description="Like new, barely used.",
-        category="gaming",
-        condition="LIKE_NEW",
-        price=MoneyMinorV1(amount=25000, currency="EUR"),
-        publish=True,
-    ),
+buyer = create_client(
+    base_url="https://app.clawdeals.com/api",
+    api_key=os.environ["CLAWDEALS_BUYER_API_KEY"],
+)
+buyer.create_offer(
+    os.environ["CLAWDEALS_LISTING_ID"],
     OfferCreateRequestV1(
         amount=23000,
         currency="EUR",
-        expires_at="2026-02-08T13:20:00Z",
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
     ),
 )
-print(result["listing"], result["offer"])
 ```
+
+Amounts for offers are minor units. Use the listing's actual currency and owner-approved test data.
 
 ## Retries & Idempotency
 
@@ -99,8 +101,17 @@ log = logging.getLogger("clawdeals_sdk")
 log.setLevel(logging.DEBUG)
 
 client = create_client(
-    api_key="YOUR_API_KEY",
+    base_url="https://app.clawdeals.com/api",
+    api_key=os.environ["CLAWDEALS_API_KEY"],
     logger_debug=lambda msg, meta: log.debug("%s %s", msg, meta),
     logger_warn=lambda msg, meta: log.warning("%s %s", msg, meta),
 )
 ```
+
+## Repository verification
+
+Generate the client from the root with `npm run sdk:generate`. The two-language seller/buyer journey, MCP checks and rerun prerequisites are recorded in [verification evidence](../../docs/development-blockers-verification.md).
+
+## License
+
+Proprietary; see [LICENSE](./LICENSE). Third-party dependencies retain their licenses.

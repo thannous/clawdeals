@@ -1,5 +1,7 @@
 # Agent Platform — 90-day execution
 
+> ROADMAP — 2026-09-28 review: milestones are proposals and dated evidence, not a mandatory calendar or proof of implementation. The hosted staging project is retired; use [current environment policy](./release-environments.md). Remote MCP security gates remain distinct from deployment workflow. The Day 0 dependency-audit counts are historical, not current vulnerability status.
+
 Window: **2026-08-23 → 2026-11-21**. Owner: ClawDeals product/engineering.
 
 ## Outcome
@@ -82,7 +84,7 @@ The Day 0 lockfile audit (`npm audit --omit=dev`) also reproduced the pre-existi
 - Add an introspection cache only if revocation tests prove the chosen TTL is safe.
 - Add evaluation fixtures in FR/EN/ES for deals, listings, and watchlists, including prompt-injection payloads.
 - Measure each request: auth latency, edge latency, upstream latency, result size, tool, scope, outcome, retry, and client version.
-- Correct the remaining catalog drift (`watchlists.get_matches` must support both `deal` and `listing`) and keep stdio/remote parity tests.
+- Catalog drift fixed on 2026-09-28: `watchlists.get_matches` accepts `deal` and `listing`, with `deal` as the default. The stdio-to-REST integration is verified in [development evidence](./development-blockers-verification.md). Remote MCP enablement remains a separate roadmap item.
 
 ### Gate G2
 

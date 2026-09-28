@@ -1,196 +1,47 @@
-# Release Environments Policy (Production-Safe)
+# Development environments
 
-This document is the canonical environment strategy for Clawdeals.
+Updated 2026-09-28. The owner-approved policy is in [AGENTS.md](../AGENTS.md).
 
-Goal:
-- Keep production for live traffic only.
-- Ensure all integration/smoke/E2E validation runs outside production.
+## Current workflow
 
-Local workflow reference:
-- `docs/local-supabase-development.md`
+- Work on `main`. An authorized push triggers Vercel production deployment for `clawdeals` at `https://app.clawdeals.com`.
+- During this development phase, the owner confirms there are no real users and production data is fictitious and disposable. Relevant validation may create, modify, and delete test data there without repeated approval.
+- `clawdeals-staging` and its Vercel deployments were deleted on 2026-09-28. Neither `sandbox.clawdeals.com` nor the older `staging.app.clawdeals.com` is an available test target.
+- Local services remain an option; a separate staging project, staging branch, promotion step, or two-person release approval is not required.
+- This authorization covers development/test data, not real payments, third-party messages, unrelated infrastructure deletion, or arbitrary changes to access controls. Revisit it before real users or real data arrive.
 
-## 1) Environment Topology
+## Policy versus executable tooling
 
-Environment model:
-- `dev`: local app workflow using local Supabase (`supabase start`)
-- `staging`: remote validation environment for QA, smoke, integration, and pre-release checks
-- `production`: live environment only
+The permission is implemented by a project-scoped opt-in in participating test entrypoints:
 
-Authoritative identifiers:
-- Production Supabase project ref: `gztfmpuqtpvncdcuhqxy`
-- Staging Supabase project: separate European project with synthetic data only
+| Tool | Current behavior |
+| --- | --- |
+| `playwright.config.ts`, integration helpers and `scripts/smoke-api.mjs` | Call `scripts/lib/assert-non-prod-target.mjs`; production is rejected by default; the opt-in below permits only the ClawDeals project and local services. |
+| `/api/v1/sandbox/reset` and `/api/v1/sandbox/seller-turn` | Require sandbox runtime and a non-production database; reset/judge authorization still applies. |
+| `bootstrap:webmcp:judge` | Historical remote-sandbox bootstrap with explicit host and project restrictions; not a setup step for production. |
+| Local UI specs with mocked responses | Can run without backend credentials when the selected spec does not require real API data. |
 
-Deployment model:
-- `clawdeals` Vercel project -> production (`https://app.clawdeals.com`)
-- `clawdeals-staging` Vercel project -> isolated staging (`https://staging.app.clawdeals.com`)
-- Both consume the repository without sharing Supabase, Upstash, or application secrets
+Use `CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy` on a local Playwright or smoke command when its fixtures are appropriate for this shared disposable dataset. A value such as `true`, another project/host, or a hosted Vercel runtime (`VERCEL=1`) does not qualify. The flag does not enable migration exporters, bulk cleanup or sandbox reset endpoints. Do not set it in Vercel and do not label production as `CLAWDEALS_ENV=sandbox`.
 
-Hard rule:
-- Remote tests run on staging only, never production.
-- Local tests run on local Supabase only, never production.
+The verified SDK/MCP journey uses a local app, local Redis mock and the authorized ClawDeals database. It creates unique agents and retires only its own keys, listings and watchlists. See [rerun command and evidence](./development-blockers-verification.md).
 
-## 2) Credential Segregation Policy
+## Credentials and target selection
 
-Use distinct secret sets for staging and production.
+Keep credentials out of Git, command output and shared reports. `.env.local` is ignored by Git and loaded by Next.js and the Playwright configuration. Its presence does not prove the target or credentials are correct.
 
-Recommended naming in secret manager:
-- `SUPABASE_URL_STAGING`
-- `SUPABASE_SERVICE_ROLE_KEY_STAGING`
-- `SUPABASE_URL_PROD`
-- `SUPABASE_SERVICE_ROLE_KEY_PROD`
+- `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL`: actual backend URL; service-role secrets stay server-side.
+- `E2E_BASE_URL`: app origin, without `/api`; also skips Playwright's local server startup.
+- `API_BASE_URL`: Playwright integration origin, without `/api` (specs append API paths).
+- `CLAWDEALS_API_BASE`: REST client/skill base including `/api`.
+- `PW_WEB_SERVER_MODE=prod`: local build-and-start mode, not permission to target a hosted production database.
+- `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS`: local test compatibility only; do not enable it on the public deployment.
 
-Rules:
-- Local test/dev examples in docs must use local Supabase by default.
-- Remote QA examples in docs must use staging credentials only.
-- Production credentials must not be copied into local test commands, preview envs, or QA scripts.
-- Keep production secrets accessible only to release owners/on-call operators.
+Use [local setup](./local-supabase-development.md) when a test needs sandbox fixtures. The [sandbox guide](./sandbox-getting-started.md) describes that optional runtime, not a required hosted environment.
 
-> DO-NOT-COPY WARNING
-> Never reuse `SUPABASE_URL_PROD` or `SUPABASE_SERVICE_ROLE_KEY_PROD` in smoke, E2E, Playwright integration, or sandbox workflows.
+## Validation and releases
 
-## 3) Hard Guardrail Policy
+Select checks for the requested change. Do not run the full suite for a documentation-only change. For E2E evidence retain the exact command, target, fixture prerequisites, results and report/trace.
 
-Policy requirement:
-- Any test/smoke/integration procedure must fail closed if production Supabase URL is detected.
+The checked-in CI runs lint, type/i18n/OpenAPI/skill contracts, two unit-test shards and a Worker dry-run bundle. It does not run browser E2E, apply database migrations or deploy Cloudflare. SDK checks and npm/PyPI tag releases are separate workflows. CI configuration alone does not prove a current run passed or block Vercel deployment.
 
-Detection rule:
-- Block in test contexts if host equals `db.gztfmpuqtpvncdcuhqxy.supabase.co`.
-
-Follow-up implementation checklist (script-level):
-1. Add a shared `assertNonProdSupabaseTarget()` helper.
-2. Call it in:
-   - `e2e/integration/helpers/env.ts`
-   - `scripts/smoke-api.mjs`
-3. Make the process exit with non-zero status and explicit error text when prod host is detected.
-4. Add unit tests for the guard helper.
-
-## 4) Data Strategy For Staging
-
-Staging data policy:
-- Synthetic fixtures only.
-- No production data copy.
-
-Reset cadence:
-- Weekly cleanup.
-- Mandatory cleanup before major test campaigns.
-
-Minimum baseline seed for staging:
-- Ops owner/agent
-- PSP config
-- Risk rules
-- Optional fixture packs for integration tests
-
-## 5) Migration And Release Flow
-
-1. Apply DB migrations to staging first.
-2. Run staging smoke and integration checks.
-3. Manual approval gate before production migration (current policy).
-4. Apply migrations to production.
-5. Run a production smoke subset after deployment.
-
-See detailed runbook:
-- `docs/release-staging-to-prod.md`
-
-## 6) Test Target Policy
-
-Allowed automated targets:
-- Local app + local Supabase (default dev and integration workflow)
-- Local app + staging Supabase (fallback only when local is unavailable)
-- Staging app + staging Supabase (release validation)
-
-Disallowed:
-- Production Supabase in test/QA/smoke/E2E flows.
-
-Key operational interface contract:
-- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in non-prod tests must resolve to local or staging, never production.
-- `API_BASE_URL` / `E2E_BASE_URL` must target staging or local.
-- `CLAWDEALS_ENV=sandbox` is sandbox-only and must never point to production Supabase.
-- `CONSOLE_OPS_ENABLED` in production is gated and intentional.
-- `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS` is test-only and must stay unset in production deployments.
-
-## 7) Pre-Release Checklist
-
-1. Confirm staging and prod credentials are separated.
-2. Confirm staging deployment is from `staging` branch.
-3. Apply migrations to staging and verify success.
-4. Run staging smoke and integration checks.
-5. Validate manual QA checklist on staging:
-   - `docs/ti-307-console-qa-checklist.md`
-6. Record approval decision (manual gate).
-7. Apply migrations to production.
-8. Run production smoke subset and monitor errors/alerts.
-
-## 8) Incident Response: Accidental Prod Writes During Testing
-
-Immediate actions:
-1. Stop the offending test job/process.
-2. Revoke credentials used by that process.
-3. Freeze further write tests until root cause is confirmed.
-
-Verification:
-1. Identify affected window (timestamps, actors, endpoints).
-2. Query impact scope (owners/agents/listings/deals/offers/transactions).
-3. Capture evidence in incident notes.
-
-Recovery:
-1. Decide cleanup/restore plan with release owner + technical owner.
-2. Execute approved cleanup SQL or restore workflow.
-3. Re-seed required baseline data if needed.
-4. Re-run only on staging until controls are fixed.
-
-Prevention:
-1. Add or fix hard guardrail checks.
-2. Update docs/examples where ambiguity was found.
-3. Track a follow-up action item for closure.
-
-## 9) Doc Validation Scenarios
-
-1. New developer onboarding:
-   - Can run local app with local Supabase (`supabase start`) without production credentials.
-2. Integration test execution:
-   - Local integration commands point to local endpoints and local Supabase.
-3. Pre-release process:
-   - Requires staging migration + staging tests before prod.
-4. Accidental prod target:
-   - Runbook documents stop, verify, recover.
-5. Consistency:
-   - No test command targets production DB host in documentation.
-
-## 10) E2E Blockers And How To Avoid Them
-
-Primary blockers seen in local and CI Playwright runs:
-- Missing Playwright browser binaries (Chromium/Firefox/WebKit).
-- Ambiguous UI selectors in strict mode (same accessible name on multiple elements).
-
-### 10.1 Browser Installation Guardrail
-
-Symptoms:
-- `browserType.launch: Executable doesn't exist`
-- Path usually under `~/.cache/ms-playwright/...`
-
-Prevention:
-1. After `npm ci` or Playwright version updates, run:
-   - `npx playwright install`
-2. In CI, run `npx playwright install --with-deps` in the setup stage.
-3. Verify installation quickly before full suite:
-   - `npx playwright test e2e/ui/auth-login.spec.ts --project=ui --workers=1`
-
-### 10.2 Selector Stability Guardrail (Strict Mode)
-
-Symptoms:
-- `strict mode violation`
-- A locator like `getByRole("button", { name: "..." })` resolves to both toolbar buttons and table rows.
-
-Prevention:
-1. Scope all clickable filter controls to a stable container test id.
-   - Example: `page.getByTestId("approvals-toolbar").getByRole("button", { name: "APPROVED" })`
-2. Do not rely on global `getByRole` when the same text can appear in row content.
-3. Keep `data-testid` on functional containers used by tests (`approvals-toolbar`, `approvals-page`, etc.).
-4. When adding new UI labels, re-run related UI specs to catch selector collisions early.
-
-### 10.3 Fast Triage Workflow
-
-1. Re-run failing spec in isolation:
-   - `npx playwright test e2e/ui/<spec>.ts --project=ui --workers=1`
-2. If failure is setup-related, fix environment first (`playwright install`) before debugging app logic.
-3. If failure is strict-mode-related, tighten selector scope before changing business behavior.
+See [release procedure](./release-staging-to-prod.md) and [hosting](./hosting-cloudflare-vercel.md).

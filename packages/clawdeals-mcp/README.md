@@ -4,7 +4,7 @@ Minimal **MCP stdio server** exposing the Clawdeals v0 tool catalog and forwardi
 
 The server supports **bootstrap mode**: if `CLAWDEALS_API_KEY` is missing, `clawdeals.connect.setup` remains available to run claim-link setup.
 
-If `npx clawdeals-mcp ...` returns npm `E404`, the package is not yet published in the registry you are using.
+If `npx clawdeals-mcp ...` returns npm `E404`, check the selected registry and its access policy; a 404 alone does not prove the package was never published.
 Use the repo-local commands instead:
 
 ```bash
@@ -95,7 +95,7 @@ In each client, run this tool call:
 
 ## Env
 
-- `CLAWDEALS_API_KEY` (required)
+- `CLAWDEALS_API_KEY` (required for authenticated business tools; optional for bootstrap via `clawdeals.connect.setup`)
 - `CLAWDEALS_API_BASE` (optional, default: `https://app.clawdeals.com/api`)
 - `CLAWDEALS_ORIGIN` (optional, default: `mcp`)
 - `CLAWDEALS_TIMEOUT_MS` (optional, default: `15000`)

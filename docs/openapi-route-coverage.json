@@ -1,0 +1,261 @@
+{
+  "description": "Reviewed route-pattern exceptions from the documentation audit. Coverage is at handler/path level, not a claim that every method, response or console endpoint is modeled.",
+  "routes": [
+    {
+      "file": "src/pages/api/v1/channels/[id_action].ts",
+      "route": "/v1/channels/{id_action}",
+      "covered_paths": [],
+      "exclusion": "Owner console channel pairing approval/revocation dispatcher; not a supported agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/channels/index.ts",
+      "route": "/v1/channels",
+      "covered_paths": [],
+      "exclusion": "Owner console channel list; not a supported agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/channels/telegram/[action].ts",
+      "route": "/v1/channels/telegram/{action}",
+      "covered_paths": [
+        "/v1/channels/telegram/webhook"
+      ],
+      "exclusion": "Owner Telegram pair:start and pair:confirm bootstrap; console-specific workflow."
+    },
+    {
+      "file": "src/pages/api/v1/sellers/[action].ts",
+      "route": "/v1/sellers/{action}",
+      "covered_paths": [
+        "/v1/sellers/psp:onboard",
+        "/v1/sellers/psp:status"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/approvals/[id].ts",
+      "route": "/v1/approvals/{id}",
+      "covered_paths": [
+        "/v1/approvals/{approval_id}:approve",
+        "/v1/approvals/{approval_id}:deny",
+        "/v1/approvals/{approval_id}:revoke",
+        "/v1/approvals/{approval_id}"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/sandbox/seller-turn.ts",
+      "route": "/v1/sandbox/seller-turn",
+      "covered_paths": [],
+      "exclusion": "Local synthetic fixture driver; hosted staging retired, not a production SDK endpoint."
+    },
+    {
+      "file": "src/pages/api/v1/sandbox/reset.ts",
+      "route": "/v1/sandbox/reset",
+      "covered_paths": [],
+      "exclusion": "Local synthetic fixture reset guarded separately; not a production SDK endpoint."
+    },
+    {
+      "file": "src/pages/api/v1/threads/[id].ts",
+      "route": "/v1/threads/{id}",
+      "covered_paths": [
+        "/v1/threads/{thread_id}:watch"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/public/listings.ts",
+      "route": "/v1/public/listings",
+      "covered_paths": [
+        "/v1/public/listings"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/public/deals.ts",
+      "route": "/v1/public/deals",
+      "covered_paths": [
+        "/v1/public/deals"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/transactions/[tx_id]/[action].ts",
+      "route": "/v1/transactions/{tx_id}/{action}",
+      "covered_paths": [
+        "/v1/transactions/{tx_id}/request-contact-reveal",
+        "/v1/transactions/{tx_id}/mark-completed",
+        "/v1/transactions/{tx_id}/ratings",
+        "/v1/transactions/{tx_id}/approve-contact-reveal",
+        "/v1/transactions/{tx_id}/deny-contact-reveal",
+        "/v1/transactions/{tx_id}/escrow:create"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/installations/[id_action].ts",
+      "route": "/v1/installations/{id_action}",
+      "covered_paths": [
+        "/v1/installations/{installation_id}:revoke"
+      ],
+      "exclusion": "Revoke is documented. Rotate and scopes-upgrade belong to the installation approval/console workflow and remain outside the supported SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/agents/[id]/[action].ts",
+      "route": "/v1/agents/{id}/{action}",
+      "covered_paths": [
+        "/v1/agents/{agent_id}/keys:rotate",
+        "/v1/agents/{agent_id}/keys:revoke",
+        "/v1/agents/{agent_id}/keys:rotate-all",
+        "/v1/agents/{agent_id}/keys:revoke-all",
+        "/v1/agents/me/claim"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/agents/me/claim.ts",
+      "route": "/v1/agents/me/claim",
+      "covered_paths": [
+        "/v1/agents/me/claim"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/disputes/[dispute_id]/[action].ts",
+      "route": "/v1/disputes/{dispute_id}/{action}",
+      "covered_paths": [
+        "/v1/disputes/{dispute_id}/resolve",
+        "/v1/disputes/{dispute_id}/evidence",
+        "/v1/disputes/{dispute_id}/evidence:confirm"
+      ]
+    },
+    {
+      "file": "src/pages/api/v1/acquisition/events.ts",
+      "route": "/v1/acquisition/events",
+      "covered_paths": [],
+      "exclusion": "First-party UI acquisition telemetry; not part of the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/auth/me.ts",
+      "route": "/v1/auth/me",
+      "covered_paths": [],
+      "exclusion": "First-party owner sign-in/session flow; outside the agent API-key SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/auth/session.ts",
+      "route": "/v1/auth/session",
+      "covered_paths": [],
+      "exclusion": "First-party owner sign-in/session flow; outside the agent API-key SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/auth/[action].ts",
+      "route": "/v1/auth/{action}",
+      "covered_paths": [],
+      "exclusion": "First-party owner sign-in/session flow; outside the agent API-key SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/chat/[command].ts",
+      "route": "/v1/chat/{command}",
+      "covered_paths": [],
+      "exclusion": "Human chat command staging for confirmation; not an autonomous agent SDK endpoint."
+    },
+    {
+      "file": "src/pages/api/v1/chat/commands/[command].ts",
+      "route": "/v1/chat/commands/{command}",
+      "covered_paths": [],
+      "exclusion": "Human confirmation/cancel/undo flow; not an autonomous agent SDK endpoint."
+    },
+    {
+      "file": "src/pages/api/v1/owner/listings.ts",
+      "route": "/v1/owner/listings",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/deals.ts",
+      "route": "/v1/owner/deals",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/identities/index.ts",
+      "route": "/v1/owner/identities",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/identities/[identity_id].ts",
+      "route": "/v1/owner/identities/{identity_id}",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/activity.ts",
+      "route": "/v1/owner/activity",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/claims.ts",
+      "route": "/v1/owner/claims",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/agents.ts",
+      "route": "/v1/owner/agents",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/offers.ts",
+      "route": "/v1/owner/offers",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/threads.ts",
+      "route": "/v1/owner/threads",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/watchlists/index.ts",
+      "route": "/v1/owner/watchlists",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/policy-decisions.ts",
+      "route": "/v1/owner/policy-decisions",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/installations.ts",
+      "route": "/v1/installations",
+      "covered_paths": [],
+      "exclusion": "Compatibility re-export of owner/installations for the connected-apps console."
+    },
+    {
+      "file": "src/pages/api/v1/owner/[action].ts",
+      "route": "/v1/owner/{action}",
+      "covered_paths": [
+        "/v1/owner/installations",
+        "/v1/owner/verify-email:start",
+        "/v1/owner/verify-email:confirm",
+        "/v1/owner/verify-phone:start",
+        "/v1/owner/verify-phone:confirm"
+      ],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/watchlists/[watchlist_id].ts",
+      "route": "/v1/owner/watchlists/{watchlist_id}",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/listings/[id].ts",
+      "route": "/v1/owner/listings/{id}",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/deals/[deal_id]/vote.ts",
+      "route": "/v1/owner/deals/{deal_id}/vote",
+      "covered_paths": [],
+      "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    }
+  ]
+}

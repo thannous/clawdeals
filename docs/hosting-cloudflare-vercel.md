@@ -6,24 +6,15 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 - DNS (2 hosts).
 - Variables d'environnement (marketing vs app).
 - `workers/edge-router.ts` (routing/redirects au niveau Cloudflare).
-- `middleware.ts` (canonisation et garde-fous cote Vercel).
+- `proxy.ts` (canonisation et garde-fous cote Vercel).
 
-## Environment Topology (Production-Safe)
+## Current development topology (2026-09-28)
 
-Use a 3-environment model and keep all automated tests away from production data.
-
-- Production Supabase project ref: `gztfmpuqtpvncdcuhqxy`
-- Staging Supabase project: separate European project with synthetic data only
-- Vercel model: separate `clawdeals-staging` project connected to this repository, so staging credentials cannot leak into production previews
-- Domains:
-  - Production app: `https://app.clawdeals.com`
-  - Staging app: `https://staging.app.clawdeals.com`
-- Remote test policy: integration/smoke/E2E tests must target staging only, never production
-
-Deployment mapping:
-- Vercel project `clawdeals` -> production (`app.clawdeals.com`)
-- Vercel project `clawdeals-staging` -> isolated staging (`staging.app.clawdeals.com`)
-- Repository work remains on `main`; staging isolation is provided by distinct service projects and credentials
+- Vercel project `clawdeals` serves `https://app.clawdeals.com`; authorized pushes to `main` deploy directly to production.
+- The owner confirms that production currently has no real users and contains disposable fictitious data. Development validation may create, modify, and delete test data there; no staging promotion is required. See `AGENTS.md` for the scope of this authorization.
+- Vercel project `clawdeals-staging` and its deployments were deleted on 2026-09-28. Its former `https://sandbox.clawdeals.com` endpoint is retired; do not use it as a test target.
+- This removal concerns the Vercel project only; it does not establish deletion of external databases, Redis services, or DNS records.
+- Existing production-target guards may still block tests; adapt them explicitly for the authorized development phase when working on test tooling. Revisit the policy before introducing real users or real data.
 
 ## Cible des domaines
 
@@ -70,35 +61,12 @@ Si la landing (sur `www`) doit appeler l'API sur `app` (ex: waitlist):
 Optionnel (SSE hors Vercel):
 - `NEXT_PUBLIC_SSE_BASE_URL=https://<host-sse>` (cote Vercel)
 
-### Vercel Staging (`clawdeals-staging` project)
-
-- `APP_HOST=staging.app.clawdeals.com`
-- `MARKETING_HOSTS=clawdeals.com`
-- `NEXT_PUBLIC_APP_URL=https://staging.app.clawdeals.com`
-- `APP_ENTRY_PATH=/start`
-- `SUPABASE_URL=<SUPABASE_URL_STAGING>`
-- `SUPABASE_SERVICE_ROLE_KEY=<SUPABASE_SERVICE_ROLE_KEY_STAGING>`
-- `NEXT_PUBLIC_SUPABASE_URL=<NEXT_PUBLIC_SUPABASE_URL_STAGING>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<NEXT_PUBLIC_SUPABASE_ANON_KEY_STAGING>`
-- `NEXT_PUBLIC_API_BASE_URL=https://staging.app.clawdeals.com`
-- `UPSTASH_REDIS_REST_URL=<UPSTASH_REDIS_REST_URL_STAGING>`
-- `UPSTASH_REDIS_REST_TOKEN=<UPSTASH_REDIS_REST_TOKEN_STAGING>`
-- `CRON_SECRET=<CRON_SECRET_STAGING>`
-
-Important:
-- Never set production Supabase credentials in Vercel Preview environment.
-- Preview/staging deployments must be isolated from production DB and production secrets.
-
 ### Cloudflare (Edge Router)
 
 - `MARKETING_HOST=clawdeals.com` (host marketing canonique)
 - `APP_ORIGIN=https://app.clawdeals.com` (origin applicatif)
-- `MARKETING_ORIGIN=https://clawdeals.vercel.app` (origin upstream de la landing; ne doit jamais pointer vers `clawdeals.com`)
+- `MARKETING_ORIGIN=https://app.clawdeals.com` (origin upstream de la landing; ne doit jamais pointer vers `clawdeals.com`)
 - `REMOTE_MCP_ENABLED=false` (kill switch production; ne pas activer sans les gates du plan 90 jours)
-
-Staging equivalent:
-- `APP_ORIGIN=https://staging.app.clawdeals.com`
-- `MARKETING_ORIGIN=https://<staging-marketing-origin>`
 
 ## CORS (API)
 
@@ -169,7 +137,6 @@ Cloudflare de la zone apres le deploiement Vercel (Dashboard > Caching > Purge E
 
 ## Related Runbooks
 
-- Canonical environment policy: `docs/release-environments.md`
-- Manual promotion procedure: `docs/release-staging-to-prod.md`
+- Current environment policy and direct-main release procedure: `docs/release-environments.md`, `docs/release-staging-to-prod.md`
 - Edge router deploy details: `docs/deploy-edge-router.md`
 - EU launch and market contract: `docs/launch-eu-fr-gb-es.md`

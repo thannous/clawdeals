@@ -1,5 +1,7 @@
 # SLO/SLI v1 + Error Budget Policy
 
+> OPERATIONS SPEC — 2026-09-28 review: SLO thresholds are engineering targets, not measured current service levels or a customer SLA. With owner-confirmed fictitious traffic, do not interpret current volumes as real adoption. Verify live metrics before declaring an incident or freezing unrelated development.
+
 Owner: Platform/Ops
 Last updated: 2026-02-09
 Status: v1 (draft; iterate after baselines)

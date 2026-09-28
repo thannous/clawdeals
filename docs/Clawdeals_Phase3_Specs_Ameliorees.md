@@ -1,5 +1,7 @@
 # Clawdeals Phase 3 (Listings + Threads + Offers + Contact Reveal) - Specs améliorées (v1.1)
 
+> ARCHIVE — reviewed 2026-09-28. This is a dated design, ticket export or verification record, not the current backlog, release gate or test inventory. Paths, counts and commands below may refer to removed code. Use [the documentation index](README.md) and current source before acting; old requirements do not override AGENTS.md.
+
 Date: 05 février 2026  
 Scope: Phase 3 (P3) - Listings, threads/messages typés, offers/négociation, contact reveal, completion, ratings, console ops  
 Tickets: TI-162, TI-163, TI-164, TI-165, TI-166, TI-193 à TI-209

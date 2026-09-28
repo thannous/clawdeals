@@ -1,10 +1,9 @@
 # Local Supabase Development Workflow
 
-Effective date: February 17, 2026.
+Updated 2026-09-28. Optional local backend setup; a prerequisite only for tests/features that need this stack. See [current environment policy](./release-environments.md).
 
 ## Goal
-- Keep local development and integration tests isolated from production.
-- Use local Supabase as the default target.
+Run deterministic sandbox fixtures locally when needed. This is not a mandatory staging gate for ordinary development or deployment.
 
 ## Prerequisites
 - Docker installed and running.
@@ -60,9 +59,17 @@ Quick preflight:
 npm run test:integration -- --list
 ```
 
-## Safety Rules
-- Never run integration/smoke/E2E with production Supabase (`gztfmpuqtpvncdcuhqxy`).
-- Guardrail checks in Playwright/smoke/integration must fail closed on production target detection.
+## Browser and runtime setup
+
+Use the Node/npm versions in `package.json` and `.nvmrc`. On a machine with mise, `mise exec node@24.19.0 -- npm run dev` selects the repository's Node version without changing the global shell.
+
+Install the matching Chromium binary once with `npx playwright install chromium --only-shell`. If macOS denies Chromium's MachPort bootstrap, run the approved browser process outside the restricted filesystem sandbox. If Watchpack reports `EMFILE`, retry with `WATCHPACK_POLLING=true` rather than changing app code.
+
+Playwright starts a local server by default; `E2E_DEV_PORT` selects its port. Some integration suites also need Redis: the optional `E2E_USE_LOCAL_UPSTASH_MOCK=1` starts the repository's REST mock. Check fixture needs for the selected suite.
+
+## Current guard behavior
+
+Playwright and smoke scripts reject production by default. The explicit project-scoped development opt-in and its limits are documented in [release-environments.md](./release-environments.md). Sandbox reset endpoints remain restricted to a non-production backend.
 
 ## Stop Local Stack
 
@@ -71,5 +78,5 @@ supabase stop
 ```
 
 ## Remote Validation
-- Use staging only for remote validation and release checks.
+- The former remote staging project is retired. Use the current environment policy to select an authorized target.
 - See `docs/release-environments.md` and `docs/release-staging-to-prod.md`.
