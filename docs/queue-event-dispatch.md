@@ -10,9 +10,17 @@ producer updates wake their existing Vercel consumers through asynchronous
   is unique per invocation, only its owner can release it, and it expires after
   five minutes. Each HTTP handler is capped at sixty seconds.
 - Postgres checks for remaining work every five minutes; empty queues cause no
-  HTTP call. Notification recovery waits at least fifteen minutes after the last
-  wake because PENDING also includes intentionally deferred digests/quiet hours.
-  Cron alignment can extend that interval to approximately twenty minutes.
+  HTTP call. Notifications have an indexed `available_at`; only due rows wake
+  consumers and are fetched. Quiet hours and hourly/daily digests are evaluated
+  together in local time, including DST gaps/repeated hours and fixed offsets.
+- Preference insert/update/delete recalculates pending schedules. A compact
+  snapshot of scheduling fields is reconciled in SQL every five minutes to catch
+  concurrent insert/preferences changes. Permanently quiet or disabled event
+  types remain suspended without HTTP; re-enabling them schedules work again.
+  SILENT mode still wakes the consumer to mark rows SUPPRESSED.
+- Failed attempts move eligibility at least fifteen minutes ahead. A preference
+  change may shorten this delay intentionally. Work becoming due is recovered
+  within the next five-minute cron window; this is not an exact-time delivery SLA.
 - Cloudflare keeps an hourly fallback at minute 2. Offer expiration remains on
   its independent five-minute schedule.
 - A crash after external notification delivery but before marking it delivered
@@ -81,3 +89,23 @@ relocatable; changing its extension schema requires dropping its transport
 queue and response history. No reinstall was performed merely to clear that
 notice. These checks do not establish end-to-end external delivery: production
 queues were empty, and trigger behavior was verified using disposable PGlite.
+
+## Eligibility migration rollout
+
+Apply `notification_eligibility_schedule` before deploying the consumer using
+`available_at`. It adds columns and an index without removing queue rows. Old
+consumers remain compatible; their existing preference checks still apply.
+Restore old application code before considering any schema rollback. The SQL
+snapshot stores scheduling settings only, not destination addresses or payloads.
+
+Run the disposable calendar/trigger checks (same PGlite prerequisite as above):
+
+```sh
+CLAWDEALS_PGLITE_MODULE=/tmp/clawdeals-queue-sql-check/node_modules/@electric-sql/pglite/dist/index.js \
+  mise exec node@24.19.0 -- node scripts/verify-notification-schedule.mjs
+```
+
+Evidence: `/tmp/claw-notification-schedule-results.json`. These tests cover DST,
+fixed offsets, retry delay, preference rescheduling, missed concurrent snapshots,
+disabled event types, permissions and rollback. They simulate pg_net and do not
+send external notifications.

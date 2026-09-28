@@ -423,6 +423,7 @@ export async function runNotificationsDispatch({
     .from("notification_outbox")
     .select("notification_outbox_id,owner_id,channel_type,event_type,entity_type,entity_id,payload,occurred_at,status,attempt_count")
     .eq("status", "PENDING")
+    .lte("available_at", now.toISOString())
     .order("occurred_at", { ascending: true })
     .order("notification_outbox_id", { ascending: true })
     .limit(fetchLimit);

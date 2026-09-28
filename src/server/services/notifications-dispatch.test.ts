@@ -65,6 +65,7 @@ function makeClient({
               eq() {
                 return chain;
               },
+              lte() { return chain; },
               order() {
                 return chain;
               },

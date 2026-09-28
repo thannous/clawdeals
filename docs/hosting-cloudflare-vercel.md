@@ -140,3 +140,15 @@ Cloudflare de la zone apres le deploiement Vercel (Dashboard > Caching > Purge E
 - Current environment policy and direct-main release procedure: `docs/release-environments.md`, `docs/release-staging-to-prod.md`
 - Edge router deploy details: `docs/deploy-edge-router.md`
 - EU launch and market contract: `docs/launch-eu-fr-gb-es.md`
+
+## Ignore documentation-only Vercel builds
+
+`vercel.json` sets `ignoreCommand` to `node scripts/vercel-ignore-build.mjs`.
+Only root AGENTS/README/LICENSE and `.md`/`.txt` files under internal `docs/`
+are skipped. Public files, source, dependencies, migrations, scripts and unknown
+paths still build. All changes since `VERCEL_GIT_PREVIOUS_SHA` are compared,
+including deletions/renames; missing history builds by default. An ignored
+build leaves the previous production version active and does not apply SQL.
+
+Verify decisions in disposable Git repositories with:
+`mise exec node@24.19.0 -- node --test scripts/vercel-ignore-build.test.mjs`.
