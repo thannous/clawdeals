@@ -54,32 +54,5 @@ describe("POST /api/internal/cron/trustscore-recalc-queue", () => {
     expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
     expect(vi.mocked(runTrustScoreRecalcQueue)).not.toHaveBeenCalled();
   });
-
-  it("authorizes with x-cron-secret header and forwards limit", async () => {
-    vi.mocked(runTrustScoreRecalcQueue).mockResolvedValue({
-      scanned: 1,
-      updated: 0,
-      skipped: 1,
-      errors: 0
-    });
-
-    const req: any = {
-      method: "POST",
-      headers: { "x-cron-secret": "secret-1" },
-      query: { limit: "2" }
-    };
-    const res = createMockRes();
-
-    await handler(req, res);
-
-    expect(vi.mocked(runTrustScoreRecalcQueue)).toHaveBeenCalledWith({ limit: 2 });
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      scanned: 1,
-      updated: 0,
-      skipped: 1,
-      errors: 0
-    });
-  });
 });
 

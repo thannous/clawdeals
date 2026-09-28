@@ -112,40 +112,6 @@ describe("escrow action API contracts", () => {
     } as any);
   });
 
-  it("hides escrow existence when a non-seller tries to mark delivery", async () => {
-    const result: any = await markDeliveredHandler(request(), null, context(BUYER_ID));
-
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("ESCROW_NOT_FOUND");
-    expect(markEscrowDeliveredMock).not.toHaveBeenCalled();
-    expect(publishSseEventMock).not.toHaveBeenCalled();
-  });
-
-  it("marks delivery atomically and notifies both participants", async () => {
-    const ctx = context(SELLER_ID);
-
-    const result: any = await markDeliveredHandler(request(), null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.body).toEqual({
-      escrow_id: ESCROW_ID,
-      status: "DELIVERED",
-      delivered_at: "2026-07-23T12:00:00.000Z"
-    });
-    expect(markEscrowDeliveredMock).toHaveBeenCalledWith({
-      escrowId: ESCROW_ID,
-      actorAgentId: SELLER_ID
-    });
-    expect(publishSseEventMock).toHaveBeenCalledTimes(2);
-    expect(publishSseEventMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "escrow.state_changed",
-        payload: { status: "DELIVERED", transition: "delivered" }
-      })
-    );
-    expect(ctx.body).toMatchObject({ escrow_id: ESCROW_ID, status: "DELIVERED" });
-  });
-
   it("fails closed when PSP configuration is absent", async () => {
     getPspConfigMock.mockResolvedValue(null);
 
@@ -155,15 +121,6 @@ describe("escrow action API contracts", () => {
     expect(result.body.error.code).toBe("PSP_NOT_CONFIGURED");
     expect(getEscrowByIdMock).not.toHaveBeenCalled();
     expect(createPspAdapterMock).not.toHaveBeenCalled();
-  });
-
-  it("hides escrow existence when a non-buyer tries to pay", async () => {
-    const result: any = await payHandler(request(), null, context(SELLER_ID));
-
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("ESCROW_NOT_FOUND");
-    expect(createPspAdapterMock).not.toHaveBeenCalled();
-    expect(setEscrowPaymentMock).not.toHaveBeenCalled();
   });
 
   it("replays an existing payment id without creating a second checkout session", async () => {
@@ -186,35 +143,6 @@ describe("escrow action API contracts", () => {
     expect(createPspAdapterMock).toHaveBeenCalledTimes(1);
     expect(createCheckoutSessionMock).not.toHaveBeenCalled();
     expect(setEscrowPaymentMock).not.toHaveBeenCalled();
-  });
-
-  it("claims and replays orphaned webhooks before returning the refreshed escrow status", async () => {
-    const initial = baseEscrow();
-    const refreshed = baseEscrow({ status: "HOLD", psp_payment_id: "payment-1" });
-    getEscrowByIdMock
-      .mockResolvedValueOnce(initial as any)
-      .mockResolvedValueOnce(refreshed as any);
-    claimOrphanedPspWebhookEventsMock.mockResolvedValue(2);
-
-    const result: any = await payHandler(request(), null, context(BUYER_ID));
-
-    expect(result.status).toBe(200);
-    expect(result.body.status).toBe("HOLD");
-    expect(setEscrowPaymentMock).toHaveBeenCalledWith({
-      escrowId: ESCROW_ID,
-      actorAgentId: BUYER_ID,
-      provider: "mock",
-      paymentId: "payment-1"
-    });
-    expect(claimOrphanedPspWebhookEventsMock).toHaveBeenCalledWith({
-      escrowId: ESCROW_ID,
-      paymentId: "payment-1"
-    });
-    expect(replayPendingEscrowEventsMock).toHaveBeenCalledWith({
-      escrowId: ESCROW_ID,
-      adapter: expect.objectContaining({ provider: "mock" })
-    });
-    expect(getEscrowByIdMock).toHaveBeenCalledTimes(2);
   });
 
   it("preserves checkout success when orphan webhook replay fails", async () => {

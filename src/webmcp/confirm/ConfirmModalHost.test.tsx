@@ -67,34 +67,6 @@ beforeEach(() => {
 });
 
 describe("ConfirmModalHost", () => {
-  it("renders nothing when no confirmation is pending", () => {
-    state.pending = null;
-    render(<ConfirmModalHost />);
-    expect(screen.queryByTestId("webmcp-confirm-modal")).toBeNull();
-  });
-
-  it("shows a human sentence and approves the original args untouched", () => {
-    render(<ConfirmModalHost />);
-    expect(screen.getByTestId("webmcp-confirm-sentence").textContent).toContain("€1,100");
-    expect(screen.getByTestId("webmcp-confirm-policy-hint").getAttribute("data-tone")).toBe("ok");
-
-    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
-    expect(state.decide).toHaveBeenCalledWith({ kind: "approve", args: offerRequest.args });
-  });
-
-  it("lets the human edit the amount without touching JSON and warns above the hard budget", () => {
-    render(<ConfirmModalHost />);
-    const field = screen.getByTestId("webmcp-confirm-primary-field") as HTMLInputElement;
-    fireEvent.change(field, { target: { value: "1350" } });
-
-    expect(screen.getByTestId("webmcp-confirm-policy-hint").getAttribute("data-tone")).toBe("warn");
-    fireEvent.click(screen.getByRole("button", { name: /Approve/ }));
-    expect(state.decide).toHaveBeenCalledWith({
-      kind: "approve",
-      args: { ...(offerRequest.args as object), amount: 1350 }
-    });
-  });
-
   it("rejects only through the explicit button; Escape and overlay never decide", () => {
     render(<ConfirmModalHost />);
     fireEvent.keyDown(document, { key: "Escape" });

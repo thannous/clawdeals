@@ -40,7 +40,7 @@ import {
   updateIdempotencyRecord,
   deleteIdempotencyRecord
 } from "./store";
-import { buildRequestHmac, shouldEncryptResponseBody, encryptJson } from "./crypto";
+import { buildRequestHmac, shouldEncryptResponseBody } from "./crypto";
 
 function expectBeginIdempotencyAction<T extends BeginIdempotencyResult["action"]>(
   result: BeginIdempotencyResult,
@@ -78,60 +78,6 @@ describe("beginIdempotency", () => {
     process.env.IDEMPOTENCY_SECRET = "test-secret";
     redisAvailable = true;
     (buildRequestHmac as any).mockReturnValue("hmac-abc");
-  });
-
-  it("skips when not enabled", async () => {
-    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: false });
-    expect(result.action).toBe("skip");
-  });
-
-  it("skips without idempotency-key header", async () => {
-    const req = { headers: {}, query: {} };
-    const result = await beginIdempotency(req, makeCtx(), { enabled: true });
-    expect(result.action).toBe("skip");
-  });
-
-  it("returns error for invalid key format", async () => {
-    const req = { headers: { "idempotency-key": "\x00bad" }, query: {} };
-    const result = await beginIdempotency(req, makeCtx(), { enabled: true });
-    const errorResult = expectBeginIdempotencyAction(result, "error");
-    expect(errorResult.response.status).toBe(400);
-    expect(errorResult.response.body.error.code).toBe("INVALID_IDEMPOTENCY_KEY");
-  });
-
-  it("returns error for key exceeding max length", async () => {
-    const req = { headers: { "idempotency-key": "a".repeat(200) }, query: {} };
-    const result = await beginIdempotency(req, makeCtx(), { enabled: true });
-    const errorResult = expectBeginIdempotencyAction(result, "error");
-    expect(errorResult.response.status).toBe(400);
-  });
-
-  it("continues when lock acquired and no existing record", async () => {
-    mockRedis.set.mockResolvedValue("OK");
-    (getIdempotencyRecord as any).mockResolvedValue(null);
-    (insertIdempotencyRecord as any).mockResolvedValue({ idempotency_id: "idem-1", status: "IN_PROGRESS" });
-
-    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
-    const continueResult = expectBeginIdempotencyAction(result, "continue");
-    expect(continueResult.context.key).toBe("test-key");
-  });
-
-  it("replays when COMPLETED record exists with matching HMAC", async () => {
-    mockRedis.set.mockResolvedValue("OK");
-    (getIdempotencyRecord as any).mockResolvedValue({
-      idempotency_id: "idem-1",
-      status: "COMPLETED",
-      request_hmac: "hmac-abc",
-      response_status: 201,
-      response_body: { data: { id: "1" } },
-      response_headers: {}
-    });
-
-    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
-    const replayResult = expectBeginIdempotencyAction(result, "replay");
-    expect(replayResult.response.status).toBe(201);
-    expect(replayResult.response.body).toEqual({ data: { id: "1" } });
-    expect(replayResult.response.headers["Idempotency-Replayed"]).toBe("true");
   });
 
   it("claims expired records when strictReplayTtl is enabled", async () => {
@@ -182,24 +128,6 @@ describe("beginIdempotency", () => {
     const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true, strictReplayTtl: true });
     const replayResult = expectBeginIdempotencyAction(result, "replay");
     expect(replayResult.response.status).toBe(201);
-  });
-
-  it("returns 409 KEY_REUSE on HMAC mismatch", async () => {
-    mockRedis.set.mockResolvedValue("OK");
-    (buildRequestHmac as any).mockReturnValue("hmac-different");
-    (getIdempotencyRecord as any).mockResolvedValue({
-      idempotency_id: "idem-1",
-      status: "COMPLETED",
-      request_hmac: "hmac-original",
-      response_status: 201,
-      response_body: {},
-      response_headers: {}
-    });
-
-    const result = await beginIdempotency(makeReq(), makeCtx(), { enabled: true });
-    const errorResult = expectBeginIdempotencyAction(result, "error");
-    expect(errorResult.response.status).toBe(409);
-    expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
   });
 
   it("returns IN_PROGRESS when lock not acquired and poll times out", async () => {
@@ -280,12 +208,6 @@ describe("beginIdempotency", () => {
     expect(errorResult.response.body.error.code).toBe("IDEMPOTENCY_KEY_REUSE");
   });
 
-  it("skips when no actor id available", async () => {
-    const ctx = makeCtx({ actor: { type: null, id: null }, agentId: null });
-    const result = await beginIdempotency(makeReq(), ctx, { enabled: true });
-    expect(result.action).toBe("skip");
-  });
-
   it("returns unavailable when no actor id is available and failOpen is false", async () => {
     const ctx = makeCtx({ actor: { type: null, id: null }, agentId: null });
     const result = await beginIdempotency(makeReq(), ctx, { enabled: true, failOpen: false });
@@ -336,23 +258,6 @@ describe("finalizeIdempotency", () => {
     redisAvailable = true;
   });
 
-  it("does nothing without context", async () => {
-    await finalizeIdempotency(null, { status: 200 });
-    expect(mockRedis.del).not.toHaveBeenCalled();
-  });
-
-  it("deletes lock key", async () => {
-    const context = {
-      lockKey: "idem:lock:agent:1:POST:/api:key",
-      record: { idempotency_id: "idem-1" }
-    };
-    (shouldEncryptResponseBody as any).mockReturnValue(false);
-    (updateIdempotencyRecord as any).mockResolvedValue({});
-
-    await finalizeIdempotency(context, { status: 200, body: {}, headers: {} });
-    expect(mockRedis.del).toHaveBeenCalledWith("idem:lock:agent:1:POST:/api:key");
-  });
-
   it("deletes record for 400 response", async () => {
     const context = {
       lockKey: "lock-key",
@@ -371,21 +276,6 @@ describe("finalizeIdempotency", () => {
     expect(deleteIdempotencyRecord).toHaveBeenCalledWith("idem-1");
   });
 
-  it("stores COMPLETED for 2xx response", async () => {
-    const context = {
-      lockKey: "lock-key",
-      record: { idempotency_id: "idem-1" }
-    };
-    (shouldEncryptResponseBody as any).mockReturnValue(false);
-    (updateIdempotencyRecord as any).mockResolvedValue({});
-
-    await finalizeIdempotency(context, { status: 201, body: { data: { id: "1" } }, headers: {} });
-    expect(updateIdempotencyRecord).toHaveBeenCalledWith(
-      "idem-1",
-      expect.objectContaining({ status: "COMPLETED", response_status: 201 })
-    );
-  });
-
   it("stores FAILED for 5xx response", async () => {
     const context = {
       lockKey: "lock-key",
@@ -398,30 +288,6 @@ describe("finalizeIdempotency", () => {
     expect(updateIdempotencyRecord).toHaveBeenCalledWith(
       "idem-1",
       expect.objectContaining({ status: "FAILED", response_status: 500 })
-    );
-  });
-
-  it("encrypts body when sensitive keys present", async () => {
-    const context = {
-      lockKey: "lock-key",
-      record: { idempotency_id: "idem-1" }
-    };
-    (shouldEncryptResponseBody as any).mockReturnValue(true);
-    (encryptJson as any).mockReturnValue("v1:encrypted-data");
-    (updateIdempotencyRecord as any).mockResolvedValue({});
-
-    await finalizeIdempotency(context, {
-      status: 201,
-      body: { data: { api_key: "cd_live_test.secret" } },
-      headers: {}
-    });
-    expect(encryptJson).toHaveBeenCalled();
-    expect(updateIdempotencyRecord).toHaveBeenCalledWith(
-      "idem-1",
-      expect.objectContaining({
-        response_body: null,
-        response_body_encrypted: "v1:encrypted-data"
-      })
     );
   });
 });

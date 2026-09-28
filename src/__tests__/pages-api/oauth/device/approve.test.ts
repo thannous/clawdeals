@@ -52,45 +52,6 @@ describe("POST /oauth/device/approve", () => {
     } as any);
   });
 
-  it("requires Idempotency-Key", async () => {
-    const req: any = { method: "POST", headers: {}, body: { user_code: "ABCD-EFGH" } };
-    const ctx: any = { ...baseCtx };
-
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-    expect(result.headers["Cache-Control"]).toBe("no-store");
-    expect(ctx.body?.user_code).toBeUndefined();
-  });
-
-  it("requires owner auth", async () => {
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "k1" },
-      body: { user_code: "ABCD-EFGH" }
-    };
-    const result: any = await handler(req, null, { authError: null, ownerId: null, actor: { type: "anonymous" } });
-    expect(result.status).toBe(401);
-  });
-
-  it("rejects unverified owner", async () => {
-    getOwnerMock.mockResolvedValue({
-      owner_id: ownerId,
-      email_verified_at: null
-    } as any);
-
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "k1" },
-      body: { user_code: "ABCD-EFGH" }
-    };
-
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(403);
-    expect(result.body.error.code).toBe("OWNER_EMAIL_NOT_VERIFIED");
-    expect(getOauthDeviceAuthorizationByUserCode).not.toHaveBeenCalled();
-  });
-
   it("sanitizes ctx.body (never stores plaintext user_code)", async () => {
     getAuthMock.mockRejectedValue({ status: 400, code: "VALIDATION_ERROR", message: "userCode is invalid" });
 
@@ -105,101 +66,6 @@ describe("POST /oauth/device/approve", () => {
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
     expect(ctx.body?.user_code).toBeUndefined();
-  });
-
-  it("approves via create_agent", async () => {
-    getAuthMock.mockResolvedValue({
-      authorization_id: "11111111-1111-1111-1111-111111111111",
-      status: "PENDING",
-      client_id: "openclaw",
-      requested_agent_name: "OpenClaw",
-      device_code_hash: "dhash",
-      user_code_hash: "uhash"
-    } as any);
-
-    createAgentMock.mockResolvedValue({ id: "22222222-2222-2222-2222-222222222222" } as any);
-    createOrGetControlDmThreadMock.mockResolvedValue({
-      thread: { thread_id: "77777777-7777-4777-8777-777777777777" },
-      created: true
-    } as any);
-
-    approveMock.mockResolvedValue({
-      authorization_id: "11111111-1111-1111-1111-111111111111",
-      status: "AUTHORIZED",
-      owner_id: ownerId,
-      agent_id: "22222222-2222-2222-2222-222222222222",
-      authorized_at: "2026-02-10T12:00:00.000Z"
-    } as any);
-
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "k1" },
-      body: { user_code: "ABCD-EFGH", mode: "create_agent", agent_name: "My Agent" }
-    };
-    const ctx: any = { ...baseCtx };
-
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(200);
-    expect(result.body.data.status).toBe("AUTHORIZED");
-    expect(result.body.data.owner_id).toBe(ownerId);
-    expect(result.headers["Cache-Control"]).toBe("no-store");
-
-    expect(createAgent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ownerId,
-        name: "My Agent",
-        metadata: expect.objectContaining({
-          oauth_client_id: "openclaw",
-          oauth_device_authorization_id: "11111111-1111-1111-1111-111111111111"
-        })
-      })
-    );
-    expect(createOrGetControlDmThread).toHaveBeenCalledWith({
-      ownerId,
-      agentId: "22222222-2222-2222-2222-222222222222"
-    });
-
-    expect(ctx.auditEvent).toBe("oauth.device_approved");
-    expect(ctx.body?.user_code).toBeUndefined();
-  });
-
-  it("approves via attach_agent", async () => {
-    getAuthMock.mockResolvedValue({
-      authorization_id: "11111111-1111-1111-1111-111111111111",
-      status: "PENDING",
-      client_id: "openclaw",
-      requested_agent_name: "OpenClaw"
-    } as any);
-
-    getAgentByIdMock.mockResolvedValue({ id: "33333333-3333-4333-8333-333333333333", owner_id: ownerId } as any);
-    createOrGetControlDmThreadMock.mockResolvedValue({
-      thread: { thread_id: "77777777-7777-4777-8777-777777777777" },
-      created: false
-    } as any);
-
-    approveMock.mockResolvedValue({
-      authorization_id: "11111111-1111-1111-1111-111111111111",
-      status: "AUTHORIZED",
-      owner_id: ownerId,
-      agent_id: "33333333-3333-4333-8333-333333333333",
-      authorized_at: "2026-02-10T12:00:00.000Z"
-    } as any);
-
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "k1" },
-      body: { user_code: "ABCD-EFGH", mode: "attach_agent", attach_agent_id: "33333333-3333-4333-8333-333333333333" }
-    };
-    const ctx: any = { ...baseCtx };
-
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(200);
-    expect(result.body.data.agent_id).toBe("33333333-3333-4333-8333-333333333333");
-    expect(createOrGetControlDmThread).toHaveBeenCalledWith({
-      ownerId,
-      agentId: "33333333-3333-4333-8333-333333333333"
-    });
-    expect(createAgent).not.toHaveBeenCalled();
   });
 
   it("keeps approval successful when control DM creation fails", async () => {
@@ -229,23 +95,5 @@ describe("POST /oauth/device/approve", () => {
 
     expect(result.status).toBe(200);
     expect(result.body.data.status).toBe("AUTHORIZED");
-  });
-
-  it("returns conflict when already authorized", async () => {
-    getAuthMock.mockResolvedValue({
-      authorization_id: "11111111-1111-1111-1111-111111111111",
-      status: "AUTHORIZED",
-      client_id: "openclaw"
-    } as any);
-
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "k1" },
-      body: { user_code: "ABCD-EFGH", mode: "create_agent" }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(409);
-    expect(result.headers["Cache-Control"]).toBe("no-store");
-    expect(approveOauthDeviceAuthorization).not.toHaveBeenCalled();
   });
 });

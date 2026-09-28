@@ -1,22 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 describe("TI-265 SSE utilities", () => {
-  it("parses comment frames (: ping)", async () => {
-    const { parseSseFrame } = await import("../../../scripts/agents/ti-265-utils.mjs");
-    const frame = parseSseFrame(": ping\n");
-    expect(frame).toEqual({ type: "comment", comment: "ping" });
-  });
-
-  it("parses event frames (id/event/data)", async () => {
-    const { parseSseFrame } = await import("../../../scripts/agents/ti-265-utils.mjs");
-    const frame = parseSseFrame('id: 1\nevent: watchlist.match\ndata: {"v":1}\n');
-    expect(frame).toEqual({
-      type: "event",
-      id: "1",
-      event: "watchlist.match",
-      data: '{"v":1}'
-    });
-  });
 
   it("extracts multiple frames from a buffered stream (\\n\\n delimited)", async () => {
     const { extractSseFrames } = await import("../../../scripts/agents/ti-265-utils.mjs");

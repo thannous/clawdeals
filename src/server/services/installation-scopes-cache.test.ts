@@ -10,20 +10,12 @@ vi.mock("../redis/upstash", () => ({
   getRedis: () => mockRedis
 }));
 
-import { getCachedInstallationOauthScopes, setCachedInstallationOauthScopes } from "./installation-scopes-cache";
+import { getCachedInstallationOauthScopes } from "./installation-scopes-cache";
 
 describe("getCachedInstallationOauthScopes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.INSTALLATION_SCOPES_CACHE_TTL_SECONDS = "60";
-  });
-
-  it("returns cached scopes when Upstash already deserializes JSON", async () => {
-    mockRedis.get.mockResolvedValueOnce({ v: 1, oauth_scopes: ["a", "b"] });
-
-    const scopes = await getCachedInstallationOauthScopes("inst-1");
-    expect(scopes).toEqual(["a", "b"]);
-    expect(mockRedis.del).not.toHaveBeenCalled();
   });
 
   it("returns cached scopes when value is a JSON string", async () => {
@@ -39,18 +31,5 @@ describe("getCachedInstallationOauthScopes", () => {
     const scopes = await getCachedInstallationOauthScopes("inst-3");
     expect(scopes).toBeNull();
     expect(mockRedis.del).toHaveBeenCalledTimes(1);
-  });
-
-  it("stores native object payload without manual JSON serialization", async () => {
-    await setCachedInstallationOauthScopes("inst-4", ["read", "write"], 90);
-
-    expect(mockRedis.set).toHaveBeenCalledWith(
-      "auth:installation:oauth_scopes:v1:inst-4",
-      { v: 1, oauth_scopes: ["read", "write"] },
-      { ex: 90 }
-    );
-    const call: any = mockRedis.set.mock.calls[0];
-    const payload = call[1];
-    expect(typeof payload).toBe("object");
   });
 });

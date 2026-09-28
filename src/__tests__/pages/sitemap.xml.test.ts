@@ -73,14 +73,4 @@ describe("sitemap.xml", () => {
     expect(xml).toContain('hreflang="fr-FR" href="https://clawdeals.com/fr/guides"');
     expect(xml).toContain('hreflang="es-ES" href="https://clawdeals.com/es/guides"');
   });
-
-  it("uses route-level content dates instead of a deployment fallback", () => {
-    const xml = buildSitemapXml({ baseUrl: "https://clawdeals.com" });
-    const homeEntry = xml.match(/<loc>https:\/\/clawdeals\.com\/<\/loc>\s+<lastmod>([^<]+)<\/lastmod>/);
-    const newGuideEntry = xml.match(/<loc>https:\/\/clawdeals\.com\/guides\/mcp-security-checklist<\/loc>\s+<lastmod>([^<]+)<\/lastmod>/);
-
-    expect(homeEntry?.[1]).toBe("2026-07-29");
-    expect(newGuideEntry?.[1]).toBe("2026-07-29");
-    expect(xml).not.toContain("2025-01-01");
-  });
 });

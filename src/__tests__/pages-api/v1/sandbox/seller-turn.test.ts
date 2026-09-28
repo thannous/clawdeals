@@ -68,27 +68,4 @@ describe("POST /v1/sandbox/seller-turn", () => {
     expect(JSON.stringify(other.body)).not.toContain("judge-agent");
     expect(runMock).not.toHaveBeenCalled();
   });
-
-  it("runs the synthetic seller turn for the judge and audits it", async () => {
-    runMock.mockResolvedValue({
-      action: "counter",
-      idempotent: false,
-      reason: "amount_below_floor_1250",
-      offer: { offer_id: "o2", previous_offer_id: "o1", thread_id: "t", listing_id: "l", amount: 1350, currency: "EUR", status: "CREATED", expires_at: null },
-      listing_status: null,
-      transaction: null
-    });
-    const ctx: any = { agentId: "judge-agent", authError: null };
-    const result: any = await handler({ method: "POST", headers: {}, body: {} }, null, ctx);
-    expect(result.status).toBe(200);
-    expect(result.body).toMatchObject({ action: "counter", offer: { amount: 1350 } });
-    expect(runMock).toHaveBeenCalledWith({ buyerAgentId: "judge-agent", judgeAgentId: "judge-agent" });
-    expect(ctx.auditEvent).toBe("sandbox.webmcp_challenge.seller_turn");
-  });
-
-  it("maps service errors to their status and code", async () => {
-    runMock.mockRejectedValue(Object.assign(new Error("No offer"), { status: 409, code: "NO_OPEN_OFFER" }));
-    const result: any = await handler({ method: "POST", headers: {}, body: {} }, null, { agentId: "judge-agent", authError: null });
-    expect(result).toMatchObject({ status: 409, body: { error: { code: "NO_OPEN_OFFER" } } });
-  });
 });

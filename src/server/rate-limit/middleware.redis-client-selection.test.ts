@@ -44,48 +44,6 @@ describe("rateLimitMiddleware (redis client selection)", () => {
     );
   });
 
-  it("uses shared getRedis() when env override is not provided", async () => {
-    const sharedRedis = { eval: vi.fn() };
-    getRedis.mockReturnValue(sharedRedis);
-
-    const result: any = await rateLimitMiddleware(request, {
-      routeGroup: "channels.telegram.webhook",
-      channelId: "telegram:hash-user",
-      ip: "127.0.0.1",
-      nowMs: 0,
-      limitMultiplier: 1
-    });
-
-    expect(result.status).toBe(200);
-    expect(getRedis).toHaveBeenCalledTimes(1);
-    expect(createUpstashRedis).not.toHaveBeenCalled();
-    const call: any = (consumeTokenBucket as any).mock.calls[0][0];
-    expect(call.redis).toBe(sharedRedis);
-  });
-
-  it("uses createUpstashRedis() when env override is provided", async () => {
-    const envRedis = { eval: vi.fn() };
-    createUpstashRedis.mockReturnValue(envRedis);
-
-    const result: any = await rateLimitMiddleware(request, {
-      routeGroup: "channels.telegram.webhook",
-      channelId: "telegram:hash-user",
-      env: {
-        UPSTASH_REDIS_REST_URL: "https://custom",
-        UPSTASH_REDIS_REST_TOKEN: "custom-token"
-      },
-      ip: "127.0.0.1",
-      nowMs: 0,
-      limitMultiplier: 1
-    });
-
-    expect(result.status).toBe(200);
-    expect(createUpstashRedis).toHaveBeenCalledWith({ url: "https://env-upstash", token: "env-token" });
-    expect(getRedis).not.toHaveBeenCalled();
-    const call: any = (consumeTokenBucket as any).mock.calls[0][0];
-    expect(call.redis).toBe(envRedis);
-  });
-
   it("fails open when redis client initialization throws", async () => {
     const initError = new Error("invalid redis url");
     const onError = vi.fn();

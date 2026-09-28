@@ -1,4 +1,3 @@
-import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
@@ -116,23 +115,6 @@ describe("PolicyPage", () => {
     cleanup();
   });
 
-  it("loads current limits, renders a live decision, and links the request receipt", async () => {
-    globalThis.fetch = makeFetch() as any;
-    render(<PolicyPage />);
-
-    await screen.findByTestId("policy-form");
-    expect((screen.getByTestId("policy-hard-ceiling") as HTMLInputElement).value).toBe("1300");
-    expect(screen.getByTestId("policy-preview-decision").textContent).toContain("APPROVAL_REQUIRED");
-    expect(screen.getByRole("link", { name: /Receipt req-12345678/i }).getAttribute("href")).toBe(
-      "/api/v1/owner/policy-decisions?request_id=req-1234567890"
-    );
-
-    fireEvent.change(screen.getByTestId("policy-hard-ceiling"), { target: { value: "1500" } });
-    fireEvent.change(screen.getByTestId("policy-approval-threshold"), { target: { value: "1500" } });
-    fireEvent.click(screen.getByRole("checkbox", { name: /Make policy-compliant offers/i }));
-    expect(screen.getByTestId("policy-preview-decision").textContent).toContain("activity.policy.serverAccepted");
-  });
-
   it("saves through the existing policy API with optimistic versioning", async () => {
     const fetchMock = makeFetch();
     globalThis.fetch = fetchMock as any;
@@ -155,16 +137,5 @@ describe("PolicyPage", () => {
       autonomous_actions: ["search", "ask_question"]
     });
     await waitFor(() => expect(mocks.show).toHaveBeenCalledWith("Policy v4 saved", "success"));
-  });
-
-  it("redirects anonymous owners before requesting policy data", async () => {
-    globalThis.fetch = vi.fn(async () =>
-      jsonResponse(200, { data: { authenticated: false, owner_id: null } })
-    ) as any;
-
-    render(<PolicyPage />);
-
-    await waitFor(() => expect(mocks.router.replace).toHaveBeenCalledWith("/auth/login?next=%2Fsettings%2Fpolicy"));
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });

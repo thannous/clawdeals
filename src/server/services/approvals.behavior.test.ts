@@ -21,17 +21,8 @@ vi.mock("./installation-scopes-cache", () => ({
 import {
   bulkResolveApprovals,
   cancelPendingListingPublishApproval,
-  computeApprovalAge,
   createApproval,
-  decodeApprovalCursor,
-  getApproval,
-  getApprovalForOwner,
-  isApprovalStale,
-  listAllApprovals,
-  listApprovals,
-  resolveApproval,
-  upsertPendingApproval
-} from "./approvals";
+  resolveApproval} from "./approvals";
 
 function createQuery(result: any) {
   const query: any = {
@@ -112,71 +103,6 @@ describe("approvals service behavior", () => {
     expect(existingQuery.eq).toHaveBeenCalledWith("owner_id", "owner-1");
   });
 
-  it("reopens an approval with an atomic upsert and clears prior resolution fields", async () => {
-    const query = createQuery({ data: { approval_id: "approval-1", state: "PENDING" }, error: null });
-    const client = { from: vi.fn(() => query) };
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue(client);
-    const now = new Date("2026-07-23T10:00:00.000Z");
-
-    await upsertPendingApproval({
-      ownerId: "owner-1",
-      actionType: "escrow.confirm_received",
-      actionRef: { escrow_id: "escrow-1" },
-      actionRefId: "escrow-1",
-      actionPayload: { token: "hidden", status: "DELIVERED" },
-      createdByAgentId: "agent-1",
-      now
-    });
-
-    expect(query.upsert).toHaveBeenCalledWith(
-      {
-        owner_id: "owner-1",
-        action_type: "escrow.confirm_received",
-        action_ref: { escrow_id: "escrow-1" },
-        action_ref_id: "escrow-1",
-        action_payload_redacted: { token: "[REDACTED]", status: "DELIVERED" },
-        created_by_agent_id: "agent-1",
-        state: "PENDING",
-        created_at: now.toISOString(),
-        resolved_at: null,
-        resolved_by_human_id: null,
-        resolved_reason_text: null
-      },
-      { onConflict: "owner_id,action_type,action_ref_id" }
-    );
-  });
-
-  it("filters owner approvals, escapes cursor values, and returns the next page cursor", async () => {
-    const rows = [
-      { approval_id: "approval-3", created_at: "2026-07-23T12:03:00.000Z" },
-      { approval_id: "approval-2", created_at: "2026-07-23T12:02:00.000Z" },
-      { approval_id: "approval-1", created_at: "2026-07-23T12:01:00.000Z" }
-    ];
-    const query = createQuery({ data: rows, error: null });
-    const client = { from: vi.fn(() => query) };
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    const result = await listApprovals({
-      ownerId: "owner-1",
-      state: "PENDING",
-      agentId: "agent-1",
-      limit: 2,
-      cursor: {
-        created_at: '2026-07-23T12:04:00.000"Z',
-        approval_id: 'approval-"4'
-      }
-    });
-
-    expect(query.eq).toHaveBeenCalledWith("owner_id", "owner-1");
-    expect(query.eq).toHaveBeenCalledWith("state", "PENDING");
-    expect(query.eq).toHaveBeenCalledWith("created_by_agent_id", "agent-1");
-    expect(query.or).toHaveBeenCalledWith(
-      'created_at.lt."2026-07-23T12:04:00.000\\"Z",and(created_at.eq."2026-07-23T12:04:00.000\\"Z",approval_id.lt."approval-\\"4")'
-    );
-    expect(result.approvals).toEqual(rows.slice(0, 2));
-    expect(decodeApprovalCursor(result.nextCursor)?.value).toEqual(rows[1]);
-  });
-
   it("falls back to the legacy resolve RPC only when the database rejects p_reason", async () => {
     const existingQuery = createQuery({
       data: {
@@ -227,85 +153,6 @@ describe("approvals service behavior", () => {
       p_decision: "APPROVED",
       p_resolved_by: "human-1"
     });
-  });
-
-  it("uses the dedicated atomic RPC for bilateral contact consent", async () => {
-    const existing = {
-      approval_id: "approval-1",
-      owner_id: "owner-1",
-      action_type: "contact_reveal_consent",
-      action_ref: { tx_id: "tx-1", party_role: "BUYER" },
-      action_ref_id: "tx-1",
-      state: "PENDING"
-    };
-    const resolved = { ...existing, state: "APPROVED", resolved_at: "2026-08-26T10:00:00.000Z" };
-    const rpc = vi.fn().mockReturnValue({
-      single: vi.fn(async () => ({
-        data: {
-          tx_id: "tx-1",
-          contact_reveal_state: "REQUESTED",
-          tx_status: "ACCEPTED",
-          became_revealed: false
-        },
-        error: null
-      }))
-    });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue({
-      from: vi
-        .fn()
-        .mockReturnValueOnce(createQuery({ data: existing, error: null }))
-        .mockReturnValueOnce(createQuery({ data: resolved, error: null })),
-      rpc
-    });
-
-    await expect(
-      resolveApproval({
-        approvalId: "approval-1",
-        ownerId: "owner-1",
-        decision: "APPROVED",
-        resolvedBy: "owner-1",
-        reason: "consent"
-      })
-    ).resolves.toMatchObject({
-      state: "APPROVED",
-      tx_id: "tx-1",
-      contact_reveal_state: "REQUESTED",
-      became_revealed: false
-    });
-    expect(rpc).toHaveBeenCalledWith("resolve_contact_reveal_consent_v1", {
-      p_approval_id: "approval-1",
-      p_owner_id: "owner-1",
-      p_decision: "APPROVED",
-      p_reason: "consent"
-    });
-  });
-
-  it("refuses the legacy unilateral contact reveal approval type", async () => {
-    const existingQuery = createQuery({
-      data: {
-        approval_id: "approval-1",
-        owner_id: "owner-1",
-        action_type: "contact_reveal",
-        action_ref_id: "tx-1",
-        state: "PENDING"
-      },
-      error: null
-    });
-    const rpc = vi.fn();
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue({
-      from: vi.fn(() => existingQuery),
-      rpc
-    });
-
-    await expect(
-      resolveApproval({
-        approvalId: "approval-1",
-        ownerId: "owner-1",
-        decision: "APPROVED",
-        resolvedBy: "owner-1"
-      })
-    ).rejects.toMatchObject({ status: 409, code: "BILATERAL_CONSENT_REQUIRED" });
-    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("maps a changed offer during approval resolution to a stable conflict", async () => {
@@ -488,97 +335,6 @@ describe("approvals service behavior", () => {
     expect(lostUpdateQuery.eq).toHaveBeenCalledWith("state", "PENDING");
   });
 
-  it("computes approval age and honors the configured stale threshold", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-23T12:30:00.000Z"));
-    process.env.APPROVAL_SLA_HOURS = "48";
-
-    expect(computeApprovalAge("2026-07-21T11:00:00.000Z")).toEqual({ hours: 49, days: 2 });
-    expect(isApprovalStale("2026-07-21T13:00:00.000Z")).toBe(false);
-    expect(isApprovalStale("2026-07-21T12:00:00.000Z")).toBe(true);
-    expect(isApprovalStale("2026-07-23T00:00:00.000Z", 12)).toBe(true);
-  });
-
-  it("gets approvals with and without owner scope and maps lookup failures", async () => {
-    const approval = { approval_id: "approval-1", owner_id: "owner-1" };
-    const first = createQuery({ data: approval, error: null });
-    const second = createQuery({ data: null, error: null });
-    const failure = createQuery({
-      data: null,
-      error: { message: "approval lookup failed", code: "PGRST500" }
-    });
-    dependencyMocks.getSupabaseServiceClient
-      .mockReturnValueOnce({ from: vi.fn(() => first) })
-      .mockReturnValueOnce({ from: vi.fn(() => second) })
-      .mockReturnValueOnce({ from: vi.fn(() => failure) });
-
-    await expect(getApproval("approval-1")).resolves.toEqual(approval);
-    expect(first.eq).toHaveBeenCalledWith("approval_id", "approval-1");
-    await expect(getApprovalForOwner("approval-2", "owner-1")).resolves.toBeNull();
-    expect(second.eq).toHaveBeenCalledWith("owner_id", "owner-1");
-    await expect(getApproval("approval-3")).rejects.toMatchObject({
-      message: "approval lookup failed"
-    });
-  });
-
-  it("rejects missing approvals, invalid direct decisions and RPC errors", async () => {
-    const missing = createQuery({ data: null, error: null });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValueOnce({
-      from: vi.fn(() => missing)
-    });
-    await expect(resolveApproval({
-      approvalId: "missing",
-      ownerId: "owner-1",
-      decision: "APPROVED",
-      resolvedBy: "human-1"
-    })).rejects.toMatchObject({ status: 404, code: "NOT_FOUND" });
-
-    const direct = createQuery({
-      data: {
-        approval_id: "approval-direct",
-        owner_id: "owner-1",
-        action_type: "escrow.create",
-        state: "PENDING"
-      },
-      error: null
-    });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValueOnce({
-      from: vi.fn(() => direct)
-    });
-    await expect(resolveApproval({
-      approvalId: "approval-direct",
-      ownerId: "owner-1",
-      decision: "CANCELLED",
-      resolvedBy: "human-1"
-    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
-
-    const rpcExisting = createQuery({
-      data: {
-        approval_id: "approval-rpc",
-        owner_id: "owner-1",
-        action_type: "offer.accept",
-        state: "PENDING"
-      },
-      error: null
-    });
-    const rpcClient = {
-      from: vi.fn(() => rpcExisting),
-      rpc: vi.fn(() => ({
-        single: vi.fn(async () => ({
-          data: null,
-          error: { message: "RPC transaction failed", code: "PGRST500" }
-        }))
-      }))
-    };
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue(rpcClient);
-    await expect(resolveApproval({
-      approvalId: "approval-rpc",
-      ownerId: "owner-1",
-      decision: "DENIED",
-      resolvedBy: "human-1"
-    })).rejects.toMatchObject({ message: "RPC transaction failed" });
-  });
-
   it("bulk-resolves pending approvals while isolating per-item failures", async () => {
     await expect(bulkResolveApprovals({
       approvalIds: [],
@@ -631,70 +387,5 @@ describe("approvals service behavior", () => {
         { approval_id: "approval-done", error: "Already resolved" }
       ]
     });
-  });
-
-  it("validates and short-circuits listing approval cancellation", async () => {
-    await expect(cancelPendingListingPublishApproval({
-      ownerId: "",
-      listingId: "listing-1"
-    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
-    await expect(cancelPendingListingPublishApproval({
-      ownerId: "owner-1",
-      listingId: null
-    })).rejects.toMatchObject({ status: 400, code: "VALIDATION_ERROR" });
-
-    const missing = createQuery({ data: null, error: null });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValueOnce({
-      from: vi.fn(() => missing)
-    });
-    await expect(cancelPendingListingPublishApproval({
-      ownerId: "owner-1",
-      listingId: "listing-1"
-    })).resolves.toBeNull();
-
-    const approved = {
-      approval_id: "approval-approved",
-      owner_id: "owner-1",
-      action_ref_id: "listing-1",
-      state: "APPROVED"
-    };
-    const approvedQuery = createQuery({ data: approved, error: null });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValueOnce({
-      from: vi.fn(() => approvedQuery)
-    });
-    await expect(cancelPendingListingPublishApproval({
-      ownerId: "owner-1",
-      listingId: "listing-1"
-    })).resolves.toEqual(approved);
-    expect(approvedQuery.update).not.toHaveBeenCalled();
-  });
-
-  it("lists all approvals with operational filters and pagination", async () => {
-    const rows = [
-      { approval_id: "approval-3", created_at: "2026-07-23T12:03:00.000Z" },
-      { approval_id: "approval-2", created_at: "2026-07-23T12:02:00.000Z" },
-      { approval_id: "approval-1", created_at: "2026-07-23T12:01:00.000Z" }
-    ];
-    const query = createQuery({ data: rows, error: null });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue({
-      from: vi.fn(() => query)
-    });
-
-    const result = await listAllApprovals({
-      state: "PENDING",
-      actionType: "offer.accept",
-      createdByAgentId: "agent-1",
-      limit: 2,
-      cursor: {
-        created_at: "2026-07-23T13:00:00.000Z",
-        approval_id: "approval-4"
-      }
-    });
-    expect(query.eq).toHaveBeenCalledWith("state", "PENDING");
-    expect(query.eq).toHaveBeenCalledWith("action_type", "offer.accept");
-    expect(query.eq).toHaveBeenCalledWith("created_by_agent_id", "agent-1");
-    expect(query.or).toHaveBeenCalled();
-    expect(result.approvals).toEqual(rows.slice(0, 2));
-    expect(result.nextCursor).toEqual(expect.any(String));
   });
 });

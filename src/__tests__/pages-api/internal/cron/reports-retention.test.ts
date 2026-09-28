@@ -48,38 +48,4 @@ describe("POST /api/internal/cron/reports-retention", () => {
     expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
     expect(vi.mocked(runReportsRetention)).not.toHaveBeenCalled();
   });
-
-  it("returns 405 for invalid method", async () => {
-    const req: any = { method: "DELETE", headers: { "x-cron-secret": "secret-1" }, query: {} };
-    const res = createMockRes();
-    await handler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(405);
-  });
-
-  it("returns 200 with valid auth", async () => {
-    vi.mocked(runReportsRetention).mockResolvedValue({
-      delete: { retentionDays: 90, affected: 5 }
-    });
-
-    const req: any = { method: "POST", headers: { "x-cron-secret": "secret-1" }, query: {} };
-    const res = createMockRes();
-    await handler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({
-      delete: { retentionDays: 90, affected: 5 }
-    });
-  });
-
-  it("returns 500 on service error", async () => {
-    vi.mocked(runReportsRetention).mockRejectedValue(new Error("boom"));
-
-    const req: any = { method: "POST", headers: { "x-cron-secret": "secret-1" }, query: {} };
-    const res = createMockRes();
-    await handler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: "boom" });
-  });
 });

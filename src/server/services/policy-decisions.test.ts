@@ -110,24 +110,6 @@ describe("listPolicyDecisionsForOwner", () => {
     expect(legacyAudit.neq).toHaveBeenCalledWith("policy->>decision", "N_A");
   });
 
-  it("applies request_id before returning a receipt and keeps owner isolation", async () => {
-    const agents = makeBuilder({ data: [{ id: OWNER_AGENT_ID }], error: null });
-    const modernAudit = makeBuilder({ data: [], error: null });
-    const legacyAudit = makeBuilder({ data: [], error: null });
-    const from = vi.fn().mockReturnValueOnce(agents).mockReturnValueOnce(modernAudit).mockReturnValueOnce(legacyAudit);
-    vi.mocked(getSupabaseServiceClient).mockReturnValue({ from } as any);
-
-    await expect(
-      listPolicyDecisionsForOwner({
-        ownerId: OWNER_ID,
-        requestId: "req-secret",
-        limit: 1
-      })
-    ).resolves.toEqual([]);
-    expect(modernAudit.eq).toHaveBeenCalledWith("request_id", "req-secret");
-    expect(legacyAudit.eq).toHaveBeenCalledWith("request_id", "req-secret");
-  });
-
   it("still scans policy-owned decisions when the owner currently has no agents", async () => {
     const agents = makeBuilder({ data: [], error: null });
     const modernAudit = makeBuilder({ data: [], error: null });

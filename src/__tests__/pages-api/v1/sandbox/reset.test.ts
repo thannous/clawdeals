@@ -59,38 +59,6 @@ describe("GET/POST /v1/sandbox/reset", () => {
     expect(result.body.error.code).toBe("NOT_FOUND");
   });
 
-  it("requires agent authentication", async () => {
-    process.env.CLAWDEALS_ENV = "sandbox";
-    const req: any = { method: "POST", headers: {}, body: {} };
-    const ctx: any = { agentId: null, authError: null };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("propagates auth errors", async () => {
-    process.env.CLAWDEALS_ENV = "sandbox";
-    const req: any = { method: "POST", headers: {}, body: {} };
-    const ctx: any = { authError: { status: 401, code: "UNAUTHORIZED", message: "Invalid" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("calls resetSandboxFixtures and returns result", async () => {
-    process.env.CLAWDEALS_ENV = "sandbox";
-    resetSandboxFixturesMock.mockResolvedValue({ ok: true, counts: { deals: 1, listings: 2, watchlists: 3 } } as any);
-
-    const req: any = { method: "POST", headers: {}, body: {} };
-    const ctx: any = { agentId: "agent-1", authError: null };
-    const result: any = await handler(req, null, ctx);
-
-    expect(resetSandboxFixturesMock).toHaveBeenCalledWith({ agentId: "agent-1", judgeMode: false });
-    expect(result.status).toBe(200);
-    expect(result.body.ok).toBe(true);
-    expect(ctx.auditEvent).toBe("sandbox.reset");
-  });
-
   it("reports judge capability without exposing the configured agent", async () => {
     process.env.CLAWDEALS_ENV = "sandbox";
     process.env.WEBMCP_JUDGE_AGENT_ID = "judge-agent";

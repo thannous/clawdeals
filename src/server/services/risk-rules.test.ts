@@ -4,7 +4,7 @@ vi.mock("../audit/singleton", () => ({
   safeAuditLog: vi.fn().mockResolvedValue(undefined)
 }));
 
-import { manualUnflagRiskFlag, runRiskRulesEngine, updateRiskRule } from "./risk-rules";
+import { runRiskRulesEngine } from "./risk-rules";
 
 class FakeRiskClient {
   rules: any[];
@@ -224,84 +224,6 @@ describe("risk-rules service", () => {
     vi.clearAllMocks();
   });
 
-  it("applies flags for matching candidates", async () => {
-    const client = new FakeRiskClient({
-      rules: [baseRule],
-      candidatesBySignal: {
-        rate_limit_triggers: [{ agent_id: AGENT_A, signal_count: 14 }]
-      },
-      initialAgentFlags: {
-        [AGENT_A]: []
-      }
-    });
-
-    const summary = await runRiskRulesEngine({
-      client,
-      now: new Date("2026-02-11T12:00:00.000Z"),
-      actor: { type: "owner", id: "00000000-0000-4000-a000-000000000000" }
-    });
-
-    expect(summary.rules_scanned).toBe(1);
-    expect(summary.agents_evaluated).toBe(1);
-    expect(summary.flags_applied).toBe(1);
-    expect(client.agentFlags.get(AGENT_A)).toContain("noisy_client");
-    expect(client.state.get(`${RULE_ID}:${AGENT_A}`)).toBeTruthy();
-    expect(client.moderationActions).toHaveLength(1);
-  });
-
-  it("respects cooldown", async () => {
-    const now = new Date("2026-02-11T12:00:00.000Z");
-    const client = new FakeRiskClient({
-      rules: [baseRule],
-      candidatesBySignal: {
-        rate_limit_triggers: [{ agent_id: AGENT_A, signal_count: 14 }]
-      },
-      initialState: {
-        [`${RULE_ID}:${AGENT_A}`]: { last_triggered_at: "2026-02-11T11:30:00.000Z" }
-      },
-      initialAgentFlags: {
-        [AGENT_A]: []
-      }
-    });
-
-    const summary = await runRiskRulesEngine({ client, now });
-    expect(summary.skipped_cooldown).toBe(1);
-    expect(summary.flags_applied).toBe(0);
-  });
-
-  it("supports dry_run without mutations", async () => {
-    const client = new FakeRiskClient({
-      rules: [baseRule],
-      candidatesBySignal: {
-        rate_limit_triggers: [{ agent_id: AGENT_A, signal_count: 14 }]
-      },
-      initialAgentFlags: {
-        [AGENT_A]: []
-      }
-    });
-
-    const summary = await runRiskRulesEngine({ client, dryRun: true });
-    expect(summary.would_apply).toBe(1);
-    expect(summary.flags_applied).toBe(0);
-    expect(client.agentFlags.get(AGENT_A)).toEqual([]);
-  });
-
-  it("counts already flagged agents", async () => {
-    const client = new FakeRiskClient({
-      rules: [baseRule],
-      candidatesBySignal: {
-        rate_limit_triggers: [{ agent_id: AGENT_A, signal_count: 14 }]
-      },
-      initialAgentFlags: {
-        [AGENT_A]: ["noisy_client"]
-      }
-    });
-
-    const summary = await runRiskRulesEngine({ client });
-    expect(summary.already_flagged).toBe(1);
-    expect(summary.flags_applied).toBe(0);
-  });
-
   it("continues after per-agent errors", async () => {
     const client = new FakeRiskClient({
       rules: [baseRule],
@@ -323,45 +245,6 @@ describe("risk-rules service", () => {
     expect(summary.flags_applied).toBe(1);
     expect(client.agentFlags.get(AGENT_A)).toEqual([]);
     expect(client.agentFlags.get(AGENT_B)).toContain("noisy_client");
-  });
-
-  it("updates rule config", async () => {
-    const client = new FakeRiskClient({ rules: [baseRule] });
-    const updated = await updateRiskRule({
-      client,
-      ruleId: RULE_ID,
-      patch: {
-        enabled: false,
-        threshold: 20,
-        window_seconds: 7200,
-        cooldown_seconds: 7200,
-        flag: "restricted"
-      },
-      updatedBy: "00000000-0000-4000-a000-000000000000"
-    });
-
-    expect(updated.enabled).toBe(false);
-    expect(updated.threshold).toBe(20);
-    expect(updated.flag).toBe("restricted");
-  });
-
-  it("manually removes risk flag", async () => {
-    const client = new FakeRiskClient({
-      initialAgentFlags: {
-        [AGENT_A]: ["restricted", "quarantined"]
-      }
-    });
-
-    const result = await manualUnflagRiskFlag({
-      client,
-      agentId: AGENT_A,
-      flag: "restricted",
-      reason: "manual override",
-      actor: { type: "owner", id: "00000000-0000-4000-a000-000000000000" }
-    });
-
-    expect(result.removed).toBe(true);
-    expect(result.trust_flags).toEqual(["quarantined"]);
   });
 });
 

@@ -40,67 +40,6 @@ describe("POST /v1/chat/commands:stage", () => {
     } as any);
   });
 
-  it("requires agent auth", async () => {
-    const req: any = {
-      method: "POST",
-      query: { command: "commands:stage" },
-      body: { action_type: "watchlist.create", payload: {} },
-      headers: {}
-    };
-    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("stages watchlist.create and returns a preview", async () => {
-    createStagedCommandMock.mockResolvedValue({
-      command_id: "00000000-0000-4000-a000-000000000333",
-      state: "STAGED",
-      action_type: "watchlist.create",
-      expires_at: new Date(Date.now() + 600_000).toISOString()
-    } as any);
-
-    const req: any = {
-      method: "POST",
-      query: { command: "commands:stage" },
-      headers: {},
-      body: {
-        action_type: "watchlist.create",
-        channel_identity_id: channelIdentityId,
-        origin_context: { kind: "control_dm" },
-        payload: {
-          name: "My watch",
-          active: true,
-          criteria: {
-            query: "iphone",
-            tags: ["apple"],
-            price_max: 1000,
-            geo: { lat: 48.8566, lon: 2.3522 },
-            distance_km: 10
-          }
-        }
-      }
-    };
-
-    const ctx: any = { ...baseCtx };
-    const result: any = await handler(req, null, ctx);
-
-    expect(result.status).toBe(201);
-    expect(result.body.command_id).toBe("00000000-0000-4000-a000-000000000333");
-    expect(result.body.action_type).toBe("watchlist.create");
-    expect(result.body.preview?.title).toContain("Create watchlist");
-    expect(Array.isArray(result.body.buttons)).toBe(true);
-
-    expect(ctx.auditEvent).toBe("chat.command_staged");
-    expect(ctx.auditEntityType).toBe("staged_command");
-    expect(ctx.auditEntityId).toBe("00000000-0000-4000-a000-000000000333");
-    expect(ctx.outcome).toEqual({ type: "STAGED", reason: "control_dm_allowed" });
-    expect(result.body.origin_context?.kind).toBe("CONTROL_DM");
-    expect(result.body.authority?.decision).toBe("EXECUTED");
-    expect(createStagedCommandMock).toHaveBeenCalledTimes(1);
-    expect(createStagedCommandMock.mock.calls[0]?.[0]?.payload?.origin_context?.kind).toBe("CONTROL_DM");
-  });
-
   it("requires explicit origin_context", async () => {
     const req: any = {
       method: "POST",

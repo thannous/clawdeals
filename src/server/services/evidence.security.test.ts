@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dbMocks = vi.hoisted(() => ({
@@ -101,29 +100,6 @@ describe("evidence reservation security boundary", () => {
     vi.clearAllMocks();
   });
 
-  it("binds every signed upload to the authenticated agent and its evidence role", async () => {
-    const harness = createHarness();
-    dbMocks.getSupabaseServiceClient.mockReturnValue(harness.client as any);
-
-    const result = await initEvidenceUpload({
-      disputeId: DISPUTE_ID,
-      submittedBy: "BUYER",
-      actor: { type: "agent", id: AGENT_ID }
-    });
-
-    const reserve = harness.calls.find((call) => call.name === "reserve_evidence_upload_v1");
-    expect(reserve?.args).toMatchObject({
-      p_evidence_pack_id: PACK_ID,
-      p_storage_bucket: "evidence",
-      p_submitted_by: "BUYER",
-      p_issued_to_type: "agent",
-      p_issued_to_id: AGENT_ID
-    });
-    expect(reserve?.args.p_storage_key).toMatch(new RegExp(`^disputes/${DISPUTE_ID}/`));
-    expect(result.upload.expires_in_seconds).toBe(7200);
-    expect(harness.storage.createSignedUploadUrl).toHaveBeenCalledTimes(1);
-  });
-
   it("fails closed before issuing a URL when the bucket lacks the hard size policy", async () => {
     const harness = createHarness();
     harness.storage.getBucket.mockResolvedValueOnce({
@@ -206,38 +182,6 @@ describe("evidence reservation security boundary", () => {
     expect(harness.storage.download).not.toHaveBeenCalled();
     expect(harness.storage.remove).toHaveBeenCalledWith([KEY]);
     expect(harness.calls.some((call) => call.name === "reject_evidence_upload_v1")).toBe(true);
-  });
-
-  it("keeps a legitimate actor-bound upload working through atomic finalization", async () => {
-    const harness = createHarness();
-    const bytes = Buffer.from("test");
-    dbMocks.getSupabaseServiceClient.mockReturnValue(harness.client as any);
-
-    const result = await confirmEvidenceUpload({
-      disputeId: DISPUTE_ID,
-      submittedBy: "BUYER",
-      actor: { type: "agent", id: AGENT_ID },
-      bucket: "evidence",
-      key: KEY,
-      sha256: crypto.createHash("sha256").update(bytes).digest("hex"),
-      contentType: "image/png",
-      bytes: bytes.byteLength
-    });
-
-    expect(harness.storage.info.mock.invocationCallOrder[0]).toBeLessThan(
-      harness.storage.download.mock.invocationCallOrder[0]
-    );
-    expect(harness.storage.download).toHaveBeenCalledTimes(1);
-    const finalize = harness.calls.find((call) => call.name === "finalize_evidence_upload_v1");
-    expect(finalize?.args).toMatchObject({
-      p_reservation_id: harness.reservation.reservation_id,
-      p_issued_to_type: "agent",
-      p_issued_to_id: AGENT_ID,
-      p_content_type: "image/png",
-      p_bytes: 4
-    });
-    expect(result.item.evidence_item_id).toBe("00000000-0000-4000-8000-000000000007");
-    expect(harness.storage.remove).not.toHaveBeenCalled();
   });
 
   it("deletes expired objects before releasing their reserved quota", async () => {

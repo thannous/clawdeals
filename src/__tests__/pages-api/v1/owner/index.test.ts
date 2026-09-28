@@ -42,87 +42,11 @@ describe("GET /v1/owner", () => {
     expect(result.body.error.code).toBe("UNAUTHORIZED");
     expect(getOwner).not.toHaveBeenCalled();
   });
-
-  it("returns 400 when authenticated owner_id is not a UUID", async () => {
-    const req = { method: "GET", headers: {} };
-    const result: any = await handler(req, null, makeCtx({
-      ownerId: "not-a-uuid",
-      actor: { type: "owner", id: "not-a-uuid" }
-    }));
-    expect(result.status).toBe(400);
-    expect(result.body.error.message).toContain("UUID");
-  });
-
-  it("returns 404 when owner not found", async () => {
-    getOwnerMock.mockResolvedValue(null);
-    const req = { method: "GET", headers: {} };
-    const result: any = await handler(req, null, makeCtx());
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 200 with owner summary", async () => {
-    getOwnerMock.mockResolvedValue({
-      owner_id: validUuid,
-      email_verified_at: "2026-01-01T00:00:00Z",
-      phone_verified_at: null
-    } as any);
-    const req = { method: "GET", headers: {} };
-    const result: any = await handler(req, null, makeCtx());
-    expect(result.status).toBe(200);
-    expect(result.body.data.owner_id).toBe(validUuid);
-    expect(result.body.data.email_verified_at).toBe("2026-01-01T00:00:00Z");
-    expect(result.body.data.phone_verified_at).toBeNull();
-  });
-
-  it("returns 405 for unsupported methods", async () => {
-    const req = { method: "DELETE", headers: { "x-owner-id": validUuid } };
-    const result: any = await handler(req, null, makeCtx());
-    expect(result.status).toBe(405);
-  });
 });
 
 describe("PATCH /v1/owner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("returns 400 without email or phone", async () => {
-    getOwnerMock.mockResolvedValue(null);
-    const req = { method: "PATCH", headers: {}, body: {} };
-    const result: any = await handler(req, null, makeCtx());
-    expect(result.status).toBe(400);
-    expect(result.body.error.message).toContain("At least one field");
-  });
-
-  it("returns 400 when phone is not E.164", async () => {
-    const req = {
-      method: "PATCH",
-      headers: {},
-      body: { phone: "12345" }
-    };
-    const result: any = await handler(req, null, makeCtx());
-    expect(result.status).toBe(400);
-    expect(result.body.error.message).toContain("E.164");
-  });
-
-  it("upserts with normalized email", async () => {
-    getOwnerMock.mockResolvedValue(null);
-    upsertOwnerMock.mockResolvedValue({
-      owner_id: validUuid,
-      email_verified_at: null,
-      phone_verified_at: null
-    } as any);
-    const req = {
-      method: "PATCH",
-      headers: {},
-      body: { email: " User@Example.COM " }
-    };
-    const result: any = await handler(req, null, makeCtx());
-    expect(result.status).toBe(200);
-    expect(upsertOwner).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "user@example.com" })
-    );
   });
 
   it("resets email_verified_at when email changes", async () => {

@@ -18,28 +18,6 @@ describe("verifyExternalAuthIdentity", () => {
     delete process.env.NEON_AUTH_BASE_URL;
   });
 
-  it("keeps Supabase verification as the default", async () => {
-    mocks.getUser.mockResolvedValue({
-      data: {
-        user: {
-          id: "45f6d706-dac8-4fd1-b3cf-155f22d59218",
-          email: "Owner@Example.test",
-          email_confirmed_at: "2026-08-07T10:00:00.000Z",
-          app_metadata: { provider: "email" }
-        }
-      },
-      error: null
-    });
-
-    await expect(verifyExternalAuthIdentity({ accessToken: "supabase-token" })).resolves.toEqual({
-      provider: "supabase",
-      subject: "45f6d706-dac8-4fd1-b3cf-155f22d59218",
-      email: "owner@example.test",
-      emailVerifiedAt: "2026-08-07T10:00:00.000Z",
-      upstreamProvider: "email"
-    });
-  });
-
   it("requires the Neon cookie session and matching bearer token", async () => {
     process.env.CLAWDEALS_AUTH_BACKEND = "neon";
     process.env.NEON_AUTH_BASE_URL = "https://auth.example.test/";

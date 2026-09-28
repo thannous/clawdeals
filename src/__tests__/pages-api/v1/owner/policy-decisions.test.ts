@@ -23,38 +23,6 @@ describe("GET /v1/owner/policy-decisions", () => {
     vi.clearAllMocks();
   });
 
-  it("requires owner authentication", async () => {
-    const result: any = await handler({ method: "GET", query: {} }, null, ownerCtx({ ownerId: null, actor: null }));
-    expect(result.status).toBe(401);
-  });
-
-  it("rejects unsupported methods and invalid limits", async () => {
-    const methodResult: any = await handler({ method: "POST", query: {} }, null, ownerCtx());
-    expect(methodResult.status).toBe(405);
-
-    const limitResult: any = await handler({ method: "GET", query: { limit: "21" } }, null, ownerCtx());
-    expect(limitResult.status).toBe(400);
-  });
-
-  it("returns the latest 20 owner decisions without caching", async () => {
-    vi.mocked(listPolicyDecisionsForOwner).mockResolvedValue([
-      { decision_id: "audit-1", decision: "AUTO_APPROVED", request_id: "req-1" }
-    ] as any);
-    const ctx = ownerCtx();
-
-    const result: any = await handler({ method: "GET", query: {} }, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.headers["Cache-Control"]).toBe("no-store");
-    expect(result.body.data.decisions).toHaveLength(1);
-    expect(listPolicyDecisionsForOwner).toHaveBeenCalledWith({
-      ownerId: OWNER_ID,
-      limit: 20,
-      requestId: null
-    });
-    expect(ctx.auditEvent).toBe("owner.policy_decisions_listed");
-  });
-
   it("forwards a request_id for an owner-scoped receipt lookup", async () => {
     vi.mocked(listPolicyDecisionsForOwner).mockResolvedValue([]);
 

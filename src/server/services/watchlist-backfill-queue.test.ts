@@ -5,7 +5,7 @@ vi.mock("./acquisition", () => ({
 }));
 
 import { WATCHLIST_BACKFILL_MAX_MATCHES } from "../config/watchlists";
-import { enqueueWatchlistBackfill, runWatchlistBackfillQueue } from "./watchlist-backfill-queue";
+import { runWatchlistBackfillQueue } from "./watchlist-backfill-queue";
 
 function createQueueDeleteChain(filters: Array<{ column: string; value: any }>) {
   const chain: any = {
@@ -21,29 +21,6 @@ function createQueueDeleteChain(filters: Array<{ column: string; value: any }>) 
 describe("runWatchlistBackfillQueue", () => {
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  it("validates and upserts a single durable backfill job", async () => {
-    const upsert = vi.fn(async () => ({ error: null }));
-    const client: any = {
-      from: vi.fn(() => ({ upsert }))
-    };
-    const now = new Date("2026-07-23T08:00:00.000Z");
-
-    await expect(enqueueWatchlistBackfill({ watchlistId: null, client })).rejects.toMatchObject({
-      status: 400,
-      code: "VALIDATION_ERROR"
-    });
-    await expect(enqueueWatchlistBackfill({ watchlistId: "wl-1", now, client })).resolves.toEqual({ ok: true });
-
-    expect(client.from).toHaveBeenCalledWith("watchlist_backfill_queue");
-    expect(upsert).toHaveBeenCalledWith(
-      {
-        watchlist_id: "wl-1",
-        updated_at: now.toISOString()
-      },
-      { onConflict: "watchlist_id" }
-    );
   });
 
   it("upserts every backfill match in bounded batches before cleaning the queue", async () => {

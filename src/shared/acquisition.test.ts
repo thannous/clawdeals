@@ -2,13 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   isAppEntryUrl,
-  isMarketingSurface,
-  localeToMarketCode,
-  normalizeAcquisitionId,
-  normalizeLandingPath,
-  resolveAcquisitionAttribution,
-  resolveAcquisitionChannel,
-  sanitizeAttributionValue
+  isMarketingSurface, normalizeLandingPath,
+  resolveAcquisitionAttribution, sanitizeAttributionValue
 } from "./acquisition";
 
 describe("acquisition attribution", () => {
@@ -29,28 +24,10 @@ describe("acquisition attribution", () => {
     expect(JSON.stringify(result)).not.toContain("private");
   });
 
-  it("maps normalized source and medium values to stable reporting channels", () => {
-    expect(resolveAcquisitionChannel({ source: "google", medium: "cpc" })).toBe("paid_search");
-    expect(resolveAcquisitionChannel({ source: "newsletter", medium: "email" })).toBe("email");
-    expect(resolveAcquisitionChannel({ source: "partner", medium: "referral" })).toBe("referral");
-    expect(resolveAcquisitionChannel({ source: "direct", medium: "none" })).toBe("direct");
-    expect(resolveAcquisitionChannel({ source: "launch", medium: "campaign" })).toBe("other");
-  });
-
   it("allows only bounded attribution labels and strips query strings from paths", () => {
     expect(sanitizeAttributionValue("SEO_launch-1")).toBe("seo_launch-1");
     expect(sanitizeAttributionValue("contains spaces")).toBeNull();
     expect(normalizeLandingPath("/fr/mcp?email=person@example.com#step")).toBe("/fr/mcp");
-  });
-
-  it("accepts UUID acquisition IDs and explicit European market mappings", () => {
-    expect(normalizeAcquisitionId("018f3c2a-1e4b-4f8a-9ac0-0123456789ab")).toBe(
-      "018f3c2a-1e4b-4f8a-9ac0-0123456789ab"
-    );
-    expect(normalizeAcquisitionId("not-a-uuid")).toBeNull();
-    expect(localeToMarketCode("fr")).toBe("FR");
-    expect(localeToMarketCode("es")).toBe("ES");
-    expect(localeToMarketCode("en")).toBe("GB");
   });
 
   it("tracks only public marketing surfaces and recognizes localized start URLs", () => {

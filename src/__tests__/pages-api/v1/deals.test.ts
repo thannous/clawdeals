@@ -51,50 +51,6 @@ describe("POST /v1/deals", () => {
     vi.clearAllMocks();
   });
 
-  it("requires Idempotency-Key", async () => {
-    const req = {
-      method: "POST",
-      headers: {},
-      body: validBody
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("requires agent authentication", async () => {
-    const req = {
-      method: "POST",
-      headers: { "idempotency-key": "abc" },
-      body: validBody
-    };
-    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("validates price", async () => {
-    const req = {
-      method: "POST",
-      headers: { "idempotency-key": "abc" },
-      body: { ...validBody, price: 0 }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("PRICE_INVALID");
-  });
-
-  it("validates expires_at", async () => {
-    const req = {
-      method: "POST",
-      headers: { "idempotency-key": "abc" },
-      body: { ...validBody, expires_at: new Date(Date.now() - 1000).toISOString() }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("EXPIRES_AT_INVALID");
-  });
-
   it("accepts images and defaults cover_image_index to 0", async () => {
     findRecentDealDuplicateMock.mockResolvedValue(null as any);
     createDealMock.mockResolvedValue({
@@ -172,75 +128,6 @@ describe("POST /v1/deals", () => {
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
   });
 
-  it("creates deal and returns deal", async () => {
-    findRecentDealDuplicateMock.mockResolvedValue(null as any);
-    createDealMock.mockResolvedValue({
-      deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
-      title: "RTX 4070 - 399€",
-      source_url: "https://example.com/deal?utm_source=unit",
-      price: "399.00",
-      currency: "EUR",
-      expires_at: "2026-02-06T12:00:00Z",
-      tags: ["gpu", "nvidia"],
-      status: "NEW",
-      new_until: "2026-02-05T12:10:00Z",
-      temperature: null,
-      votes_up: 0,
-      votes_down: 0,
-      creator_agent_id: "agent-1",
-      created_at: "2026-02-05T12:00:00Z"
-    } as any);
-
-    const req = {
-      method: "POST",
-      headers: { "idempotency-key": "abc" },
-      body: validBody
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(201);
-    expect(result.body.deal.deal_id).toBe("b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4");
-    expect(result.body.data).toBeUndefined();
-    expect(createDeal).toHaveBeenCalled();
-  });
-
-  it("returns 200 with existing deal when recent fingerprint match exists", async () => {
-    const nowIso = new Date("2026-02-05T12:00:00.000Z").toISOString();
-    findRecentDealDuplicateMock.mockResolvedValue({
-      deal_id: "11111111-1111-1111-1111-111111111111",
-      created_at: nowIso
-    } as any);
-    getDealByIdMock.mockResolvedValue({
-      deal_id: "11111111-1111-1111-1111-111111111111",
-      title: "Existing deal",
-      source_url: "https://example.com/deal",
-      price: "399.00",
-      currency: "EUR",
-      expires_at: "2026-02-06T12:00:00Z",
-      tags: ["gpu", "nvidia"],
-      status: "NEW",
-      temperature: 10,
-      votes_up: 0,
-      votes_down: 0,
-      created_at: nowIso
-    } as any);
-
-    const req = {
-      method: "POST",
-      headers: { "idempotency-key": "abc" },
-      body: validBody
-    };
-    const ctx: any = { ...baseCtx };
-    const result: any = await handler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.body.deal.deal_id).toBe("11111111-1111-1111-1111-111111111111");
-    expect(result.body.meta.duplicate).toBe(true);
-    expect(result.body.meta.existing_deal_id).toBe("11111111-1111-1111-1111-111111111111");
-    expect(createDeal).not.toHaveBeenCalled();
-    expect(ctx.auditEvent).toBe("deal.duplicate_returned");
-    expect(ctx.outcome?.type).toBe("OK");
-  });
-
   it("treats utm_* variants as duplicates (fingerprint normalization)", async () => {
     const normalized = normalizeDealUrl(validBody.url);
     expect(normalized).not.toContain("utm_source");
@@ -272,72 +159,6 @@ describe("POST /v1/deals", () => {
 describe("GET /v1/deals", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("requires authentication", async () => {
-    const req = {
-      method: "GET",
-      query: {}
-    };
-    const result: any = await handler(req, null, { ...baseCtx, ownerId: null, agentId: null });
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("returns 400 for malformed cursor", async () => {
-    const req = {
-      method: "GET",
-      query: { cursor: "bad-cursor" }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.message).toContain("cursor");
-  });
-
-  it("returns items + next_cursor and masks temperature for NEW", async () => {
-    listDealsMock.mockResolvedValue({
-      items: [
-        {
-          deal_id: "b8b9dfe7-9c84-4d45-a3ce-4dbfef9cc0e4",
-          title: "RTX 4070 - 399€",
-          source_url: "https://example.com/deal",
-          price: "399.00",
-          currency: "EUR",
-          expires_at: "2026-02-06T12:00:00Z",
-          tags: ["gpu", "nvidia"],
-          status: "NEW",
-          temperature: 50,
-          votes_up: 0,
-          votes_down: 0,
-          created_at: "2026-02-05T12:00:00Z"
-        }
-      ],
-      nextCursor: "cursor-abc"
-    } as any);
-
-    const ctx: any = { ...baseCtx };
-    const req = {
-      method: "GET",
-      query: { sort: "new" }
-    };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(200);
-    expect(ctx.auditEvent).toBe("deals.listed");
-    expect(result.body.items).toHaveLength(1);
-    expect(result.body.items[0].temperature).toBeNull();
-    expect(result.body.items[0].price).toBe(399);
-    expect(result.body.next_cursor).toBe("cursor-abc");
-    expect(listDeals).toHaveBeenCalledWith({
-      sort: "new",
-      statuses: ["NEW", "ACTIVE"],
-      q: null,
-      tags: [],
-      priceMax: null,
-      includeHidden: false,
-      minTemperature: 0,
-      limit: 30,
-      cursor: null
-    });
   });
 
   it("preserves enriched media fields from listDeals", async () => {
@@ -374,56 +195,5 @@ describe("GET /v1/deals", () => {
     expect(result.body.items).toHaveLength(1);
     expect(result.body.items[0].images_count).toBe(3);
     expect(result.body.items[0].cover_image).toEqual(coverImage);
-  });
-
-  it("passes price_max to listDeals", async () => {
-    listDealsMock.mockResolvedValue({ items: [], nextCursor: null } as any);
-
-    const req = {
-      method: "GET",
-      query: { sort: "new", price_max: "499.99" }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(200);
-    expect(listDeals).toHaveBeenCalledWith(
-      expect.objectContaining({
-        priceMax: 499.99
-      })
-    );
-  });
-
-  it("validates price_max (non-number \u2192 400)", async () => {
-    const req = {
-      method: "GET",
-      query: { price_max: "xyz" }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-    expect(result.body.error.message).toBe("price_max must be a number");
-    expect(listDeals).not.toHaveBeenCalled();
-  });
-
-  it("validates price_max (negative \u2192 400)", async () => {
-    const req = {
-      method: "GET",
-      query: { price_max: "-1" }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-    expect(result.body.error.message).toBe("price_max must be >= 0");
-    expect(listDeals).not.toHaveBeenCalled();
-  });
-
-  it("rejects status filter for temp", async () => {
-    const req = {
-      method: "GET",
-      query: { sort: "temp", status: "NEW" }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-    expect(listDeals).not.toHaveBeenCalled();
   });
 });

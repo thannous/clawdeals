@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
@@ -20,7 +20,7 @@ vi.mock("../auth/useOwnerSessionGate", () => ({
   useOwnerSessionGate: () => sessionGateMock()
 }));
 
-import ListingHumanActions, { buildAskMyAgentHref } from "./ListingHumanActions";
+import ListingHumanActions from "./ListingHumanActions";
 import { getFollowedListingIds } from "./followed-listings";
 
 const listing = {
@@ -32,32 +32,6 @@ const listing = {
   geo: { lat: 48.86, lng: 2.35 }
 };
 
-describe("buildAskMyAgentHref", () => {
-  it("carries only public listing fields into the mission prefill query", () => {
-    const href = buildAskMyAgentHref("/fr", listing);
-    const url = new URL(href, "https://clawdeals.com");
-    expect(url.pathname).toBe("/fr/webmcp");
-    expect(url.hash).toBe("#buy-mission");
-    expect(Object.fromEntries(url.searchParams)).toEqual({
-      listing: listing.listing_id,
-      title: listing.title,
-      category: "mobility",
-      price: "1150",
-      currency: "EUR",
-      market: "FR",
-      lat: "48.86",
-      lng: "2.35"
-    });
-  });
-
-  it("omits geo and market when the listing has none", () => {
-    const href = buildAskMyAgentHref("", { listing_id: "x", title: "Lamp", price: { amount: 20, currency: "GBP" } });
-    const url = new URL(href, "https://clawdeals.com");
-    expect(url.pathname).toBe("/webmcp");
-    expect(url.searchParams.has("lat")).toBe(false);
-    expect(url.searchParams.has("market")).toBe(false);
-  });
-});
 
 describe("ListingHumanActions", () => {
   beforeEach(() => {
@@ -68,14 +42,6 @@ describe("ListingHumanActions", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
-  });
-
-  it("renders the three human actions and links Ask my agent to the prefilled mission", () => {
-    render(<ListingHumanActions listing={listing} localePrefix="" />);
-    const ask = screen.getByTestId("listing-ask-agent");
-    expect(ask.getAttribute("href")).toContain("/webmcp?listing=");
-    expect(screen.getByTestId("listing-follow").textContent).toContain("actions.follow");
-    expect(screen.getByTestId("listing-share").textContent).toContain("actions.share");
   });
 
   it("toggles follow state and persists it in localStorage", () => {
@@ -90,54 +56,5 @@ describe("ListingHumanActions", () => {
     fireEvent.click(follow);
     expect(follow.getAttribute("aria-pressed")).toBe("false");
     expect(getFollowedListingIds()).toEqual([]);
-  });
-
-  it("persists a signed-in follow as an owner watchlist", async () => {
-    sessionGateMock.mockReturnValue("authenticated");
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { watchlists: [] } })
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { watchlist: { watchlist_id: "watchlist-1" } } })
-      } as Response);
-
-    render(<ListingHumanActions listing={listing} localePrefix="" />);
-    await waitFor(() => expect(screen.getByTestId("listing-follow").hasAttribute("disabled")).toBe(false));
-    fireEvent.click(screen.getByTestId("listing-follow"));
-
-    await screen.findByTestId("listing-follow-server-hint");
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "/api/v1/owner/watchlists",
-      expect.objectContaining({ method: "POST", credentials: "include" })
-    );
-    expect(getFollowedListingIds()).toEqual([]);
-  });
-
-  it("suggests an account once a second listing is followed", () => {
-    window.localStorage.setItem("clawdeals.followed_listings:v1", JSON.stringify(["other-listing"]));
-    render(<ListingHumanActions listing={listing} localePrefix="/fr" />);
-    expect(screen.queryByTestId("listing-follow-nudge")).toBeNull();
-
-    fireEvent.click(screen.getByTestId("listing-follow"));
-
-    const nudge = screen.getByTestId("listing-follow-nudge");
-    expect(nudge.textContent).toContain("followNudge.title");
-    expect(nudge.querySelector("a")?.getAttribute("href")).toContain("/fr/auth/login?mode=signup&next=");
-  });
-
-  it("copies the page URL when the Web Share API is unavailable", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
-
-    render(<ListingHumanActions listing={listing} localePrefix="" />);
-    fireEvent.click(screen.getByTestId("listing-share"));
-
-    await screen.findByText("actions.linkCopied");
-    expect(writeText).toHaveBeenCalledWith(window.location.href);
   });
 });

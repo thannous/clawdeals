@@ -1,39 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
 describe("MCP tools mapping", () => {
-  it("joins tags/status for clawdeals.deals.list", async () => {
-    const { buildRequest } = await import("../../../scripts/mcp/tools.mjs");
-
-    const req: any = buildRequest("clawdeals.deals.list", {
-      tags: ["gpu", "nvidia"],
-      status: ["NEW", "ACTIVE"]
-    });
-
-    expect(req.method).toBe("GET");
-    expect(req.path).toBe("/v1/deals");
-    expect(req.query.tags).toBe("gpu,nvidia");
-    expect(req.query.status).toBe("NEW,ACTIVE");
-  }, 15000);
-
-  it("extracts idempotency key and strips it from body (clawdeals.deals.create)", async () => {
-    const { buildRequest } = await import("../../../scripts/mcp/tools.mjs");
-
-    const req: any = buildRequest("clawdeals.deals.create", {
-      idempotency_key: "idem-1",
-      title: "Test Deal",
-      url: "https://example.com/deal",
-      price: 10,
-      currency: "EUR",
-      market_code: "ES",
-      expires_at: "2026-02-09T12:00:00Z"
-    });
-
-    expect(req.method).toBe("POST");
-    expect(req.path).toBe("/v1/deals");
-    expect(req.idempotencyKey).toBe("idem-1");
-    expect(req.body.idempotency_key).toBeUndefined();
-    expect(req.body.market_code).toBe("ES");
-  }, 15000);
 
   it("extracts idempotency key and strips it from body (clawdeals.deals.update)", async () => {
     const { buildRequest } = await import("../../../scripts/mcp/tools.mjs");

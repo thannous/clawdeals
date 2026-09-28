@@ -40,27 +40,6 @@ describe("/api/console/channels", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects non-GET methods", async () => {
-    const req: any = { method: "POST", query: {} };
-    const result: any = await listHandler(req, null, { ...baseCtx });
-    expect(result.status).toBe(405);
-    expect(result.body.error.code).toBe("METHOD_NOT_ALLOWED");
-  });
-
-  it("returns 401 when no ownerId", async () => {
-    const req: any = { method: "GET", query: {} };
-    const result: any = await listHandler(req, null, { ...baseCtx, ownerId: null });
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("validates state", async () => {
-    const req: any = { method: "GET", query: { state: "NOPE" } };
-    const result: any = await listHandler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
   it("returns sanitized items", async () => {
     vi.mocked(listChannelIdentities).mockResolvedValue([
       {
@@ -95,40 +74,6 @@ describe("/api/console/channels/confirm", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects non-POST methods", async () => {
-    const req: any = { method: "GET", body: {} };
-    const result: any = await confirmHandler(req, null, { ...baseCtx });
-    expect(result.status).toBe(405);
-  });
-
-  it("returns 410 when code expired", async () => {
-    vi.mocked(confirmPairingCode).mockResolvedValue({
-      ok: false,
-      reason: "expired",
-      identity: { channel_identity_id: "cid-1" }
-    } as any);
-
-    const ctx: any = { ...baseCtx };
-    const req: any = { method: "POST", body: { code: "CD-AAAAAA" } };
-    const result: any = await confirmHandler(req, null, ctx);
-
-    expect(result.status).toBe(410);
-    expect(result.body.error.code).toBe("PAIRING_EXPIRED");
-    expect(ctx.auditEvent).toBe("pairing.code_failed");
-  });
-
-  it("returns 404 when code invalid", async () => {
-    vi.mocked(confirmPairingCode).mockResolvedValue({ ok: false, reason: "not_found", identity: null } as any);
-
-    const ctx: any = { ...baseCtx };
-    const req: any = { method: "POST", body: { code: "CD-AAAAAA" } };
-    const result: any = await confirmHandler(req, null, ctx);
-
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("PAIRING_CODE_INVALID");
-    expect(ctx.auditEvent).toBe("pairing.code_failed");
-  });
-
   it("returns sanitized identity when confirmed", async () => {
     vi.mocked(confirmPairingCode).mockResolvedValue({
       ok: true,
@@ -160,22 +105,6 @@ describe("/api/console/channels/[channel_identity_id]", () => {
     vi.clearAllMocks();
   });
 
-  it("GET returns 404 when not found", async () => {
-    vi.mocked(getChannelIdentity).mockResolvedValue(null as any);
-
-    const req: any = { method: "GET", query: { channel_identity_id: "cid-1" } };
-    const result: any = await idHandler(req, null, { ...baseCtx });
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("POST validates action", async () => {
-    const req: any = { method: "POST", query: { channel_identity_id: "cid-1" }, body: { action: "nope" } };
-    const result: any = await idHandler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
   it("POST approve calls service and sanitizes response", async () => {
     vi.mocked(approvePairing).mockResolvedValue({
       channel_identity_id: "cid-1",
@@ -197,40 +126,6 @@ describe("/api/console/channels/[channel_identity_id]", () => {
     expect(result.status).toBe(200);
     expect(ctx.auditEvent).toBe("pairing.approved");
     expect(result.body.identity.channel_user_id).toBeUndefined();
-  });
-
-  it("POST deny calls service", async () => {
-    vi.mocked(denyPairing).mockResolvedValue({
-      channel_identity_id: "cid-1",
-      channel_type: "telegram",
-      channel_user_id: "123",
-      channel_context_id: "",
-      state: "REVOKED"
-    } as any);
-
-    const ctx: any = { ...baseCtx };
-    const req: any = { method: "POST", query: { channel_identity_id: "cid-1" }, body: { action: "deny" } };
-    const result: any = await idHandler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(ctx.auditEvent).toBe("pairing.denied");
-  });
-
-  it("POST revoke calls service", async () => {
-    vi.mocked(revokePairing).mockResolvedValue({
-      channel_identity_id: "cid-1",
-      channel_type: "telegram",
-      channel_user_id: "123",
-      channel_context_id: "",
-      state: "REVOKED"
-    } as any);
-
-    const ctx: any = { ...baseCtx };
-    const req: any = { method: "POST", query: { channel_identity_id: "cid-1" }, body: { action: "revoke" } };
-    const result: any = await idHandler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(ctx.auditEvent).toBe("pairing.revoked");
   });
 });
 

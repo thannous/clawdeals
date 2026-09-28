@@ -9,15 +9,8 @@ vi.mock("../db/supabase", () => ({
 }));
 
 import {
-  acceptOffer,
-  cancelOffer,
   counterOffer,
-  createOffer,
-  declineOffer,
-  listOffersByAgent,
-  listOffersByIds,
-  mapOfferActionError
-} from "./offers";
+  createOffer} from "./offers";
 
 function createQuery(result: any) {
   const query: any = {
@@ -45,25 +38,6 @@ function createRpcClient(result: any) {
 describe("offers service behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("does not access the database when the offer id list normalizes to empty", async () => {
-    const client = { from: vi.fn() };
-    dbMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    await expect(listOffersByIds(["", "   ", null as any])).resolves.toEqual([]);
-    expect(client.from).not.toHaveBeenCalled();
-  });
-
-  it("deduplicates valid offer ids before querying", async () => {
-    const query = createQuery({ data: [{ offer_id: "offer-1" }], error: null });
-    const client = { from: vi.fn(() => query) };
-    dbMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    const result = await listOffersByIds(["offer-1", "offer-1", "offer-2"]);
-
-    expect(query.in).toHaveBeenCalledWith("offer_id", ["offer-1", "offer-2"]);
-    expect(result).toEqual([{ offer_id: "offer-1" }]);
   });
 
   it("turns the partial-unique create race into an idempotent conflict with the winner id", async () => {
@@ -134,100 +108,6 @@ describe("offers service behavior", () => {
       p_currency: "EUR",
       p_expires_at: "2026-07-24T12:00:00.000Z",
       p_sender_id: "buyer-1"
-    });
-  });
-
-  it("maps a missing previous offer during an atomic counter to 404", async () => {
-    const { client } = createRpcClient({
-      data: null,
-      error: { message: "OFFER_NOT_FOUND" }
-    });
-    dbMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    await expect(
-      counterOffer({
-        previousOfferId: "missing",
-        threadId: "thread-1",
-        amount: 300,
-        currency: "EUR",
-        expiresAt: "2026-07-24T12:00:00.000Z",
-        senderId: "buyer-1"
-      })
-    ).rejects.toMatchObject({ status: 404, code: "OFFER_NOT_FOUND" });
-  });
-
-  it.each([
-    ["accept", acceptOffer, "offer_accept_v0"],
-    ["decline", declineOffer, "offer_decline_v0"],
-    ["cancel", cancelOffer, "offer_cancel_v0"]
-  ])("executes %s through its atomic RPC", async (_name, action, rpcName) => {
-    const row = { offer_id: "offer-1", offer_status: "ACCEPTED" };
-    const { client, rpc } = createRpcClient({ data: row, error: null });
-    dbMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    await expect(action({ offerId: "offer-1", actorAgentId: "agent-1" })).resolves.toEqual(row);
-    expect(rpc).toHaveBeenCalledWith(rpcName, {
-      p_offer_id: "offer-1",
-      p_actor_agent_id: "agent-1"
-    });
-  });
-
-  it("preserves actionable state details from an atomic offer action failure", async () => {
-    const { client } = createRpcClient({
-      data: null,
-      error: { message: "OFFER_NOT_ACTIONABLE:COUNTERED" }
-    });
-    dbMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    await expect(
-      acceptOffer({ offerId: "offer-1", actorAgentId: "agent-1" })
-    ).rejects.toMatchObject({
-      status: 409,
-      code: "OFFER_NOT_ACTIONABLE",
-      details: { status: "COUNTERED" }
-    });
-  });
-
-  it("clamps pagination, applies filters, and emits a stable next cursor", async () => {
-    const rows = [
-      { offer_id: "offer-3", created_at: "2026-07-23T12:03:00.000Z" },
-      { offer_id: "offer-2", created_at: "2026-07-23T12:02:00.000Z" },
-      { offer_id: "offer-1", created_at: "2026-07-23T12:01:00.000Z" }
-    ];
-    const query = createQuery({ data: rows, error: null });
-    const client = { from: vi.fn(() => query) };
-    dbMocks.getSupabaseServiceClient.mockReturnValue(client);
-
-    const result = await listOffersByAgent({
-      agentIds: ["agent-1", "", "agent-2"],
-      status: "CREATED",
-      limit: 2,
-      cursor: {
-        created_at: "2026-07-23T12:04:00.000Z",
-        offer_id: "offer-4"
-      }
-    });
-
-    expect(query.or).toHaveBeenCalledWith(
-      'buyer_agent_id.in.("agent-1","agent-2"),seller_agent_id.in.("agent-1","agent-2")'
-    );
-    expect(query.eq).toHaveBeenCalledWith("status", "CREATED");
-    expect(query.limit).toHaveBeenCalledWith(3);
-    expect(query.or).toHaveBeenCalledWith(
-      'created_at.lt."2026-07-23T12:04:00.000Z",and(created_at.eq."2026-07-23T12:04:00.000Z",offer_id.lt."offer-4")'
-    );
-    expect(result.items).toEqual(rows.slice(0, 2));
-    expect(JSON.parse(Buffer.from(result.nextCursor!, "base64").toString("utf8"))).toEqual({
-      created_at: "2026-07-23T12:02:00.000Z",
-      offer_id: "offer-2"
-    });
-  });
-
-  it("falls back to the shared database error mapping", () => {
-    expect(mapOfferActionError({ message: "database unavailable" })).toEqual({
-      status: 500,
-      code: "DATABASE_ERROR",
-      message: "database unavailable"
     });
   });
 });

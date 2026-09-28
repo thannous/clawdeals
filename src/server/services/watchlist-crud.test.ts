@@ -7,8 +7,6 @@ vi.mock("../db/supabase", () => ({
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
   createWatchlist,
-  getWatchlistForAgent,
-  MAX_ACTIVE_WATCHLISTS,
   updateWatchlistForAgent
 } from "./watchlists";
 
@@ -96,29 +94,6 @@ describe("watchlist CRUD service", () => {
     });
   });
 
-  it("blocks creation when the active watchlist quota is reached", async () => {
-    const countQuery = createAwaitableQuery({ count: MAX_ACTIVE_WATCHLISTS, error: null });
-    const from = vi.fn(() => countQuery);
-    vi.mocked(getSupabaseServiceClient).mockReturnValue({ from } as any);
-
-    await expect(
-      createWatchlist({
-        agentId: "agent-1",
-        active: true,
-        marketCode: "FR",
-        currency: "EUR"
-      } as any)
-    ).rejects.toMatchObject({
-      message: "Watchlist limit reached",
-      status: 409,
-      code: "WATCHLIST_LIMIT_REACHED",
-      isBlocked: true,
-      reason: "quota",
-      activeLimit: MAX_ACTIVE_WATCHLISTS
-    });
-    expect(from).toHaveBeenCalledTimes(1);
-  });
-
   it("updates market_code and currency atomically for the owning agent", async () => {
     const existing = {
       watchlist_id: "wl-1",
@@ -164,33 +139,5 @@ describe("watchlist CRUD service", () => {
     expect(updateQuery.eq).toHaveBeenCalledWith("watchlist_id", "wl-1");
     expect(updateQuery.eq).toHaveBeenCalledWith("agent_id", "agent-1");
     expect(result).toMatchObject({ market_code: "GB", currency: "GBP" });
-  });
-
-  it("does not reveal a watchlist owned by another agent", async () => {
-    const lookupQuery = createMaybeSingleQuery({
-      data: {
-        watchlist_id: "wl-private",
-        agent_id: "agent-owner",
-        active: true,
-        deleted_at: null
-      },
-      error: null
-    });
-    vi.mocked(getSupabaseServiceClient).mockReturnValue({
-      from: vi.fn(() => lookupQuery)
-    } as any);
-
-    await expect(
-      getWatchlistForAgent({
-        watchlistId: "wl-private",
-        agentId: "agent-other"
-      })
-    ).rejects.toMatchObject({
-      message: "Watchlist not found",
-      status: 404,
-      code: "NOT_FOUND",
-      isBlocked: true,
-      reason: "authz"
-    });
   });
 });

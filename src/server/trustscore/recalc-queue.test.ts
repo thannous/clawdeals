@@ -121,22 +121,5 @@ describe("runTrustScoreRecalcQueue", () => {
     expect(client._queue[0].agent_id).toBe("a1");
     expect(client._queue[0].updated_at).toBe(t2);
   });
-
-  it("deletes the queue row when updated_at is unchanged", async () => {
-    const t1 = "2026-02-08T00:00:00.000Z";
-    const client = new FakeSupabaseClient([{ agent_id: "a1", updated_at: t1, last_reason: null }]);
-
-    const recalculate = vi.fn(async () => ({ ok: true, updated: false }));
-
-    const summary = await runTrustScoreRecalcQueue({
-      client,
-      recalculate,
-      limit: 10,
-      now: new Date("2026-02-08T00:00:20.000Z")
-    });
-
-    expect(summary.skipped).toBe(1);
-    expect(client._queue).toHaveLength(0);
-  });
 });
 

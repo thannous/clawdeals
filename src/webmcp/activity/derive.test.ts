@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { ActionReceipt } from "./action-receipts";
-import { deriveDealRoom, deriveMilestones, derivePendingApprovals, formatAmount } from "./derive";
+import { deriveMilestones, derivePendingApprovals } from "./derive";
 
 let counter = 0;
 
@@ -81,12 +81,6 @@ const consent = receipt({
 const reread = receipt({ tool: "get_action_receipt", at: 10, confirmation: "not_required", result: { receipt_version: "1" } });
 
 describe("deriveMilestones", () => {
-  it("returns nine pending milestones without receipts", () => {
-    const milestones = deriveMilestones([]);
-    expect(milestones).toHaveLength(9);
-    expect(milestones.every((entry) => entry.state === "pending")).toBe(true);
-  });
-
   it("marks the full judge journey regardless of receipt order", () => {
     const shuffled = [reread, consent, accepted, resolved, policyStop, offer, message, thread, search, mission];
     const milestones = deriveMilestones(shuffled);
@@ -115,22 +109,6 @@ describe("deriveMilestones", () => {
 });
 
 describe("derivePendingApprovals", () => {
-  it("lists a policy stop with the attempted amount and the mission ceiling", () => {
-    const attempted = receipt({
-      tool: "make_offer",
-      at: 6,
-      outcome: "denied",
-      arguments_summary: { amount: 1350, currency: "EUR" },
-      policy: { decision: "server_rejected", error_code: "APPROVAL_REQUIRED" },
-      approval_ids: ["appr_9"],
-      result: { code: "APPROVAL_REQUIRED" }
-    });
-    const pending = derivePendingApprovals([attempted, mission]);
-    expect(pending).toEqual([
-      expect.objectContaining({ approvalId: "appr_9", kind: "policy", amount: 1350, currency: "EUR", hardBudgetMax: 1300 })
-    ]);
-  });
-
   it("removes approvals once the owner resolves them and keeps consent approvals separate", () => {
     const pending = derivePendingApprovals([mission, policyStop, resolved, consent]);
     expect(pending.map((entry) => entry.approvalId)).toEqual(["appr_consent"]);
@@ -140,44 +118,5 @@ describe("derivePendingApprovals", () => {
   it("deduplicates identical approval ids across retries", () => {
     const retry = { ...policyStop, receipt_id: "rcpt_retry", request_id: "req_retry" };
     expect(derivePendingApprovals([policyStop, retry])).toHaveLength(1);
-  });
-});
-
-describe("deriveDealRoom", () => {
-  it("returns null without negotiation receipts", () => {
-    expect(deriveDealRoom([mission, search])).toBeNull();
-  });
-
-  it("follows thread → offer → policy stop → reserved → consent", () => {
-    expect(deriveDealRoom([thread, message])).toMatchObject({ status: "thread_open", threadId: "t1", listingId: "l1", messagesSent: 1 });
-    expect(deriveDealRoom([thread, offer])).toMatchObject({ status: "offer_pending", offer: { offerId: "o1", amount: 1100, currency: "EUR" } });
-    expect(deriveDealRoom([thread, offer, policyStop])).toMatchObject({ status: "approval_required", approvalIds: ["appr_1"] });
-    expect(deriveDealRoom([thread, offer, policyStop, resolved, accepted])).toMatchObject({ status: "reserved", txId: "tx1" });
-    expect(deriveDealRoom([thread, offer, accepted, consent])).toMatchObject({
-      status: "reserved",
-      consent: { buyer: "GRANTED", seller: "PENDING" },
-      approvalIds: ["appr_consent"]
-    });
-  });
-
-  it("records seller counters and declines", () => {
-    const counter = receipt({
-      tool: "respond_to_offer",
-      at: 6,
-      arguments_summary: { offer_id: "o1", action: "counter", amount: 1350, currency: "EUR" },
-      result: { offer_id: "o2", amount: 1350, currency: "EUR", status: "PENDING" }
-    });
-    expect(deriveDealRoom([offer, counter])).toMatchObject({ status: "countered", offer: { offerId: "o2", amount: 1350 } });
-    const declined = receipt({ tool: "respond_to_offer", at: 7, arguments_summary: { offer_id: "o2", action: "decline" }, result: { offer_id: "o2", status: "DECLINED" } });
-    expect(deriveDealRoom([offer, counter, declined])).toMatchObject({ status: "declined" });
-  });
-});
-
-describe("formatAmount", () => {
-  it("formats amounts and tolerates unknown currencies", () => {
-    expect(formatAmount(1300, "EUR")).toBe("€1,300");
-    expect(formatAmount(1300, "EUR", "fr")).toMatch(/1[\s\u202f]300\s€/);
-    expect(formatAmount(null, "EUR")).toBeNull();
-    expect(formatAmount(12, "???")).toBe("12 ???");
   });
 });

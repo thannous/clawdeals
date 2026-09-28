@@ -80,28 +80,6 @@ describe("GET /v1/events/stream", () => {
     vi.unstubAllEnvs();
   });
 
-  it("returns 405 for unsupported methods", async () => {
-    const req = createMockReq({ method: "POST" });
-    const res = createMockRes();
-    const result: any = await handler(req, res, { ...baseCtx });
-    expect(result.status).toBe(405);
-    expect(result.headers.Allow).toBe("GET");
-  });
-
-  it("returns 401 without auth", async () => {
-    const req = createMockReq({ headers: { accept: "text/event-stream" } });
-    const res = createMockRes();
-    const result: any = await handler(req, res, {
-      requestId: "req-1",
-      authError: null,
-      actor: { type: "anonymous", id: null },
-      agentId: null,
-      ownerId: null
-    });
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
   it("denies an ordinary owner even when owner operations SSE is enabled", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("SSE_ALLOW_OWNER_OPS", "true");
@@ -167,34 +145,6 @@ describe("GET /v1/events/stream", () => {
     expect(result.status).toBe(403);
     expect(result.body.error.code).toBe("FORBIDDEN");
     expect(opsStreamKeyMock).not.toHaveBeenCalled();
-  });
-
-  it("returns 400 when Accept header is missing", async () => {
-    const req = createMockReq();
-    const res = createMockRes();
-    const result: any = await handler(req, res, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("returns 400 for invalid heartbeat", async () => {
-    const req = createMockReq({
-      headers: { accept: "text/event-stream" },
-      query: { heartbeat: "0" }
-    });
-    const res = createMockRes();
-    const result: any = await handler(req, res, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("returns 429 when concurrent slot acquisition fails", async () => {
-    acquireAgentConnectionSlotMock.mockResolvedValue({ ok: false, reason: "limit_reached" } as any);
-    const req = createMockReq({ headers: { accept: "text/event-stream" } });
-    const res = createMockRes();
-    const result: any = await handler(req, res, { ...baseCtx });
-    expect(result.status).toBe(429);
-    expect(result.body.error.code).toBe("RATE_LIMITED");
   });
 
   it("writes sse.gap when Last-Event-ID is too old and replay=true", async () => {

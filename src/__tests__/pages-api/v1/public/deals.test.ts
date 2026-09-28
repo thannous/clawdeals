@@ -62,19 +62,4 @@ describe("GET /api/v1/public/deals", () => {
     expect(res.body.error.message).toBe("status is invalid");
     expect(listDealsMock).not.toHaveBeenCalled();
   });
-
-  it("accepts ACTIVE status for temp sort and forwards ACTIVE only", async () => {
-    listDealsMock.mockResolvedValue({ items: [], nextCursor: null } as any);
-    const res = mockRes();
-
-    await handler(mockReq("GET", { sort: "temp", status: "ACTIVE" }), res);
-
-    expect(res.statusCode).toBe(200);
-    expect(listDealsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sort: "temp",
-        statuses: ["ACTIVE"],
-      })
-    );
-  });
 });

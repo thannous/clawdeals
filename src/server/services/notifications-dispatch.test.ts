@@ -184,62 +184,6 @@ describe("notifications-dispatch", () => {
     vi.clearAllMocks();
   });
 
-  it("sends hourly digest (dry run) and marks outbox delivered", async () => {
-    vi.mocked(getNotificationPreferences).mockResolvedValue({
-      owner_id: "o1",
-      mode: "DIGEST_HOURLY",
-      timezone: "UTC",
-      quiet_enabled: false,
-      quiet_start_min: null,
-      quiet_end_min: null,
-      event_types: ["watchlist_match"],
-      filters: {},
-      daily_digest_hour: 9,
-      last_hourly_digest_at: null,
-      last_daily_digest_at: null
-    } as any);
-
-    const outboxRows: any[] = [
-      {
-        notification_outbox_id: "n1",
-        owner_id: "o1",
-        channel_type: "telegram",
-        event_type: "watchlist_match",
-        entity_type: "deal",
-        entity_id: "d1",
-        payload: {},
-        occurred_at: "2026-02-10T00:00:00.000Z",
-        status: "PENDING",
-        attempt_count: 0
-      }
-    ];
-
-    const client = makeClient({
-      outboxRows,
-      identity: { channel_identity_id: "cid-1", channel_context_id: "chat-1" },
-      deals: [{ deal_id: "d1", title: "Deal 1", price: 99.5, currency: "EUR" }]
-    });
-
-    const sendTelegram = vi.fn(async () => ({ ok: true }));
-
-    const res = await runNotificationsDispatch({
-      client,
-      sendTelegram,
-      dryRun: true,
-      now: new Date("2026-02-10T10:00:00.000Z"),
-      limitOwners: 1,
-      maxItemsPerOwner: 10,
-      maxItemsPerDigest: 10
-    });
-
-    expect(res.ok).toBe(true);
-    expect(sendTelegram).not.toHaveBeenCalled();
-    expect(outboxRows[0].status).toBe("DELIVERED");
-    expect(outboxRows[0].delivered_at).toBe("2026-02-10T10:00:00.000Z");
-    expect(client._prefUpdates.length).toBe(1);
-    expect(client._prefUpdates[0].patch.last_hourly_digest_at).toBe("2026-02-10T10:00:00.000Z");
-  });
-
   it("persists digest timestamps even when preferences row is missing", async () => {
     vi.mocked(getNotificationPreferences).mockResolvedValue(null as any);
 

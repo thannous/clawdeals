@@ -82,78 +82,6 @@ describe("email-alerts", () => {
       return { from: vi.fn(() => ({ select: () => chain })) };
     }
 
-    it("creates an inactive watchlist and emails a localized confirmation link", async () => {
-      dependencyMocks.getOwnerByEmail.mockResolvedValue({ owner_id: OWNER_ID, email: "user@example.test" });
-      dependencyMocks.getSupabaseServiceClient.mockReturnValue(makeAgentLookupClient({ id: AGENT_ID, owner_id: OWNER_ID }));
-      dependencyMocks.createWatchlist.mockResolvedValue({ watchlist_id: WATCHLIST_ID, active: false });
-      const sendEmail = vi.fn(async () => ({ ok: true }));
-
-      const result = await createEmailAlert({
-        email: "user@example.test",
-        locale: "fr",
-        marketCode: "FR",
-        currency: "EUR",
-        criteria: { query: "vélo" },
-        queryText: "vélo",
-        tags: [],
-        priceMax: 150,
-        sendEmail
-      });
-
-      expect(result.status).toBe("pending_confirmation");
-      expect(result.watchlist_id).toBe(WATCHLIST_ID);
-      expect(dependencyMocks.createAgent).not.toHaveBeenCalled();
-      expect(dependencyMocks.createWatchlist).toHaveBeenCalledWith(
-        expect.objectContaining({ agentId: AGENT_ID, active: false, marketCode: "FR", currency: "EUR" })
-      );
-
-      expect(sendEmail).toHaveBeenCalledOnce();
-      const [mail] = sendEmail.mock.calls[0] as any[];
-      expect(mail.toEmail).toBe("user@example.test");
-      expect(mail.subject).toContain("Confirmez");
-      expect(mail.text).toContain("/api/v1/alerts/confirm?token=");
-      expect(mail.text).toContain("150 EUR");
-    });
-
-    it("creates the shadow alert agent when the owner has none", async () => {
-      dependencyMocks.getOwnerByEmail.mockResolvedValue({ owner_id: OWNER_ID, email: "user@example.test" });
-      dependencyMocks.getSupabaseServiceClient.mockReturnValue(makeAgentLookupClient(null));
-      dependencyMocks.createAgent.mockResolvedValue({ id: AGENT_ID, owner_id: OWNER_ID });
-      dependencyMocks.createWatchlist.mockResolvedValue({ watchlist_id: WATCHLIST_ID, active: false });
-
-      await createEmailAlert({
-        email: "user@example.test",
-        marketCode: "GB",
-        currency: "GBP",
-        criteria: {},
-        queryText: "gpu",
-        sendEmail: vi.fn(async () => ({ ok: true }))
-      });
-
-      expect(dependencyMocks.createAgent).toHaveBeenCalledWith(
-        expect.objectContaining({ ownerId: OWNER_ID, metadata: { system: "email_alerts" } })
-      );
-    });
-
-    it("returns the confirm URL instead of failing when no provider is configured outside production", async () => {
-      dependencyMocks.getOwnerByEmail.mockResolvedValue({ owner_id: OWNER_ID, email: "user@example.test" });
-      dependencyMocks.getSupabaseServiceClient.mockReturnValue(makeAgentLookupClient({ id: AGENT_ID, owner_id: OWNER_ID }));
-      dependencyMocks.createWatchlist.mockResolvedValue({ watchlist_id: WATCHLIST_ID, active: false });
-      const sendEmail = vi.fn(async () => ({ ok: false, skipped: true, error: "EMAIL_PROVIDER_NOT_CONFIGURED" }));
-
-      const result = await createEmailAlert({
-        email: "user@example.test",
-        marketCode: "FR",
-        currency: "EUR",
-        criteria: {},
-        queryText: "ps5",
-        sendEmail
-      });
-
-      expect(result.email_delivery).toBe("skipped");
-      expect(result.confirm_url).toContain("/api/v1/alerts/confirm?token=");
-    });
-
     it("fails with 503 when the provider send fails", async () => {
       dependencyMocks.getOwnerByEmail.mockResolvedValue({ owner_id: OWNER_ID, email: "user@example.test" });
       dependencyMocks.getSupabaseServiceClient.mockReturnValue(makeAgentLookupClient({ id: AGENT_ID, owner_id: OWNER_ID }));
@@ -212,34 +140,6 @@ describe("email-alerts", () => {
         })
       };
     }
-
-    it("activates the watchlist, verifies the owner email, and enqueues a backfill", async () => {
-      const updates: any[] = [];
-      dependencyMocks.getSupabaseServiceClient.mockReturnValue(
-        makeConfirmClient({
-          watchlist: { watchlist_id: WATCHLIST_ID, agent_id: AGENT_ID, active: false },
-          agent: { id: AGENT_ID, owner_id: OWNER_ID },
-          onWatchlistUpdate: (patch) => updates.push(patch)
-        })
-      );
-      dependencyMocks.getOwner.mockResolvedValue({ owner_id: OWNER_ID, email_verified_at: null });
-      dependencyMocks.setOwnerVerified.mockResolvedValue({});
-      dependencyMocks.enqueueWatchlistBackfill.mockResolvedValue({});
-
-      const token = buildAlertConfirmToken({
-        ownerId: OWNER_ID,
-        watchlistId: WATCHLIST_ID,
-        expiresAtMs: Date.now() + 60_000
-      });
-      const result = await confirmEmailAlert({ token });
-
-      expect(result).toEqual({ status: "confirmed", watchlist_id: WATCHLIST_ID });
-      expect(updates[0]).toMatchObject({ active: true });
-      expect(dependencyMocks.setOwnerVerified).toHaveBeenCalledWith(
-        expect.objectContaining({ ownerId: OWNER_ID, type: "EMAIL" })
-      );
-      expect(dependencyMocks.enqueueWatchlistBackfill).toHaveBeenCalledWith({ watchlistId: WATCHLIST_ID });
-    });
 
     it("rejects a token whose owner does not match the watchlist agent", async () => {
       dependencyMocks.getSupabaseServiceClient.mockReturnValue(

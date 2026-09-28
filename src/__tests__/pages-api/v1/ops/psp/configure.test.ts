@@ -42,47 +42,6 @@ suite("POST /v1/ops/psp/configure", () => {
     upsertPspConfigMock.mockResolvedValue({ provider: "mock", mode: "sandbox" } as any);
   });
 
-  it("returns 403 when caller is not ops owner", async () => {
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "idem-1" },
-      query: {},
-      body: {
-        provider: "mock",
-        mode: "sandbox",
-        webhook_secret_ref: "env:PSP_WEBHOOK_SECRET",
-        platform_fee_bps_default: 100
-      }
-    };
-
-    const nonOpsOwnerId = "11111111-1111-4111-8111-111111111111";
-    const result: any = await handler(req, null, {
-      ...baseCtx,
-      ownerId: nonOpsOwnerId,
-      actor: { type: "owner", id: nonOpsOwnerId }
-    });
-    expect(result.status).toBe(403);
-    expect(result.body.error.code).toBe("PERMISSION_DENIED");
-  });
-
-  it("requires Idempotency-Key", async () => {
-    const req: any = {
-      method: "POST",
-      headers: {},
-      query: {},
-      body: {
-        provider: "mock",
-        mode: "sandbox",
-        webhook_secret_ref: "env:PSP_WEBHOOK_SECRET",
-        platform_fee_bps_default: 100
-      }
-    };
-
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
   it("rejects the mock provider in production mode", async () => {
     const req: any = {
       method: "POST",
@@ -100,28 +59,5 @@ suite("POST /v1/ops/psp/configure", () => {
     expect(result.status).toBe(400);
     expect(result.body.error.code).toBe("VALIDATION_ERROR");
     expect(upsertPspConfigMock).not.toHaveBeenCalled();
-  });
-
-  it("preserves non-validation errors from upsertPspConfig", async () => {
-    const err: any = new Error("db down");
-    err.status = 503;
-    err.code = "DB_DOWN";
-    upsertPspConfigMock.mockRejectedValueOnce(err);
-
-    const req: any = {
-      method: "POST",
-      headers: { "idempotency-key": "idem-1" },
-      query: {},
-      body: {
-        provider: "mock",
-        mode: "sandbox",
-        webhook_secret_ref: "env:PSP_WEBHOOK_SECRET",
-        platform_fee_bps_default: 100
-      }
-    };
-
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(503);
-    expect(result.body.error.code).toBe("DB_DOWN");
   });
 });

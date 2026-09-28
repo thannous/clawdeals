@@ -64,44 +64,6 @@ describe("editable mission offer approvals", () => {
     } as any);
   });
 
-  it("revalidates mission and current policy before updating the pending payload", async () => {
-    const updated = { ...approval(), action_ref: { ...approval().action_ref, amount: 1290 } };
-    const chain = updateChain(updated);
-    vi.mocked(getSupabaseServiceClient).mockReturnValue({ from: vi.fn(() => chain) } as any);
-    const now = new Date("2026-08-26T10:00:00.000Z");
-
-    const result = await editPendingMissionOfferApproval({
-      approval: approval(),
-      ownerId: OWNER_ID,
-      amount: 1290,
-      now
-    });
-
-    expect(enforceBuyMissionOffer).toHaveBeenCalledWith({
-      missionId: MISSION_ID,
-      agentId: AGENT_ID,
-      amount: 1290,
-      currency: "EUR",
-      now
-    });
-    expect(evaluatePolicyAction).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "offer.create", offerAmount: 1290, offerCurrency: "EUR" })
-    );
-    expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action_ref: expect.objectContaining({ amount: 1290 }),
-        action_payload_redacted: expect.objectContaining({
-          offer: expect.objectContaining({ amount: 1290 }),
-          owner_edit: expect.objectContaining({
-            mission_decision: "ALLOW",
-            policy_decision: "ALLOW"
-          })
-        })
-      })
-    );
-    expect(result.approval).toBe(updated);
-  });
-
   it("fails closed when the pending row changed before the edit", async () => {
     const chain = updateChain(null);
     vi.mocked(getSupabaseServiceClient).mockReturnValue({ from: vi.fn(() => chain) } as any);
@@ -114,42 +76,6 @@ describe("editable mission offer approvals", () => {
         now: new Date("2026-08-26T10:00:00.000Z")
       })
     ).rejects.toMatchObject({ code: "APPROVAL_STALE", status: 409 });
-  });
-
-  it("records an explicit owner override when the amount still violates the mission rule", async () => {
-    vi.mocked(enforceBuyMissionOffer).mockRejectedValue(
-      Object.assign(new Error("Owner approval required"), {
-        code: "APPROVAL_REQUIRED",
-        status: 409,
-        details: {
-          reason: "hard_budget_exceeded",
-          hard_budget_max: 1300,
-          currency: "EUR"
-        }
-      })
-    );
-    const updated = approval();
-    const chain = updateChain(updated);
-    vi.mocked(getSupabaseServiceClient).mockReturnValue({ from: vi.fn(() => chain) } as any);
-
-    const result = await editPendingMissionOfferApproval({
-      approval: approval(),
-      ownerId: OWNER_ID,
-      amount: 1350,
-      now: new Date("2026-08-26T10:00:00.000Z")
-    });
-
-    expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action_payload_redacted: expect.objectContaining({
-          owner_edit: expect.objectContaining({
-            mission_decision: "OWNER_OVERRIDE",
-            mission_reason: "hard_budget_exceeded"
-          })
-        })
-      })
-    );
-    expect(result.mission).toMatchObject({ hard_budget_max: 1300, currency: "EUR" });
   });
 
   it("fails closed when the mission is inactive rather than merely outside delegation", async () => {

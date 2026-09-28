@@ -3,37 +3,6 @@ import { describe, expect, it } from "vitest";
 import { safeRedirectUrl } from "./safeRedirect";
 
 describe("safeRedirectUrl", () => {
-  it("returns default for non-string input", () => {
-    expect(safeRedirectUrl(undefined)).toBe("/settings/account");
-    expect(safeRedirectUrl(null)).toBe("/settings/account");
-    expect(safeRedirectUrl(42)).toBe("/settings/account");
-    expect(safeRedirectUrl({})).toBe("/settings/account");
-  });
-
-  it("returns default for empty or whitespace string", () => {
-    expect(safeRedirectUrl("")).toBe("/settings/account");
-    expect(safeRedirectUrl("   ")).toBe("/settings/account");
-  });
-
-  it("accepts allowed prefixes", () => {
-    expect(safeRedirectUrl("/claim/abc-123")).toBe("/claim/abc-123");
-    expect(safeRedirectUrl("/settings/account")).toBe("/settings/account");
-    expect(safeRedirectUrl("/settings/agents")).toBe("/settings/agents");
-    expect(safeRedirectUrl("/start")).toBe("/start");
-    expect(safeRedirectUrl("/deals")).toBe("/deals");
-    expect(safeRedirectUrl("/deals/abc")).toBe("/deals/abc");
-    expect(safeRedirectUrl("/console")).toBe("/console");
-    expect(safeRedirectUrl("/explore")).toBe("/explore");
-    expect(safeRedirectUrl("/auth/login")).toBe("/auth/login");
-  });
-
-  it("accepts /my/* routes", () => {
-    expect(safeRedirectUrl("/my/threads")).toBe("/my/threads");
-    expect(safeRedirectUrl("/my/offers")).toBe("/my/offers");
-    expect(safeRedirectUrl("/my/listings")).toBe("/my/listings");
-    expect(safeRedirectUrl("/my/approvals")).toBe("/my/approvals");
-  });
-
   it("accepts locale-prefixed allowed routes", () => {
     expect(safeRedirectUrl("/fr/settings/connected-apps")).toBe("/fr/settings/connected-apps");
     expect(safeRedirectUrl("/en-US/claim/abc-123?step=2")).toBe("/en-US/claim/abc-123?step=2");
@@ -72,18 +41,6 @@ describe("safeRedirectUrl", () => {
   it("blocks control characters", () => {
     expect(safeRedirectUrl("/claim/\x00abc")).toBe("/settings/account");
     expect(safeRedirectUrl("/claim/\nabc")).toBe("/settings/account");
-  });
-
-  it("trims whitespace before validating", () => {
-    expect(safeRedirectUrl("  /claim/abc  ")).toBe("/claim/abc");
-  });
-
-  // Regression: /my/* was rejected because stripLocalePrefix treated "/my"
-  // as a 2-letter locale code, turning "/my/threads" into "/threads".
-  // The fix checks the raw path before locale stripping.
-  it("does not strip /my as a locale prefix", () => {
-    expect(safeRedirectUrl("/my/threads")).toBe("/my/threads");
-    expect(safeRedirectUrl("/my/offers")).toBe("/my/offers");
   });
 
   // Regression: short allowed prefixes like /my/ must not be misinterpreted

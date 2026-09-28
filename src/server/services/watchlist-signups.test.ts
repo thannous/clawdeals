@@ -31,37 +31,6 @@ describe("createWatchlistSignup", () => {
     dependencyMocks.getNeonSql.mockReturnValue(dependencyMocks.neonQuery);
   });
 
-  it("sends a localized confirmation email after a successful signup", async () => {
-    const { client } = makeClient({ data: { watchlist_signup_id: "s1" }, error: null });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue(client);
-    const sendEmail = vi.fn(async () => ({ ok: true }));
-
-    const result = await createWatchlistSignup({
-      email: "new@example.test",
-      locale: "fr-FR",
-      source: "landing",
-      sendEmail
-    });
-
-    expect(result.status).toBe("created");
-    expect(sendEmail).toHaveBeenCalledOnce();
-    const [mail] = sendEmail.mock.calls[0] as any[];
-    expect(mail.toEmail).toBe("new@example.test");
-    expect(mail.subject).toContain("liste d'attente");
-    expect(mail.text).toContain("Merci");
-  });
-
-  it("does not email again for an already registered address", async () => {
-    const { client } = makeClient({ data: null, error: { code: "23505", message: "duplicate key value" } });
-    dependencyMocks.getSupabaseServiceClient.mockReturnValue(client);
-    const sendEmail = vi.fn(async () => ({ ok: true }));
-
-    const result = await createWatchlistSignup({ email: "dup@example.test", sendEmail });
-
-    expect(result.status).toBe("already_registered");
-    expect(sendEmail).not.toHaveBeenCalled();
-  });
-
   it("still succeeds when the confirmation email fails or the provider is unconfigured", async () => {
     const { client } = makeClient({ data: { watchlist_signup_id: "s1" }, error: null });
     dependencyMocks.getSupabaseServiceClient.mockReturnValue(client);

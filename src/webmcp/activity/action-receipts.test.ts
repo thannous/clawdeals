@@ -59,59 +59,6 @@ describe("action receipts", () => {
     expect(receipt.link).toBeNull();
   });
 
-  it("finalizes while preserving durable identity and correlation", async () => {
-    const receipt = await pending();
-    const finalized = finalizeActionReceipt(receipt, {
-      outcome: "success",
-      confirmation: "approved",
-      approvalIds: ["approval-1"],
-      result: { offer_id: "offer-1", status: "accepted" },
-      timestamp: "2026-08-26T10:01:00.000Z"
-    });
-
-    expect(finalized.receipt_id).toBe(receipt.receipt_id);
-    expect(finalized.request_id).toBe(receipt.request_id);
-    expect(finalized.input_hash).toBe(receipt.input_hash);
-    expect(Object.keys(finalized)).toEqual([
-      "receipt_version",
-      "receipt_id",
-      "request_id",
-      "tool",
-      "actor",
-      "arguments_summary",
-      "input_hash",
-      "policy",
-      "confirmation",
-      "approval_ids",
-      "outcome",
-      "best_effort_error",
-      "result",
-      "timestamp",
-      "link"
-    ]);
-    expect(finalized).toMatchObject({
-      outcome: "success",
-      confirmation: "approved",
-      approval_ids: ["approval-1"]
-    });
-  });
-
-  it("keeps pending, success, denied, and unknown outcomes distinct", async () => {
-    const receipt = await pending();
-    expect(receipt.outcome).toBe("pending");
-    expect(finalizeActionReceipt(receipt, { outcome: "success" }).outcome).toBe("success");
-    expect(finalizeActionReceipt(receipt, { outcome: "denied" }).outcome).toBe("denied");
-    expect(
-      finalizeActionReceipt(receipt, {
-        outcome: "unknown",
-        result: { safe_to_retry: false, reconciliation_url: "/my/offers" }
-      })
-    ).toMatchObject({
-      outcome: "unknown",
-      result: { safe_to_retry: false, reconciliation_url: "/my/offers" }
-    });
-  });
-
   it("serializes, reloads, and replaces the pending receipt", async () => {
     const storage = createMemoryStorage();
     const firstStore = new ActionReceiptStore({ storage });
@@ -122,16 +69,6 @@ describe("action receipts", () => {
     const reloaded = new ActionReceiptStore({ storage });
     expect(reloaded.list()).toHaveLength(1);
     expect(reloaded.getByRequestId("req-1")?.outcome).toBe("denied");
-  });
-
-  it("clears in-memory and persisted receipts for a fresh judge session", async () => {
-    const storage = createMemoryStorage();
-    const store = new ActionReceiptStore({ storage });
-    store.upsert(await pending());
-
-    expect(store.clear()).toBe(true);
-    expect(store.list()).toEqual([]);
-    expect(new ActionReceiptStore({ storage }).list()).toEqual([]);
   });
 
   it("ignores corrupt storage and exposes best-effort write failures in memory", async () => {

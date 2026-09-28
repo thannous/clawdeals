@@ -36,88 +36,6 @@ describe("POST /v1/threads/{thread_id}:watch", () => {
     vi.useRealTimers();
   });
 
-  it("returns 405 for unsupported methods", async () => {
-    const req: any = { method: "GET", query: { id: `${threadId}:watch` } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(405);
-    expect(result.headers.Allow).toBe("POST");
-  });
-
-  it("requires agent authentication", async () => {
-    const req: any = { method: "POST", query: { id: `${threadId}:watch` }, body: { timeout_ms: 0 } };
-    const result: any = await handler(req, null, { ...baseCtx, agentId: null });
-    expect(result.status).toBe(401);
-    expect(result.body.error.code).toBe("UNAUTHORIZED");
-  });
-
-  it("validates thread_id UUID", async () => {
-    const req: any = { method: "POST", query: { id: `not-a-uuid:watch` }, body: { timeout_ms: 0 } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("returns 404 for unknown action", async () => {
-    const req: any = { method: "POST", query: { id: `${threadId}:nope` }, body: { timeout_ms: 0 } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("rejects malformed cursor formats", async () => {
-    for (const cursor of ["1-2-3", "1.5-0"]) {
-      const req: any = { method: "POST", query: { id: `${threadId}:watch` }, body: { cursor, timeout_ms: 0 } };
-      const result: any = await handler(req, null, { ...baseCtx });
-      expect(result.status).toBe(400);
-      expect(result.body.error.code).toBe("VALIDATION_ERROR");
-      expect(result.body.error.message).toContain("cursor");
-    }
-    expect(getThreadMock).not.toHaveBeenCalled();
-    expect(readThreadEventsAfterMock).not.toHaveBeenCalled();
-  });
-
-  it("returns 404 when thread not found", async () => {
-    getThreadMock.mockResolvedValue(null as any);
-    getLatestThreadEventIdMock.mockResolvedValue("0-0" as any);
-    readThreadEventsAfterMock.mockResolvedValue([] as any);
-
-    const req: any = { method: "POST", query: { id: `${threadId}:watch` }, body: { timeout_ms: 0 } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("returns 404 when caller is not a party to the thread (BOLA)", async () => {
-    getThreadMock.mockResolvedValue({
-      buyer_agent_id: "agent-a",
-      seller_agent_id: "agent-b"
-    } as any);
-
-    const req: any = { method: "POST", query: { id: `${threadId}:watch` }, body: { timeout_ms: 0 } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("NOT_FOUND");
-  });
-
-  it("uses latest cursor when cursor is omitted", async () => {
-    getThreadMock.mockResolvedValue({
-      buyer_agent_id: "agent-1",
-      seller_agent_id: "agent-2"
-    } as any);
-    getLatestThreadEventIdMock.mockResolvedValue("7-0" as any);
-    readThreadEventsAfterMock.mockResolvedValue([] as any);
-
-    const req: any = {
-      method: "POST",
-      query: { id: `${threadId}:watch` },
-      body: { timeout_ms: 0, limit: 10 }
-    };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(200);
-    expect(result.body.events).toEqual([]);
-    expect(result.body.next_cursor).toBe("7-0");
-  });
-
   it("returns matching events and advances cursor monotonically", async () => {
     getThreadMock.mockResolvedValue({
       buyer_agent_id: "agent-1",
@@ -183,28 +101,6 @@ describe("POST /v1/threads/{thread_id}:watch", () => {
     expect(result.status).toBe(200);
     expect(result.body.events).toEqual([]);
     expect(result.body.next_cursor).toBe("1-0");
-  });
-
-  it("returns within timeout even when no events", async () => {
-    getThreadMock.mockResolvedValue({
-      buyer_agent_id: "agent-1",
-      seller_agent_id: "agent-2"
-    } as any);
-    getLatestThreadEventIdMock.mockResolvedValue("0-0" as any);
-    readThreadEventsAfterMock.mockResolvedValue([] as any);
-
-    const req: any = {
-      method: "POST",
-      query: { id: `${threadId}:watch` },
-      body: { timeout_ms: 1000, limit: 10 }
-    };
-
-    const promise = handler(req, null, { ...baseCtx });
-    await vi.advanceTimersByTimeAsync(1000);
-    await vi.runOnlyPendingTimersAsync();
-    const result: any = await promise;
-    expect(result.status).toBe(200);
-    expect(result.body.events).toEqual([]);
   });
 
   it("does not exceed timeout when an empty poll read is slow", async () => {

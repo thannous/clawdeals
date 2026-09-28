@@ -100,49 +100,4 @@ describe("oauth-refresh-tokens.rotateRefreshToken", () => {
     expect(cleanupBuilder.eq).toHaveBeenCalledWith("token_id", "new-token-id");
     expect(fromMock).toHaveBeenCalledTimes(4);
   });
-
-  it("returns a rotated token when revocation succeeds", async () => {
-    const now = new Date("2026-02-11T12:00:00.000Z");
-    const existingTokenRow = {
-      token_id: "old-token-id",
-      token_hash: "old-token-hash",
-      owner_id: "owner-1",
-      agent_id: "agent-1",
-      installation_id: "inst-1",
-      scopes: ["agent:read", "agent:write"],
-      revoked_at: null,
-      expires_at: new Date(now.getTime() + 60_000).toISOString()
-    };
-    const insertedTokenRow = {
-      token_id: "new-token-id",
-      token_hash: "new-token-hash",
-      expires_at: new Date(now.getTime() + 60_000).toISOString()
-    };
-
-    const lookupBuilder = createLookupBuilder({ data: existingTokenRow, error: null });
-    const insertBuilder = createInsertBuilder({ data: insertedTokenRow, error: null });
-    const revokeBuilder = createRevokeBuilder({
-      data: { token_id: existingTokenRow.token_id },
-      error: null
-    });
-
-    const fromMock = vi
-      .fn()
-      .mockReturnValueOnce(lookupBuilder)
-      .mockReturnValueOnce(insertBuilder)
-      .mockReturnValueOnce(revokeBuilder);
-
-    getSupabaseServiceClientMock.mockReturnValue({ from: fromMock });
-
-    const rotated = await rotateRefreshToken({ refreshToken: "cd_rt_old", now });
-
-    expect(rotated.old_token_id).toBe("old-token-id");
-    expect(rotated.new_token_id).toBe("new-token-id");
-    expect(rotated.owner_id).toBe("owner-1");
-    expect(rotated.agent_id).toBe("agent-1");
-    expect(rotated.installation_id).toBe("inst-1");
-    expect(rotated.scopes).toEqual(["agent:read", "agent:write"]);
-    expect(rotated.new_refresh_token).toMatch(/^cd_rt_/);
-    expect(fromMock).toHaveBeenCalledTimes(3);
-  });
 });

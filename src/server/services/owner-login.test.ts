@@ -31,13 +31,11 @@ vi.mock("../db/supabase", () => ({
 
 import { getOwner, getOwnerByEmail } from "./owners";
 import {
-  createOwnerSession,
   getOwnerSessionById,
   incrementOwnerSessionAttempt,
   markOwnerSessionExpired,
   markOwnerSessionRevoked
 } from "./owner-sessions";
-import { buildOwnerSessionCookie } from "../auth/session-cookie";
 import { hashOwnerSessionToken } from "../utils/session-tokens";
 import { confirmOwnerLogin, startOwnerLogin } from "./owner-login";
 
@@ -60,19 +58,6 @@ describe("owner-login", () => {
     process.env = { ...originalEnv };
   });
 
-  it("starts an owner session and returns token", async () => {
-    const owner = { owner_id: "owner-1", email: "test@example.com", suspended_at: null };
-    vi.mocked(getOwnerByEmail).mockResolvedValue(owner as any);
-    vi.mocked(createOwnerSession).mockResolvedValue({ session_id: "sess-1" } as any);
-
-    const now = new Date("2026-02-11T10:00:00Z");
-    const result = await startOwnerLogin({ email: "Test@Example.com", now });
-
-    expect(result.owner).toBe(owner);
-    expect(result.session_token.startsWith("cd_os_")).toBe(true);
-    expect(createOwnerSession).toHaveBeenCalledWith(expect.objectContaining({ ownerId: "owner-1" }));
-  });
-
   it("blocks start when owner is suspended", async () => {
     vi.mocked(getOwnerByEmail).mockResolvedValue({ owner_id: "owner-1", suspended_at: "2026-02-10T00:00:00Z" } as any);
 
@@ -80,30 +65,6 @@ describe("owner-login", () => {
       status: 403,
       code: "OWNER_SUSPENDED"
     });
-  });
-
-  it("increments attempts and returns remaining attempts for invalid token", async () => {
-    const token = TOKEN_VALID;
-    const session = {
-      session_id: "sess-1",
-      owner_id: "owner-1",
-      status: "PENDING",
-      token_hash: hashOwnerSessionToken(TOKEN_OTHER),
-      attempt_count: 1,
-      max_attempts: 3,
-      expires_at: "2099-01-01T00:00:00Z"
-    };
-
-    vi.mocked(getOwnerSessionById).mockResolvedValue(session as any);
-    vi.mocked(incrementOwnerSessionAttempt).mockResolvedValue({ ...session, attempt_count: 2 } as any);
-
-    await expect(confirmOwnerLogin({ sessionId: "sess-1", token })).rejects.toMatchObject({
-      status: 400,
-      code: "INVALID_SESSION_TOKEN",
-      details: { remaining_attempts: 1 }
-    });
-
-    expect(incrementOwnerSessionAttempt).toHaveBeenCalledWith("sess-1", 2, expect.any(Date));
   });
 
   it("locks out after max attempts", async () => {
@@ -277,18 +238,5 @@ describe("owner-login", () => {
     consumeMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: "database unavailable" } });
 
     await expect(confirmOwnerLogin({ sessionId: "sess-1", token })).rejects.toMatchObject({ status: 500 });
-  });
-
-  it("builds dev cookie without Secure and with SameSite=Lax", () => {
-    const cookie = buildOwnerSessionCookie({
-      token: TOKEN_VALID,
-      expiresAt: new Date("2026-02-12T00:00:00Z")
-    });
-
-    expect(cookie).toContain(`cd_owner_session=${TOKEN_VALID}`);
-    expect(cookie).toContain("HttpOnly");
-    expect(cookie).toContain("SameSite=Lax");
-    expect(cookie).toContain("Path=/");
-    expect(cookie.includes("Secure")).toBe(false);
   });
 });

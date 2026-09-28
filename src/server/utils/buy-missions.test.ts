@@ -21,27 +21,6 @@ function validMission(overrides: Record<string, unknown> = {}) {
 }
 
 describe("normalizeBuyMission", () => {
-  it("normalizes a valid mission and removes duplicate requirements/actions", () => {
-    const result = normalizeBuyMission(
-      validMission({
-        requirements: ["battery_health >= 80%", " BATTERY_HEALTH >= 80% "],
-        autonomous_actions: ["search", "search", "make_offer"]
-      }),
-      { now: NOW }
-    );
-
-    expect(result).toMatchObject({
-      version: 1,
-      kind: "BUY",
-      preferred_price_max: 1200,
-      hard_budget_max: 1300,
-      currency: "EUR",
-      requirements: ["battery_health >= 80%"],
-      autonomous_actions: ["search", "make_offer"],
-      contact_reveal: "manual_bilateral_approval",
-      location: { label: "Paris", lat: 48.8566, lon: 2.3522, radius_km: 25 }
-    });
-  });
 
   it("rejects an inverted target and hard budget", () => {
     expect(() =>

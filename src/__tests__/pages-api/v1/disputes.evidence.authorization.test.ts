@@ -137,62 +137,6 @@ describe("dispute and evidence actor boundaries", () => {
     }
   );
 
-  it("preserves participant upload initialization and binds the claim to the agent", async () => {
-    const result: any = await handler(request("evidence", "POST"), null, {
-      actor: { type: "agent", id: BUYER_AGENT_ID },
-      agentId: BUYER_AGENT_ID,
-      ownerId: OPS_OWNER_ID,
-      authError: null
-    });
-
-    expect(result.status).toBe(200);
-    expect(initEvidenceUploadMock).toHaveBeenCalledWith({
-      disputeId: DISPUTE_ID,
-      submittedBy: "BUYER",
-      actor: { type: "agent", id: BUYER_AGENT_ID }
-    });
-  });
-
-  it("preserves participant confirmation and passes the same actor binding", async () => {
-    const body = {
-      bucket: "evidence",
-      key: `disputes/${DISPUTE_ID}/key`,
-      sha256: "a".repeat(64),
-      content_type: "image/png",
-      bytes: 1
-    };
-    const result: any = await handler(request("evidence:confirm", "POST", body), null, {
-      actor: { type: "agent", id: BUYER_AGENT_ID },
-      agentId: BUYER_AGENT_ID,
-      ownerId: BUYER_OWNER_ID,
-      authError: null
-    });
-
-    expect(result.status).toBe(200);
-    expect(confirmEvidenceUploadMock).toHaveBeenCalledWith({
-      disputeId: DISPUTE_ID,
-      submittedBy: "BUYER",
-      bucket: "evidence",
-      key: body.key,
-      sha256: body.sha256,
-      contentType: "image/png",
-      bytes: 1,
-      actor: { type: "agent", id: BUYER_AGENT_ID }
-    });
-  });
-
-  it("preserves OPS evidence access for an authenticated ops owner", async () => {
-    const result: any = await handler(request("evidence", "GET"), null, {
-      actor: { type: "owner", id: OPS_OWNER_ID },
-      ownerId: OPS_OWNER_ID,
-      agentId: null,
-      authError: null
-    });
-
-    expect(result.status).toBe(200);
-    expect(listEvidenceBundleMock).toHaveBeenCalledWith({ disputeId: DISPUTE_ID, escrowId: ESCROW_ID });
-  });
-
   it("preserves an ordinary owner's access on behalf of an owned participant", async () => {
     getAgentByIdMock.mockImplementation(async (agentId: string) =>
       agentId === BUYER_AGENT_ID ? ({ id: agentId, owner_id: BUYER_OWNER_ID } as any) : null

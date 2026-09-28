@@ -59,18 +59,6 @@ describe("POST /v1/escrows/:escrow_id/disputes", () => {
     } as any);
   });
 
-  it("requires an idempotency key before revealing escrow existence", async () => {
-    const result: any = await handler(request(undefined, {}), null, {
-      authError: null,
-      agentId: BUYER_ID,
-      actor: { type: "agent", id: BUYER_ID }
-    });
-
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-    expect(getEscrowByIdMock).not.toHaveBeenCalled();
-  });
-
   it("hides escrow existence from an unrelated owner", async () => {
     getAgentByIdMock.mockResolvedValue({ owner_id: "different-owner" } as any);
 
@@ -115,39 +103,5 @@ describe("POST /v1/escrows/:escrow_id/disputes", () => {
     });
     expect(ctx.body.opened_notes_redacted).toBe("Contact [REDACTED] or [REDACTED] for details");
     expect(result.body).not.toHaveProperty("opened_notes_redacted");
-  });
-
-  it("rejects an invalid reason before attempting the atomic dispute transition", async () => {
-    const result: any = await handler(
-      request({ reason_code: "chargeback_everything" }),
-      null,
-      {
-        authError: null,
-        agentId: BUYER_ID,
-        actor: { type: "agent", id: BUYER_ID }
-      }
-    );
-
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-    expect(openDisputeMock).not.toHaveBeenCalled();
-  });
-
-  it("preserves the duplicate-open conflict returned by the atomic service", async () => {
-    openDisputeMock.mockRejectedValue(
-      Object.assign(new Error("Dispute already exists"), {
-        status: 409,
-        code: "DISPUTE_ALREADY_EXISTS"
-      })
-    );
-
-    const result: any = await handler(request(), null, {
-      authError: null,
-      agentId: BUYER_ID,
-      actor: { type: "agent", id: BUYER_ID }
-    });
-
-    expect(result.status).toBe(409);
-    expect(result.body.error.code).toBe("DISPUTE_ALREADY_EXISTS");
   });
 });

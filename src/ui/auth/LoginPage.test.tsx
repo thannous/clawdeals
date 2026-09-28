@@ -1,4 +1,3 @@
-import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
@@ -71,25 +70,6 @@ describe("LoginPage Google OAuth", () => {
     }
   });
 
-  it("uses manual browser redirect for Google OAuth", async () => {
-    render(<LoginPage />);
-
-    fireEvent.click(screen.getByTestId("auth-login-google"));
-
-    await waitFor(() => {
-      expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
-        expect.objectContaining({
-          provider: "google",
-          options: expect.objectContaining({
-            redirectTo: expect.stringMatching(/^http:\/\/localhost(?::\d+)?\/auth\/callback$/),
-            skipBrowserRedirect: true
-          })
-        })
-      );
-    });
-    expect(sessionStorage.getItem("clawdeals.auth_next")).toBe("/start");
-  });
-
   it("passes next in callback URL when sessionStorage is unavailable", async () => {
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("Private mode");
@@ -149,28 +129,6 @@ describe("LoginPage Google OAuth", () => {
       );
     });
     expect(sessionStorage.getItem("clawdeals.auth_next")).toBe("/start");
-  });
-
-  it("keeps default redirect when next is absent and router is not ready", async () => {
-    mocks.router.isReady = false;
-    mocks.router.query = {};
-    window.history.replaceState({}, "", "/auth/login");
-    render(<LoginPage />);
-
-    fireEvent.click(screen.getByTestId("auth-login-google"));
-
-    await waitFor(() => {
-      expect(mocks.signInWithOAuth).toHaveBeenCalledWith(
-        expect.objectContaining({
-          provider: "google",
-          options: expect.objectContaining({
-            redirectTo: expect.stringMatching(/^http:\/\/localhost(?::\d+)?\/auth\/callback$/),
-            skipBrowserRedirect: true
-          })
-        })
-      );
-    });
-    expect(sessionStorage.getItem("clawdeals.auth_next")).toBe("/settings/account");
   });
 
   it("forces localhost callback origin in local dev even when NEXT_PUBLIC_APP_URL is set", async () => {

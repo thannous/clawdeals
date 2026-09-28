@@ -39,18 +39,6 @@ describe("GET/POST /api/internal/cron/audit-retention", () => {
     process.env = { ...originalEnv };
   });
 
-  it("returns 405 for unsupported methods", async () => {
-    const req: any = { method: "PUT", headers: {}, query: {} };
-    const res = createMockRes();
-
-    await handler(req, res);
-
-    expect(res.setHeader).toHaveBeenCalledWith("Allow", "GET, POST");
-    expect(res.status).toHaveBeenCalledWith(405);
-    expect(res.json).toHaveBeenCalledWith({ error: "Method not allowed" });
-    expect(vi.mocked(runAuditRetention)).not.toHaveBeenCalled();
-  });
-
   it("returns 401 when x-cron-secret is missing or invalid", async () => {
     const req: any = { method: "POST", headers: {}, query: {} };
     const res = createMockRes();
@@ -60,31 +48,6 @@ describe("GET/POST /api/internal/cron/audit-retention", () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
     expect(vi.mocked(runAuditRetention)).not.toHaveBeenCalled();
-  });
-
-  it("runs retention and returns 200 when authorized", async () => {
-    vi.mocked(runAuditRetention).mockResolvedValue({ ok: true } as any);
-
-    const req: any = { method: "POST", headers: { "x-cron-secret": "secret-1" }, query: {} };
-    const res = createMockRes();
-
-    await handler(req, res);
-
-    expect(vi.mocked(runAuditRetention)).toHaveBeenCalledTimes(1);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ ok: true });
-  });
-
-  it("returns 500 when retention throws", async () => {
-    vi.mocked(runAuditRetention).mockRejectedValue(new Error("boom"));
-
-    const req: any = { method: "GET", headers: { "x-cron-secret": "secret-1" }, query: {} };
-    const res = createMockRes();
-
-    await handler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: "boom" });
   });
 });
 

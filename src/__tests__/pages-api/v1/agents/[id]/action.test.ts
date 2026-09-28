@@ -68,110 +68,6 @@ describe("POST /v1/agents/:id/keys actions", () => {
     } as any);
   });
 
-  it("requires owner auth", async () => {
-    const req = baseReq("keys:rotate");
-    const ctx: any = { actor: { type: "agent" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(401);
-  });
-
-  it("validates agent id", async () => {
-    const req = { method: "POST", headers: {}, query: { id: "bad", action: "keys:rotate" } };
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(400);
-  });
-
-  it("returns 404 when agent not found", async () => {
-    getAgentByIdMock.mockResolvedValue(null);
-    const req = baseReq("keys:rotate");
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(404);
-  });
-
-  it("returns 403 when owner mismatched", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: "other" } as any);
-    const req = baseReq("keys:rotate");
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(403);
-  });
-
-  it("requires Idempotency-Key for rotate", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    const req = baseReq("keys:rotate");
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("rotates api key", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    rotateApiKeyForAgentMock.mockResolvedValue({
-      apiKey: "cd_live_new.secret",
-      apiKeyId: "0a9d1f2c-51db-4d0c-9cd1-7346557f6b6e",
-      previousApiKeyId: "3f2b2bf1-2c0b-4bd8-bf60-0ea0aa9e43d0",
-      rotatedAt: new Date("2026-02-05T12:00:00.000Z"),
-      graceSeconds: 86400
-    } as any);
-    const req = baseReq("keys:rotate");
-    req.headers["idempotency-key"] = "abc";
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(200);
-    expect(result.body.data.api_key).toBe("cd_live_new.secret");
-  });
-
-  it("revokes api key", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    revokeApiKeyForAgentMock.mockResolvedValue({
-      api_key_id: "e8e975c9-6a5f-43c2-9b41-7ff0d2f1f8b8",
-      revoked_at: "2026-02-05T12:00:00.000Z"
-    } as any);
-    const req = baseReq("keys:revoke");
-    req.body = { api_key_id: "e8e975c9-6a5f-43c2-9b41-7ff0d2f1f8b8" };
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-    expect(result.status).toBe(200);
-    expect(result.body.data.api_key_id).toBe("e8e975c9-6a5f-43c2-9b41-7ff0d2f1f8b8");
-  });
-
-  it("rotate-all succeeds with global rotation + installation revocations", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    rotateGlobalApiKeyForAgentIfPresentMock.mockResolvedValue({
-      rotated: true,
-      apiKey: "cd_live_rotate_all.secret",
-      apiKeyId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-      previousApiKeyId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      rotatedAt: new Date("2026-02-14T11:22:33.000Z"),
-      graceSeconds: 86400
-    } as any);
-    listActiveInstallationsForOwnerAgentMock
-      .mockResolvedValueOnce([
-        { installation_id: "00000000-0000-4000-a000-000000000010" },
-        { installation_id: "00000000-0000-4000-a000-000000000011" }
-      ] as any)
-      .mockResolvedValueOnce([] as any);
-
-    const req = baseReq("keys:rotate-all");
-    req.headers["idempotency-key"] = "idem-rotate-all";
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.body.data.agent_id).toBe(agentId);
-    expect(result.body.data.rotated).toBe(true);
-    expect(result.body.data.api_key).toBe("cd_live_rotate_all.secret");
-    expect(result.body.data.revoked_installations_count).toBe(2);
-    expect(result.body.data.revoked_installation_ids).toEqual([
-      "00000000-0000-4000-a000-000000000010",
-      "00000000-0000-4000-a000-000000000011"
-    ]);
-    expect(revokeInstallationForOwnerMock).toHaveBeenCalledTimes(2);
-  });
-
   it("rotate-all revokes every active installation across multiple batches", async () => {
     getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
     rotateGlobalApiKeyForAgentIfPresentMock.mockResolvedValue({
@@ -204,30 +100,6 @@ describe("POST /v1/agents/:id/keys actions", () => {
     expect(result.body.data.revoked_installation_ids[100]).toBe("inst-100");
     expect(revokeInstallationForOwnerMock).toHaveBeenCalledTimes(101);
     expect(listActiveInstallationsForOwnerAgentMock).toHaveBeenCalledTimes(3);
-  });
-
-  it("rotate-all succeeds without global key (rotated=false)", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    rotateGlobalApiKeyForAgentIfPresentMock.mockResolvedValue({
-      rotated: false,
-      apiKey: null,
-      apiKeyId: null,
-      previousApiKeyId: null,
-      rotatedAt: null,
-      graceSeconds: null
-    } as any);
-    listActiveInstallationsForOwnerAgentMock.mockResolvedValue([] as any);
-
-    const req = baseReq("keys:rotate-all");
-    req.headers["idempotency-key"] = "idem-rotate-all-no-global";
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.body.data.rotated).toBe(false);
-    expect(result.body.data.api_key).toBeUndefined();
-    expect(result.body.data.revoked_installations_count).toBe(0);
-    expect(mockUpdate).toHaveBeenCalledWith({ status: "revoked" });
   });
 
   it("returns 500 when rotate status sync write fails", async () => {
@@ -302,24 +174,6 @@ describe("POST /v1/agents/:id/keys actions", () => {
     expect(result.body.error.details.failure_stage).toBe("agent_status_update");
   });
 
-  it("revoke-all succeeds as no-op when nothing to revoke", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    revokeGlobalApiKeysForAgentMock.mockResolvedValue({
-      revokedGlobalKeysCount: 0,
-      revokedGlobalApiKeyIds: []
-    } as any);
-    listActiveInstallationsForOwnerAgentMock.mockResolvedValue([] as any);
-
-    const req = baseReq("keys:revoke-all");
-    req.headers["idempotency-key"] = "idem-revoke-all";
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-    const result: any = await handler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(result.body.data.revoked_global_keys_count).toBe(0);
-    expect(result.body.data.revoked_installations_count).toBe(0);
-  });
-
   it("revoke-all revokes every active installation across multiple batches", async () => {
     getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
     revokeGlobalApiKeysForAgentMock.mockResolvedValue({
@@ -347,21 +201,6 @@ describe("POST /v1/agents/:id/keys actions", () => {
     expect(result.body.data.revoked_installation_ids).toHaveLength(101);
     expect(revokeInstallationForOwnerMock).toHaveBeenCalledTimes(101);
     expect(listActiveInstallationsForOwnerAgentMock).toHaveBeenCalledTimes(3);
-  });
-
-  it("requires Idempotency-Key for rotate-all and revoke-all", async () => {
-    getAgentByIdMock.mockResolvedValue({ id: agentId, owner_id: ownerId } as any);
-    const rotateReq = baseReq("keys:rotate-all");
-    const revokeReq = baseReq("keys:revoke-all");
-    const ctx: any = { ownerId, actor: { type: "owner" } };
-
-    const rotateResult: any = await handler(rotateReq, null, ctx);
-    const revokeResult: any = await handler(revokeReq, null, ctx);
-
-    expect(rotateResult.status).toBe(400);
-    expect(revokeResult.status).toBe(400);
-    expect(rotateResult.body.error.code).toBe("VALIDATION_ERROR");
-    expect(revokeResult.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("rotate-all fails fast on installation revoke error", async () => {

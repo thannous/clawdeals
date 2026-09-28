@@ -75,55 +75,6 @@ describe("POST /v1/installations/:installation_id:scopes-upgrade", () => {
     } as any);
   });
 
-  it("returns 400 without Idempotency-Key", async () => {
-    const req: any = {
-      method: "POST",
-      query: { id_action: `${installationId}:scopes-upgrade` },
-      headers: {},
-      body: {}
-    };
-
-    const result: any = await handler(req, null, makeOwnerCtx());
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("returns 200 when only default/legacy scopes are requested", async () => {
-    const req: any = {
-      method: "POST",
-      query: { id_action: `${installationId}:scopes-upgrade` },
-      headers: { "idempotency-key": "idem-1" },
-      body: { requested_scopes: ["agent:read", "watchlists:read"] }
-    };
-
-    const result: any = await handler(req, null, makeOwnerCtx());
-    expect(result.status).toBe(200);
-    expect(result.body.oauth_scopes).toEqual(V1_SCOPES_DEFAULT);
-    expect(createApprovalMock).not.toHaveBeenCalled();
-  });
-
-  it("returns 202 + approval_id for non-default scopes", async () => {
-    const req: any = {
-      method: "POST",
-      query: { id_action: `${installationId}:scopes-upgrade` },
-      headers: { "idempotency-key": "idem-1" },
-      body: { requested_scopes: ["policies:*"] }
-    };
-
-    const result: any = await handler(req, null, makeOwnerCtx());
-    expect(result.status).toBe(202);
-    expect(result.body.status).toBe("PENDING_APPROVAL");
-    expect(result.body.approval_id).toBe("appr-1");
-    expect(result.body.requested_scopes).toEqual(["policies:*"]);
-    expect(createApprovalMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ownerId,
-        actionType: "scopes.upgrade",
-        actionRefId: installationId
-      })
-    );
-  });
-
   it("requires owner approval for newly introduced sensitive action scopes", async () => {
     const requestedScopes = ["transactions:write", "evidence:read", "evidence:write", "ratings:write"];
     createApprovalMock.mockResolvedValue({

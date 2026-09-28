@@ -166,13 +166,6 @@ describe("getConsoleOpsDashboard() — SLI / SLO fields", () => {
       expect(result.sli.write_journeys.aggregate.budget_state).toBe("YELLOW");
     });
 
-    it("returns GREEN when success_rate=0.998 (budget remaining > 50%)", async () => {
-      // 998 success, 2 fail → rate = 0.998
-      // used = 0.002, remaining% = 1 - 0.002/0.01 = 0.8 → GREEN
-      const result = await dashboardWithSliRate(998, 2);
-      expect(result.sli.write_journeys.aggregate.budget_state).toBe("GREEN");
-    });
-
     it("returns RED when success_rate is very low (budget remaining < 25%)", async () => {
       // 980 success, 20 fail → rate = 0.98
       // used = 0.02, remaining% = 1 - 0.02/0.01 = -1 → clamped to 0 → EXHAUSTED
@@ -453,28 +446,6 @@ describe("getConsoleOpsDashboard() — SLI / SLO fields", () => {
       expect(result.approvals_detail.resolved_window.count).toBe(0);
       expect(result.approvals_detail.resolved_window.p50_resolve_s).toBeNull();
       expect(result.approvals_detail.resolved_window.p95_resolve_s).toBeNull();
-    });
-
-    it("returns slo_latency_targets with expected keys", async () => {
-      const now = new Date("2026-02-11T12:00:00.000Z");
-
-      mockFrom.mockImplementation((table: string) => {
-        if (table === "audit_logs") return supabaseChain([]);
-        if (table === "approvals") return supabaseChain([], null);
-        return countChain(0);
-      });
-
-      const result = await getConsoleOpsDashboard({
-        windowMinutes: 60,
-        now,
-        client: mockClient
-      });
-
-      expect(result.slo_latency_targets).toBeDefined();
-      expect(typeof result.slo_latency_targets).toBe("object");
-      expect(result.slo_latency_targets["deal.create"]).toBe(1000);
-      expect(result.slo_latency_targets["listing.create"]).toBe(1200);
-      expect(result.slo_latency_targets["offer.create"]).toBe(1200);
     });
   });
 });

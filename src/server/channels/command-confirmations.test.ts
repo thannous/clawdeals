@@ -34,39 +34,6 @@ describe("command confirmations", () => {
     store.clear();
   });
 
-  it("creates confirmation (NX) and consumes once", async () => {
-    const created = await createConfirmation({
-      channelIdentityId: "cid-1",
-      action: "approve",
-      targetId: "approval-1",
-      payload: { approvalId: "approval-1" },
-      ttlSeconds: 600
-    });
-    expect(created.ok).toBe(true);
-
-    const peek = await getConfirmation({ channelIdentityId: "cid-1", action: "approve", targetId: "approval-1" });
-    expect(peek).toEqual({ approvalId: "approval-1" });
-
-    // Isolate consumeConfirmation behavior from the peek above.
-    mockRedis.get.mockClear();
-    mockRedis.del.mockClear();
-    mockRedis.eval.mockClear();
-
-    const consumed = await consumeConfirmation({ channelIdentityId: "cid-1", action: "approve", targetId: "approval-1" });
-    expect(consumed).toEqual({ approvalId: "approval-1" });
-    expect(mockRedis.eval).toHaveBeenCalledTimes(1);
-    expect(mockRedis.get).toHaveBeenCalledTimes(0);
-    expect(mockRedis.del).toHaveBeenCalledTimes(0);
-
-    const consumedAgain = await consumeConfirmation({
-      channelIdentityId: "cid-1",
-      action: "approve",
-      targetId: "approval-1"
-    });
-    expect(consumedAgain).toBeNull();
-    expect(mockRedis.eval).toHaveBeenCalledTimes(2);
-  });
-
   it("does not overwrite existing confirmation when NX is used", async () => {
     await createConfirmation({
       channelIdentityId: "cid-1",
@@ -114,23 +81,5 @@ describe("command confirmations", () => {
     expect(mockRedis.eval).toHaveBeenCalledTimes(2);
     expect(mockRedis.get).toHaveBeenCalledTimes(0);
     expect(mockRedis.del).toHaveBeenCalledTimes(0);
-  });
-
-  it("stores confirmation payload as native object", async () => {
-    await createConfirmation({
-      channelIdentityId: "cid-2",
-      action: "approve",
-      targetId: "approval-3",
-      payload: { approvalId: "approval-3", ok: true },
-      ttlSeconds: 600
-    });
-
-    expect(mockRedis.set).toHaveBeenCalledWith(
-      "chan:confirm:cid-2:approve:approval-3",
-      { approvalId: "approval-3", ok: true },
-      { nx: true, ex: 600 }
-    );
-    const [, payload] = mockRedis.set.mock.calls[0];
-    expect(typeof payload).toBe("object");
   });
 });

@@ -27,20 +27,6 @@ describe("GET /v1/deals/:deal_id/votes", () => {
     vi.clearAllMocks();
   });
 
-  it("validates direction", async () => {
-    const req = { method: "GET", query: { deal_id: dealId, direction: "sideways" } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
-  it("returns 400 for malformed cursor", async () => {
-    const req = { method: "GET", query: { deal_id: dealId, cursor: "bad-cursor" } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(400);
-    expect(result.body.error.code).toBe("VALIDATION_ERROR");
-  });
-
   it("rejects cursor with mismatched direction", async () => {
     const cursor = encodeDealVotesCursor({
       deal_id: dealId,
@@ -53,39 +39,5 @@ describe("GET /v1/deals/:deal_id/votes", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("direction");
-  });
-
-  it("returns items + next_cursor", async () => {
-    listDealVotesMock.mockResolvedValue({
-      items: [
-        {
-          direction: 1,
-          reason: "Great price",
-          weight: "0.72",
-          created_at: "2026-02-05T12:03:00Z"
-        }
-      ],
-      nextCursor: "cursor-abc"
-    } as any);
-
-    const ctx: any = { ...baseCtx };
-    const req = { method: "GET", query: { deal_id: dealId, direction: "up", limit: "50" } };
-    const result: any = await handler(req, null, ctx);
-
-    expect(result.status).toBe(200);
-    expect(ctx.auditEvent).toBe("deal.votes_listed");
-    expect(result.body.items).toHaveLength(1);
-    expect(result.body.items[0].direction).toBe("up");
-    expect(result.body.items[0].weight).toBe(0.72);
-    expect(result.body.next_cursor).toBe("cursor-abc");
-  });
-
-  it("maps errors from service", async () => {
-    listDealVotesMock.mockRejectedValue(Object.assign(new Error("Deal not found"), { status: 404, code: "DEAL_NOT_FOUND" }));
-
-    const req = { method: "GET", query: { deal_id: dealId } };
-    const result: any = await handler(req, null, { ...baseCtx });
-    expect(result.status).toBe(404);
-    expect(result.body.error.code).toBe("DEAL_NOT_FOUND");
   });
 });

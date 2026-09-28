@@ -31,6 +31,11 @@
 
 ## Code, Tests, and Release
 
+- Never write unit tests after you write code.
+- Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work. At the end of E2E tests, produce a verifiable and repeatable artifact.
+- If you must test a system in isolation, first write down all the ways it could fail, then write the code.
+- Keep an isolation test only for a concrete failure that the existing E2E tests miss; document that coverage gap. Avoid assertions that merely repeat implementation details, copy, or mocked calls.
+- E2E evidence must include the exact rerun command, safe target and fixture prerequisites, results, and a saved report or trace. Report skipped or blocked checks explicitly.
 - Use TypeScript/React patterns already present: 2-space indentation, semicolons, double quotes; components `PascalCase.tsx`, utilities `camelCase.ts`, tests `*.test.ts(x)`, E2E `*.spec.ts`.
 - Vitest uses Node by default and `jsdom` for `src/ui/**`. Playwright starts the app unless `E2E_BASE_URL` is set; useful overrides include `E2E_DEV_PORT` and `API_BASE_URL`.
 - Remote integration, smoke, and E2E tests must use isolated staging with synthetic data, never production data or production secrets.

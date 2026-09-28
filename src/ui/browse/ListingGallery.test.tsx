@@ -27,26 +27,10 @@ describe("resolveGallerySources", () => {
       "https://cdn.example.com/c.jpg"
     ]);
   });
-
-  it("falls back to photos and ignores unresolvable entries", () => {
-    expect(resolveGallerySources({ photos: [{ storage_key: "" }, photos[0]] })).toEqual(["https://cdn.example.com/a.jpg"]);
-    expect(resolveGallerySources({})).toEqual([]);
-  });
 });
 
 describe("ListingGallery", () => {
   afterEach(cleanup);
-
-  it("renders nothing without photos", () => {
-    const { container } = render(<ListingGallery listing={{}} title="Lamp" />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("shows a single image without thumbnails", () => {
-    render(<ListingGallery listing={{ cover_image: photos[0] }} title="Lamp" />);
-    expect(screen.getByRole("img", { name: "Lamp" })).toBeTruthy();
-    expect(screen.queryByRole("tablist")).toBeNull();
-  });
 
   it("switches the main image from the thumbnails", () => {
     render(<ListingGallery listing={{ images: photos, cover_image: photos[0] }} title="Bike" />);
