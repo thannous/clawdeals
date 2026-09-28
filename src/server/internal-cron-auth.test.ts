@@ -1,6 +1,27 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { isInternalCronAuthorized } from "./internal-cron-auth";
+import { isInternalCronAuthorized, isQueueDispatchAuthorized } from "./internal-cron-auth";
+
+// E2E cron fixtures do not cover a separate database-webhook credential. It must
+// fail closed and must never authorize unrelated maintenance endpoints.
+describe("queue dispatch credential", () => {
+  const original = process.env.QUEUE_DISPATCH_SECRET;
+  afterEach(() => {
+    if (original === undefined) delete process.env.QUEUE_DISPATCH_SECRET;
+    else process.env.QUEUE_DISPATCH_SECRET = original;
+  });
+  it("authorizes queues only", () => {
+    process.env.QUEUE_DISPATCH_SECRET = "queue-only-secret";
+    const req = { headers: { authorization: "Bearer queue-only-secret" } };
+    expect(isQueueDispatchAuthorized(req)).toBe(true);
+    expect(isInternalCronAuthorized(req)).toBe(false);
+    expect(isQueueDispatchAuthorized({ headers: { authorization: "Bearer wrong" } })).toBe(false);
+  });
+  it("does not accept a missing queue secret", () => {
+    delete process.env.QUEUE_DISPATCH_SECRET;
+    expect(isQueueDispatchAuthorized({ headers: { authorization: "Bearer undefined" } })).toBe(false);
+  });
+});
 
 describe("isInternalCronAuthorized", () => {
   const originalSecret = process.env.INTERNAL_CRON_SECRET;

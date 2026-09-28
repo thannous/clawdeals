@@ -49,3 +49,12 @@ export function isInternalCronAuthorized(req: CronAuthRequest) {
 
   return false;
 }
+
+// The database credential can wake only queue consumers, not maintenance jobs.
+export function isQueueDispatchAuthorized(req: CronAuthRequest) {
+  if (isInternalCronAuthorized(req)) return true;
+  const secret = process.env.QUEUE_DISPATCH_SECRET;
+  const authorization = getHeaderValue(req.headers, "authorization");
+  const match = typeof authorization === "string" ? authorization.match(/^Bearer\s+(.+)$/i) : null;
+  return Boolean(secret && match?.[1] && timingSafeEqualString(match[1], secret));
+}

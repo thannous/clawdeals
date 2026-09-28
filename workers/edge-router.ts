@@ -20,8 +20,8 @@ const CRON_JOBS: Record<string, readonly string[]> = {
   [FAST_LANE_CRON]: [
     "/api/internal/cron/offers-expiration"
   ],
-  // Development cadence: revisit queue latency before onboarding real users.
-  "*/15 * * * *": [
+  // Hourly fallback; database events wake consumers and recover pending work.
+  "2 * * * *": [
     "/api/internal/cron/watchlist-match-queue",
     "/api/internal/cron/watchlist-backfill-queue",
     "/api/internal/cron/notifications-dispatch",

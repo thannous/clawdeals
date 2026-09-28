@@ -1,5 +1,8 @@
+import { withQueueDrainLease } from "../../../../server/services/queue-drain";
 import { runTrustScoreRecalcQueue } from "../../../../server/trustscore/recalc-queue";
-import { isInternalCronAuthorized } from "../../../../server/internal-cron-auth";
+import { isQueueDispatchAuthorized } from "../../../../server/internal-cron-auth";
+
+export const config = { maxDuration: 60 };
 
 function parseOptionalInt(value: any) {
   if (!value) return null;
@@ -16,16 +19,16 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  if (!isInternalCronAuthorized(req)) {
+  if (!isQueueDispatchAuthorized(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
   try {
     const limit = parseOptionalInt(req.query?.limit);
-    const result = await runTrustScoreRecalcQueue({
+    const result = await withQueueDrainLease("trustscore-recalc-queue", () => runTrustScoreRecalcQueue({
       ...(limit ? { limit } : {})
-    });
+    }));
     res.status(200).json(result);
   } catch (error) {
     res.status(500).json({

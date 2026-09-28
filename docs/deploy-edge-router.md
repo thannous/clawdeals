@@ -25,12 +25,11 @@ Important:
 
 ## Scheduled jobs during development
 
-While production contains fictitious data, offer expiration runs every 5 minutes;
-watchlist matching, backfill, notification dispatch and trustscore queue processing
-run every 15 minutes. Hourly and daily maintenance keep their existing schedules.
-Compared with running all five jobs every 5 minutes, this avoids 23,040 HTTP
-invocations per 30 days at a constant cadence. Queue processing can take up to
-10 additional minutes; revisit this tradeoff before onboarding real users.
+Offer expiration runs every 5 minutes. Database events wake watchlist matching,
+backfill, notification dispatch and trustscore consumers when work arrives.
+Cloudflare retains an hourly recovery pass at minute 2; other hourly and daily
+maintenance keep their schedules. See `docs/queue-event-dispatch.md` for durable
+recovery, credential setup and rollback.
 
 Keep `wrangler.jsonc` triggers and `workers/edge-router.ts` in sync. The existing
 `CRON_SECRET` Worker secret is required and must be preserved during deployment.

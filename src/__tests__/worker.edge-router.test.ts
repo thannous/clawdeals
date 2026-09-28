@@ -110,14 +110,14 @@ describe("worker edge router", () => {
     ]);
   });
 
-  it("dispatches the four queues every fifteen minutes with bearer authentication", async () => {
+  it("dispatches the hourly queue recovery with bearer authentication", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ processed: 0 }), { status: 200 })
     );
 
     await edgeRouterWorker.scheduled(
-      { cron: "*/15 * * * *", scheduledTime: 0 },
+      { cron: "2 * * * *", scheduledTime: 0 },
       {
         APP_ORIGIN: "https://app.clawdeals.com",
         MARKETING_ORIGIN: "https://app.clawdeals.com",

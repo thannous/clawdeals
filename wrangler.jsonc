@@ -17,7 +17,7 @@
   ],
   "triggers": {
     // Must stay in sync with CRON_JOBS in workers/edge-router.ts.
-    "crons": ["*/5 * * * *", "*/15 * * * *", "17 * * * *", "10 2 * * *"]
+    "crons": ["*/5 * * * *", "2 * * * *", "17 * * * *", "10 2 * * *"]
   },
   "observability": {
     "enabled": true,

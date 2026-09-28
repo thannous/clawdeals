@@ -1,5 +1,8 @@
+import { withQueueDrainLease } from "../../../../server/services/queue-drain";
 import { runWatchlistBackfillQueue } from "../../../../server/services/watchlist-backfill-queue";
-import { isInternalCronAuthorized } from "../../../../server/internal-cron-auth";
+import { isQueueDispatchAuthorized } from "../../../../server/internal-cron-auth";
+
+export const config = { maxDuration: 60 };
 
 function parseOptionalInt(value: any) {
   if (!value) return null;
@@ -16,7 +19,7 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  if (!isInternalCronAuthorized(req)) {
+  if (!isQueueDispatchAuthorized(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -26,11 +29,11 @@ export default async function handler(req: any, res: any) {
     const dealsLimit = parseOptionalInt(req.query?.deals_limit);
     const listingsLimit = parseOptionalInt(req.query?.listings_limit);
 
-    const result = await runWatchlistBackfillQueue({
+    const result = await withQueueDrainLease("watchlist-backfill-queue", () => runWatchlistBackfillQueue({
       ...(limit ? { limit } : {}),
       ...(dealsLimit ? { dealsLimit } : {}),
       ...(listingsLimit ? { listingsLimit } : {})
-    });
+    }));
 
     res.status(200).json(result);
   } catch (error) {

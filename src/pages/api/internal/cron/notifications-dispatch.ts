@@ -1,5 +1,8 @@
+import { withQueueDrainLease } from "../../../../server/services/queue-drain";
 import { runNotificationsDispatch } from "../../../../server/services/notifications-dispatch";
-import { isInternalCronAuthorized } from "../../../../server/internal-cron-auth";
+import { isQueueDispatchAuthorized } from "../../../../server/internal-cron-auth";
+
+export const config = { maxDuration: 60 };
 
 function parseOptionalInt(value: any) {
   if (!value) return null;
@@ -23,7 +26,7 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  if (!isInternalCronAuthorized(req)) {
+  if (!isQueueDispatchAuthorized(req)) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -34,12 +37,12 @@ export default async function handler(req: any, res: any) {
     const maxItemsPerOwner = parseOptionalInt(req.query?.max_items_per_owner);
     const maxItemsPerDigest = parseOptionalInt(req.query?.max_items_per_digest);
 
-    const result = await runNotificationsDispatch({
+    const result = await withQueueDrainLease("notifications-dispatch", () => runNotificationsDispatch({
       ...(dryRun ? { dryRun: true } : {}),
       ...(limitOwners ? { limitOwners } : {}),
       ...(maxItemsPerOwner ? { maxItemsPerOwner } : {}),
       ...(maxItemsPerDigest ? { maxItemsPerDigest } : {})
-    });
+    }));
 
     res.status(200).json(result);
   } catch (error) {
