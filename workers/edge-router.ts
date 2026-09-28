@@ -16,12 +16,15 @@ type EdgeRouterWorkerEnv = EdgeRouterEnv & RemoteMcpEnv & {
 const FAST_LANE_CRON = "*/5 * * * *";
 
 const CRON_JOBS: Record<string, readonly string[]> = {
-  // Queue drains and time-sensitive expirations.
+  // Keep offer expiration responsive while production uses fictitious data.
   [FAST_LANE_CRON]: [
+    "/api/internal/cron/offers-expiration"
+  ],
+  // Development cadence: revisit queue latency before onboarding real users.
+  "*/15 * * * *": [
     "/api/internal/cron/watchlist-match-queue",
     "/api/internal/cron/watchlist-backfill-queue",
     "/api/internal/cron/notifications-dispatch",
-    "/api/internal/cron/offers-expiration",
     "/api/internal/cron/trustscore-recalc-queue"
   ],
   // Hourly lifecycle + monitoring.

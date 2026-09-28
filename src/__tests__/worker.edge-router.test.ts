@@ -96,14 +96,28 @@ describe("worker edge router", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("dispatches the fast-lane cron endpoints with bearer authentication", async () => {
+  // Browser E2E does not drive Cloudflare scheduled events. These checks protect
+  // against lost jobs, duplicate queue dispatch and delayed offer expiration.
+  it("dispatches only offer expiration every five minutes", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}"));
+    await edgeRouterWorker.scheduled(
+      { cron: "*/5 * * * *", scheduledTime: 0 },
+      { APP_ORIGIN: "https://app.clawdeals.com", CRON_SECRET: "cron-secret" }
+    );
+    expect(fetchSpy.mock.calls.map(([target]) => target.toString())).toEqual([
+      "https://app.clawdeals.com/api/internal/cron/offers-expiration"
+    ]);
+  });
+
+  it("dispatches the four queues every fifteen minutes with bearer authentication", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ processed: 0 }), { status: 200 })
     );
 
     await edgeRouterWorker.scheduled(
-      { cron: "*/5 * * * *", scheduledTime: 0 },
+      { cron: "*/15 * * * *", scheduledTime: 0 },
       {
         APP_ORIGIN: "https://app.clawdeals.com",
         MARKETING_ORIGIN: "https://app.clawdeals.com",
@@ -116,7 +130,8 @@ describe("worker edge router", () => {
     expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/watchlist-match-queue");
     expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/watchlist-backfill-queue");
     expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/notifications-dispatch");
-    expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/offers-expiration");
+    expect(targets).toHaveLength(4);
+    expect(targets).not.toContain("https://app.clawdeals.com/api/internal/cron/offers-expiration");
     expect(targets).toContain("https://app.clawdeals.com/api/internal/cron/trustscore-recalc-queue");
 
     for (const [, init] of fetchSpy.mock.calls) {

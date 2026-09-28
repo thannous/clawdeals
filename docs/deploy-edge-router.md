@@ -23,7 +23,19 @@ Important:
 4. App sections on `clawdeals.com` (`/deals`, `/console`, `/start`, `/settings`, `/auth`, `/developer`, `/dev`, `/claim`, `/device`, `/pair`) -> `308` to `APP_ORIGIN`
 5. Remaining `clawdeals.com/*` -> proxy to `MARKETING_ORIGIN`
 
-## Commands
+## Scheduled jobs during development
+
+While production contains fictitious data, offer expiration runs every 5 minutes;
+watchlist matching, backfill, notification dispatch and trustscore queue processing
+run every 15 minutes. Hourly and daily maintenance keep their existing schedules.
+Compared with running all five jobs every 5 minutes, this avoids 23,040 HTTP
+invocations per 30 days at a constant cadence. Queue processing can take up to
+10 additional minutes; revisit this tradeoff before onboarding real users.
+
+Keep `wrangler.jsonc` triggers and `workers/edge-router.ts` in sync. The existing
+`CRON_SECRET` Worker secret is required and must be preserved during deployment.
+
+## Deployment commands
 
 - Deploy production router:
 ```bash
