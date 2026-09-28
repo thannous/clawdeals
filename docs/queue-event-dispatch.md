@@ -60,3 +60,24 @@ actual external delivery. The result is saved at `/tmp/clawdeals-queue-sql-resul
 For deployment verification, inspect extension/job metadata, privileges, counts,
 `private.queue_dispatch_state.last_request_id` and `net._http_response` status;
 never select stored request headers or decrypted Vault data into logs.
+
+## Hosted pg_net permissions
+
+Supabase manages pg_net objects as `supabase_admin`. Migration
+`20260928211927_restrict_queue_transport_access.sql` records a best-effort
+revocation; the inherited PUBLIC grants remained after execution. Do not treat
+that migration succeeding as evidence that the SQL privileges were removed.
+
+The access boundary is the Data API schema allowlist and roles without direct
+login. On 2026-09-28, a public-key request with `Accept-Profile: net` returned
+HTTP 406 / `PGRST106` (`Invalid schema: net`); both client roles were NOLOGIN,
+and the three queue RPCs denied execution to anon/authenticated. Keep `net`
+out of exposed schemas and never expose transport tables through views or
+client-callable definer functions. This is the hosted behavior described in
+[Supabase's pg_net permissions documentation](https://supabase.com/docs/guides/database/extensions/pg_net#permissions).
+
+The advisor also reports pg_net installed in public. The extension is not
+relocatable; changing its extension schema requires dropping its transport
+queue and response history. No reinstall was performed merely to clear that
+notice. These checks do not establish end-to-end external delivery: production
+queues were empty, and trigger behavior was verified using disposable PGlite.
