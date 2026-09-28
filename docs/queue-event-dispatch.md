@@ -109,3 +109,11 @@ Evidence: `/tmp/claw-notification-schedule-results.json`. These tests cover DST,
 fixed offsets, retry delay, preference rescheduling, missed concurrent snapshots,
 disabled event types, permissions and rollback. They simulate pg_net and do not
 send external notifications.
+
+When adding a notification event type, update both the TypeScript
+`NOTIFICATION_EVENT_TYPES` list and the SQL eligibility allowlist in a new
+migration. Otherwise the new type stays suspended. Preference snapshots include
+only scheduling fields and event types; channel addresses and message payloads
+are excluded. Production rollout of this scheduler was verified on commit
+`b1182da` after migration `20260928220905`, with a successful recovery run and
+no pending notifications at the observation time.
