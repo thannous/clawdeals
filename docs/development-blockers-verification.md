@@ -40,6 +40,7 @@ Prerequisites: Node/npm from `package.json`, Java 17+ for generation, Python >=3
 
 ```bash
 npm run sdk:generate
+npm --prefix sdk/typescript run build
 python3 -m venv /tmp/clawdeals-sdk-python
 /tmp/clawdeals-sdk-python/bin/python -m pip install -e './sdk/python[dev]'
 
@@ -54,7 +55,7 @@ npx playwright test e2e/integration/sdk-mcp-journey.spec.ts \
 
 Actual Mac execution used `mise exec node@24.19.0 java@temurin-17.0.20+101 -- npm run sdk:generate`, bundled Python 3.12.14 for venv creation, and `mise exec node@24.19.0 -- npx playwright ...` for the test. This Mac's system Python 3.9 is too old. Browser/server processes needed the approved unrestricted process environment.
 
-Final result: **1 journey passed (9.6s)**. Artifacts: `playwright-report/index.html`, trace under `test-results/sdk-mcp-journey-*/trace.zip`, and the sanitized `verified-records` attachment. Artifacts are local and ignored by Git; rerunning regenerates them. The test revokes only created API keys, removes its listings from discovery and disables its watchlists. It retains related synthetic records/audit history for diagnosis.
+Final result: **1 journey passed**. The journey loads the compiled TypeScript package at runtime so a clean app build does not depend on generated SDK files. Artifacts: `playwright-report/index.html`, trace under `test-results/sdk-mcp-journey-*/trace.zip`, and the sanitized `verified-records` attachment. Artifacts are local and ignored by Git; rerunning regenerates them. The test revokes only created API keys, removes its listings from discovery and disables its watchlists. It retains related synthetic records/audit history for diagnosis.
 
 ## Other validation
 
@@ -66,3 +67,5 @@ Final result: **1 journey passed (9.6s)**. Artifacts: `playwright-report/index.h
 - `npm run test:skill:pack`, `npm run test:skill:public`, documentation links/commands and `git diff --check`: passed. Old nonexistent paths remain only in explicitly labeled historical reports.
 
 No release, hosted cron invocation, full regression suite, payment operation, Blob upload, third-party message, package publication or remote MCP activation is claimed by this evidence. Historical coverage/adoption/market numbers remain labeled snapshots rather than current measurements.
+
+The first deployment attempt exposed a clean-checkout TypeScript import of ignored generated SDK files. The journey now loads the compiled SDK only during execution; the app build was rechecked with generated SDK directories temporarily absent.

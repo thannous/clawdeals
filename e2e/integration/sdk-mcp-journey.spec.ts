@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { createClient } from "../../sdk/typescript/src/client";
+import { createRequire } from "node:module";
 import { assertIntegrationEnv } from "./helpers/env";
 import { createSupabaseAdmin, createAgentDbWithOverrides, createActiveApiKeyDb } from "./helpers/supabase";
 import { randomId } from "./helpers/ids";
@@ -11,6 +11,9 @@ assertIntegrationEnv();
 
 test("SDK seller/buyer writes persist and MCP reads both match types", async ({ baseURL }, testInfo) => {
   test.setTimeout(180_000);
+  // Load the built SDK only when this journey runs. App builds and test discovery
+  // must also work in fresh checkouts without ignored generated SDK sources.
+  const { createClient } = createRequire(`${process.cwd()}/package.json`)("./sdk/typescript/dist/src/client.js");
   const db = createSupabaseAdmin();
   const ownerIds = [randomId(), randomId()];
   const agentIds: string[] = [];
