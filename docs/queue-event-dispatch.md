@@ -47,6 +47,24 @@ The private dispatch-state table intentionally has RLS with no policies and no
 direct service-role table grant; narrowly scoped definer helpers are its only
 application access. Supabase's no-policy informational notice is expected.
 
+## Notification email configuration
+
+Owners without an active Telegram identity receive notifications at their
+verified email address. The notification sender uses `EMAIL_FROM`, falling back
+to `OWNER_LOGIN_EMAIL_FROM`. For ClawDeals, use
+`Clawdeals <no-reply@clawdeals.com>` with the verified Resend domain
+`clawdeals.com`; `no-reply@clawdeals` is invalid and Resend rejects it with HTTP
+422. The durable notification remains pending and receives the normal retry
+delay when a provider rejects the send.
+
+Production environment changes require a new deployment before consumers use
+them. The documentary build filter only examines Git inputs and can cancel a
+redeployment of unchanged source. For an authorized configuration redeployment
+in the Vercel dashboard, uncheck **Use project's Ignore Build Step**. Preserve
+the project's normal documentary filter for subsequent Git deployments. Verify
+the canonical deployment is READY, then check the queue result and actual
+receipt on the explicitly authorized test account.
+
 ## Verification
 
 Existing queue service tests cover business processing. Isolated tests are kept
