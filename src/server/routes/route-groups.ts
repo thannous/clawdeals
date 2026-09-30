@@ -167,6 +167,16 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/owner\/watchlists$/
   },
   {
+    group: "owner.notifications.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/owner\/notification-preferences$/
+  },
+  {
+    group: "owner.notifications.write",
+    methods: ["PATCH"],
+    pattern: /^\/v1\/owner\/notification-preferences$/
+  },
+  {
     group: "owner.watchlists.write",
     methods: ["POST", "DELETE"],
     pattern: /^\/v1\/owner\/watchlists(?:\/[^/]+)?$/

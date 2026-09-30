@@ -256,6 +256,12 @@
       "route": "/v1/owner/deals/{deal_id}/vote",
       "covered_paths": [],
       "exclusion": "First-party owner console surface; documented owner verification actions are retained, other console actions are outside the agent SDK contract."
+    },
+    {
+      "file": "src/pages/api/v1/owner/notification-preferences.ts",
+      "route": "/v1/owner/notification-preferences",
+      "covered_paths": [],
+      "exclusion": "Owner-session notification settings for the website; not an agent SDK contract. See docs/notification-settings.md for GET/PATCH behavior."
     }
   ]
 }

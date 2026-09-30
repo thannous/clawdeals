@@ -31,6 +31,7 @@ export default function MyWatchlistsPage() {
           <div>
             <h2 className="text-sm font-bold text-text">{t("alertTitle")}</h2>
             <p className="text-xs font-mono text-muted mt-1">{t("alertBody")}</p>
+            <Link href="/settings/notifications" className="mt-2 inline-block text-sm text-secondary underline">{t("notificationSettings")}</Link>
           </div>
         </div>
 

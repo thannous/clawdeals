@@ -1732,7 +1732,61 @@
     "browseListings": "Explorar anuncios"
   },
   "settings": {
+    "notifications": {
+      "pageTitle": "Notificaciones // CLAWDEALS",
+      "title": "Notificaciones",
+      "description": "Elige las alertas que recibes y cuándo pueden llegarte.",
+      "deliveryHint": "Las alertas llegan a tu conexión activa de Telegram o a tu correo verificado si Telegram no está conectado.",
+      "manageChannels": "Gestionar identidades vinculadas",
+      "frequency": "¿Con qué frecuencia?",
+      "modes": {
+        "REALTIME": {
+          "label": "Al instante",
+          "hint": "Recibe cada alerta seleccionada en cuanto esté lista."
+        },
+        "DIGEST_HOURLY": {
+          "label": "Cada hora",
+          "hint": "Agrupa las alertas seleccionadas en un resumen por hora."
+        },
+        "DIGEST_DAILY": {
+          "label": "Una vez al día",
+          "hint": "Recibe un resumen a la hora local que elijas."
+        },
+        "SILENT": {
+          "label": "En pausa",
+          "hint": "Detén las alertas hasta que elijas otra frecuencia."
+        }
+      },
+      "pausedHint": "Las alertas recibidas durante la pausa se descartan. Al reanudar solo recibirás alertas nuevas.",
+      "timezone": "Zona horaria",
+      "digestHour": "Hora del resumen",
+      "localTimeHint": "El resumen y las horas de silencio usan esta zona horaria. Puedes introducir una zona compatible, como Europe/Madrid.",
+      "quietHours": "Horas de silencio",
+      "quietEnabled": "Activar horas de silencio",
+      "quietHint": "Guarda las alertas para más tarde durante este periodo. Se admiten periodos que pasan la medianoche, como de 22:00 a 08:00.",
+      "quietStart": "Inicio del silencio",
+      "quietEnd": "Fin del silencio",
+      "categories": "¿Qué alertas?",
+      "events": {
+        "watchlist_match": "Coincidencias y bajadas de precio",
+        "offer_received": "Ofertas recibidas",
+        "approval_required": "Solicitudes de aprobación",
+        "transaction_updates": "Actualizaciones de transacciones"
+      },
+      "noCategories": "No has seleccionado tipos de alerta. No recibirás notificaciones.",
+      "loading": "Cargando preferencias…",
+      "loadError": "No se pudieron cargar tus preferencias.",
+      "retry": "Reintentar",
+      "save": "Guardar preferencias",
+      "saving": "Guardando…",
+      "saveSuccess": "Preferencias guardadas.",
+      "saveError": "No se pudieron guardar tus preferencias. Tus cambios siguen aquí; inténtalo de nuevo.",
+      "invalidTimezone": "Introduce una zona horaria válida, como Europe/Madrid.",
+      "invalidQuietHours": "Elige horas de inicio y fin diferentes.",
+      "unsaved": "Cambios sin guardar"
+    },
     "nav": {
+      "notifications": "Notificaciones",
       "profile": "Perfil",
       "account": "Cuenta",
       "policy": "Política",
@@ -1871,6 +1925,7 @@
     }
   },
   "myWatchlists": {
+    "notificationSettings": "Configurar notificaciones",
     "pageTitle": "Mis seguimientos // CLAWDEALS",
     "title": "MIS SEGUIMIENTOS",
     "alertTitle": "Alertas de bajada de precio en el servidor",

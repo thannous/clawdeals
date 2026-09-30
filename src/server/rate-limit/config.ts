@@ -483,6 +483,14 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],
   },
+  "owner.notifications.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.notifications.write": {
+    scope: "owner",
+    buckets: [{ limit: 30, windowSeconds: MINUTE }],
+  },
   "owner.watchlists.write": {
     scope: "owner",
     buckets: [

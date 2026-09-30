@@ -1,18 +1,8 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { ensureOwnerExists } from "./owners";
-
-export const NOTIFICATION_EVENT_TYPES = [
-  "watchlist_match",
-  "offer_received",
-  "approval_required",
-  "transaction_updates"
-] as const;
-
-export type NotificationEventType = (typeof NOTIFICATION_EVENT_TYPES)[number];
-
-export const NOTIFICATION_MODES = ["REALTIME", "DIGEST_HOURLY", "DIGEST_DAILY", "SILENT"] as const;
-export type NotificationMode = (typeof NOTIFICATION_MODES)[number];
+import { NOTIFICATION_EVENT_TYPES, NOTIFICATION_MODES, type NotificationEventType, type NotificationMode } from "../../shared/notification-settings";
+export { NOTIFICATION_EVENT_TYPES, NOTIFICATION_MODES, type NotificationEventType, type NotificationMode } from "../../shared/notification-settings";
 
 function buildServiceError(message: string, status = 500, code = "ERROR") {
   const error: any = new Error(message);
@@ -120,12 +110,14 @@ export async function getOrCreateNotificationPreferences({
     updated_at: now.toISOString()
   };
 
-  const { data, error } = await client.from("notification_preferences").insert(payload).select("*").single();
+  // Concurrent first saves (web and Telegram) must preserve the winning row.
+  const { data, error } = await client.from("notification_preferences")
+    .upsert(payload, { onConflict: "owner_id", ignoreDuplicates: true }).select("*").maybeSingle();
   if (error) {
     const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
   }
-  return data;
+  return data || await getNotificationPreferences(ownerId);
 }
 
 export async function updateNotificationPreferences({
@@ -208,4 +200,3 @@ export async function updateNotificationPreferences({
 
   return data;
 }
-

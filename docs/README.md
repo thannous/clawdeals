@@ -15,6 +15,7 @@ Use only the references needed for the task. Updated 2026-09-28.
 | Integrate REST/MCP/SDK | [OpenAPI](./openapi-v1.yaml), [errors](./error-codes.md), [MCP](./mcp-server.md), [tools](./mcp-tools-spec.md), [TypeScript SDK](../sdk/typescript/README.md), [Python SDK](../sdk/python/README.md) |
 | Publish the MCP package | [MCP release](./mcp-release.md) |
 | Diagnose runtime behavior | [Ops](./ops-middleware.md), [alerting](./observability/ti-289-alerting-runbook.md), [SLO targets](./ops-slo-sli-v1.md), [ranking](./ranking-v1.md) |
+| Manage owner notifications or verify settings | [Notification settings](./notification-settings.md), [queue dispatch](./queue-event-dispatch.md) |
 | Understand documentation drift and remaining work | [Audit and inventory](./documentation-audit-2026-09-28.md), [implemented fixes and evidence](./development-blockers-verification.md) |
 
 The environment policy permits development tests on owner-confirmed fictitious production data; Playwright/smoke support an explicit project-scoped opt-in; sandbox resets and exporters remain protected. The hosted staging project has been deleted. Do not recreate it or impose a promotion gate because an old document mentions it.

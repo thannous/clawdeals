@@ -27,7 +27,11 @@ const internalCronSecret = process.env.INTERNAL_CRON_SECRET || "test-cron-secret
 // Enable the WebMCP demo route for UI smoke tests.
 const webmcpEnv = "NEXT_PUBLIC_WEBMCP_ENABLED=1";
 const webmcpJudgeEnv = `WEBMCP_JUDGE_AGENT_ID=${process.env.WEBMCP_JUDGE_AGENT_ID || "93000000-0000-4000-8000-000000000001"}`;
-const authLegacyBridgeEnv = "AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=1";
+// Cookie-session security journeys can explicitly disable the compatibility
+// bridge. Existing API fixtures keep their default local-only header bridge.
+const authLegacyBridgeEnv = process.env.AUTH_ALLOW_LEGACY_IDENTITY_HEADERS === "0"
+  ? "AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=0"
+  : "AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=1";
 const consoleOpsOwnerEnv = "CONSOLE_OPS_OWNER_ID=00000000-0000-4000-a000-000000000000";
 const ownerLoginEmailPort = Number(process.env.E2E_OWNER_LOGIN_EMAIL_PORT || 4399);
 const ownerLoginEmailEnv = `OWNER_LOGIN_EMAIL_PROVIDER=resend OWNER_LOGIN_EMAIL_FROM=e2e@clawdeals.local RESEND_API_KEY=e2e-resend-key OWNER_LOGIN_RESEND_API_URL=http://127.0.0.1:${ownerLoginEmailPort}/emails`;

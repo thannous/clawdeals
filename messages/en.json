@@ -1732,7 +1732,61 @@
     "browseListings": "Browse listings"
   },
   "settings": {
+    "notifications": {
+      "pageTitle": "Notifications // CLAWDEALS",
+      "title": "Notifications",
+      "description": "Choose the alerts you receive and when they can reach you.",
+      "deliveryHint": "Alerts go to your active Telegram connection, or to your verified email if Telegram is not connected.",
+      "manageChannels": "Manage linked identities",
+      "frequency": "How often?",
+      "modes": {
+        "REALTIME": {
+          "label": "As they happen",
+          "hint": "Send each selected alert as soon as it is ready."
+        },
+        "DIGEST_HOURLY": {
+          "label": "Every hour",
+          "hint": "Group selected alerts into an hourly summary."
+        },
+        "DIGEST_DAILY": {
+          "label": "Once a day",
+          "hint": "Receive a summary at your chosen local hour."
+        },
+        "SILENT": {
+          "label": "Paused",
+          "hint": "Stop receiving alerts until you choose another frequency."
+        }
+      },
+      "pausedHint": "Alerts received while paused are discarded. Resuming applies to future alerts.",
+      "timezone": "Time zone",
+      "digestHour": "Summary time",
+      "localTimeHint": "Summary times and quiet hours use this time zone. You can enter any supported time zone, such as Europe/Paris.",
+      "quietHours": "Quiet hours",
+      "quietEnabled": "Enable quiet hours",
+      "quietHint": "Keep alerts for later during this period. Overnight periods, such as 22:00 to 08:00, are supported.",
+      "quietStart": "Quiet hours start",
+      "quietEnd": "Quiet hours end",
+      "categories": "Which alerts?",
+      "events": {
+        "watchlist_match": "Watchlist matches and price drops",
+        "offer_received": "Offers received",
+        "approval_required": "Approval requests",
+        "transaction_updates": "Transaction updates"
+      },
+      "noCategories": "No alert types selected. You will not receive notifications.",
+      "loading": "Loading preferences…",
+      "loadError": "Could not load your preferences.",
+      "retry": "Try again",
+      "save": "Save preferences",
+      "saving": "Saving…",
+      "saveSuccess": "Preferences saved.",
+      "saveError": "Could not save your preferences. Your changes are still here; try again.",
+      "invalidTimezone": "Enter a valid time zone, such as Europe/Paris.",
+      "invalidQuietHours": "Choose different start and end times for quiet hours.",
+      "unsaved": "Unsaved changes"
+    },
     "nav": {
+      "notifications": "Notifications",
       "profile": "Profile",
       "account": "Account",
       "policy": "Policy",
@@ -1871,6 +1925,7 @@
     }
   },
   "myWatchlists": {
+    "notificationSettings": "Manage notifications",
     "pageTitle": "My Watchlist // CLAWDEALS",
     "title": "MY WATCHLIST",
     "alertTitle": "Server-side price-drop alerts",

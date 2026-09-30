@@ -1732,7 +1732,61 @@
     "browseListings": "Parcourir les annonces"
   },
   "settings": {
+    "notifications": {
+      "pageTitle": "Notifications // CLAWDEALS",
+      "title": "Notifications",
+      "description": "Choisissez les alertes que vous recevez et les moments où elles peuvent vous parvenir.",
+      "deliveryHint": "Les alertes arrivent sur votre connexion Telegram active, ou sur votre adresse email vérifiée si Telegram n’est pas connecté.",
+      "manageChannels": "Gérer mes identités liées",
+      "frequency": "À quelle fréquence ?",
+      "modes": {
+        "REALTIME": {
+          "label": "Dès leur arrivée",
+          "hint": "Recevoir chaque alerte sélectionnée dès qu’elle est prête."
+        },
+        "DIGEST_HOURLY": {
+          "label": "Toutes les heures",
+          "hint": "Regrouper les alertes sélectionnées dans un récapitulatif horaire."
+        },
+        "DIGEST_DAILY": {
+          "label": "Une fois par jour",
+          "hint": "Recevoir un récapitulatif à l’heure locale choisie."
+        },
+        "SILENT": {
+          "label": "En pause",
+          "hint": "Arrêter les alertes jusqu’au choix d’une autre fréquence."
+        }
+      },
+      "pausedHint": "Les alertes reçues pendant la pause sont écartées. La reprise concerne les nouvelles alertes.",
+      "timezone": "Fuseau horaire",
+      "digestHour": "Heure du récapitulatif",
+      "localTimeHint": "Le récapitulatif et les horaires de silence suivent ce fuseau. Vous pouvez saisir un fuseau pris en charge, comme Europe/Paris.",
+      "quietHours": "Horaires de silence",
+      "quietEnabled": "Activer les horaires de silence",
+      "quietHint": "Conserver les alertes pour plus tard pendant cette période. Les plages passant minuit, comme 22:00–08:00, sont prises en charge.",
+      "quietStart": "Début du silence",
+      "quietEnd": "Fin du silence",
+      "categories": "Quelles alertes ?",
+      "events": {
+        "watchlist_match": "Correspondances et baisses de prix",
+        "offer_received": "Offres reçues",
+        "approval_required": "Approbations demandées",
+        "transaction_updates": "Suivi des transactions"
+      },
+      "noCategories": "Aucun type d’alerte sélectionné. Vous ne recevrez pas de notifications.",
+      "loading": "Chargement des préférences…",
+      "loadError": "Impossible de charger vos préférences.",
+      "retry": "Réessayer",
+      "save": "Enregistrer les préférences",
+      "saving": "Enregistrement…",
+      "saveSuccess": "Préférences enregistrées.",
+      "saveError": "Impossible d’enregistrer vos préférences. Vos modifications sont conservées ; réessayez.",
+      "invalidTimezone": "Saisissez un fuseau horaire valide, comme Europe/Paris.",
+      "invalidQuietHours": "Choisissez des heures de début et de fin différentes.",
+      "unsaved": "Modifications non enregistrées"
+    },
     "nav": {
+      "notifications": "Notifications",
       "profile": "Profil",
       "account": "Compte",
       "policy": "Politique",
@@ -1871,6 +1925,7 @@
     }
   },
   "myWatchlists": {
+    "notificationSettings": "Régler mes notifications",
     "pageTitle": "Mes suivis // CLAWDEALS",
     "title": "MES SUIVIS",
     "alertTitle": "Alertes de baisse de prix côté serveur",

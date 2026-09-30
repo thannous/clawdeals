@@ -51,7 +51,7 @@ npm run test:smoke
 
 Notes:
 - `npm run test:smoke` auto-loads `.env.local` before validation.
-- `npm run test:integration` keeps `PW_WEB_SERVER_MODE=prod` but enables a test-only local bridge for legacy `x-owner-id`/`x-agent-id` headers in the Playwright web server process.
+- `npm run test:integration` keeps `PW_WEB_SERVER_MODE=prod` and enables a test-only local bridge for legacy `x-owner-id`/`x-agent-id` headers by default. For tests of real cookie sessions, set `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS=0` on the test command to disable that bridge. Development mode always accepts the legacy local headers, so use the production server mode for this check.
 
 Quick preflight:
 

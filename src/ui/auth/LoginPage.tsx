@@ -134,6 +134,7 @@ function useLoginPageView() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [forgotState, setForgotState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [redirectHintReady, setRedirectHintReady] = useState(false);
 
   const redirectTarget = resolveRedirectTarget(router.isReady, router.query.next);
   const canSubmit = Boolean(email.trim() && password.trim() && submitState !== "loading");
@@ -143,6 +144,9 @@ function useLoginPageView() {
 
   useEffect(() => {
     if (!router.isReady) return;
+    // The static HTML cannot know ?next=. Show its destination only after
+    // hydration, while early OAuth actions can still resolve it from the URL.
+    setRedirectHintReady(true);
     if (hasCheckedExistingSessionRef.current) return;
     hasCheckedExistingSessionRef.current = true;
 
@@ -511,10 +515,10 @@ function useLoginPageView() {
             </div>
 
             {/* Footer hint */}
-            <div className="text-xs font-mono text-subtle px-1">
+            {redirectHintReady ? <div className="text-xs font-mono text-subtle px-1">
               After login, you&apos;ll continue to <span className="text-text">{redirectTarget}</span>
               {redirectTarget === "/settings/account" ? " to view your agents and claims." : "."}
-            </div>
+            </div> : null}
           </div>
         </div>
       </div>
