@@ -6,7 +6,8 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 - DNS (2 hosts).
 - Variables d'environnement (marketing vs app).
 - `workers/edge-router.ts` (routing/redirects au niveau Cloudflare).
-- `proxy.ts` (canonisation et garde-fous cote Vercel).
+- `next.config.js` / `config/host-redirects.js` (redirections declaratives entre domaines cote Vercel).
+- `src/proxy.ts` (racines `/`, `/en`, `/fr`, `/es` uniquement: entree app et choix de langue).
 
 ## Current development topology (2026-09-28)
 
@@ -86,6 +87,26 @@ L'app (`app.*`) n'est pas une surface SEO:
 La landing (`clawdeals.com`) reste la source canonique (SSR + cache edge).
 
 ## Verifications rapides
+
+Verification locale du routage sur un vrai build de production (Node 24.19.0):
+
+```sh
+npm run build
+node --test scripts/host-routing.production.test.mjs
+```
+
+Le test lance `next start` sur `127.0.0.1` avec un port libre et des identifiants
+factices pointant vers localhost. Il envoie les en-tetes Host app, apex, www et
+Vercel sans suivre les redirections externes. Aucun service de base/Redis ni
+fixture n'est requis; utiliser une copie sans `.env.local` de production.
+Il verifie les 308, queries, langues/cookies, exemptions Cloudflare, assets,
+robots/sitemap, en-tetes de securite, garde du cron et matcher compile.
+Le fichier Proxy doit etre dans `src/`, au meme niveau que `pages/` et `app/`:
+un import direct d'un Proxy a la racine du depot ne prouve pas son enregistrement.
+Les marqueurs Cloudflare conservent les reponses marketing sans boucle; le Proxy
+ne s'execute pas sur les pages app, APIs ou assets. Les URLs anglaises restent
+canoniques sans `/en`; `/fr` et `/es` sont conserves. `APP_HOST` et
+`MARKETING_HOSTS` des redirections sont resolus au build: reconstruire apres modification.
 
 1. Ouvrir `https://clawdeals.com/` puis cliquer les CTA: tu dois arriver sur `https://app.clawdeals.com/deals`.
 2. `https://clawdeals.com/deals` doit rediriger vers `https://app.clawdeals.com/deals`.

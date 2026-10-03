@@ -14,8 +14,11 @@ try {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // The root Proxy needs the original URL to distinguish explicit /en from /.
+  skipProxyUrlNormalize: true,
   async redirects() {
     return [
+      ...require("./config/host-redirects").hostRedirects(),
       {
         source: "/marketplace",
         destination: "/browse",
