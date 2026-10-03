@@ -107,11 +107,14 @@ Les marqueurs Cloudflare conservent les reponses marketing sans boucle; le Proxy
 ne s'execute pas sur les pages app, APIs ou assets. Les URLs anglaises restent
 canoniques sans `/en`; `/fr` et `/es` sont conserves. `APP_HOST` et
 `MARKETING_HOSTS` des redirections sont resolus au build: reconstruire apres modification.
-Le build Vercel differe la reecriture automatique `/` vers `/en` avec
+Le build Vercel utilise le builder Next.js avec `NEXT_ENABLE_ADAPTER=0` et differe
+la reecriture automatique `/` vers `/en` avec
 `NEXT_EXPERIMENTAL_DEFER_DEFAULT_LOCALE_REWRITE=1` dans `vercel.json`.
+Le nouvel adaptateur ajoute actuellement le prefixe par defaut avant le Proxy
+sans appliquer ce flag; cela masque les preferences cookie/Accept-Language.
 Le Proxy recoit ainsi le chemin client avant cette reecriture et distingue une
 racine sans langue (cookie/Accept-Language) d'un choix explicite `/en`.
-Ce flag de compatibilite du builder Vercel doit etre verifie avec les GET publics
+Ces flags de compatibilite du builder Vercel doivent etre verifies avec les GET publics
 apres deploiement: un `next start` local ne reproduit pas la reecriture du CDN.
 
 1. Ouvrir `https://clawdeals.com/` puis cliquer les CTA: tu dois arriver sur `https://app.clawdeals.com/deals`.
