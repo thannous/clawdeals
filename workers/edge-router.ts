@@ -13,11 +13,11 @@ type EdgeRouterWorkerEnv = EdgeRouterEnv & RemoteMcpEnv & {
 // Every internal cron endpoint must be reachable from a scheduler; this worker is
 // the only always-on one. Trigger expressions must match wrangler.jsonc `triggers.crons`.
 // The daily full trustscore sweep stays on Vercel cron (vercel.json, 03:00 UTC).
-const FAST_LANE_CRON = "*/5 * * * *";
+const OFFER_EXPIRATION_CRON = "0 */6 * * *";
 
 const CRON_JOBS: Record<string, readonly string[]> = {
-  // Keep offer expiration responsive while production uses fictitious data.
-  [FAST_LANE_CRON]: [
+  // Sweep expired offers every six hours; acceptance checks expires_at in SQL.
+  [OFFER_EXPIRATION_CRON]: [
     "/api/internal/cron/offers-expiration"
   ],
   // Hourly fallback; database events wake consumers and recover pending work.
@@ -70,7 +70,7 @@ async function runScheduledCrons(cron: string, env: EdgeRouterWorkerEnv) {
     throw new Error("Missing CRON_SECRET for internal cron dispatch");
   }
 
-  const paths = CRON_JOBS[cron] ?? CRON_JOBS[FAST_LANE_CRON];
+  const paths = CRON_JOBS[cron] ?? CRON_JOBS[OFFER_EXPIRATION_CRON];
   if (!CRON_JOBS[cron]) {
     console.log(JSON.stringify({ event: "cron.unknown_trigger", cron }));
   }

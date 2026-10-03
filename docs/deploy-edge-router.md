@@ -25,7 +25,11 @@ Important:
 
 ## Scheduled jobs during development
 
-Offer expiration runs every 5 minutes. Database events wake watchlist matching,
+Offer expiration runs every six hours (`0 */6 * * *`: 00:00, 06:00, 12:00 and
+18:00 UTC). The displayed status and expiration cleanup/events can lag by up to
+six hours; `offer_accept_v0` still rejects expired offers using `expires_at`
+before accepting them, even while their status remains `CREATED`.
+Database events wake watchlist matching,
 backfill, notification dispatch and trustscore consumers when work arrives.
 Cloudflare retains an hourly recovery pass at minute 2; other hourly and daily
 maintenance keep their schedules. See `docs/queue-event-dispatch.md` for durable

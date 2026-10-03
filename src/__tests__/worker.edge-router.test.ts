@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { parseConfigFileTextToJson } from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import edgeRouterWorker from "../../workers/edge-router";
 
@@ -97,17 +99,35 @@ describe("worker edge router", () => {
   });
 
   // Browser E2E does not drive Cloudflare scheduled events. These checks protect
-  // against lost jobs, duplicate queue dispatch and delayed offer expiration.
-  it("dispatches only offer expiration every five minutes", async () => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
+  // against lost jobs, duplicate queue dispatch and mismatched cron registration.
+  it("registers six-hour offer expiration while preserving the other cron schedules", () => {
+    const config = parseConfigFileTextToJson(
+      "wrangler.jsonc",
+      readFileSync(new URL("../../wrangler.jsonc", import.meta.url), "utf8")
+    );
+
+    expect(config.error).toBeUndefined();
+    expect(config.config.triggers.crons).toEqual([
+      "0 */6 * * *",
+      "2 * * * *",
+      "17 * * * *",
+      "10 2 * * *"
+    ]);
+  });
+
+  it("recognizes the six-hour trigger and dispatches only offer expiration", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}"));
     await edgeRouterWorker.scheduled(
-      { cron: "*/5 * * * *", scheduledTime: 0 },
+      { cron: "0 */6 * * *", scheduledTime: 0 },
       { APP_ORIGIN: "https://app.clawdeals.com", CRON_SECRET: "cron-secret" }
     );
     expect(fetchSpy.mock.calls.map(([target]) => target.toString())).toEqual([
       "https://app.clawdeals.com/api/internal/cron/offers-expiration"
     ]);
+    expect(logSpy).not.toHaveBeenCalledWith(
+      JSON.stringify({ event: "cron.unknown_trigger", cron: "0 */6 * * *" })
+    );
   });
 
   it("dispatches the hourly queue recovery with bearer authentication", async () => {
@@ -184,7 +204,7 @@ describe("worker edge router", () => {
   it("fails closed when the Cloudflare cron secret is missing", async () => {
     await expect(
       edgeRouterWorker.scheduled(
-        { cron: "*/5 * * * *", scheduledTime: 0 },
+        { cron: "0 */6 * * *", scheduledTime: 0 },
         {
           APP_ORIGIN: "https://app.clawdeals.com",
           MARKETING_ORIGIN: "https://app.clawdeals.com",
@@ -202,7 +222,7 @@ describe("worker edge router", () => {
 
     await expect(
       edgeRouterWorker.scheduled(
-        { cron: "*/5 * * * *", scheduledTime: 0 },
+        { cron: "0 */6 * * *", scheduledTime: 0 },
         {
           APP_ORIGIN: "https://app.clawdeals.com",
           MARKETING_ORIGIN: "https://app.clawdeals.com",

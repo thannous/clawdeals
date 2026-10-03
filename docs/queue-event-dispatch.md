@@ -22,7 +22,8 @@ producer updates wake their existing Vercel consumers through asynchronous
   change may shorten this delay intentionally. Work becoming due is recovered
   within the next five-minute cron window; this is not an exact-time delivery SLA.
 - Cloudflare keeps an hourly fallback at minute 2. Offer expiration remains on
-  its independent five-minute schedule.
+  its independent six-hour schedule (`0 */6 * * *`, UTC). Expiration cleanup
+  can lag by up to six hours; SQL still rejects acceptance after `expires_at`.
 - A crash after external notification delivery but before marking it delivered
   can still cause a duplicate. The lease prevents overlapping workers; it is not
   an exactly-once delivery guarantee.
