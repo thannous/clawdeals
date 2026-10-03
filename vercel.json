@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "build": {
+    "env": {
+      "NEXT_EXPERIMENTAL_DEFER_DEFAULT_LOCALE_REWRITE": "1"
+    }
+  },
   "regions": [
     "dub1"
   ],
