@@ -106,6 +106,7 @@ jobs:
     env:
       E2E_TELEMETRY_DISABLED: "1"
       NEXT_TELEMETRY_DISABLED: "1"
+      TESTERARMY_AI: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

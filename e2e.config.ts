@@ -88,6 +88,7 @@ export default {
     { name: "mobile", engine: web({ viewport: { width: 390, height: 844 } }), app }
   ],
   workers: 1,
+  ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),
   timeout: aiEnabled ? 180_000 : 60_000,
   assertionTimeout: 15_000,
   trace: "on",

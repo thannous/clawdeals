@@ -104,6 +104,10 @@ The `testerarmy` job in `.github/workflows/ci.yml` installs Chromium and runs al
 
 The npm scripts disable TesterArmy usage telemetry. For direct `npx e2e` commands, set `E2E_TELEMETRY_DISABLED=1` to keep the same setting.
 
+CI explicitly sets `TESTERARMY_AI=0`. The exact suite uses no replay cache and
+zero retries, so a stale recording or a retry cannot conceal a failing public
+journey. The optional AI command still requires its explicit provider opt-in.
+
 ## Setup validation — 2026-10-02
 
 Verified on Node 24.19.0 with Chromium 153 / Playwright 1.63.0:
