@@ -31,6 +31,7 @@
     "scripts/**/*",
     "e2e/**/*",
     "playwright.config.ts",
+    "e2e.config.ts",
     "vitest.config.ts",
     "next.config.js",
     "open-next.config.ts",

@@ -99,10 +99,44 @@ jobs:
           WRANGLER_SEND_METRICS: "false"
         run: npm exec -- wrangler deploy --dry-run --outdir "$RUNNER_TEMP/clawdeals-worker-bundle"
 
+  testerarmy:
+    name: TesterArmy browser journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      E2E_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Run public desktop and mobile journeys
+        run: npm run test:testerarmy
+      - name: Retain browser reports and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: testerarmy-browser-results
+          path: |
+            .e2e/report.json
+            .e2e/junit.xml
+            .e2e/summary.md
+            .e2e/failures/
+            .e2e/artifacts/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+
   test-ci:
     name: test-ci
     if: ${{ always() }}
-    needs: [lint, contracts, unit_tests, worker_contracts]
+    needs: [lint, contracts, unit_tests, worker_contracts, testerarmy]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -112,8 +146,9 @@ jobs:
           CONTRACTS_RESULT: ${{ needs.contracts.result }}
           UNIT_TESTS_RESULT: ${{ needs.unit_tests.result }}
           WORKER_RESULT: ${{ needs.worker_contracts.result }}
+          TESTERARMY_RESULT: ${{ needs.testerarmy.result }}
         run: |
-          if [[ "$LINT_RESULT" != "success" || "$CONTRACTS_RESULT" != "success" || "$UNIT_TESTS_RESULT" != "success" || "$WORKER_RESULT" != "success" ]]; then
-            echo "CI failed: lint=$LINT_RESULT contracts=$CONTRACTS_RESULT unit-tests=$UNIT_TESTS_RESULT worker=$WORKER_RESULT"
+          if [[ "$LINT_RESULT" != "success" || "$CONTRACTS_RESULT" != "success" || "$UNIT_TESTS_RESULT" != "success" || "$WORKER_RESULT" != "success" || "$TESTERARMY_RESULT" != "success" ]]; then
+            echo "CI failed: lint=$LINT_RESULT contracts=$CONTRACTS_RESULT unit-tests=$UNIT_TESTS_RESULT worker=$WORKER_RESULT testerarmy=$TESTERARMY_RESULT"
             exit 1
           fi

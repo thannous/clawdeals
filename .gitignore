@@ -61,3 +61,6 @@ sdk/python/**/*.pyc
 sdk/python/src/clawdeals_sdk_generated_README.md
 .vercel
 .mcp.json
+
+# TesterArmy reports, traces, sessions and replay cache
+.e2e/

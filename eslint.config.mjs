@@ -4,6 +4,7 @@ const config = [
   {
     ignores: [
       ".claude/**",
+      ".e2e/**",
       ".next/**",
       ".next.bak/**",
       ".open-next/**",

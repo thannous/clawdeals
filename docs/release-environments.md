@@ -16,7 +16,7 @@ The permission is implemented by a project-scoped opt-in in participating test e
 
 | Tool | Current behavior |
 | --- | --- |
-| `playwright.config.ts`, integration helpers and `scripts/smoke-api.mjs` | Call `scripts/lib/assert-non-prod-target.mjs`; production is rejected by default; the opt-in below permits only the ClawDeals project and local services. |
+| `playwright.config.ts`, `e2e.config.ts` (TesterArmy), integration helpers and `scripts/smoke-api.mjs` | Call `scripts/lib/assert-non-prod-target.mjs`; production is rejected by default; the opt-in below permits only the ClawDeals project and local services. |
 | `/api/v1/sandbox/reset` and `/api/v1/sandbox/seller-turn` | Require sandbox runtime and a non-production database; reset/judge authorization still applies. |
 | `bootstrap:webmcp:judge` | Historical remote-sandbox bootstrap with explicit host and project restrictions; not a setup step for production. |
 | Local UI specs with mocked responses | Can run without backend credentials when the selected spec does not require real API data. |
@@ -42,6 +42,6 @@ Use [local setup](./local-supabase-development.md) when a test needs sandbox fix
 
 Select checks for the requested change. Do not run the full suite for a documentation-only change. For E2E evidence retain the exact command, target, fixture prerequisites, results and report/trace.
 
-The checked-in CI runs lint, type/i18n/OpenAPI/skill contracts, two unit-test shards and a Worker dry-run bundle. It does not run browser E2E, apply database migrations or deploy Cloudflare. SDK checks and npm/PyPI tag releases are separate workflows. CI configuration alone does not prove a current run passed or block Vercel deployment.
+The checked-in CI runs lint, type/i18n/OpenAPI/skill contracts, two unit-test shards, a Worker dry-run bundle and the [TesterArmy public browser journeys](./testerarmy-e2e.md) on desktop and mobile viewports. It does not run the database integration suites, apply database migrations or deploy Cloudflare. SDK checks and npm/PyPI tag releases are separate workflows. CI configuration alone does not prove a current run passed or block Vercel deployment.
 
 See [release procedure](./release-staging-to-prod.md) and [hosting](./hosting-cloudflare-vercel.md).

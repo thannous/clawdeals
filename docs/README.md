@@ -10,6 +10,7 @@ Use only the references needed for the task. Updated 2026-09-28.
 | Select an environment or understand production-test blockers | [Environment policy](./release-environments.md) |
 | Push/deploy and verify a release | [Direct-main release procedure](./release-staging-to-prod.md) |
 | Configure local fixture services | [Local setup](./local-supabase-development.md), [optional sandbox runtime](./sandbox-getting-started.md) |
+| Run TesterArmy browser or AI journeys | [TesterArmy setup, targets and reports](./testerarmy-e2e.md) |
 | Change hosting, proxying or schedules | [Hosting](./hosting-cloudflare-vercel.md), [edge router](./deploy-edge-router.md), [market infrastructure](./launch-eu-fr-gb-es.md) |
 | Work on WebMCP | [Overview](../WEBMCP.md), [development](../WEBMCP_DEV.md), [validation map](../evals/webmcp/README.md) |
 | Integrate REST/MCP/SDK | [OpenAPI](./openapi-v1.yaml), [errors](./error-codes.md), [MCP](./mcp-server.md), [tools](./mcp-tools-spec.md), [TypeScript SDK](../sdk/typescript/README.md), [Python SDK](../sdk/python/README.md) |

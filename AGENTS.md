@@ -7,6 +7,7 @@ Read only the code and documentation needed for the task. Documentation-only or 
 - This app uses Next.js Pages Router: UI in `src/pages/`, APIs in `src/pages/api/`, server code in `src/server/`.
 - For Next.js API, routing, or configuration changes, consult the relevant guide in `node_modules/next/dist/docs/`. This is the scope of the generated Next.js guidance below; it is not a prerequisite for unrelated edits.
 - For local database or integration-test setup, use `docs/local-supabase-development.md` and `playwright.config.ts`.
+- For TesterArmy browser tests, read `node_modules/e2e/skills/e2e/SKILL.md` and the relevant topic before writing or running tests. Configuration is in `e2e.config.ts`; commands and target selection are in `docs/testerarmy-e2e.md`. Existing Playwright suites keep their own runner.
 - For hosting or deployment changes, use `docs/hosting-cloudflare-vercel.md`: `clawdeals.com` uses `workers/edge-router.ts`; `app.clawdeals.com` uses Vercel Git integration.
 - Find other task-specific references in `docs/`; commands are defined in `package.json`. Update affected documentation when behavior or workflows change.
 
@@ -36,3 +37,32 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## E2E framework preference (owner decision, 2026-10-05)
+
+Use TesterArmy `e2e` for new and affected E2E journeys across every project,
+subproject and worktree. Reference: https://docs.expo.dev/guides/using-e2e/.
+Read the official `e2e` skill and the relevant topic from the project's installed
+version before writing or running tests. Use `@e2e-dev/mobile` for native apps and
+`@e2e-dev/web` for browser apps. API/CLI-only projects need an appropriate real
+interface journey; do not invent a mobile or browser target when none exists.
+Reuse project runners, device ownership checks, fixtures and environment guards.
+Native qualification uses an identified installed Release build, one worker per
+device, and `app.open()` at each test start. Follow existing build/prebuild rules.
+Use one goal per `agent.act()` and exact assertions for critical outcomes; exact
+steps need no model. Preserve reports, failures, screenshots/traces, build/source
+identity and the exact rerun command. A stale/missing replay is not a passed check.
+Retain existing Playwright/Maestro/API coverage and required CI until equivalent
+TesterArmy journeys have passed; new tests use TesterArmy by default. Keep model
+calls within existing authorized providers and budgets, and never export private
+test content, credentials or feedback without authorization.
+
+Use `npm run test:testerarmy` for browser journeys and
+`npm run test:testerarmy:list` for discovery. Read `docs/testerarmy-e2e.md` and
+the skill from `node_modules/e2e`. SDK and MCP changes should be exercised through
+real client/server journeys; preserve uncovered existing contract checks.
+
+
+The official `agent-device` skill is available for native projects on this host.
+ClawDeals uses `@e2e-dev/web`: use `npm run testerarmy:mcp` for live exploration,
+not a fabricated native target. See `docs/testerarmy-e2e.md#agent-device-routing`.
