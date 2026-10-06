@@ -98,11 +98,21 @@ Verified `agent.act` steps may replay from `.e2e/cache/`; assertions still run. 
 
 Every run writes `.e2e/report.json`, `.e2e/junit.xml` and `.e2e/summary.md`. `trace: "on"` retains browser traces for successful and failed tests under `.e2e/artifacts/`; failures also produce screenshots and Markdown diagnostics. App output is in `.e2e/logs/app.log`. `.e2e/` is ignored; keep reports private when they contain app data. To preserve separate runs, append `--output .e2e/validation/<run-name>` before rerunning.
 
-The `testerarmy` job in `.github/workflows/ci.yml` installs Chromium and runs all eight public cases against a fresh local app without model or database credentials. It uploads reports and browser artifacts for seven days, including after failures, and contributes to the aggregate `test-ci` result. It does not deploy the app or test the deployed revision.
+The `testerarmy` job in `.github/workflows/ci.yml` installs Chromium and runs the public navigation and client control cases against a fresh local app without model or database credentials. It uploads reports and browser artifacts for seven days, including after failures, and contributes to the aggregate `test-ci` result. It does not deploy the app or test the deployed revision.
 
 `npm run testerarmy:mcp` starts the framework's stdio MCP server with the desktop target selected. An MCP client can register this command to inspect the app; no user-level Codex configuration is modified by this setup.
 
 The npm scripts disable TesterArmy usage telemetry. For direct `npx e2e` commands, set `E2E_TELEMETRY_DISABLED=1` to keep the same setting.
+
+The exact suite also runs six client UI cases (three journeys on each viewport)
+in `e2e/testerarmy/marketplace-controls.e2e.ts`: listing sort/search/filter reset
+with exact request parameters and empty-state recovery, price-alert API error
+recovery, and legacy sign-in link creation for the exact entered address. These
+reuse the historical UI suites' synthetic client API seams. They do not qualify
+SSR data, database durability, authorization, notifications, transactions or SDK
+and MCP behavior; the existing backend and isolation contracts remain.
+The listing toolbar's filter reset keeps the search query; clearing that query
+is a separate visible action tested before checking recovery.
 
 CI explicitly sets `TESTERARMY_AI=0`. The exact suite uses no replay cache and
 zero retries, so a stale recording or a retry cannot conceal a failing public
