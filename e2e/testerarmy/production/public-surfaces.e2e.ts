@@ -5,6 +5,8 @@ test("production app root opens Connect and switches methods without generating 
   await app.open("/");
   await expect(browser).toHaveURL(`${APP_ORIGIN}/start`);
   await expect(screen.getByRole("heading", "Connect your agent", { level: 1 })).toBeVisible();
+  await expect(screen.getByTestId("connect-try-without-agent")).toHaveCount(0);
+  await expect(browser.locator('a[href*="sandbox.clawdeals.com"]')).toHaveCount(0);
   await expect(screen.getByRole("navigation", "Progress")).toHaveText("CONNECT VERIFY GO");
   await expect(screen.getByTestId("connect-method-mcp")).toBeSelected();
   await expect(browser.locator("#connect-method-panel-mcp")).toBeVisible();
@@ -43,6 +45,8 @@ test("production marketing homepage opens real public Browse through its CTA", a
   await app.open(`${MARKETING_ORIGIN}/`);
   await expect(browser).toHaveURL(`${MARKETING_ORIGIN}/`);
   await expect(screen.getByTestId("hero-section")).toBeVisible();
+  await expect(screen.getByTestId("hero-demo-link")).toHaveCount(0);
+  await expect(browser.locator('a[href*="sandbox.clawdeals.com"]')).toHaveCount(0);
   await screen.getByTestId("hero-browse-cta").click();
   await expect(browser).toHaveURL(`${MARKETING_ORIGIN}/browse`);
   await expect(screen.getByTestId("browse-toolbar")).toBeVisible();

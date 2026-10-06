@@ -2,7 +2,7 @@ import React, { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { ChevronDown, ChevronRight, Lock, Play, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, ShieldCheck, ShoppingBag, Zap } from "lucide-react";
 import { useTheme } from "../theme/theme-context";
 import { getPublicApiBaseUrl, getPublicAppEntryHref, joinUrl } from "../shared/urls";
 import { localePrefixFor } from "../shared/seo";
@@ -21,7 +21,6 @@ const MarketPhone = dynamic(() => import("./landing/MarketPhone"));
 const TRUST_MARQUEE_KEYS = ["segment-01", "segment-02", "segment-03", "segment-04"] as const;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const JUDGE_DEMO_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 
 function toStableStringEntries(values: readonly string[]) {
   const seen = new Map<string, number>();
@@ -235,16 +234,6 @@ function HeroCurrent({ locale }: { locale: string }) {
           </span>
         </Link>
       </div>
-      <a
-        href={JUDGE_DEMO_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-5 inline-flex items-center gap-2 font-mono text-xs text-subtle underline-offset-4 hover:text-primary hover:underline"
-        data-testid="hero-demo-link"
-      >
-        <Play className="w-3.5 h-3.5" aria-hidden="true" />
-        {t("hero.demoCta")}
-      </a>
     </HeroFrame>
   );
 }

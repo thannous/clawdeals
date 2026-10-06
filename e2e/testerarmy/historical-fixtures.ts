@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { desktopEngine, mobileEngine } from "./web-engines";
+import { withEvidence, describeError } from "./evidence.mjs";
 
 // Matchers only: TesterArmy remains the sole runner and owns the browser trace.
 export const { expect }: typeof import("@playwright/test") = createRequire(import.meta.url)("@playwright/test");
@@ -72,11 +73,19 @@ export function createHistoricalTest() {
         outputPath(name) { const path = join(folder, name); captures.push(path); return path; },
         async attach(name, artifact) { writeFileSync(info.outputPath(`${name}.${artifact.contentType === "image/png" ? "png" : "json"}`), artifact.body); }
       };
-      try {
+      await withEvidence(async () => {
         for (const hook of setup) await hook(historical);
         await body(historical, info);
-        await app.screenshot("historical-final");
-      } finally { writeFileSync(join(folder, "artifacts.json"), JSON.stringify(captures, null, 2) + "\n"); }
+      }, [
+        { phase: "screenshot", run: () => app.screenshot("historical-final") },
+        { phase: "manifest", run: () => writeFileSync(join(folder, "artifacts.json"), JSON.stringify(captures, null, 2) + "\n", { flag: "wx" }) },
+        { phase: "diagnostics", run: state => {
+          if (state.bodyFailed || state.secondaryErrors.length) writeFileSync(join(folder, "errors.json"), JSON.stringify({
+            primaryError: state.bodyFailed ? describeError(state.primaryError) : null,
+            secondaryErrors: state.secondaryErrors,
+          }, null, 2) + "\n", { flag: "wx" });
+        } },
+      ]);
     });
   };
   return Object.assign(register, {

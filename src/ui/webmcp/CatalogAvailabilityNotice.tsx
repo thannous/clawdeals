@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ExternalLink } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { AlertTriangle, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 
 import { getPublicApiBaseUrl, joinUrl } from "../../shared/urls";
-
-const SANDBOX_HUB_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
+import { localePrefixFor, resolveSupportedLocale } from "../../shared/i18n";
 
 type CatalogState = "unknown" | "populated" | "empty";
 
 /**
  * The production marketplace can legitimately have zero public listings, in which case the
- * judge mission has nothing to rank. Say so up front and point to the fixture-backed sandbox
- * instead of letting `search_listings` come back empty without explanation.
+ * mission has nothing to rank. Explain the empty state and offer the real public
+ * marketplace; the retired judge sandbox is not an available demonstration.
  */
 export default function CatalogAvailabilityNotice() {
   const t = useTranslations("webmcp");
+  const locale = useLocale();
   const [state, setState] = useState<CatalogState>("unknown");
 
   useEffect(() => {
@@ -50,13 +51,14 @@ export default function CatalogAvailabilityNotice() {
           {t("catalog.emptyDescription")}
         </p>
       </div>
-      <a
-        href={SANDBOX_HUB_URL}
+      <Link
+        href={`${localePrefixFor(resolveSupportedLocale(locale))}/browse`}
+        data-testid="catalog-browse-link"
         className="inline-flex h-10 items-center gap-2 border border-warning bg-warning px-4 font-mono text-[11px] font-bold uppercase tracking-wider text-bg hover:brightness-110"
       >
-        {t("catalog.openSandbox")}
-        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-      </a>
+        {t("catalog.browseListings")}
+        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </Link>
     </div>
   );
 }

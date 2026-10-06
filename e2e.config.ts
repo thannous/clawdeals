@@ -87,7 +87,7 @@ const app = {
         UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN
       },
       startupTimeout: 180_000,
-      log: ".e2e/logs/app.log"
+      log: `${process.env.PARITY_OUTPUT ?? ".e2e"}/logs/app.log`
     }
   })
 };

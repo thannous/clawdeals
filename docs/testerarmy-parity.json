@@ -1,0 +1,1147 @@
+{
+  "format": "clawdeals-testerarmy-parity-v1",
+  "baselineCommit": "ce18460df733c9a48d51e8fd4121ff4b0f0a3d9d",
+  "scope": "real browser client UI with historical synthetic API seams; Desktop Chrome 1280x720",
+  "historicalCaseCount": 181,
+  "families": [
+    {
+      "historicalFile": "e2e/ui/auth-login.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/auth-login.e2e.ts",
+      "caseCount": 3,
+      "historicalSha256": "b647f5243227466b062ead49ba70c0e1c12b82f54403e062f76eab4b83d34814",
+      "testerarmySha256": "2c8b43775e2653239c74efbcc61b545f6985f1ba745d34ea78caf4a9a08de7e4",
+      "titlePaths": [
+        [
+          "Auth: Login",
+          "shows unified login with Google and legacy link"
+        ],
+        [
+          "Auth: Login",
+          "toggles password visibility"
+        ],
+        [
+          "Auth: Login",
+          "requests legacy magic link and shows verify link"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/browse-deals.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/browse-deals.e2e.ts",
+      "caseCount": 15,
+      "historicalSha256": "d4082563fe2ea3c944adb080f0ee450fbe980c03a1dd2c214adb926d15ae0e38",
+      "testerarmySha256": "b26738951515bb1f551f4f836df2f0cd24f72f555c06e2a79456d7f9f9ca6c6b",
+      "titlePaths": [
+        [
+          "Browse Deals page",
+          "Initial SSR render",
+          "page loads with SSR data and shows deals or empty state"
+        ],
+        [
+          "Browse Deals page",
+          "Initial SSR render",
+          "page title and heading are present"
+        ],
+        [
+          "Browse Deals page",
+          "Initial SSR render",
+          "toolbar is visible with sort tabs and search"
+        ],
+        [
+          "Browse Deals page",
+          "Toolbar interactions",
+          "sort tabs change URL and trigger fetch"
+        ],
+        [
+          "Browse Deals page",
+          "Toolbar interactions",
+          "search input updates URL after debounce"
+        ],
+        [
+          "Browse Deals page",
+          "Toolbar interactions",
+          "status pills toggle filter and update URL"
+        ],
+        [
+          "Browse Deals page",
+          "Toolbar interactions",
+          "clear filters button resets status filter"
+        ],
+        [
+          "Browse Deals page",
+          "Toolbar interactions",
+          "verifies cover image DOM markers per deal card after client fetch"
+        ],
+        [
+          "Browse Deals page",
+          "Client-side fetch states",
+          "shows empty state after filter yields no results"
+        ],
+        [
+          "Browse Deals page",
+          "Client-side fetch states",
+          "shows error state after client-side fetch failure"
+        ],
+        [
+          "Browse Deals page",
+          "Client-side fetch states",
+          "retry button re-fetches after error"
+        ],
+        [
+          "Browse Deals page",
+          "Client-side fetch states",
+          "reset filters button appears in empty state"
+        ],
+        [
+          "Browse Deals page",
+          "Pagination",
+          "load more button appears with next_cursor and appends deals"
+        ],
+        [
+          "Browse Deals page",
+          "Navigation",
+          "clicking a public deal card navigates to /browse/deals/:id"
+        ],
+        [
+          "Browse Deals page",
+          "Navigation",
+          "legacy deals detail URL with browse marker redirects to public route"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/browse.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/browse.e2e.ts",
+      "caseCount": 13,
+      "historicalSha256": "b6b1df5f02e78f820013b7b56962b57cc6408de37867a9e87fc66f4629fc3232",
+      "testerarmySha256": "f9072a2e574505c2eedbeaa68e4194fc731404dea471ef1f45401870e85dee9a",
+      "titlePaths": [
+        [
+          "Browse page",
+          "Initial SSR render",
+          "page loads with SSR data and shows listings or empty state"
+        ],
+        [
+          "Browse page",
+          "Initial SSR render",
+          "page title and heading are present"
+        ],
+        [
+          "Browse page",
+          "Initial SSR render",
+          "toolbar is visible with sort tabs and search"
+        ],
+        [
+          "Browse page",
+          "Toolbar interactions",
+          "sort tabs change URL and trigger fetch"
+        ],
+        [
+          "Browse page",
+          "Toolbar interactions",
+          "search input updates URL after debounce"
+        ],
+        [
+          "Browse page",
+          "Toolbar interactions",
+          "condition pills toggle filter and update URL"
+        ],
+        [
+          "Browse page",
+          "Toolbar interactions",
+          "clear filters button resets all filters"
+        ],
+        [
+          "Browse page",
+          "Toolbar interactions",
+          "verifies cover image DOM markers per listing card after client fetch"
+        ],
+        [
+          "Browse page",
+          "Client-side fetch states",
+          "shows empty state after filter yields no results"
+        ],
+        [
+          "Browse page",
+          "Client-side fetch states",
+          "shows error state after client-side fetch failure"
+        ],
+        [
+          "Browse page",
+          "Client-side fetch states",
+          "retry button re-fetches after error"
+        ],
+        [
+          "Browse page",
+          "Client-side fetch states",
+          "reset filters button appears in empty state"
+        ],
+        [
+          "Browse page",
+          "Pagination",
+          "load more button appears with next_cursor and appends listings"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/claim.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/claim.e2e.ts",
+      "caseCount": 3,
+      "historicalSha256": "2fb67e5684723fc9cd6ef8fd950f0af7fb4924e79eac7cd952c2d26b85a208f7",
+      "testerarmySha256": "4288f16adc1084cb54594c686d054cb35ad415add0ab0b40f09bcdf9f56fc999",
+      "titlePaths": [
+        [
+          "Claim page",
+          "defaults to attach mode and hides create when owner reached limit"
+        ],
+        [
+          "Claim page",
+          "defaults to create mode when owner has no agent"
+        ],
+        [
+          "Claim page",
+          "deny flow marks session as cancelled"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/connected-apps.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/connected-apps.e2e.ts",
+      "caseCount": 4,
+      "historicalSha256": "bd43acd33343ec7ee299bf8432f6087434338561cabf5747ed7d2c3150c74da5",
+      "testerarmySha256": "33ef976317a37a6b9658440c86de309caa46f25f7640f3a3df6424adbc3306ee",
+      "titlePaths": [
+        [
+          "Settings: Connected Apps",
+          "renders list and revokes an installation"
+        ],
+        [
+          "Settings: Connected Apps",
+          "rotates installation credential with optional grace seconds and clears reveal on close"
+        ],
+        [
+          "Settings: Connected Apps",
+          "redirects to login when owner session is missing"
+        ],
+        [
+          "Settings: Connected Apps",
+          "redirects to login when revoke returns 401 after page load"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-acquisition.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-acquisition.e2e.ts",
+      "caseCount": 1,
+      "historicalSha256": "2080cd96cc3101bc7a12d9e685b6b1844ba0399db0e6fd233c3dedf1a6d9e422",
+      "testerarmySha256": "b0af7d7815d51fab7d77401691a47e4cf0b68a2de9c639e6d3df899bc7594b94",
+      "titlePaths": [
+        [
+          "renders the attribution contract, auxclick split, and currency-safe revenue"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-approvals.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-approvals.e2e.ts",
+      "caseCount": 16,
+      "historicalSha256": "c3539909164789dfde8f3425563d09f4bc91537f89e0813bfdf7cfa65b3e12c4",
+      "testerarmySha256": "156aabc24b3af4d10fe4971b8e8af48e2d0d61829ceba55578bbee227d3d1e2a",
+      "titlePaths": [
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "renders approvals queue with PENDING as default"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "shows empty state when no approvals"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "shows error state on API failure"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "filters by action type listing_publish"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "filters by action type offer_over_budget"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "filters by state APPROVED"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "List view",
+          "filters by agent ID"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Approve flow",
+          "displays approval metadata and context preview"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Approve flow",
+          "Approve button opens confirmation modal"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Approve flow",
+          "Confirm Approve sends POST request"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Approve flow",
+          "shows success toast after approve"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Deny flow",
+          "Deny button opens confirmation modal"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Deny flow",
+          "Confirm Deny sends POST request"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Error handling",
+          "shows error toast on API failure"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Detail \u2014 Error handling",
+          "Cancel button in modal closes without action"
+        ],
+        [
+          "Console Approvals \u2014 US-3/US-4",
+          "Non-pending approvals",
+          "does not show Approve/Deny buttons for APPROVED approvals"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-audit.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-audit.e2e.ts",
+      "caseCount": 19,
+      "historicalSha256": "419315d580cc1de0dff517b799ea4092aa6de14913bac4a1c462ac32b55cfe71",
+      "testerarmySha256": "3b7674434f73ecedb84ce54930f6f01d28757f2e4c58d721426eaa66c14cd132",
+      "titlePaths": [
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "List view",
+          "renders audit logs table"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "List view",
+          "from and to date fields are pre-filled"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "List view",
+          "shows empty state when no audit logs"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "List view",
+          "shows error state on API failure"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "List view",
+          "shows loading skeleton while fetching"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Filters",
+          "filters by actor type agent"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Filters",
+          "filters by action name listing.create"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Filters",
+          "filters by entity type listing"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Filters",
+          "filters by actor ID"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Filters",
+          "filters by entity ID"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Filters",
+          "filters by outcome SUCCESS"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Pagination",
+          "shows Load More when next_cursor exists"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Pagination",
+          "appends results on Load More click"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Detail modal",
+          "clicking audit row opens detail modal"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Detail modal",
+          "modal closes on Close button"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Detail modal",
+          "modal closes on Escape key"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Time range validation",
+          "shows error when time range exceeds 7 days"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Export CSV",
+          "Export CSV button is visible"
+        ],
+        [
+          "Console Audit \u2014 US-5/US-6",
+          "Export CSV",
+          "clicking Export CSV triggers API call"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-cross-feature.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-cross-feature.e2e.ts",
+      "caseCount": 3,
+      "historicalSha256": "52e51ea6717c6bcdc331f76827aff0a31c39a2391b7e3602a241dbc1ecd222fa",
+      "testerarmySha256": "29b0dddedb37af56cf9d971b87405f3989f963b6f342a066c4504e3fc56bf17c",
+      "titlePaths": [
+        [
+          "Console Cross-Feature \u2014 US-7",
+          "Listing \u2192 Related Threads \u2192 Thread detail \u2192 View Listing (round trip)"
+        ],
+        [
+          "Console Cross-Feature \u2014 US-7",
+          "Approvals \u2192 Review \u2192 Approve flow"
+        ],
+        [
+          "Console Cross-Feature \u2014 US-7",
+          "Audit page shows event history filtered by entity_id"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-listings.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-listings.e2e.ts",
+      "caseCount": 16,
+      "historicalSha256": "6820c0fb7789deaad2f0e8b35c6cfb7c3b3d6b0f1608672ea11df49091c31492",
+      "testerarmySha256": "c290bcf3646074457458fcd12ac3f0b4d48f1806c9550f41ea1c37e7cfa52836",
+      "titlePaths": [
+        [
+          "Console Listings \u2014 US-1",
+          "List view",
+          "renders listings table with correct data"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "List view",
+          "shows loading skeleton while fetching"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "List view",
+          "shows empty state when no listings"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "List view",
+          "shows error state on API failure"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Filters",
+          "filters by status PENDING_APPROVAL"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Filters",
+          "filters by condition NEW"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Filters",
+          "filters by price range"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Filters",
+          "changes sort to price_asc"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Filters",
+          "search input sends query param"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Pagination",
+          "shows Load More button when next_cursor exists"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Pagination",
+          "appends results on Load More click"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Detail view",
+          "displays listing metadata"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Detail view",
+          "description displays URLs as plain text (no auto-linkify)"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Detail view",
+          "shows seller_agent_id but no PII"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Detail view",
+          "Related Threads link navigates to threads filtered by listing_id"
+        ],
+        [
+          "Console Listings \u2014 US-1",
+          "Detail view",
+          "Back link returns to listings list"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-security.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-security.e2e.ts",
+      "caseCount": 9,
+      "historicalSha256": "b6e16b97313129a4af58bbc78d510692f341bcb5b10d235be78a48efbf574215",
+      "testerarmySha256": "cffb0c75755dabea20e78e356cbe185156caa093402ed8586884f8c3224d6433",
+      "titlePaths": [
+        [
+          "Console Security \u2014 US-8",
+          "No auto-linkify",
+          "listing description does not render URLs as clickable links"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "No auto-linkify",
+          "thread messages do not render URLs as clickable links"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "No PII exposure",
+          "listing detail does not show email or phone"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "Redaction",
+          "redacted messages show REDACTED badge"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "Redaction",
+          "warning messages are visually highlighted (yellow border)"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "Confirmation modals",
+          "approve requires confirmation modal before action"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "Confirmation modals",
+          "deny requires confirmation modal before action"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "Audit time range enforcement",
+          "from and to fields are pre-filled (required)"
+        ],
+        [
+          "Console Security \u2014 US-8",
+          "Audit time range enforcement",
+          "time range > 7 days shows validation error"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/console-threads.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/console-threads.e2e.ts",
+      "caseCount": 14,
+      "historicalSha256": "0708b68e3a193b981cc05221cb01924e1928f0a06144c6bb5e343e66a9f926ae",
+      "testerarmySha256": "c507f0b60adc9ecf435d161d336773ae657fdce439c53f023463425fec992290",
+      "titlePaths": [
+        [
+          "Console Threads \u2014 US-2",
+          "List view",
+          "renders threads table"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "List view",
+          "shows empty state when no threads"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "List view",
+          "shows error state on API failure"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "List view",
+          "filters by listing_id"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "List view",
+          "filters by status OPEN"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "displays thread metadata"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "shows messages in chronological order with type badges"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "warning messages are highlighted"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "redacted messages show REDACTED badge, no original text"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "URLs in messages are plain text, not clickable links"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "offer messages display offer card"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "listing link navigates to listing detail"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "Back link returns to threads list"
+        ],
+        [
+          "Console Threads \u2014 US-2",
+          "Detail view",
+          "shows empty timeline when no messages"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/deal-detail.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/deal-detail.e2e.ts",
+      "caseCount": 1,
+      "historicalSha256": "f5cee4dba71b9ebe1d53153e88002516cc672b4a783f9d796e5711e9aa4e56b4",
+      "testerarmySha256": "1ce5f43ae6363c3d760d255922891cfa32abd778028a93892dc9d25a76459c22",
+      "titlePaths": [
+        [
+          "legacy /deals detail redirects to the public detail without console calls"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/deals.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/deals.e2e.ts",
+      "caseCount": 2,
+      "historicalSha256": "ce8da0f01ccc0f4fc59e73f5c0fb18cadf8824ad7c635e336e1e637cb49f07ec",
+      "testerarmySha256": "db9dd86aba84de538b71bfa091074b9a02dc7c683ddfb661f251ac2c5129b91d",
+      "titlePaths": [
+        [
+          "Deals owner entry point",
+          "redirects an anonymous visitor to login without exposing console errors"
+        ],
+        [
+          "Deals owner entry point",
+          "renders the authenticated owner's deals without calling console APIs"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/device.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/device.e2e.ts",
+      "caseCount": 3,
+      "historicalSha256": "e3c5373160da71c183525c8987cb805ce91c3fd4d2bb5664c228823c195a50c9",
+      "testerarmySha256": "1147b345599b125baef55a8bac9581ee9cb4e80250d8f361ac92f47c792dbf07",
+      "titlePaths": [
+        [
+          "Device page",
+          "rejects invalid user code format"
+        ],
+        [
+          "Device page",
+          "auto-loads from query param and approves via console wrapper"
+        ],
+        [
+          "Device page",
+          "manual lookup normalizes user code and denies after confirmation"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/landing.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/landing.e2e.ts",
+      "caseCount": 5,
+      "historicalSha256": "cc58175981578bd4473c29b9b5196ebc9a936db5c0b95c41a64884d7cb7c77b8",
+      "testerarmySha256": "75a8cc8be38beff15041be86ece9393c9aa1fffd9906bfc16383df116a6cd8b1",
+      "titlePaths": [
+        [
+          "Landing page",
+          "loads with default theme tokens"
+        ],
+        [
+          "Landing page",
+          "renders key UI sections"
+        ],
+        [
+          "Landing page",
+          "stays within the concise six-section landing contract"
+        ],
+        [
+          "Landing page",
+          "switches locale FR then EN from the navbar"
+        ],
+        [
+          "Landing page",
+          "persists theme from localStorage and updates meta theme-color"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/marketplace.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/marketplace.e2e.ts",
+      "caseCount": 5,
+      "historicalSha256": "870eaf3024d856b2e9c1747b8d4ccdcc5e6b6de7bcbb4d7d14fe6cc0b2d65421",
+      "testerarmySha256": "f25f3dc2d18c06635ee1c10693c8ce27c36c0ecd981bd5aabc2a99d8ccf89888",
+      "titlePaths": [
+        [
+          "Legacy marketplace route",
+          "/marketplace permanently redirects to /browse"
+        ],
+        [
+          "Legacy marketplace route",
+          "/fr/marketplace permanently redirects to /fr/browse"
+        ],
+        [
+          "Legacy marketplace route",
+          "/es/marketplace permanently redirects to /es/browse"
+        ],
+        [
+          "Legacy marketplace route",
+          "preserves query parameters through the permanent redirect"
+        ],
+        [
+          "Legacy marketplace route",
+          "the marketing navigation opens browse directly"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/my-deals.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/my-deals.e2e.ts",
+      "caseCount": 11,
+      "historicalSha256": "5a2164dc190b04760989a1dd717c2349abb99daf3c3a1107e82b1521e45c22ca",
+      "testerarmySha256": "47f644886f1be6f90b13b154bcac58a985398acffc4feab7c347c10036d25e95",
+      "titlePaths": [
+        [
+          "My Deals page",
+          "List view",
+          "renders deals table with correct data"
+        ],
+        [
+          "My Deals page",
+          "List view",
+          "shows loading skeleton while fetching"
+        ],
+        [
+          "My Deals page",
+          "List view",
+          "shows empty state when no deals"
+        ],
+        [
+          "My Deals page",
+          "List view",
+          "shows error state on API failure"
+        ],
+        [
+          "My Deals page",
+          "Filters",
+          "filters by status NEW"
+        ],
+        [
+          "My Deals page",
+          "Filters",
+          "filters by status ACTIVE"
+        ],
+        [
+          "My Deals page",
+          "Filters",
+          "filter state persists in URL query params"
+        ],
+        [
+          "My Deals page",
+          "Pagination",
+          "shows Load More button when next_cursor exists"
+        ],
+        [
+          "My Deals page",
+          "Pagination",
+          "appends results on Load More click"
+        ],
+        [
+          "My Deals page",
+          "Navigation",
+          "AppNav shows Deals as active"
+        ],
+        [
+          "My Deals page",
+          "Navigation",
+          "redirects to login on 401"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/my-watchlists.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/my-watchlists.e2e.ts",
+      "caseCount": 2,
+      "historicalSha256": "8604ab3c1ad254a6b4e974a6c443f44888d764ac1c29e4648d69035300e9f04c",
+      "testerarmySha256": "ec4b03542dcbf161a28f174e45af19a6439ed8457800a73beee15fe6e6cab99e",
+      "titlePaths": [
+        [
+          "My Watchlist page",
+          "shows persisted listing follows for a signed-in owner"
+        ],
+        [
+          "My Watchlist page",
+          "removes a persisted follow"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/settings-account.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/settings-account.e2e.ts",
+      "caseCount": 1,
+      "historicalSha256": "7ade29ad1bd40ede538b986623c2588eb36c15c83fb1de0ac4e718f7b7205dda",
+      "testerarmySha256": "a8ce90a3622acbbb69b6e2674384bc24e2c03fe4ad2fcd0b1a13db5f79c8f2e4",
+      "titlePaths": [
+        [
+          "Settings: Account",
+          "redirects to login when owner session is missing"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/settings-identities.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/settings-identities.e2e.ts",
+      "caseCount": 3,
+      "historicalSha256": "a9990d00d8d56f4a3a5cff0519ca4ebb1ed000c5a36e742cd4946c5b1b78cc3a",
+      "testerarmySha256": "27645d58d45cfd8d09fc7e83e422178c0539fb68b78c916951562d68e09457b4",
+      "titlePaths": [
+        [
+          "Settings: Linked Identities",
+          "logs out and redirects to login"
+        ],
+        [
+          "Settings: Linked Identities",
+          "renders identities and unlinks one"
+        ],
+        [
+          "Settings: Linked Identities",
+          "redirects to login when owner session is missing"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/settings-profile.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/settings-profile.e2e.ts",
+      "caseCount": 7,
+      "historicalSha256": "50f4378fb79fb7b1ebeeaf45818b9626d3bd8c8c12ea71dcb67da2513f540585",
+      "testerarmySha256": "72558e4db75ef0e99ba971e156192230016aa8a41ce29e2b2bbc731c53580dfe",
+      "titlePaths": [
+        [
+          "Settings: Profile",
+          "redirects to login when auth is missing"
+        ],
+        [
+          "Settings: Profile",
+          "renders profile page with empty profile"
+        ],
+        [
+          "Settings: Profile",
+          "renders profile page with filled profile and hides completion banner"
+        ],
+        [
+          "Settings: Profile",
+          "shows verify CTA when email not verified"
+        ],
+        [
+          "Settings: Profile",
+          "hides verify CTA when email is verified"
+        ],
+        [
+          "Settings: Profile",
+          "can fill in display name and save"
+        ],
+        [
+          "Settings: Profile",
+          "avatar preset selection updates the displayed avatar"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/start-agent-name.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/start-agent-name.e2e.ts",
+      "caseCount": 5,
+      "historicalSha256": "3739b0a3f657da001d13d73166afcd46146061ccaa6eb1338a3fce4cebf5e7dc",
+      "testerarmySha256": "bfcf82cc4bd63bb59cd1ded2952c9d821c761d4e0d837775ff88be0fad02319b",
+      "titlePaths": [
+        [
+          "Start page: agent naming",
+          "auto-claims agent when owner session appears"
+        ],
+        [
+          "Start page: agent naming",
+          "claims after login session appears later"
+        ],
+        [
+          "Start page: agent naming",
+          "creates agent name from first-win when name is missing"
+        ],
+        [
+          "Start page: agent naming",
+          "updates generic default name from first-win"
+        ],
+        [
+          "Start page: agent naming",
+          "shows existing agent name and no naming form"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/ti-498-public-navigation.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/ti-498-public-navigation.e2e.ts",
+      "caseCount": 12,
+      "historicalSha256": "2a67bb00edebc3d1afb17800cad547c14e87ccd4475d4cc23db9371e526e8957",
+      "testerarmySha256": "761dc609cb1d5c1a2f61bca63acf92cdecf234a81e512e00fbe8a75bb9fe9136",
+      "titlePaths": [
+        [
+          "TI-498 public navigation and claims",
+          "/ does not expose Explore links or payment-protection claims"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/marketplace does not expose Explore links or payment-protection claims"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/browse does not expose Explore links or payment-protection claims"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/browse/deals does not expose Explore links or payment-protection claims"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/pricing does not expose Explore links or payment-protection claims"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/integrations/openclaw does not expose Explore links or payment-protection claims"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "the 404 secondary CTA browses listings"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/fr/ti-498-missing-page keeps the localized 404"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/es/ti-498-missing-page keeps the localized 404"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/explore redirects to its localized homepage"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/explore/agents redirects to its localized homepage"
+        ],
+        [
+          "TI-498 public navigation and claims",
+          "/fr/explore/skills redirects to its localized homepage"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/webmcp-challenge.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/webmcp-challenge.e2e.ts",
+      "caseCount": 3,
+      "historicalSha256": "5cb828aa0e95c98e12cbacc2898db261de3af5fc08e5bcde7dd0cae2d7dd292e",
+      "testerarmySha256": "632d09aec5b05193b66f3bd52d156554578bea180bd48fdda92cf4848986684f",
+      "titlePaths": [
+        [
+          "WebMCP Challenge judge entry",
+          "serves the complete judge hub in French and normalizes the locale query"
+        ],
+        [
+          "WebMCP Challenge judge entry",
+          "shows the real public registry, eligibility evidence, live demo, and copyable mission"
+        ],
+        [
+          "WebMCP Challenge judge entry",
+          "rebuilds the same judge fixture twice and clears stale local receipts"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    },
+    {
+      "historicalFile": "e2e/ui/webmcp.spec.ts",
+      "testerarmyFile": "e2e/testerarmy/historical/webmcp.e2e.ts",
+      "caseCount": 5,
+      "historicalSha256": "c1b07e895f9c1320f47cdcf67e09e53eb79242e76a950192069fb16bec817fcb",
+      "testerarmySha256": "3340efeb40183a536eee521b87ea624b6230d811e1fe62e1154f05f0125bae44",
+      "titlePaths": [
+        [
+          "Dev WebMCP demo",
+          "localizes the French mission and confirmation surfaces"
+        ],
+        [
+          "Dev WebMCP demo",
+          "registers tools, blocks writes via confirm gate, and injects Idempotency-Key on approve"
+        ],
+        [
+          "Dev WebMCP demo",
+          "re-registers contextual tools and aborts stale agent sessions"
+        ],
+        [
+          "Dev WebMCP demo",
+          "keeps get_action_receipt registered after search_listings navigates to /browse"
+        ],
+        [
+          "Dev WebMCP demo",
+          "binds owner approval resolution to the visible page and owner cookies"
+        ]
+      ],
+      "assertions": "existing bodies retained; matcher/driver adapter changes documented separately",
+      "legacyRetained": true
+    }
+  ],
+  "retainedWithoutEquivalence": [
+    "72 API/integration files: persistence, authorization/RLS, transactions, notifications, SDK/MCP server contracts",
+    "visual/pixel regressions and physical/native device journeys are not established by these browser client contracts"
+  ],
+  "newAffectedCoverage": {
+    "file": "e2e/testerarmy/catalog-availability.e2e.ts",
+    "locales": [
+      "en",
+      "fr"
+    ],
+    "targets": [
+      "desktop",
+      "mobile"
+    ],
+    "scope": "identified empty-listings client seam, real localized Browse, empty state and browser return, unavailable demo CTA absence",
+    "productionFile": "e2e/testerarmy/production/public-surfaces.e2e.ts",
+    "productionScope": "real canonical GET/HEAD navigation; no empty catalogue fixture or mutating action"
+  }
+}

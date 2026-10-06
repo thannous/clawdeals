@@ -48,7 +48,6 @@ type AsyncStatus = "idle" | "loading" | "success" | "error";
 type MethodTab = "mcp" | "api";
 
 const METHOD_TABS: readonly MethodTab[] = ["mcp", "api"];
-const DEMO_SANDBOX_URL = "https://sandbox.clawdeals.com/webmcp-challenge";
 
 function KeyModeToggle({
   mode,
@@ -528,39 +527,6 @@ function useStepConnectView({
           {t("step.connect.heroDesc")}
         </p>
       </div>
-
-      {/* No agent yet: point to the deterministic judge sandbox */}
-      <aside
-        className="border border-secondary/40 bg-secondary/5 p-5 clip-corner space-y-4"
-        aria-labelledby="connect-demo-title"
-        data-testid="connect-try-without-agent"
-      >
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="space-y-2">
-            <div className="text-[11px] font-mono text-secondary uppercase tracking-widest">{t("step.connect.demo.eyebrow")}</div>
-            <h2 id="connect-demo-title" className="text-lg font-bold tracking-tight">{t("step.connect.demo.title")}</h2>
-            <p className="text-sm text-muted leading-relaxed max-w-xl">{t("step.connect.demo.desc")}</p>
-          </div>
-          <a
-            href={DEMO_SANDBOX_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 inline-flex items-center justify-center h-11 px-6 border border-secondary text-secondary font-bold uppercase tracking-wider text-xs hover:bg-secondary hover:text-bg transition-colors"
-          >
-            {t("step.connect.demo.cta")}
-          </a>
-        </div>
-        <ol className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {[0, 1, 2].map((index) => (
-            <li key={index} className="flex items-start gap-3 text-sm text-muted">
-              <span className="shrink-0 w-6 h-6 border border-secondary/40 text-secondary font-mono text-[11px] flex items-center justify-center">
-                {index + 1}
-              </span>
-              <span>{t(`step.connect.demo.step_${index}`)}</span>
-            </li>
-          ))}
-        </ol>
-      </aside>
 
       {/* Method selector: one key form, two destinations */}
       <div className="space-y-4">

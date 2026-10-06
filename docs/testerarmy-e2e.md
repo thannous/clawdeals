@@ -19,7 +19,7 @@ npm run test:testerarmy
 
 `e2e.config.ts` selects the public journeys by default, the historical UI files through their dedicated entry, and the agent test only when AI mode is selected. The runner starts `next dev --webpack` on `http://localhost:4318`, waits for readiness, shares the server between targets and stops it afterward. `E2E_DEV_PORT` changes the port. A supplied `E2E_BASE_URL` attaches to an existing server instead. Stop an app occupying the default port or choose another port; the runner does not silently reuse it.
 
-The four public journeys run on Chromium at 1280×720 and 390×844:
+The original navigation journeys run on Chromium at 1280×720 and 390×844:
 
 - Homepage → listings through the actual CTA.
 - English → French → English, using each viewport's language controls.
@@ -45,7 +45,7 @@ For the explicit public production selection:
 TESTERARMY_PRODUCTION_PUBLIC=1 TESTERARMY_AI=0 \
 E2E_BASE_URL=https://app.clawdeals.com \
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
-PARITY_OUTPUT=.e2e/validation/production-public \
+PARITY_OUTPUT=.e2e/validation/production-public-UNIQUE \
   npm run test:testerarmy
 ```
 
@@ -72,9 +72,7 @@ requests are aborted before the first app open. Service workers are blocked.
 The guard remains active until the runner closes the isolated context.
 Each attempt saves its final screenshot, browser trace, public Next build ID
 and refused request paths; no request bodies or credentials are recorded.
-Use `PARITY_OUTPUT` for this selection to keep the supplemental `request-guards/`
-JSON and the runner report in the same directory; the default is
-`.e2e/production-public`. Use a fresh directory for each campaign.
+The canonical entry reserves a fresh `PARITY_OUTPUT` and keeps supplemental `request-guards/` JSON, the report and logs in that same directory. A supplied path must be new and inside `.e2e/`; reuse and symlink parents are refused.
 There is no Generate, login submission, payment, demo navigation or real send.
 
 The default local public suite and the historical entry remain exclusive of
@@ -90,23 +88,7 @@ visibility cases. They do not establish backend qualification. The red report,
 screenshots and traces are retained, and none of those local assertions is
 weakened to make the campaign green.
 
-Separate finding: Connect currently links the demo to the retired
-`sandbox.clawdeals.com` host described in the hosting runbook. These tests do
-not follow that link or change the product/infrastructure.
-
-On 2026-10-06 this dedicated selection passed **10/10** without skips, retries
-or models in 12.13 seconds, run `01a1104f-9cba-78d2-82c3-227b2470e4e1`, under
-`.e2e/validation/production-public-selection-v3/`. Its report, screenshots,
-traces, request-guard JSON and source/input hashes are retained. Authoring
-calibrations v1/v2 are retained separately; they corrected runner base URL
-normalization, rendered uppercase progress text, the raw relative recovery
-href and the screenshot API's attempt-relative return value.
-The final evidence teardown also passed **10/10**, run
-`01a11055-6f26-7713-a71e-66eb45051d1b`, in 14.11 seconds under
-`.e2e/validation/production-public-selection-v5/`. Build, screenshot and JSON
-collection are independent. The original body error is rethrown unchanged;
-secondary collection errors are recorded structurally, and collection failure
-fails an otherwise successful case. Network guards stay active through cleanup.
+The retired `sandbox.clawdeals.com` demonstration is unavailable. The unsupported hero and Connect demo actions are removed. The catalogue notice links to the real public Browse route in the active locale; it promises no synthetic demonstration. The new local catalogue journey uses the existing identified public-listings client seam only, covers the empty state, Browse and browser return, and does not qualify production catalogue data. Production keeps real GET/HEAD requests.
 
 ## Enable agent actions
 
@@ -163,9 +145,38 @@ This is documented support, with no live Jev qualification in this project. Enab
 
 ## Reports, CI and MCP
 
-Every run writes `.e2e/report.json`, `.e2e/junit.xml` and `.e2e/summary.md`. `trace: "on"` retains browser traces for successful and failed tests under `.e2e/artifacts/`; failures also produce screenshots and Markdown diagnostics. App output is in `.e2e/logs/app.log`. `.e2e/` is ignored; keep reports private when they contain app data. To preserve separate runs, append `--output .e2e/validation/<run-name>` before rerunning.
+The maintained `npm run test:testerarmy` and historical entry reserve one new directory per invocation: `.e2e/runs/<selection>/<timestamp>-<uuid>`, or a fresh explicit `PARITY_OUTPUT`. The AI npm entry uses the same reservation without changing providers or budgets; it is excluded from public bundles. Discovery writes no report or app log. The raw SDK/MCP entry is an exploration interface, not this guarded qualification entry.
 
-The `testerarmy` job in `.github/workflows/ci.yml` installs Chromium and runs the public navigation and client control cases against a fresh local app without model or database credentials. It uploads reports and browser artifacts for seven days, including after failures, and contributes to the aggregate `test-ci` result. It does not deploy the app or test the deployed revision.
+Reports, JUnit, Markdown, SDK artifacts, `runner.log`, `logs/app.log`, `command.json` and `completion.json` share the reserved directory. The receipts record exact arguments, source HEAD/dirty state, input SHA256 before and after, the primary exit/signal and any log failure. Inputs are checked in memory; a log/receipt failure makes an otherwise successful command fail, and does not replace the original failing exit. The historical fixture independently attempts screenshot, attachment index and structured error capture: original error object/stack survives a failing write. A successful body with collection failure stays red.
+
+The existing required `testerarmy` CI job keeps its 15-minute total budget. Setup and deterministic evidence controls precede one 12-minute public+historical step, leaving time for teardown, packaging and upload. Actions, assertions, test timeouts and zero retries are unchanged. Collection and uploads use `always()`. A forced termination, missing completion or skipped case is explicitly incomplete qualification, even if upload succeeds. The remaining required jobs and legacy commands are retained.
+
+### Complete bounded public artifacts
+
+`bundle.mjs` consolidates actual `report-1` identities `(runId, targetId, testId, agent, repeat, attemptId, attemptIndex)`. It records every discovered pair, selected flag, exclusion/skip, cleanup and secondary error. Its `contextKey` correlates the engine context owned by one attempt; it is not a new SDK context ID. Current Clawdeals journeys do not create additional contexts or serial groups; these would require explicit mapping. Titles alone are never the key.
+
+Only exact model-free public/historical/production-public invocations are exportable. Agent runs, sessions, replay caches and `ai-trace.json` are excluded. Declared SDK artifacts are checked against size and SHA256; undeclared/missing media are not invented. No artifacts directory is required when no media exists. Wrong field types, duplicate identities, missing attempts, failed cleanup/steps, missing receipts, changed inputs or altered files prevent a green complete verdict. Complete evidence and passed journeys are separate fields, so a preserved red run remains red.
+
+The file inventory is partitioned into at most four disjoint parts, each with at most 384 MiB of uncompressed payload and at most 480 MiB for its actual compressed archive plus index. An individual file or total part count above these limits fails explicitly; it is never dropped to meet a size limit. Every part carries the same complete manifest with all file sizes/digests, exact membership and run identities. The union must contain each inventoried file exactly once.
+
+CI uploads **each part as a separate artifact**, named `testerarmy-browser-results-<run_id>-<run_attempt>-part-N`, plus `testerarmy-evidence-index-<run_id>-<run_attempt>`. It explicitly uses [`upload-artifact@v7` `archive: true`](https://github.com/actions/upload-artifact/blob/v7/action.yml) and `compression-level: 0`: each provider download remains a ZIP containing `evidence.tar.gz` and `manifest.json`. There is no combined upload of all parts. This preserves the existing ZIP download contract and leaves 32 MiB for the provider envelope below the 512 MiB read cap. `archive: false` would upload a single raw file and ignore `name`; it is deliberately not used here.
+
+Before upload, creation round-trips the actual tar files: checks archive hashes, part-index equality, regular file types, safe membership, then extracts only into an owned temporary directory and rechecks every file byte/hash. Retrieve every listed artifact for the exact workflow run, retain the provider artifact IDs/ZIP hashes, inspect the downloaded format before extraction, then restore the part folders and common manifest to its recorded bundle path and rerun:
+
+```sh
+node e2e/testerarmy/bundle.mjs verify .e2e/ci/RUN_ID-RUN_ATTEMPT/bundle
+```
+
+For a local pair of fresh campaigns:
+
+```sh
+PARITY_OUTPUT=.e2e/validation/public-UNIQUE npm run test:testerarmy
+PARITY_OUTPUT=.e2e/validation/historical-UNIQUE node e2e/testerarmy/run-historical.mjs run
+node e2e/testerarmy/bundle.mjs create .e2e/validation/bundle-UNIQUE \
+  .e2e/validation/public-UNIQUE .e2e/validation/historical-UNIQUE
+```
+
+The procedure and [parity matrix](./testerarmy-parity.json) describe maintained behavior. Each completed campaign has one external closeout manifest containing the current source/tree, exact rerun commands, selected/excluded identities, artifact/union hashes and deployment boundary. Never edit an earlier run or turn a PR result into a final-main result: compare the delivered tree and obtain the delivered commit's CI and automatic deployment evidence separately.
 
 `npm run testerarmy:mcp` starts the framework's stdio MCP server with the desktop target selected. An MCP client can register this command to inspect the app; no user-level Codex configuration is modified by this setup.
 
@@ -187,7 +198,7 @@ journey. The optional AI command still requires its explicit provider opt-in.
 
 ## Historical UI parity
 
-The 26 historical UI families (181 Desktop Chrome cases) also run under
+The [26-family parity matrix](./testerarmy-parity.json) maps 181 Desktop Chrome cases under
 TesterArmy, retaining their request payload, filters, pagination, redaction,
 confirmation, owner profile, device authorization and WebMCP assertions:
 
@@ -200,7 +211,7 @@ This is the single historical entry. It fixes the desktop target, uses the
 existing local app and environment guard, enables the same WebMCP flag as the
 old UI config, and scopes a matcher preload to the test CLI/workers. The app
 receives the caller's original `NODE_OPTIONS` value or its original absence.
-The default public desktop/mobile command remains unchanged. CI runs both
+The default public desktop/mobile selection remains independent. CI runs both
 commands in its existing required TesterArmy job and uploads both sets of
 reports, JUnit, screenshots and traces.
 
@@ -218,102 +229,17 @@ all unmocked API mutations and external requests are aborted. This proves
 client interactions and mocked contracts, including write confirmation and
 idempotency headers. Database durability, RLS, authorization, SDK/MCP server
 contracts and real financial actions remain in the retained backend suites.
-No historical UI or integration test is removed by this migration.
+No historical UI or integration test is removed by this migration. The 72 retained API/integration files are separate real backend contracts. A mocked UI pass is not backend durability, a pixel diff or a native/device qualification.
 
 On 2026-10-06 the full suite passed 181/181 without skips, retries or models;
-reports are under `.e2e/historical/<timestamp>-<pid>/`. Each attempt records
+that dated campaign retains its historical output directories. Each attempt records
 its final UI and retains the browser trace, and failed calibration runs are
 preserved separately. Earlier loader/baseURL/dialog failures were adapter
 failures; they were not app regressions.
 
-## Upgrade qualification — e2e 0.18.0, 2026-10-06
+## Dated qualification archives
 
-Node 24.19.0, `@e2e-dev/web` 0.13.0 and Playwright Core 1.63.0 passed the existing journeys below. The TypeScript config and all 26 historical files collected with the new oxc loader; no config, runner, preload, fixture, assertion or legacy gate needed an adaptation.
-
-| Campaign | Result | Report |
-| --- | --- | --- |
-| Real password visibility pilot, desktop | 1/1 | `.e2e/validation/e2e018-pilot-v2/report.json` |
-| Local public desktop/mobile, CI mode, backend credentials empty | 14/14 | `.e2e/validation/e2e018-public-ci/report.json` |
-| Historical desktop UI contracts, CI mode | 181/181 | `.e2e/historical/1791298485458-36805/report.json` |
-| Canonical production public desktop/mobile | 10/10 | `.e2e/validation/e2e018-production-public/report.json` |
-
-Every green campaign has zero skips, retries and model calls, with reports and browser traces retained. Typecheck, lint, dependency peers and diff whitespace passed. These local runs qualified the dependency/lock change on source `4e88377` with the upgrade diff present; recorded input hashes identify that candidate. They do not claim a hosted CI run or deployment of the upgrade. The first pilot's macOS sandbox Chromium launch failure remains separately under `.e2e/validation/e2e018-pilot/`; the same test passed outside that sandbox without changing its body. Older production and migration failures remain retained.
-
-Exact reruns (start from the qualified commit and keep every output directory distinct):
-
-```bash
-CI=1 TESTERARMY_AI=0 E2E_DEV_PORT=4515 \
-SUPABASE_URL= NEXT_PUBLIC_SUPABASE_URL= SUPABASE_SERVICE_ROLE_KEY= NEXT_PUBLIC_SUPABASE_ANON_KEY= \
-UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= \
-E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 NEXT_TELEMETRY_DISABLED=1 \
-PARITY_OUTPUT=.e2e/validation/e2e018-public-ci-rerun \
-  mise exec node@24.19.0 -- npm run test:testerarmy
-
-CI=1 TESTERARMY_AI=0 E2E_DEV_PORT=4515 \
-SUPABASE_URL= NEXT_PUBLIC_SUPABASE_URL= SUPABASE_SERVICE_ROLE_KEY= NEXT_PUBLIC_SUPABASE_ANON_KEY= \
-UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= \
-E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 NEXT_TELEMETRY_DISABLED=1 \
-  mise exec node@24.19.0 -- node e2e/testerarmy/run-historical.mjs run
-
-TESTERARMY_PRODUCTION_PUBLIC=1 TESTERARMY_AI=0 E2E_BASE_URL=https://app.clawdeals.com \
-CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
-E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 NEXT_TELEMETRY_DISABLED=1 \
-PARITY_OUTPUT=.e2e/validation/e2e018-production-public-rerun \
-  mise exec node@24.19.0 -- npm run test:testerarmy
-```
-
-The local suites start and stop their own app on port 4515. Production attaches only to the canonical app URL and preserves the existing GET/HEAD-only network guard. Historical tests keep their mock contracts and cannot qualify database durability. Jev support is documented above; its optional executor is not installed or activated.
-
-## Setup validation — 2026-10-02
-
-Verified on Node 24.19.0 with Chromium 153 / Playwright 1.63.0:
-
-| Check | Result | Evidence |
-| --- | --- | --- |
-| Public journeys, local app and authorized ClawDeals backend | 8/8 passed, no skips | `.e2e/validation/local/report.json`, `summary.md`, eight browser traces |
-| Public journeys, CI mode with database/Redis credentials empty | 8/8 passed, no skips | `.e2e/validation/ci-no-backend/report.json`, `summary.md`, eight browser traces |
-| Existing landing, login and legacy deal UI suites | 9/9 passed | `.e2e/validation/playwright-compatibility/index.html`, traces under `.e2e/validation/playwright-artifacts/` |
-| Target/config preflight | Six cases passed | Production without opt-in, foreign host, Vercel runtime, invalid port and unknown provider rejected; AI discovery selected two target/test pairs |
-| MCP | Passed | Stdio handshake and discovery of `open_session`, `tools`, `call`, `close_session` |
-| Typecheck, lint, CI YAML parsing and diff whitespace | Passed | Local commands |
-
-No test account or seeded data is required for these runs. Browser navigation does not write marketplace data. The CI-mode run deliberately leaves the backend unavailable and qualifies public controls only. The AI journey was discovered and typechecked, but no live model run was performed because a provider/login has not been selected. The GitHub job is configured; no hosted CI run or deployment was triggered.
-
-Exact local rerun using the installed temporary browser cache:
-
-```bash
-CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
-PLAYWRIGHT_BROWSERS_PATH=/private/tmp/clawdeals-testerarmy-browsers \
-NEXT_TELEMETRY_DISABLED=1 \
-mise exec node@24.19.0 -- npm run test:testerarmy -- --output .e2e/validation/local
-```
-
-To reproduce the CI-mode check without backend credentials:
-
-```bash
-CI=1 SUPABASE_URL= NEXT_PUBLIC_SUPABASE_URL= \
-SUPABASE_SERVICE_ROLE_KEY= NEXT_PUBLIC_SUPABASE_ANON_KEY= \
-UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= \
-PLAYWRIGHT_BROWSERS_PATH=/private/tmp/clawdeals-testerarmy-browsers \
-NEXT_TELEMETRY_DISABLED=1 \
-mise exec node@24.19.0 -- npm run test:testerarmy -- --output .e2e/validation/ci-no-backend
-```
-
-Exact compatibility rerun:
-
-```bash
-CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
-E2E_DEV_PORT=4318 WATCHPACK_POLLING=true \
-PLAYWRIGHT_BROWSERS_PATH=/private/tmp/clawdeals-testerarmy-browsers \
-PLAYWRIGHT_HTML_REPORT=.e2e/validation/playwright-compatibility \
-NEXT_TELEMETRY_DISABLED=1 \
-mise exec node@24.19.0 -- npx playwright test \
-  e2e/ui/landing.spec.ts e2e/ui/auth-login.spec.ts e2e/ui/deal-detail.spec.ts \
-  --project=ui --workers=1 --trace=on --reporter=html,line \
-  --output .e2e/validation/playwright-artifacts
-```
-
-If the temporary cache is gone, rerun `PLAYWRIGHT_BROWSERS_PATH=/private/tmp/clawdeals-testerarmy-browsers npx playwright install chromium` with Node 24 first. macOS sandbox restrictions can prevent Chromium's MachPort bootstrap; these successful browser runs used an approved process outside that restricted sandbox.
+[Setup and 0.18.0 upgrade observations](./archive/testerarmy-qualification-2026-10-06.md) retain their source-specific results and failures. Current results are recorded once in the campaign closeout manifest, not copied into this procedure.
 
 ## Local host routing
 
