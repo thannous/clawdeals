@@ -67,6 +67,7 @@ uses an absolute canonical URL, so a correct path on a different host fails.
 Public GET/HEAD requests on the two canonical origins reach production without
 API mocks. All mutations, including acquisition telemetry POSTs, and external
 requests are aborted before the first app open. Service workers are blocked.
+The guard remains active until the runner closes the isolated context.
 Each attempt saves its final screenshot, browser trace, public Next build ID
 and refused request paths; no request bodies or credentials are recorded.
 Use `PARITY_OUTPUT` for this selection to keep the supplemental `request-guards/`
@@ -98,6 +99,12 @@ traces, request-guard JSON and source/input hashes are retained. Authoring
 calibrations v1/v2 are retained separately; they corrected runner base URL
 normalization, rendered uppercase progress text, the raw relative recovery
 href and the screenshot API's attempt-relative return value.
+The final evidence teardown also passed **10/10**, run
+`01a11055-6f26-7713-a71e-66eb45051d1b`, in 14.11 seconds under
+`.e2e/validation/production-public-selection-v5/`. Build, screenshot and JSON
+collection are independent. The original body error is rethrown unchanged;
+secondary collection errors are recorded structurally, and collection failure
+fails an otherwise successful case. Network guards stay active through cleanup.
 
 ## Enable agent actions
 
