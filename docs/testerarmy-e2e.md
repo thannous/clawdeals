@@ -37,15 +37,67 @@ CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
   npm run test:testerarmy
 ```
 
-For the public production app:
+For the explicit public production selection:
 
 ```bash
+TESTERARMY_PRODUCTION_PUBLIC=1 TESTERARMY_AI=0 \
 E2E_BASE_URL=https://app.clawdeals.com \
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/production-public \
   npm run test:testerarmy
 ```
 
 The same flag is needed for `test:testerarmy:list`, AI tests and MCP when their configured backend is production. Do not set it in Vercel. Production remains an explicitly labelled production target in the report. See [environment policy](./release-environments.md) for the permission and its limits.
+
+### Two canonical production surfaces
+
+`app.clawdeals.com/` redirects to `/start` (Connect); the SEO landing and
+public Browse live on `clawdeals.com`. The dedicated production selection
+runs only `e2e/testerarmy/production/`, on desktop and mobile:
+
+- App root → exact `/start`, method tabs and their visible panels, without generating a key.
+- App header EN → FR → reload → EN, using its actual banner controls and exact app URLs.
+- Marketing homepage → Browse through the real CTA, with hydrated toolbar/search and no Browse error.
+- Marketing EN → FR → EN, preserving the canonical marketing host.
+- App French missing page → marketing 404 → French Browse through the single recovery link scoped to `main`.
+
+It requires the exact app base URL above plus the existing disposable-production
+opt-in, and rejects AI/historical mode combinations. Every destination assertion
+uses an absolute canonical URL, so a correct path on a different host fails.
+Public GET/HEAD requests on the two canonical origins reach production without
+API mocks. All mutations, including acquisition telemetry POSTs, and external
+requests are aborted before the first app open. Service workers are blocked.
+Each attempt saves its final screenshot, browser trace, public Next build ID
+and refused request paths; no request bodies or credentials are recorded.
+Use `PARITY_OUTPUT` for this selection to keep the supplemental `request-guards/`
+JSON and the runner report in the same directory; the default is
+`.e2e/production-public`. Use a fresh directory for each campaign.
+There is no Generate, login submission, payment, demo navigation or real send.
+
+The default local public suite and the historical entry remain exclusive of
+these files. Their assertions and backend contracts are unchanged. This public
+selection proves deployed navigation/controls and public reads, not authenticated
+writes, notifications, transaction durability or server authorization.
+
+The earlier production run `delivered-main-production` remains a separate red
+campaign: **8/14 passed, 6 failed**. The local landing and navbar expectations
+opened app Connect instead; the French 404 recovery matched both main and footer
+links. Its eight passes comprise six mocked client controls and two password
+visibility cases. They do not establish backend qualification. The red report,
+screenshots and traces are retained, and none of those local assertions is
+weakened to make the campaign green.
+
+Separate finding: Connect currently links the demo to the retired
+`sandbox.clawdeals.com` host described in the hosting runbook. These tests do
+not follow that link or change the product/infrastructure.
+
+On 2026-10-06 this dedicated selection passed **10/10** without skips, retries
+or models in 12.13 seconds, run `01a1104f-9cba-78d2-82c3-227b2470e4e1`, under
+`.e2e/validation/production-public-selection-v3/`. Its report, screenshots,
+traces, request-guard JSON and source/input hashes are retained. Authoring
+calibrations v1/v2 are retained separately; they corrected runner base URL
+normalization, rendered uppercase progress text, the raw relative recovery
+href and the screenshot API's attempt-relative return value.
 
 ## Enable agent actions
 

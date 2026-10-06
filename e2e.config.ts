@@ -1,3 +1,4 @@
+import { web } from "@e2e-dev/web";
 import { desktopEngine, mobileEngine } from "./e2e/testerarmy/web-engines";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -24,6 +25,13 @@ if (!Number.isInteger(port) || port < 1 || port > 65_535) {
 const baseURL = process.env.E2E_BASE_URL || `http://localhost:${port}`;
 const aiEnabled = process.env.TESTERARMY_AI === "1";
 const historical = process.env.TESTERARMY_HISTORICAL === "1";
+const productionPublic = process.env.TESTERARMY_PRODUCTION_PUBLIC === "1";
+if (productionPublic) {
+  if (aiEnabled || historical) throw new Error("Production public selection is exclusive of AI and historical suites.");
+  if (process.env.E2E_BASE_URL !== "https://app.clawdeals.com") {
+    throw new Error("Production public selection requires E2E_BASE_URL=https://app.clawdeals.com exactly.");
+  }
+}
 const appNodeOptions = process.env.E2E_APP_NODE_OPTIONS_PRESENT === undefined
   ? process.env.NODE_OPTIONS
   : process.env.E2E_APP_NODE_OPTIONS_PRESENT === "1" ? process.env.E2E_APP_NODE_OPTIONS : undefined;
@@ -89,17 +97,18 @@ export default {
   tests: aiEnabled
     ? "e2e/testerarmy/**/*.agent.e2e.ts"
     : historical ? "e2e/testerarmy/historical/**/*.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts"],
+    : productionPublic ? "e2e/testerarmy/production/**/*.e2e.ts"
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts"],
   targets: [
-    { name: "desktop", engine: desktopEngine, app },
-    { name: "mobile", engine: mobileEngine, app }
+    { name: "desktop", engine: productionPublic ? web({ viewport: { width: 1280, height: 720 }, headers: {} }) : desktopEngine, app },
+    { name: "mobile", engine: productionPublic ? web({ viewport: { width: 390, height: 844 }, headers: {} }) : mobileEngine, app }
   ],
   workers: 1,
   ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),
   timeout: aiEnabled ? 180_000 : 60_000,
   assertionTimeout: 15_000,
   trace: "on",
-  output: process.env.PARITY_OUTPUT ?? ".e2e",
+  output: process.env.PARITY_OUTPUT ?? (productionPublic ? ".e2e/production-public" : ".e2e"),
   reporters: ["list", "junit", "markdown"],
   ...(aiEnabled ? {
     agents: {
