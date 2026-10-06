@@ -1,4 +1,4 @@
-import { web } from "@e2e-dev/web";
+import { desktopEngine, mobileEngine } from "./e2e/testerarmy/web-engines";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import dotenv from "dotenv";
@@ -23,6 +23,10 @@ if (!Number.isInteger(port) || port < 1 || port > 65_535) {
 }
 const baseURL = process.env.E2E_BASE_URL || `http://localhost:${port}`;
 const aiEnabled = process.env.TESTERARMY_AI === "1";
+const historical = process.env.TESTERARMY_HISTORICAL === "1";
+const appNodeOptions = process.env.E2E_APP_NODE_OPTIONS_PRESENT === undefined
+  ? process.env.NODE_OPTIONS
+  : process.env.E2E_APP_NODE_OPTIONS_PRESENT === "1" ? process.env.E2E_APP_NODE_OPTIONS : undefined;
 
 function agentModel() {
   const provider = process.env.TESTERARMY_PROVIDER || "chatgpt";
@@ -59,6 +63,8 @@ const app = {
       args: ["node_modules/next/dist/bin/next", "dev", "--port", String(port), "--hostname", "localhost", "--webpack"],
       env: {
         WATCHPACK_POLLING: "true",
+        ...(appNodeOptions === undefined ? {} : { NODE_OPTIONS: appNodeOptions }),
+        ...(historical ? { NEXT_PUBLIC_WEBMCP_ENABLED: "1" } : {}),
         // Local browser journeys exercise marketing routes; do not inherit APP_HOST=localhost.
         APP_HOST: "app.clawdeals.com",
         MARKETING_HOSTS: "clawdeals.com,www.clawdeals.com",
@@ -82,17 +88,18 @@ export default {
   projectId: "clawdeals-testerarmy",
   tests: aiEnabled
     ? "e2e/testerarmy/**/*.agent.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts"],
+    : historical ? "e2e/testerarmy/historical/**/*.e2e.ts"
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts"],
   targets: [
-    { name: "desktop", engine: web({ viewport: { width: 1280, height: 720 } }), app },
-    { name: "mobile", engine: web({ viewport: { width: 390, height: 844 } }), app }
+    { name: "desktop", engine: desktopEngine, app },
+    { name: "mobile", engine: mobileEngine, app }
   ],
   workers: 1,
   ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),
   timeout: aiEnabled ? 180_000 : 60_000,
   assertionTimeout: 15_000,
   trace: "on",
-  output: ".e2e",
+  output: process.env.PARITY_OUTPUT ?? ".e2e",
   reporters: ["list", "junit", "markdown"],
   ...(aiEnabled ? {
     agents: {

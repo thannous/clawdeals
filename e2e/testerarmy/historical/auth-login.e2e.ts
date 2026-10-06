@@ -1,0 +1,69 @@
+// Historical UI assertions on TesterArmy; mocked client contracts only.
+import { createHistoricalTest, expect } from "../historical-fixtures";
+const test = createHistoricalTest();
+
+test.describe("Auth: Login", () => {
+  test("shows unified login with Google and legacy link", async ({ page }) => {
+    await page.goto("/auth/login");
+    await expect(page.getByTestId("auth-login-page")).toBeVisible();
+    await expect(page.getByTestId("auth-login-google")).toBeVisible();
+    await expect(page.getByTestId("auth-login-submit")).toBeVisible();
+    await expect(page.getByTestId("auth-login-legacy-link")).toHaveAttribute("href", "/auth/login-legacy");
+  });
+
+  test("toggles password visibility", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    const passwordInput = page.getByTestId("auth-login-password");
+    const passwordToggle = page.getByTestId("auth-login-password-toggle");
+
+    await passwordInput.fill("SuperSecret123!");
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(passwordToggle).toHaveText("Show");
+
+    await passwordToggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    await expect(passwordToggle).toHaveText("Hide");
+
+    await passwordToggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(passwordToggle).toHaveText("Show");
+  });
+
+  test("requests legacy magic link and shows verify link", async ({ page }) => {
+    let loginStarted = false;
+
+    await page.route("**/api/v1/auth/login:start", async (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      const body = JSON.parse(route.request().postData() || "{}");
+      expect(body).toMatchObject({ email: "owner@example.com" });
+      loginStarted = true;
+      return route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: {
+            owner_id: "11111111-1111-4111-8111-111111111111",
+            session_id: "22222222-2222-4222-8222-222222222222",
+            session_token: "cd_os_test_123",
+            expires_at: "2026-02-12T12:00:00Z"
+          }
+        })
+      });
+    });
+
+    await page.goto("/auth/login-legacy");
+    await expect(page.getByTestId("auth-login-page")).toBeVisible();
+
+    await page.getByTestId("auth-login-email").fill("owner@example.com");
+    await page.getByTestId("auth-login-submit").click();
+
+    await expect(page.getByTestId("auth-login-sent")).toBeVisible();
+    await expect(page.getByTestId("auth-login-token")).toContainText("cd_os_test_123");
+    await expect(page.getByTestId("auth-login-verify-link")).toHaveAttribute(
+      "href",
+      "/auth/verify?session_id=22222222-2222-4222-8222-222222222222&token=cd_os_test_123"
+    );
+    expect(loginStarted).toBe(true);
+  });
+});

@@ -118,6 +118,47 @@ CI explicitly sets `TESTERARMY_AI=0`. The exact suite uses no replay cache and
 zero retries, so a stale recording or a retry cannot conceal a failing public
 journey. The optional AI command still requires its explicit provider opt-in.
 
+## Historical UI parity
+
+The 26 historical UI families (181 Desktop Chrome cases) also run under
+TesterArmy, retaining their request payload, filters, pagination, redaction,
+confirmation, owner profile, device authorization and WebMCP assertions:
+
+```sh
+mise exec node@24.19.0 -- node e2e/testerarmy/run-historical.mjs list
+mise exec node@24.19.0 -- node e2e/testerarmy/run-historical.mjs run
+```
+
+This is the single historical entry. It fixes the desktop target, uses the
+existing local app and environment guard, enables the same WebMCP flag as the
+old UI config, and scopes a matcher preload to the test CLI/workers. The app
+receives the caller's original `NODE_OPTIONS` value or its original absence.
+The default public desktop/mobile command remains unchanged. CI runs both
+commands in its existing required TesterArmy job and uploads both sets of
+reports, JUnit, screenshots and traces.
+
+The browser engine's public `surfaceOf()` supplies Page/context APIs for the
+historical bodies. TesterArmy owns attempts, context isolation, screenshots
+and tracing; the Playwright package supplies exact matchers only. Relative
+navigation and the two relative URL expectations resolve against the fixed
+QA baseURL. Native dialogs use the engine's public dialog handler. Function
+init scripts receive a lexical compiler helper required by the installed
+TypeScript loader; mocks and registry expectations stay unchanged.
+
+Identified synthetic client API fixtures retain priority over the network
+guard. Read-only local requests follow the existing nonproduction guards;
+all unmocked API mutations and external requests are aborted. This proves
+client interactions and mocked contracts, including write confirmation and
+idempotency headers. Database durability, RLS, authorization, SDK/MCP server
+contracts and real financial actions remain in the retained backend suites.
+No historical UI or integration test is removed by this migration.
+
+On 2026-10-06 the full suite passed 181/181 without skips, retries or models;
+reports are under `.e2e/historical/<timestamp>-<pid>/`. Each attempt records
+its final UI and retains the browser trace, and failed calibration runs are
+preserved separately. Earlier loader/baseURL/dialog failures were adapter
+failures; they were not app regressions.
+
 ## Setup validation — 2026-10-02
 
 Verified on Node 24.19.0 with Chromium 153 / Playwright 1.63.0:

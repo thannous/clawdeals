@@ -119,6 +119,8 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Run public desktop and mobile journeys
         run: npm run test:testerarmy
+      - name: Run historical desktop UI contracts with TesterArmy
+        run: node e2e/testerarmy/run-historical.mjs run
       - name: Retain browser reports and traces
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
@@ -130,6 +132,7 @@ jobs:
             .e2e/summary.md
             .e2e/failures/
             .e2e/artifacts/
+            .e2e/historical/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7
