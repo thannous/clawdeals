@@ -15,7 +15,7 @@ npm run test:testerarmy:list
 npm run test:testerarmy
 ```
 
-`e2e.config.ts` discovers only `e2e/testerarmy/**/*.e2e.ts`; it excludes the agent test unless AI mode is selected. The runner starts `next dev --webpack` on `http://localhost:4318`, waits for readiness, shares the server between targets and stops it afterward. `E2E_DEV_PORT` changes the port. A supplied `E2E_BASE_URL` attaches to an existing server instead. Stop an app occupying the default port or choose another port; the runner does not silently reuse it.
+`e2e.config.ts` selects the public journeys by default, the historical UI files through their dedicated entry, and the agent test only when AI mode is selected. The runner starts `next dev --webpack` on `http://localhost:4318`, waits for readiness, shares the server between targets and stops it afterward. `E2E_DEV_PORT` changes the port. A supplied `E2E_BASE_URL` attaches to an existing server instead. Stop an app occupying the default port or choose another port; the runner does not silently reuse it.
 
 The four public journeys run on Chromium at 1280×720 and 390×844:
 
