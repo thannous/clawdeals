@@ -1,6 +1,8 @@
 # TesterArmy browser tests
 
-ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.15.2 and `@e2e-dev/web` 0.11.1 are pinned; Playwright is aligned at 1.63.0 to satisfy the browser engine's peer dependency. These tools are development dependencies.
+ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.18.0 and `@e2e-dev/web` 0.13.0 are pinned development dependencies. The engine requires `e2e >=0.18.0 <1` and pins `playwright-core` 1.63.0 itself; the retained Playwright suites stay on 1.63.0.
+
+The [official 0.18.0 release](https://github.com/tester-army/e2e/releases/tag/e2e%400.18.0) requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
 
 Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and the relevant reference, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`. The full versioned documentation is under `node_modules/e2e/docs/`.
 
@@ -153,6 +155,12 @@ Keep secrets in the ignored local file or shell. A text-only Cerebras model used
 
 Verified `agent.act` steps may replay from `.e2e/cache/`; assertions still run. Add `--no-cache` to the AI command to qualify a live model run.
 
+### Decision models, including Jev
+
+The shipped 0.18.0 [decision-model guide](https://e2e.tester.army/docs/decision-models) documents the optional `@e2e-dev/decision` executor. It chooses bounded actions from the semantic tree using a decision model, such as `typeSafeAi.decisionModel('jev-latest')`, rather than generating selectors or URLs. A separate text model supplies field values and the judgment tier. The runner still authorizes actions and applies its budgets; this executor has no vision and does not offer drag, upload or hover.
+
+This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.18.0 itself requires `ai ^7.0.0`, which the current 7.0.107 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
+
 ## Reports, CI and MCP
 
 Every run writes `.e2e/report.json`, `.e2e/junit.xml` and `.e2e/summary.md`. `trace: "on"` retains browser traces for successful and failed tests under `.e2e/artifacts/`; failures also produce screenshots and Markdown diagnostics. App output is in `.e2e/logs/app.log`. `.e2e/` is ignored; keep reports private when they contain app data. To preserve separate runs, append `--output .e2e/validation/<run-name>` before rerunning.
@@ -217,6 +225,44 @@ reports are under `.e2e/historical/<timestamp>-<pid>/`. Each attempt records
 its final UI and retains the browser trace, and failed calibration runs are
 preserved separately. Earlier loader/baseURL/dialog failures were adapter
 failures; they were not app regressions.
+
+## Upgrade qualification — e2e 0.18.0, 2026-10-06
+
+Node 24.19.0, `@e2e-dev/web` 0.13.0 and Playwright Core 1.63.0 passed the existing journeys below. The TypeScript config and all 26 historical files collected with the new oxc loader; no config, runner, preload, fixture, assertion or legacy gate needed an adaptation.
+
+| Campaign | Result | Report |
+| --- | --- | --- |
+| Real password visibility pilot, desktop | 1/1 | `.e2e/validation/e2e018-pilot-v2/report.json` |
+| Local public desktop/mobile, CI mode, backend credentials empty | 14/14 | `.e2e/validation/e2e018-public-ci/report.json` |
+| Historical desktop UI contracts, CI mode | 181/181 | `.e2e/historical/1791298485458-36805/report.json` |
+| Canonical production public desktop/mobile | 10/10 | `.e2e/validation/e2e018-production-public/report.json` |
+
+Every green campaign has zero skips, retries and model calls, with reports and browser traces retained. Typecheck, lint, dependency peers and diff whitespace passed. These local runs qualified the dependency/lock change on source `4e88377` with the upgrade diff present; recorded input hashes identify that candidate. They do not claim a hosted CI run or deployment of the upgrade. The first pilot's macOS sandbox Chromium launch failure remains separately under `.e2e/validation/e2e018-pilot/`; the same test passed outside that sandbox without changing its body. Older production and migration failures remain retained.
+
+Exact reruns (start from the qualified commit and keep every output directory distinct):
+
+```bash
+CI=1 TESTERARMY_AI=0 E2E_DEV_PORT=4515 \
+SUPABASE_URL= NEXT_PUBLIC_SUPABASE_URL= SUPABASE_SERVICE_ROLE_KEY= NEXT_PUBLIC_SUPABASE_ANON_KEY= \
+UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= \
+E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 NEXT_TELEMETRY_DISABLED=1 \
+PARITY_OUTPUT=.e2e/validation/e2e018-public-ci-rerun \
+  mise exec node@24.19.0 -- npm run test:testerarmy
+
+CI=1 TESTERARMY_AI=0 E2E_DEV_PORT=4515 \
+SUPABASE_URL= NEXT_PUBLIC_SUPABASE_URL= SUPABASE_SERVICE_ROLE_KEY= NEXT_PUBLIC_SUPABASE_ANON_KEY= \
+UPSTASH_REDIS_REST_URL= UPSTASH_REDIS_REST_TOKEN= \
+E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 NEXT_TELEMETRY_DISABLED=1 \
+  mise exec node@24.19.0 -- node e2e/testerarmy/run-historical.mjs run
+
+TESTERARMY_PRODUCTION_PUBLIC=1 TESTERARMY_AI=0 E2E_BASE_URL=https://app.clawdeals.com \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+E2E_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 NEXT_TELEMETRY_DISABLED=1 \
+PARITY_OUTPUT=.e2e/validation/e2e018-production-public-rerun \
+  mise exec node@24.19.0 -- npm run test:testerarmy
+```
+
+The local suites start and stop their own app on port 4515. Production attaches only to the canonical app URL and preserves the existing GET/HEAD-only network guard. Historical tests keep their mock contracts and cannot qualify database durability. Jev support is documented above; its optional executor is not installed or activated.
 
 ## Setup validation — 2026-10-02
 
