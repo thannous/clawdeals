@@ -131,6 +131,7 @@ function fixture(root) {
   });
   const run = {
     id: "public-report-control",
+    status: "passed",
     vcs: { commit: head, dirty: false },
     runner: { name: "e2e", version: "0.18.0" },
     targets: ["desktop", "mobile"].map((id) => ({ id })),
@@ -357,4 +358,37 @@ test("model evidence is refused before public archive creation", (t) => {
     () => bundleRuns(root, ".e2e/bundles/refused", [directory]),
     /model-free public/,
   );
+});
+
+test("missing or contradictory global verdict cannot qualify passed rows", (t) => {
+  const root = temporary(t),
+    { directory, run } = fixture(root);
+  const missing = structuredClone(run);
+  delete missing.status;
+  writeFileSync(
+    join(root, directory, "report.json"),
+    JSON.stringify({ schemaVersion: "report-1", run: missing }),
+  );
+  assert.throws(
+    () => inspectReport(root, directory),
+    /Malformed TesterArmy global status/,
+  );
+  for (const status of ["failed", "error", "interrupted", "blocked"]) {
+    writeFileSync(
+      join(root, directory, "report.json"),
+      JSON.stringify({ schemaVersion: "report-1", run: { ...run, status } }),
+    );
+    const index = inspectReport(root, directory);
+    assert.equal(index.evidenceComplete, false);
+    assert.equal(index.journeysPassed, false);
+    assert.ok(
+      index.errors.some((error) => error.code === "GLOBAL_VERDICT_MISMATCH"),
+    );
+  }
+  writeFileSync(
+    join(root, directory, "report.json"),
+    JSON.stringify({ schemaVersion: "report-1", run: { ...run, exitCode: 1 } }),
+  );
+  assert.equal(inspectReport(root, directory).journeysPassed, false);
+  assert.equal(inspectReport(root, directory).evidenceComplete, false);
 });

@@ -55,6 +55,12 @@ export function inspectReport(
   )
     throw new Error("Unsupported TesterArmy report schema.");
   const run = document.run;
+  if (
+    !["passed", "failed", "error", "interrupted", "blocked"].includes(
+      run.status,
+    )
+  )
+    throw new Error("Malformed TesterArmy global status.");
   const object = (value) =>
     value !== null && typeof value === "object" && !Array.isArray(value);
   const text = (value) => typeof value === "string" && value.length > 0;
@@ -246,6 +252,14 @@ export function inspectReport(
     });
   }
   const selected = pairs.filter((pair) => pair.selected);
+  if (
+    (run.status === "passed" &&
+      (run.exitCode !== 0 ||
+        run.errors.length > 0 ||
+        selected.some((pair) => pair.status !== "passed"))) ||
+    (run.status !== "passed" && run.exitCode === 0)
+  )
+    errors.push({ code: "GLOBAL_VERDICT_MISMATCH" });
   const computed = {
     discovered: pairs.length,
     selected: selected.length,
@@ -260,6 +274,7 @@ export function inspectReport(
   if (!isDeepStrictEqual(computed, run.summary))
     errors.push({ code: "SUMMARY_MISMATCH" });
   const passed =
+    run.status === "passed" &&
     selected.length > 0 &&
     selected.every(
       (pair) =>
@@ -276,6 +291,7 @@ export function inspectReport(
   return {
     directory,
     runId: run.id,
+    status: run.status,
     vcs: run.vcs,
     runner: run.runner,
     targets: run.targets,
