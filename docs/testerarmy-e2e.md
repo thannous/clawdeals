@@ -6,6 +6,21 @@ The [official 0.18.0 release](https://github.com/tester-army/e2e/releases/tag/e2
 
 Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and the relevant reference, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`. The full versioned documentation is under `node_modules/e2e/docs/`.
 
+## Current contracts and proportional evidence
+
+The pinned versions describe the current installation, not a permanent ceiling.
+Within authorized work, verify compatible peers and the candidate's installed
+loader/API documentation, then adopt a successful representative journey with
+its applicable checks. Exact steps need no model or new provider.
+
+Current functional requirements govern test expectations. Record the reason for
+revising an obsolete expectation and preserve its historical result; keep relevant
+uncovered assertions and required CI. Retain one canonical report, source/target
+identity, exact rerun and useful failure media. Reference verified outputs instead
+of copying or fully rehashing them at each review. Reused evidence remains labelled
+as reuse. Documentation-only follow-ups need diff/link checks, not another browser
+corpus or production campaign. See [operating policy](../AGENTS.md).
+
 ## Run the public journeys
 
 Use the repository's Node 24.19.0/npm versions:

@@ -2,7 +2,7 @@
 
 ## Scope and references
 
-Read only the code and documentation needed for the task. Documentation-only or copy-only edits do not require application test suites.
+Read only the code and documentation needed for the task. Documentation-only or copy-only edits do not require application test suites. The generated Next.js block below applies to Next.js APIs, routing and configuration compatibility; it is not a requirement to reload framework docs before unrelated edits.
 
 - This app uses Next.js Pages Router: UI in `src/pages/`, APIs in `src/pages/api/`, server code in `src/server/`.
 - For Next.js API, routing, or configuration changes, consult the relevant guide in `node_modules/next/dist/docs/`. This is the scope of the generated Next.js guidance below; it is not a prerequisite for unrelated edits.
@@ -10,6 +10,22 @@ Read only the code and documentation needed for the task. Documentation-only or 
 - For TesterArmy browser tests, read `node_modules/e2e/skills/e2e/SKILL.md` and the relevant topic before writing or running tests. Configuration is in `e2e.config.ts`; commands and target selection are in `docs/testerarmy-e2e.md`. Existing Playwright suites keep their own runner.
 - For hosting or deployment changes, use `docs/hosting-cloudflare-vercel.md`: `clawdeals.com` uses `workers/edge-router.ts`; `app.clawdeals.com` uses Vercel Git integration.
 - Find other task-specific references in `docs/`; commands are defined in `package.json`. Update affected documentation when behavior or workflows change.
+
+## Current operating policy (owner, 2026-10-06)
+
+Current user scope and functional requirements govern. Older choices, memories and
+historical assertions are context and may be revised with a stated reason. Evaluate
+new functionality and compatible tools by their actual behavior; adopt a successful
+bounded pilot within the authorized task without asking again at each step.
+Use only the references and checks needed for the affected behavior. Documentation
+changes need diff/link checks; no broad application rerun solely for instructions.
+Keep one useful result, relevant failure log/media, identity and rerun command.
+Exhaustive archive copies and duplicate downloads/rehashes are not release gates.
+Keep factual old results honest, revise the active contract when behavior changes,
+and preserve still-relevant uncovered coverage. Mandatory platform/security checks,
+personal data, secrets and existing provider/spending boundaries stay protected.
+Necessary isolated local generation/builds for requested native QA are authorized;
+do not reset or overwrite a personal app or change an unrelated environment.
 
 ## Validation and autonomy
 
@@ -24,7 +40,7 @@ Read only the code and documentation needed for the task. Documentation-only or 
 
 - Follow existing TypeScript/React conventions: 2-space indentation, semicolons, double quotes; components `PascalCase.tsx`, utilities `camelCase.ts`, tests `*.test.ts(x)`, E2E `*.spec.ts`.
 - Preserve unrelated work. Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
-- Work directly on `main`; do not create branches or PRs. If starting in a detached worktree, preserve and report that state rather than switching branches or moving unrelated work.
+- Deliver to `main` within the user’s standing authorization. Use the existing direct-push workflow for a small reviewed change; use a worktree/branch/PR when isolation, review or required CI makes it useful. Preserve unrelated work and report the actual starting state.
 - Commit only when authorized, using the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and ticket IDs when applicable.
 - The current release workflow is a direct push to `main`, followed by automatic Vercel production deployment; no staging promotion is required. An authorized push includes that automatic deployment. Manual deployments, including `npm run deploy:cloudflare`, and unrelated destructive or external actions still require authorization.
 
@@ -38,24 +54,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## E2E framework preference (owner decision, 2026-10-05)
+## E2E default and current contracts
 
-Use TesterArmy `e2e` for new and affected E2E journeys across every project,
-subproject and worktree. Reference: https://docs.expo.dev/guides/using-e2e/.
-Read the official `e2e` skill and the relevant topic from the project's installed
-version before writing or running tests. Use `@e2e-dev/mobile` for native apps and
-`@e2e-dev/web` for browser apps. API/CLI-only projects need an appropriate real
-interface journey; do not invent a mobile or browser target when none exists.
-Reuse project runners, device ownership checks, fixtures and environment guards.
-Native qualification uses an identified installed Release build, one worker per
-device, and `app.open()` at each test start. Follow existing build/prebuild rules.
-Use one goal per `agent.act()` and exact assertions for critical outcomes; exact
-steps need no model. Preserve reports, failures, screenshots/traces, build/source
-identity and the exact rerun command. A stale/missing replay is not a passed check.
-Retain existing Playwright/Maestro/API coverage and required CI until equivalent
-TesterArmy journeys have passed; new tests use TesterArmy by default. Keep model
-calls within existing authorized providers and budgets, and never export private
-test content, credentials or feedback without authorization.
+Use TesterArmy `e2e` for new and affected real E2E journeys by default:
+`@e2e-dev/web` for browsers and `@e2e-dev/mobile` for native apps. API/CLI-only
+projects use their real interface. Reference: https://docs.expo.dev/guides/using-e2e/.
+Read the installed skill and relevant topic once per version or changed API.
+Reuse existing runners and fixtures; native runs identify the installed Release,
+use one worker per owned device and start each test with `app.open()`.
+Use one goal per `agent.act()` and exact assertions for critical outcomes, without
+models for exact steps. Upgrade compatible versions with relevant checks when useful.
+An installation diagnostic does not block SDK execution on an allocated QA target;
+release only this invocation's wrapper lock after its process closes. Report
+identity/cleanup problems separately and never invent a passed execution.
+Keep current functional coverage, update obsolete historical expectations with their
+reason and useful counterexamples. Do not hold a new approach behind every old
+assertion, full replay or duplicate media archive. A reused result is not a new run.
+Keep private formative content/feedback and credentials out of exports; use only
+existing authorized providers and budgets.
+
 
 Use `npm run test:testerarmy` for browser journeys and
 `npm run test:testerarmy:list` for discovery. Read `docs/testerarmy-e2e.md` and
