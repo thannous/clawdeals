@@ -11,7 +11,7 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 
 ## Current development topology (2026-09-28)
 
-- Vercel project `clawdeals` serves `https://app.clawdeals.com`; authorized pushes to `main` deploy directly to production.
+- Vercel project `clawdeals` serves `https://app.clawdeals.com`. Since 2026-10-07, `vercel.json` disables automatic Git deployments from `main`. PRs run contract/unit checks and public browser journeys; the complete historical corpus also runs on `main`. Publish the exact merged commit explicitly only after all main CI jobs succeed, including SDK CI. The Cloudflare router continues proxying this Vercel origin and needs no deployment for a Next.js-only update.
 - The owner confirms that production currently has no real users and contains disposable fictitious data. Development validation may create, modify, and delete test data there; no staging promotion is required. See `AGENTS.md` for the scope of this authorization.
 - Vercel project `clawdeals-staging` and its deployments were deleted on 2026-09-28. Its former `https://sandbox.clawdeals.com` endpoint is retired; do not use it as a test target.
 - This removal concerns the Vercel project only; it does not establish deletion of external databases, Redis services, or DNS records.
