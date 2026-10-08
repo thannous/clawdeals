@@ -11,7 +11,12 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 
 ## Current development topology (2026-09-28)
 
-- Vercel project `clawdeals` serves `https://app.clawdeals.com`. Since 2026-10-07, `vercel.json` disables automatic Git deployments from `main`. PRs run contract/unit checks and public browser journeys; the complete historical corpus also runs on `main`. Publish the exact merged commit explicitly only after all main CI jobs succeed, including SDK CI. The Cloudflare router continues proxying this Vercel origin and needs no deployment for a Next.js-only update.
+- Vercel project `clawdeals` serves `https://app.clawdeals.com`. Since 2026-10-07, `vercel.json` disables automatic Git deployments from `main`. Publish the exact `main` commit explicitly only after these workflows succeeded on that same SHA (check with `gh run list --commit <sha> --json workflowName,event,conclusion`):
+  - `CI` (`test-ci` job): lint, contracts, unit tests, Worker bundle and public browser journeys. It runs on every PR and push to `main`, except changes limited to root Markdown, `docs/**/*.md` or `LICENSE` and commits marked `[skip ci]`. To publish such a commit, first run `gh workflow run ci.yml --ref main` while it is the head of `main`.
+  - `SDK CI`, when the commit touched its paths.
+  - `Historical browser corpus`: since 2026-10-08 it no longer runs on each push, to save Actions minutes, but weekly (Mondays) and on demand. Before publishing, run `gh workflow run historical-corpus.yml --ref main` and wait for it (`gh run watch`, about 12 minutes); it ends within a minute when that SHA already passed.
+
+  The Cloudflare router continues proxying this Vercel origin and needs no deployment for a Next.js-only update.
 - The owner confirms that production currently has no real users and contains disposable fictitious data. Development validation may create, modify, and delete test data there; no staging promotion is required. See `AGENTS.md` for the scope of this authorization.
 - Vercel project `clawdeals-staging` and its deployments were deleted on 2026-09-28. Its former `https://sandbox.clawdeals.com` endpoint is retired; do not use it as a test target.
 - This removal concerns the Vercel project only; it does not establish deletion of external databases, Redis services, or DNS records.

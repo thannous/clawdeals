@@ -1,10 +1,24 @@
 name: CI
 
+# Actions minutes are capped on this private repository. Every job is billed
+# rounded up to the minute and repeats checkout, setup and `npm ci`, so all
+# checks share one job. Documentation-only changes and `[skip ci]` commits do
+# not run CI. The complete historical browser corpus runs weekly and on demand
+# in historical-corpus.yml; production deployment waits for it on the exact
+# SHA (docs/hosting-cloudflare-vercel.md).
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - "*.md"
+      - "docs/**/*.md"
+      - "LICENSE"
   push:
     branches: ["main"]
+    paths-ignore:
+      - "*.md"
+      - "docs/**/*.md"
+      - "LICENSE"
 
 permissions:
   contents: read
@@ -14,10 +28,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Lint
+  test-ci:
+    # Keeps the `test-ci` status name of the former aggregate job.
+    name: test-ci
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # About 4 minutes observed; the margin covers a slow registry during
+    # `npm ci` and lets evidence upload after a browser step timeout.
+    timeout-minutes: 15
+    env:
+      E2E_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+      TESTERARMY_AI: "0"
+      E2E_CI_ROOT: .e2e/ci/${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -32,117 +54,63 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-24-eslint-${{ hashFiles('package-lock.json', 'eslint.config.mjs') }}-
       - name: Install dependencies
-        run: npm ci
-      - name: Lint
-        run: npm run lint -- --cache --cache-location .eslintcache --cache-strategy content
+        id: install
+        run: npm ci --prefer-offline --no-audit --no-fund
 
-  contracts:
-    name: Typecheck and contracts
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
+      # Fast checks: each one runs after a successful install even when an
+      # earlier check failed, so a single run reports every failure.
+      - name: Lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run lint -- --cache --cache-location .eslintcache --cache-strategy content
       - name: Typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run typecheck
       - name: Validate i18n page contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test:i18n:contract
       - name: Validate i18n messages
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test:i18n:messages
       - name: Lint OpenAPI contract
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run openapi:lint
       - name: Validate skill pack
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test:skill:pack
       - name: Validate public skill files
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test:skill:public
-
-  unit_tests:
-    name: Unit tests (${{ matrix.shard }}/2)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Run unit-test shard
-        run: npm run test:unit -- --shard=${{ matrix.shard }}/2
-
-  worker_contracts:
-    name: Cloudflare Worker contracts
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Run edge and remote MCP contracts
-        run: npm run test:unit -- src/__tests__/mcp/http-worker.test.ts src/__tests__/worker.edge-router.test.ts
-      - name: Bundle Worker without deploying
+      - name: Unit tests, including edge and remote MCP Worker contracts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        timeout-minutes: 5
+        run: npm run test:unit
+      - name: Bundle Cloudflare Worker without deploying
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         env:
           WRANGLER_SEND_METRICS: "false"
         run: npm exec -- wrangler deploy --dry-run --outdir "$RUNNER_TEMP/clawdeals-worker-bundle"
 
-  testerarmy:
-    name: TesterArmy browser journeys
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      E2E_TELEMETRY_DISABLED: "1"
-      NEXT_TELEMETRY_DISABLED: "1"
-      TESTERARMY_AI: "0"
-      E2E_CI_ROOT: .e2e/ci/${{ github.run_id }}-${{ github.run_attempt }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
+      # Browser journeys are the most expensive part: they start only when
+      # every check above passed.
       - name: Install Chromium
         run: npx playwright install chromium --with-deps
       - name: Check evidence preservation and bounded archive controls
         run: node --test e2e/testerarmy/evidence.test.mjs
       - name: Run public journeys with time for evidence
-        # Keep the existing 15-minute job budget and all test/action budgets.
-        # This bounded step leaves time for teardown and upload; a forced runner
-        # stop can still prevent collection and is never complete qualification.
-        timeout-minutes: 12
+        id: public_journeys
+        # About 1 minute observed. This bounded step leaves time for teardown
+        # and upload within the job budget; a forced runner stop can still
+        # prevent collection and is never complete qualification.
+        timeout-minutes: 5
         run: |
           PARITY_OUTPUT="$E2E_CI_ROOT/public" npm run test:testerarmy
-      - name: Run the complete historical corpus on main
-        if: github.event_name != 'pull_request'
-        timeout-minutes: 12
-        run: |
-          PARITY_OUTPUT="$E2E_CI_ROOT/historical" node e2e/testerarmy/run-historical.mjs run
       - name: Prepare complete bounded public evidence
         id: bundle
-        if: ${{ always() }}
+        if: ${{ always() && steps.public_journeys.outcome != 'skipped' }}
         run: |
-          runs=("$E2E_CI_ROOT/public")
-          if [[ "$GITHUB_EVENT_NAME" != "pull_request" ]]; then
-            runs+=("$E2E_CI_ROOT/historical")
-          fi
-          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "${runs[@]}"
+          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "$E2E_CI_ROOT/public"
       - name: Retain evidence index including incomplete campaigns
-        if: ${{ always() }}
+        if: ${{ always() && steps.public_journeys.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
         with:
           name: testerarmy-evidence-index-${{ github.run_id }}-${{ github.run_attempt }}
@@ -194,23 +162,3 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
-
-  test-ci:
-    name: test-ci
-    if: ${{ always() }}
-    needs: [lint, contracts, unit_tests, worker_contracts, testerarmy]
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Require every CI job to pass
-        env:
-          LINT_RESULT: ${{ needs.lint.result }}
-          CONTRACTS_RESULT: ${{ needs.contracts.result }}
-          UNIT_TESTS_RESULT: ${{ needs.unit_tests.result }}
-          WORKER_RESULT: ${{ needs.worker_contracts.result }}
-          TESTERARMY_RESULT: ${{ needs.testerarmy.result }}
-        run: |
-          if [[ "$LINT_RESULT" != "success" || "$CONTRACTS_RESULT" != "success" || "$UNIT_TESTS_RESULT" != "success" || "$WORKER_RESULT" != "success" || "$TESTERARMY_RESULT" != "success" ]]; then
-            echo "CI failed: lint=$LINT_RESULT contracts=$CONTRACTS_RESULT unit-tests=$UNIT_TESTS_RESULT worker=$WORKER_RESULT testerarmy=$TESTERARMY_RESULT"
-            exit 1
-          fi

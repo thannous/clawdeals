@@ -1,0 +1,131 @@
+name: Historical browser corpus
+
+# The complete historical TesterArmy corpus takes about 10 minutes, so it no
+# longer runs on every push to main. It runs weekly and on demand, and is
+# skipped when this exact commit already passed it. Production deployment of a
+# commit waits for a successful run on that SHA: dispatch this workflow on main
+# before publishing (docs/hosting-cloudflare-vercel.md).
+on:
+  schedule:
+    # Mondays 05:23 UTC, off the hour to avoid the scheduler's peak.
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Run again even if this exact commit already passed
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: historical-corpus-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  historical:
+    name: Historical browser corpus
+    runs-on: ubuntu-latest
+    # About 12 minutes observed; the corpus step has its own 15-minute budget
+    # and the remainder leaves time for evidence upload.
+    timeout-minutes: 20
+    env:
+      E2E_TELEMETRY_DISABLED: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+      TESTERARMY_AI: "0"
+      E2E_CI_ROOT: .e2e/ci/${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Skip a commit that already passed the corpus
+        id: previous
+        if: ${{ !inputs.force }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # An unreadable history runs the corpus rather than skipping it.
+          passed="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/historical-corpus.yml/runs?head_sha=$GITHUB_SHA&status=success&per_page=1" --jq '.total_count' || echo 0)"
+          if [[ "$passed" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::notice::$GITHUB_SHA already passed the historical corpus; nothing to run."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.previous.outputs.skip != 'true'
+      - uses: actions/setup-node@v7
+        if: steps.previous.outputs.skip != 'true'
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        if: steps.previous.outputs.skip != 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Install Chromium
+        if: steps.previous.outputs.skip != 'true'
+        run: npx playwright install chromium --with-deps
+      - name: Check evidence preservation and bounded archive controls
+        if: steps.previous.outputs.skip != 'true'
+        run: node --test e2e/testerarmy/evidence.test.mjs
+      - name: Run the complete historical corpus
+        id: historical
+        if: steps.previous.outputs.skip != 'true'
+        timeout-minutes: 15
+        run: |
+          PARITY_OUTPUT="$E2E_CI_ROOT/historical" node e2e/testerarmy/run-historical.mjs run
+      - name: Prepare complete bounded historical evidence
+        id: bundle
+        if: ${{ always() && steps.historical.outcome != 'skipped' }}
+        run: |
+          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "$E2E_CI_ROOT/historical"
+      - name: Retain evidence index including incomplete campaigns
+        if: ${{ always() && steps.historical.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: testerarmy-evidence-index-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.E2E_CI_ROOT }}/bundle/manifest.json
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Retain historical evidence part 1
+        if: ${{ always() && steps.bundle.outputs.parts >= 1 }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: testerarmy-browser-results-${{ github.run_id }}-${{ github.run_attempt }}-part-1
+          path: ${{ env.E2E_CI_ROOT }}/bundle/part-1/
+          archive: true
+          compression-level: 0
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain historical evidence part 2
+        if: ${{ always() && steps.bundle.outputs.parts >= 2 }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: testerarmy-browser-results-${{ github.run_id }}-${{ github.run_attempt }}-part-2
+          path: ${{ env.E2E_CI_ROOT }}/bundle/part-2/
+          archive: true
+          compression-level: 0
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain historical evidence part 3
+        if: ${{ always() && steps.bundle.outputs.parts >= 3 }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: testerarmy-browser-results-${{ github.run_id }}-${{ github.run_attempt }}-part-3
+          path: ${{ env.E2E_CI_ROOT }}/bundle/part-3/
+          archive: true
+          compression-level: 0
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain historical evidence part 4
+        if: ${{ always() && steps.bundle.outputs.parts >= 4 }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: testerarmy-browser-results-${{ github.run_id }}-${{ github.run_attempt }}-part-4
+          path: ${{ env.E2E_CI_ROOT }}/bundle/part-4/
+          archive: true
+          compression-level: 0
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
