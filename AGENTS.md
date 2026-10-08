@@ -41,6 +41,7 @@ do not reset or overwrite a personal app or change an unrelated environment.
 - Follow existing TypeScript/React conventions: 2-space indentation, semicolons, double quotes; components `PascalCase.tsx`, utilities `camelCase.ts`, tests `*.test.ts(x)`, E2E `*.spec.ts`.
 - Preserve unrelated work. Do not commit generated `.next/`, `.open-next/`, `coverage/`, or `test-results/` output.
 - Deliver to `main` within the user’s standing authorization. Use the existing direct-push workflow for a small reviewed change; use a worktree/branch/PR when isolation, review or required CI makes it useful. Preserve unrelated work and report the actual starting state.
+- Every push to `main` or to a PR branch re-runs CI, and GitHub Actions minutes are capped on this private account (about 20 runner-minutes per push to `main`). Validate locally before pushing, batch related commits into one push, and add `[skip ci]` to the message of a documentation-only commit.
 - Commit only when authorized, using the existing style (`feat(scope):`, `fix:`, `refactor:`, `test:`, `chore:`) and ticket IDs when applicable.
 - The current release workflow is a direct push to `main`, followed by automatic Vercel production deployment; no staging promotion is required. An authorized push includes that automatic deployment. Manual deployments, including `npm run deploy:cloudflare`, and unrelated destructive or external actions still require authorization.
 
