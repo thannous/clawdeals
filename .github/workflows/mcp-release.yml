@@ -9,6 +9,7 @@ jobs:
   release_mcp:
     if: startsWith(github.ref_name, 'mcp-v')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write
