@@ -3,6 +3,8 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { LINT_EVERYTHING as LINT_EVERYTHING_FILES } from "./lint-everything.mjs";
+
 // Targeted lint of `verify:pr` (common delivery rule v2, Q5): ESLint with
 // `--max-warnings=0` on the JS/TS files changed since the merge base with
 // origin/main, instead of the whole repository. A change to the ESLint
@@ -14,7 +16,7 @@ import { fileURLToPath } from "node:url";
 // It runs on the checked-out commit (HEAD): in `verify:pr`, the isolated copy.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CODE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
-const LINT_EVERYTHING = new Set(["eslint.config.mjs", "package-lock.json"]);
+const LINT_EVERYTHING = new Set(LINT_EVERYTHING_FILES);
 const MAX_FILES = 400;
 // Same extensions as `npm run lint`.
 const EVERYTHING = ["--ext", ".js,.jsx,.ts,.tsx"];
