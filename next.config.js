@@ -75,7 +75,9 @@ const nextConfig = {
   bundlePagesRouterDependencies: true,
   experimental: {
     // Avoid lucide-react barrel import cost by rewriting to per-icon imports at build time.
-    optimizePackageImports: ["lucide-react"]
+    optimizePackageImports: ["lucide-react"],
+    // dev-only, agents draft Next.js issue reports for human review, nothing sent without Send
+    agentFeedback: true
   },
   i18n: {
     locales: ["en", "fr", "es"],
