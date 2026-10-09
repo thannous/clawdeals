@@ -155,11 +155,12 @@ const config = {
       requires: {
         // verify-sdk.sh also downloads the generator (npm, Maven Central) and the
         // Python SDK dependencies (PyPI): an offline machine cannot run it either.
+        // Retried, so a passing network blip does not mark the check unavailable.
         command:
           "java -version >/dev/null 2>&1 && python3.11 --version >/dev/null 2>&1 && " +
-          "curl -sf -o /dev/null --max-time 10 https://registry.npmjs.org/ && " +
-          "curl -sf -o /dev/null --max-time 10 https://repo1.maven.org/maven2/ && " +
-          "curl -sf -o /dev/null --max-time 10 https://pypi.org/simple/pip/",
+          "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://registry.npmjs.org/ && " +
+          "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://repo1.maven.org/maven2/ && " +
+          "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://pypi.org/simple/pip/",
         hint: "install Java (OpenAPI Generator) and Python 3.11 (the version sdk-ci.yml pins) and reach npm, Maven Central and PyPI, or dispatch sdk-ci.yml and pass --external sdk=\"https://<run URL> on <SHA>\"",
       },
     },
