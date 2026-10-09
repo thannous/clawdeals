@@ -29,11 +29,12 @@ const config = {
   mainBranch: "main",
   commands: { pr: "npm run verify:pr", release: "npm run verify:release" },
   deps: {
-    // Install, not link: the Turbopack build (`next build`) refuses a
-    // node_modules whose entries link outside the copy ("Could not find the
-    // Next.js package"). Measured on 2026-10-09: link 1.3 s, `npm ci` from the
-    // npm cache about 57 s and 1.4 GB, paid only when a check has to run.
-    mode: "install",
+    // Link when package-lock.json matches the checkout (measured on
+    // 2026-10-09: copy ready in about 1.3 s, against about 57 s and 1.4 GB for
+    // `npm ci`). Only `build` needs a real install: the Turbopack build refuses
+    // a node_modules whose entries link outside the copy ("Could not find the
+    // Next.js package"), so that check is marked install: true.
+    mode: "link",
     lockfile: "package-lock.json",
     install: "npm ci --prefer-offline --no-audit --no-fund",
     copy: [],
@@ -111,6 +112,7 @@ const config = {
       name: "build",
       command: "npm run build",
       kinds: ["release"],
+      install: true,
       exclude: NOT_APP,
       env: { NEXT_TELEMETRY_DISABLED: "1" },
     },
