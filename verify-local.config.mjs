@@ -48,6 +48,26 @@ const config = {
     copy: [],
   },
   setup: [],
+  // The scripts these checks run: changing them changes what a proof proves,
+  // so proof-block flags them for the owner's review like this file.
+  deliveryFiles: [
+    "scripts/lint-changed.mjs",
+    "scripts/lint-everything.mjs",
+    "scripts/verify-sdk.sh",
+    "scripts/has-playwright-browser.mjs",
+    "scripts/install-git-hooks.mjs",
+    // The validators the i18n, skill and OpenAPI checks run, and their config.
+    "scripts/validate-i18n-page-contract.mjs",
+    "scripts/validate-i18n-messages.mjs",
+    "scripts/validate-skill-pack.mjs",
+    "scripts/sync-skill-public.mjs",
+    ".redocly.yaml",
+    ".redocly.lint-ignore.yaml",
+    "e2e/testerarmy/run-historical.mjs",
+    // The tests of the hook and of this config.
+    "scripts/git-hooks.test.mjs",
+    "scripts/verify-local.config.test.mjs",
+  ],
   checks: [
     {
       name: "engine-tests",
@@ -133,15 +153,31 @@ const config = {
       when: ["docs/openapi-v1.yaml", "scripts/sdk/**", "sdk/**", "scripts/verify-sdk.sh"],
       specialised: true,
       requires: {
-        command: "java -version >/dev/null 2>&1 && python3.11 --version >/dev/null 2>&1",
-        hint: "install Java (OpenAPI Generator) and Python 3.11, or dispatch sdk-ci.yml and pass --external sdk=<run URL>",
+        // verify-sdk.sh also downloads the generator (npm, Maven Central) and the
+        // Python SDK dependencies (PyPI): an offline machine cannot run it either.
+        // Retried, so a passing network blip does not mark the check unavailable.
+        // It also creates a virtual environment: python3.11 needs venv and ensurepip.
+        command:
+          "java -version >/dev/null 2>&1 && python3.11 -c \"import ensurepip, venv\" >/dev/null 2>&1 && " +
+          "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://registry.npmjs.org/ && " +
+          "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://repo1.maven.org/maven2/ && " +
+          "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://pypi.org/simple/pip/",
+        hint: "install Java (OpenAPI Generator) and Python 3.11 (the version sdk-ci.yml pins) and reach npm, Maven Central and PyPI, or dispatch sdk-ci.yml and pass --external sdk=\"https://<run URL> on <SHA>\"",
       },
     },
 
-    // Release only: what is delivered. The app reads its deployed SHA from
+    // Release only. lint-changed lints the files changed since origin/main,
+    // which on the delivered main commit are none: a release lints them all.
+    {
+      name: "lint",
+      command: "npm run lint",
+      kinds: ["release"],
+      inputs: [...CODE, "package.json", ...LINT_EVERYTHING],
+    },
+    // What is delivered. The app reads its deployed SHA from
     // the hosting environment at runtime (VERCEL_GIT_COMMIT_SHA and friends);
     // the local build embeds no SHA, so it depends on the tree, not on the
-    // commit, and is reused like any other check.
+    // commit.
     {
       name: "build",
       command: "npm run build",
@@ -178,7 +214,7 @@ const config = {
       requires: {
         command: "node scripts/has-playwright-browser.mjs",
         hint:
-          "install the Chromium pinned by playwright-core (`npx playwright install chromium`), or dispatch historical-corpus.yml on the released commit and pass --external historical-corpus=<run URL>",
+          "install the Chromium pinned by playwright-core (`npx playwright install chromium`), or dispatch historical-corpus.yml on the released commit and pass --external historical-corpus=\"https://<run URL> on <SHA>\"",
       },
     },
   ],
