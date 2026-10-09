@@ -67,11 +67,10 @@ const config = {
   // The scripts these checks run: changing them changes what a proof proves,
   // so proof-block flags them for the owner's review like this file.
   deliveryFiles: [
-    // What the checks install and run with, and the lint, typecheck and test
-    // configs (the engine already flags package.json scripts and tool configs;
-    // listed here so that a dependency or lockfile change is flagged too).
-    "package.json",
-    "package-lock.json",
+    // The lint, typecheck and test configs (the engine's own list covers them
+    // too). package.json and package-lock.json stay out: the engine flags a
+    // package.json change outside dependencies and version by itself, and the
+    // delivery rule (section 2.3) exempts dependency-only changes.
     "eslint.config.mjs",
     "tsconfig.json",
     "vitest.config.ts",
