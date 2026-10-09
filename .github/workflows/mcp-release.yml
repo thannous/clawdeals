@@ -3,6 +3,11 @@ name: MCP Release
 # Publishes clawdeals-mcp to npm. Manual dispatch only, on an explicit
 # decision to publish: `gh workflow run mcp-release.yml --ref main -f version=X.Y.Z`.
 # The version input must equal packages/clawdeals-mcp/package.json.
+# Gating: the job-level `if` skips any ref other than main before a runner
+# starts, and the `release` environment only accepts main (its branch policy)
+# and holds the publish secrets. A dispatch runs the workflow file of its own
+# ref, so the `if` alone can be edited away on a branch; the real enforcement
+# is the environment branch policy.
 on:
   workflow_dispatch:
     inputs:
@@ -13,6 +18,8 @@ on:
 
 jobs:
   release_mcp:
+    if: github.ref == 'refs/heads/main'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -27,8 +34,6 @@ jobs:
           package-manager-cache: false
       - name: Install root deps
         run: npm ci
-      - name: Require main
-        run: test "$GITHUB_REF" = "refs/heads/main"
       - name: Verify version matches input
         env:
           INPUT_VERSION: ${{ inputs.version }}

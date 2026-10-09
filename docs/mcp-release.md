@@ -15,10 +15,12 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
   - organization or user: `thannous`
   - repository: `clawdeals`
   - workflow filename: `mcp-release.yml`
-  - environment: none
+  - environment: `release` (the job now runs in that GitHub environment; an empty npm environment field is not checked, setting `release` binds publishing to it)
   - allowed action: `npm publish`
 - The workflow must keep `id-token: write`, use a GitHub-hosted runner, Node 24,
   npm 11.5.1 or newer, and publish without `NODE_AUTH_TOKEN`.
+- GitHub environment `release` limited to `main` (deployment branch policy `main` only), holding the publish secrets.
+- Gating, as enforced: the job-level `if: github.ref == 'refs/heads/main'` skips any other ref before a runner starts, and the `release` environment refuses any branch but `main`. A dispatch runs the workflow file of its own ref, so the `if` alone can be edited away on a branch; the real enforcement is the environment branch policy.
 - You are on `main` with a clean release diff for MCP files.
 
 ## Release Procedure
@@ -58,7 +60,7 @@ npm view clawdeals-mcp version --json
 ## Expected Workflow Steps
 
 1. Install root dependencies (`npm ci`)
-2. Require `main` and verify the `version` input equals the package version
+2. Verify the `version` input equals the package version (the `main` restriction is the job-level `if` and the `release` environment, before any step runs)
 3. Validate CLI entrypoint (`--help`)
 4. Validate publish artifact (`npm pack --dry-run`)
 5. Exchange the GitHub Actions OIDC identity for a short-lived npm credential.

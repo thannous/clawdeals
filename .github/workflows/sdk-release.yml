@@ -5,6 +5,11 @@ name: SDK Release
 # `gh workflow run sdk-release.yml --ref main -f target=ts -f version=X.Y.Z`.
 # The version input must equal the SDK's own version. PyPI trusted publishing
 # needs this GitHub Actions run (registry constraint, External CI table).
+# Gating: each job's `if` skips any ref other than main before a runner
+# starts, and the `release` environment only accepts main (its branch policy)
+# and holds the publish secrets. A dispatch runs the workflow file of its own
+# ref, so the `if` alone can be edited away on a branch; the real enforcement
+# is the environment branch policy.
 on:
   workflow_dispatch:
     inputs:
@@ -22,7 +27,8 @@ on:
 
 jobs:
   release_ts:
-    if: inputs.target == 'ts'
+    if: github.ref == 'refs/heads/main' && inputs.target == 'ts'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,8 +41,6 @@ jobs:
         run: npm ci
       - name: Generate TS SDK
         run: npm run sdk:generate:ts
-      - name: Require main
-        run: test "$GITHUB_REF" = "refs/heads/main"
       - name: Verify version matches input
         env:
           INPUT_VERSION: ${{ inputs.version }}
@@ -56,7 +60,8 @@ jobs:
         run: npm --prefix sdk/typescript publish --access public
 
   release_py:
-    if: inputs.target == 'py'
+    if: github.ref == 'refs/heads/main' && inputs.target == 'py'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -73,8 +78,6 @@ jobs:
         run: npm ci
       - name: Generate Python SDK
         run: npm run sdk:generate:py
-      - name: Require main
-        run: test "$GITHUB_REF" = "refs/heads/main"
       - name: Verify version matches input
         env:
           INPUT_VERSION: ${{ inputs.version }}
