@@ -6,7 +6,7 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
 
 - Package: `packages/clawdeals-mcp`
 - Workflow: `.github/workflows/mcp-release.yml`
-- Trigger: git tag `mcp-v*` (example: `mcp-v0.1.4`)
+- Trigger: manual dispatch on `main` with a `version` input (example: `0.1.4`)
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
 
 ## Release Procedure
 
-Publication and tag pushes require authorization; these instructions are not permission to publish. Check that the selected version/tag is unused.
+Publication requires authorization; these instructions are not permission to publish. Check that the selected version is unused.
 
 1. Bump package version in `packages/clawdeals-mcp/package.json`.
 2. Keep CLI version output in sync in `packages/clawdeals-mcp/bin/clawdeals-mcp.mjs`.
@@ -35,12 +35,11 @@ npm pack ./packages/clawdeals-mcp --dry-run
 ```
 
 4. Commit and push to `main`.
-5. Create and push the release tag:
+5. Dispatch the release workflow on `main`:
 
 ```bash
 MCP_RELEASE_VERSION="$(node -p 'require("./packages/clawdeals-mcp/package.json").version')"
-git tag "mcp-v${MCP_RELEASE_VERSION}"
-git push origin "mcp-v${MCP_RELEASE_VERSION}"
+gh workflow run mcp-release.yml --repo thannous/clawdeals --ref main -f version="${MCP_RELEASE_VERSION}"
 ```
 
 6. Watch the workflow:
@@ -59,7 +58,7 @@ npm view clawdeals-mcp version --json
 ## Expected Workflow Steps
 
 1. Install root dependencies (`npm ci`)
-2. Verify tag version equals package version
+2. Require `main` and verify the `version` input equals the package version
 3. Validate CLI entrypoint (`--help`)
 4. Validate publish artifact (`npm pack --dry-run`)
 5. Exchange the GitHub Actions OIDC identity for a short-lived npm credential.
@@ -77,14 +76,14 @@ npm view clawdeals-mcp version --json
   - provenance is unsupported for this private source repository.
   - keep `publishConfig.provenance` and `NPM_CONFIG_PROVENANCE` set to `false`.
 
-- Tag/version mismatch:
-  - workflow checks `mcp-vX.Y.Z` against `packages/clawdeals-mcp/package.json`.
-  - fix by aligning tag and package version, then push a new tag.
+- Version mismatch:
+  - workflow checks the `version` input against `packages/clawdeals-mcp/package.json`.
+  - fix by aligning the input and the package version, then dispatch again.
 
 ## Recovery and Retry
 
 - Prefer publishing a new patch version (`0.1.x`) instead of reusing the same version.
-- Push a new tag for each retry (`mcp-v0.1.5`, `mcp-v0.1.6`, ...).
+- Dispatch with the new version for each retry (`0.1.5`, `0.1.6`, ...).
 - Avoid deleting npm versions unless absolutely necessary and policy allows it.
 - Do not restore a long-lived npm write token after trusted publishing is active.
 
