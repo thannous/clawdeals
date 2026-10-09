@@ -64,6 +64,9 @@ const config = {
     ".redocly.yaml",
     ".redocly.lint-ignore.yaml",
     "e2e/testerarmy/run-historical.mjs",
+    // The tests of the hook and of this config.
+    "scripts/git-hooks.test.mjs",
+    "scripts/verify-local.config.test.mjs",
   ],
   checks: [
     {
