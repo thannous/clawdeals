@@ -1,0 +1,77 @@
+#!/bin/sh
+# Pre-push check. `npm ci` installs it: the `prepare` script runs
+# scripts/install-git-hooks.mjs, which sets `git config core.hooksPath .githooks`.
+#
+# Remote CI only runs on manual dispatch, so this local run is the check that
+# guards every push carrying new commits. Agents must never bypass it
+# (`git push --no-verify`, another core.hooksPath); `--no-verify` stays
+# available to humans. See AGENTS.md.
+set -u
+
+check="npm run test:ci"
+remote_name=${1:-}
+
+# Git sends one line per ref: <local ref> <local sha> <remote ref> <remote sha>.
+# Keep the refs that bring commits the remote does not already have.
+pushed=""
+while read -r local_ref local_sha remote_ref remote_sha || [ -n "${local_ref:-}" ]; do
+  case ${local_sha:-0} in
+    *[!0]*) ;;
+    *) continue ;; # branch or tag deletion: nothing to check
+  esac
+  known_remote=""
+  case ${remote_sha:-0} in
+    *[!0]*)
+      if git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+        known_remote="^$remote_sha"
+      fi
+      ;;
+  esac
+  # An unknown object or a failing rev-list counts as new: run the check.
+  # shellcheck disable=SC2086 # $known_remote is empty or one argument
+  if new=$(git rev-list -n 1 "$local_sha" $known_remote --not --remotes="$remote_name" 2>/dev/null) && [ -z "$new" ]; then
+    continue # every commit is already on this remote
+  fi
+  pushed="$pushed $local_sha"
+done
+
+if [ -z "$pushed" ]; then
+  echo "pre-push: nothing new to check (deletion, or commits already on ${remote_name:-the remote}); skipping \`$check\`."
+  exit 0
+fi
+
+if [ ! -f node_modules/.package-lock.json ] || ! command -v npm >/dev/null 2>&1; then
+  echo "pre-push: dependencies are not installed (or npm is not on PATH), so \`$check\` cannot run." >&2
+  echo "pre-push: install them with \`npm ci\` using Node $(cat .nvmrc 2>/dev/null || echo 'from .nvmrc'), then push again." >&2
+  exit 1
+fi
+
+# The check runs on the working tree: refuse when it would not be the pushed commit.
+head=$(git rev-parse HEAD)
+for sha in $pushed; do
+  commit=$(git rev-parse --verify --quiet "$sha^{commit}") || commit=""
+  if [ "$commit" != "$head" ]; then
+    echo "pre-push: pushed commit $sha is not the checked-out commit $head." >&2
+    echo "pre-push: \`$check\` runs on the working tree; check out what you push, then push again." >&2
+    exit 1
+  fi
+done
+# Untracked files count too: an import of a file never added would pass here.
+untracked=$(git ls-files --others --exclude-standard | head -n 5)
+if ! git diff --quiet HEAD -- || [ -n "$untracked" ]; then
+  echo "pre-push: the working tree differs from $head (modified or untracked files); commit, stash or remove them so \`$check\` runs on exactly what you push." >&2
+  [ -z "$untracked" ] || echo "$untracked" | sed 's/^/pre-push: untracked: /' >&2
+  exit 1
+fi
+
+echo "pre-push: running \`$check\` on $head (Node $(node --version 2>/dev/null || echo unknown))"
+start=$(date +%s)
+# shellcheck disable=SC2086 # run exactly the command printed above
+$check </dev/null
+status=$?
+elapsed=$(($(date +%s) - start))
+if [ "$status" -ne 0 ]; then
+  echo "pre-push: \`$check\` failed on $head after ${elapsed}s (exit $status); push aborted." >&2
+  exit "$status"
+fi
+echo "pre-push: \`$check\` passed on $head in ${elapsed}s."

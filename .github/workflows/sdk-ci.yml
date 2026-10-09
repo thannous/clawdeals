@@ -1,37 +1,17 @@
 name: SDK CI
 
+# Manual only. When a change touches the OpenAPI contract, the SDK generators
+# (scripts/sdk/**) or sdk/**, run these steps locally (they need Java for the
+# OpenAPI generator and Python 3.11) or dispatch this workflow with
+# `gh workflow run sdk-ci.yml --ref <branch>`, and state it in the PR.
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/sdk-ci.yml"
-      - ".gitignore"
-      - "docs/openapi-v1.yaml"
-      - "package.json"
-      - "package-lock.json"
-      - "scripts/sdk/**"
-      - "sdk/**"
-      - "src/__tests__/sdk/**"
-      - "tsconfig.json"
-      - "vitest.config.ts"
-  push:
-    branches: ["main"]
-    paths:
-      - ".github/workflows/sdk-ci.yml"
-      - ".gitignore"
-      - "docs/openapi-v1.yaml"
-      - "package.json"
-      - "package-lock.json"
-      - "scripts/sdk/**"
-      - "sdk/**"
-      - "src/__tests__/sdk/**"
-      - "tsconfig.json"
-      - "vitest.config.ts"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: sdk-ci-${{ github.event.pull_request.number || github.ref }}
+  group: sdk-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

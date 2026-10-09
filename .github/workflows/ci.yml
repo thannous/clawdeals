@@ -1,30 +1,19 @@
 name: CI
 
-# Actions minutes are capped on this private repository. Every job is billed
-# rounded up to the minute and repeats checkout, setup and `npm ci`, so all
-# checks share one job. Documentation-only changes and `[skip ci]` commits do
-# not run CI. The complete historical browser corpus runs weekly and on demand
-# in historical-corpus.yml; production deployment waits for it on the exact
-# SHA (docs/hosting-cloudflare-vercel.md).
+# Manual only. Every push is checked locally first: `npm ci` installs a
+# pre-push hook that runs `npm run test:ci`, and the PR states the command, SHA
+# and result (AGENTS.md). Dispatch this workflow for a clean-machine run, for
+# instance for the lint, Worker bundle or public browser journeys it adds:
+# `gh workflow run ci.yml --ref <branch>`. All checks share one job so a run
+# repeats checkout, setup and `npm ci` only once.
 on:
   workflow_dispatch:
-  pull_request:
-    paths-ignore:
-      - "*.md"
-      - "docs/**/*.md"
-      - "LICENSE"
-  push:
-    branches: ["main"]
-    paths-ignore:
-      - "*.md"
-      - "docs/**/*.md"
-      - "LICENSE"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
