@@ -1,0 +1,157 @@
+// Checks of this repository for scripts/verify-local.mjs, the engine of the
+// common delivery rule v2 (regle-commune-livraison). Data only: the engine
+// loads this file as committed in the verified commit.
+//
+// `npm run verify:pr` runs the PR checks on an isolated copy of the commit;
+// `npm run verify:release` adds the release checks. A check whose inputs,
+// command, Node, npm and lockfile already passed is reused, not run again.
+
+// Source files TypeScript, Vitest and ESLint read.
+const CODE = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
+// Prose and tooling that no application check reads.
+const NOT_APP = [
+  "*.md",
+  "docs/**/*.md",
+  ".agents/**",
+  ".github/**",
+  ".githooks/**",
+  "competitor-profiles/**",
+  "verify-local.config.mjs",
+  "scripts/verify-local.mjs",
+  "scripts/test-verify-local.mjs",
+  "scripts/install-git-hooks.mjs",
+  "scripts/git-hooks.test.mjs",
+  "scripts/lint-changed.mjs",
+  "scripts/has-playwright-browser.mjs",
+];
+
+const config = {
+  mainBranch: "main",
+  commands: { pr: "npm run verify:pr", release: "npm run verify:release" },
+  deps: {
+    // Install, not link: the Turbopack build (`next build`) refuses a
+    // node_modules whose entries link outside the copy ("Could not find the
+    // Next.js package"). Measured on 2026-10-09: link 1.3 s, `npm ci` from the
+    // npm cache about 57 s and 1.4 GB, paid only when a check has to run.
+    mode: "install",
+    lockfile: "package-lock.json",
+    install: "npm ci --prefer-offline --no-audit --no-fund",
+    copy: [],
+  },
+  setup: [],
+  checks: [
+    {
+      name: "engine-tests",
+      command: "node --test scripts/test-verify-local.mjs",
+      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs"],
+    },
+    {
+      name: "git-hooks",
+      command: "npm run test:git-hooks",
+      inputs: [
+        ".githooks/**",
+        ".gitignore",
+        "package.json",
+        "verify-local.config.mjs",
+        "scripts/verify-local.mjs",
+        "scripts/install-git-hooks.mjs",
+        "scripts/git-hooks.test.mjs",
+      ],
+    },
+    {
+      // ESLint on the JS/TS files changed since the merge base with
+      // origin/main (everything when the ESLint config or the lockfile changed).
+      name: "lint-changed",
+      command: "npm run lint:changed",
+      inputs: [...CODE, "package.json"],
+      when: [...CODE, "package-lock.json"],
+    },
+    {
+      name: "typecheck",
+      command: "npm run typecheck",
+      inputs: [...CODE, "**/*.json"],
+      exclude: ["verify-local.config.mjs"],
+    },
+    {
+      name: "i18n-page-contract",
+      command: "npm run test:i18n:contract",
+      inputs: ["src/pages/**", "scripts/validate-i18n-page-contract.mjs", "package.json"],
+    },
+    {
+      name: "i18n-messages",
+      command: "npm run test:i18n:messages",
+      inputs: ["messages/**", "scripts/validate-i18n-messages.mjs", "package.json"],
+    },
+    {
+      name: "openapi-lint",
+      command: "npm run openapi:lint",
+      inputs: ["docs/openapi-v1.yaml", ".redocly.yaml", ".redocly.lint-ignore.yaml", "package.json"],
+    },
+    {
+      name: "skill-pack",
+      command: "npm run test:skill:pack",
+      inputs: ["skills/**", "public/**", "scripts/validate-skill-pack.mjs", "package.json"],
+    },
+    {
+      name: "skill-public",
+      command: "npm run test:skill:public",
+      inputs: ["skills/**", "public/**", "scripts/sync-skill-public.mjs", "package.json"],
+    },
+    {
+      name: "unit",
+      command: "npm run test:unit",
+      exclude: NOT_APP,
+    },
+
+    // Release only: what is delivered. The app reads its deployed SHA from
+    // the hosting environment at runtime (VERCEL_GIT_COMMIT_SHA and friends);
+    // the local build embeds no SHA, so it depends on the tree, not on the
+    // commit, and is reused like any other check.
+    {
+      name: "build",
+      command: "npm run build",
+      kinds: ["release"],
+      exclude: NOT_APP,
+      env: { NEXT_TELEMETRY_DISABLED: "1" },
+    },
+    {
+      name: "worker-bundle",
+      command: "npm exec -- wrangler deploy --dry-run --outdir .wrangler/verify-local-bundle",
+      kinds: ["release"],
+      inputs: ["workers/**", "src/**", "wrangler.jsonc", "tsconfig.json", "package.json"],
+      env: { WRANGLER_SEND_METRICS: "false" },
+    },
+    {
+      // The complete historical TesterArmy corpus (about 12 minutes): a local
+      // `next dev` and headless Chromium. Its evidence is copied to
+      // .e2e/verify-local/ in the main checkout before the copy is removed.
+      name: "historical-corpus",
+      command:
+        'out=".e2e/runs/historical/verify-local-$VERIFY_LOCAL_SHA"; ' +
+        'PARITY_OUTPUT="$out" node e2e/testerarmy/run-historical.mjs run; status=$?; ' +
+        'kept="$VERIFY_LOCAL_ROOT/.e2e/verify-local/historical-$VERIFY_LOCAL_SHA"; ' +
+        'rm -rf "$kept" && mkdir -p "$kept" && cp -R "$out/." "$kept/" && echo "historical-corpus: evidence in $kept"; ' +
+        'exit $status',
+      kinds: ["release"],
+      specialised: true,
+      exclude: NOT_APP,
+      env: { E2E_TELEMETRY_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1", TESTERARMY_AI: "0" },
+      requires: {
+        command: "node scripts/has-playwright-browser.mjs",
+        hint:
+          "install the Chromium pinned by playwright-core (`npx playwright install chromium`), or dispatch historical-corpus.yml on the released commit and pass --external historical-corpus=<run URL>",
+      },
+    },
+  ],
+  hook: {
+    checks: [
+      {
+        // .gitignore keeps local env files out of `git add`; only the template is tracked.
+        name: "gitignore-env",
+        command: "git check-ignore -q .env && git check-ignore -q .env.local && ! git check-ignore -q .env.example",
+      },
+    ],
+  },
+};
+
+export default config;

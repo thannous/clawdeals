@@ -1,8 +1,8 @@
 name: CI
 
 # Runs on every push to main as a post-merge signal, never a merge gate (CI
-# never blocks). PRs are checked locally: `npm ci` installs a pre-push hook that
-# runs `npm run test:ci`, and the PR states the command, SHA and result in its
+# never blocks). PRs are checked locally with `npm run verify:pr` (common
+# delivery rule v2), and the PR states the command, SHA, tree and result in its
 # Local proof (AGENTS.md). Dispatch this workflow for a clean-machine run on a
 # branch: `gh workflow run ci.yml --ref <branch>`. Main push runs are never
 # cancelled, so every main SHA gets a result. All checks share one job so a run
