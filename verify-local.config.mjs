@@ -41,6 +41,14 @@ const config = {
     copy: [],
   },
   setup: [],
+  // The scripts these checks run: changing them changes what a proof proves,
+  // so proof-block flags them for the owner's review like this file.
+  deliveryFiles: [
+    "scripts/lint-changed.mjs",
+    "scripts/verify-sdk.sh",
+    "scripts/has-playwright-browser.mjs",
+    "scripts/install-git-hooks.mjs",
+  ],
   checks: [
     {
       name: "engine-tests",
@@ -115,7 +123,7 @@ const config = {
       specialised: true,
       requires: {
         command: "java -version >/dev/null 2>&1 && python3.11 --version >/dev/null 2>&1",
-        hint: "install Java (OpenAPI Generator) and Python 3.11, or dispatch sdk-ci.yml and pass --external sdk=\"<run URL> on <SHA>\"",
+        hint: "install Java (OpenAPI Generator) and Python 3.11 (the version sdk-ci.yml pins), or dispatch sdk-ci.yml and pass --external sdk=\"<run URL> on <SHA>\"",
       },
     },
 

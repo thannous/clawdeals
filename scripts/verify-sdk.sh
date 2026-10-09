@@ -19,6 +19,9 @@ npm run sdk:generate:py
 test -f sdk/python/src/clawdeals_sdk_generated/__init__.py
 git diff --exit-code
 venv="${TMPDIR:-/tmp}/clawdeals-sdk-venv-$$"
+# Removed even when a step fails: the box is short on disk.
+trap 'rm -rf "$venv"' EXIT
+# Python 3.11 is the version sdk-ci.yml pins.
 python3.11 -m venv "$venv"
 "$venv/bin/python" -m pip install --quiet -U pip
 "$venv/bin/python" -m pip install --quiet "sdk/python[dev]"
