@@ -1,10 +1,10 @@
 # Règle commune de livraison
 
-**Version commune : v3 (2026-10-09)**
+**Version commune : v4 (2026-10-09)**
 **Statut** : en vigueur. La v2 a été adoptée par le propriétaire le 9 octobre 2026 ; la v3 (même jour, soir) ajoute le principe « local d'abord » (§10), l'échelle de relecture (§11), la preuve des contrôles spécialisés (§12) et la CI externe (§13).
 **Décideur** : le propriétaire.
 **Dépôts concernés** : shapier, skillcodex, clawdeals, bodylab, dreamer.
-**Copies** : chaque dépôt a sa propre copie de ce fichier, dans `docs/regle-commune-livraison.md`. Aucune copie n'est la source des autres. Tout ce qui précède la §13.1 est identique, octet pour octet, dans les cinq dépôts ; la §13.1 est propre à chaque dépôt.
+**Copies** : chaque dépôt a sa propre copie de ce fichier, à l'emplacement qu'il choisit (le chemin de la règle du dépôt, donné dans sa §13.1). Aucune copie n'est la source des autres. Tout ce qui précède la §13.1 est identique, octet pour octet, dans les cinq dépôts ; la §13.1 est propre à chaque dépôt.
 
 ## 0. Consignes aux agents relecteurs
 
@@ -43,7 +43,7 @@ Chaque `AGENTS.md` en reprend le résumé et renvoie à la copie locale de ce fi
    - Conditions de fusion, communes aux cinq dépôts :
      - la PR n'est plus en brouillon ;
      - le `Commit SHA` de la preuve est la tête de la PR ;
-     - chaque fil de discussion a une réponse et aucun n'est ouvert (§11) ;
+     - chaque fil de discussion a une réponse et est résolu ; aucun n'est ouvert (§11) ;
      - il n'y a pas de conflit ;
      - la relecture du CTO n'a pas de point bloquant.
    - C'est le CTO qui fusionne, en squash. Les relecteurs ne poussent jamais sur la branche de l'auteur. On ne fusionne jamais une PR Dependabot.
@@ -108,10 +108,10 @@ Le modèle `.github/pull_request_template.md` a les sections `## Summary`, `## L
 
 - Chaque dépôt a sa copie de ce fichier, et son `AGENTS.md` contient :
   - la phrase de la §1 ;
-  - un lien vers la copie locale, `docs/regle-commune-livraison.md` ;
+  - un lien vers la copie locale, au chemin de la règle du dépôt (donné dans sa §13.1) ;
   - la table locale des commandes.
 - La ligne **Version commune** en tête identifie le texte commun. Une correction du texte commun change cette version et se recopie dans les cinq dépôts ; un dépôt peut s'aligner plus tard, sa version dit où il en est.
-- **Moteur** : `scripts/verify-local.mjs` et ses tests `scripts/test-verify-local.mjs` sont aujourd'hui identiques octet pour octet dans les cinq dépôts, chacun avec sa propre copie. Ils portent le hook, `verify:pr`, `verify:release`, la preuve et la garde de publication. Chaque dépôt ne décrit que ses contrôles, dans `verify-local.config.mjs`. Une correction du moteur se fait dans chaque dépôt, jamais dans un seul ; ses tests vérifient l'empreinte du moteur (`ENGINE_SHA256`).
+- **Moteur** : `scripts/verify-local.mjs` et ses tests `scripts/test-verify-local.mjs` sont, par choix recommandé, le même fichier dans les cinq dépôts, chaque dépôt avec sa propre copie. Ils portent le hook, `verify:pr`, `verify:release`, la preuve et la garde de publication. Chaque dépôt ne décrit que ses contrôles, dans `verify-local.config.mjs`. Chaque dépôt épingle sa propre copie par `ENGINE_SHA256` dans ses propres tests et ne vérifie que celle-ci. Une correction du moteur gagne à être reportée dans chaque dépôt, mais ce report n'est jamais vérifié entre dépôts : aucun contrôle ne compare les dépôts entre eux.
 - Un test de présence du texte ne prouve rien sur le comportement. Chaque dépôt teste plutôt :
   - la durée et les cas du hook (§3) ;
   - la réutilisation d'une preuve quand l'arbre est identique ;
@@ -123,7 +123,7 @@ Le modèle `.github/pull_request_template.md` a les sections `## Summary`, `## L
 | --- | --- |
 | Q1 : Arbre modifié | Vérification sur une copie isolée du commit ; on ne touche pas au travail en cours |
 | Q2 : Langue | Français pour le texte commun ; chaque dépôt garde sa langue pour le reste |
-| Q3 : Source du texte | Chaque dépôt a sa copie ; aucune n'est canonique ; la ligne Version commune les relie |
+| Q3 : Source du texte et du moteur | Chaque dépôt a sa copie du texte et du moteur ; aucune n'est canonique ; la ligne Version commune relie les textes. Le même fichier moteur partout est recommandé ; chaque dépôt épingle et vérifie seulement sa copie (`ENGINE_SHA256` dans ses tests) ; une correction gagne à être reportée partout, sans contrôle entre dépôts |
 | Q4 : Durée du hook | Quelques secondes. Un dépassement entraîne une optimisation ou un déplacement, jamais un faux succès |
 | Q5 : Lint | Ciblé et mis en cache quand du code change. Pas de lint global ajouté seulement pour uniformiser |
 | Q6 : Dependabot | On ne fusionne jamais une PR Dependabot ; les mises à jour de sécurité restent actives |
@@ -137,12 +137,12 @@ Le modèle `.github/pull_request_template.md` a les sections `## Summary`, `## L
 
 Un dépôt applique la règle quand il a :
 
-- sa copie de ce fichier et, dans `AGENTS.md`, la section commune qui y renvoie ;
+- sa copie de ce fichier, au chemin qu'il choisit et qu'il donne dans sa §13.1, et, dans `AGENTS.md`, la section commune qui y renvoie ;
 - le moteur, sa config `verify-local.config.mjs`, les commandes `verify:pr` et `verify:release`, et le hook `.githooks/pre-push` installé par `prepare` ;
 - le modèle de PR commun (§5) ;
 - des `requires.hint` qui nomment d'abord la machine du propriétaire (§12) ;
 - des workflows de CI en `workflow_dispatch` seulement, et des workflows de publication gardés comme le dit la §13 ;
-- sa table de CI externe (§13.1).
+- sa §13.1 : le chemin de sa copie de ce fichier, ses contrôles de push et sa table de CI externe.
 
 ## 9. Historique
 
@@ -151,11 +151,13 @@ Un dépôt applique la règle quand il a :
 | v1 | 9 octobre 2026 | Première proposition, relue le même jour |
 | v2 | 9 octobre 2026 | Hook rapide, `verify:pr` sur copie isolée, preuve liée à l'arbre, `verify:release` sans réutilisation ; adoptée par le propriétaire |
 | v3 | 9 octobre 2026, soir | Local d'abord (§10), échelle de relecture (§11), preuve des contrôles spécialisés (§12), CI externe et garde des publications (§13) ; une copie par dépôt, aucune canonique ; texte commun sans état des lieux par dépôt |
+| v4 | 9 octobre 2026, soir | Fil répondu **et** résolu avant fusion (§2.3, §11, modèle de PR) ; chemin de la règle choisi par chaque dépôt et donné dans sa §13.1 ; lien relatif vers la règle du dépôt dans le modèle de PR, au lieu d'un lien vers la branche principale ; même fichier moteur recommandé, chaque dépôt n'épinglant et ne vérifiant que sa copie, une correction reportée de préférence partout mais jamais vérifiée entre dépôts (§6, Q3, §10, `AGENTS.md`) |
+
 ## 10. Local d'abord : processus commun, dépôts indépendants
 
 **Décision du propriétaire du 9 octobre 2026.**
 
-1. **Processus commun, pas code commun.** Chaque dépôt possède sa copie du moteur, sa config, ses hooks et ce document. Un dépôt se vérifie seul : aucun contrôle, aucune empreinte et aucun lien vers un autre dépôt n'est nécessaire. Le texte commun est recopié à l'identique dans chaque dépôt ; seule la §13.1 change. La copie de chaque dépôt fait foi pour lui.
+1. **Processus commun, pas code commun.** Chaque dépôt possède sa copie du moteur, sa config, ses hooks et ce document. Le même fichier moteur partout est recommandé ; chaque dépôt épingle et vérifie seulement sa propre copie (`ENGINE_SHA256` dans ses tests). Un dépôt se vérifie seul : aucun contrôle entre dépôts, aucune empreinte d'un autre dépôt et aucun lien vers un autre dépôt n'est nécessaire. Le texte commun est recopié à l'identique dans chaque dépôt ; seule la §13.1 change. La copie de chaque dépôt fait foi pour lui.
 2. **La CI externe ne tourne jamais par défaut.** GitHub Actions, CircleCI, GitLab CI, EAS Workflows et les builds Git de Vercel ou de Cloudflare ne se lancent que sur demande explicite, et seulement là où un client, un partenaire ou un registre l'exige. Chaque cas est listé dans la table de la §13 ; sans ligne dans cette table, aucune CI externe n'est attendue.
 3. **La preuve ordinaire est locale ou auto-hébergée.** Rôles des machines :
    - **machine partagée (box)** : `verify:pr` et les relectures du CTO ;
@@ -185,7 +187,7 @@ Chaque remarque de relecture porte un niveau :
 | **à corriger** (should-fix) | à traiter dans cette PR | corrige dans cette PR, ou répond avec une raison, ou avec un suivi tracé (ticket ou issue) |
 | **détail** (nit) | facultatif | corrige, ou décline par une réponse courte |
 
-Chaque fil reçoit une réponse. Aucune PR n'est fusionnée avec un fil sans réponse.
+Chaque fil reçoit une réponse, puis est résolu. Aucune PR n'est fusionnée avec un fil sans réponse ou non résolu.
 
 ## 12. Preuve des contrôles spécialisés
 
@@ -217,6 +219,8 @@ Un lancement manuel exécute le fichier de workflow de sa propre référence : l
 ### 13.1 Propre à ce dépôt (clawdeals)
 
 Cette sous-section est la seule partie de ce document qui diffère d'un dépôt à l'autre.
+
+**Chemin de la règle (§6).** La copie de ce dépôt est `docs/regle-commune-livraison.md`.
 
 **Contrôles de push (§3).** Le hook `.githooks/pre-push` lance `node scripts/verify-local.mjs hook` : les contrôles du moteur sur ce que le push envoie (fichiers interdits, secrets, taille au plus 10 Mo), puis le contrat `.gitignore` de `hook.checks` dans `verify-local.config.mjs` (`gitignore-env` : `.env` et `.env.local` ignorés, `.env.example` suivi), et enfin l'existence d'une preuve pour l'arbre poussé, qui ne bloque pas. `npm ci` l'installe par `prepare`.
 

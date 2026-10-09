@@ -27,14 +27,14 @@ for a workflow listed in External CI. Otherwise: none / out of scope.
 
 ## Review
 
-<!-- Scale and rules: docs/regle-commune-livraison.md, section 11. -->
-- [ ] Every review thread has an answer; nothing merges with an unanswered thread.
-- [ ] Scale ([docs/regle-commune-livraison.md](https://github.com/thannous/clawdeals/blob/main/docs/regle-commune-livraison.md#11-échelle-de-relecture)): blocker fixed before merge; should-fix fixed in this PR or answered with a reason or a tracked follow-up; nit optional, may be declined with a short reply.
+<!-- Scale and rules: the repo's delivery rule (its path is linked from AGENTS.md, Livraison section), section 11. -->
+- [ ] Every review thread is answered and resolved; nothing merges with an unanswered or unresolved thread.
+- [ ] Scale ([the repo's delivery rule, section 11](../docs/regle-commune-livraison.md#11-échelle-de-relecture)): blocker fixed before merge; should-fix fixed in this PR or answered with a reason or a tracked follow-up; nit optional, may be declined with a short reply.
 
 ## External CI
 
 <!--
 none, or which workflow of the External CI table
-(docs/regle-commune-livraison.md, section 13) runs for this PR and why.
+(the repo's delivery rule, section 13) runs for this PR and why.
 -->
 - none
