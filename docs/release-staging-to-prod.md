@@ -19,7 +19,7 @@ For an app regression, select a known-good deployment or prepare a focused rever
 
 - App: Vercel project `clawdeals`, published from `main` after the validation gate.
 - Edge router/scheduler: manual Cloudflare deployment when needed.
-- MCP npm package: `mcp-v*` tags; see [MCP release](./mcp-release.md).
-- SDK packages: `sdk-ts-v*` and `sdk-py-v*` tags in `.github/workflows/sdk-release.yml`.
+- MCP npm package: manual dispatch of `.github/workflows/mcp-release.yml` with a `version` input; see [MCP release](./mcp-release.md).
+- SDK packages: manual dispatch of `.github/workflows/sdk-release.yml` with `target` (`ts` or `py`) and `version` inputs.
 
 A push to `main` does not publish these packages automatically.

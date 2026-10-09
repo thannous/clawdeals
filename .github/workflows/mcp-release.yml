@@ -1,13 +1,25 @@
 name: MCP Release
 
+# Publishes clawdeals-mcp to npm. Manual dispatch only, on an explicit
+# decision to publish: `gh workflow run mcp-release.yml --ref main -f version=X.Y.Z`.
+# The version input must equal packages/clawdeals-mcp/package.json.
+# Gating: the job-level `if` skips any ref other than main before a runner
+# starts, and the `release` environment only accepts main (its branch policy)
+# and holds the publish secrets. A dispatch runs the workflow file of its own
+# ref, so the `if` alone can be edited away on a branch; the real enforcement
+# is the environment branch policy.
 on:
-  push:
-    tags:
-      - "mcp-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (X.Y.Z, must equal packages/clawdeals-mcp/package.json)"
+        required: true
+        type: string
 
 jobs:
   release_mcp:
-    if: startsWith(github.ref_name, 'mcp-v')
+    if: github.ref == 'refs/heads/main'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -22,11 +34,14 @@ jobs:
           package-manager-cache: false
       - name: Install root deps
         run: npm ci
-      - name: Verify version matches tag
+      - name: Verify version matches input
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          TAG="${GITHUB_REF_NAME#mcp-v}"
+          TAG="$INPUT_VERSION"
           PKG="$(grep -m1 '\"version\"' ./packages/clawdeals-mcp/package.json | sed -E 's/.*\"version\"[[:space:]]*:[[:space:]]*\"([^\"]+)\".*/\1/')"
-          echo "tag=$TAG pkg=$PKG"
+          echo "input=$TAG pkg=$PKG"
+          test -n "$TAG"
           test "$TAG" = "$PKG"
       - name: Validate CLI entrypoint
         run: node packages/clawdeals-mcp/bin/clawdeals-mcp.mjs --help > /dev/null

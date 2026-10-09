@@ -32,7 +32,7 @@ npm run test:ci
 npm run build
 ```
 
-Before a merge, `npm run verify:pr` runs the PR checks (contracts, unit tests and ESLint on the changed files) on an isolated copy of the commit and records a proof; `npm run verify:release` adds the build, the Worker bundle and the historical browser corpus before a release. `npm ci` also installs a Git `pre-push` hook that only runs fast checks (forbidden files, secrets, size) in a few seconds. Remote CI runs after each push to `main` as a post-merge signal and otherwise on manual dispatch; see the [repository guidelines](./AGENTS.md).
+Before a merge, `npm run verify:pr` runs the PR checks (contracts, unit tests and ESLint on the changed files) on an isolated copy of the commit and records a proof; `npm run verify:release` adds the build, the Worker bundle and the historical browser corpus before a release. `npm ci` also installs a Git `pre-push` hook that only runs fast checks (forbidden files, secrets, size) in a few seconds. Remote CI and the npm/PyPI release workflows run on manual dispatch only; see the [repository guidelines](./AGENTS.md).
 
 Browser tests: `npm run test:ui`. API journeys: `npm run test:integration`.
 Integration tests need the services and fixtures required by the selected spec; current tooling still rejects known production targets.

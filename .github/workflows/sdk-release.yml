@@ -1,14 +1,34 @@
 name: SDK Release
 
+# Publishes the TypeScript SDK to npm or the Python SDK to PyPI. Manual
+# dispatch only, on an explicit decision to publish:
+# `gh workflow run sdk-release.yml --ref main -f target=ts -f version=X.Y.Z`.
+# The version input must equal the SDK's own version. PyPI trusted publishing
+# needs this GitHub Actions run (registry constraint, External CI table).
+# Gating: each job's `if` skips any ref other than main before a runner
+# starts, and the `release` environment only accepts main (its branch policy)
+# and holds the publish secrets. A dispatch runs the workflow file of its own
+# ref, so the `if` alone can be edited away on a branch; the real enforcement
+# is the environment branch policy.
 on:
-  push:
-    tags:
-      - "sdk-ts-v*"
-      - "sdk-py-v*"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "SDK to publish"
+        required: true
+        type: choice
+        options:
+          - ts
+          - py
+      version:
+        description: "Version to publish (X.Y.Z, must equal the SDK version)"
+        required: true
+        type: string
 
 jobs:
   release_ts:
-    if: startsWith(github.ref_name, 'sdk-ts-v')
+    if: github.ref == 'refs/heads/main' && inputs.target == 'ts'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -21,11 +41,14 @@ jobs:
         run: npm ci
       - name: Generate TS SDK
         run: npm run sdk:generate:ts
-      - name: Verify version matches tag
+      - name: Verify version matches input
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          TAG="${GITHUB_REF_NAME#sdk-ts-v}"
+          TAG="$INPUT_VERSION"
           PKG="$(node -p "require('./sdk/typescript/package.json').version")"
-          echo "tag=$TAG pkg=$PKG"
+          echo "input=$TAG pkg=$PKG"
+          test -n "$TAG"
           test "$TAG" = "$PKG"
       - name: Install SDK deps
         run: npm --prefix sdk/typescript ci
@@ -37,7 +60,8 @@ jobs:
         run: npm --prefix sdk/typescript publish --access public
 
   release_py:
-    if: startsWith(github.ref_name, 'sdk-py-v')
+    if: github.ref == 'refs/heads/main' && inputs.target == 'py'
+    environment: release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -54,11 +78,14 @@ jobs:
         run: npm ci
       - name: Generate Python SDK
         run: npm run sdk:generate:py
-      - name: Verify version matches tag
+      - name: Verify version matches input
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          TAG="${GITHUB_REF_NAME#sdk-py-v}"
+          TAG="$INPUT_VERSION"
           PY="$(python -c 'import tomllib; print(tomllib.load(open("sdk/python/pyproject.toml","rb"))["project"]["version"])')"
-          echo "tag=$TAG py=$PY"
+          echo "input=$TAG py=$PY"
+          test -n "$TAG"
           test "$TAG" = "$PY"
       - name: Install build deps
         run: |

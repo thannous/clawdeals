@@ -162,7 +162,8 @@ const config = {
           "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://registry.npmjs.org/ && " +
           "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://repo1.maven.org/maven2/ && " +
           "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://pypi.org/simple/pip/",
-        hint: "install Java (OpenAPI Generator) and Python 3.11 (the version sdk-ci.yml pins) and reach npm, Maven Central and PyPI, or dispatch sdk-ci.yml and pass --external sdk=\"https://<run URL> on <SHA>\"",
+        hint:
+          "run it on the owner machine (PC Tanuki: Java for OpenAPI Generator, Python 3.11, access to npm, Maven Central and PyPI) and pass --external sdk=\"owner-machine: <host> <note> on <SHA>\"; dispatch sdk-ci.yml only if it is listed in External CI (docs/regle-commune-livraison.md, section 13)",
       },
     },
 
@@ -214,7 +215,7 @@ const config = {
       requires: {
         command: "node scripts/has-playwright-browser.mjs",
         hint:
-          "install the Chromium pinned by playwright-core (`npx playwright install chromium`), or dispatch historical-corpus.yml on the released commit and pass --external historical-corpus=\"https://<run URL> on <SHA>\"",
+          "run it on the owner machine (PC Tanuki, with the Chromium pinned by playwright-core: `npx playwright install chromium`) and pass --external historical-corpus=\"owner-machine: <host> <note> on <SHA>\"; dispatch historical-corpus.yml only if it is listed in External CI (docs/regle-commune-livraison.md, section 13)",
       },
     },
   ],

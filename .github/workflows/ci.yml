@@ -1,27 +1,21 @@
 name: CI
 
-# Runs on every push to main as a post-merge signal, never a merge gate (CI
-# never blocks). PRs are checked locally with `npm run verify:pr` (common
-# delivery rule v2), and the PR states the command, SHA, tree and result in its
-# Local proof (AGENTS.md). Dispatch this workflow for a clean-machine run on a
-# branch: `gh workflow run ci.yml --ref <branch>`. Main push runs are never
-# cancelled, so every main SHA gets a result. All checks share one job so a run
-# repeats checkout, setup and `npm ci` only once.
+# Manual dispatch only (`gh workflow run ci.yml --ref <branch>`): a
+# clean-machine run on request, never a merge or release gate. PRs are checked
+# locally with `npm run verify:pr`, and the PR states the command, SHA, tree and
+# result in its Local proof (AGENTS.md, docs/regle-commune-livraison.md). The
+# post-merge signal is an optional `npm run verify:pr` on the main SHA on the
+# shared box. All checks share one job so a run repeats checkout, setup and
+# `npm ci` only once.
 on:
   workflow_dispatch:
-  push:
-    branches: ["main"]
-    paths-ignore:
-      - "*.md"
-      - "docs/**/*.md"
-      - "LICENSE"
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'push' }}
+  cancel-in-progress: true
 
 jobs:
   test-ci:
