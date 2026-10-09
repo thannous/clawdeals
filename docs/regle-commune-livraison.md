@@ -37,7 +37,7 @@ Chaque `AGENTS.md` en reprend le résumé et renvoie à la copie locale de ce fi
    - Le contrôle tourne sur une copie isolée du commit (`git worktree`), pas dans l'arbre de travail. Il n'oblige donc pas à ranger un travail en cours.
    - Il produit une **preuve** liée à l'**arbre vérifié** (le *tree hash* git), pas seulement au commit (§4). Il y note les contrôles lancés, leur résultat et l'environnement : versions de Node et du gestionnaire de paquets.
    - Les variables d'environnement qui réduisent ce qu'un contrôle lance sont retirées avant les contrôles : `JEST_CHANGED_SINCE`, `TURBO_SCM_BASE`, `TURBO_SCM_HEAD`, `CI_BASE_REVISION`, `GITHUB_BASE_SHA`, et celles que la config d'un dépôt ajoute dans `stripEnv`. Un contrôle qui a besoin de l'une d'elles la fixe dans son propre `env`.
-   - **Contrôles spécialisés.** Quand la machine de l'agent ne peut pas lancer un contrôle spécialisé, la preuve vient d'abord de la machine du propriétaire, et d'une CI externe seulement si ce workflow est retenu pour le dépôt (§12, §13). Si ce contrôle est exigé avant la fusion, la PR attend cette preuve. Le moteur n'accepte `--external` que pour un contrôle spécialisé qui ne peut pas tourner sur cette machine (sa sonde `requires` échoue), et seulement avec une preuve qui commence par `owner-machine:` (ou donne le lien `https://` de l'exécution) et cite exactement un commit : le SHA vérifié ou un commit de même arbre. Une entrée externe n'est jamais réutilisée par une autre preuve.
+   - **Contrôles spécialisés.** Quand la machine de l'agent ne peut pas lancer un contrôle spécialisé, la preuve vient par défaut de la machine du propriétaire (`owner-machine:`), et d'une source externe seulement si ce workflow figure dans la table de CI externe du dépôt (§12, §13, §13.1). Si ce contrôle est exigé avant la fusion, la PR attend cette preuve. `--external` ne vaut que pour un contrôle spécialisé qui ne peut pas tourner sur cette machine (sa sonde `requires` échoue), et la preuve cite exactement un commit : le SHA de tête de la PR, jamais un autre commit, même de même arbre. Une entrée externe n'est jamais réutilisée par une autre preuve.
 3. **La PR et sa fusion.**
    - Avant fusion, la section `## Local proof` cite la preuve : commande, commit et arbre vérifiés, résultat, contrôles spécialisés lancés ou jugés hors périmètre. Ce titre anglais et la ligne du SHA du commit restent inchangés : le contrôle de fusion automatique des agents les lit.
    - Conditions de fusion, communes aux cinq dépôts :
@@ -51,7 +51,7 @@ Chaque `AGENTS.md` en reprend le résumé et renvoie à la copie locale de ce fi
 4. **Intégration : recalculer, ne pas tout rejouer.**
    - Si la branche de base a avancé, l'auteur fusionne la base dans la branche et relance `verify:pr`.
    - Seuls les contrôles dont les entrées ont changé sont rejoués.
-   - Si l'arbre fusionné est identique à l'arbre déjà prouvé, la preuve reste valable telle quelle.
+   - Si l'arbre fusionné est identique à l'arbre déjà prouvé, aucun contrôle ne tourne à nouveau ; `verify:pr` est tout de même relancé pour que la preuve cite le nouveau SHA de tête (§2.3).
 5. **Publication vérifiée pour la cible livrée.**
    - Avant de publier, `verify:release` s'exécute sur le commit livré.
    - Il ne réutilise aucun résultat : chaque contrôle de publication tourne sur le commit livré, dans une copie isolée, même si la PR l'a déjà passé sur le même arbre. Les contrôles qu'une PR ne lance que si leurs chemins changent (`when`) tournent aussi. La réutilisation par entrées identiques reste réservée à `verify:pr`.
@@ -151,7 +151,7 @@ Un dépôt applique la règle quand il a :
 | v1 | 9 octobre 2026 | Première proposition, relue le même jour |
 | v2 | 9 octobre 2026 | Hook rapide, `verify:pr` sur copie isolée, preuve liée à l'arbre, `verify:release` sans réutilisation ; adoptée par le propriétaire |
 | v3 | 9 octobre 2026, soir | Local d'abord (§10), échelle de relecture (§11), preuve des contrôles spécialisés (§12), CI externe et garde des publications (§13) ; une copie par dépôt, aucune canonique ; texte commun sans état des lieux par dépôt |
-| v4 | 9 octobre 2026, soir | Fil répondu **et** résolu avant fusion (§2.3, §11, modèle de PR) ; chemin de la règle choisi par chaque dépôt et donné dans sa §13.1 ; lien relatif vers la règle du dépôt dans le modèle de PR, au lieu d'un lien vers la branche principale ; même fichier moteur recommandé, chaque dépôt n'épinglant et ne vérifiant que sa copie, une correction reportée de préférence partout mais jamais vérifiée entre dépôts (§6, Q3, §10, `AGENTS.md`) |
+| v4 | 9 octobre 2026, soir | Fil répondu **et** résolu avant fusion (§2.3, §11, modèle de PR) ; chemin de la règle choisi par chaque dépôt et donné dans sa §13.1 ; dans le modèle de PR, l'échelle de relecture renvoie en texte simple à la §11 de la règle du dépôt, sans lien (ni lien vers la branche principale, ni lien relatif) ; même fichier moteur recommandé, chaque dépôt n'épinglant et ne vérifiant que sa copie, une correction reportée de préférence partout mais jamais vérifiée entre dépôts (§6, Q3, §10, `AGENTS.md`) ; preuve spécialisée alignée sur la §12 : machine du propriétaire par défaut, source externe seulement si elle figure dans la CI externe du dépôt (§13, §13.1), et seulement sur le SHA de tête, jamais un commit de même arbre (§2.2, §2.4, §12, `AGENTS.md`, modèle de PR) |
 
 ## 10. Local d'abord : processus commun, dépôts indépendants
 
@@ -197,7 +197,9 @@ Chaque fil reçoit une réponse, puis est résolu. Aucune PR n'est fusionnée av
   --external <contrôle>="owner-machine: <hôte> <note> on <SHA>"
   ```
 
-- **Une CI externe seulement si elle est retenue pour ce dépôt.** Une preuve `https://` d'une exécution de CI n'est valable que si ce workflow figure dans la table de la §13 pour ce dépôt.
+  `<SHA>` est le SHA de tête de la PR (le `Commit SHA` de `## Local proof`), jamais un autre commit, même de même arbre.
+
+- **Une source externe seulement si elle est retenue pour ce dépôt.** Une preuve venue d'une CI externe (le lien de son exécution) n'est valable que si ce workflow figure dans la table de CI externe du dépôt (§13, §13.1), et seulement pour une exécution sur le SHA de tête de la PR.
 - La PR cite chaque preuve spécialisée dans sa section `## Specialised checks`, ou y écrit « none / out of scope ».
 
 ## 13. CI externe

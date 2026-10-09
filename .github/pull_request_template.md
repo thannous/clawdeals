@@ -20,8 +20,9 @@ merge it into the branch, rerun `npm run verify:pr` and update this section.
 
 <!--
 One line per specialised check this PR needs, owner machine first:
-`<check>: owner-machine: <host> <note> on <SHA>`. External CI evidence only
-for a workflow listed in External CI. Otherwise: none / out of scope.
+`<check>: owner-machine: <host> <note> on <SHA>`, where <SHA> is the PR head
+SHA (never another commit, even with the same tree). External evidence only
+for a workflow listed in the repo's External CI table, run on the head SHA. Otherwise: none / out of scope.
 -->
 - none / out of scope
 
@@ -29,7 +30,7 @@ for a workflow listed in External CI. Otherwise: none / out of scope.
 
 <!-- Scale and rules: the repo's delivery rule (its path is linked from AGENTS.md, Livraison section), section 11. -->
 - [ ] Every review thread is answered and resolved; nothing merges with an unanswered or unresolved thread.
-- [ ] Scale ([the repo's delivery rule, section 11](../docs/regle-commune-livraison.md#11-échelle-de-relecture)): blocker fixed before merge; should-fix fixed in this PR or answered with a reason or a tracked follow-up; nit optional, may be declined with a short reply.
+- [ ] Scale (section 11 of the repo's delivery rule, `docs/regle-commune-livraison.md`): blocker fixed before merge; should-fix fixed in this PR or answered with a reason or a tracked follow-up; nit optional, may be declined with a short reply.
 
 ## External CI
 
