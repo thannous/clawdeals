@@ -1,5 +1,5 @@
 // Checks of this repository for scripts/verify-local.mjs, the engine of the
-// common delivery rule v2 (regle-commune-livraison). Data only: the engine
+// common delivery rule (regle-commune-livraison, docs/regle-commune-livraison.md). Data only: the engine
 // loads this file as committed in the verified commit.
 //
 // `npm run verify:pr` runs the PR checks on an isolated copy of the commit;
@@ -33,6 +33,13 @@ const NOT_APP = [
   "scripts/verify-sdk.sh",
 ];
 
+// sha256 of this repository's own copy of scripts/verify-local.mjs (engine v3,
+// ported byte-identical from thannous/skillcodex#197 at 3eb7f3fc). The engine
+// tests compare the file with it, so an engine edit is a deliberate change of
+// this pin. No other repository is read or compared.
+export const ENGINE_SHA256 =
+  "bcb521d64c7e1cc8872784b50c8101a7614dadee19c89a395e09d04ec231d7b2";
+
 const config = {
   mainBranch: "main",
   commands: { pr: "npm run verify:pr", release: "npm run verify:release" },
@@ -48,9 +55,26 @@ const config = {
     copy: [],
   },
   setup: [],
+  // https:// URL prefixes of the external CI runs that --external may cite as
+  // evidence for a specialised check (External CI, section 13.1 of
+  // docs/regle-commune-livraison.md). None here, so only owner-machine
+  // evidence counts: the publish rows (mcp-release.yml, sdk-release.yml)
+  // publish and prove no check, and the 13.1 row for ci.yml, sdk-ci.yml and
+  // historical-corpus.yml says they are never a merge or publish condition. A
+  // prefix also cannot pick one workflow: every run of this repository lives
+  // under https://github.com/thannous/clawdeals/actions/runs/.
+  externalSources: [],
   // The scripts these checks run: changing them changes what a proof proves,
   // so proof-block flags them for the owner's review like this file.
   deliveryFiles: [
+    // The lint, typecheck and test configs (the engine's own list covers them
+    // too). package.json and package-lock.json stay out: the engine flags a
+    // package.json change outside dependencies and version by itself, and the
+    // delivery rule (section 2.3) exempts dependency-only changes.
+    "eslint.config.mjs",
+    "tsconfig.json",
+    "vitest.config.ts",
+    ".githooks/pre-push",
     "scripts/lint-changed.mjs",
     "scripts/lint-everything.mjs",
     "scripts/verify-sdk.sh",
@@ -72,7 +96,8 @@ const config = {
     {
       name: "engine-tests",
       command: "node --test scripts/test-verify-local.mjs",
-      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs"],
+      // The engine tests read ENGINE_SHA256 from this file.
+      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs", "verify-local.config.mjs"],
     },
     {
       name: "git-hooks",
