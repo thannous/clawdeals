@@ -14,6 +14,7 @@
     "build": "next build",
     "analyze": "node scripts/analyze-build.mjs",
     "start": "next start",
+    "prepare": "node scripts/install-git-hooks.mjs",
     "lint": "eslint . --max-warnings=0 --ext .js,.jsx,.ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test:i18n:contract": "node scripts/validate-i18n-page-contract.mjs",

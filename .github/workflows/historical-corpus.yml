@@ -1,14 +1,13 @@
 name: Historical browser corpus
 
-# The complete historical TesterArmy corpus takes about 10 minutes, so it no
-# longer runs on every push to main. It runs weekly and on demand, and is
-# skipped when this exact commit already passed it. Production deployment of a
-# commit waits for a successful run on that SHA: dispatch this workflow on main
-# before publishing (docs/hosting-cloudflare-vercel.md).
+# The complete historical TesterArmy corpus takes about 10 minutes. It runs
+# only on demand: `gh workflow run historical-corpus.yml --ref <branch>`, or
+# locally with `node e2e/testerarmy/run-historical.mjs run`. Run it when a change
+# touches the historical suites and before a release; production deployment of
+# a commit then waits for its success on that SHA
+# (docs/hosting-cloudflare-vercel.md). A dispatch is skipped when this exact
+# commit already passed it.
 on:
-  schedule:
-    # Mondays 05:23 UTC, off the hour to avoid the scheduler's peak.
-    - cron: "23 5 * * 1"
   workflow_dispatch:
     inputs:
       force:

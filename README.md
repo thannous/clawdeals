@@ -32,6 +32,8 @@ npm run test:ci
 npm run build
 ```
 
+`npm ci` also installs a Git `pre-push` hook that runs `npm run test:ci` before each push carrying new commits. Remote CI runs on manual dispatch only; see the [repository guidelines](./AGENTS.md).
+
 Browser tests: `npm run test:ui`. API journeys: `npm run test:integration`.
 Integration tests need the services and fixtures required by the selected spec; current tooling still rejects known production targets.
 The WebMCP suite is `npm run eval:webmcp:gate`; its environment requirements
