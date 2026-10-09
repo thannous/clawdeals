@@ -64,6 +64,8 @@ const config = {
       // ESLint on the JS/TS files changed since the merge base with
       // origin/main (everything when the ESLint config or the lockfile changed).
       name: "lint-changed",
+      // Lints the files changed since the merge base: reused only against the same one.
+      perBase: true,
       command: "npm run lint:changed",
       inputs: [...CODE, "package.json"],
       when: [...CODE, "package-lock.json"],
