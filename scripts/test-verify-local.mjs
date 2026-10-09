@@ -3,6 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,16 +12,22 @@ import { fileURLToPath } from 'node:url';
 
 import {
   PROOF_FORMAT_VERSION,
+  checkFingerprint,
   checkReleaseProof,
   cleanGitEnv,
   globToRegExp,
   prePush,
+  readBlobs,
   proofBlock,
   readProof,
   verify,
 } from './verify-local.mjs';
 
 const ENGINE = fileURLToPath(new URL('./verify-local.mjs', import.meta.url));
+// sha256 of the engine shared by the five repositories. An edit to
+// scripts/verify-local.mjs in one repository alone fails here: change the
+// engine in all five at once, then update this value in all five.
+const ENGINE_SHA256 = 'cc91ea1bfdbf5c8068b16a95b2c640688f9b93fee1d62b20a16ec2890ee85fa6';
 const scratch = mkdtempSync(path.join(os.tmpdir(), 'verify-local-test-'));
 after(() => rmSync(scratch, { recursive: true, force: true }));
 
@@ -93,6 +100,13 @@ function makeRepository() {
   const options = { cwd: work, env, log: (line) => lines.push(line), worktreeRoot: path.join(base, 'worktrees') };
   return { base, origin, work, env, git, write, commit, runs, clearRuns, lines, options };
 }
+
+describe('shared engine', () => {
+  test('the engine is the version shared by the five repositories', () => {
+    const actual = createHash('sha256').update(readFileSync(ENGINE)).digest('hex');
+    assert.equal(actual, ENGINE_SHA256, 'scripts/verify-local.mjs differs from the shared engine; change it in all five repositories at once and update ENGINE_SHA256');
+  });
+});
 
 describe('globs', () => {
   test('** crosses directories, * does not, a trailing slash is a prefix', () => {
@@ -177,23 +191,56 @@ describe('verify:pr', () => {
   test('a specialised check runs only when its inputs change, and can come from elsewhere', async () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
-    repo.commit('migration', { 'db/1.sql': 'select 1;\n' });
+    const sha = repo.commit('migration', { 'db/1.sql': 'select 1;\n' });
 
     const missing = await verify('pr', [], repo.options);
     assert.equal(missing.status, 2, 'incomplete when the database cannot run here');
     assert.equal(missing.proof.result, 'incomplete');
     assert.equal(missing.proof.checks.find((check) => check.name === 'db').result, 'unavailable');
 
-    const external = await verify('pr', ['--external', 'db=CircleCI pipeline 42'], repo.options);
+    const external = await verify('pr', ['--external', `db=CircleCI pipeline 42 on ${sha}`], repo.options);
     assert.equal(external.status, 0);
     const db = external.proof.checks.find((check) => check.name === 'db');
     assert.equal(db.result, 'passed');
-    assert.equal(db.external, 'CircleCI pipeline 42');
+    assert.equal(db.external, `CircleCI pipeline 42 on ${sha}`);
 
     repo.clearRuns();
     const local = await verify('pr', ['--force'], { ...repo.options, env: { ...repo.env, DB_AVAILABLE: '1' } });
     assert.equal(local.status, 0);
     assert.deepEqual(repo.runs(), ['lint', 'test', 'db']);
+  });
+
+  test('--external only stands in for a specialised check that cannot run here, with evidence for this tree', async () => {
+    const repo = makeRepository();
+    repo.git(['checkout', '--quiet', '-b', 'feature']);
+    const sha = repo.commit('migration', { 'db/1.sql': 'select 1;\n' });
+    const tree = repo.git(['rev-parse', `${sha}^{tree}`]);
+
+    await assert.rejects(verify('pr', ['--external', `lint=done on ${sha}`], repo.options), /only a specialised check/);
+    await assert.rejects(verify('pr', ['--external', 'db=CircleCI pipeline 42'], repo.options), /must name the verified commit/);
+    await assert.rejects(verify('pr', ['--external', `nope=x on ${sha}`], repo.options), /no such pr check/);
+    const unknown = spawnSync(process.execPath, [ENGINE, 'pr', '--external', `lint=x on ${sha}`], { cwd: repo.work, env: repo.env, encoding: 'utf8' });
+    assert.equal(unknown.status, 64);
+
+    // The tree, or another commit with the same tree (a squash), also counts.
+    assert.equal((await verify('pr', ['--force', '--external', `db=owner machine, tree ${tree}`], repo.options)).status, 0);
+    const squash = repo.git(['commit-tree', tree, '-p', 'origin/main', '-m', 'squash']);
+    assert.equal((await verify('pr', ['--rev', squash, '--force', '--external', `db=run on ${sha}`], repo.options)).status, 0);
+
+    // When the check can run here, it runs: --external cannot skip it.
+    repo.clearRuns();
+    const local = await verify('pr', ['--force', '--external', `db=run on ${sha}`], { ...repo.options, env: { ...repo.env, DB_AVAILABLE: '1' } });
+    assert.equal(local.status, 0);
+    assert.ok(repo.runs().includes('db'));
+    assert.equal(local.proof.checks.find((check) => check.name === 'db').external, undefined);
+  });
+
+  test('a check that picks its work from the base is reused only against the same merge base', () => {
+    const check = { name: 'affected', command: 'x', env: {}, inputs: null, exclude: [], perCommit: false, perBase: true };
+    const args = { check, files: [], tree: 't', sha: 's', environment: {} };
+    assert.notEqual(checkFingerprint({ ...args, mergeBase: 'a' }), checkFingerprint({ ...args, mergeBase: 'b' }));
+    const plain = { ...check, perBase: false };
+    assert.equal(checkFingerprint({ ...args, check: plain, mergeBase: 'a' }), checkFingerprint({ ...args, check: plain, mergeBase: 'b' }));
   });
 
   test('a failed check fails the run, stops it, and is never reused', async () => {
@@ -401,6 +448,18 @@ describe('verify:release and the deploy guard', () => {
     assert.match(block, /^- Result: passed/m);
     assert.match(block, /^- Tree \(`git rev-parse <sha>\^\{tree\}`\): `[0-9a-f]{40}`$/m);
     assert.match(block, /^- Integration: base unchanged/m);
+    assert.doesNotMatch(block, /Delivery checks changed/);
+  });
+
+  test('proof-block flags a change to the checks themselves for the owner', async () => {
+    const repo = makeRepository();
+    repo.git(['checkout', '--quiet', '-b', 'feature']);
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
+    repo.commit('relax', { 'verify-local.config.mjs': config.replace("allow: ['public/*.pem']", "allow: ['public/*.pem', '**/*.key']") });
+    await verify('pr', [], repo.options);
+    repo.lines.length = 0;
+    await proofBlock([], repo.options);
+    assert.match(repo.lines.join('\n'), /^- Delivery checks changed: verify-local.config.mjs \(needs the owner's review\)$/m);
   });
 });
 
@@ -494,6 +553,10 @@ describe('pre-push hook', () => {
     await verify('pr', [], repo.options);
     const afterProof = await hookRun(repo, line);
     assert.match(afterProof.output, /pr proof passed/);
+  });
+
+  test('the secret scan fails closed when git cannot read the blobs', () => {
+    assert.equal(readBlobs(path.join(scratch, 'no-such-repository'), cleanGitEnv(), [{ file: 'a', object: 'b'.repeat(40) }]), null);
   });
 
   test('a real git push runs the hook in under 10 seconds', () => {

@@ -29,6 +29,7 @@ const NOT_APP = [
   "scripts/lint-everything.mjs",
   "scripts/verify-local.config.test.mjs",
   "scripts/has-playwright-browser.mjs",
+  "scripts/verify-sdk.sh",
 ];
 
 const config = {
@@ -81,6 +82,8 @@ const config = {
       // ESLint on the JS/TS files changed since the merge base with
       // origin/main (everything when the ESLint config or the lockfile changed).
       name: "lint-changed",
+      // Lints the files changed since the merge base: reused only against the same one.
+      perBase: true,
       command: "npm run lint:changed",
       inputs: [...CODE, "package.json", ...LINT_EVERYTHING],
       when: [...CODE, ...LINT_EVERYTHING],
@@ -121,6 +124,18 @@ const config = {
       command: "npm run test:unit",
       exclude: NOT_APP,
     },
+    {
+      // The steps of sdk-ci.yml (TypeScript and Python SDKs), when the OpenAPI
+      // contract or the SDK sources change. About a minute.
+      name: "sdk",
+      command: "sh scripts/verify-sdk.sh",
+      when: ["docs/openapi-v1.yaml", "scripts/sdk/**", "sdk/**", "scripts/verify-sdk.sh"],
+      specialised: true,
+      requires: {
+        command: "java -version >/dev/null 2>&1 && python3.11 --version >/dev/null 2>&1",
+        hint: "install Java (OpenAPI Generator) and Python 3.11, or dispatch sdk-ci.yml and pass --external sdk=<run URL>",
+      },
+    },
 
     // Release only: what is delivered. The app reads its deployed SHA from
     // the hosting environment at runtime (VERCEL_GIT_COMMIT_SHA and friends);
@@ -132,13 +147,15 @@ const config = {
       kinds: ["release"],
       install: true,
       exclude: NOT_APP,
+      // Only inside the throwaway copy; never disable telemetry in the checkout.
       env: { NEXT_TELEMETRY_DISABLED: "1" },
     },
     {
       name: "worker-bundle",
       command: "npm exec -- wrangler deploy --dry-run --outdir .wrangler/verify-local-bundle",
       kinds: ["release"],
-      inputs: ["workers/**", "src/**", "wrangler.jsonc", "tsconfig.json", "package.json"],
+      // workers/remote-mcp.ts imports packages/clawdeals-mcp/mcp/*.mjs.
+      inputs: ["workers/**", "src/**", "packages/**", "wrangler.jsonc", "tsconfig.json", "package.json"],
       env: { WRANGLER_SEND_METRICS: "false" },
     },
     {
@@ -155,6 +172,7 @@ const config = {
       kinds: ["release"],
       specialised: true,
       exclude: NOT_APP,
+      // Only inside the throwaway copy; never disable telemetry in the checkout.
       env: { E2E_TELEMETRY_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1", TESTERARMY_AI: "0" },
       requires: {
         command: "node scripts/has-playwright-browser.mjs",
