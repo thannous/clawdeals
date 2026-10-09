@@ -11,7 +11,7 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 
 ## Current development topology (2026-09-28)
 
-- Vercel project `clawdeals` serves `https://app.clawdeals.com`. Since 2026-10-07, `vercel.json` disables automatic Git deployments from `main`. Publish the exact `main` commit explicitly only after these workflows succeeded on that same SHA (check with `gh run list --commit <sha> --json workflowName,event,conclusion`):
+- Vercel project `clawdeals` serves `https://app.clawdeals.com`. Since 2026-10-07, `vercel.json` disables automatic Git deployments from `main`, and since 2026-10-09 from every branch: previews are not used, and branch pushes counted against the Vercel Hobby limit of 100 deployments a day. Publish the exact `main` commit explicitly only after these workflows succeeded on that same SHA (check with `gh run list --commit <sha> --json workflowName,event,conclusion`):
   - `CI` (`test-ci` job): lint, contracts, unit tests, Worker bundle and public browser journeys. It runs on every PR and push to `main`, except changes limited to root Markdown, `docs/**/*.md` or `LICENSE` and commits marked `[skip ci]`. To publish such a commit, first run `gh workflow run ci.yml --ref main` while it is the head of `main`.
   - `SDK CI`, when the commit touched its paths.
   - `Historical browser corpus`: since 2026-10-08 it no longer runs on each push, to save Actions minutes, but weekly (Mondays) and on demand. Before publishing, run `gh workflow run historical-corpus.yml --ref main` and wait for it (`gh run watch`, about 12 minutes); it ends within a minute when that SHA already passed.
