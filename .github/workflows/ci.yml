@@ -1,20 +1,27 @@
 name: CI
 
-# Manual only. Every push is checked locally first: `npm ci` installs a
-# pre-push hook that runs `npm run test:ci`, and the PR states the command, SHA
-# and result (AGENTS.md). Dispatch this workflow for a clean-machine run, for
-# instance for the lint, Worker bundle or public browser journeys it adds:
-# `gh workflow run ci.yml --ref <branch>`. All checks share one job so a run
+# Runs on every push to main as a post-merge signal, never a merge gate (CI
+# never blocks). PRs are checked locally: `npm ci` installs a pre-push hook that
+# runs `npm run test:ci`, and the PR states the command, SHA and result in its
+# Local proof (AGENTS.md). Dispatch this workflow for a clean-machine run on a
+# branch: `gh workflow run ci.yml --ref <branch>`. Main push runs are never
+# cancelled, so every main SHA gets a result. All checks share one job so a run
 # repeats checkout, setup and `npm ci` only once.
 on:
   workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "*.md"
+      - "docs/**/*.md"
+      - "LICENSE"
 
 permissions:
   contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
   test-ci:
