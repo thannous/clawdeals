@@ -4,7 +4,7 @@ Updated 2026-09-28. The owner-approved policy is in [AGENTS.md](../AGENTS.md).
 
 ## Current workflow
 
-- Work on `main`. An authorized push triggers Vercel production deployment for `clawdeals` at `https://app.clawdeals.com`.
+- Work on `main`. Automatic Git deployment from `main` is disabled in `vercel.json`: an authorized push is published to `clawdeals` at `https://app.clawdeals.com` once that commit passes the [validation gate](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28).
 - During this development phase, the owner confirms there are no real users and production data is fictitious and disposable. Relevant validation may create, modify, and delete test data there without repeated approval.
 - `clawdeals-staging` and its Vercel deployments were deleted on 2026-09-28. Neither `sandbox.clawdeals.com` nor the older `staging.app.clawdeals.com` is an available test target.
 - Local services remain an option; a separate staging project, staging branch, promotion step, or two-person release approval is not required.
@@ -42,6 +42,6 @@ Use [local setup](./local-supabase-development.md) when a test needs sandbox fix
 
 Select checks for the requested change. Do not run the full suite for a documentation-only change. For E2E evidence retain the exact command, target, fixture prerequisites, results and report/trace.
 
-The checked-in CI runs lint, type/i18n/OpenAPI/skill contracts, two unit-test shards, a Worker dry-run bundle and the [TesterArmy public browser journeys](./testerarmy-e2e.md) on desktop and mobile viewports. It does not run the database integration suites, apply database migrations or deploy Cloudflare. SDK checks and npm/PyPI tag releases are separate workflows. CI configuration alone does not prove a current run passed or block Vercel deployment.
+The checked-in CI (`.github/workflows/ci.yml`) is a single `test-ci` job: lint, type/i18n/OpenAPI/skill contracts, unit tests and a Worker dry-run bundle, then, once those pass, the [TesterArmy public browser journeys](./testerarmy-e2e.md) on desktop and mobile viewports. It runs on PRs and pushes to `main`, except changes limited to root Markdown, `docs/**/*.md` or `LICENSE` and commits marked `[skip ci]`. The complete historical browser corpus is a separate workflow (`.github/workflows/historical-corpus.yml`) that runs weekly and on manual dispatch, and skips a commit that already passed it. CI does not run the database integration suites, apply database migrations or deploy Cloudflare. SDK checks and npm/PyPI tag releases are separate workflows. CI configuration alone does not prove a current run passed or block Vercel deployment.
 
 See [release procedure](./release-staging-to-prod.md) and [hosting](./hosting-cloudflare-vercel.md).

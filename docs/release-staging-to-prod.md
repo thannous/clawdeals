@@ -3,7 +3,7 @@
 Updated 2026-09-28. This filename is retained for existing links; the former staging-promotion workflow is retired. Current environment policy: [release-environments.md](./release-environments.md).
 
 1. Review the requested diff and preserve unrelated work. Run checks relevant to the changed behavior; documentation-only edits do not require an application build or browser suite.
-2. When commit/push is authorized, commit the intended files on `main` and push. Vercel Git integration deploys `clawdeals` automatically. No staging branch, separate staging project or repeated deployment approval is required for that authorized push.
+2. When commit/push is authorized, commit the intended files on `main` and push. Automatic Git deployment from `main` is disabled in `vercel.json`: publish that exact commit to `clawdeals` once it passes the [validation gate](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28), which includes dispatching the historical browser corpus on that SHA. No staging branch, separate staging project or repeated deployment approval is required for that authorized push.
 3. Verify the deployment associated with the pushed SHA is ready and inspect the affected public behavior. A successful Git push or CI run alone is not deployment proof.
 4. Apply database migrations only when the requested work includes them. Review migration order and compatibility; a Vercel deploy does not apply SQL migrations. Disposable data does not make schema damage harmless.
 5. Deploy the Cloudflare Worker only when its code/configuration changed and that deployment is authorized. `npm run deploy:cloudflare` is not a routine step for a Vercel-only app change.
@@ -17,7 +17,7 @@ For an app regression, select a known-good deployment or prepare a focused rever
 
 ## Separate release channels
 
-- App: Vercel Git integration on `main`.
+- App: Vercel project `clawdeals`, published from `main` after the validation gate.
 - Edge router/scheduler: manual Cloudflare deployment when needed.
 - MCP npm package: `mcp-v*` tags; see [MCP release](./mcp-release.md).
 - SDK packages: `sdk-ts-v*` and `sdk-py-v*` tags in `.github/workflows/sdk-release.yml`.

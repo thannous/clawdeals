@@ -164,7 +164,7 @@ The maintained `npm run test:testerarmy` and historical entry reserve one new di
 
 Reports, JUnit, Markdown, SDK artifacts, `runner.log`, `logs/app.log`, `command.json` and `completion.json` share the reserved directory. The receipts record exact arguments, source HEAD/dirty state, input SHA256 before and after, the primary exit/signal and any log failure. Inputs are checked in memory; a log/receipt failure makes an otherwise successful command fail, and does not replace the original failing exit. The historical fixture independently attempts screenshot, attachment index and structured error capture: original error object/stack survives a failing write. A successful body with collection failure stays red.
 
-The existing required `testerarmy` CI job keeps its 15-minute total budget. Setup and deterministic evidence controls precede one 12-minute public+historical step, leaving time for teardown, packaging and upload. Actions, assertions, test timeouts and zero retries are unchanged. Collection and uploads use `always()`. A forced termination, missing completion or skipped case is explicitly incomplete qualification, even if upload succeeds. The remaining required jobs and legacy commands are retained.
+To save Actions minutes, CI runs the public journeys at the end of its single `test-ci` job (15-minute budget), once lint, contracts and unit tests have passed. Deterministic evidence controls precede a 5-minute public step (about 1 minute observed), leaving time for teardown, packaging and upload. The complete historical corpus runs in the separate `Historical browser corpus` workflow (`.github/workflows/historical-corpus.yml`), weekly and on manual dispatch, with a 15-minute step in a 20-minute job; it skips a commit that already passed it, and a production deployment waits for its success on the deployed SHA ([hosting](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28)). When a branch changes the historical suites, dispatch it there with `gh workflow run historical-corpus.yml --ref <branch>`. Actions, assertions, test timeouts and zero retries are unchanged. Once the journeys have started, collection and uploads use `always()`. A forced termination, missing completion or skipped case is explicitly incomplete qualification, even if upload succeeds. The legacy commands are retained.
 
 ### Complete bounded public artifacts
 
@@ -174,7 +174,7 @@ Only exact model-free public/historical/production-public invocations are export
 
 The file inventory is partitioned into at most four disjoint parts, each with at most 384 MiB of uncompressed payload and at most 480 MiB for its actual compressed archive plus index. An individual file or total part count above these limits fails explicitly; it is never dropped to meet a size limit. Every part carries the same complete manifest with all file sizes/digests, exact membership and run identities. The union must contain each inventoried file exactly once.
 
-CI uploads **each part as a separate artifact**, named `testerarmy-browser-results-<run_id>-<run_attempt>-part-N`, plus `testerarmy-evidence-index-<run_id>-<run_attempt>`. It explicitly uses [`upload-artifact@v7` `archive: true`](https://github.com/actions/upload-artifact/blob/v7/action.yml) and `compression-level: 0`: each provider download remains a ZIP containing `evidence.tar.gz` and `manifest.json`. There is no combined upload of all parts. This preserves the existing ZIP download contract and leaves 32 MiB for the provider envelope below the 512 MiB read cap. `archive: false` would upload a single raw file and ignore `name`; it is deliberately not used here.
+Both workflows upload **each part as a separate artifact**, named `testerarmy-browser-results-<run_id>-<run_attempt>-part-N`, plus `testerarmy-evidence-index-<run_id>-<run_attempt>`. It explicitly uses [`upload-artifact@v7` `archive: true`](https://github.com/actions/upload-artifact/blob/v7/action.yml) and `compression-level: 0`: each provider download remains a ZIP containing `evidence.tar.gz` and `manifest.json`. There is no combined upload of all parts. This preserves the existing ZIP download contract and leaves 32 MiB for the provider envelope below the 512 MiB read cap. `archive: false` would upload a single raw file and ignore `name`; it is deliberately not used here.
 
 Before upload, creation round-trips the actual tar files: checks archive hashes, part-index equality, regular file types, safe membership, then extracts only into an owned temporary directory and rechecks every file byte/hash. Retrieve every listed artifact for the exact workflow run, retain the provider artifact IDs/ZIP hashes, inspect the downloaded format before extraction, then restore the part folders and common manifest to its recorded bundle path and rerun:
 
@@ -191,7 +191,7 @@ node e2e/testerarmy/bundle.mjs create .e2e/validation/bundle-UNIQUE \
   .e2e/validation/public-UNIQUE .e2e/validation/historical-UNIQUE
 ```
 
-The procedure and [parity matrix](./testerarmy-parity.json) describe maintained behavior. Each completed campaign has one external closeout manifest containing the current source/tree, exact rerun commands, selected/excluded identities, artifact/union hashes and deployment boundary. Never edit an earlier run or turn a PR result into a final-main result: compare the delivered tree and obtain the delivered commit's CI and automatic deployment evidence separately.
+The procedure and [parity matrix](./testerarmy-parity.json) describe maintained behavior. Each completed campaign has one external closeout manifest containing the current source/tree, exact rerun commands, selected/excluded identities, artifact/union hashes and deployment boundary. Never edit an earlier run or turn a PR result into a final-main result: compare the delivered tree and obtain the delivered commit's CI, historical-corpus and deployment evidence separately.
 
 `npm run testerarmy:mcp` starts the framework's stdio MCP server with the desktop target selected. An MCP client can register this command to inspect the app; no user-level Codex configuration is modified by this setup.
 
@@ -226,9 +226,10 @@ This is the single historical entry. It fixes the desktop target, uses the
 existing local app and environment guard, enables the same WebMCP flag as the
 old UI config, and scopes a matcher preload to the test CLI/workers. The app
 receives the caller's original `NODE_OPTIONS` value or its original absence.
-The default public desktop/mobile selection remains independent. CI runs both
-commands in its existing required TesterArmy job and uploads both sets of
-reports, JUnit, screenshots and traces.
+The default public desktop/mobile selection remains independent. CI runs the
+public command on each PR and push to `main`; `historical-corpus.yml` runs this
+historical command weekly and on dispatch. Each uploads its reports, JUnit,
+screenshots and traces.
 
 The browser engine's public `surfaceOf()` supplies Page/context APIs for the
 historical bodies. TesterArmy owns attempts, context isolation, screenshots
