@@ -1,7 +1,7 @@
 # Règle commune de livraison
 
-**Version commune : v4 (2026-10-09)**
-**Statut** : en vigueur. La v2 a été adoptée par le propriétaire le 9 octobre 2026 ; la v3 (même jour, soir) ajoute le principe « local d'abord » (§10), l'échelle de relecture (§11), la preuve des contrôles spécialisés (§12) et la CI externe (§13).
+**Version commune : v5 (2026-10-09)**
+**Statut** : en vigueur. La v2 a été adoptée par le propriétaire le 9 octobre 2026 ; la v3 (même jour, soir) ajoute le principe « local d'abord » (§10), l'échelle de relecture (§11), la preuve des contrôles spécialisés (§12) et la CI externe (§13) ; la v4 et la v5 (même soir) corrigent le texte commun après relecture (§9).
 **Décideur** : le propriétaire.
 **Dépôts concernés** : shapier, skillcodex, clawdeals, bodylab, dreamer.
 **Copies** : chaque dépôt a sa propre copie de ce fichier, à l'emplacement qu'il choisit (le chemin de la règle du dépôt, donné dans sa §13.1). Aucune copie n'est la source des autres. Tout ce qui précède la §13.1 est identique, octet pour octet, dans les cinq dépôts ; la §13.1 est propre à chaque dépôt.
@@ -37,7 +37,7 @@ Chaque `AGENTS.md` en reprend le résumé et renvoie à la copie locale de ce fi
    - Le contrôle tourne sur une copie isolée du commit (`git worktree`), pas dans l'arbre de travail. Il n'oblige donc pas à ranger un travail en cours.
    - Il produit une **preuve** liée à l'**arbre vérifié** (le *tree hash* git), pas seulement au commit (§4). Il y note les contrôles lancés, leur résultat et l'environnement : versions de Node et du gestionnaire de paquets.
    - Les variables d'environnement qui réduisent ce qu'un contrôle lance sont retirées avant les contrôles : `JEST_CHANGED_SINCE`, `TURBO_SCM_BASE`, `TURBO_SCM_HEAD`, `CI_BASE_REVISION`, `GITHUB_BASE_SHA`, et celles que la config d'un dépôt ajoute dans `stripEnv`. Un contrôle qui a besoin de l'une d'elles la fixe dans son propre `env`.
-   - **Contrôles spécialisés.** Quand la machine de l'agent ne peut pas lancer un contrôle spécialisé, la preuve vient par défaut de la machine du propriétaire (`owner-machine:`), et d'une source externe seulement si ce workflow figure dans la table de CI externe du dépôt (§12, §13, §13.1). Si ce contrôle est exigé avant la fusion, la PR attend cette preuve. `--external` ne vaut que pour un contrôle spécialisé qui ne peut pas tourner sur cette machine (sa sonde `requires` échoue), et la preuve cite exactement un commit : le SHA de tête de la PR, jamais un autre commit, même de même arbre. Une entrée externe n'est jamais réutilisée par une autre preuve.
+   - **Contrôles spécialisés.** Quand la machine de l'agent ne peut pas lancer un contrôle spécialisé, la preuve vient par défaut de la machine du propriétaire (`owner-machine:`), et d'une source externe seulement si ce workflow figure dans la table de CI externe du dépôt (§12, §13, §13.1). Si ce contrôle est exigé avant la fusion, la PR attend cette preuve. `--external` ne vaut que pour un contrôle spécialisé qui ne peut pas tourner sur cette machine (sa sonde `requires` échoue), et la preuve cite exactement un commit, le commit vérifié : le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release` ; jamais un autre commit, même de même arbre. Une entrée externe n'est jamais réutilisée par une autre preuve.
 3. **La PR et sa fusion.**
    - Avant fusion, la section `## Local proof` cite la preuve : commande, commit et arbre vérifiés, résultat, contrôles spécialisés lancés ou jugés hors périmètre. Ce titre anglais et la ligne du SHA du commit restent inchangés : le contrôle de fusion automatique des agents les lit.
    - Conditions de fusion, communes aux cinq dépôts :
@@ -152,6 +152,7 @@ Un dépôt applique la règle quand il a :
 | v2 | 9 octobre 2026 | Hook rapide, `verify:pr` sur copie isolée, preuve liée à l'arbre, `verify:release` sans réutilisation ; adoptée par le propriétaire |
 | v3 | 9 octobre 2026, soir | Local d'abord (§10), échelle de relecture (§11), preuve des contrôles spécialisés (§12), CI externe et garde des publications (§13) ; une copie par dépôt, aucune canonique ; texte commun sans état des lieux par dépôt |
 | v4 | 9 octobre 2026, soir | Fil répondu **et** résolu avant fusion (§2.3, §11, modèle de PR) ; chemin de la règle choisi par chaque dépôt et donné dans sa §13.1 ; dans le modèle de PR, l'échelle de relecture renvoie en texte simple à la §11 de la règle du dépôt, sans lien (ni lien vers la branche principale, ni lien relatif) ; même fichier moteur recommandé, chaque dépôt n'épinglant et ne vérifiant que sa copie, une correction reportée de préférence partout mais jamais vérifiée entre dépôts (§6, Q3, §10, `AGENTS.md`) ; preuve spécialisée alignée sur la §12 : machine du propriétaire par défaut, source externe seulement si elle figure dans la CI externe du dépôt (§13, §13.1), et seulement sur le SHA de tête, jamais un commit de même arbre (§2.2, §2.4, §12, `AGENTS.md`, modèle de PR) |
+| v5 | 9 octobre 2026, soir | `<SHA>` d'une preuve spécialisée = le commit vérifié : tête de la PR pour `verify:pr`, commit livré pour `verify:release`, jamais un autre commit même de même arbre (§2.2, §12, `AGENTS.md`) ; condition `main` des workflows de publication jointe à une condition de cible par `&&` seulement, jamais `||` (§13) ; v4 et v5 sur la ligne Statut |
 
 ## 10. Local d'abord : processus commun, dépôts indépendants
 
@@ -197,9 +198,9 @@ Chaque fil reçoit une réponse, puis est résolu. Aucune PR n'est fusionnée av
   --external <contrôle>="owner-machine: <hôte> <note> on <SHA>"
   ```
 
-  `<SHA>` est le SHA de tête de la PR (le `Commit SHA` de `## Local proof`), jamais un autre commit, même de même arbre.
+  `<SHA>` est le commit vérifié : le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release` ; jamais un autre commit, même de même arbre. Pour une PR, c'est le `Commit SHA` de `## Local proof`.
 
-- **Une source externe seulement si elle est retenue pour ce dépôt.** Une preuve venue d'une CI externe (le lien de son exécution) n'est valable que si ce workflow figure dans la table de CI externe du dépôt (§13, §13.1), et seulement pour une exécution sur le SHA de tête de la PR.
+- **Une source externe seulement si elle est retenue pour ce dépôt.** Une preuve venue d'une CI externe (le lien de son exécution) n'est valable que si ce workflow figure dans la table de CI externe du dépôt (§13, §13.1), et seulement pour une exécution sur le commit vérifié (le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release`).
 - La PR cite chaque preuve spécialisée dans sa section `## Specialised checks`, ou y écrit « none / out of scope ».
 
 ## 13. CI externe
@@ -212,7 +213,7 @@ Ce qui peut tourner hors des machines locales, qui l'exige et comment le lancer.
 
 **Workflows de publication.** Tout workflow qui publie (npm, PyPI, magasin d'applications, production) se garde ainsi :
 
-- un `if: github.ref == 'refs/heads/main'` au niveau du job (combiné avec la condition de cible s'il y en a une ; `master` pour un dépôt dont c'est la branche principale), pour que rien ne soit extrait ni lancé sur une autre référence ;
+- un `if: github.ref == 'refs/heads/main'` au niveau du job (joint à une éventuelle condition de cible par `&&` seulement, jamais par `||` ; `master` pour un dépôt dont c'est la branche principale), pour que rien ne soit extrait ni lancé sur une autre référence ;
 - `environment: release` sur ce job : un environnement GitHub limité à la branche principale par sa règle de branches de déploiement, et qui porte les secrets de publication (secrets d'environnement, pas de copie au niveau du dépôt) ;
 - jamais de contrôle de référence dans une étape : une étape tourne après l'extraction et l'installation, alors que le job détient déjà `id-token: write` et les secrets.
 
@@ -231,7 +232,7 @@ Cette sous-section est la seule partie de ce document qui diffère d'un dépôt 
 | Workflow | Qui l'exige | Déclenchement | Notes |
 | --- | --- | --- | --- |
 | `sdk-release.yml`, cible `py` | PyPI (contrainte du registre, pas d'un client) | `workflow_dispatch` seulement, entrées `target: py` et `version` ; décision explicite de publier | La publication de confiance de PyPI exige une exécution GitHub Actions : le job de publication PyPI tourne dans ce workflow avec `id-token: write` (OIDC), et PyPI lie l'éditeur de confiance à ce dépôt, à ce fichier de workflow et à son environnement. Le job n'a pas encore `id-token: write` : la publication de confiance ne peut pas aboutir avant cet ajout (suivi connu). Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
-| `sdk-release.yml`, cible `ts` | personne | `workflow_dispatch` seulement, entrées `target: ts` et `version` ; décision explicite de publier | publication npm du SDK TypeScript, avec le secret `NPM_TOKEN` de l'environnement `release`. Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
+| `sdk-release.yml`, cible `ts` | personne | `workflow_dispatch` seulement, entrées `target: ts` et `version` ; décision explicite de publier | publication npm du SDK TypeScript, avec le secret `NPM_TOKEN`. Le déplacement de `NPM_TOKEN` vers l'environnement `release` attend l'étape de thanh dans Settings (#18) : aujourd'hui l'environnement `release` n'a aucun secret et `NPM_TOKEN` est encore un secret du dépôt. Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
 | `mcp-release.yml` | personne | `workflow_dispatch` seulement, entrée `version` ; décision explicite de publier | publication npm de `clawdeals-mcp` (éditeur de confiance npm lié à `mcp-release.yml`). Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
 | `ci.yml`, `sdk-ci.yml`, `historical-corpus.yml` | personne | `workflow_dispatch` seulement (`gh workflow run <fichier> --ref <branche>`) | exécution sur machine propre, sur demande ; jamais une condition de fusion ni de publication |
 
