@@ -7,7 +7,12 @@
 // command, Node, npm and lockfile already passed is reused, not run again.
 
 // Source files TypeScript, Vitest and ESLint read.
-const CODE = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
+export const CODE = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
+// Files after which scripts/lint-changed.mjs lints every file. Same list as
+// scripts/lint-everything.mjs (this file is data only and cannot import it);
+// scripts/verify-local.config.test.mjs keeps them equal. Named exports are
+// for that test only; the engine reads the default export.
+export const LINT_EVERYTHING = ["eslint.config.mjs", "package-lock.json"];
 // Prose and tooling that no application check reads.
 const NOT_APP = [
   "*.md",
@@ -22,6 +27,8 @@ const NOT_APP = [
   "scripts/install-git-hooks.mjs",
   "scripts/git-hooks.test.mjs",
   "scripts/lint-changed.mjs",
+  "scripts/lint-everything.mjs",
+  "scripts/verify-local.config.test.mjs",
   "scripts/has-playwright-browser.mjs",
   "scripts/verify-sdk.sh",
 ];
@@ -45,6 +52,7 @@ const config = {
   // so proof-block flags them for the owner's review like this file.
   deliveryFiles: [
     "scripts/lint-changed.mjs",
+    "scripts/lint-everything.mjs",
     "scripts/verify-sdk.sh",
     "scripts/has-playwright-browser.mjs",
     "scripts/install-git-hooks.mjs",
@@ -69,14 +77,26 @@ const config = {
       ],
     },
     {
+      // Repository contracts of this file (scripts/verify-local.config.test.mjs).
+      name: "verify-config",
+      command: "node --test scripts/verify-local.config.test.mjs",
+      inputs: [
+        "verify-local.config.mjs",
+        "scripts/verify-local.mjs",
+        "scripts/lint-changed.mjs",
+        "scripts/lint-everything.mjs",
+        "scripts/verify-local.config.test.mjs",
+      ],
+    },
+    {
       // ESLint on the JS/TS files changed since the merge base with
       // origin/main (everything when the ESLint config or the lockfile changed).
       name: "lint-changed",
       // Lints the files changed since the merge base: reused only against the same one.
       perBase: true,
       command: "npm run lint:changed",
-      inputs: [...CODE, "package.json"],
-      when: [...CODE, "package-lock.json"],
+      inputs: [...CODE, "package.json", ...LINT_EVERYTHING],
+      when: [...CODE, ...LINT_EVERYTHING],
     },
     {
       name: "typecheck",
