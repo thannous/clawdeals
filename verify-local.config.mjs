@@ -115,7 +115,7 @@ const config = {
       specialised: true,
       requires: {
         command: "java -version >/dev/null 2>&1 && python3.11 --version >/dev/null 2>&1",
-        hint: "install Java (OpenAPI Generator) and Python 3.11, or dispatch sdk-ci.yml and pass --external sdk=<run URL>",
+        hint: "install Java (OpenAPI Generator) and Python 3.11, or dispatch sdk-ci.yml and pass --external sdk=\"<run URL> on <SHA>\"",
       },
     },
 
@@ -159,7 +159,7 @@ const config = {
       requires: {
         command: "node scripts/has-playwright-browser.mjs",
         hint:
-          "install the Chromium pinned by playwright-core (`npx playwright install chromium`), or dispatch historical-corpus.yml on the released commit and pass --external historical-corpus=<run URL>",
+          "install the Chromium pinned by playwright-core (`npx playwright install chromium`), or dispatch historical-corpus.yml on the released commit and pass --external historical-corpus=\"<run URL> on <SHA>\"",
       },
     },
   ],
