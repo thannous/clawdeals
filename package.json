@@ -16,6 +16,7 @@
     "start": "next start",
     "prepare": "node scripts/install-git-hooks.mjs",
     "lint": "eslint . --max-warnings=0 --ext .js,.jsx,.ts,.tsx",
+    "lint:changed": "node scripts/lint-changed.mjs",
     "typecheck": "tsc --noEmit",
     "test:i18n:contract": "node scripts/validate-i18n-page-contract.mjs",
     "test:i18n:messages": "node scripts/validate-i18n-messages.mjs",
@@ -74,7 +75,11 @@
     "deploy": "npm run deploy:cloudflare",
     "deploy:cloudflare": "wrangler deploy --no-autoconfig",
     "deploy:cloudflare:opennext": "npm run sync:skill:public && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "test:ci": "npm run typecheck && npm run test:i18n:contract && npm run test:i18n:messages && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public"
+    "test:ci": "npm run typecheck && npm run test:i18n:contract && npm run test:i18n:messages && npm run openapi:lint && npm run test:unit && npm run test:skill:pack && npm run test:skill:public",
+    "test:git-hooks": "node --test scripts/git-hooks.test.mjs",
+    "test:verify-local": "node --test scripts/test-verify-local.mjs",
+    "verify:pr": "node scripts/verify-local.mjs pr",
+    "verify:release": "node scripts/verify-local.mjs release"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

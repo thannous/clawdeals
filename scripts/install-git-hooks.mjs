@@ -4,10 +4,10 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // `npm ci` and `npm install` run this through the `prepare` script. It points
-// Git at the tracked `.githooks/` directory, so the pre-push check is active
+// Git at the tracked `.githooks/` directory, so the pre-push hook is active
 // for anyone who installed dependencies. Outside a Git checkout of this
-// repository (no Git, a deployment build without history) it does nothing and
-// never fails the install.
+// repository (no Git, a deployment build without history, a copy installed
+// inside another repository) it does nothing and never fails the install.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const hooksPath = ".githooks";
 
@@ -34,7 +34,7 @@ try {
     git("config", "--local", "core.hooksPath", hooksPath);
     const previous = current ? ` (was ${current})` : "";
     console.log(
-      `install-git-hooks: core.hooksPath set to ${hooksPath}${previous}; pre-push runs \`npm run test:ci\`.`,
+      `install-git-hooks: core.hooksPath set to ${hooksPath}${previous}; pre-push runs the fast push checks (a few seconds). Run \`npm run verify:pr\` before asking for a merge.`,
     );
   }
 } catch {

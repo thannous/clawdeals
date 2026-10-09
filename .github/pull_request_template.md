@@ -5,13 +5,16 @@
 ## Local proof
 
 <!--
-Remote CI runs on manual dispatch only, so this section is the check record.
-The pre-push hook runs `npm run test:ci`; add every other check you ran
-(`npm run lint`, browser journeys, historical corpus, SDK checks).
-If `main` moves before merging: merge `main` into this branch, re-run the
-check and update the SHA and result below.
+Common delivery rule v2 (AGENTS.md). Run `npm run verify:pr` on the PR head,
+then replace this section with the output of
+`node scripts/verify-local.mjs proof-block`. Add every other check you ran
+(browser journeys, integration suites, SDK checks). If `main` moves before
+merging: merge it into this branch, rerun `npm run verify:pr` (only checks
+whose inputs changed run again) and update this section.
 -->
-
-- Command(s):
-- Commit SHA:
-- Result:
+- Commands: `npm run verify:pr`
+- Commit SHA: `…`
+- Result: …
+- Tree (`git rev-parse <sha>^{tree}`): `…`
+- Specialised checks (database, browser, mobile, corpus): run: … / out of scope: …
+- Integration: base unchanged / base moved, checks replayed: …
