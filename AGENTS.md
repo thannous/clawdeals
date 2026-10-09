@@ -40,11 +40,11 @@ do not reset or overwrite a personal app or change an unrelated environment.
 
 > Push rapide ; contrôles locaux proportionnés avant fusion ; publication vérifiée pour la cible livrée ; CI externe seulement sur demande explicite.
 
-Règle complète : [`docs/regle-commune-livraison.md`](docs/regle-commune-livraison.md), la copie de ce dépôt, qui fait foi pour lui. Processus commun, pas code commun : ce dépôt possède son moteur (`scripts/verify-local.mjs` et ses tests `scripts/test-verify-local.mjs`), sa config (`verify-local.config.mjs`), ses hooks (`.githooks/`) et ce document, et se vérifie sans aucun autre dépôt. Le moteur reste identique octet pour octet dans les cinq dépôts (ses tests vérifient son empreinte) : ne jamais le modifier ici seul.
+Règle complète : [`docs/regle-commune-livraison.md`](docs/regle-commune-livraison.md), la copie de ce dépôt, qui fait foi pour lui (sa ligne « Version commune » dit quelle version du texte commun il applique). Processus commun, pas code commun : ce dépôt possède son moteur (`scripts/verify-local.mjs` et ses tests `scripts/test-verify-local.mjs`), sa config (`verify-local.config.mjs`), ses hooks (`.githooks/`) et ce document, et se vérifie sans aucun autre dépôt. Le moteur reste identique octet pour octet dans les cinq dépôts (ses tests vérifient son empreinte) : ne jamais le modifier ici seul.
 
 | Étape | Commande | Effet |
 | --- | --- | --- |
-| Push (S0) | hook `.githooks/pre-push` (automatique) | quelques secondes : fichiers interdits, secrets, taille, contrat `.gitignore` ; affiche la preuve de l'arbre poussé (absente : non bloquant) |
+| Push (S0) | hook `.githooks/pre-push` (automatique) | quelques secondes : les contrôles de push du dépôt (§3 de la règle, détail en §13.1) ; affiche la preuve de l'arbre poussé (absente : non bloquant) |
 | Avant fusion (S1) | `npm run verify:pr` | contrôles déclarés dans `verify-local.config.mjs`, sur une copie isolée du commit (le travail en cours n'est ni vérifié ni touché) ; preuve liée à l'arbre ; contrôles déjà réussis sur les mêmes entrées réutilisés |
 | Contrôles spécialisés (S2) | contrôles qui portent `requires` dans la config | sur la machine du propriétaire quand celle-ci ne peut pas les lancer, cités par `--external <contrôle>="owner-machine: <hôte> <note> on <SHA>"` |
 | Description de PR | `node scripts/verify-local.mjs proof-block` | imprime la section `## Local proof` à coller |
@@ -56,7 +56,7 @@ Règle complète : [`docs/regle-commune-livraison.md`](docs/regle-commune-livrai
 - `--external` ne vaut que pour un contrôle spécialisé que la machine ne peut pas lancer, et cite exactement un commit (le SHA vérifié ou un commit de même arbre). D'abord la machine du propriétaire (`owner-machine: <hôte> <note> on <SHA>`) ; un lien `https://` de CI seulement pour un workflow listé dans la table CI externe (§13 de la règle).
 - Les variables qui réduisent le périmètre d'un contrôle (`JEST_CHANGED_SINCE`, `TURBO_SCM_BASE`, `TURBO_SCM_HEAD`, `CI_BASE_REVISION`, `GITHUB_BASE_SHA`, et celles de `stripEnv` dans la config) sont retirées de l'environnement des contrôles ; un contrôle qui en a besoin la fixe dans son propre `env`.
 - Base avancée : fusionner la base dans la branche, relancer `verify:pr` (seuls les contrôles dont les entrées ont changé tournent), mettre `## Local proof` à jour.
-- Publication : `verify:release` sur le commit livré de la branche principale (il ne réutilise rien, contrôles limités par `when` compris), puis vérifier la production et noter le SHA. Publier reste une décision explicite.
+- Publication : `verify:release` sur le commit livré de la branche principale (il ne réutilise rien, contrôles limités par `when` compris), puis vérifier la production et noter le SHA. Publier reste une décision explicite. Un workflow de publication se garde au niveau du job (`if` sur la branche principale) et par un environnement GitHub limité à elle qui porte les secrets de publication, jamais par un contrôle dans une étape (§13 de la règle).
 - CI externe : jamais par défaut, seulement sur demande explicite là où un client, un partenaire ou un registre l'exige (table §13 de la règle). Le signal après fusion est le `verify:pr` facultatif sur la machine partagée (S5), jamais une condition. Aucun aperçu automatique.
 - Machines : machine partagée (box) pour `verify:pr` et les relectures ; PC Tanuki pour Docker, Supabase local, e2e navigateur et `verify:release` web ; Mac mini pour Expo, Maestro, iOS, Android et `verify:release` mobile.
 
