@@ -16,5 +16,5 @@
     }
   ],
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
-  "git": { "deploymentEnabled": { "main": false } }
+  "git": { "deploymentEnabled": false }
 }
