@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import config from "../verify-local.config.mjs";
+import config, { CODE, LINT_EVERYTHING as CONFIG_LINT_EVERYTHING } from "../verify-local.config.mjs";
 import { LINT_EVERYTHING } from "./lint-everything.mjs";
 import { matchesAny, normaliseConfig } from "./verify-local.mjs";
 
@@ -18,6 +18,25 @@ test("lint-changed is a when-scoped check with explicit inputs", () => {
   assert.ok(Array.isArray(lintChanged.when), "lint-changed has a when list");
   assert.ok(Array.isArray(lintChanged.inputs), "lint-changed has an inputs list");
   assert.ok(LINT_EVERYTHING.length > 0);
+});
+
+const sorted = (values) => [...values].sort();
+
+test("the config's LINT_EVERYTHING equals lint-everything.mjs exactly, both ways", () => {
+  assert.equal(new Set(CONFIG_LINT_EVERYTHING).size, CONFIG_LINT_EVERYTHING.length, "no duplicate in the config list");
+  assert.equal(new Set(LINT_EVERYTHING).size, LINT_EVERYTHING.length, "no duplicate in the module list");
+  const config = new Set(CONFIG_LINT_EVERYTHING);
+  const shared = new Set(LINT_EVERYTHING);
+  assert.deepEqual([...config].filter((file) => !shared.has(file)), [], "config entries missing from lint-everything.mjs");
+  assert.deepEqual([...shared].filter((file) => !config.has(file)), [], "lint-everything.mjs entries missing from the config");
+});
+
+test("lint-changed when and inputs hold exactly CODE plus the lint-everything set", () => {
+  // `when` and `inputs` also carry the CODE globs (and package.json for
+  // inputs); what remains must be the lint-everything set, no more, no less.
+  const extra = (list, known) => sorted(list.filter((entry) => !known.includes(entry)));
+  assert.deepEqual(extra(lintChanged.when, CODE), sorted(LINT_EVERYTHING));
+  assert.deepEqual(extra(lintChanged.inputs, [...CODE, "package.json"]), sorted(LINT_EVERYTHING));
 });
 
 test("lint-changed.mjs takes its lint-everything list from lint-everything.mjs", () => {

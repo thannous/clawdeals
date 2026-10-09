@@ -7,11 +7,12 @@
 // command, Node, npm and lockfile already passed is reused, not run again.
 
 // Source files TypeScript, Vitest and ESLint read.
-const CODE = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
+export const CODE = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
 // Files after which scripts/lint-changed.mjs lints every file. Same list as
 // scripts/lint-everything.mjs (this file is data only and cannot import it);
-// scripts/verify-local.config.test.mjs keeps them in sync.
-const LINT_EVERYTHING = ["eslint.config.mjs", "package-lock.json"];
+// scripts/verify-local.config.test.mjs keeps them equal. Named exports are
+// for that test only; the engine reads the default export.
+export const LINT_EVERYTHING = ["eslint.config.mjs", "package-lock.json"];
 // Prose and tooling that no application check reads.
 const NOT_APP = [
   "*.md",
