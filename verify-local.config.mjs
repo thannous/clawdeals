@@ -150,7 +150,7 @@ const config = {
     // Release only: what is delivered. The app reads its deployed SHA from
     // the hosting environment at runtime (VERCEL_GIT_COMMIT_SHA and friends);
     // the local build embeds no SHA, so it depends on the tree, not on the
-    // commit, and is reused like any other check.
+    // commit.
     {
       name: "build",
       command: "npm run build",
