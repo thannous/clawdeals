@@ -6,7 +6,11 @@ import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { PROOF_FORMAT_VERSION, writeProof } from "./verify-local.mjs";
+import {
+  ENGINE_FILE_SHA256,
+  PROOF_FORMAT_VERSION,
+  writeProof,
+} from "./verify-local.mjs";
 
 // Contract of the pre-push hook (common delivery rule v2, section 3) and of the
 // installer that `npm ci` runs, exercised with real `git push` calls into
@@ -216,6 +220,7 @@ test("the proof of the pushed tree is shown", () => {
   const now = new Date().toISOString();
   writeProof(commonDir, {
     version: PROOF_FORMAT_VERSION,
+    engine: ENGINE_FILE_SHA256,
     rule: "regle-commune-livraison v2",
     kind: "pr",
     sha,

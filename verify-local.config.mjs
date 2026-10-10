@@ -38,7 +38,7 @@ const NOT_APP = [
 // tests compare the file with it, so an engine edit is a deliberate change of
 // this pin. No other repository is read or compared.
 export const ENGINE_SHA256 =
-  "269adfe5e46a3a6c7b21bf220d5a5c9a85859fe8287974d3c0253a93ac8acdbf";
+  "6213a26ed55c7e388238e207cc6878299b8d728b9d29e5f743105881d408326b";
 
 const config = {
   mainBranch: "main",
@@ -96,7 +96,7 @@ const config = {
       name: "engine-tests",
       command: "node --test scripts/test-verify-local.mjs",
       // The engine tests read ENGINE_SHA256 from this file.
-      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs", "verify-local.config.mjs"],
+      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs", "verify-local.config.mjs", ".gitattributes"],
     },
     {
       name: "git-hooks",
