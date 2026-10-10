@@ -21,11 +21,11 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
   npm 11.5.1 or newer, and publish without `NODE_AUTH_TOKEN`.
 - GitHub environment `release` limited to `main` (deployment branch policy `main` only), holding the publish secrets.
 - Gating, as enforced: the job-level `if: github.ref == 'refs/heads/main'` skips any other ref before a runner starts, and the `release` environment refuses any branch but `main`. A dispatch runs the workflow file of its own ref, so the `if` alone can be edited away on a branch; the real enforcement is the environment branch policy.
-- You are on `main` with a clean release diff for MCP files.
+- You work on a branch from an up-to-date `main`, with a clean release diff for MCP files.
 
 ## Release Procedure
 
-Publication requires authorization; these instructions are not permission to publish. Check that the selected version is unused.
+Publication requires thanh's go; these instructions are not permission to publish. Check that the selected version is unused.
 
 1. Bump package version in `packages/clawdeals-mcp/package.json`.
 2. Keep CLI version output in sync in `packages/clawdeals-mcp/bin/clawdeals-mcp.mjs`.
@@ -36,7 +36,7 @@ node packages/clawdeals-mcp/bin/clawdeals-mcp.mjs --version
 npm pack ./packages/clawdeals-mcp --dry-run
 ```
 
-4. Commit and push to `main`.
+4. Merge the change into `main` through a PR.
 5. Dispatch the release workflow on `main`:
 
 ```bash
