@@ -57,8 +57,8 @@ const config = {
   setup: [],
   // https:// URL prefixes of the external CI runs that --external may cite as
   // evidence for a specialised check (External CI, section 13.1 of
-  // docs/regle-commune-livraison.md). None here, so only owner-machine
-  // evidence counts: the publish rows (mcp-release.yml, sdk-release.yml)
+  // docs/regle-commune-livraison.md). None here, so only evidence in the
+  // engine's owner-machine: format counts (no machine role): the publish rows (mcp-release.yml, sdk-release.yml)
   // publish and prove no check, and the 13.1 row for ci.yml, sdk-ci.yml and
   // historical-corpus.yml says they are never a merge or publish condition. A
   // prefix also cannot pick one workflow: every run of this repository lives
@@ -188,7 +188,7 @@ const config = {
           "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://repo1.maven.org/maven2/ && " +
           "curl -sf -o /dev/null --retry 2 --retry-all-errors --max-time 15 https://pypi.org/simple/pip/",
         hint:
-          "run it on the owner machine (PC Tanuki: Java for OpenAPI Generator, Python 3.11, access to npm, Maven Central and PyPI) and pass --external sdk=\"owner-machine: <host> <note> on <SHA>\"; dispatch sdk-ci.yml only if it is listed in External CI (docs/regle-commune-livraison.md, section 13)",
+          "run it locally where you run verify:pr (it needs Java for OpenAPI Generator, Python 3.11, access to npm, Maven Central and PyPI); if this machine cannot, say so in the Local proof; a run on the verified commit is cited with --external sdk=\"owner-machine: <host> <note> on <SHA>\"; dispatch sdk-ci.yml only if it is listed in External CI (docs/regle-commune-livraison.md, section 13)",
       },
     },
 
@@ -240,7 +240,7 @@ const config = {
       requires: {
         command: "node scripts/has-playwright-browser.mjs",
         hint:
-          "run it on the owner machine (PC Tanuki, with the Chromium pinned by playwright-core: `npx playwright install chromium`) and pass --external historical-corpus=\"owner-machine: <host> <note> on <SHA>\"; dispatch historical-corpus.yml only if it is listed in External CI (docs/regle-commune-livraison.md, section 13)",
+          "run it locally where you run verify:pr (it needs the Chromium pinned by playwright-core: `npx playwright install chromium`); if this machine cannot, say so in the Local proof; a run on the verified commit is cited with --external historical-corpus=\"owner-machine: <host> <note> on <SHA>\"; dispatch historical-corpus.yml only if it is listed in External CI (docs/regle-commune-livraison.md, section 13)",
       },
     },
   ],

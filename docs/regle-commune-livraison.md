@@ -1,7 +1,7 @@
 # Règle commune de livraison
 
-**Version commune : v5 (2026-10-09)**
-**Statut** : en vigueur. La v2 a été adoptée par le propriétaire le 9 octobre 2026 ; la v3 (même jour, soir) ajoute le principe « local d'abord » (§10), l'échelle de relecture (§11), la preuve des contrôles spécialisés (§12) et la CI externe (§13) ; la v4 et la v5 (même soir) corrigent le texte commun après relecture (§9).
+**Version commune : v6 (2026-10-10)**
+**Statut** : en vigueur. La v2 a été adoptée par le propriétaire le 9 octobre 2026 ; la v3 (même jour, soir) ajoute le principe « local d'abord » (§10), l'échelle de relecture (§11), la preuve des contrôles spécialisés (§12) et la CI externe (§13) ; la v4 et la v5 (même soir) corrigent le texte commun après relecture ; la v6 (10 octobre 2026) retire toute attribution de machines et passe Dependabot aux alertes seules (§9).
 **Décideur** : le propriétaire.
 **Dépôts concernés** : shapier, skillcodex, clawdeals, bodylab, dreamer.
 **Copies** : chaque dépôt a sa propre copie de ce fichier, à l'emplacement qu'il choisit (le chemin de la règle du dépôt, donné dans sa §13.1). Aucune copie n'est la source des autres. Tout ce qui précède la §13.1 est identique, octet pour octet, dans les cinq dépôts ; la §13.1 est propre à chaque dépôt.
@@ -37,7 +37,7 @@ Chaque `AGENTS.md` en reprend le résumé et renvoie à la copie locale de ce fi
    - Le contrôle tourne sur une copie isolée du commit (`git worktree`), pas dans l'arbre de travail. Il n'oblige donc pas à ranger un travail en cours.
    - Il produit une **preuve** liée à l'**arbre vérifié** (le *tree hash* git), pas seulement au commit (§4). Il y note les contrôles lancés, leur résultat et l'environnement : versions de Node et du gestionnaire de paquets.
    - Les variables d'environnement qui réduisent ce qu'un contrôle lance sont retirées avant les contrôles : `JEST_CHANGED_SINCE`, `TURBO_SCM_BASE`, `TURBO_SCM_HEAD`, `CI_BASE_REVISION`, `GITHUB_BASE_SHA`, et celles que la config d'un dépôt ajoute dans `stripEnv`. Un contrôle qui a besoin de l'une d'elles la fixe dans son propre `env`.
-   - **Contrôles spécialisés.** Quand la machine de l'agent ne peut pas lancer un contrôle spécialisé, la preuve vient par défaut de la machine du propriétaire (`owner-machine:`), et d'une source externe seulement si ce workflow figure dans la table de CI externe du dépôt (§12, §13, §13.1). Si ce contrôle est exigé avant la fusion, la PR attend cette preuve. `--external` ne vaut que pour un contrôle spécialisé qui ne peut pas tourner sur cette machine (sa sonde `requires` échoue), et la preuve cite exactement un commit, le commit vérifié : le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release` ; jamais un autre commit, même de même arbre. Une entrée externe n'est jamais réutilisée par une autre preuve.
+   - **Contrôles spécialisés.** L'agent lance les contrôles spécialisés sur la machine où il s'exécute (§10.3). Si elle ne peut pas lancer l'un d'eux, il le dit dans `## Local proof` ; si ce contrôle est exigé avant la fusion, la PR attend sa preuve. `--external` ne vaut que pour un contrôle spécialisé qui ne peut pas tourner ici (sa sonde `requires` échoue) et cite une exécution de ce contrôle au format du moteur (§12) ou un workflow listé dans la table de CI externe du dépôt (§13, §13.1). La preuve cite exactement un commit, le commit vérifié : le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release` ; jamais un autre commit, même de même arbre. Une entrée externe n'est jamais réutilisée par une autre preuve.
 3. **La PR et sa fusion.**
    - Avant fusion, la section `## Local proof` cite la preuve : commande, commit et arbre vérifiés, résultat, contrôles spécialisés lancés ou jugés hors périmètre. Ce titre anglais et la ligne du SHA du commit restent inchangés : le contrôle de fusion automatique des agents les lit.
    - Conditions de fusion, communes aux cinq dépôts :
@@ -60,7 +60,7 @@ Chaque `AGENTS.md` en reprend le résumé et renvoie à la copie locale de ce fi
 6. **Aperçus à la demande.** Aucun déploiement d'aperçu n'est déclenché par un push. On lance un aperçu quand on en a besoin.
 7. **CI externe seulement sur demande explicite (§10, §13).**
    - Elle ne tourne jamais par défaut et ne bloque jamais rien par elle-même ; aucune fusion n'attend un lancement automatique.
-   - Le signal après fusion est un `verify:pr` facultatif sur le SHA de la branche principale, sur la machine partagée (S5, §10).
+   - Le signal après fusion est un `verify:pr` facultatif sur le SHA de la branche principale (S5, §10).
    - Aucune protection GitHub ne doit exiger un statut de CI : une règle écrite dans `AGENTS.md` ne retire pas un statut obligatoire côté serveur.
 8. **Propre à chaque dépôt**, dans sa section de l'`AGENTS.md` et dans la §13.1 :
    - la technique, les conventions et la langue ;
@@ -126,7 +126,7 @@ Le modèle `.github/pull_request_template.md` a les sections `## Summary`, `## L
 | Q3 : Source du texte et du moteur | Chaque dépôt a sa copie du texte et du moteur ; aucune n'est canonique ; la ligne Version commune relie les textes. Le même fichier moteur partout est recommandé ; chaque dépôt épingle son propre `ENGINE_SHA256` et le vérifie localement ; une correction gagne à être reportée partout, sans contrôle entre dépôts |
 | Q4 : Durée du hook | Quelques secondes. Un dépassement entraîne une optimisation ou un déplacement, jamais un faux succès |
 | Q5 : Lint | Ciblé et mis en cache quand du code change. Pas de lint global ajouté seulement pour uniformiser |
-| Q6 : Dependabot | On ne fusionne jamais une PR Dependabot ; les mises à jour de sécurité restent actives |
+| Q6 : Dependabot | On ne fusionne jamais une PR Dependabot ; seules les alertes Dependabot restent actives (alertes seulement, PR automatiques de correctifs de sécurité désactivées) |
 | Q7 : Aperçus | À la demande ; aucun déclenchement systématique |
 | Q8 : CI externe | Jamais par défaut ; seulement sur demande explicite, là où un client, un partenaire ou un registre l'exige (§13) |
 | Q9 : Format de la preuve | Commun aux cinq dépôts (§4) |
@@ -140,7 +140,7 @@ Un dépôt applique la règle quand il a :
 - sa copie de ce fichier, au chemin qu'il choisit et qu'il donne dans sa §13.1, et, dans `AGENTS.md`, la section commune qui y renvoie ;
 - le moteur, sa config `verify-local.config.mjs`, les commandes `verify:pr` et `verify:release`, et le hook `.githooks/pre-push` installé par `prepare` ;
 - le modèle de PR commun (§5) ;
-- des `requires.hint` qui nomment d'abord la machine du propriétaire (§12) ;
+- des `requires.hint` qui disent de lancer le contrôle là où tourne `verify:pr`, puis comment le citer avec `--external` (§12) ;
 - des workflows de CI en `workflow_dispatch` seulement, et des workflows de publication gardés comme le dit la §13 ;
 - sa §13.1 : le chemin de sa copie de ce fichier, ses contrôles de push et sa table de CI externe.
 
@@ -153,6 +153,7 @@ Un dépôt applique la règle quand il a :
 | v3 | 9 octobre 2026, soir | Local d'abord (§10), échelle de relecture (§11), preuve des contrôles spécialisés (§12), CI externe et garde des publications (§13) ; une copie par dépôt, aucune canonique ; texte commun sans état des lieux par dépôt |
 | v4 | 9 octobre 2026, soir | Fil répondu **et** résolu avant fusion (§2.3, §11, modèle de PR) ; chemin de la règle choisi par chaque dépôt et donné dans sa §13.1 ; dans le modèle de PR, l'échelle de relecture renvoie en texte simple à la §11 de la règle du dépôt, sans lien (ni lien vers la branche principale, ni lien relatif) ; même fichier moteur recommandé, chaque dépôt n'épinglant et ne vérifiant que sa copie, une correction reportée de préférence partout mais jamais vérifiée entre dépôts (§6, Q3, §10, `AGENTS.md`) ; preuve spécialisée alignée sur la §12 : machine du propriétaire par défaut, source externe seulement si elle figure dans la CI externe du dépôt (§13, §13.1), et seulement sur le SHA de tête, jamais un commit de même arbre (§2.2, §2.4, §12, `AGENTS.md`, modèle de PR) |
 | v5 | 9 octobre 2026, soir | `<SHA>` d'une preuve spécialisée = le commit vérifié : tête de la PR pour `verify:pr`, commit livré pour `verify:release`, jamais un autre commit même de même arbre (§2.2, §12, `AGENTS.md`) ; condition `main` des workflows de publication jointe à une condition de cible par `&&` seulement, jamais `||` (§13) ; `ENGINE_SHA256` épinglé par chaque dépôt et vérifié localement, sans dire où (§6, Q3, §10.1, `AGENTS.md`) ; v4 et v5 sur la ligne Statut |
+| v6 | 10 octobre 2026 | Décision du propriétaire : la règle commune n'attribue plus aucune machine. Les rôles de machines (§10.3, colonne Machine de la §10.4, S5, `AGENTS.md`, modèle de PR) sont remplacés par une seule règle : l'agent lance les contrôles sur la machine où il s'exécute et dit dans `## Local proof` ce qu'elle ne peut pas lancer (§2.2, §10.3, §12). Preuve `--external` décrite sans rôle de machine, au format qu'exige le moteur. Dependabot : alertes seulement, PR automatiques de correctifs de sécurité désactivées (Q6, §10.5) |
 
 ## 10. Local d'abord : processus commun, dépôts indépendants
 
@@ -160,23 +161,20 @@ Un dépôt applique la règle quand il a :
 
 1. **Processus commun, pas code commun.** Chaque dépôt possède sa copie du moteur, sa config, ses hooks et ce document. Le même fichier moteur partout est recommandé ; chaque dépôt épingle son propre `ENGINE_SHA256` et le vérifie localement. Un dépôt se vérifie seul : aucun contrôle entre dépôts, aucune empreinte d'un autre dépôt et aucun lien vers un autre dépôt n'est nécessaire. Le texte commun est recopié à l'identique dans chaque dépôt ; seule la §13.1 change. La copie de chaque dépôt fait foi pour lui.
 2. **La CI externe ne tourne jamais par défaut.** GitHub Actions, CircleCI, GitLab CI, EAS Workflows et les builds Git de Vercel ou de Cloudflare ne se lancent que sur demande explicite, et seulement là où un client, un partenaire ou un registre l'exige. Chaque cas est listé dans la table de la §13 ; sans ligne dans cette table, aucune CI externe n'est attendue.
-3. **La preuve ordinaire est locale ou auto-hébergée.** Rôles des machines :
-   - **machine partagée (box)** : `verify:pr` et les relectures du CTO ;
-   - **PC Tanuki** : Docker, Supabase local, e2e navigateur (Playwright, TesterArmy) et `verify:release` web ;
-   - **Mac mini** : Expo, Maestro, simulateur iOS, émulateur Android et `verify:release` mobile.
+3. **Les contrôles tournent là où l'agent s'exécute.** L'agent lance les contrôles (`verify:pr`, `verify:release`, e2e) sur la machine où il s'exécute. Si cette machine ne peut pas lancer un contrôle, il le dit dans `## Local proof`. La règle ne nomme aucune machine et ne répartit jamais le travail entre elles.
 4. **Étapes communes**, chaque dépôt avec ses propres commandes :
 
-   | Étape | Commande | Machine | Bloque |
-   | --- | --- | --- | --- |
-   | S0 push | hook `pre-push` : les contrôles de push du dépôt (§3, §13.1) | celle qui pousse | le push |
-   | S1 PR | `verify:pr`, preuve collée dans `## Local proof` | machine partagée | la fusion (SHA de la preuve = tête de la PR) |
-   | S2 contrôles spécialisés | contrôles qui portent `requires` dans la config | PC Tanuki ou Mac mini | la fusion, quand la PR touche leurs chemins (§12) |
-   | S3 relecture | relecture du CTO sur l'échelle de la §11 | CTO | la fusion |
-   | S4 fusion | squash par le CTO | GitHub | |
-   | S5 après fusion | `verify:pr` facultatif sur le SHA de `main` | machine partagée | rien : signal seulement |
-   | S6 publication | `verify:release` sur le commit livré | PC Tanuki (web), Mac mini (mobile) | la publication, qui reste une décision explicite |
+   | Étape | Commande | Bloque |
+   | --- | --- | --- |
+   | S0 push | hook `pre-push` : les contrôles de push du dépôt (§3, §13.1) | le push |
+   | S1 PR | `verify:pr`, preuve collée dans `## Local proof` | la fusion (SHA de la preuve = tête de la PR) |
+   | S2 contrôles spécialisés | contrôles qui portent `requires` dans la config | la fusion, quand la PR touche leurs chemins (§12) |
+   | S3 relecture | relecture du CTO sur l'échelle de la §11 | la fusion |
+   | S4 fusion | squash par le CTO | |
+   | S5 après fusion | `verify:pr` facultatif sur le SHA de `main` | rien : signal seulement |
+   | S6 publication | `verify:release` sur le commit livré | la publication, qui reste une décision explicite |
 
-5. **Ce qui n'est pas de la CI reste tel quel** : crons d'exécution (Vercel Cron, crons d'un Worker), sauvegardes, mises à jour de sécurité Dependabot.
+5. **Ce qui n'est pas de la CI reste tel quel** : crons d'exécution (Vercel Cron, crons d'un Worker), sauvegardes, alertes Dependabot (alertes seulement, PR automatiques de correctifs de sécurité désactivées).
 
 ## 11. Échelle de relecture
 
@@ -192,13 +190,13 @@ Chaque fil reçoit une réponse, puis est résolu. Aucune PR n'est fusionnée av
 
 ## 12. Preuve des contrôles spécialisés
 
-- **D'abord la machine du propriétaire.** Quand la machine qui lance `verify:pr` ou `verify:release` ne peut pas exécuter un contrôle spécialisé (sa sonde `requires` échoue), on le lance sur la machine du propriétaire qui convient (§10.3), puis on le cite :
+- **Là où l'agent s'exécute.** L'agent lance chaque contrôle spécialisé sur la machine où il s'exécute (§10.3). Si elle ne peut pas l'exécuter (sa sonde `requires` échoue), il le dit dans `## Local proof`. Une exécution de ce contrôle sur le commit vérifié se cite ainsi :
 
   ```
   --external <contrôle>="owner-machine: <hôte> <note> on <SHA>"
   ```
 
-  `<SHA>` est le commit vérifié : le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release` ; jamais un autre commit, même de même arbre. Pour une PR, c'est le `Commit SHA` de `## Local proof`.
+  `<SHA>` est le commit vérifié : le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release` ; jamais un autre commit, même de même arbre. Pour une PR, c'est le `Commit SHA` de `## Local proof`. Ce format est celui qu'exige le moteur : `owner-machine:` y est un mot-clé fixe, `<hôte>` le nom de la machine qui a lancé le contrôle ; il n'attribue aucun rôle à une machine.
 
 - **Une source externe seulement si elle est retenue pour ce dépôt.** Une preuve venue d'une CI externe (le lien de son exécution) n'est valable que si ce workflow figure dans la table de CI externe du dépôt (§13, §13.1), et seulement pour une exécution sur le commit vérifié (le SHA de tête de la PR pour `verify:pr`, le commit livré pour `verify:release`).
 - La PR cite chaque preuve spécialisée dans sa section `## Specialised checks`, ou y écrit « none / out of scope ».
@@ -234,6 +232,6 @@ Cette sous-section est la seule partie de ce document qui diffère d'un dépôt 
 | `sdk-release.yml`, cible `py` | PyPI (contrainte du registre, pas d'un client) | `workflow_dispatch` seulement, entrées `target: py` et `version` ; décision explicite de publier | La publication de confiance de PyPI exige une exécution GitHub Actions : le job de publication PyPI tourne dans ce workflow avec `id-token: write` (OIDC), et PyPI lie l'éditeur de confiance à ce dépôt, à ce fichier de workflow et à son environnement. Le job n'a pas encore `id-token: write` : la publication de confiance ne peut pas aboutir avant cet ajout (suivi connu). Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
 | `sdk-release.yml`, cible `ts` | personne | `workflow_dispatch` seulement, entrées `target: ts` et `version` ; décision explicite de publier | publication npm du SDK TypeScript, avec le secret `NPM_TOKEN`. Le déplacement de `NPM_TOKEN` vers l'environnement `release` attend l'étape de thanh dans Settings (#18) : aujourd'hui l'environnement `release` n'a aucun secret et `NPM_TOKEN` est encore un secret du dépôt. Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
 | `mcp-release.yml` | personne | `workflow_dispatch` seulement, entrée `version` ; décision explicite de publier | publication npm de `clawdeals-mcp` (éditeur de confiance npm lié à `mcp-release.yml`). Garde des workflows de publication (§13) : `if: github.ref == 'refs/heads/main'` au niveau du job et environnement `release`, limité à `main`. |
-| `ci.yml`, `sdk-ci.yml`, `historical-corpus.yml` | personne | `workflow_dispatch` seulement (`gh workflow run <fichier> --ref <branche>`) | exécution sur machine propre, sur demande ; jamais une condition de fusion ni de publication |
+| `ci.yml`, `sdk-ci.yml`, `historical-corpus.yml` | personne | `workflow_dispatch` seulement (`gh workflow run <fichier> --ref <branche>`) | exécution sur un runner propre, sur demande ; jamais une condition de fusion ni de publication |
 
-Dependency Graph (soumission dynamique de GitHub) et les mises à jour de sécurité Dependabot restent tels quels. Les crons d'exécution (`vercel.json`, `wrangler.jsonc`) ne sont pas de la CI.
+Dependency Graph (soumission dynamique de GitHub) et les alertes Dependabot (alertes seulement, PR automatiques de correctifs de sécurité désactivées) restent tels quels. Les crons d'exécution (`vercel.json`, `wrangler.jsonc`) ne sont pas de la CI.

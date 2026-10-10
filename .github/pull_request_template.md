@@ -19,10 +19,12 @@ merge it into the branch, rerun `npm run verify:pr` and update this section.
 ## Specialised checks
 
 <!--
-One line per specialised check this PR needs, owner machine first:
-`<check>: owner-machine: <host> <note> on <SHA>`, where <SHA> is the PR head
+One line per specialised check this PR needs, run where the agent runs:
+`<check>: owner-machine: <host> <note> on <SHA>` (the engine's fixed format;
+<host> is the machine that ran it), where <SHA> is the PR head
 SHA (never another commit, even with the same tree). External evidence only
-for a workflow listed in the repo's External CI table, run on the head SHA. Otherwise: none / out of scope.
+for a workflow listed in the repo's External CI table, run on the head SHA.
+A check this machine cannot run: say so. Otherwise: none / out of scope.
 -->
 - none / out of scope
 
