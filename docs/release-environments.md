@@ -4,7 +4,7 @@ Updated 2026-09-28. The owner-approved policy is in [AGENTS.md](../AGENTS.md).
 
 ## Current workflow
 
-- Work on `main`. Automatic Git deployment from `main` is disabled in `vercel.json`: an authorized push is published to `clawdeals` at `https://app.clawdeals.com` once that commit passes the [validation gate](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28).
+- Changes reach `main` through a reviewed PR. Automatic Git deployment from `main` is disabled in `vercel.json`: a `main` commit is published to `clawdeals` at `https://app.clawdeals.com` only on thanh's go, once that commit passes the [validation gate](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28).
 - During this development phase, the owner confirms there are no real users and production data is fictitious and disposable. Relevant validation may create, modify, and delete test data there without repeated approval.
 - `clawdeals-staging` and its Vercel deployments were deleted on 2026-09-28. Neither `sandbox.clawdeals.com` nor the older `staging.app.clawdeals.com` is an available test target.
 - Local services remain an option; a separate staging project, staging branch, promotion step, or two-person release approval is not required.

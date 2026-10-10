@@ -25,7 +25,7 @@ This runbook documents how to publish the `clawdeals-mcp` package to npm from th
 
 ## Release Procedure
 
-Publication requires authorization; these instructions are not permission to publish. Check that the selected version is unused.
+Publication requires thanh's go; these instructions are not permission to publish. Check that the selected version is unused.
 
 1. Bump package version in `packages/clawdeals-mcp/package.json`.
 2. Keep CLI version output in sync in `packages/clawdeals-mcp/bin/clawdeals-mcp.mjs`.
@@ -36,7 +36,7 @@ node packages/clawdeals-mcp/bin/clawdeals-mcp.mjs --version
 npm pack ./packages/clawdeals-mcp --dry-run
 ```
 
-4. Commit and push to `main`.
+4. Merge the change into `main` through a PR.
 5. Dispatch the release workflow on `main`:
 
 ```bash
