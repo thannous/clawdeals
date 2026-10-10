@@ -96,7 +96,7 @@ const config = {
       name: "engine-tests",
       command: "node --test scripts/test-verify-local.mjs",
       // The engine tests read ENGINE_SHA256 from this file.
-      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs", "verify-local.config.mjs"],
+      inputs: ["scripts/verify-local.mjs", "scripts/test-verify-local.mjs", "verify-local.config.mjs", ".gitattributes"],
     },
     {
       name: "git-hooks",
