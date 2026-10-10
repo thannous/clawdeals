@@ -4,7 +4,7 @@ name: SDK Release
 # dispatch only, on an explicit decision to publish:
 # `gh workflow run sdk-release.yml --ref main -f target=ts -f version=X.Y.Z`.
 # The version input must equal the SDK's own version. PyPI trusted publishing
-# needs this GitHub Actions run (registry constraint, External CI table).
+# needs this GitHub Actions run (registry constraint).
 # Gating: each job's `if` skips any ref other than main before a runner
 # starts, and the `release` environment only accepts main (its branch policy)
 # and holds the publish secrets. A dispatch runs the workflow file of its own
