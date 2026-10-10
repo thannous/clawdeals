@@ -34,7 +34,7 @@ try {
     git("config", "--local", "core.hooksPath", hooksPath);
     const previous = current ? ` (was ${current})` : "";
     console.log(
-      `install-git-hooks: core.hooksPath set to ${hooksPath}${previous}; pre-push runs the fast push checks (a few seconds). Run \`npm run verify:pr\` before asking for a merge.`,
+      `install-git-hooks: core.hooksPath set to ${hooksPath}${previous}; pre-push runs the fast push checks (a few seconds). Run \`npm run verify:pr\` before pushing.`,
     );
   }
 } catch {

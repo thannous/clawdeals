@@ -164,7 +164,7 @@ test("a push takes seconds, reports a missing proof and accepts work in progress
   writeFileSync(join(repo.work, "draft.js"), "export const draft = true;\n");
   const result = repo.push("origin", "feature");
   assert.equal(result.status, 0, result.output);
-  assert.match(result.output, /no proof yet; run npm run verify:pr before asking for a merge/);
+  assert.match(result.output, /no proof yet; run npm run verify:pr before pushing/);
   assert.match(result.output, /fast checks passed/);
   assert.doesNotMatch(result.output, /test:ci|vitest|tsc/);
   assert.ok(result.elapsed < 10_000, `the push took ${result.elapsed} ms`);
