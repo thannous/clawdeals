@@ -1,3 +1,5 @@
+import { NextIntlClientProvider } from "next-intl";
+import messages from "../../../messages/en.json";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
@@ -54,7 +56,7 @@ describe("Magic link mission return", () => {
   });
 
   it("keeps the localized mission destination when switching to Magic link", async () => {
-    render(<LoginPage />);
+    render(<NextIntlClientProvider locale="en" messages={messages}><LoginPage /></NextIntlClientProvider>);
     const link = screen.getByTestId("auth-login-legacy-link");
     expect(new URL(link.getAttribute("href")!, window.location.origin).searchParams.get("next")).toBe(missionPath);
   });

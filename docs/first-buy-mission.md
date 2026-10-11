@@ -20,6 +20,55 @@ envoyée ou qu’un achat est conclu. Ces actions gardent leurs autorisations et
 confirmations propres. Le [runner Cerebras](./cerebras-buyer-workflow.md) prépare
 une proposition locale distincte ; il ne remplace pas la persistance de ce parcours.
 
+### Passage de l’annonce à la mission
+
+Le prix préféré et le plafond sont initialisés au prix exact de l’annonce. L’ancien
+ajout automatique de 10 % est supprimé : une marge supplémentaire résulte d’une
+modification explicite du plafond. La devise reste visible avec les limites.
+La durée, les actions autorisées et les coordonnées détaillées sont accessibles
+dans des sections repliées ; une zone personnalisée peut toujours être modifiée.
+
+Le brouillon est conservé dans le même onglet pendant 24 heures, y compris les
+exigences et les actions choisies. L’écran de connexion indique la reprise de la
+mission et permet de revenir au brouillon avant de se connecter. Ses contrôles
+sont traduits en français, anglais et espagnol. Après la connexion, la création
+attend toujours la confirmation du récapitulatif. Cette conservation ne promet
+pas une synchronisation entre appareils ou des onglets ouverts indépendamment.
+
+Validation complémentaire du 2026-10-11 sur la branche `codex/first-buy-mission` :
+
+- `.e2e/validation/listing-mission-draft-verified-20261011/report.json` : **6/6**,
+  bureau/mobile, prix sans marge implicite, options repliées, retour depuis
+  l’inscription, critères conservés puis rechargement. Auth anonyme simulée pour
+  ce scénario de retour sans connexion.
+- `.e2e/validation/listing-mission-live-20261011/report.json` : **4/4**, connexion
+  réelle, écriture et relecture EUR/GBP ; Redis local simulé, Auth/Postgres réels.
+  Les quatre fixtures signalent zéro erreur de nettoyage et zéro ligne restante.
+- `.e2e/validation/listing-mission-client-20261011/report.json` : les **14 cas**
+  WebMCP et reprise après erreur passent. Le même rapport garde deux échecs du
+  nouveau test de brouillon dus au sélecteur de titre ; ce scénario a ensuite été
+  corrigé et rejoué dans le rapport 6/6 ci-dessus. Ces 14 résultats sont réutilisés,
+  pas présentés comme une nouvelle exécution.
+
+Ces exécutions portent sur les modifications locales au-dessus de `7671b335`.
+Les commandes, versions et empreintes sont dans chaque `command.json` associé.
+Les résultats qualifient l’app locale, pas un déploiement en production.
+
+Relance des contrôles de cette évolution avec l’app locale et les prérequis du
+guide E2E ci-dessous (chaque dossier de sortie doit être nouveau) :
+
+```bash
+TESTERARMY_AI=0 E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/listing-mission-draft-UNIQUE \
+  npm run test:testerarmy -- e2e/testerarmy/mission-draft.e2e.ts
+
+E2E_BASE_URL=http://localhost:4327 TESTERARMY_REDIS_FIXTURE=local-mock \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/listing-mission-live-UNIQUE \
+  npm run test:mission
+```
+
 ## Vérification et livraison
 
 Utiliser le parcours TesterArmy et ses prérequis dans

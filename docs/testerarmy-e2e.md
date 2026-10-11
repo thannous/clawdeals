@@ -99,8 +99,10 @@ An incomplete cleanup remains a failed campaign, separate from a passed UI body.
 Local results describe the local app against its named backend. CI and deployed
 UI qualification require their own identified executions.
 
-The default client suite also covers an anonymous draft returning from sign-in,
-the same search started with a different price limit, and recovery when the
+The default client suite also covers a listing draft returning from the localized
+sign-in/sign-up screen, its explicitly edited budget and allowed actions after
+reload, an anonymous draft returning from sign-in, the same search started with
+a different price limit, and recovery when the
 server commits a mission but its response is lost. The recovery case models only
 that network failure: it verifies that editing is blocked while the outcome is
 unknown, and that reload/retry preserves the exact body and idempotency key. The

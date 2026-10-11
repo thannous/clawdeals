@@ -231,11 +231,9 @@ export type BuyMissionPrefill = {
   listingTitle?: string;
 };
 
-const HARD_BUDGET_HEADROOM = 1.1;
-
 /**
  * Builds a mission prefill from a listing a human is looking at: preferred price =
- * asking price, hard ceiling = asking price + 10 %, location = the listing's market.
+ * asking price, hard ceiling = asking price. Any extra budget is the buyer's choice.
  */
 export function prefillFromListing(input: {
   title?: string | null;
@@ -258,7 +256,7 @@ export function prefillFromListing(input: {
   }
   if (typeof input.price === "number" && Number.isFinite(input.price) && input.price > 0) {
     prefill.preferredPriceMax = String(Math.round(input.price * 100) / 100);
-    prefill.hardBudgetMax = String(Math.round(input.price * HARD_BUDGET_HEADROOM * 100) / 100);
+    prefill.hardBudgetMax = prefill.preferredPriceMax;
   }
   if (
     typeof input.latitude === "number" &&
@@ -305,6 +303,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
   const [storageError, setStorageError] = useState(false);
   const activeMission = useSyncExternalStore(subscribeActiveBuyMission, getActiveBuyMission, () => null);
   const hasCustomLocation = Boolean(prefill?.latitude && prefill?.longitude);
+  const [coordinatesOpen, setCoordinatesOpen] = useState(!draftSource && hasCustomLocation);
   const defaultCity = CITY_PRESETS.find((city) => city.market === (prefill?.marketCode || "FR"))!;
   const [query, setQuery] = useState(prefill?.query ?? t("mission.defaults.query"));
   const [marketCode, setMarketCode] = useState<MarketCode>(prefill?.marketCode ?? "FR");
@@ -419,6 +418,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
 
   const applyCityPreset = (presetId: string) => {
     setCityPreset(presetId);
+    setCoordinatesOpen(presetId === "custom");
     const preset = CITY_PRESETS.find((entry) => entry.id === presetId);
     if (!preset) return;
     setLocationLabel(t(preset.labelKey));
@@ -498,6 +498,69 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
     }
   };
 
+  const options = (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <label className="space-y-1">
+        <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.expires")}</span>
+        <input
+          {...param(t("mission.params.expires"))}
+          required
+          name="expires_at"
+          type="datetime-local"
+          value={expiresAt}
+          onChange={(event) => setExpiresAt(event.target.value)}
+          className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
+        />
+      </label>
+      <fieldset className="space-y-1" data-testid="buy-mission-autonomy">
+        <legend className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.autonomy")}</legend>
+        <div className="space-y-1.5 border border-border bg-bg px-3 py-2">
+          {AUTONOMOUS_ACTION_OPTIONS.map((option) => {
+            const checked = autonomousActions.includes(option.value);
+            return (
+              <label
+                key={option.value}
+                className="flex items-start gap-2 text-xs font-mono text-text"
+                title={t(option.hintKey)}
+              >
+                <input
+                  {...param(
+                    t("mission.params.delegate", {
+                      action: t(option.labelKey)
+                    })
+                  )}
+                  type="checkbox"
+                  name="autonomous_actions"
+                  value={option.value}
+                  checked={option.locked ? true : checked}
+                  disabled={option.locked}
+                  onChange={(event) => toggleAutonomousAction(option.value, event.target.checked)}
+                  className="mt-0.5 accent-[var(--color-primary)]"
+                />
+                <span>
+                  {t(option.labelKey)}
+                  {option.locked ? <span className="ml-1 text-subtle">({t("common.required")})</span> : null}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+      <label className="space-y-1">
+        <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.contact")}</span>
+        <select
+          {...param(t("mission.params.contact"))}
+          required
+          name="contact_reveal"
+          defaultValue="manual_bilateral_approval"
+          className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
+        >
+          <option value="manual_bilateral_approval">{t("mission.manualBilateral")}</option>
+        </select>
+      </label>
+    </div>
+  );
+
   return (
     <div id="buy-mission" className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 space-y-4 scroll-mt-24">
       {!draftSource && activeMission ? <MissionSummary mission={activeMission} /> : null}
@@ -521,6 +584,9 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
           </div>
           {!draftSource ? <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.mode")}</span> : null}
         </div>
+
+        {draftSource ? <p className="mt-3 text-sm text-muted">{t(prefill?.listingTitle ? "mission.budgetHint" : "mission.currencyHint", { currency: marketCode === "GB" ? "GBP" : "EUR" })}</p> : null}
+        {draftSource && restoredDraft.current ? <p role="status" className="mt-2 text-sm text-primary">{t("mission.draftResumed")}</p> : null}
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1 lg:col-span-2">
@@ -548,7 +614,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
                   {t(preset.labelKey)} · {preset.market === "GB" ? "GBP" : "EUR"}
                 </option>
               ))}
-              <option value="custom">{t("mission.customCoordinates")}</option>
+              <option value="custom">{t(draftSource && hasCustomLocation && latitude === prefill?.latitude && longitude === prefill?.longitude ? "mission.listingLocation" : "mission.customCoordinates")}</option>
             </select>
           </label>
           <label className="space-y-1">
@@ -576,18 +642,6 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
               max="300"
               value={radiusKm}
               onChange={(event) => setRadiusKm(event.target.value)}
-              className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
-            />
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.expires")}</span>
-            <input
-              {...param(t("mission.params.expires"))}
-              required
-              name="expires_at"
-              type="datetime-local"
-              value={expiresAt}
-              onChange={(event) => setExpiresAt(event.target.value)}
               className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
             />
           </label>
@@ -630,57 +684,20 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
               className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
             />
           </label>
-          <fieldset className="space-y-1" data-testid="buy-mission-autonomy">
-            <legend className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.autonomy")}</legend>
-            <div className="space-y-1.5 border border-border bg-bg px-3 py-2">
-              {AUTONOMOUS_ACTION_OPTIONS.map((option) => {
-                const checked = autonomousActions.includes(option.value);
-                return (
-                  <label
-                    key={option.value}
-                    className="flex items-start gap-2 text-xs font-mono text-text"
-                    title={t(option.hintKey)}
-                  >
-                    <input
-                      {...param(
-                        t("mission.params.delegate", {
-                          action: t(option.labelKey)
-                        })
-                      )}
-                      type="checkbox"
-                      name="autonomous_actions"
-                      value={option.value}
-                      checked={option.locked ? true : checked}
-                      disabled={option.locked}
-                      onChange={(event) => toggleAutonomousAction(option.value, event.target.checked)}
-                      className="mt-0.5 accent-[var(--color-primary)]"
-                    />
-                    <span>
-                      {t(option.labelKey)}
-                      {option.locked ? <span className="ml-1 text-subtle">({t("common.required")})</span> : null}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-          <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.contact")}</span>
-            <select
-              {...param(t("mission.params.contact"))}
-              required
-              name="contact_reveal"
-              defaultValue="manual_bilateral_approval"
-              className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
-            >
-              <option value="manual_bilateral_approval">{t("mission.manualBilateral")}</option>
-            </select>
-          </label>
+
         </div>
+
+        {draftSource ? (
+          <details className="mt-4 border border-border bg-bg/40" data-testid="buy-mission-options">
+            <summary className="cursor-pointer px-3 py-3 text-sm text-muted">{t("mission.options")}</summary>
+            <div className="border-t border-border p-3">{options}</div>
+          </details>
+        ) : <div className="mt-4">{options}</div>}
 
         <details
           className="mt-4 border border-border bg-bg/40"
-          open={cityPreset === "custom"}
+          open={coordinatesOpen}
+          onToggle={(event) => setCoordinatesOpen(event.currentTarget.open)}
           data-testid="buy-mission-advanced"
         >
           <summary className="cursor-pointer select-none px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-subtle hover:text-text">

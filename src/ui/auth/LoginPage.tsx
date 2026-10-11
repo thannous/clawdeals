@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
@@ -119,6 +120,7 @@ export default function LoginPage() {
 }
 
 function useLoginPageView() {
+  const t = useTranslations("ownerLogin");
   const router = useRouter();
   const hasCheckedExistingSessionRef = useRef(false);
   const [modeOverride, setModeOverride] = useState<"login" | "signup" | null>(null);
@@ -137,6 +139,7 @@ function useLoginPageView() {
   const [redirectHintReady, setRedirectHintReady] = useState(false);
 
   const redirectTarget = resolveRedirectTarget(router.isReady, router.query.next);
+  const missionReturn = redirectHintReady && /^\/(?:fr\/|en\/|es\/)?my\/missions\/new(?:[?#]|$)/.test(redirectTarget);
   const canSubmit = Boolean(email.trim() && password.trim() && submitState !== "loading");
   const hardRedirect = useCallback((target: string) => {
     window.location.assign(target);
@@ -208,9 +211,9 @@ function useLoginPageView() {
       window.location.assign(oauthData.url);
     } catch (err: any) {
       setSubmitState("error");
-      setError(String(err?.message || "Google sign-in failed"));
+      setError(String(err?.message || t("googleError")));
     }
-  }, [redirectTarget]);
+  }, [redirectTarget, t]);
 
   const onEmailPassword = useCallback(async () => {
     if (!canSubmit) return;
@@ -255,17 +258,17 @@ function useLoginPageView() {
       }
 
       setSubmitState("done");
-      setNotice("Account created. Check your inbox if email confirmation is enabled.");
+      setNotice(t("accountCreated"));
     } catch (err: any) {
       setSubmitState("error");
-      setError(String(err?.message || "Authentication failed"));
+      setError(String(err?.message || t("authError")));
     }
-  }, [canSubmit, email, mode, password, router, redirectTarget]);
+  }, [canSubmit, email, mode, password, router, redirectTarget, t]);
 
   const onForgotPassword = useCallback(async () => {
     if (!email.trim()) {
       setForgotState("error");
-      setError("Enter your email first.");
+      setError(t("enterEmail"));
       return;
     }
     setForgotState("loading");
@@ -276,18 +279,18 @@ function useLoginPageView() {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
       if (resetError) throw resetError;
       setForgotState("done");
-      setNotice("Password reset email sent.");
+      setNotice(t("resetSent"));
     } catch (err: any) {
       setForgotState("error");
-      setError(String(err?.message || "Failed to send reset email"));
+      setError(String(err?.message || t("resetError")));
     }
-  }, [email]);
+  }, [email, t]);
 
   return (
     <div data-testid="auth-login-page" className="min-h-screen bg-bg relative overflow-hidden flex flex-col lg:flex-row">
 
       {/* ── Left branding panel ── */}
-      <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative flex-col justify-between p-10 xl:p-14 overflow-hidden">
+      <div className={missionReturn ? "hidden" : "hidden lg:flex lg:w-[45%] xl:w-[50%] relative flex-col justify-between p-10 xl:p-14 overflow-hidden"}>
         {/* Background layers */}
         <div className="absolute inset-0 tech-grid opacity-40" />
         <div className="absolute inset-0 bg-linear-to-br from-primary/4 via-transparent to-secondary/2" />
@@ -302,7 +305,7 @@ function useLoginPageView() {
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(255,95,31,0.5)]" />
-              <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
+              <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">{t("securePortal")}</span>
             </div>
             <Link href="/" className="block w-fit">
               <h2 className="text-4xl xl:text-5xl font-bold tracking-wider text-text text-shadow-glow leading-tight">
@@ -310,16 +313,16 @@ function useLoginPageView() {
               </h2>
             </Link>
             <p className="text-sm font-mono text-muted max-w-sm leading-relaxed">
-              The autonomous marketplace where AI agents negotiate, transact and settle&nbsp;&mdash; trustlessly.
+              {t("brandIntro")}
             </p>
           </div>
 
           <div className="w-16 h-px bg-linear-to-r from-primary/60 to-transparent" />
 
           <div className="space-y-3 max-w-xs">
-            <StatusBadge label="Protocol" value="v1.4" />
-            <StatusBadge label="Network" value="mainnet" />
-            <StatusBadge label="Encryption" value="AES-256" />
+            <StatusBadge label={t("protocol")} value="v1.4" />
+            <StatusBadge label={t("network")} value="mainnet" />
+            <StatusBadge label={t("encryption")} value="AES-256" />
           </div>
         </div>
 
@@ -329,7 +332,7 @@ function useLoginPageView() {
           <TerminalBlock />
 
           <div className="text-xs font-mono text-subtle/50">
-            &copy; {new Date().getFullYear()} Clawdeals &mdash; Agent-to-agent commerce infrastructure
+            &copy; {new Date().getFullYear()} Clawdeals &mdash; {t("brandFooter")}
           </div>
         </div>
 
@@ -344,10 +347,10 @@ function useLoginPageView() {
         <div className="animate-scanline lg:hidden" />
 
         {/* Mobile-only brand header */}
-        <div className="lg:hidden relative z-10 px-6 pt-8 pb-2">
+        <div className={`${missionReturn ? "" : "lg:hidden"} relative z-10 px-6 pt-8 pb-2`}>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_6px_rgba(255,95,31,0.5)]" />
-            <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">Secure portal</span>
+            <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">{t("securePortal")}</span>
           </div>
           <Link href="/" className="block w-fit mt-2">
             <h2 className="text-2xl font-bold tracking-wider text-text text-shadow-glow">
@@ -363,13 +366,15 @@ function useLoginPageView() {
             {/* Card */}
             <div className="bg-surface/80 backdrop-blur-sm border border-border rounded clip-corner p-6 sm:p-8 space-y-6">
 
+              {missionReturn ? <Link href={redirectTarget} locale={false} className="inline-block text-sm text-primary underline">{t("backToDraft")}</Link> : null}
+
               {/* Header */}
               <div className="space-y-2">
                 <h1 className="text-xl font-bold tracking-wider text-text text-shadow-glow">
-                  <span className="text-primary">/ </span>OWNER SIGN IN
+                  <span className="text-primary">/ </span>{t(missionReturn ? "missionTitle" : "title")}
                 </h1>
                 <p className="text-xs font-mono text-subtle leading-relaxed">
-                  Sign in with Google or with your email and password.
+                  {t(missionReturn ? "missionHint" : "intro")}
                 </p>
               </div>
 
@@ -380,13 +385,13 @@ function useLoginPageView() {
                 disabled={submitState === "loading"}
                 className="w-full px-4 py-3 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
               >
-                Continue with Google
+                {t("google")}
               </button>
 
               {/* Divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-xs font-mono text-subtle uppercase tracking-widest">or</span>
+                <span className="text-xs font-mono text-subtle uppercase tracking-widest">{t("or")}</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
 
@@ -399,7 +404,7 @@ function useLoginPageView() {
                       mode === "login" ? "bg-text text-bg" : "text-subtle hover:text-text"
                     }`}
                   >
-                    Login
+                    {t("login")}
                   </button>
                   <button
                     onClick={() => selectMode("signup")}
@@ -407,13 +412,13 @@ function useLoginPageView() {
                       mode === "signup" ? "bg-text text-bg" : "text-subtle hover:text-text"
                     }`}
                   >
-                    Sign up
+                    {t("signup")}
                   </button>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-xs font-mono text-subtle uppercase tracking-wider" htmlFor="auth-email">
-                    Email
+                    {t("email")}
                   </label>
                   <input
                     id="auth-email"
@@ -426,7 +431,7 @@ function useLoginPageView() {
                     data-testid="auth-login-email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com…"
+                    placeholder={t("emailPlaceholder")}
                     autoComplete="email"
                     className="w-full px-4 py-3 text-sm font-mono bg-bg/60 border border-border rounded text-text placeholder:text-subtle/60 focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface transition-colors"
                   />
@@ -434,7 +439,7 @@ function useLoginPageView() {
 
                 <div className="space-y-2">
                   <label className="block text-xs font-mono text-subtle uppercase tracking-wider" htmlFor="auth-password">
-                    Password
+                    {t("password")}
                   </label>
                   <div className="relative">
                     <input
@@ -454,26 +459,26 @@ function useLoginPageView() {
                     <button
                       type="button"
                       data-testid="auth-login-password-toggle"
-                      aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                      aria-label={t(isPasswordVisible ? "hidePassword" : "showPassword")}
                       aria-pressed={isPasswordVisible}
                       onClick={() => setIsPasswordVisible((previous) => !previous)}
                       className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[12px] font-mono font-bold uppercase tracking-wider border border-border text-text rounded bg-bg/80 hover:border-primary/70 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     >
-                      {isPasswordVisible ? "Hide" : "Show"}
+                      {t(isPasswordVisible ? "hide" : "show")}
                     </button>
                   </div>
                 </div>
 
                 {error && (
                   <div data-testid="auth-login-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-error">Error</div>
+                    <div className="text-xs font-mono text-error">{t("error")}</div>
                     <div className="text-xs font-mono text-muted mt-1">{error}</div>
                   </div>
                 )}
 
                 {notice && (
                   <div data-testid="auth-login-notice" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
-                    <div className="text-xs font-mono text-secondary">Notice</div>
+                    <div className="text-xs font-mono text-secondary">{t("notice")}</div>
                     <div className="text-xs font-mono text-muted mt-1">{notice}</div>
                   </div>
                 )}
@@ -487,10 +492,10 @@ function useLoginPageView() {
                     className="w-full px-4 py-3 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
                     {submitState === "loading"
-                      ? "Working…"
+                      ? t("working")
                       : mode === "signup"
-                        ? "Create account"
-                        : "Login"}
+                        ? t("createAccount")
+                        : t("login")}
                   </button>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -500,14 +505,14 @@ function useLoginPageView() {
                       disabled={forgotState === "loading" || submitState === "loading"}
                       className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors disabled:opacity-50"
                     >
-                      {forgotState === "loading" ? "Sending…" : "Forgot password"}
+                      {t(forgotState === "loading" ? "sending" : "forgot")}
                     </button>
                     <Link
                       href={`/auth/login-legacy?next=${encodeURIComponent(safeRedirectUrl(router.query.next))}`}
                       data-testid="auth-login-legacy-link"
                       className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
                     >
-                      Magic link
+                      {t("magicLink")}
                     </Link>
                   </div>
                 </div>
@@ -515,9 +520,8 @@ function useLoginPageView() {
             </div>
 
             {/* Footer hint */}
-            {redirectHintReady ? <div className="text-xs font-mono text-subtle px-1">
-              After login, you&apos;ll continue to <span className="text-text">{redirectTarget}</span>
-              {redirectTarget === "/settings/account" ? " to view your agents and claims." : "."}
+            {redirectHintReady && !missionReturn ? <div className="text-sm text-muted px-1 space-y-2">
+              <p>{t("returnHint")} <span className="text-text">{redirectTarget}</span></p>
             </div> : null}
           </div>
         </div>

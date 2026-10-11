@@ -1,3 +1,5 @@
+import { NextIntlClientProvider } from "next-intl";
+import messages from "../../../messages/en.json";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
@@ -76,7 +78,7 @@ describe("LoginPage Google OAuth", () => {
     });
 
     try {
-      render(<LoginPage />);
+      render(<NextIntlClientProvider locale="en" messages={messages}><LoginPage /></NextIntlClientProvider>);
 
       fireEvent.click(screen.getByTestId("auth-login-google"));
 
@@ -99,7 +101,7 @@ describe("LoginPage Google OAuth", () => {
 
   it("shows an error when Supabase does not return an OAuth redirect URL", async () => {
     mocks.signInWithOAuth.mockResolvedValue({ data: null, error: null });
-    render(<LoginPage />);
+    render(<NextIntlClientProvider locale="en" messages={messages}><LoginPage /></NextIntlClientProvider>);
 
     fireEvent.click(screen.getByTestId("auth-login-google"));
 
@@ -113,7 +115,7 @@ describe("LoginPage Google OAuth", () => {
     mocks.router.isReady = false;
     mocks.router.query = {};
     window.history.replaceState({}, "", "/auth/login?next=/start");
-    render(<LoginPage />);
+    render(<NextIntlClientProvider locale="en" messages={messages}><LoginPage /></NextIntlClientProvider>);
 
     fireEvent.click(screen.getByTestId("auth-login-google"));
 
@@ -133,7 +135,7 @@ describe("LoginPage Google OAuth", () => {
 
   it("forces localhost callback origin in local dev even when NEXT_PUBLIC_APP_URL is set", async () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.clawdeals.com";
-    render(<LoginPage />);
+    render(<NextIntlClientProvider locale="en" messages={messages}><LoginPage /></NextIntlClientProvider>);
 
     fireEvent.click(screen.getByTestId("auth-login-google"));
 

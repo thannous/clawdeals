@@ -77,7 +77,7 @@ describe("BuyMissionPanel", () => {
       listingTitle: "Used e-bike urban commute - battery health 88%",
       marketCode: "FR",
       preferredPriceMax: "1150",
-      hardBudgetMax: "1265",
+      hardBudgetMax: "1150",
       latitude: "48.86",
       longitude: "2.35",
       locationLabelKey: "mission.listingLocation",
@@ -99,7 +99,7 @@ describe("BuyMissionPanel", () => {
         latitude: 48.86,
         longitude: 2.35,
         preferred_price_max: 1150,
-        hard_budget_max: 1265
+        hard_budget_max: 1150
       })
     );
   });

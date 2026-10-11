@@ -14,7 +14,7 @@ for (const entry of ["search", "listing"] as const) {
       await screen.getByTestId("listing-ask-agent").click();
       await expect(browser).toHaveURL(/\/fr\/my\/missions\/new\?/);
       await expect(screen.getByRole("spinbutton", "Prix préféré")).toHaveValue("75");
-      await expect(screen.getByRole("spinbutton", "Plafond absolu")).toHaveValue("82.5");
+      await expect(screen.getByRole("spinbutton", "Plafond absolu")).toHaveValue("75");
     } else {
       await app.open("/fr/browse");
       await screen.getByTestId("browse-search").fill(query);
@@ -31,7 +31,7 @@ for (const entry of ["search", "listing"] as const) {
     await expect(screen.getByTestId("auth-login-page")).toBeVisible();
     expect(new URL(await browser.url()).searchParams.get("next")).toContain("/fr/my/missions/new");
     await screen.getByLabel("Email").fill(missionFixture.email);
-    await screen.getByLabel("Password").fill(credentials.user("mission").password);
+    await screen.getByLabel("Mot de passe").fill(credentials.user("mission").password);
     await screen.getByTestId("auth-login-submit").click();
     await expect(browser).toHaveURL(/\/fr\/my\/missions\/new/);
     await expect(screen.getByRole("textbox", "Objet recherché")).toHaveValue(query);
