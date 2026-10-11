@@ -2040,6 +2040,133 @@ paths:
         "404": { $ref: "#/components/responses/Error404" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/owner/missions:
+    get:
+      tags: [Owner]
+      operationId: v1OwnerMissionsList
+      summary: List the signed-in owner's buying missions
+      description: Lists persisted BUY missions across all agents owned by the session owner, including expired and paused missions. Responses are not cached.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: owner.missions.read
+      security:
+        - ownerSession: []
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Owner missions ordered by most recent creation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OwnerBuyMissionsListResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+    post:
+      tags: [Owner]
+      operationId: v1OwnerMissionsCreate
+      summary: Create a buying mission using an owner session
+      description: |-
+        Uses the authenticated owner's account without requesting an agent API key.
+        If necessary, provisions an internal agent under the existing owner agent limit without issuing credentials.
+        Validates the mission before provisioning; the currency must match the market and the stored price filter cannot exceed the hard budget.
+        Selected autonomy permissions are persisted, but this request starts no offer, seller message, payment or contact disclosure.
+        This workflow sets notification_mode to in_app without enabling an external notification channel.
+        Idempotency is scoped to the authenticated owner; reused keys with changed payloads return 409.
+        Creation fails closed if rate limiting or idempotency protection is unavailable.
+        This is a same-origin browser endpoint. Cross-origin CORS is not enabled, and the required Idempotency-Key header cannot be submitted by a cross-site HTML form.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: owner.missions.write
+      security:
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OwnerBuyMissionCreateRequestV1" }
+      responses:
+        "201":
+          description: Mission persisted, or original successful creation replayed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OwnerBuyMissionV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Authentication or a required rate-limit/idempotency protection is unavailable; creation does not proceed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /v1/owner/missions/{mission_id}:
+    get:
+      tags: [Owner]
+      operationId: v1OwnerMissionsGet
+      summary: Read a persisted buying mission owned by the session owner
+      description: A missing, deleted, non-BUY or another owner's mission returns 404. A suspended agent's mission remains readable with status PAUSED. Responses are not cached.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: owner.missions.read
+      security:
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/MissionId"
+      responses:
+        "200":
+          description: Persisted mission and derived current status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OwnerBuyMissionV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
+  /v1/owner/missions/{mission_id}/matches:
+    get:
+      tags: [Owner]
+      operationId: v1OwnerMissionMatchesList
+      summary: Search the current public catalogue for an owned buying mission
+      description: |-
+        Rechecks ownership before querying the catalogue. Returns current LIVE, moderation-visible listing summaries matching the mission text, market, currency, exact hard budget and radius.
+        Uses public listing fields without private seller identifiers or exact seller coordinates. Requirements remain criteria for the buyer to verify; free-text requirements are not a guarantee of compatibility.
+        Expired or paused missions return an empty list without starting a search. Results are not cached and do not depend on completion of the asynchronous watchlist backfill.
+        Reads at most five catalogue pages per call. An empty items array with a non-null next_cursor means more candidates remain; continue with that cursor before concluding there are no matches.
+        The cursor is tied to the mission's location and radius.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: owner.missions.read
+      security:
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/MissionId"
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 30, default: 20 }
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Current public results and mission status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OwnerBuyMissionMatchesResponseV1" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+
   /v1/owner/installations:
     get:
       tags: [Owner]
@@ -2719,7 +2846,7 @@ paths:
             type: integer
             minimum: 1
             maximum: 300
-      description: Price filters use minor units. sort=distance requires lat, lng and distance_km. The public
+      description: Price filters use whole major currency units, matching price.amount (100 means 100 EUR or GBP, not cents). No currency conversion is performed. sort=distance requires lat, lng and distance_km. The public
         response omits private seller identifiers.
       responses:
         "200":
@@ -3025,6 +3152,12 @@ components:
       name: installation_id
       required: true
       schema: { type: string, format: uuid }
+    MissionId:
+      in: path
+      name: mission_id
+      required: true
+      description: Persisted mission watchlist identifier; ownership is resolved from the session, never from caller input.
+      schema: { type: string, format: uuid }
     WatchlistId:
       in: path
       name: watchlist_id
@@ -3226,13 +3359,14 @@ components:
 
     MoneyMinorV1:
       type: object
+      description: Historical schema name retained for compatibility. Listing prices use major currency units, without conversion to cents.
       required: [amount, currency]
       additionalProperties: false
       properties:
         amount:
           type: integer
           minimum: 0
-          description: Minor units (e.g. cents).
+          description: Whole major currency units (e.g. 100 means 100 EUR or GBP).
         currency:
           type: string
           minLength: 3
@@ -3836,9 +3970,123 @@ components:
         price_max: { type: number, nullable: true, minimum: 0 }
         geo: { $ref: "#/components/schemas/WatchlistGeoV1" }
         distance_km: { type: integer, nullable: true, minimum: 1, maximum: 300 }
-        deal_type: { $ref: "#/components/schemas/DealTypeV1" }
-        country: { type: string, minLength: 2, maxLength: 2, description: "ISO 3166-1 alpha-2 country code" }
-        delivery_method: { $ref: "#/components/schemas/DeliveryMethodV1" }
+        deal_type: { type: string, enum: [ONLINE, LOCAL], nullable: true }
+        country: { type: string, minLength: 2, maxLength: 2, nullable: true, description: "ISO 3166-1 alpha-2 country code" }
+        delivery_method: { $ref: "#/components/schemas/NullableDeliveryMethodV1" }
+        mission: { $ref: "#/components/schemas/BuyMissionV1" }
+        notification_mode:
+          type: string
+          enum: [in_app]
+          readOnly: true
+          description: Set by the owner mission workflow. Prevents external match notifications and is preserved when an agent updates the criteria.
+
+    BuyMissionV1:
+      type: object
+      additionalProperties: false
+      required: [hard_budget_max, currency, autonomous_actions, contact_reveal, expires_at, location]
+      properties:
+        version: { type: integer, enum: [1], default: 1 }
+        kind: { type: string, enum: [BUY], default: BUY }
+        preferred_price_max:
+          type: number
+          nullable: true
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000000
+          multipleOf: 0.01
+          description: Preferred amount in major currency units; must not exceed hard_budget_max.
+        hard_budget_max:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 1000000000
+          multipleOf: 0.01
+          description: Absolute budget in major currency units, for example 75.50 EUR. No conversion to cents or between currencies.
+        currency: { type: string, enum: [EUR, GBP], description: "Must match market_code: FR/ES use EUR, GB uses GBP." }
+        requirements:
+          type: array
+          maxItems: 10
+          items: { type: string, minLength: 1, maxLength: 120 }
+        autonomous_actions:
+          type: array
+          minItems: 1
+          maxItems: 3
+          uniqueItems: true
+          description: Must include search. Stores explicitly chosen permissions; creating or reading a mission does not execute them.
+          items: { type: string, enum: [search, ask_question, make_offer] }
+        contact_reveal: { type: string, enum: [manual_bilateral_approval] }
+        expires_at:
+          type: string
+          format: date-time
+          description: At creation, must be in the future and no more than 90 days ahead.
+        location:
+          type: object
+          additionalProperties: false
+          required: [lat, lon, radius_km]
+          properties:
+            label: { type: string, nullable: true, maxLength: 80 }
+            lat: { type: number, minimum: -90, maximum: 90 }
+            lon: { type: number, minimum: -180, maximum: 180 }
+            radius_km: { type: integer, minimum: 1, maximum: 300 }
+
+    OwnerBuyMissionCriteriaV1:
+      allOf:
+        - $ref: "#/components/schemas/WatchlistCriteriaV1"
+        - type: object
+          required: [query, geo, distance_km, mission]
+          properties:
+            query: { type: string, minLength: 1, maxLength: 80 }
+            geo:
+              type: object
+              required: [lat, lon]
+              properties:
+                lat: { type: number, minimum: -90, maximum: 90 }
+                lon: { type: number, minimum: -180, maximum: 180 }
+            distance_km: { type: integer, minimum: 1, maximum: 300 }
+      description: The geo coordinates and distance_km must equal mission.location; price_max is capped to the mission hard budget.
+
+    OwnerBuyMissionCreateRequestV1:
+      allOf:
+        - $ref: "#/components/schemas/WatchlistCreateRequestV1"
+        - type: object
+          properties:
+            criteria: { $ref: "#/components/schemas/OwnerBuyMissionCriteriaV1" }
+
+    OwnerBuyMissionStatusV1:
+      type: string
+      enum: [ACTIVE, EXPIRED, PAUSED]
+      description: PAUSED when the mission is inactive or its agent suspended; otherwise EXPIRED when its expiration is past, or ACTIVE.
+
+    OwnerBuyMissionV1:
+      allOf:
+        - $ref: "#/components/schemas/WatchlistV1"
+        - type: object
+          required: [status]
+          properties:
+            status: { $ref: "#/components/schemas/OwnerBuyMissionStatusV1" }
+            criteria: { $ref: "#/components/schemas/OwnerBuyMissionCriteriaV1" }
+
+    OwnerBuyMissionsListResponseV1:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OwnerBuyMissionV1" }
+        next_cursor: { type: string, nullable: true }
+
+    OwnerBuyMissionMatchesResponseV1:
+      type: object
+      required: [items, next_cursor, status]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/PublicListingSummaryV1" }
+        next_cursor:
+          type: string
+          nullable: true
+          description: A non-null cursor signals additional catalogue candidates even if this items array is empty.
+        status: { $ref: "#/components/schemas/OwnerBuyMissionStatusV1" }
 
     WatchlistV1:
       type: object

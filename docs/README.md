@@ -1,25 +1,27 @@
 # Documentation
 
-Use only the references needed for the task. Updated 2026-09-28.
+Use only the references needed for the task. Updated 2026-10-11.
 
 ## Current development references
 
 | Task | Read |
 | --- | --- |
 | Repository workflow and permissions | [AGENTS.md](../AGENTS.md) |
-| Select an environment or understand production-test blockers | [Environment policy](./release-environments.md) |
-| Push/deploy and verify a release | [Direct-main release procedure](./release-staging-to-prod.md) |
+| Select a test target and its guardrails | [Environment policy](./release-environments.md) |
+| Deliver the first purchase mission or plan the pilot | [Mission contract, evidence and priorities](./first-buy-mission.md) |
+| Push/deploy and verify a release | [Reviewed PR and approved release procedure](./release-staging-to-prod.md) |
 | Configure local fixture services | [Local setup](./local-supabase-development.md), [optional sandbox runtime](./sandbox-getting-started.md) |
 | Run TesterArmy browser or AI journeys | [TesterArmy setup, targets and reports](./testerarmy-e2e.md) |
 | Change hosting, proxying or schedules | [Hosting](./hosting-cloudflare-vercel.md), [edge router](./deploy-edge-router.md), [market infrastructure](./launch-eu-fr-gb-es.md) |
 | Work on WebMCP | [Overview](../WEBMCP.md), [development](../WEBMCP_DEV.md), [validation map](../evals/webmcp/README.md) |
 | Integrate REST/MCP/SDK | [OpenAPI](./openapi-v1.yaml), [errors](./error-codes.md), [MCP](./mcp-server.md), [tools](./mcp-tools-spec.md), [TypeScript SDK](../sdk/typescript/README.md), [Python SDK](../sdk/python/README.md) |
+| Run an external Cerebras buyer agent | [Cerebras workflow](./cerebras-buyer-workflow.md) |
 | Publish the MCP package | [MCP release](./mcp-release.md) |
 | Diagnose runtime behavior | [Ops](./ops-middleware.md), [alerting](./observability/ti-289-alerting-runbook.md), [SLO targets](./ops-slo-sli-v1.md), [ranking](./ranking-v1.md) |
 | Manage owner notifications or verify settings | [Notification settings](./notification-settings.md), [queue dispatch](./queue-event-dispatch.md) |
 | Understand documentation drift and remaining work | [Audit and inventory](./documentation-audit-2026-09-28.md), [implemented fixes and evidence](./development-blockers-verification.md) |
 
-The environment policy permits development tests on owner-confirmed fictitious production data; Playwright/smoke support an explicit project-scoped opt-in; sandbox resets and exporters remain protected. The hosted staging project has been deleted. Do not recreate it or impose a promotion gate because an old document mentions it.
+The environment policy is the reference for target selection. Supported Playwright, TesterArmy, integration and smoke commands have an explicit ClawDeals-only opt-in for owner-confirmed fictitious production data; sandbox resets and exporters remain protected. The hosted staging project has been deleted. Do not recreate it or impose a promotion gate because an old document mentions it.
 
 ## Plans and archives
 

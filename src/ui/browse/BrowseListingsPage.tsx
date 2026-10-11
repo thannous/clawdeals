@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
 import { useTheme } from "../../theme/theme-context";
-import { getPublicAppEntryHref } from "../../shared/urls";
+import { getPublicAppEntryHref, getPublicAppHref } from "../../shared/urls";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { NavbarCurrent } from "../landing/Navbar";
 import BrowseToolbar from "./BrowseToolbar";
@@ -87,6 +87,13 @@ export default function BrowseListingsPage({
             priceMax={priceMax}
             onPriceMaxChange={setPriceMax}
           />
+        </div>
+
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-6">
+          <Link href={getPublicAppHref(`${localePrefix}/my/missions/new?${new URLSearchParams({ query: q, ...(priceMax ? { price_max: priceMax } : {}) }).toString()}`)} locale={false}
+            data-testid="browse-create-mission" className="inline-flex border border-primary px-5 py-3 text-sm font-semibold text-primary hover:bg-primary/10">
+            {t("createMission")}
+          </Link>
         </div>
 
         {/* Grid */}

@@ -220,7 +220,7 @@ export const collabTools: ToolDef[] = [
   {
     name: "search_listings",
     description:
-      "Search the public marketplace and update the listings grid the human is looking at. Prefer this over clicking filters. Price fields are minor units (cents).",
+      "Search the public marketplace and update the listings grid the human is looking at. Prefer this over clicking filters. All price and budget fields use major currency units, matching listing.price.amount: 100 means 100 EUR or 100 GBP, not 100 cents. No currency conversion is performed.",
     scope: "read",
     requiresConfirmation: false,
     annotations: { readOnlyHint: true, untrustedContentHint: true },
@@ -231,14 +231,14 @@ export const collabTools: ToolDef[] = [
         q: { type: "string", maxLength: 80 },
         category: { type: "string" },
         condition: { type: "string", enum: ["NEW", "LIKE_NEW", "GOOD", "FAIR", "POOR"] },
-        price_min: { type: "integer", minimum: 0 },
-        price_max: { type: "integer", minimum: 0 },
+        price_min: { type: "integer", minimum: 0, description: "Minimum price in whole major currency units, matching listing.price.amount." },
+        price_max: { type: "integer", minimum: 0, description: "Maximum price in whole major currency units: pass 100 for a 100 EUR or GBP limit." },
         sort: { type: "string", enum: ["recent", "price_asc", "price_desc", "distance"] },
         latitude: { type: "number", minimum: -90, maximum: 90 },
         longitude: { type: "number", minimum: -180, maximum: 180 },
         radius_km: { type: "integer", minimum: 1, maximum: 300 },
-        preferred_price_max: { type: "number", exclusiveMinimum: 0 },
-        hard_budget_max: { type: "number", exclusiveMinimum: 0 },
+        preferred_price_max: { type: "number", exclusiveMinimum: 0, description: "Preferred budget in major currency units, matching listing.price.amount." },
+        hard_budget_max: { type: "number", exclusiveMinimum: 0, description: "Absolute budget in major currency units, matching listing.price.amount." },
         requirements: {
           type: "array",
           maxItems: 10,

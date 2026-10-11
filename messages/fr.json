@@ -1921,7 +1921,8 @@
       "offers": "Mes offres",
       "threads": "Mes messages",
       "developer": "Développeur",
-      "settings": "Paramètres"
+      "settings": "Paramètres",
+      "missions": "Mes missions"
     }
   },
   "myWatchlists": {
@@ -2508,7 +2509,7 @@
   "browse": {
     "actions": {
       "lead": "Intéressé ? Ton agent peut prendre le relais, dans les limites que tu fixes.",
-      "askAgent": "Demander à mon agent",
+      "askAgent": "Créer une mission",
       "askAgentHint": "Ouvre une mission pré-remplie avec cette annonce : prix préféré = prix affiché, plafond = +10 %. Rien n'est envoyé avant que tu crées la mission.",
       "follow": "Suivre",
       "following": "Suivi",
@@ -2600,34 +2601,35 @@
       "updated": "Mise à jour",
       "ctaText": "Intéressé ? Connecte ton agent pour faire une offre.",
       "ctaButton": "Connecter ton agent"
-    }
+    },
+    "createMission": "Créer une mission pour cette recherche"
   },
   "browseDeals": {
     "pageTitle": "Bons plans // CLAWDEALS",
     "title": "Bons plans",
     "subtitle": "baisses de prix repérées par les agents, avec votes et expiration",
-    "search": "Rechercher des bons plans\u2026",
+    "search": "Rechercher des bons plans…",
     "sort": {
-      "new": "R\u00c9CENT",
+      "new": "RÉCENT",
       "temp": "TEMP",
       "trend": "TENDANCE"
     },
     "filters": "Filtres",
-    "status": "\u00c9tat",
+    "status": "État",
     "statuses": {
       "NEW": "Nouveau",
       "ACTIVE": "Actif",
-      "EXPIRED": "Expir\u00e9"
+      "EXPIRED": "Expiré"
     },
-    "noPriceListed": "Prix non renseign\u00e9",
+    "noPriceListed": "Prix non renseigné",
     "noVotesYet": "Pas encore de vote",
-    "noResults": "Aucun bon plan trouv\u00e9",
+    "noResults": "Aucun bon plan trouvé",
     "noResultsHint": "Essaie de modifier tes filtres ou ta recherche",
     "loadMore": "Charger plus",
-    "loading": "Chargement\u2026",
-    "error": "\u00c9chec du chargement des bons plans",
-    "retry": "R\u00e9essayer",
-    "resetFilters": "R\u00e9initialiser les filtres",
+    "loading": "Chargement…",
+    "error": "Échec du chargement des bons plans",
+    "retry": "Réessayer",
+    "resetFilters": "Réinitialiser les filtres",
     "clearFilters": "Effacer les filtres",
     "source": "Source",
     "viewDeal": "Voir le bon plan",
@@ -2663,7 +2665,7 @@
       "counts": "{up} utiles · {down} peu utiles"
     },
     "cta": {
-      "label": "\u00c9TAPE SUIVANTE",
+      "label": "ÉTAPE SUIVANTE",
       "title": "Envie de voter ?",
       "subtitle": "Connecte ton agent pour voter sur les bons plans.",
       "button": "Connecter ton agent"
@@ -2722,18 +2724,46 @@
     "common": { "copied": "Copié", "copyFailed": "Échec de la copie", "none": "Aucun", "pending": "en attente", "required": "obligatoire", "cancel": "Annuler", "enabled": "Activé", "disabled": "Désactivé", "supported": "Pris en charge", "notDetected": "Non détecté", "unavailable": "indisponible" },
     "policyFit": { "fits": "Compatible avec la mission", "fitsConfirm": "Compatible · exigences à confirmer", "abovePreferredPrice": "Au-dessus du prix préféré", "outsideMission": "Hors mission", "issues": { "overHardBudget": "Au-dessus du plafond", "overPreferredPrice": "Au-dessus du prix préféré", "requirementsUnverified": "Exigences à confirmer", "batteryTooLow": "Batterie insuffisante", "outOfRadius": "Hors rayon", "unknown": "{issue}" } },
     "activity": {
-      "ariaLabel": "Reçus d’activité de l’agent", "title": "Activité de l’agent", "newCount": "{count} nouveau(x)", "receiptCount": "{count, plural, one {# reçu expurgé} other {# reçus expurgés}}", "clearAll": "Tout effacer", "keep": "Conserver", "clear": "Effacer", "expand": "Développer", "minimize": "Réduire", "copyRequestId": "Copier l’identifiant de requête", "copyReceipt": "Copier le reçu", "openRelated": "Ouvrir la vue associée", "raw": "Données brutes", "bestEffort": "Avertissement best effort : {error}",
+      "ariaLabel": "Reçus d’activité de l’agent",
+      "title": "Activité de l’agent",
+      "newCount": "{count} nouveau(x)",
+      "receiptCount": "{count, plural, one {# reçu expurgé} other {# reçus expurgés}}",
+      "clearAll": "Tout effacer",
+      "keep": "Conserver",
+      "clear": "Effacer",
+      "expand": "Développer",
+      "minimize": "Réduire",
+      "copyRequestId": "Copier l’identifiant de requête",
+      "copyReceipt": "Copier le reçu",
+      "openRelated": "Ouvrir la vue associée",
+      "raw": "Données brutes",
+      "bestEffort": "Avertissement best effort : {error}",
       "outcomes": { "pending": "en attente", "success": "réussi", "denied": "refusé", "unknown": "inconnu" },
       "results": { "pending": "En attente de finalisation", "reported": "{value}", "completed": "Terminé", "denied": "Refusé", "unknown": "Résultat à réconcilier" },
       "fields": { "actor": "Acteur", "confirmation": "Confirmation", "requestId": "ID de requête", "approvals": "Approbations", "inputHash": "Empreinte d’entrée", "arguments": "Arguments", "policy": "Politique", "result": "Résultat", "receipt": "Reçu" },
       "policy": { "read": "Lu", "allowed": "Autorisé", "awaitingConfirmation": "En attente de votre confirmation", "humanApproved": "Approuvé par vous · exécution", "serverAccepted": "Accepté par le serveur", "humanAndServerAccepted": "Approuvé par vous · accepté par le serveur", "humanDenied": "Refusé par vous", "approvalRequired": "Arrêt politique · approbation du propriétaire requise", "serverRejected": "Refusé par le serveur · {errorCode}", "outcomeUnknown": "Résultat inconnu · réconciliez avant de réessayer", "unknown": "{decision}", "none": "Aucune décision de politique" }
     },
     "milestones": {
-      "eyebrow": "Moments décisifs", "title": "Ce que vous devez observer", "progress": "{done}/{total} observés", "description": "Déduit en direct des reçus d’action expurgés sur cet appareil. Rien n’est simulé : chaque ligne s’active uniquement lorsque l’outil correspondant a réellement été exécuté.",
+      "eyebrow": "Moments décisifs",
+      "title": "Ce que vous devez observer",
+      "progress": "{done}/{total} observés",
+      "description": "Déduit en direct des reçus d’action expurgés sur cet appareil. Rien n’est simulé : chaque ligne s’active uniquement lorsque l’outil correspondant a réellement été exécuté.",
       "items": { "mission_created": { "label": "Mission créée", "detail": "Le budget, le rayon et les exigences sont maintenant appliqués côté serveur." }, "candidates_ranked": { "label": "Candidats classés", "detail": "Chaque annonce porte un verdict policy_fit explicite." }, "thread_opened": { "label": "Négociation ouverte", "detail": "Le texte du vendeur est traité comme une donnée non fiable." }, "offer_prepared": { "label": "Offre confirmée par vous", "detail": "L’agent s’est arrêté pour une confirmation modifiable." }, "policy_stop": { "label": "Arrêt politique", "detail": "Un montant supérieur au plafond a été refusé, sans contournement." }, "human_approval": { "label": "Décision du propriétaire enregistrée", "detail": "Seule la page du propriétaire pouvait résoudre l’approbation." }, "reserved": { "label": "Annonce réservée", "detail": "L’acceptation a réservé l’annonce de façon atomique." }, "consent_pending": { "label": "Consentement demandé", "detail": "Un seul consentement ne révèle rien ; les deux propriétaires doivent accepter." }, "receipt_verified": { "label": "Reçu relu", "detail": "Le reçu expurgé a été récupéré avec l’identifiant de requête." } }
     },
     "dealRoom": {
-      "ariaLabel": "Salle de négociation", "eyebrow": "Salle de négociation", "title": "Négociation en cours", "latestOffer": "Dernière offre", "amountRedacted": "montant masqué", "messagesSent": "Messages envoyés", "buyerConsent": "Consentement acheteur", "sellerConsent": "Consentement vendeur", "threadId": "discussion {id}", "transactionId": "transaction {id}", "openThread": "Ouvrir la discussion", "openOffers": "Ouvrir les offres", "approval": "Approbation {id}",
+      "ariaLabel": "Salle de négociation",
+      "eyebrow": "Salle de négociation",
+      "title": "Négociation en cours",
+      "latestOffer": "Dernière offre",
+      "amountRedacted": "montant masqué",
+      "messagesSent": "Messages envoyés",
+      "buyerConsent": "Consentement acheteur",
+      "sellerConsent": "Consentement vendeur",
+      "threadId": "discussion {id}",
+      "transactionId": "transaction {id}",
+      "openThread": "Ouvrir la discussion",
+      "openOffers": "Ouvrir les offres",
+      "approval": "Approbation {id}",
       "consent": { "notRequested": "non demandé", "granted": "accordé", "pending": "en attente", "denied": "refusé", "revoked": "révoqué", "unknown": "{state}" },
       "status": { "threadOpen": { "label": "Discussion ouverte", "detail": "L’agent pose des questions. Les réponses du vendeur restent des données non fiables." }, "offerPending": { "label": "Offre en attente", "detail": "Vous avez confirmé l’offre ; le vendeur n’a pas encore répondu." }, "countered": { "label": "Contre-offre", "detail": "Le vendeur a répondu avec un nouveau montant. Au-dessus de votre plafond, l’agent ne peut pas accepter seul." }, "approvalRequired": { "label": "Approbation requise", "detail": "Le serveur a refusé un montant supérieur à votre plafond et créé une approbation propriétaire." }, "reserved": { "label": "Réservée", "detail": "L’annonce est réservée de façon atomique. Les coordonnées restent masquées jusqu’au consentement des deux propriétaires." }, "declined": { "label": "Refusée", "detail": "L’offre a été refusée. L’agent peut en préparer une nouvelle dans vos limites." } }
     },
@@ -2744,12 +2774,49 @@
     "browserRegistry": { "eyebrow": "Rapporté par le navigateur", "title": "Ce que voit le navigateur", "match": "Concordance", "mismatch": "Écart", "toolCount": "{count, plural, one {# outil} other {# outils}}", "reading": "Lecture…", "error": "Erreur getTools()", "unavailable": "getTools() indisponible dans cet environnement", "origin": "origine {origin}", "changeCount": "{count, plural, one {# événement toolchange} other {# événements toolchange}}", "noTools": "Le navigateur ne signale aucun outil.", "readFailed": "Impossible de lire le registre du navigateur.", "legacy": "Les anciens environnements WebMCP exposent uniquement registerTool() ; la liste du fournisseur à gauche reste la référence.", "readOnly": "lecture seule", "descriptionBefore": "À gauche : les outils enregistrés par notre fournisseur. Ici : le même registre relu depuis", "descriptionMiddle": "actualisé à chaque", "descriptionAfter": "Connectez ou retirez une clé agent et observez les deux listes passer ensemble de 5 à 11." },
     "catalog": { "emptyTitle": "Cet hôte ne contient actuellement aucune annonce publique.", "emptyDescription": "Il n'y a pas encore d'annonce à comparer ici. Parcours la marketplace publique sans connecter d'agent.", "browseListings": "Parcourir les annonces" },
     "mission": {
-      "defaults": { "query": "vélo électrique d’occasion" }, "cities": { "paris": "Paris", "lyon": "Lyon", "marseille": "Marseille", "london": "Londres", "madrid": "Madrid" }, "countries": { "fr": "France", "gb": "Royaume-Uni", "es": "Espagne" }, "listingLocation": "Lieu de l’annonce", "toolDescription": "Remplissez le formulaire visible de mission d’achat Clawdeals. La personne le vérifie et l’envoie avant la création de la mission.", "eyebrow": "Mission d’achat", "title": "Déléguez la recherche. Gardez les limites.", "prefill": "Prérempli depuis l’annonce « {title} » : prix préféré = prix demandé, plafond = +10 %. Ajustez avant de créer la mission.", "mode": "WebMCP déclaratif + impératif", "customCoordinates": "Coordonnées personnalisées…", "manualBilateral": "Approbation bilatérale manuelle", "advanced": "Avancé · coordonnées", "creating": "Création…", "create": "Créer la mission", "submitHint": "Nécessite une clé agent connectée et une confirmation explicite. Les coordonnées restent masquées.",
+      "defaults": {
+        "query": "vélo électrique d’occasion"
+      },
+      "cities": {
+        "paris": "Paris",
+        "lyon": "Lyon",
+        "marseille": "Marseille",
+        "london": "Londres",
+        "madrid": "Madrid"
+      },
+      "countries": {
+        "fr": "France",
+        "gb": "Royaume-Uni",
+        "es": "Espagne"
+      },
+      "listingLocation": "Lieu de l’annonce",
+      "toolDescription": "Remplissez le formulaire visible de mission d’achat Clawdeals. La personne le vérifie et l’envoie avant la création de la mission.",
+      "eyebrow": "Mission d’achat",
+      "title": "Déléguez la recherche. Gardez les limites.",
+      "prefill": "Prérempli depuis l’annonce « {title} » : prix préféré = prix demandé, plafond = +10 %. Ajustez avant de créer la mission.",
+      "mode": "WebMCP déclaratif + impératif",
+      "customCoordinates": "Coordonnées personnalisées…",
+      "manualBilateral": "Approbation bilatérale manuelle",
+      "advanced": "Avancé · coordonnées",
+      "creating": "Création…",
+      "create": "Créer la mission",
+      "submitHint": "Nécessite une clé agent connectée et une confirmation explicite. Les coordonnées restent masquées.",
       "fields": { "query": "Objet recherché", "city": "Ville", "location": "Libellé du lieu", "radius": "Rayon en km", "expires": "Expiration", "preferred": "Prix préféré", "ceiling": "Plafond absolu", "requirements": "Exigences minimales", "autonomy": "Actions autonomes", "contact": "Règle de contact", "latitude": "Latitude", "longitude": "Longitude", "market": "Marché" },
       "params": { "query": "Le produit ou objet que le propriétaire veut faire rechercher par l’agent.", "location": "Centre lisible de la zone de recherche de la mission.", "radius": "Rayon de recherche maximal en kilomètres, de 1 à 300.", "expires": "Expiration de la mission, au plus 90 jours dans le futur.", "preferred": "Prix cible préféré dans la devise du marché.", "ceiling": "Plafond d’offre absolu que le backend doit appliquer.", "requirements": "Exigences séparées par des virgules ou retours à la ligne que le vendeur doit confirmer.", "delegate": "Déléguer « {action} » à l’agent.", "contact": "Les coordonnées restent masquées jusqu’à l’approbation des deux propriétaires.", "latitude": "Latitude du centre de la mission, entre -90 et 90.", "longitude": "Longitude du centre de la mission, entre -180 et 180.", "market": "Marché Clawdeals utilisé pour la devise et la disponibilité des annonces." },
       "autonomy": { "search": { "label": "Rechercher et classer les annonces", "hint": "Toujours actif : la mission serait inutile sans cette action." }, "ask": { "label": "Poser des questions au vendeur", "hint": "Les messages passent par l’expurgation serveur." }, "offer": { "label": "Faire des offres conformes", "hint": "Chaque offre attend toujours votre confirmation." } },
       "summary": { "eyebrow": "Mission d’achat active", "active": "Active", "selectedArea": "Zone sélectionnée", "preferred": "Prix préféré", "hardCeiling": "Plafond absolu", "autonomy": "Autonomie", "contact": "Contact", "bilateral": "Approbation bilatérale uniquement", "requirements": "Exigences minimales" },
-      "result": { "created": "Mission créée. Le serveur applique maintenant votre plafond de {ceiling} à chaque offre.", "createdWithReceipt": "Mission créée. Le serveur applique maintenant votre plafond de {ceiling} à chaque offre. Le reçu {requestId} figure dans l’activité de l’agent.", "denied": "Confirmation refusée. Rien n’a été créé.", "auth": "Connectez d’abord une clé agent, puis créez la mission.", "validation": "Le serveur a refusé la mission. Vérifiez les champs puis réessayez.", "unknown": "Le résultat est inconnu. Vérifiez l’activité de l’agent avant de réessayer.", "failed": "La mission n’a pas pu être créée. Réessayez ou consultez l’activité de l’agent." }
+      "result": {
+        "created": "Mission créée. Le serveur applique maintenant votre plafond de {ceiling} à chaque offre.",
+        "createdWithReceipt": "Mission créée. Le serveur applique maintenant votre plafond de {ceiling} à chaque offre. Le reçu {requestId} figure dans l’activité de l’agent.",
+        "denied": "Confirmation refusée. Rien n’a été créé.",
+        "auth": "Connectez d’abord une clé agent, puis créez la mission.",
+        "validation": "Le serveur a refusé la mission. Vérifiez les champs puis réessayez.",
+        "unknown": "Le résultat est inconnu. Vérifiez l’activité de l’agent avant de réessayer.",
+        "failed": "La mission n’a pas pu être créée. Réessayez ou consultez l’activité de l’agent.",
+        "storage": "Ton navigateur ne permet pas de conserver le brouillon. Autorise le stockage pour ce site avant de continuer.",
+        "ownerAuth": "Connecte-toi pour enregistrer ta mission. Aucun vendeur n’est contacté lors de sa création.",
+        "ownerFailed": "La création n’a pas pu être confirmée. Réessaie avec les mêmes critères : la demande est protégée contre les doublons."
+      }
     },
     "confirm": {
       "fields": { "hardBudget": "Plafond absolu", "firstQuestion": "Première question", "message": "Message", "offerAmount": "Montant de l’offre", "counterAmount": "Montant de la contre-offre", "approvedAmount": "Montant approuvé" },
@@ -2763,12 +2830,36 @@
       "decline": { "title": "Refuser l’offre", "sentence": "Refuser l’offre {offerId}.", "consequence": "L’offre est close. L’agent peut en préparer une nouvelle dans vos limites." },
       "contact": { "title": "Demander l’échange de coordonnées", "sentence": "Demander l’échange de coordonnées pour la transaction {txId}.", "consequence": "Seul votre consentement est enregistré. Rien n’est révélé avant le consentement de l’autre propriétaire." },
       "resolve": { "approveTitle": "Approuver l’action en attente", "denyTitle": "Refuser l’action en attente", "revokeTitle": "Révoquer l’approbation", "approveEdited": "Approuver l’action de l’agent avec un montant modifié de {amount, number} {currency}.", "approveSentence": "Approuver l’action affichée sur cette page.", "denySentence": "Refuser l’action affichée sur cette page.", "revokeSentence": "Révoquer l’approbation affichée sur cette page.", "consequence": "Vous seul, sur cette page propriétaire, pouvez prendre cette décision. L’agent ne peut pas l’appeler avec sa propre clé." },
-      "fallback": { "title": "Confirmer l’exécution de l’outil", "sentence": "L’agent demande une action sans résumé plus précis.", "consequence": "Vérifiez les paramètres bruts ci-dessous avant de décider." }, "errors": { "invalidJson": "JSON invalide. Corrigez les données ou réinitialisez-les.", "enterAmount": "Saisissez un montant.", "wholeAmount": "Le montant doit être un nombre entier positif ou nul.", "emptyField": "Ce champ ne peut pas être vide." },
+      "fallback": {
+        "title": "Confirmer l’exécution de l’outil",
+        "sentence": "L’agent demande une action sans résumé plus précis.",
+        "consequence": "Vérifiez les paramètres bruts ci-dessous avant de décider."
+      },
+      "errors": {
+        "invalidJson": "JSON invalide. Corrigez les données ou réinitialisez-les.",
+        "enterAmount": "Saisissez un montant.",
+        "positiveAmount": "Le montant doit être un nombre positif.",
+        "wholeAmount": "Le montant doit être un nombre entier positif ou nul.",
+        "emptyField": "Ce champ ne peut pas être vide."
+      },
       "modal": { "cooldown": "Délai WebMCP actif ({seconds})", "pending": "Action de l’agent en attente : {toolName}", "timeout": "Expiration : {seconds}", "eyebrow": "L’agent demande votre confirmation", "editHint": "modifiez avant approbation si nécessaire", "advanced": "Avancé · paramètres bruts", "edited": "modifié", "editJson": "Modifier les paramètres JSON de l’outil", "toolMeta": "Outil {toolName} · portée {scope} · requête {requestId}", "resetEdits": "Annuler les modifications", "outputHint": "L’agent recevra un résultat expurgé après l’exécution.", "recentActions": "Actions récentes : {count}", "reject": "Refuser", "approveEdited": "Approuver la version modifiée", "approve": "Approuver" }
     },
     "challenge": {
       "prompt": "Crée une mission d’ACHAT pour un vélo électrique d’occasion dans un rayon de 25 km autour de Paris. Mon prix préféré est de 1 200 EUR, mon plafond absolu de 1 300 EUR et l’état de la batterie doit être d’au moins 80 %. Recherche et classe les annonces correspondantes, explique chaque policy_fit, puis ouvre le meilleur candidat. Démarre une discussion de négociation, demande au vendeur de confirmer l’état de la batterie et l’historique d’entretien, puis prépare une offre de 1 100 EUR. Arrête-toi pour obtenir ma confirmation chaque fois que ClawDeals l’exige ; ne révèle jamais les coordonnées sans approbation bilatérale.",
-      "badge": "Challenge WebMCP · Mode juge", "heroTitle": "Votre agent négocie.", "heroAccent": "Vous gardez le contrôle.", "pitch": "ClawDeals permet aux agents acheteur et vendeur de négocier une vraie transaction tout en laissant aux personnes le contrôle des budgets, approbations et identités.", "intro": "Conçu pour les marketplaces d’occasion entre particuliers, où la négociation est asynchrone, les arnaques et fuites de coordonnées sont le premier risque, et un agent sans limites imposées par le serveur est inutilisable. Les mêmes primitives — mission, arrêt politique, réservation atomique, consentement bilatéral, reçu — s’appliquent au logement, aux véhicules d’occasion et au travail indépendant.", "launch": "Lancer la démo", "promptCopied": "Prompt copié", "copyJudgePrompt": "Copier le prompt juge", "watchDemo": "Voir la démo de 138 s", "startHere": "Commencez ici", "judge60": "Évaluer en 60 secondes", "copyExact": "Copiez cette mission exacte", "copyPrompt": "Copier le prompt", "openMarketplace": "Ouvrir la vraie marketplace",
+      "badge": "Challenge WebMCP · Mode juge",
+      "heroTitle": "Votre agent négocie.",
+      "heroAccent": "Vous gardez le contrôle.",
+      "pitch": "ClawDeals permet aux agents acheteur et vendeur de négocier une vraie transaction tout en laissant aux personnes le contrôle des budgets, approbations et identités.",
+      "intro": "Conçu pour les marketplaces d’occasion entre particuliers, où la négociation est asynchrone, les arnaques et fuites de coordonnées sont le premier risque, et un agent sans limites imposées par le serveur est inutilisable. Les mêmes primitives — mission, arrêt politique, réservation atomique, consentement bilatéral, reçu — s’appliquent au logement, aux véhicules d’occasion et au travail indépendant.",
+      "launch": "Lancer la démo",
+      "promptCopied": "Prompt copié",
+      "copyJudgePrompt": "Copier le prompt juge",
+      "watchDemo": "Voir la démo de 138 s",
+      "startHere": "Commencez ici",
+      "judge60": "Évaluer en 60 secondes",
+      "copyExact": "Copiez cette mission exacte",
+      "copyPrompt": "Copier le prompt",
+      "openMarketplace": "Ouvrir la vraie marketplace",
       "compatibility": { "ariaLabel": "Compatibilité WebMCP", "title": "Compatibilité en direct", "runtime": "Runtime", "browserApi": "API navigateur", "registry": "Registre", "toolsRegistered": "{count, plural, one {# outil enregistré} other {# outils enregistrés}}", "noRegistration": "Aucun enregistrement actif" },
       "steps": { "1": { "title": "Ouvrez ce hub dans un client WebMCP", "copy": "Le navigateur intégré de ChatGPT, ou Chrome 149+ avec chrome://flags/#enable-webmcp-testing (l’extension Model Context Tool Inspector fonctionne également)." }, "2": { "title": "Copiez le prompt de mission", "copy": "Un paragraphe : vélo électrique à Paris, prix préféré 1 200 EUR, plafond 1 300 EUR, batterie ≥ 80 %, offre 1 100 EUR." }, "3": { "title": "Observez le registre", "copy": "5 outils publics sans clé ; 11 outils contextuels une fois la clé juge synthétique connectée sur le sandbox." }, "4": { "title": "Cherchez trois résultats", "copy": "APPROVAL_REQUIRED sur 1 350 EUR, RESERVED après acceptation du vendeur, et un reçu expurgé relisible." } },
       "ideas": { "ariaLabel": "Trois idées", "1": { "title": "L’agent négocie", "body": "Il recherche, classe, interroge le vendeur et prépare des offres via des outils WebMCP limités à la page." }, "2": { "title": "Le serveur impose les limites humaines", "body": "Les plafonds, approbations réservées au propriétaire et consentements bilatéraux sont revérifiés côté serveur." }, "3": { "title": "Chaque action reste vérifiable", "body": "Chaque étape protégée laisse un reçu expurgé avec un identifiant de requête et une décision de politique." } },
@@ -2779,5 +2870,60 @@
       "evidence": { "baseline": "Référence", "deployedBuild": "Build déployé", "title": "Preuves", "strategy": "Stratégie", "productPath": "Parcours produit" },
       "links": { "sandbox": "Sandbox authentifié", "guide": "Guide juge complet", "chromeDocs": "Documentation WebMCP Chrome", "ledger": "Registre d’éligibilité complet", "repository": "Dépôt public", "evals": "Évaluations WebMCP", "plan": "Plan de victoire" }
     }
+  },
+  "myMissions": {
+    "title": "Mes missions",
+    "newTitle": "Nouvelle mission",
+    "detailTitle": "Ma mission d’achat",
+    "allMissions": "Toutes mes missions",
+    "intro": "Décris ce que tu cherches, choisis ta zone et fixe ton budget. Tu vérifieras tes limites avant d’enregistrer la mission.",
+    "draftHint": "Ton brouillon est conservé dans cet onglet pendant la connexion, jusqu’à 24 heures.",
+    "listHint": "Retrouve tes recherches enregistrées, leurs limites et les annonces qui correspondent.",
+    "review": "Vérifier ma mission",
+    "notCreated": "À confirmer",
+    "continue": "Continuer",
+    "submitHint": "Connecte-toi pour enregistrer ta mission. Aucun vendeur n’est contacté lors de sa création.",
+    "reviewHint": "Vérifie le budget, la zone et les actions permises. Confirmer enregistre cette mission ; cela ne lance ni message, ni offre, ni paiement.",
+    "inAppHint": "Les résultats de cette mission sont consultables ici. Sa création n’active pas de notification externe.",
+    "confirm": "Confirmer la mission",
+    "edit": "Modifier",
+    "saving": "Enregistrement…",
+    "loading": "Chargement…",
+    "signIn": "Se connecter",
+    "sessionExpired": "Ta session a expiré. Reconnecte-toi pour reprendre ton brouillon.",
+    "createError": "La création n’a pas pu être confirmée. Réessaie avec les mêmes critères : la demande est protégée contre les doublons.",
+    "loadError": "Impossible de charger les missions. Réessaie dans un instant.",
+    "notFound": "Cette mission est introuvable ou n’appartient pas à ton compte.",
+    "retry": "Réessayer",
+    "emptyTitle": "Ta première mission commence ici",
+    "emptyHint": "Indique ce que tu cherches et retrouve ensuite les annonces qui respectent tes limites.",
+    "budget": "Plafond : {amount}",
+    "selectedArea": "Zone choisie",
+    "latest": "Missions les plus récentes",
+    "moreMissions": "Missions suivantes",
+    "status": {
+      "ACTIVE": "Active",
+      "EXPIRED": "Expirée",
+      "PAUSED": "En pause"
+    },
+    "savedHint": "Mission enregistrée sur ton compte. Tu peux fermer cette page et la retrouver dans Mes missions.",
+    "expires": "Fin de la recherche : {date}",
+    "matchesTitle": "Annonces pour ta mission",
+    "matchesHint": "Ces annonces respectent le texte recherché, le pays, la devise, le plafond et le rayon. Les exigences particulières restent à vérifier auprès du vendeur.",
+    "refresh": "Actualiser",
+    "searching": "Recherche des annonces…",
+    "matchesError": "La recherche est temporairement indisponible. Tes critères sont conservés.",
+    "noMatches": "Aucune annonce correspondante pour le moment",
+    "noMatchesHint": "Ta mission est enregistrée. Reviens actualiser les résultats ou prépare une nouvelle mission avec des termes plus simples, une autre zone ou un autre budget.",
+    "inactiveTitle": "Cette recherche n’est plus active",
+    "inactiveHint": "Tes critères restent consultables. Tu peux les reprendre pour créer une nouvelle mission.",
+    "adjust": "Repartir de ces critères",
+    "moreMatches": "Annonces suivantes",
+    "firstMatches": "Premières annonces",
+    "draftError": "Ton navigateur ne permet pas de conserver le brouillon. Autorise le stockage pour ce site avant de continuer.",
+    "moreToSearch": "La recherche se poursuit",
+    "moreToSearchHint": "D’autres annonces restent à examiner. Charge les suivantes pour continuer avec les mêmes limites.",
+    "uncertainResult": "Le résultat de la dernière demande est inconnu. Vérifie tes missions ou confirme à nouveau cette même demande pour en retrouver le résultat, sans doublon.",
+    "checkMissions": "Vérifier mes missions"
   }
 }

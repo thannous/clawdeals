@@ -1,5 +1,6 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { assertNativeMarketCurrency } from "../config/markets";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -171,21 +172,24 @@ export async function createWatchlist({
   return data;
 }
 
-export async function listWatchlists({ agentId, active, limit, cursor }: any = {}) {
+export async function listWatchlists({ agentId, ownerId, active, limit, cursor, missionOnly = false }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
   let query = client
     .from("watchlists")
-    .select("*")
-    .eq("agent_id", agentId)
+    .select(ownerId ? "*,agents!inner(owner_id,suspended_at)" : "*")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .order("watchlist_id", { ascending: false })
     .limit(pageLimit + 1);
 
+  query = ownerId ? query.eq("agents.owner_id", ownerId) : query.eq("agent_id", agentId);
+
   if (typeof active === "boolean") {
     query = query.eq("active", active);
   }
+
+  if (missionOnly) query = query.contains("criteria", { mission: { kind: "BUY" } });
 
   if (cursor?.created_at && cursor?.watchlist_id) {
     const createdAt = formatFilterValue(cursor.created_at);
@@ -276,6 +280,19 @@ export async function getWatchlistForAgent({ watchlistId, agentId }: any = {}) {
   return record;
 }
 
+export async function getWatchlistForOwner({ watchlistId, ownerId }: { watchlistId: string; ownerId: string }) {
+  if (!ownerId) throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("watchlists")
+    .select("*,agents!inner(owner_id,suspended_at)")
+    .eq("watchlist_id", watchlistId)
+    .eq("agents.owner_id", ownerId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) mapError(error);
+  return data || null;
+}
+
 export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: any = {}) {
   const existing = await getWatchlistById(watchlistId);
   if (!existing) return null;
@@ -284,6 +301,15 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
       isBlocked: true,
       reason: "authz"
     });
+  }
+
+  const nextCriteria = patch?.criteria ?? existing.criteria;
+  if (nextCriteria?.mission) {
+    try {
+      assertNativeMarketCurrency(patch?.marketCode ?? existing.market_code, nextCriteria.mission.currency);
+    } catch (error: any) {
+      throw buildServiceError(error.message, 400, "VALIDATION_ERROR");
+    }
   }
 
   const nextActive = typeof patch?.active === "boolean" ? patch.active : existing.active;
@@ -311,7 +337,9 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
     payload.active = patch.active;
   }
   if (patch && Object.prototype.hasOwnProperty.call(patch, "criteria")) {
-    payload.criteria = patch.criteria;
+    payload.criteria = existing.criteria?.notification_mode === "in_app"
+      ? { ...patch.criteria, notification_mode: "in_app" }
+      : patch.criteria;
     payload.query_text = patch.queryText ?? null;
     payload.tags = patch.tags ?? [];
     payload.price_max = patch.priceMax ?? null;

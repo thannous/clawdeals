@@ -56,3 +56,8 @@ export function joinUrl(baseUrl: string, path: string): string {
   if (p.startsWith("/")) return `${base}${p}`;
   return `${base}/${p}`;
 }
+
+/** Canonical app deep link, with relative paths retained for local development. */
+export function getPublicAppHref(path: string): string {
+  return joinUrl(normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL || ""), path);
+}

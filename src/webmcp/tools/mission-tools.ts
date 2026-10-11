@@ -88,8 +88,8 @@ export const buyMissionInputJsonSchema: Record<string, unknown> = {
     latitude: { type: "number", minimum: -90, maximum: 90 },
     longitude: { type: "number", minimum: -180, maximum: 180 },
     radius_km: { type: "integer", minimum: 1, maximum: 300 },
-    preferred_price_max: { type: "number", exclusiveMinimum: 0 },
-    hard_budget_max: { type: "number", exclusiveMinimum: 0 },
+    preferred_price_max: { type: "number", exclusiveMinimum: 0, description: "Preferred price in major units of the market currency (EUR or GBP), e.g. 75.50." },
+    hard_budget_max: { type: "number", exclusiveMinimum: 0, description: "Absolute budget in major units of the market currency (EUR or GBP), e.g. 100 for 100 EUR." },
     requirements: {
       type: "array",
       maxItems: 10,

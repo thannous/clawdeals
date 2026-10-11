@@ -40,17 +40,20 @@ vi.mock("../../webmcp/WebMcpProvider", () => ({
 }));
 
 import { clearActiveBuyMission } from "../../webmcp/ui-bridge";
+import { clearStoredApiKey, setStoredApiKey } from "../developer/storage";
 import BuyMissionPanel, { prefillFromListing } from "./BuyMissionPanel";
 
 describe("BuyMissionPanel", () => {
   afterEach(() => {
     cleanup();
     clearActiveBuyMission();
+    clearStoredApiKey();
     vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setStoredApiKey("cd_test_dummy");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
     executeTool.mockResolvedValue({
       ok: true,

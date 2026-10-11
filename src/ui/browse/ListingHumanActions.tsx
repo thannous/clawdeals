@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getPublicAppHref } from "../../shared/urls";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Bot, Bookmark, BookmarkCheck, Check, Share2 } from "lucide-react";
@@ -21,7 +22,7 @@ export type ListingActionTarget = {
 };
 
 /**
- * Builds the `/webmcp` URL that opens the Deal Mission form prefilled from a listing.
+ * Builds the human mission URL that opens the Deal Mission form prefilled from a listing.
  * Only public, non-identifying fields travel in the query string.
  */
 export function buildAskMyAgentHref(localePrefix: string, listing: ListingActionTarget): string {
@@ -36,7 +37,7 @@ export function buildAskMyAgentHref(localePrefix: string, listing: ListingAction
     params.set("lat", String(listing.geo.lat));
     params.set("lng", String(listing.geo.lng));
   }
-  return `${localePrefix}/webmcp?${params.toString()}#buy-mission`;
+  return getPublicAppHref(`${localePrefix}/my/missions/new?${params.toString()}`);
 }
 
 export default function ListingHumanActions({
@@ -141,6 +142,7 @@ export default function ListingHumanActions({
       <div className="flex flex-col sm:flex-row flex-wrap gap-2">
         <Link
           href={buildAskMyAgentHref(localePrefix, listing)}
+          locale={false}
           data-testid="listing-ask-agent"
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
         >

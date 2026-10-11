@@ -13,6 +13,7 @@ import {
   clearStoredOwnerSessionToken
 } from "./ownerAuth";
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
+import { safeRedirectUrl } from "./safeRedirect";
 
 function getErrorMessage(body: any, status: number) {
   const error = body?.error;
@@ -41,6 +42,7 @@ export default function VerifyPage() {
 
 function useVerifyPageView() {
   const router = useRouter();
+  const queryNext = router.query?.next;
   const queryToken = resolveQueryParam(router.query?.token).trim();
   const querySessionId = (() => {
     const raw = resolveQueryParam(router.query?.session_id).trim();
@@ -92,13 +94,18 @@ function useVerifyPageView() {
         setSubmitState("success");
         setError(null);
         await waitForOwnerSessionReady();
-        void router.replace("/settings/identities");
+        let next: unknown = queryNext;
+        try {
+          if (next === undefined) next = sessionStorage.getItem("clawdeals.auth_next");
+          sessionStorage.removeItem("clawdeals.auth_next");
+        } catch { /* An explicit next URL also works without browser storage. */ }
+        void router.replace(safeRedirectUrl(next ?? "/settings/identities"), undefined, { locale: false });
       } catch (err: any) {
         setError(String(err?.message || "Verification failed"));
         setSubmitState("error");
       }
     },
-    [router]
+    [router, queryNext]
   );
 
   useEffect(() => {
@@ -277,7 +284,7 @@ function useVerifyPageView() {
           {!sessionId.trim() && (
             <div className="text-xs font-mono text-subtle">
               Missing session ID. Return to{" "}
-              <Link href="/auth/login-legacy" className="text-text underline">
+              <Link href={`/auth/login-legacy?next=${encodeURIComponent(safeRedirectUrl(queryNext ?? "/settings/identities"))}`} className="text-text underline">
                 /auth/login-legacy
               </Link>
               .

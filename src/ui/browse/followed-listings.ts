@@ -1,5 +1,6 @@
 const STORAGE_KEY = "clawdeals.followed_listings:v1";
 const MAX_FOLLOWED = 200;
+const EMPTY_IDS: readonly string[] = Object.freeze([]);
 
 type Listener = () => void;
 
@@ -36,7 +37,7 @@ export function getFollowedListingIds(): readonly string[] {
 }
 
 export function getServerFollowedListingIds(): readonly string[] {
-  return [];
+  return EMPTY_IDS;
 }
 
 function write(ids: readonly string[]) {

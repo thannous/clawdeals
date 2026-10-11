@@ -211,6 +211,24 @@ describe("watchlist matching service", () => {
     vi.restoreAllMocks();
   });
 
+  it("keeps marked owner missions in-app while existing watchlists keep external delivery", async () => {
+    const client = new MatchingClient([
+      watchlist({ watchlist_id: "owner-mission", criteria: { notification_mode: "in_app" } }),
+      watchlist({ watchlist_id: "existing-watchlist" })
+    ]);
+    await matchListingToWatchlists({
+      client,
+      listing: { listing_id: "listing", title: "Console", category: "gaming", market_code: "FR", currency: "EUR", price_amount: 100 }
+    });
+    expect(client.insertedMatches).toHaveLength(2);
+    expect(publishSseEvent).toHaveBeenCalledWith(expect.objectContaining({
+      payload: expect.objectContaining({ watchlist_ids: ["owner-mission", "existing-watchlist"] })
+    }));
+    expect(enqueueWatchlistMatchOutbox).toHaveBeenCalledWith(expect.objectContaining({
+      insertedByAgent: new Map([["agent-default", { watchlistIds: ["existing-watchlist"] }]])
+    }));
+  });
+
   it("isolates EUR deal candidates by market_code and delivers only the ES match", async () => {
     const client = new MatchingClient([
       watchlist({

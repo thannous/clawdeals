@@ -122,7 +122,7 @@ export const readTools: ToolDef[] = [
   },
   {
     name: "clawdeals.listings_search",
-    description: "Search live listings and update the marketplace grid the human is viewing.",
+    description: "Search live listings and update the marketplace grid the human is viewing. Price filters use major currency units, matching listing.price.amount: 100 means 100 EUR or GBP. No currency conversion is performed.",
     scope: "read",
     requiresConfirmation: false,
     annotations: { readOnlyHint: true, untrustedContentHint: true },

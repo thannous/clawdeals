@@ -2,7 +2,7 @@
 
 ## Environment policy
 
-Use [release-environments.md](./release-environments.md) for the current development-phase policy. Production test data is disposable by owner declaration; the deleted staging project is not a prerequisite. Existing smoke/Playwright guards still reject known production targets until explicitly adapted.
+Use [release-environments.md](./release-environments.md) for the current development-phase policy and supported test opt-in. Production test data is disposable by owner declaration; the deleted staging project is not a prerequisite. Smoke, Playwright and TesterArmy reject production by default and allow the documented ClawDeals-only opt-in during local test execution. Sandbox resets and exporters remain protected.
 
 ## Environment variables
 
@@ -49,6 +49,6 @@ Use [release-environments.md](./release-environments.md) for the current develop
 
 ## Test targets
 
-For local fixtures, follow [local setup](./local-supabase-development.md). Verify the target and loaded environment before running a script; an app on localhost can still use a remote database. `npm run test:smoke` retains its production-target guard.
+For local fixtures, follow [local setup](./local-supabase-development.md). Verify the target and loaded environment before running a script; an app on localhost can still use a remote database. Use the environment policy's opt-in only when the selected smoke fixtures suit the shared disposable dataset.
 
 The route list above is illustrative, not a complete API inventory. See [OpenAPI](./openapi-v1.yaml) and `src/pages/api/` for the implemented surface.

@@ -45,6 +45,103 @@ No account or seeded listing is required. These journeys verify navigation and h
 
 The configuration loads `.env.testerarmy.local`, then `.env.local`, without overwriting shell variables. Next.js also loads its normal local environment. The configuration passes selected database/Redis variables to the child app so shell overrides select the same backend the target guard checks. Follow [local setup](./local-supabase-development.md) when using the local backend.
 
+## Verify the real first purchase mission
+
+Use `TESTERARMY_MISSION_LIVE=1` for the real authenticated first-mission journeys.
+This selection is exclusive of the public, historical and AI campaigns. It uses
+the same pinned SDK, exact browser steps, desktop/mobile viewports and one worker.
+It never calls a model. The default public suite cannot create these fixtures.
+
+```bash
+TESTERARMY_MISSION_LIVE=1 TESTERARMY_AI=0 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+  npm run test:testerarmy:list
+
+TESTERARMY_MISSION_LIVE=1 TESTERARMY_AI=0 \
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/first-mission-UNIQUE \
+  npm run test:testerarmy
+```
+
+Prerequisites: an app using that exact browser/API origin, the matching
+`SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and
+the server-only `SUPABASE_SERVICE_ROLE_KEY`. Use an existing local database or the
+explicitly authorized disposable ClawDeals production project; do not infer the
+database target from a localhost browser URL. No additional provider is required.
+
+The app also requires its configured Redis/Upstash dependency for rate limits and
+idempotency. An unreachable dependency correctly fails mission writes with 503.
+For an isolated local run, the existing `scripts/mock-upstash-redis-rest.mjs` can
+serve the local REST fixture on port 4413 using the configured synthetic token.
+Set `TESTERARMY_REDIS_FIXTURE=local-mock` on that test invocation so its receipt
+labels the boundary: real app API, Auth and database persistence, simulated Redis.
+Such a run does not qualify the deployed Redis service or its durability. Keep
+the middleware guards active; do not bypass them to accommodate a missing service.
+
+Each attempt creates its own confirmed synthetic Auth user without sending an
+email. The maintained runner generates an ephemeral password in memory and the
+test fills it through the SDK's opaque credential. The browser performs the real
+password login and owner-session bridge; mission creation, readback and catalogue
+matching are not mocked. The listing case seeds one synthetic seller and public
+listing. Teardown deletes only identities and rows belonging to that attempt.
+
+Browser traffic allows same-origin reads, the password sign-in, the owner-session
+bridge and mission creation. Offers, seller messages, payments and other browser
+writes are blocked. These cases qualify mission creation and retrieval, not
+negotiation, notification delivery or purchases.
+
+Live results are private evidence: exact assertions, target/source receipts and
+safe fixture/cleanup summaries in `mission-fixtures/`. Network traces are disabled
+because real authentication contains session tokens; the SDK also suppresses
+screenshots after password entry. Do not export these runs with the public bundle.
+An incomplete cleanup remains a failed campaign, separate from a passed UI body.
+Local results describe the local app against its named backend. CI and deployed
+UI qualification require their own identified executions.
+
+The default client suite also covers an anonymous draft returning from sign-in,
+the same search started with a different price limit, and recovery when the
+server commits a mission but its response is lost. The recovery case models only
+that network failure: it verifies that editing is blocked while the outcome is
+unknown, and that reload/retry preserves the exact body and idempotency key. The
+live cases above independently verify the real mission write/readback and replay.
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/mission-client-UNIQUE \
+  npm run test:testerarmy -- \
+  e2e/testerarmy/mission-draft.e2e.ts \
+  e2e/testerarmy/mission-recovery.e2e.ts \
+  e2e/testerarmy/webmcp-mission-regression.e2e.ts
+```
+
+## Mission form and price-unit regressions
+
+`e2e/testerarmy/webmcp-mission-regression.e2e.ts` covers human and agent submissions,
+missing-key recovery, refusal without a write, explicit approval with decimal budgets,
+rejection of zero budgets, and the shared 100-unit search limit on desktop and mobile.
+The browser contract for `SubmitEvent.respondWith` is modeled strictly: only an
+agent-invoked, prevented event can respond. The synthetic agent key and intercepted
+watchlist POST validate the client journey; they do not prove authenticated backend
+persistence. The price comparison uses 75- and 180-unit listing fixtures. Public
+GETs not intercepted by these fixtures may reach the configured backend; all other
+mutations and external requests are blocked.
+
+Run against a local app with `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_API_BASE_URL`
+pointing at that app. WebMCP is enabled on these marketplace routes automatically:
+
+```bash
+TESTERARMY_AI=0 E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/mission-regression-UNIQUE \
+  npm run test:testerarmy -- e2e/testerarmy/webmcp-mission-regression.e2e.ts
+```
+
+No account or backend write fixture is needed. Pair a native WebMCP browser check
+and real public price search with these client regressions when qualifying native
+support; the modeled browser API alone is not native implementation evidence.
+
 ## Select an authorized target
 
 The existing project-scoped target guard also protects TesterArmy. The actual `.env.local` backend matters even when the browser opens localhost. If it targets the owner-approved disposable ClawDeals production database, use:

@@ -85,6 +85,35 @@ describe("withApiMiddlewares fail-closed protections", () => {
     expect(parseBody(res)?.error?.code).toBe("RATE_LIMIT_UNAVAILABLE");
   });
 
+  it("rejects anonymous and agent callers before owner mission protection stores", async () => {
+    const handler = vi.fn(async () => jsonResponse(201, { ok: true }));
+    const wrapped = withApiMiddlewares(handler, { requireOwner: true, enableAudit: false });
+    for (const identity of [{}, { "x-agent-id": "agent-1" }]) {
+      const req = makeReq("/api/v1/owner/missions");
+      req.headers = { "idempotency-key": "mission-1", ...identity };
+      const res = makeRes();
+      await wrapped(req, res);
+      expect(res.statusCode).toBe(401);
+    }
+    expect(handler).not.toHaveBeenCalled();
+    expect(rateLimitMiddlewareMock).not.toHaveBeenCalled();
+    expect(beginIdempotencyMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for an authenticated owner mission when idempotency is unavailable", async () => {
+    beginIdempotencyMock.mockRejectedValueOnce(new Error("idempotency store down"));
+    const handler = vi.fn(async () => jsonResponse(201, { ok: true }));
+    const wrapped = withApiMiddlewares(handler, { requireOwner: true, enableAudit: false });
+    const req = makeReq("/api/v1/owner/missions");
+    req.__clawdealsTrustedIdentity = { ownerId: "owner-1" };
+    delete req.headers["x-agent-id"];
+    const res = makeRes();
+    await wrapped(req, res);
+    expect(res.statusCode).toBe(503);
+    expect(parseBody(res)?.error?.code).toBe("IDEMPOTENCY_UNAVAILABLE");
+    expect(handler).not.toHaveBeenCalled();
+  });
+
   it("blocks newly covered sensitive route groups before handler side effects when rate limit is unavailable", async () => {
     rateLimitMiddlewareMock.mockRejectedValueOnce(new Error("redis down"));
     const handler = vi.fn(async () => jsonResponse(200, { ok: true }));

@@ -12,7 +12,7 @@ let inflight: Promise<OwnerSessionSnapshot> | null = null;
 
 async function requestSnapshot(): Promise<OwnerSessionSnapshot> {
   try {
-    const resp = await fetch("/api/v1/auth/session", { method: "GET", cache: "no-store", credentials: "include" });
+    const resp = await fetch("/api/v1/auth/session", { method: "GET", cache: "no-store", credentials: "include", signal: AbortSignal.timeout(10_000) });
     if (!resp.ok) {
       return { state: "unknown", ownerId: null };
     }

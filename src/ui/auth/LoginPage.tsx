@@ -503,7 +503,7 @@ function useLoginPageView() {
                       {forgotState === "loading" ? "Sending…" : "Forgot password"}
                     </button>
                     <Link
-                      href="/auth/login-legacy"
+                      href={`/auth/login-legacy?next=${encodeURIComponent(safeRedirectUrl(router.query.next))}`}
                       data-testid="auth-login-legacy-link"
                       className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
                     >

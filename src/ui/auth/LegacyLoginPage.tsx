@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useMemo, useReducer } from "react";
+import { safeRedirectUrl } from "./safeRedirect";
 
 import {
   clearStoredOwnerAuth,
@@ -59,6 +61,8 @@ function legacyLoginReducer(state: LegacyLoginState, action: LegacyLoginAction):
 }
 
 export default function LegacyLoginPage() {
+  const router = useRouter();
+  const redirectTarget = safeRedirectUrl(router.query.next ?? "/settings/identities");
   const [state, dispatch] = useReducer(legacyLoginReducer, undefined, initLegacyLoginState);
 
   const canSubmit = useMemo(
@@ -104,6 +108,9 @@ export default function LegacyLoginPage() {
     });
 
     setStoredOwnerEmail(state.email.trim());
+    // The emailed URL has no next parameter. Preserve the return in this tab;
+    // the manual verification link also carries it if storage is unavailable.
+    try { sessionStorage.setItem("clawdeals.auth_next", redirectTarget); } catch { /* URL fallback below. */ }
 
     try {
       const res = await fetch("/api/v1/auth/login:start", {
@@ -154,7 +161,7 @@ export default function LegacyLoginPage() {
         }
       });
     }
-  }, [state.email]);
+  }, [state.email, redirectTarget]);
 
   return (
     <div data-testid="auth-login-page" className="min-h-screen bg-bg relative overflow-hidden">
@@ -229,8 +236,8 @@ export default function LegacyLoginPage() {
                     data-testid="auth-login-verify-link"
                     href={
                       state.sessionId
-                        ? `/auth/verify?session_id=${encodeURIComponent(state.sessionId)}${state.token ? `&token=${encodeURIComponent(state.token)}` : ""}`
-                        : "/auth/verify"
+                        ? `/auth/verify?session_id=${encodeURIComponent(state.sessionId)}${state.token ? `&token=${encodeURIComponent(state.token)}` : ""}&next=${encodeURIComponent(redirectTarget)}`
+                        : `/auth/verify?next=${encodeURIComponent(redirectTarget)}`
                     }
                     className="px-3 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
                   >

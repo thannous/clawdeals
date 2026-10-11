@@ -1,9 +1,17 @@
-import { FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
 import { getActiveBuyMission, subscribeActiveBuyMission, type BuyMissionView } from "../../webmcp/ui-bridge";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
+import { getStoredApiKey } from "../developer/storage";
+import type { StableToolResult } from "../../webmcp/types";
+import { randomUuid } from "../../webmcp/utils";
+import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
+import type { z } from "zod";
+import { clearBuyMissionDraft, readBuyMissionDraft, saveBuyMissionDraft } from "./buyMissionDraft";
+
+export type BuyMissionInput = z.infer<typeof buyMissionZodSchema>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -90,7 +98,8 @@ function formatCeiling(value: string, market: MarketCode, locale: string): strin
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
-    maximumFractionDigits: 0
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
   }).format(amount);
 }
 
@@ -109,6 +118,9 @@ export function describeMissionResult(
     };
   }
   const code = result.error.code;
+  if (code === "DRAFT_STORAGE_UNAVAILABLE") return { key: "mission.result.storage", code };
+  if (code === "OWNER_AUTH_REQUIRED") return { key: "mission.result.ownerAuth", code };
+  if (code === "OWNER_CREATE_FAILED") return { key: "mission.result.ownerFailed", code };
   if (code === "USER_DENIED") return { key: "mission.result.denied", code };
   if (code === "UNAUTHORIZED" || code === "AUTH_REQUIRED" || code === "MISSING_API_KEY") {
     return { key: "mission.result.auth", code };
@@ -127,6 +139,7 @@ export function describeMissionResult(
 
 function defaultExpirationValue() {
   const date = new Date(Date.now() + 7 * DAY_MS);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
   date.setSeconds(0, 0);
   return date.toISOString().slice(0, 16);
 }
@@ -136,7 +149,7 @@ function formatMoney(value: number | null, currency: string, locale: string) {
   return new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);
 }
 
-function MissionSummary({ mission }: { mission: BuyMissionView }) {
+export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionView; statusLabel?: string }) {
   const t = useTranslations("webmcp");
   const locale = useLocale();
   return (
@@ -148,7 +161,7 @@ function MissionSummary({ mission }: { mission: BuyMissionView }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">
-            {t("mission.summary.eyebrow")}
+            {statusLabel || t("mission.summary.eyebrow")}
           </p>
           <h3 className="mt-1 text-lg font-bold uppercase tracking-wide text-text">{mission.query}</h3>
           <p className="mt-1 text-xs font-mono text-muted">
@@ -156,7 +169,7 @@ function MissionSummary({ mission }: { mission: BuyMissionView }) {
           </p>
         </div>
         <span className="border border-primary/50 px-2 py-1 text-[10px] font-mono uppercase text-primary">
-          {mission.status === "ACTIVE" ? t("mission.summary.active") : mission.status}
+          {statusLabel || (mission.status === "ACTIVE" ? t("mission.summary.active") : mission.status)}
         </span>
       </div>
 
@@ -235,7 +248,7 @@ export function prefillFromListing(input: {
   const prefill: BuyMissionPrefill = {};
   const title = typeof input.title === "string" ? input.title.trim() : "";
   if (title) {
-    prefill.query = title;
+    prefill.query = title.slice(0, 80);
     prefill.listingTitle = title;
   } else if (input.category) {
     prefill.query = String(input.category).toLowerCase();
@@ -244,8 +257,8 @@ export function prefillFromListing(input: {
     prefill.marketCode = input.marketCode;
   }
   if (typeof input.price === "number" && Number.isFinite(input.price) && input.price > 0) {
-    prefill.preferredPriceMax = String(Math.round(input.price));
-    prefill.hardBudgetMax = String(Math.round(input.price * HARD_BUDGET_HEADROOM));
+    prefill.preferredPriceMax = String(Math.round(input.price * 100) / 100);
+    prefill.hardBudgetMax = String(Math.round(input.price * HARD_BUDGET_HEADROOM * 100) / 100);
   }
   if (
     typeof input.latitude === "number" &&
@@ -261,25 +274,51 @@ export function prefillFromListing(input: {
   return prefill;
 }
 
+type FormProps = {
+  prefill?: BuyMissionPrefill | null;
+  draftSource?: string;
+  submitLabel?: string;
+  submitHint?: string;
+  executeMission: (args: BuyMissionInput, context: { draftSaved: boolean }) => Promise<StableToolResult>;
+};
+
 export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefill | null } = {}) {
+  const { executeTool } = useWebMcp();
+  return <BuyMissionForm prefill={prefill} executeMission={async (args) => {
+    if (!getStoredApiKey()) {
+      return {
+        ok: false,
+        error: { code: "MISSING_API_KEY", message: "Connect an agent key first", details: {} },
+        meta: { request_id: randomUuid() }
+      };
+    }
+    return executeTool("create_buy_mission", args);
+  }} />;
+}
+
+export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, executeMission }: FormProps) {
   const t = useTranslations("webmcp");
   const locale = useLocale();
-  const { executeTool } = useWebMcp();
+  const restoredDraft = useRef(false);
+  const edited = useRef(false);
+  const [draftReady, setDraftReady] = useState(!draftSource);
+  const [storageError, setStorageError] = useState(false);
   const activeMission = useSyncExternalStore(subscribeActiveBuyMission, getActiveBuyMission, () => null);
   const hasCustomLocation = Boolean(prefill?.latitude && prefill?.longitude);
+  const defaultCity = CITY_PRESETS.find((city) => city.market === (prefill?.marketCode || "FR"))!;
   const [query, setQuery] = useState(prefill?.query ?? t("mission.defaults.query"));
   const [marketCode, setMarketCode] = useState<MarketCode>(prefill?.marketCode ?? "FR");
-  const [cityPreset, setCityPreset] = useState<string>(hasCustomLocation ? "custom" : "paris");
+  const [cityPreset, setCityPreset] = useState<string>(hasCustomLocation ? "custom" : defaultCity.id);
   const [locationLabel, setLocationLabel] = useState(
-    prefill?.locationLabel ?? (prefill?.locationLabelKey ? t(prefill.locationLabelKey) : t("mission.cities.paris"))
+    prefill?.locationLabel ?? (prefill?.locationLabelKey ? t(prefill.locationLabelKey) : t(defaultCity.labelKey))
   );
-  const [latitude, setLatitude] = useState(prefill?.latitude ?? "48.8566");
-  const [longitude, setLongitude] = useState(prefill?.longitude ?? "2.3522");
+  const [latitude, setLatitude] = useState(prefill?.latitude ?? defaultCity.latitude);
+  const [longitude, setLongitude] = useState(prefill?.longitude ?? defaultCity.longitude);
   const [radiusKm, setRadiusKm] = useState("25");
   const [preferredPriceMax, setPreferredPriceMax] = useState(prefill?.preferredPriceMax ?? "1200");
   const [hardBudgetMax, setHardBudgetMax] = useState(prefill?.hardBudgetMax ?? "1300");
   const [requirements, setRequirements] = useState(prefill?.requirements ?? "battery_health >= 80%");
-  const [autonomousActions, setAutonomousActions] = useState<string[]>(["search", "ask_question", "make_offer"]);
+  const [autonomousActions, setAutonomousActions] = useState<string[]>(draftSource ? ["search"] : ["search", "ask_question", "make_offer"]);
   const [expiresAt, setExpiresAt] = useState(defaultExpirationValue);
   const [resultMessage, setResultMessage] = useState<{
     key: string;
@@ -287,6 +326,37 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
     code: string | null;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const draft = { query, marketCode, cityPreset, locationLabel, latitude, longitude, radiusKm,
+    preferredPriceMax, hardBudgetMax, requirements, autonomousActions: autonomousActions as BuyMissionInput["autonomous_actions"], expiresAt };
+
+  useEffect(() => {
+    if (!draftSource) return;
+    const saved = readBuyMissionDraft(draftSource);
+    if (saved) {
+      restoredDraft.current = true;
+      setQuery(saved.query);
+      setMarketCode(saved.marketCode);
+      setCityPreset(saved.cityPreset);
+      setLocationLabel(saved.locationLabel);
+      setLatitude(saved.latitude);
+      setLongitude(saved.longitude);
+      setRadiusKm(saved.radiusKm);
+      setPreferredPriceMax(saved.preferredPriceMax);
+      setHardBudgetMax(saved.hardBudgetMax);
+      setRequirements(saved.requirements);
+      setAutonomousActions(saved.autonomousActions);
+      setExpiresAt(saved.expiresAt);
+    }
+    setDraftReady(true);
+  }, [draftSource]);
+
+  useEffect(() => {
+    if (draftSource && draftReady) setStorageError(!saveBuyMissionDraft(draftSource, draft));
+  // Each draft field is intentionally a dependency; never overwrite it with a stale closure.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftSource, draftReady, query, marketCode, cityPreset, locationLabel, latitude, longitude,
+    radiusKm, preferredPriceMax, hardBudgetMax, requirements, autonomousActions, expiresAt]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -305,7 +375,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
         });
       })
       .then(async (response) => {
-        if (!response || !response.ok) return;
+        if (!response || !response.ok || restoredDraft.current || edited.current) return;
         const payload = await response.json();
         const policy = payload?.data;
         const radius = policy?.mission_defaults?.radius_km;
@@ -316,7 +386,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
         const configuredActions = Array.isArray(policy?.mission_defaults?.autonomous_actions)
           ? policy.mission_defaults.autonomous_actions
           : null;
-        if (configuredActions) {
+        if (configuredActions && !draftSource) {
           const actionSet = new Set(
             configuredActions.filter((action: unknown): action is string => typeof action === "string")
           );
@@ -345,7 +415,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
       });
 
     return () => controller.abort();
-  }, [prefill]);
+  }, [prefill, draftSource]);
 
   const applyCityPreset = (presetId: string) => {
     setCityPreset(presetId);
@@ -394,26 +464,47 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
         .filter(Boolean),
       autonomous_actions: autonomousActions,
       contact_reveal: "manual_bilateral_approval" as const,
-      expires_at: new Date(expiresAt).toISOString()
+      expires_at: Number.isFinite(new Date(expiresAt).getTime()) ? new Date(expiresAt).toISOString() : ""
     };
-    const execution = executeTool("create_buy_mission", args);
+    const parsed = buyMissionZodSchema.safeParse(args);
+    if (!parsed.success) {
+      setResultMessage({ key: "mission.result.validation", code: "VALIDATION_ERROR" });
+      setSubmitting(false);
+      return;
+    }
+    const draftSaved = draftSource ? saveBuyMissionDraft(draftSource, draft) : true;
+    const execution: Promise<StableToolResult> = Promise.resolve()
+      .then(() => executeMission(parsed.data, { draftSaved }))
+      .catch(() => ({
+        ok: false as const,
+        error: { code: "OUTCOME_UNKNOWN", message: "Check the saved missions before retrying", details: {} },
+        meta: { request_id: randomUuid() }
+      }));
+
+    // Observe completion for both human and agent submits, including rejected executions.
+    void execution.then((result) => {
+      if (result.ok && draftSource) clearBuyMissionDraft();
+      setResultMessage(describeMissionResult(result, formatCeiling(hardBudgetMax, marketCode, locale)));
+      setSubmitting(false);
+    });
+
     const nativeEvent = event.nativeEvent as Event & {
+      agentInvoked?: boolean;
       respondWith?: (result: Promise<unknown>) => void;
     };
-    if (typeof nativeEvent.respondWith === "function") nativeEvent.respondWith(execution);
-
-    void execution.then((result) => {
-      setSubmitting(false);
-      setResultMessage(describeMissionResult(result, formatCeiling(hardBudgetMax, marketCode, locale)));
-    });
+    // Native WebMCP exposes respondWith on human SubmitEvents too, but rejects its use there.
+    if (nativeEvent.agentInvoked && typeof nativeEvent.respondWith === "function") {
+      nativeEvent.respondWith(execution);
+    }
   };
 
   return (
     <div id="buy-mission" className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-10 space-y-4 scroll-mt-24">
-      {activeMission ? <MissionSummary mission={activeMission} /> : null}
+      {!draftSource && activeMission ? <MissionSummary mission={activeMission} /> : null}
 
       <form
-        {...webMcpFormAttributes}
+        {...(draftSource ? {} : webMcpFormAttributes)}
+        onChangeCapture={() => { edited.current = true; }}
         onSubmit={submitMission}
         className="border border-border bg-surface rounded clip-corner p-4"
         data-testid="buy-mission-form"
@@ -428,7 +519,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
               </p>
             ) : null}
           </div>
-          <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.mode")}</span>
+          {!draftSource ? <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.mode")}</span> : null}
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -437,6 +528,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
             <input
               {...param(t("mission.params.query"))}
               required
+              maxLength={80}
               name="query"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -463,6 +555,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
             <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.location")}</span>
             <input
               {...param(t("mission.params.location"))}
+              maxLength={80}
               name="location_label"
               value={locationLabel}
               onChange={(event) => {
@@ -529,6 +622,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
             <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.requirements")}</span>
             <textarea
               {...param(t("mission.params.requirements"))}
+              maxLength={1210}
               name="requirements_text"
               rows={3}
               value={requirements}
@@ -649,13 +743,14 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || !draftReady}
             className="border border-primary bg-primary px-4 py-2 text-xs font-mono font-bold uppercase text-bg disabled:opacity-50"
           >
-            {submitting ? t("mission.creating") : t("mission.create")}
+            {submitting ? t("mission.creating") : submitLabel || t("mission.create")}
           </button>
-          <p className="text-xs font-mono text-subtle">{t("mission.submitHint")}</p>
+          <p className="text-xs font-mono text-subtle">{submitHint || t("mission.submitHint")}</p>
         </div>
+        {storageError ? <p role="alert" className="mt-3 text-sm text-warning">{t("mission.result.storage")}</p> : null}
         {resultMessage ? (
           <p
             className={`mt-3 text-xs font-mono ${resultMessage.code ? "text-warning" : "text-success"}`}

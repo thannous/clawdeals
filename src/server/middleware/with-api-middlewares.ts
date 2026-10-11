@@ -47,6 +47,7 @@ const FAIL_CLOSED_PROTECTION_ROUTE_GROUPS = new Set([
   "ops.psp.write",
   "owner.identities.delete",
   "owner.identities.write",
+  "owner.missions.write",
   "policies.write",
   "psp.webhooks",
   "ratings.create",
@@ -457,6 +458,12 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
     let idempotencyContext = null;
 
     try {
+      if (resolved.requireOwner === true && (ctx.authError || ctx.actor?.type !== "owner" || !ctx.ownerId)) {
+        const authError = ctx.authError || { status: 401, code: "UNAUTHORIZED", message: "Owner authentication required" };
+        ctx.response = jsonResponse(authError.status || 401, errorPayload(authError.code, authError.message));
+        sendJson(res, ctx.response.status, ctx.response.body, {});
+        return;
+      }
       // TI-331: installation-scoped OAuth scopes (v1).
       // Keep this before rate limiting / idempotency: blocked requests should not consume limits or locks.
       const scopesResponse = await enforceInstallationScopes(res, ctx);

@@ -12,6 +12,7 @@ export type ConfirmPrimaryField = {
   kind: "amount" | "text";
   value: number | string | null;
   currency: string | null;
+  allowDecimal?: boolean;
 };
 
 export type ConfirmPolicyHint = {
@@ -50,7 +51,8 @@ export function formatMoney(amount: number | null, currency: string | null, loca
     return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currency || "EUR",
-      maximumFractionDigits: 0
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
     }).format(amount);
   } catch {
     return `${amount} ${currency || ""}`.trim();
@@ -109,7 +111,8 @@ export function summarizeConfirmRequest(request: ConfirmRequest, mission: BuyMis
           labelKey: "confirm.fields.hardBudget",
           kind: "amount",
           value: hard,
-          currency
+          currency,
+          allowDecimal: true
         },
         policyHint: null
       };
@@ -287,7 +290,11 @@ export function applyPrimaryField(
     const trimmed = rawValue.trim();
     if (trimmed === "") return { args, error: "confirm.errors.enterAmount" };
     const parsed = Number(trimmed);
-    if (!Number.isInteger(parsed) || parsed < 0) return { args, error: "confirm.errors.wholeAmount" };
+    if (field.allowDecimal) {
+      if (!Number.isFinite(parsed) || parsed <= 0) return { args, error: "confirm.errors.positiveAmount" };
+    } else if (!Number.isInteger(parsed) || parsed < 0) {
+      return { args, error: "confirm.errors.wholeAmount" };
+    }
     return { args: { ...args, [field.key]: parsed }, error: null };
   }
   if (!rawValue.trim()) return { args, error: "confirm.errors.emptyField" };

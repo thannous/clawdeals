@@ -479,6 +479,14 @@ export const RATE_LIMIT_PROFILES = {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: HOUR }],
   },
+  "owner.missions.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "owner.missions.write": {
+    scope: "owner",
+    buckets: [{ limit: 10, windowSeconds: MINUTE }, { limit: 120, windowSeconds: DAY }],
+  },
   "owner.watchlists.read": {
     scope: "owner",
     buckets: [{ limit: 120, windowSeconds: MINUTE }],

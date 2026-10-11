@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import {
   readFileSync,
   readdirSync,
@@ -81,6 +81,8 @@ export async function execute({ historical = false } = {}) {
   }
   const selection = historical
     ? "historical"
+    : process.env.TESTERARMY_MISSION_LIVE === "1"
+      ? "mission-live"
     : process.env.TESTERARMY_PRODUCTION_PUBLIC === "1"
       ? "production-public"
       : process.env.TESTERARMY_AI === "1"
@@ -91,6 +93,11 @@ export async function execute({ historical = false } = {}) {
     E2E_TELEMETRY_DISABLED: "1",
     DO_NOT_TRACK: "1",
   };
+  if (selection === "mission-live") {
+    // One ephemeral password is shared with the worker's opaque credential.
+    // It is never persisted to the receipt, command line or repository.
+    env.TESTERARMY_MISSION_PASSWORD = randomBytes(32).toString("base64url");
+  }
   if (historical)
     Object.assign(env, {
       TESTERARMY_AI: "0",
@@ -120,8 +127,8 @@ export async function execute({ historical = false } = {}) {
         {
           format: "clawdeals-testerarmy-command-v1",
           selection,
-          publicEvidence: selection !== "ai",
-          requiredArtifactKinds: ["trace"], // e2e.config.ts keeps trace: "on"
+          publicEvidence: selection !== "ai" && selection !== "mission-live",
+          requiredArtifactKinds: selection === "mission-live" ? [] : ["trace"],
           command: [
             process.execPath,
             historical

@@ -26,6 +26,10 @@ const baseURL = process.env.E2E_BASE_URL || `http://localhost:${port}`;
 const aiEnabled = process.env.TESTERARMY_AI === "1";
 const historical = process.env.TESTERARMY_HISTORICAL === "1";
 const productionPublic = process.env.TESTERARMY_PRODUCTION_PUBLIC === "1";
+const missionLive = process.env.TESTERARMY_MISSION_LIVE === "1";
+if (missionLive && (aiEnabled || historical || productionPublic)) {
+  throw new Error("Live mission selection is exclusive of AI, historical and public production suites.");
+}
 if (productionPublic) {
   if (aiEnabled || historical) throw new Error("Production public selection is exclusive of AI and historical suites.");
   if (process.env.E2E_BASE_URL !== "https://app.clawdeals.com") {
@@ -76,6 +80,8 @@ const app = {
         // Local browser journeys exercise marketing routes; do not inherit APP_HOST=localhost.
         APP_HOST: "app.clawdeals.com",
         MARKETING_HOSTS: "clawdeals.com,www.clawdeals.com",
+        NEXT_PUBLIC_APP_URL: baseURL,
+        NEXT_PUBLIC_API_BASE_URL: baseURL,
         CI: process.env.CI || "",
         CLAWDEALS_ENV: process.env.CLAWDEALS_ENV,
         API_KEY_NAMESPACE: process.env.API_KEY_NAMESPACE,
@@ -98,16 +104,22 @@ export default {
     ? "e2e/testerarmy/**/*.agent.e2e.ts"
     : historical ? "e2e/testerarmy/historical/**/*.e2e.ts"
     : productionPublic ? "e2e/testerarmy/production/**/*.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts"],
+    : missionLive ? "e2e/testerarmy/mission-live/**/*.e2e.ts"
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts"],
   targets: [
     { name: "desktop", engine: productionPublic ? web({ viewport: { width: 1280, height: 720 }, headers: {} }) : desktopEngine, app },
     { name: "mobile", engine: productionPublic ? web({ viewport: { width: 390, height: 844 }, headers: {} }) : mobileEngine, app }
   ],
   workers: 1,
   ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),
-  timeout: aiEnabled ? 180_000 : 60_000,
+  timeout: aiEnabled || missionLive ? 180_000 : 60_000,
   assertionTimeout: 15_000,
-  trace: "on",
+  // Live password authentication carries real session tokens. Keep the exact
+  // report and safe fixture receipts, never a network trace with auth payloads.
+  trace: missionLive ? "off" : "on",
+  ...(missionLive ? { credentials: {
+    mission: { username: "synthetic-mission", password: () => process.env.TESTERARMY_MISSION_PASSWORD || "" }
+  } } : {}),
   output: process.env.PARITY_OUTPUT ?? (productionPublic ? ".e2e/production-public" : ".e2e"),
   reporters: ["list", "junit", "markdown"],
   ...(aiEnabled ? {

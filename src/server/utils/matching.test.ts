@@ -94,6 +94,23 @@ describe("evaluateWatchlistMatch", () => {
 });
 
 describe("evaluateWatchlistMatchListing", () => {
+  it("enforces a legacy mission hard budget even without a top-level price filter", () => {
+    const watchlist = {
+      active: true,
+      query_text: "bike",
+      criteria: { mission: { hard_budget_max: 100, currency: "EUR", expires_at: "2099-01-01T00:00:00Z" } }
+    };
+    expect(evaluateWatchlistMatchListing({ listing: { title: "bike", price_amount: 101, currency: "EUR" }, watchlist }).matched).toBe(false);
+    expect(evaluateWatchlistMatchListing({ listing: { title: "bike", price_amount: 100, currency: "EUR" }, watchlist }).matched).toBe(true);
+    expect(evaluateWatchlistMatchListing({ listing: { title: "bike", price_amount: 100, currency: "GBP" }, watchlist }).matched).toBe(false);
+  });
+
+  it("does not keep matching an expired buy mission", () => {
+    expect(evaluateWatchlistMatchListing({
+      listing: { title: "bike", price_amount: 100, currency: "EUR" },
+      watchlist: { active: true, query_text: "bike", criteria: { mission: { hard_budget_max: 100, currency: "EUR", expires_at: "2000-01-01T00:00:00Z" } } }
+    }).matched).toBe(false);
+  });
 
   it("treats geo watchlists as non-match when listing has no geo", () => {
     const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, geo_lat: null, geo_lng: null };

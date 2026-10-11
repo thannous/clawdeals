@@ -249,6 +249,22 @@ export function evaluateWatchlistMatchListing({
     return { matched: false, reason: { inactive: true } };
   }
 
+  const mission = watchlist?.criteria?.mission;
+  if (mission) {
+    const expiresAt = new Date(mission.expires_at).getTime();
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      return { matched: false, reason: { mission_expired: true } };
+    }
+    const budget = toNumber(mission.hard_budget_max);
+    const price = toNumber(listing.price_amount);
+    if (!Number.isFinite(budget) || !Number.isFinite(price) || budget <= 0 || price > budget) {
+      return { matched: false, reason: { price_ok: false } };
+    }
+    if (String(listing.currency).toUpperCase() !== String(mission.currency).toUpperCase()) {
+      return { matched: false, reason: { currency_mismatch: true } };
+    }
+  }
+
   const reason: WatchlistMatchReason = {};
 
   const listingMarket = coerceString(listing.market_code);
