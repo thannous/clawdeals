@@ -2892,6 +2892,7 @@
     "signIn": "Se connecter",
     "sessionExpired": "Ta session a expiré. Reconnecte-toi pour reprendre ton brouillon.",
     "createError": "La création n’a pas pu être confirmée. Réessaie avec les mêmes critères : la demande est protégée contre les doublons.",
+    "missionLimitReached": "La limite de recherches actives de ton compte est atteinte. Aucune mission n’a été créée. Consulte tes missions existantes avant d’en créer une autre.",
     "loadError": "Impossible de charger les missions. Réessaie dans un instant.",
     "notFound": "Cette mission est introuvable ou n’appartient pas à ton compte.",
     "retry": "Réessayer",

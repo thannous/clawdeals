@@ -2892,6 +2892,7 @@
     "signIn": "Iniciar sesión",
     "sessionExpired": "Tu sesión ha caducado. Inicia sesión de nuevo para recuperar tu borrador.",
     "createError": "No se pudo confirmar la creación. Reintenta con los mismos criterios: la solicitud está protegida contra duplicados.",
+    "missionLimitReached": "Tu cuenta ha alcanzado el límite de búsquedas activas. No se ha creado ninguna misión. Consulta tus misiones existentes antes de crear otra.",
     "loadError": "No se pudieron cargar las misiones. Inténtalo de nuevo en un momento.",
     "notFound": "No se encontró la misión o no pertenece a tu cuenta.",
     "retry": "Reintentar",

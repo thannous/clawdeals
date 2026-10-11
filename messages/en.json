@@ -2980,6 +2980,7 @@
     "signIn": "Sign in",
     "sessionExpired": "Your session expired. Sign in again to resume your draft.",
     "createError": "We could not confirm creation. Retry with the same criteria: duplicate requests are protected.",
+    "missionLimitReached": "Your account has reached its active search limit. No mission was created. Check your existing missions before creating another.",
     "loadError": "Could not load your missions. Please try again shortly.",
     "notFound": "This mission could not be found or does not belong to your account.",
     "retry": "Try again",

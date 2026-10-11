@@ -111,10 +111,13 @@ export default function NewMissionPage() {
       resolveSubmission.current = null;
       void router.push(`${prefix}/my/missions/${encodeURIComponent(created.watchlist_id)}`, undefined, { locale: false });
     } catch (cause) {
+      // This business rejection happens before insertion, including when a
+      // retry recovers its lost response. Other 409s can still be in progress.
+      const quotaRejected = cause instanceof MissionRequestError && cause.status === 409 && cause.code === "WATCHLIST_LIMIT_REACHED";
       const definitiveRejection = cause instanceof MissionRequestError && [400, 401, 403, 404, 422, 429].includes(cause.status);
-      const unknownOutcome = uncertain || !definitiveRejection;
+      const unknownOutcome = !quotaRejected && (uncertain || !definitiveRejection);
       setUncertain(unknownOutcome);
-      setCreateError(cause instanceof MissionRequestError && cause.status === 401 ? "sessionExpired" : unknownOutcome ? "uncertainResult" : "createError");
+      setCreateError(quotaRejected ? "missionLimitReached" : cause instanceof MissionRequestError && cause.status === 401 ? "sessionExpired" : unknownOutcome ? "uncertainResult" : "createError");
       if (!unknownOutcome) {
         request.current = null;
         try { sessionStorage.removeItem(REQUEST_KEY); } catch { /* Storage unavailable. */ }
@@ -145,7 +148,7 @@ export default function NewMissionPage() {
             <p className="text-sm text-muted">{t("inAppHint")}</p>
             {createError ? <p role="alert" className="text-sm text-warning">{t(createError)}</p> : null}
             {createError === "sessionExpired" ? <a className="text-sm text-primary underline" href={`${prefix}/auth/login?next=${encodeURIComponent(router.asPath.startsWith(`${prefix}/my/`) ? router.asPath : `${prefix}${router.asPath}`)}`}>{t("signIn")}</a> : null}
-            {uncertain ? <Link href="/my/missions" className="inline-block text-primary underline">{t("checkMissions")}</Link> : null}
+            {uncertain || createError === "missionLimitReached" ? <Link href="/my/missions" className="inline-block text-primary underline">{t("checkMissions")}</Link> : null}
             <div className="flex flex-wrap gap-3">
               <button type="button" disabled={saving} onClick={() => void confirm()} className="px-5 py-3 bg-primary text-bg font-semibold disabled:opacity-50">{saving ? t("saving") : t("confirm")}</button>
               <button type="button" disabled={saving || uncertain} onClick={cancel} className="px-5 py-3 border border-border text-text disabled:opacity-50">{t("edit")}</button>

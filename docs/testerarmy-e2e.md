@@ -105,6 +105,10 @@ server commits a mission but its response is lost. The recovery case models only
 that network failure: it verifies that editing is blocked while the outcome is
 unknown, and that reload/retry preserves the exact body and idempotency key. The
 live cases above independently verify the real mission write/readback and replay.
+A server-paused mission remains paused in the list and detail even if its stored
+active flag is true. Confirmed quota rejections release editing and the rejected
+idempotency key, including after a lost rejection response; uncertain creation
+outcomes retain their key. The full client shortcut now selects 20 cases.
 
 ```bash
 E2E_BASE_URL=http://localhost:4327 \
@@ -115,23 +119,32 @@ PARITY_OUTPUT=.e2e/validation/mission-client-UNIQUE \
 
 ### Local qualification on 2026-10-11
 
-Fresh runs on clean commit `7adc10d38fa9352bcc6a18ff8d375579cc1b9390`
+Runs on commit `dd9e76eee1ba37578f785513bbd32e578549d72b`
 used Node 24.19.0, Next.js 16.4.0, `e2e` 0.18.0 and `@e2e-dev/web` 0.13.0:
 
-- `test:mission`: **4/4 passed**, desktop and mobile, in 30.84 s.
-  Canonical report: `.e2e/validation/first-mission-next164-20261011/report.json`.
-- `test:mission:client`: **14/14 passed**, comprising WebMCP 8, draft 4 and
-  lost-response recovery 2, in 18.93 s. Canonical report:
-  `.e2e/validation/mission-client-next164-20261011/report.json`.
+- `test:mission`: **4/4 passed**, desktop and mobile, in 28.76 s.
+  Canonical report: `.e2e/validation/first-mission-dd9e76e-20261011/report.json`.
+- `test:mission:client`: **16/16 passed**, comprising WebMCP 8, draft 4,
+  lost-response recovery 2 and server-paused status 2, in 20.87 s. Report:
+  `.e2e/validation/mission-client-dd9e76e-20261011/report.json`.
 
-Both wrappers exited 0 with unchanged inputs. The live run used the local app
+Both wrappers exited 0 with unchanged inputs; only `docs/first-buy-mission.md`
+was uncommitted, so receipts identify a dirty checkout. The live run used the local app
 at `http://localhost:4327`, real Auth/database services on the authorized
 disposable ClawDeals project and the existing local Redis mock on port 4413
 (`TESTERARMY_REDIS_FIXTURE=local-mock`). All four fixture receipts report no
 cleanup errors and zero remaining owned owner/agent/listing rows. Runtime logs
-in `.e2e/validation/mission-next164-runtime-20261011/app.log` contain no hydration
+in `.e2e/validation/mission-dd9e76e-runtime-20261011/app.log` contain no hydration
 or `getServerSnapshot` warnings during these journeys. These are local results,
 not CI, a deployed UI check or qualification of the deployed Redis service.
+
+The later quota correction was reproduced red and then qualified with **6/6**
+recovery cases in 8.74 s (lost creation response, direct quota rejection and lost
+quota response). Report: `.e2e/validation/mission-recovery-quota-fixed-20261011/report.json`.
+Its `source-scope.json` identifies the five stable changed inputs on top of
+`dd9e76e`. The unchanged live and client results above are reused, not a fresh
+20-case client run. To replay this affected subset, use the same client command
+environment with `npm run test:testerarmy -- e2e/testerarmy/mission-recovery.e2e.ts`.
 
 The earlier reports `first-mission-realdb-20261011` (4/4) and
 `mission-client-regressions-20261011` (14/14) used Next.js 16.3.3 on the

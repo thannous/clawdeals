@@ -37,18 +37,68 @@ exige ensuite `npm run verify:release` réussi sur le SHA exact fusionné dans
 Vérifier enfin le déploiement Vercel et le comportement affecté. Les preuves
 locales, la revue, la CI manuelle éventuelle et le produit déployé restent distincts.
 
+Dans le périmètre actuel, l’agent prépare les changements, les vérifie, pousse la
+branche après `verify:pr` et ouvre la PR avec ses preuves. La fusion revient au
+CTO ; la mise en production attend un go explicite de thanh. L’ancienne mention
+de push direct avec déploiement automatique ne décrit plus la configuration
+actuelle. Les tests sur données fictives n’autorisent pas à sauter ces étapes.
+
 ## Preuves
 
-Section réservée au compte rendu de validation du parcours. À compléter avec les
-résultats constatés ; les critères du tableau ne sont pas encore des preuves.
+État constaté le 2026-10-11. Les campagnes navigateur ci-dessous ont démarré sur
+le commit `dd9e76eee1ba37578f785513bbd32e578549d72b`, avec Node 24.19.0,
+Next.js 16.4.0, `e2e` 0.18.0 et `@e2e-dev/web` 0.13.0. Leurs wrappers terminent
+avec le code 0 et des entrées inchangées. Seul ce document était modifié au
+démarrage ; les reçus portent donc `dirty: true`. Elles qualifient le code de ce
+commit, pas les corrections ultérieures ni un déploiement.
 
-| Périmètre | Preuve attendue | Résultat / référence |
+| Périmètre exécuté | Résultat et limite | Référence locale |
 | --- | --- | --- |
-| Local, navigateur réel et backend identifié | Départ annonce et recherche, brouillon conservé à la connexion, création authentifiée, relecture après rechargement, résultats et état vide/action suivante | À renseigner après exécution. |
-| Régressions pertinentes | Contrats de limites/authentification, parcours WebMCP touchés et CLI Cerebras séparée | À renseigner avec commandes et résultats. |
-| PR et vérification locale | SHA vérifié par `verify:pr`, résultat et statut de revue/merge | À renseigner après exécution et revue. |
-| CI, si déclenchée manuellement | SHA et jobs terminés, avec échecs ou contrôles non exécutés | À renseigner, ou indiquer non déclenchée. |
-| Publication autorisée | SHA fusionné vérifié par `verify:release`, go de thanh, SHA servi, identité du déploiement et parcours affecté | À renseigner après autorisation et publication. |
+| Première mission authentifiée | **4/4 réussis**, bureau et mobile : recherche française sans résultat et annonce britannique avec résultat, connexion réelle, brouillon conservé, budget décimal EUR/GBP, écriture/relecture et retour après rechargement. | `.e2e/validation/first-mission-dd9e76e-20261011/report.json` |
+| Régressions navigateur | **16/16 réussis** : WebMCP 8, brouillon 4, réponse perdue/reprise idempotente 2 et statut serveur en pause 2. Les réponses simulées du test de récupération prouvent ce cas réseau ; la persistance réelle est qualifiée séparément par les quatre cas précédents. | `.e2e/validation/mission-client-dd9e76e-20261011/report.json` |
+| Filtres et contrôles backend après `7adc10d` | **31/31 réussis dans 4 fichiers**, sur le checkout modifié : création/validation/résultats propriétaire, catégorie/livraison, matcher, matching/outbox et backfill. ESLint ciblé et diff check réussis. Ce résultat n’est pas un nouveau parcours navigateur. | Sortie d’exécution du 2026-10-11 à 05:03:34 locale ; commande ci-dessous, aucun rapport persistant dédié. |
+| Cerebras CLI, preuve antérieure réutilisée | **10/10 réussis** avec processus CLI et services HTTP simulés. Les deux sources correspondent toujours aux empreintes du rapport ; aucun nouvel appel Cerebras ni offre réelle. | `test-results/first-buy-mission/cerebras-cli-check.json` |
+| Retour Magic link | Défaut reproduit avant correction, puis **18/18 tests ciblés réussis** ; ces tests composants font aussi partie du contrôle unitaire complet ci-dessous. Aucun email envoyé, retour dans le même onglet. | `test-results/first-buy-mission/magic-link-return-check.json` pour la reproduction et première correction |
+| Validation obligatoire du commit `dd9e76e` | `verify:pr` réussi : **12 contrôles exécutés**, dont typage, lint, traductions, OpenAPI et SDK TypeScript/Python. **217 fichiers / 786 tests unitaires réussis, 1 ignoré**. Le moteur de vérification passe **70 tests, 7 ignorés spécifiques à la plateforme**. | `.git/verify-proofs/8a7175a17d2a2436478e8ac8293601aaece8e3b9.json` |
+| Reprise après refus de quota, correction postérieure à `dd9e76e` | Défaut reproduit rouge, puis **6/6 cas navigateur réussis** : réponse de création perdue, refus de quota direct et refus retrouvé après perte de réponse, sur les deux tailles d’écran. Un refus confirmé libère l’édition et crée une nouvelle clé ; un résultat inconnu conserve la clé et les limites. | `.e2e/validation/mission-recovery-quota-fixed-20261011/report.json` et `source-scope.json` ; reproduction : `mission-quota-before-20261011` |
+
+La campagne authentifiée utilise l’app locale `http://localhost:4327`, Auth et
+Postgres réels du projet ClawDeals autorisé `gztfmpuqtpvncdcuhqxy`, avec le Redis
+REST simulé local sur le port 4413. Elle ne qualifie ni Redis déployé, ni sa
+durabilité, ni l’interface de production. Les quatre reçus `mission-fixtures/`
+signalent zéro erreur de nettoyage et zéro ligne owner/agent/listing restante
+parmi les données créées par chaque cas. Aucun email, message vendeur, paiement
+ou appel de modèle n’a été nécessaire. Les preuves Auth restent privées, sans
+trace réseau ni credentials enregistrés ; ne pas les publier dans un bundle public.
+
+Les dossiers de campagne contiennent aussi `command.json` (sélection exacte et
+source) et `completion.json`. Prérequis, cible et commandes navigateur :
+[guide de relance](./testerarmy-e2e.md#verify-the-real-first-purchase-mission).
+Commande exacte du contrôle backend de 31 cas :
+
+```bash
+npx vitest run --project node \
+  src/server/services/owner-buy-missions.test.ts \
+  src/server/utils/matching.test.ts \
+  src/server/services/watchlist-matching.test.ts \
+  src/server/services/watchlist-backfill-queue.test.ts
+```
+
+Le premier `verify:pr` a révélé trois assertions de chemins non portables sur
+macOS. La correction canonicalise la racine temporaire des fixtures ; le moteur,
+son empreinte et ses protections restent inchangés. Le contrôle complet ci-dessus
+inclut ces assertions. Le bloc « Local proof » de la PR identifie le commit final
+et distingue les contrôles exécutés de ceux réutilisés avec entrées inchangées.
+
+La correction du refus de quota a été testée sur `dd9e76e` avec les modifications
+locales identifiées dans `source-scope.json` (formulaire, messages et test).
+Les cinq empreintes restent stables pendant les six cas. Les quatre parcours
+authentifiés et les parties client inchangées sont réutilisés avec ce périmètre ;
+ce n’est pas une nouvelle exécution globale des 20 cas de la sélection client.
+
+La CI distante n’a pas été déclenchée pour ce lot. La fusion, `verify:release`
+sur le SHA fusionné, le go de thanh et la publication/vérification du déploiement
+restent à constater. Aucun de ces états n’est déduit des résultats locaux.
 
 ## Backlog après le parcours vérifié
 
