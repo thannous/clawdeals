@@ -31,7 +31,7 @@ describe("owner buy missions", () => {
     vi.resetAllMocks();
     vi.mocked(getAgentIdByOwnerId).mockResolvedValue("agent-1");
     vi.mocked(getAgentById).mockResolvedValue({ id: "agent-1", owner_id: ownerId });
-    vi.mocked(getWatchlistForOwner).mockResolvedValue({ ...body(), watchlist_id: missionId, active: true });
+    vi.mocked(getWatchlistForOwner).mockResolvedValue({ ...body(), watchlist_id: missionId, active: true, currency: "EUR" });
     vi.mocked(createWatchlist).mockImplementation(async (input: any) => ({ ...input, criteria: input.criteria, watchlist_id: missionId, market_code: input.marketCode }));
     vi.mocked(listListings).mockResolvedValue({ items: [], nextCursor: null });
   });
@@ -85,5 +85,29 @@ describe("owner buy missions", () => {
     vi.mocked(getWatchlistForOwner).mockResolvedValue(row);
     expect(await listOwnerBuyMissionMatches({ ownerId, missionId })).toEqual({ items: [], next_cursor: null, status: "EXPIRED" });
     expect(listListings).not.toHaveBeenCalled();
+  });
+
+  it("preserves agent watchlist category and delivery constraints in owner results", async () => {
+    const input = body();
+    vi.mocked(getWatchlistForOwner).mockResolvedValue({
+      ...input,
+      watchlist_id: missionId,
+      active: true,
+      currency: "EUR",
+      criteria: { ...input.criteria, tags: ["cycling"], delivery_method: "PICKUP" }
+    });
+    const listing = {
+      listing_id: "pickup", title: "City bike", status: "LIVE", market_code: "FR", currency: "EUR",
+      price_amount: 90, distance_m: 1_000, category: "cycling", delivery_method: "PICKUP"
+    };
+    vi.mocked(listListings).mockResolvedValue({ items: [
+      listing,
+      { ...listing, listing_id: "either-delivery", delivery_method: "BOTH" },
+      { ...listing, listing_id: "wrong-category", category: "electronics" },
+      { ...listing, listing_id: "shipping-only", delivery_method: "SHIPPING" },
+      { ...listing, listing_id: "unknown-delivery", delivery_method: null }
+    ], nextCursor: null });
+    const result = await listOwnerBuyMissionMatches({ ownerId, missionId });
+    expect(result.items.map((item) => item.listing_id)).toEqual(["pickup", "either-delivery"]);
   });
 });

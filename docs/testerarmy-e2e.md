@@ -47,7 +47,8 @@ The configuration loads `.env.testerarmy.local`, then `.env.local`, without over
 
 ## Verify the real first purchase mission
 
-Use `TESTERARMY_MISSION_LIVE=1` for the real authenticated first-mission journeys.
+Use `npm run test:mission` for the real authenticated first-mission journeys.
+The shortcut selects `TESTERARMY_MISSION_LIVE=1` and disables AI mode.
 This selection is exclusive of the public, historical and AI campaigns. It uses
 the same pinned SDK, exact browser steps, desktop/mobile viewports and one worker.
 It never calls a model. The default public suite cannot create these fixtures.
@@ -57,11 +58,10 @@ TESTERARMY_MISSION_LIVE=1 TESTERARMY_AI=0 \
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
   npm run test:testerarmy:list
 
-TESTERARMY_MISSION_LIVE=1 TESTERARMY_AI=0 \
 E2E_BASE_URL=http://localhost:4327 \
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
 PARITY_OUTPUT=.e2e/validation/first-mission-UNIQUE \
-  npm run test:testerarmy
+  npm run test:mission
 ```
 
 Prerequisites: an app using that exact browser/API origin, the matching
@@ -110,11 +110,35 @@ live cases above independently verify the real mission write/readback and replay
 E2E_BASE_URL=http://localhost:4327 \
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
 PARITY_OUTPUT=.e2e/validation/mission-client-UNIQUE \
-  npm run test:testerarmy -- \
-  e2e/testerarmy/mission-draft.e2e.ts \
-  e2e/testerarmy/mission-recovery.e2e.ts \
-  e2e/testerarmy/webmcp-mission-regression.e2e.ts
+  npm run test:mission:client
 ```
+
+### Local qualification on 2026-10-11
+
+Fresh runs on clean commit `7adc10d38fa9352bcc6a18ff8d375579cc1b9390`
+used Node 24.19.0, Next.js 16.4.0, `e2e` 0.18.0 and `@e2e-dev/web` 0.13.0:
+
+- `test:mission`: **4/4 passed**, desktop and mobile, in 30.84 s.
+  Canonical report: `.e2e/validation/first-mission-next164-20261011/report.json`.
+- `test:mission:client`: **14/14 passed**, comprising WebMCP 8, draft 4 and
+  lost-response recovery 2, in 18.93 s. Canonical report:
+  `.e2e/validation/mission-client-next164-20261011/report.json`.
+
+Both wrappers exited 0 with unchanged inputs. The live run used the local app
+at `http://localhost:4327`, real Auth/database services on the authorized
+disposable ClawDeals project and the existing local Redis mock on port 4413
+(`TESTERARMY_REDIS_FIXTURE=local-mock`). All four fixture receipts report no
+cleanup errors and zero remaining owned owner/agent/listing rows. Runtime logs
+in `.e2e/validation/mission-next164-runtime-20261011/app.log` contain no hydration
+or `getServerSnapshot` warnings during these journeys. These are local results,
+not CI, a deployed UI check or qualification of the deployed Redis service.
+
+The earlier reports `first-mission-realdb-20261011` (4/4) and
+`mission-client-regressions-20261011` (14/14) used Next.js 16.3.3 on the
+pre-integration working tree. They remain historical evidence, not the current
+qualification. The original draft-loss reproduction is retained separately in
+`mission-draft-before-browser-20261011`; intermediate failed runs are not recast
+as passes.
 
 ## Mission form and price-unit regressions
 

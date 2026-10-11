@@ -4,7 +4,7 @@ import { getWatchlistForOwner, listWatchlists } from "./watchlists";
 import { listListings } from "./listings";
 import { decodeListingsCursor } from "./listings-cursor";
 import { mapPublicListingRow } from "./public-listings";
-import { buildEntityTokensFromListing, tokenize } from "../utils/matching";
+import { evaluateWatchlistMatchListing, tokenize } from "../utils/matching";
 
 function serviceError(message: string, status: number, code: string) {
   return Object.assign(new Error(message), { status, code });
@@ -86,6 +86,7 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
   const items = [];
   let nextCursor: string | null = null;
   const queryTokens = tokenize(row.criteria.query);
+  const watchlist = { ...row, tags: row.criteria.tags ?? [] };
   const budget = Math.min(mission.hard_budget_max, row.criteria.price_max ?? mission.hard_budget_max);
   // Read through the same LIVE and moderation-filtered catalogue as public search.
   // Continue bounded pages because filtering another market must not mask later matches.
@@ -102,13 +103,13 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
       includeHidden: false
     });
     for (const listing of result.items) {
-      const tokens = new Set(buildEntityTokensFromListing(listing));
       const price = Number(listing.price_amount);
       const distance = Number(listing.distance_m);
       if (listing.status !== "LIVE" || listing.market_code !== row.market_code ||
         listing.currency !== mission.currency || listing.price_amount == null || !Number.isFinite(price) || price < 0 || price > budget ||
         listing.distance_m == null || !Number.isFinite(distance) || distance < 0 || distance > geo.distanceKm * 1000 ||
-        !queryTokens.length || queryTokens.some((token) => !tokens.has(token))) continue;
+        !queryTokens.length) continue;
+      if (!evaluateWatchlistMatchListing({ listing, watchlist, listingDistanceKm: distance / 1000 }).matched) continue;
       items.push(mapPublicListingRow(listing));
     }
     nextCursor = result.nextCursor;

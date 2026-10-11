@@ -235,12 +235,15 @@ export type EvaluateWatchlistMatchListingArgs = {
   listing?: any;
   watchlist?: any;
   entityTokens?: any;
+  // Trusted catalogue distance, when exact seller coordinates are intentionally omitted.
+  listingDistanceKm?: number;
 };
 
 export function evaluateWatchlistMatchListing({
   listing,
   watchlist,
-  entityTokens
+  entityTokens,
+  listingDistanceKm
 }: EvaluateWatchlistMatchListingArgs = {}): WatchlistMatchResult {
   if (!listing || typeof listing !== "object") return { matched: false, reason: { invalid: true } };
   if (!watchlist || typeof watchlist !== "object") return { matched: false, reason: { invalid: true } };
@@ -372,12 +375,12 @@ export function evaluateWatchlistMatchListing({
       return { matched: false, reason: { ...reason, geo_invalid: true } };
     }
 
-    if (!Number.isFinite(listingLat) || !Number.isFinite(listingLon)) {
+    if (listingDistanceKm === undefined && (!Number.isFinite(listingLat) || !Number.isFinite(listingLon))) {
       return { matched: false, reason: { ...reason, geo_missing: true } };
     }
 
-    const km = haversineKm(geoLat, geoLon, listingLat, listingLon);
-    if (!Number.isFinite(km)) {
+    const km = listingDistanceKm === undefined ? haversineKm(geoLat, geoLon, listingLat, listingLon) : listingDistanceKm;
+    if (!Number.isFinite(km) || km < 0) {
       return { matched: false, reason: { ...reason, geo_invalid: true } };
     }
     reason.geo_km = km;

@@ -5,6 +5,7 @@ export type OwnerMission = {
   watchlist_id: string;
   name: string;
   active: boolean;
+  status?: "ACTIVE" | "EXPIRED" | "PAUSED";
   market_code: "FR" | "GB" | "ES";
   currency: string;
   created_at: string;
@@ -20,6 +21,8 @@ export function missionView(item: OwnerMission): BuyMissionView {
 }
 
 export function missionStatus(item: OwnerMission) {
+  // The server also knows whether the mission's agent is suspended.
+  if (item.status) return item.status;
   if (!item.active) return "PAUSED";
   return Date.parse(item.criteria.mission.expires_at) <= Date.now() ? "EXPIRED" : "ACTIVE";
 }
