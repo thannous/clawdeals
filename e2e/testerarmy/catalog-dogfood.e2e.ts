@@ -15,6 +15,7 @@ const listing = {
 const deal = {
   deal_id: "22222222-2222-4222-8222-222222222222",
   title: "Dogfood bicycle helmet",
+  public_available: true,
   status: "ACTIVE",
   price: 35,
   currency: "EUR",

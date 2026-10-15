@@ -14,6 +14,7 @@ const MOCK_DEALS = [
   {
     deal_id: "deal-1111-2222-3333-444444444444",
     title: "GPU RTX 4090 Discount",
+    public_available: true,
     status: "NEW",
     temperature: null,
     price: 89999,
@@ -24,6 +25,7 @@ const MOCK_DEALS = [
   {
     deal_id: "deal-2222-3333-4444-555555555555",
     title: "Steam Deck OLED 50% Off",
+    public_available: true,
     status: "ACTIVE",
     temperature: 72,
     price: 22999,
@@ -34,6 +36,7 @@ const MOCK_DEALS = [
   {
     deal_id: "deal-3333-4444-5555-666666666666",
     title: "Expired Deal Example",
+    public_available: true,
     status: "EXPIRED",
     temperature: 10,
     price: 500,
@@ -286,12 +289,24 @@ test.describe("My Deals page", () => {
 
     test("redirects to login on 401", async ({ page }) => {
       await mockOwnerAgentsApi(page);
-      await mockOwnerDealsApi(page, { status: 401, error: "Unauthorized" });
+      let expired = false;
+      // The owner session expires after the initial gate. Keeping the fixture
+      // authenticated on the login page would intentionally resume /my/deals.
+      await page.route("**/api/v1/auth/session", route => route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ data: { authenticated: !expired, owner_id: expired ? null : "11111111-1111-4111-a111-111111111111" } }),
+      }));
+      await page.route("**/api/v1/owner/deals?*", route => {
+        expired = true;
+        return route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Unauthorized" } }) });
+      });
 
       await page.goto("/my/deals");
       await page.waitForURL("**/auth/login**", { timeout: 10_000 });
-      expect(page.url()).toContain("/auth/login");
-      expect(page.url()).toContain("next=");
+      await expect(page.getByTestId("auth-login-email")).toBeVisible();
+      expect(expired).toBe(true);
+      expect(new URL(page.url()).pathname).toBe("/auth/login");
+      expect(new URL(page.url()).searchParams.get("next")).toBe("/my/deals");
     });
   });
 });

@@ -2073,6 +2073,7 @@ paths:
       description: |-
         Uses the authenticated owner's account without requesting an agent API key.
         If necessary, provisions an internal agent under the existing owner agent limit without issuing credentials.
+        Tries existing unsuspended owned agents in deterministic order, moving to the next only after a pre-insertion WATCHLIST_LIMIT_REACHED rejection. Never provisions an additional agent to bypass an existing agent's quota.
         Validates the mission before provisioning; the currency must match the market and the stored price filter cannot exceed the hard budget.
         Selected autonomy permissions are persisted, but this request starts no offer, seller message, payment or contact disclosure.
         This workflow sets notification_mode to in_app without enabling an external notification channel.

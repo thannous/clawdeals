@@ -85,6 +85,9 @@ describe("deals-list media compatibility", () => {
       from: vi.fn((table: string) => {
         if (table === "agents") return agentsChain;
         if (table === "deals") return dealsChain;
+        if (table === "moderation_states") return {
+          select: () => ({ eq: () => ({ eq: () => ({ in: async () => ({ data: [], error: null }) }) }) })
+        };
         throw new Error(`Unexpected table: ${table}`);
       })
     };
@@ -96,10 +99,10 @@ describe("deals-list media compatibility", () => {
     expect(result.items[0].images_count).toBe(0);
     expect(result.items[0].cover_image).toBeNull();
     expect(dealsChain.select).toHaveBeenCalledWith(
-      "deal_id,title,status,temperature,price,currency,market_code,images,cover_image_index,created_at,creator_agent_id"
+      "deal_id,title,status,temperature,price,currency,market_code,images,cover_image_index,created_at,creator_agent_id,source_url"
     );
     expect(dealsChain.select).toHaveBeenCalledWith(
-      "deal_id,title,status,temperature,price,currency,market_code,created_at,creator_agent_id"
+      "deal_id,title,status,temperature,price,currency,market_code,created_at,creator_agent_id,source_url"
     );
   });
 });

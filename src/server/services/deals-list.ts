@@ -3,6 +3,7 @@ import { mapSupabaseError } from "./supabase-errors";
 import { isSyntheticDealSource } from "../utils/synthetic-deal";
 import { encodeDealsCursor } from "./deals-cursor";
 import { normalizeReadMedia } from "../media/images";
+import type { OwnerDeal } from "../../shared/owner-deals";
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
@@ -244,7 +245,7 @@ async function listDealsPage({
   return { items, nextCursor };
 }
 
-export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit = 50, cursor }: any = {}) {
+export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit = 50, cursor }: any = {}): Promise<{ items: OwnerDeal[]; nextCursor: string | null }> {
   const client = getSupabaseServiceClient();
 
   const { data: agentsData, error: agentsError } = await client
@@ -297,8 +298,8 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
     return query;
   };
 
-  const selectWithMedia = "deal_id,title,status,temperature,price,currency,market_code,images,cover_image_index,created_at,creator_agent_id";
-  const selectWithoutMedia = "deal_id,title,status,temperature,price,currency,market_code,created_at,creator_agent_id";
+  const selectWithMedia = "deal_id,title,status,temperature,price,currency,market_code,images,cover_image_index,created_at,creator_agent_id,source_url";
+  const selectWithoutMedia = "deal_id,title,status,temperature,price,currency,market_code,created_at,creator_agent_id,source_url";
 
   let { data, error } = await buildOwnerDealsQuery(selectWithMedia);
   if (error && isMissingDealMediaColumns(error)) {
@@ -309,14 +310,29 @@ export async function listDealsByOwner({ ownerId, status, creatorAgentId, limit 
   const rows = data || [];
   const hasMore = rows.length > cappedLimit;
   const rawItems = hasMore ? rows.slice(0, cappedLimit) : rows;
+  // Keep private owner history and cursor semantics; only public links depend
+  // on moderation. One bounded lookup covers the returned page, not N queries.
+  const hiddenIds = new Set<string>();
+  if (rawItems.length > 0) {
+    const { data: hidden, error: moderationError } = await client
+      .from("moderation_states")
+      .select("entity_id")
+      .eq("entity_type", "deal")
+      .eq("hidden", true)
+      .in("entity_id", rawItems.map((row: any) => row.deal_id));
+    if (moderationError) mapError(moderationError);
+    for (const state of hidden || []) hiddenIds.add(state.entity_id);
+  }
   const items = rawItems.map((row: any) => {
     const media = normalizeReadMedia({
       rawImages: row?.images,
       rawCoverImageIndex: row?.cover_image_index
     });
-    const { images, cover_image_index, ...rest } = row || {};
+    const { images, cover_image_index, source_url, ...rest } = row || {};
     return {
       ...rest,
+      public_available: ["NEW", "ACTIVE", "EXPIRED"].includes(row.status)
+        && !isSyntheticDealSource(source_url) && !hiddenIds.has(row.deal_id),
       images_count: media.images_count,
       cover_image: media.cover_image
     };

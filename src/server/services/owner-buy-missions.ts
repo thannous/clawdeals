@@ -10,8 +10,10 @@ function serviceError(message: string, status: number, code: string) {
   return Object.assign(new Error(message), { status, code });
 }
 
-async function ownerAgentId(ownerId: string, create = false): Promise<string | null> {
-  let agentId = await getAgentIdByOwnerId(ownerId, { preferUnsuspended: true });
+async function ownerAgentId(ownerId: string, create = false, excludeAgentIds: string[] = []): Promise<string | null> {
+  let agentId = await getAgentIdByOwnerId(ownerId, {
+    preferUnsuspended: true, ...(excludeAgentIds.length ? { excludeAgentIds } : {})
+  });
   if (!agentId && create) {
     try {
       const agent = await createAgentWithOwnerLimit({
@@ -31,7 +33,12 @@ async function ownerAgentId(ownerId: string, create = false): Promise<string | n
   if (!agentId) return null;
   const agent = await getAgentById(agentId);
   if (!agent || agent.owner_id !== ownerId) throw serviceError("Agent not found", 404, "NOT_FOUND");
-  if (agent.suspended_at) throw serviceError("Agent account is suspended", 403, "AGENT_SUSPENDED");
+  if (agent.suspended_at) {
+    // Selection puts all unsuspended agents first. After quota rejections, a
+    // suspended fallback means no remaining eligible agent can take the brief.
+    if (excludeAgentIds.length) return null;
+    throw serviceError("Agent account is suspended", 403, "AGENT_SUSPENDED");
+  }
   return agentId;
 }
 
@@ -51,9 +58,22 @@ export async function createOwnerBuyMission({ ownerId, body }: { ownerId: string
   if (!mission) throw serviceError("criteria.mission is required", 400, "VALIDATION_ERROR");
   // Mission creation does not authorize external messages or enable delivery channels.
   (input.criteria as any).notification_mode = "in_app";
-  const agentId = await ownerAgentId(ownerId, true);
-  const created = await createConfiguredWatchlist({ agentId, input });
-  return mapOwnerMission(created);
+  let agentId = await ownerAgentId(ownerId, true);
+  const fullAgentIds: string[] = [];
+  for (;;) {
+    try {
+      const created = await createConfiguredWatchlist({ agentId, input });
+      return mapOwnerMission(created);
+    } catch (error: any) {
+      // This exact rejection occurs before insertion. Never retry another agent
+      // after an unknown failure, or provision one to evade a watchlist quota.
+      if (error?.status !== 409 || error?.code !== "WATCHLIST_LIMIT_REACHED") throw error;
+      fullAgentIds.push(agentId);
+      const nextAgentId = await ownerAgentId(ownerId, false, fullAgentIds);
+      if (!nextAgentId) throw error;
+      agentId = nextAgentId;
+    }
+  }
 }
 
 export async function listOwnerBuyMissions({ ownerId, limit = 50, cursor = null }: any) {

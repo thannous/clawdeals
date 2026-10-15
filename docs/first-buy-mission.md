@@ -70,6 +70,22 @@ trouvées dans la description par le catalogue, tout en appliquant encore les
 contraintes de pays, devise, prix, distance, catégorie et livraison. Une requête
 composée uniquement de ponctuation ne devient pas une recherche sans filtre.
 
+Si le compte possède plusieurs agents, la création utilise les agents non
+suspendus dans un ordre stable. Quand le premier atteint ses 50 recherches
+actives, elle essaie le suivant avec les mêmes critères et permissions. Seul
+le refus `409 WATCHLIST_LIMIT_REACHED`, émis avant insertion, autorise ce passage
+au suivant ; toute autre erreur arrête la demande. Aucun agent supplémentaire
+n’est créé pour contourner le quota. La création d’un premier agent reste
+réservée aux comptes sans agent, sous leur limite existante. Les lectures
+continuent d’agréger les missions de tous les agents possédés.
+
+Cette frontière multi-agent est couverte par `owner-buy-missions.test.ts`,
+`owner-agent-selection.test.ts` et `watchlist-quota.test.ts` : un agent plein
+suivi d’un agent libre, tous pleins, suspension, première mission et erreurs
+sans repli. Les deux derniers utilisent le constructeur de requêtes Supabase
+réel avec un transport PostgREST contrôlé ; ils ne constituent pas une nouvelle
+preuve de persistance sur le backend réel ni un rejeu navigateur.
+
 Validation complémentaire du 2026-10-11 sur la branche `codex/first-buy-mission` :
 
 - `.e2e/validation/listing-mission-draft-verified-20261011/report.json` : **6/6**,

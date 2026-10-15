@@ -11,6 +11,22 @@ import test from "node:test";
 // Application browser tests do not execute this standalone Node agent, its
 // model-controlled tool loop, or its human confirmation and credential boundary.
 const listingId = "90000000-0000-4000-8000-000000000001";
+const offerId = "90000000-0000-4000-8000-000000000101";
+const invalidOfferResponses = {
+  "offer-null": () => null,
+  "offer-object-id": response => ({ ...response, offer_id: {} }),
+  "offer-invalid-id": response => ({ ...response, offer_id: "not-an-offer-id" }),
+  "offer-id-only": response => ({ offer_id: response.offer_id }),
+  "offer-wrong-listing": response => ({ ...response, listing_id: "90000000-0000-4000-8000-000000000099" }),
+  "offer-wrong-amount": response => ({ ...response, amount: 1200 }),
+  "offer-wrong-currency": response => ({ ...response, currency: "GBP" }),
+  "offer-wrong-expiry": response => ({ ...response, expires_at: new Date(Date.parse(response.expires_at) + 60000).toISOString() }),
+  "offer-invalid-status": response => ({ ...response, status: "OPEN" }),
+  "offer-invalid-thread": response => ({ ...response, thread_id: {} }),
+  "offer-invalid-buyer": response => ({ ...response, buyer_agent_id: null }),
+  "offer-invalid-seller": response => ({ ...response, seller_agent_id: "not-an-agent" }),
+  "offer-invalid-created": response => ({ ...response, created_at: "not-a-date" })
+};
 const secret = "csk-cerebras-e2e-secret-never-print";
 const terminalPayload = "\u001b[2J\u001b[H\u001b]8;;https://terminal.invalid\u0007link\u001b]8;;\u0007"
   + "\u001b]52;c;Y2xpcGJvYXJk\u001b\\\u009d52;c;Y2xpcGJvYXJk\u009c\r\b\u0000\u0085";
@@ -124,9 +140,26 @@ async function fixture(t, scenario = "success") {
       if (scenario === "approval") {
         res.writeHead(409);
         res.end(JSON.stringify({ error: { code: "APPROVAL_REQUIRED" }, approval_id: "owner-approval" }));
+      } else if (scenario.startsWith("offer-denied-")) {
+        res.writeHead(Number(scenario.slice("offer-denied-".length)));
+        res.end(JSON.stringify({ error: { code: "SUBMISSION_DENIED" } }));
+      } else if (scenario === "offer-server-error") {
+        res.writeHead(500);
+        res.end(JSON.stringify({ error: { code: "SERVER_ERROR" } }));
+      } else if (scenario === "offer-unreadable") {
+        res.writeHead(201);
+        res.end("{");
       } else {
         res.writeHead(201);
-        res.end(JSON.stringify({ offer_id: "offer-e2e", listing_id: listingId, status: "OPEN" }));
+        const offer = {
+          offer_id: offerId, thread_id: "90000000-0000-4000-8000-000000000102", listing_id: listingId,
+          buyer_agent_id: "90000000-0000-4000-8000-000000000103", seller_agent_id: "90000000-0000-4000-8000-000000000104",
+          amount: body.amount, currency: body.currency,
+          // PostgreSQL may return a different ISO representation of the same instant.
+          expires_at: new Date(body.expires_at).toISOString().replace("Z", "+00:00"),
+          status: "CREATED", created_at: new Date().toISOString(), mission_id: null
+        };
+        res.end(JSON.stringify(invalidOfferResponses[scenario] ? invalidOfferResponses[scenario](offer) : offer));
       }
     } else {
       res.writeHead(404);
@@ -385,6 +418,68 @@ test("confirmed submission preserves expiry and idempotency across reruns", asyn
   assert.deepEqual(writes[0].body, writes[1].body);
   assert.equal(writes[0].body.amount, 1100);
   assert.equal(JSON.parse(await readFile(`${f.report}.submission.json`, "utf8")).status, "submitted");
+});
+
+for (const scenario of Object.keys(invalidOfferResponses)) {
+  test(`${scenario}: ambiguous success preserves the report and retries the original offer`, async t => {
+    const f = await fixture(t, scenario);
+    assert.equal((await f.plan()).code, 0);
+    const original = await readFile(f.report, "utf8");
+    const confirmation = `ENVOYER 1100 EUR ${listingId}\n`;
+    const result = await f.run(["--submit", f.report], confirmation);
+    assert.equal(result.code, 2);
+    assert.match(result.stdout, /Envoi non confirmé/);
+    assert.equal(result.stdout.includes("Offre envoyée"), false);
+    const receipt = JSON.parse(await readFile(`${f.report}.submission.json`, "utf8"));
+    assert.equal(receipt.status, "outcome_unknown");
+    assert.equal(receipt.error, "OFFER_RESPONSE_UNCONFIRMED");
+    assert.equal(receipt.idempotency_key, JSON.parse(original).idempotency_key);
+    assert.equal(await readFile(f.report, "utf8"), original);
+    assert.equal(f.requests.filter(request => request.path.includes("/offers")).length, 1);
+    const modelCalls = f.requests.filter(request => request.path === "/v1/chat/completions").length;
+    f.setScenario("success");
+    assert.equal((await f.run(["--submit", f.report], confirmation)).code, 0);
+    const writes = f.requests.filter(request => request.path.includes("/offers"));
+    assert.equal(writes.length, 2);
+    assert.equal(writes[0].headers["idempotency-key"], writes[1].headers["idempotency-key"]);
+    assert.deepEqual(writes[0].body, writes[1].body);
+    assert.equal(await readFile(f.report, "utf8"), original);
+    assert.equal(f.requests.filter(request => request.path === "/v1/chat/completions").length, modelCalls);
+    assert.equal(JSON.parse(await readFile(`${f.report}.submission.json`, "utf8")).offer_id, offerId);
+  });
+}
+
+for (const [scenario, expectedStatus] of [
+  ["offer-denied-400", "failed"], ["offer-denied-401", "failed"], ["offer-denied-403", "failed"],
+  ["offer-server-error", "outcome_unknown"], ["offer-unreadable", "outcome_unknown"]
+]) {
+  test(`${scenario}: submission distinguishes explicit rejection from an uncertain write`, async t => {
+    const f = await fixture(t, scenario);
+    assert.equal((await f.plan()).code, 0);
+    const original = await readFile(f.report, "utf8");
+    const result = await f.run(["--submit", f.report], `ENVOYER 1100 EUR ${listingId}\n`);
+    assert.equal(result.code, 2);
+    assert.equal(result.stdout.includes("Offre envoyée"), false);
+    assert.equal(JSON.parse(await readFile(`${f.report}.submission.json`, "utf8")).status, expectedStatus);
+    assert.equal(await readFile(f.report, "utf8"), original);
+    assert.equal(f.requests.filter(request => request.path.includes("/offers")).length, 1);
+  });
+}
+
+test("a rejected retry cannot erase uncertainty about an earlier offer attempt", async t => {
+  const f = await fixture(t, "offer-object-id");
+  assert.equal((await f.plan()).code, 0);
+  const confirmation = `ENVOYER 1100 EUR ${listingId}\n`;
+  assert.equal((await f.run(["--submit", f.report], confirmation)).code, 2);
+  f.setScenario("offer-denied-403");
+  assert.equal((await f.run(["--submit", f.report], confirmation)).code, 2);
+  const receipt = JSON.parse(await readFile(`${f.report}.submission.json`, "utf8"));
+  assert.equal(receipt.status, "outcome_unknown");
+  assert.equal(receipt.error, "SUBMISSION_DENIED");
+  const writes = f.requests.filter(request => request.path.includes("/offers"));
+  assert.equal(writes.length, 2);
+  assert.equal(writes[0].headers["idempotency-key"], writes[1].headers["idempotency-key"]);
+  assert.deepEqual(writes[0].body, writes[1].body);
 });
 
 test("server owner-approval requirement is reported as blocked, not as success", async t => {

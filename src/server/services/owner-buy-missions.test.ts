@@ -11,6 +11,7 @@ vi.mock("./listings", () => ({ listListings: vi.fn() }));
 import { createAgentWithOwnerLimit, getAgentById, getAgentIdByOwnerId } from "./agents";
 import { createWatchlist, getWatchlistForOwner } from "./watchlists";
 import { listListings } from "./listings";
+import { enqueueWatchlistBackfill } from "./watchlist-backfill-queue";
 import { createOwnerBuyMission, listOwnerBuyMissionMatches } from "./owner-buy-missions";
 
 const ownerId = "10000000-0000-4000-8000-000000000001";
@@ -73,6 +74,67 @@ describe("owner buy missions", () => {
     input.criteria.mission.autonomous_actions.push("ask_question");
     const result = await createOwnerBuyMission({ ownerId, body: input });
     expect(result.criteria).toMatchObject({ price_max: 100.50, notification_mode: "in_app", mission: { hard_budget_max: 100.50, autonomous_actions: ["search", "ask_question"] } });
+  });
+
+  // A browser's intercepted API cannot prove per-agent capacity or that retrying
+  // a full agent stops before insertion. Exercise the real creation orchestration.
+  it("creates on the next owned active agent when the first has fifty active watchlists", async () => {
+    const input = body();
+    input.criteria.mission.autonomous_actions.push("ask_question", "make_offer");
+    vi.mocked(getAgentIdByOwnerId).mockResolvedValueOnce("agent-1").mockResolvedValueOnce("agent-2");
+    vi.mocked(getAgentById).mockImplementation(async id => ({ id, owner_id: ownerId }));
+    vi.mocked(createWatchlist).mockRejectedValueOnce({ status: 409, code: "WATCHLIST_LIMIT_REACHED", activeLimit: 50 });
+    const result = await createOwnerBuyMission({ ownerId, body: input });
+    expect(createWatchlist).toHaveBeenCalledTimes(2);
+    expect(createWatchlist).toHaveBeenNthCalledWith(1, expect.objectContaining({ agentId: "agent-1" }));
+    expect(createWatchlist).toHaveBeenNthCalledWith(2, expect.objectContaining({ agentId: "agent-2" }));
+    const [first, second] = vi.mocked(createWatchlist).mock.calls.map(([call]) => call);
+    expect({ ...second, agentId: first.agentId }).toEqual(first);
+    expect(result.criteria.mission.autonomous_actions).toEqual(["search", "ask_question", "make_offer"]);
+    expect(result.criteria.notification_mode).toBe("in_app");
+    expect(enqueueWatchlistBackfill).toHaveBeenCalledTimes(1);
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
+  });
+
+  it("returns the quota rejection when every owned active agent is full without provisioning", async () => {
+    vi.mocked(getAgentIdByOwnerId).mockResolvedValueOnce("agent-1").mockResolvedValueOnce("agent-2").mockResolvedValueOnce(null);
+    vi.mocked(getAgentById).mockImplementation(async id => ({ id, owner_id: ownerId }));
+    const quota = { status: 409, code: "WATCHLIST_LIMIT_REACHED", activeLimit: 50 };
+    vi.mocked(createWatchlist).mockRejectedValue(quota);
+    await expect(createOwnerBuyMission({ ownerId, body: body() })).rejects.toEqual(quota);
+    expect(createWatchlist).toHaveBeenCalledTimes(2);
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
+    expect(enqueueWatchlistBackfill).not.toHaveBeenCalled();
+  });
+
+  it("does not use a suspended fallback after the available agent reaches its quota", async () => {
+    vi.mocked(getAgentIdByOwnerId).mockResolvedValueOnce("agent-1").mockResolvedValueOnce("suspended");
+    vi.mocked(getAgentById).mockImplementation(async id => ({ id, owner_id: ownerId, suspended_at: id === "suspended" ? "2026-10-15T00:00:00Z" : null }));
+    const quota = { status: 409, code: "WATCHLIST_LIMIT_REACHED" };
+    vi.mocked(createWatchlist).mockRejectedValue(quota);
+    await expect(createOwnerBuyMission({ ownerId, body: body() })).rejects.toEqual(quota);
+    expect(createWatchlist).toHaveBeenCalledTimes(1);
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
+  });
+
+  it("provisions a first agent only when the owner has no existing agent", async () => {
+    vi.mocked(getAgentIdByOwnerId).mockResolvedValueOnce(null);
+    vi.mocked(createAgentWithOwnerLimit).mockResolvedValue({ id: "agent-1" });
+    await createOwnerBuyMission({ ownerId, body: body() });
+    expect(createAgentWithOwnerLimit).toHaveBeenCalledOnce();
+    expect(createAgentWithOwnerLimit).toHaveBeenCalledWith(expect.objectContaining({ ownerId, ownerAgentLimit: 1 }));
+    expect(createWatchlist).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    { status: 500, code: "ERROR" }, { status: 400, code: "VALIDATION_ERROR" },
+    { status: 409, code: "OWNER_AGENT_LIMIT_REACHED" }, { status: 500, code: "WATCHLIST_LIMIT_REACHED" }
+  ])("never retries another agent on $status $code", async error => {
+    vi.mocked(createWatchlist).mockRejectedValue(error);
+    await expect(createOwnerBuyMission({ ownerId, body: body() })).rejects.toEqual(error);
+    expect(createWatchlist).toHaveBeenCalledOnce();
+    expect(getAgentIdByOwnerId).toHaveBeenCalledOnce();
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
   });
 
   it("never returns cross-market, over-budget, stale or out-of-radius catalogue rows", async () => {

@@ -29,10 +29,13 @@ export async function deleteAgentById(agentId: string) {
   }
 }
 
-export async function getAgentIdByOwnerId(ownerId: string, { preferUnsuspended = false }: { preferUnsuspended?: boolean } = {}): Promise<string | null> {
+export async function getAgentIdByOwnerId(ownerId: string, {
+  preferUnsuspended = false, excludeAgentIds = []
+}: { preferUnsuspended?: boolean; excludeAgentIds?: string[] } = {}): Promise<string | null> {
   if (!ownerId) return null;
   const client = getSupabaseServiceClient();
   let query = client.from("agents").select("id").eq("owner_id", ownerId);
+  for (const agentId of excludeAgentIds) query = query.neq("id", agentId);
   if (preferUnsuspended) {
     // Keep a suspended fallback so the caller can reject it instead of creating
     // another agent and bypassing the owner's suspension/agent-limit checks.

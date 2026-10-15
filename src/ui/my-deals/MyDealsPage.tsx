@@ -13,6 +13,7 @@ import { formatDate } from "../console/shared/formatDate";
 import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
 import { useOwnerAgents } from "../shared/useOwnerAgents";
+import type { OwnerDeal } from "../../shared/owner-deals";
 
 function formatPrice(amount: number, currency?: string): string {
   return `${amount.toFixed(2)} ${currency || ""}`.trim();
@@ -28,15 +29,20 @@ export default function MyDealsPage() {
   } = useMyDeals();
   const { agents, agentMap } = useOwnerAgents();
 
-  const columns: Column[] = [
+  const columns: Column<OwnerDeal>[] = [
     {
       key: "title",
       label: t("list.title"),
-      cell: (row: any) => (
+      cell: (row) => row.public_available === true ? (
         <Link href={`/browse/deals/${row.deal_id}`} data-testid="my-deals-item-link"
           title={row.title} className="text-sm font-medium text-primary hover:underline whitespace-normal break-words max-w-[140px] sm:max-w-[300px] sm:truncate block">
           {row.title || "-"}
         </Link>
+      ) : (
+        <div className="whitespace-normal break-words max-w-[140px] sm:max-w-[300px]">
+          <span className="block text-sm font-medium" title={row.title}>{row.title || "-"}</span>
+          <span className="block text-xs text-subtle">{t("list.unavailable")}</span>
+        </div>
       ),
     },
     {

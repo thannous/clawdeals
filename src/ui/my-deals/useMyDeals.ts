@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
+import type { OwnerDeal, OwnerDealsResponse } from "../../shared/owner-deals";
 
 const PAGE_SIZE = 50;
 
@@ -25,7 +26,7 @@ export function useMyDeals() {
   const [authRequired, setAuthRequired] = useState(false);
   const sessionGate = useOwnerSessionGate();
 
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<OwnerDeal[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [fetchState, setFetchState] = useState("idle");
   const [loadMoreState, setLoadMoreState] = useState("idle");
@@ -81,7 +82,7 @@ export function useMyDeals() {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body?.error?.message || `HTTP ${resp.status}`);
       }
-      const data = await resp.json();
+      const data: OwnerDealsResponse = await resp.json();
       const deals = data?.data?.deals || [];
       if (append) {
         setItems((prev) => [...prev, ...deals]);

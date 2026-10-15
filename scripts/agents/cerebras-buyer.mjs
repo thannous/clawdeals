@@ -23,6 +23,14 @@ const offerSchema = z.object({
   currency: z.enum(["EUR", "GBP"]), rationale: z.string().min(1).max(2000),
   unknowns: z.array(z.string().max(300)).max(10)
 }).strict();
+// POST create and its idempotent replay return the original CREATED OfferV1.
+const createdOfferSchema = z.object({
+  offer_id: z.string().uuid(), thread_id: z.string().uuid(), listing_id: z.string().uuid(),
+  buyer_agent_id: z.string().uuid(), seller_agent_id: z.string().uuid(),
+  amount: z.number().int().min(0).max(2147483647), currency: z.enum(["EUR", "GBP"]),
+  expires_at: z.string().datetime({ offset: true }), status: z.literal("CREATED"),
+  created_at: z.string().datetime({ offset: true })
+});
 const schemas = {
   search_listings: z.object({ query: z.string().max(200).nullable(), cursor: z.string().max(2000).nullable() }).strict(),
   get_listing: z.object({ listing_id: z.string().uuid() }).strict(),
@@ -302,19 +310,32 @@ async function submit(config, path) {
     console.log("Annulé : aucune offre envoyée.");
     return;
   }
-  const receipt = { run_id: report.run_id, attempted_at: new Date().toISOString(), status: "failed" };
+  let previousOutcomeUnknown = false;
+  try {
+    const previous = JSON.parse(await readFile(`${path}.submission.json`, "utf8"));
+    previousOutcomeUnknown = previous.run_id === report.run_id && previous.idempotency_key === report.idempotency_key &&
+      previous.status === "outcome_unknown";
+  } catch { /* No readable previous receipt for this attempt. */ }
+  const receipt = { run_id: report.run_id, idempotency_key: report.idempotency_key,
+    attempted_at: new Date().toISOString(), status: "outcome_unknown" };
   try {
     const response = await request(`${config.apiBase}/v1/listings/${offer.listing_id}/offers`, {
       method: "POST", key: env.CLAWDEALS_API_KEY,
       headers: { "Idempotency-Key": report.idempotency_key, "x-request-id": randomUUID(), "x-clawdeals-origin": "cerebras-buyer" },
       body: { amount: offer.amount, currency: offer.currency, expires_at: report.expires_at }
     });
-    if (!response.offer_id) throw failure("OFFER_RESPONSE_UNCONFIRMED");
+    const confirmed = createdOfferSchema.safeParse(response);
+    if (!confirmed.success || confirmed.data.listing_id !== offer.listing_id ||
+        confirmed.data.amount !== offer.amount || confirmed.data.currency !== offer.currency ||
+        Date.parse(confirmed.data.expires_at) !== expiry) throw failure("OFFER_RESPONSE_UNCONFIRMED");
     receipt.status = "submitted";
-    receipt.offer_id = response.offer_id;
-    console.log(`Offre envoyée : ${safeText(response.offer_id)}. Suivi : https://app.clawdeals.com/my/offers`);
+    receipt.offer_id = confirmed.data.offer_id;
+    console.log(`Offre envoyée : ${receipt.offer_id}. Suivi : https://app.clawdeals.com/my/offers`);
   } catch (error) {
-    receipt.status = error.code === "APPROVAL_REQUIRED" ? "approval_required" : "failed";
+    const definitiveRejection = error.status >= 400 && error.status < 500 && error.status !== 408 &&
+      error.code !== "IDEMPOTENCY_IN_PROGRESS";
+    receipt.status = previousOutcomeUnknown || !definitiveRejection ? "outcome_unknown"
+      : error.code === "APPROVAL_REQUIRED" ? "approval_required" : "failed";
     receipt.error = error.code || "OFFER_RESPONSE_UNCONFIRMED";
     console.log(receipt.status === "approval_required" ? "Validation propriétaire requise : https://app.clawdeals.com/my/approvals" : `Envoi non confirmé : ${receipt.error}. Relance avec le même rapport pour conserver l’idempotence.`);
     process.exitCode = 2;

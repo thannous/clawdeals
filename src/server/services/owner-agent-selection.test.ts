@@ -20,6 +20,10 @@ function database(rows: Agent[]) {
       const url = new URL(String(input));
       if (url.pathname !== "/rest/v1/agents" || (init?.method || "GET") !== "GET") throw new Error("Unexpected agent write.");
       let selected = rows.filter(row => `eq.${row.owner_id}` === url.searchParams.get("owner_id"));
+      for (const filter of url.searchParams.getAll("id")) {
+        if (!filter.startsWith("neq.")) throw new Error("Unexpected agent exclusion filter.");
+        selected = selected.filter(row => row.id !== filter.slice(4));
+      }
       const ordering = (url.searchParams.get("order") || "").split(",").filter(Boolean);
       selected = [...selected].sort((a, b) => {
         for (const term of ordering) {
@@ -61,6 +65,15 @@ describe("owner mission agent selection", () => {
   it("returns a suspended agent when that is all the owner has, preserving the service's refusal", async () => {
     database([own("suspended", "2026-10-14T00:00:00Z")]);
     expect(await getAgentIdByOwnerId("owner", { preferUnsuspended: true })).toBe("suspended");
+  });
+
+  it("excludes already full agents while retaining owned, deterministic, unsuspended selection", async () => {
+    database([
+      own("full-a"), own("full-b"), own("remaining", null, "2026-10-14T00:00:00Z"),
+      own("suspended", "2026-10-14T00:00:00Z"), { ...own("foreign"), owner_id: "other" }
+    ]);
+    expect(await getAgentIdByOwnerId("owner", { preferUnsuspended: true, excludeAgentIds: ["full-a", "full-b"] })).toBe("remaining");
+    expect(await getAgentIdByOwnerId("owner", { preferUnsuspended: true, excludeAgentIds: ["full-a", "full-b", "remaining", "suspended"] })).toBeNull();
   });
 
   it("returns null for an owner without agents without changing legacy selection", async () => {

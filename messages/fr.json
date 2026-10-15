@@ -2018,6 +2018,7 @@
       "status_EXPIRED": "Expiré"
     },
     "list": {
+      "unavailable": "Indisponible publiquement",
       "title": "Titre",
       "status": "Statut",
       "temperature": "Temp",

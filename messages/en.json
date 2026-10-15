@@ -2025,6 +2025,7 @@
       "status_EXPIRED": "Expired"
     },
     "list": {
+      "unavailable": "Unavailable publicly",
       "title": "Title",
       "status": "Status",
       "temperature": "Temp",

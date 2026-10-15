@@ -145,13 +145,19 @@ Toute autre réponse annule l’envoi. Le modèle ne participe pas à cette éta
 Après confirmation, un seul POST d’offre est tenté. Le rapport de soumission
 est enregistré à côté du JSON : `proposition.json.submission.json`.
 
-- `submitted` : l’API a retourné un identifiant d’offre ; suis-la dans
+- `submitted` : l’API a retourné une offre `CREATED` complète, avec des identifiants
+  UUID valides et l’annonce, le montant, la devise et l’expiration confirmés ; suis-la dans
   [Mes offres](https://app.clawdeals.com/my/offers).
 - `approval_required` : l’offre nécessite une action dans
   [Mes validations](https://app.clawdeals.com/my/approvals). Ce résultat ne prouve
   pas que l’offre a été envoyée.
-- `failed` : l’envoi n’est pas confirmé. Pour réessayer, utilise **le même JSON** :
-  le montant, l’expiration et la clé d’idempotence restent identiques.
+- `outcome_unknown` : l’envoi peut avoir abouti mais la réponse est inexploitable,
+  incohérente, absente ou en erreur serveur. Vérifie d’abord [Mes offres](https://app.clawdeals.com/my/offers).
+  Pour réessayer, utilise **le même JSON** : le montant, l’expiration et la clé
+  d’idempotence restent identiques. Un refus ultérieur ne résout pas l’incertitude
+  d’une tentative précédente ; seule une réponse d’offre confirmée la résout.
+- `failed` : l’API a explicitement refusé cette tentative, sans tentative précédente
+  encore incertaine. Le code du refus est conservé dans le rapport de soumission.
 
 La proposition expire après 24 heures ; après expiration ou à moins de dix
 minutes de celle-ci, relance une mission. Les pages publiques peuvent être mises
@@ -199,6 +205,9 @@ annonce retrouvée après la première page, le repli textuel paginé et l’arr
 offre face à des curseurs répétés, trop de pages ou une annonce hors limites.
 Les séquences C1 incomplètes du modèle ou d’une annonce sont aussi testées lors
 de l’enregistrement des rapports, de leur soumission et des échanges d’outils.
+Les réponses d’offre incomplètes ou incohérentes conservent le rapport et la clé
+du premier envoi ; un rejeu valide est distingué des refus explicites et des
+réponses encore incertaines.
 Les sorties de processus sont
 conservées dans `/private/tmp/clawdeals-cerebras-e2e-*`. Ils ne prouvent ni un appel
 Cerebras réel ni l’enregistrement d’une offre dans la base de production.
