@@ -21,6 +21,10 @@ of copying or fully rehashing them at each review. Reused evidence remains label
 as reuse. Documentation-only follow-ups need diff/link checks, not another browser
 corpus or production campaign. See [operating policy](../AGENTS.md).
 
+The [15 October dogfooding report](dogfooding-2026-10-15.md) records the current
+catalogue, mission validation, authentication, profile and agent-setup regressions,
+their desktop/mobile results, real-service boundaries and exact replay commands.
+
 ## Run the public journeys
 
 Use the repository's Node 24.19.0/npm versions:

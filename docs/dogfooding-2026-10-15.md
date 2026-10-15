@@ -26,6 +26,41 @@ Les anciennes attentes de connexion sont actualisées uniquement pour conserver
 Les contre-exemples couvrent une mission localisée et une destination externe
 refusée. Les protections et contrôles de livraison ne sont pas assouplis.
 
+## Résultats et identité
+
+Les campagnes finales ont exécuté le commit propre
+`e0a868f81dc3bdb1518ed925b29a4406191d2923`, sur l’application locale à
+`http://localhost:4327`. Les trois reçus finaux ci-dessous indiquent un code de
+sortie 0, des entrées stables et aucune erreur du journal du runner.
+
+| Vérification | Résultat | Rapport local conservé |
+| --- | --- | --- |
+| Parcours client desktop/mobile | 82/82, 135,52 s | `.e2e/validation/dogfood-final-e0a868f/summary.md` |
+| Missions avec Auth/Postgres réels | 4/4, 58,18 s | `.e2e/validation/dogfood-live-e0a868f/summary.md` |
+| Rejeu authentification historique | 3/3, 5,12 s | `.e2e/validation/dogfood-historical-auth-e0a868f/summary.md` |
+| Contrats PR | `npm run verify:pr` réussi ; 5 contrôles exécutés, 7 réutilisés | Preuve locale pour l’arbre `1f6e9d6268baf978239621d5fd825e5f0a713133` |
+
+Le vérificateur a notamment exécuté les tests unitaires : 217 fichiers,
+787 tests réussis et 1 ignoré. Il a aussi vérifié TypeScript, les traductions,
+le lint des fichiers concernés et les SDK. Ce résultat est local, pas un statut CI.
+Les quatre fixtures réelles ont été nettoyées sans erreur, avec zéro ligne
+propriétaire/agent/annonce restante parmi les identités créées par la campagne.
+
+Le corpus historique initial conserve son résultat **179/181**, en 312,70 s,
+dans `.e2e/validation/dogfood-historical-20261015/summary.md`. Les deux échecs
+étaient des attentes de liens qui omettaient désormais `next`. Après correction
+de ces attentes, les trois cas d’authentification ont été rejoués avec succès.
+Les **178 autres cas réussis sont réutilisés** : aucune de leurs entrées
+sélectionnées n’a changé. Le premier reçu reste `inputStable:false`, car trois
+fichiers de tests ont changé pendant l’exécution, dont deux hors sélection.
+Ce n’est donc pas une exécution fraîche intégrale des 181 cas sur le commit final.
+
+Ces 26 familles historiques incluent les annonces et bons plans, les identités,
+la connexion d’appareil, les réglages, WebMCP et la console (approbations, audit,
+annonces, messages et contrôle d’accès). Un rapport illustré privé est conservé
+dans `.e2e/dogfood-20261015/rapport.md`. Les ajouts documentaires qui suivent
+réutilisent ces preuves applicatives ; ils ne sont pas présentés comme un rejeu.
+
 ## Relancer
 
 Démarrer l’application locale selon [le guide TesterArmy](testerarmy-e2e.md),
@@ -48,6 +83,8 @@ E2E_BASE_URL=http://localhost:4327 \
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
 PARITY_OUTPUT=.e2e/validation/dogfood-historical-new-run \
 mise exec node@24.19.0 -- node e2e/testerarmy/run-historical.mjs run
+
+mise exec node@24.19.0 java@temurin-17.0.20+101 python@3.11.17 -- npm run verify:pr
 ```
 
 Le parcours réel utilise Auth et Postgres du projet ClawDeals jetable autorisé,
