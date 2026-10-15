@@ -21,7 +21,7 @@ for (const storageFailure of ["throws", "drops-write"]) {
       const setItem = Storage.prototype.setItem;
       (window as any).__restoreRequestStorage = () => { Storage.prototype.setItem = setItem; };
       Storage.prototype.setItem = function(key, value) {
-        if (key === "clawdeals:buy-mission-request:v1") {
+        if (key.startsWith("clawdeals:buy-mission-request:")) {
           if (failure === "throws") throw new DOMException("Storage denied", "QuotaExceededError");
           return;
         }
@@ -43,7 +43,7 @@ for (const storageFailure of ["throws", "drops-write"]) {
     await expect.poll(() => writes.length).toBe(1);
     await expect(review.getByRole("button", "Confirmer la mission")).toBeEnabled();
     await expect(review.getByRole("button", "Modifier")).toBeDisabled();
-    const saved = await browser.evaluate(() => JSON.parse(sessionStorage.getItem("clawdeals:buy-mission-request:v1")!));
+    const saved = await browser.evaluate(() => JSON.parse(sessionStorage.getItem("clawdeals:buy-mission-request:v2:11111111-1111-4111-8111-111111111111")!));
     expect(saved).toMatchObject({ ownerId, key: writes[0].key, fingerprint: writes[0].body });
     expect(saved.input.hard_budget_max).toBe(83.25);
     await browser.reload();
@@ -84,12 +84,12 @@ for (const scenario of ["changed-owner", "signed-out", "changed-owner-after-unce
       await expect(review.getByRole("button", "Confirmer la mission")).toBeEnabled();
       await expect(review.getByRole("button", "Modifier")).toBeDisabled();
     }
-    const originalRequest = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v1"));
+    const originalRequest = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v2:11111111-1111-4111-8111-111111111111"));
     activeOwner = scenario === "signed-out" ? null : "22222222-2222-4222-8222-222222222222";
     await review.getByRole("button", "Confirmer la mission").click();
     await expect(review.getByRole("alert")).toContainText(scenario === "signed-out" ? "session a expiré" : "compte a changé");
     expect(writes).toHaveLength(recovering ? 1 : 0);
-    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v1"))).toBe(originalRequest);
+    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v2:11111111-1111-4111-8111-111111111111"))).toBe(originalRequest);
     await app.screenshot(`mission-owner-guard-${scenario}`);
     activeOwner = originalOwner;
     await review.getByRole("button", "Confirmer la mission").click();
@@ -204,6 +204,8 @@ for (const firstResponseLost of [false, true]) {
     if (firstResponseLost) {
       await expect(edit).toBeDisabled();
       expect(writes).toHaveLength(1);
+      await browser.reload();
+      await screen.getByRole("button", "Vérifier ma mission").click();
       await screen.getByRole("region", "Vérifier ma mission").getByRole("button", "Confirmer la mission").click();
     }
     await expect(edit).toBeEnabled();

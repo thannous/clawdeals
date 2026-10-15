@@ -37,7 +37,7 @@ test("a magic link in a separate tab preserves the private draft in its original
   await screen.getByTestId("auth-login-submit").click();
   await expect(screen.getByTestId("auth-login-resume-mission")).toBeVisible();
   expect(sends).toEqual([{ email: "synthetic-owner@example.test", next: missionPath }]);
-  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v1"));
+  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"));
   expect(originalDraft).toContain("Mon brouillon privé");
 
   // The engine's browser fixture exposes one active tab. Its supported surface
@@ -48,7 +48,7 @@ test("a magic link in a separate tab preserves the private draft in its original
   try {
     const emailUrl = `${origin}/fr/auth/verify?session_id=synthetic-session&token=synthetic-token&next=${encodeURIComponent(sends[0].next)}`;
     await emailTab.goto(emailUrl);
-    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v1"))).toBeNull();
+    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
     await emailTab.getByTestId("auth-verify-resend").click();
     await expect.poll(() => sends.length).toBe(2);
     expect(sends[1]).toEqual(sends[0]);
@@ -60,9 +60,9 @@ test("a magic link in a separate tab preserves the private draft in its original
     const folder = join(process.env.PARITY_OUTPUT || ".e2e", "handoff-screenshots");
     await mkdir(folder, { recursive: true });
     await emailTab.screenshot({ path: join(folder, `magic-link-independent-tab-${width}.png`), fullPage: true });
-    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v1"))).toBeNull();
+    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
     expect(emailTab.url()).not.toContain("brouillon");
-    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v1"))).toBe(originalDraft);
+    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBe(originalDraft);
     await screen.getByTestId("auth-login-resume-mission").click();
     await expect(browser).toHaveURL(missionPath);
     await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("Mon brouillon privé, cadre bas et panier");
@@ -74,4 +74,25 @@ test("a magic link in a separate tab preserves the private draft in its original
   } finally {
     await emailTab.close();
   }
+});
+
+// An already owned draft must also survive reauthentication in its original tab.
+test("a same-tab magic link restores only the reconnecting owner's mission draft", async ({ app, browser, screen }) => {
+  const origin = new URL(app.baseUrl!).origin;
+  const ownerId = "11111111-1111-4111-8111-111111111111";
+  let authenticated = true;
+  await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method) ? route.continue() : route.abort());
+  await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: { authenticated, owner_id: authenticated ? ownerId : null } } }));
+  await browser.route("**/api/v1/policies", route => route.fulfill({ json: { data: {} } }));
+  await browser.route("**/api/v1/auth/login:confirm", async route => { authenticated = true; await route.fulfill({ json: { data: { authenticated: true } } }); });
+  const next = "/fr/my/missions/new?query=velo&price_max=83.25";
+  await app.open(next);
+  await screen.getByRole("textbox", "Exigences minimales").fill("Brouillon privé du propriétaire reconnecté");
+  authenticated = false;
+  await screen.getByRole("button", "Vérifier ma mission").click();
+  await expect(screen.getByTestId("auth-login-email")).toBeVisible();
+  await app.open(`/fr/auth/verify?session_id=synthetic-session&token=synthetic-token&next=${encodeURIComponent(next)}`);
+  await screen.getByTestId("auth-verify-submit").click();
+  await expect(browser).toHaveURL(next);
+  await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("Brouillon privé du propriétaire reconnecté");
 });

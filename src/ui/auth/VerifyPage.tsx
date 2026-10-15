@@ -13,6 +13,7 @@ import {
   clearStoredOwnerSessionId,
   clearStoredOwnerSessionToken
 } from "./ownerAuth";
+import { probeOwnerSession } from "./ownerSessionProbe";
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
 import { missionDraftSourceFromUrl, readBuyMissionDraft } from "../webmcp/buyMissionDraft";
@@ -105,7 +106,8 @@ function useVerifyPageView() {
         } catch { /* An explicit next URL also works without browser storage. */ }
         const destination = safeRedirectUrl(next ?? "/settings/identities");
         const draftSource = missionDraftSourceFromUrl(destination);
-        if (draftSource !== null && !readBuyMissionDraft(draftSource)) {
+        const owner = draftSource !== null ? await probeOwnerSession({ fresh: true }) : null;
+        if (draftSource !== null && !readBuyMissionDraft(draftSource, owner?.state === "authenticated" ? owner.ownerId : null)) {
           // sessionStorage belongs to the original tab. Do not imply that its
           // private edits followed the email link into this independent tab.
           setMissionReturn(destination);

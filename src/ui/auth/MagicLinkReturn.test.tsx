@@ -52,7 +52,7 @@ describe("Magic link mission return", () => {
     mocks.waitForOwnerSessionReady.mockResolvedValue(false);
     mocks.fetch.mockImplementation(async (url: string) => url === "/api/v1/auth/login:start"
       ? reply({ session_id: "synthetic-session", session_token: "synthetic-token" })
-      : reply({ authenticated: true }));
+      : reply({ authenticated: true, owner_id: "11111111-1111-4111-8111-111111111111" }));
     vi.stubGlobal("fetch", mocks.fetch);
   });
 
@@ -85,13 +85,13 @@ describe("Magic link mission return", () => {
       ...(source === "query" ? { next: missionPath } : {}) };
     sessionStorage.setItem(nextKey, source === "stored" ? missionPath : "/settings/account");
     saveBuyMissionDraft(missionDraftSourceFromUrl(missionPath)!, savedDraft);
-    const rawDraft = sessionStorage.getItem("clawdeals:buy-mission-draft:v1");
+    const rawDraft = sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous");
     mocks.waitForOwnerSessionReady.mockResolvedValue(true);
     render(withMessages(<VerifyPage />));
     fireEvent.click(screen.getByTestId("auth-verify-submit"));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(missionPath, undefined, { locale: false }));
     expect(sessionStorage.getItem(nextKey)).toBeNull();
-    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v1")).toBe(rawDraft);
+    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous")).toBe(rawDraft);
   });
 
   it("rejects an external destination even when a previous stored destination exists", async () => {
@@ -113,7 +113,7 @@ describe("Magic link mission return", () => {
     expect(link.getAttribute("href")).toBe(missionPath);
     expect(screen.getByText(/Return to the tab where you prepared your mission/)).toBeTruthy();
     expect(mocks.replace).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v1")).toEqual(draft === "missing" ? null : expect.any(String));
+    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous")).toEqual(draft === "missing" ? null : expect.any(String));
   });
 
   it.each(["query", "stored"])("keeps the %s destination when requesting a replacement email", async (source) => {

@@ -187,6 +187,10 @@ server commits a mission but its response is lost. The recovery case models only
 that network failure: it verifies that editing is blocked while the outcome is
 unknown, and that reload/retry preserves the exact body and idempotency key. The
 live cases above independently verify the real mission write/readback and replay.
+`mission-owner-recovery.e2e.ts` additionally checks A → B → A in one tab,
+per-owner drafts and attempts, legacy storage migration, expired-request replay
+and storage failures. These are intercepted client regressions, not real backend
+account-switch evidence.
 A server-paused mission remains paused in the list and detail even if its stored
 active flag is true. Confirmed quota rejections release editing and the rejected
 idempotency key, including after a lost rejection response; uncertain creation
@@ -246,6 +250,12 @@ watchlist POST validate the client journey; they do not prove authenticated back
 persistence. The price comparison uses 75- and 180-unit listing fixtures. Public
 GETs not intercepted by these fixtures may reach the configured backend; all other
 mutations and external requests are blocked.
+
+`webmcp-response-recovery.e2e.ts` checks uncertain creation replies and retries
+using the originally approved arguments, idempotency key and agent identity,
+including edited confirmation JSON, duplicate submissions, agent-key changes,
+late responses and malformed success payloads. Retry state belongs to the mounted
+panel; this suite does not claim persistence across reloads or independent tabs.
 
 Run against a local app with `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_API_BASE_URL`
 pointing at that app. WebMCP is enabled on these marketplace routes automatically:

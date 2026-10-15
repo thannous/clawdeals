@@ -10,6 +10,7 @@ type CallOptions = {
   requestId?: string;
   idempotencyKey?: string | null;
   signal?: AbortSignal;
+  apiKey?: string | null;
 };
 
 type AuthMode = "required" | "owner_session" | "none";
@@ -60,7 +61,7 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
   if (options.signal?.aborted) {
     return stableError(requestId, "ABORTED", "Tool execution was cancelled");
   }
-  const apiKey = options.auth === "required" ? getStoredApiKey() : null;
+  const apiKey = options.auth === "required" ? (options.apiKey === undefined ? getStoredApiKey() : options.apiKey) : null;
   if (options.auth === "required" && !apiKey) {
     return stableError(requestId, "UNAUTHORIZED", "API key required; go to /start");
   }
@@ -117,6 +118,11 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
         data: payload as T,
         meta: { request_id: resRequestId }
       };
+    }
+
+    // A server/gateway timeout or failure may occur after the mutation commits.
+    if (options.method === "POST" && (res.status >= 500 || res.status === 408)) {
+      return unknownWriteOutcome(resRequestId);
     }
 
     const err = (payload as any)?.error;

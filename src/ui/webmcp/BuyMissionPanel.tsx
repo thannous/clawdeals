@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore }
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 
-import { useWebMcp } from "../../webmcp/WebMcpProvider";
+import { useWebMcp, type PendingToolAttempt } from "../../webmcp/WebMcpProvider";
 import { getActiveBuyMission, subscribeActiveBuyMission, type BuyMissionView } from "../../webmcp/ui-bridge";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
 import { getStoredApiKey } from "../developer/storage";
@@ -105,14 +105,17 @@ function formatCeiling(value: string, market: MarketCode, locale: string): strin
 }
 
 export function describeMissionResult(
-  result: { ok: true; meta?: { request_id?: string } } | { ok: false; error: { code: string; message: string } },
-  ceiling: string
+  result: { ok: true; data?: { mission?: { hard_budget_max?: number; currency?: string } }; meta?: { request_id?: string } } | { ok: false; error: { code: string; message: string } },
+  ceiling: string,
+  locale = "en"
 ): { key: string; values?: Record<string, string>; code: string | null } {
   if (result.ok === true) {
     return {
       key: result.meta?.request_id ? "mission.result.createdWithReceipt" : "mission.result.created",
       values: {
-        ceiling,
+        ceiling: result.data?.mission && Number.isFinite(result.data.mission.hard_budget_max) && ["EUR", "GBP"].includes(result.data.mission.currency || "")
+          ? new Intl.NumberFormat(locale, { style: "currency", currency: result.data.mission.currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(result.data.mission.hard_budget_max!)
+          : ceiling,
         requestId: result.meta?.request_id?.slice(0, 8) || ""
       },
       code: null
@@ -276,6 +279,7 @@ export function prefillFromListing(input: {
 type FormProps = {
   prefill?: BuyMissionPrefill | null;
   draftSource?: string;
+  draftOwnerId?: string | null;
   submitLabel?: string;
   submitHint?: string;
   executeMission: (args: BuyMissionInput, context: { draftSaved: boolean }) => Promise<StableToolResult>;
@@ -283,7 +287,7 @@ type FormProps = {
 
 export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefill | null } = {}) {
   const { executeTool } = useWebMcp();
-  const attempts = useRef(new Map<string, Promise<StableToolResult>>());
+  const attempts = useRef(new Map<string, PendingToolAttempt>());
   return <BuyMissionForm prefill={prefill} executeMission={async (args) => {
     const apiKey = getStoredApiKey();
     if (!apiKey) {
@@ -297,7 +301,7 @@ export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefi
   }} />;
 }
 
-export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, executeMission }: FormProps) {
+export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, submitLabel, submitHint, executeMission }: FormProps) {
   const t = useTranslations("webmcp");
   const locale = useLocale();
   const restoredDraft = useRef(false);
@@ -353,7 +357,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
 
   useEffect(() => {
     if (!draftSource) return;
-    const saved = readBuyMissionDraft(draftSource);
+    const saved = readBuyMissionDraft(draftSource, draftOwnerId);
     if (saved) {
       restoredDraft.current = true;
       setQuery(saved.query);
@@ -370,13 +374,13 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
       setExpiresAt(saved.expiresAt);
     }
     setDraftReady(true);
-  }, [draftSource]);
+  }, [draftSource, draftOwnerId]);
 
   useEffect(() => {
-    if (draftSource && draftReady) setStorageError(!saveBuyMissionDraft(draftSource, draft));
+    if (draftSource && draftReady) setStorageError(!saveBuyMissionDraft(draftSource, draft, draftOwnerId));
   // Each draft field is intentionally a dependency; never overwrite it with a stale closure.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftSource, draftReady, query, marketCode, cityPreset, locationLabel, latitude, longitude,
+  }, [draftSource, draftOwnerId, draftReady, query, marketCode, cityPreset, locationLabel, latitude, longitude,
     radiusKm, preferredPriceMax, hardBudgetMax, requirements, autonomousActions, expiresAt]);
 
   useEffect(() => {
@@ -504,7 +508,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
       setSubmitting(false);
       return;
     }
-    const draftSaved = draftSource ? saveBuyMissionDraft(draftSource, draft) : true;
+    const draftSaved = draftSource ? saveBuyMissionDraft(draftSource, draft, draftOwnerId) : true;
     const execution: Promise<StableToolResult> = Promise.resolve()
       .then(() => executeMission(parsed.data, { draftSaved }))
       .catch(() => ({
@@ -515,8 +519,8 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
 
     // Observe completion for both human and agent submits, including rejected executions.
     void execution.then((result) => {
-      if (result.ok && draftSource) clearBuyMissionDraft();
-      setResultMessage(describeMissionResult(result, formatCeiling(hardBudgetMax, marketCode, locale)));
+      if (result.ok && draftSource) clearBuyMissionDraft(draftOwnerId);
+      setResultMessage(describeMissionResult(result, formatCeiling(hardBudgetMax, marketCode, locale), locale));
       setSubmitting(false);
     });
 

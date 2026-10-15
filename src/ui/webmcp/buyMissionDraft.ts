@@ -1,7 +1,10 @@
 import { z } from "zod";
+import { legacyMissionRequestOwner } from "../my-missions/missionRequestRecovery";
 
 const DRAFT_KEY = "clawdeals:buy-mission-draft:v1";
+const ANONYMOUS_KEY = "clawdeals:buy-mission-draft:v2:anonymous";
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const ownerDraftKey = (ownerId: string) => `clawdeals:buy-mission-draft:v2:${ownerId}`;
 
 const draftSchema = z.object({
   query: z.string().max(80),
@@ -38,32 +41,68 @@ export function missionDraftSourceFromUrl(next: string): string | null {
 
 // Tab-scoped storage survives sign-in redirects without putting a private brief
 // in URLs or keeping it indefinitely on a shared computer.
-export function readBuyMissionDraft(source: string): BuyMissionDraft | null {
+function draftOwner(saved: { ownerId?: string } | null, key: string): string | null {
+  return saved?.ownerId || (key === DRAFT_KEY ? legacyMissionRequestOwner() : null);
+}
+
+export function readBuyMissionDraft(source: string, ownerId: string | null = null): BuyMissionDraft | null {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    if (!raw) return null;
-    const saved = JSON.parse(raw);
-    if (saved.source !== source || typeof saved.at !== "number" || Date.now() - saved.at > MAX_AGE_MS) return null;
-    const parsed = draftSchema.safeParse(saved.draft);
-    return parsed.success ? parsed.data : null;
-  } catch {
+    const keys = [...(ownerId ? [ownerDraftKey(ownerId)] : []), ANONYMOUS_KEY, DRAFT_KEY];
+    for (const key of keys) {
+      const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (!saved) continue;
+      const savedOwner = draftOwner(saved, key);
+      if (savedOwner && savedOwner !== ownerId) continue;
+      if (saved.source !== source || typeof saved.at !== "number" || Date.now() - saved.at > MAX_AGE_MS) continue;
+      const parsed = draftSchema.safeParse(saved.draft);
+      if (parsed.success) return parsed.data;
+    }
     return null;
-  }
+  } catch { return null; }
 }
 
-export function saveBuyMissionDraft(source: string, draft: BuyMissionDraft): boolean {
+// A legacy request is the only trustworthy owner evidence for an unmarked v1
+// draft. Persist that evidence before the request can be cleared after a refusal.
+export function claimLegacyBuyMissionDraft(ownerId: string): boolean {
   try {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ source, at: Date.now(), draft }));
-    return true;
-  } catch {
-    return false;
-  }
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null");
+    if (!saved || saved.ownerId || legacyMissionRequestOwner() !== ownerId) return true;
+    const claimed = JSON.stringify({ ...saved, ownerId });
+    sessionStorage.setItem(DRAFT_KEY, claimed);
+    return sessionStorage.getItem(DRAFT_KEY) === claimed;
+  } catch { return false; }
 }
 
-export function clearBuyMissionDraft() {
+export function saveBuyMissionDraft(source: string, draft: BuyMissionDraft, ownerId: string | null = null): boolean {
   try {
-    sessionStorage.removeItem(DRAFT_KEY);
+    // Attribute old anonymous copies before writing the owner's copy. A failed
+    // removal must never make private edits available to a different account.
+    if (ownerId) for (const key of [ANONYMOUS_KEY, DRAFT_KEY]) {
+      const prior = JSON.parse(sessionStorage.getItem(key) || "null");
+      const priorOwner = draftOwner(prior, key);
+      if (prior?.source === source && (!priorOwner || priorOwner === ownerId)) {
+        const claimed = JSON.stringify({ ...prior, ownerId });
+        sessionStorage.setItem(key, claimed);
+        if (sessionStorage.getItem(key) !== claimed) return false;
+      }
+    }
+    // Anonymous work has its own slot: signing out must not overwrite an
+    // unresolved legacy request/draft belonging to the previous account.
+    const key = ownerId ? ownerDraftKey(ownerId) : ANONYMOUS_KEY;
+    const saved = JSON.stringify({ source, at: Date.now(), draft, ...(ownerId ? { ownerId } : {}) });
+    sessionStorage.setItem(key, saved);
+    return sessionStorage.getItem(key) === saved;
+  } catch { return false; }
+}
+
+export function clearBuyMissionDraft(ownerId: string | null = null) {
+  try {
+    if (ownerId) sessionStorage.removeItem(ownerDraftKey(ownerId));
+    for (const key of [ANONYMOUS_KEY, DRAFT_KEY]) {
+      const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (draftOwner(saved, key) === ownerId) sessionStorage.removeItem(key);
+    }
   } catch {
-    // Nothing is persisted when storage is unavailable.
+    // A retained owner-scoped draft remains isolated if storage is unavailable.
   }
 }

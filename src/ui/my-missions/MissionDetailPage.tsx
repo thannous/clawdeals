@@ -7,7 +7,8 @@ import PageHeader from "../shared/PageHeader";
 import ListingCard from "../browse/ListingCard";
 import { MissionSummary } from "../webmcp/BuyMissionPanel";
 import { saveBuyMissionDraft } from "../webmcp/buyMissionDraft";
-import { missionView, missionStatus, type OwnerMission } from "./missionClient";
+import { probeOwnerSession } from "../auth/ownerSessionProbe";
+import { missionRequest, missionView, missionStatus, type OwnerMission } from "./missionClient";
 import { useMissionResource } from "./useMissionResource";
 
 export default function MissionDetailPage() {
@@ -21,19 +22,29 @@ export default function MissionDetailPage() {
   const matches = useMissionResource<{ items: any[]; next_cursor: string | null; status: string }>(path ? `${path}/matches${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}` : null);
   const item = mission.data;
 
-  const adjust = () => {
-    if (!item) return;
-    const view = missionView(item);
-    const expiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    expiration.setMinutes(expiration.getMinutes() - expiration.getTimezoneOffset());
-    const saved = saveBuyMissionDraft(`mission:${item.watchlist_id}`, {
-      query: view.query, marketCode: item.market_code, cityPreset: "custom", locationLabel: view.location.label || "",
-      latitude: String(view.location.lat), longitude: String(view.location.lon), radiusKm: String(view.location.radius_km),
-      preferredPriceMax: view.preferred_price_max === null ? "" : String(view.preferred_price_max), hardBudgetMax: String(view.hard_budget_max),
-      requirements: view.requirements.join("\n"), autonomousActions: view.autonomous_actions as ("search" | "ask_question" | "make_offer")[], expiresAt: expiration.toISOString().slice(0, 16)
-    });
-    if (!saved) { setDraftError(true); return; }
-    void router.push(`/my/missions/new?from=${encodeURIComponent(item.watchlist_id)}`);
+  const adjust = async () => {
+    if (!item || !path) return;
+    setDraftError(false);
+    try {
+      const owner = await probeOwnerSession({ fresh: true });
+      if (owner.state !== "authenticated" || !owner.ownerId) { setDraftError(true); return; }
+      // Re-read the owner-only resource before copying its private brief. The
+      // cookie may have switched accounts since the detail page was opened.
+      const current = await missionRequest<OwnerMission>(path);
+      const checked = await probeOwnerSession({ fresh: true });
+      if (checked.ownerId !== owner.ownerId || checked.state !== "authenticated") { setDraftError(true); return; }
+      const view = missionView(current);
+      const expiration = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      expiration.setMinutes(expiration.getMinutes() - expiration.getTimezoneOffset());
+      const saved = saveBuyMissionDraft(`mission:${current.watchlist_id}`, {
+        query: view.query, marketCode: current.market_code, cityPreset: "custom", locationLabel: view.location.label || "",
+        latitude: String(view.location.lat), longitude: String(view.location.lon), radiusKm: String(view.location.radius_km),
+        preferredPriceMax: view.preferred_price_max === null ? "" : String(view.preferred_price_max), hardBudgetMax: String(view.hard_budget_max),
+        requirements: view.requirements.join("\n"), autonomousActions: view.autonomous_actions as ("search" | "ask_question" | "make_offer")[], expiresAt: expiration.toISOString().slice(0, 16)
+      }, owner.ownerId);
+      if (!saved) { setDraftError(true); return; }
+      void router.push(`/my/missions/new?from=${encodeURIComponent(current.watchlist_id)}`);
+    } catch { setDraftError(true); }
   };
 
   const refresh = () => { mission.reload(); matches.reload(); };
@@ -69,7 +80,7 @@ export default function MissionDetailPage() {
             )}
             {matches.data?.next_cursor && !matches.loading ? <button onClick={() => setCursor(matches.data!.next_cursor)} className="text-primary underline">{t("moreMatches")}</button> : null}
             {cursor ? <button onClick={() => setCursor(null)} className="ml-4 text-primary underline">{t("firstMatches")}</button> : null}
-            <button onClick={adjust} className="px-4 py-2 border border-primary text-primary">{t("adjust")}</button>
+            <button onClick={() => void adjust()} className="px-4 py-2 border border-primary text-primary">{t("adjust")}</button>
             {draftError ? <p role="alert" className="text-warning">{t("draftError")}</p> : null}
           </section>
         </> : null}

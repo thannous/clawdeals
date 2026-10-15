@@ -4,7 +4,7 @@ import { expect } from "e2e";
 const OWNER_A = "11111111-1111-4111-8111-111111111111";
 const OWNER_B = "33333333-3333-4333-8333-333333333333";
 const MISSION_ID = "22222222-2222-4222-8222-222222222222";
-const REQUEST_KEY = "clawdeals:buy-mission-request:v1";
+const REQUEST_KEY = `clawdeals:buy-mission-request:v2:${OWNER_A}`;
 
 for (const corruption of ["missing-criteria", "missing-mission", "invalid-location", "invalid-autonomy"]) {
   test(`mission recovery survives a successful response with ${corruption}`, async ({ app, browser, screen }) => {

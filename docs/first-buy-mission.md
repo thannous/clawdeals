@@ -45,8 +45,13 @@ Le POST transmet aussi `X-Expected-Owner-Id`, issu du compte qui a confirmé le
 brief. Le serveur le compare à l’identité authentifiée de cette même requête
 avant toute création : une bascule de cookie après la sonde est refusée avec
 `403 OWNER_SESSION_CHANGED`. Cet identifiant n’est pas un moyen d’authentification.
+Les brouillons et les tentatives sont isolés par compte dans le stockage de
+l’onglet ; un brouillon anonyme dispose de son propre emplacement. Un second
+compte peut créer sa mission sans écraser la tentative incertaine du premier.
 Le corps et la clé d’une tentative au résultat inconnu restent inchangés au
-retour sur le compte initial. Les appels GET et l’API agent restent inchangés.
+retour sur le compte initial, même si sa date d’expiration est passée : la reprise
+retrouve le résultat de l’envoi initial et ne crée pas une nouvelle mission.
+Les appels GET et l’API agent restent inchangés.
 Une réponse `201` contenant seulement un identifiant ne suffit pas à confirmer
 la création : les critères, la zone, le budget et les permissions doivent être
 valides avant d’effacer le brouillon et la reprise. Un succès incomplet ou
@@ -63,6 +68,17 @@ complète cette preuve : le navigateur simulé ne peut pas prouver que le vrai
 handler refuse la bascule de compte avant d’appeler le service de création.
 Les appels directs des fixtures réelles conservent eux aussi le propriétaire
 attendu avec leur clé ; le parcours réel reste qualifié séparément.
+`e2e/testerarmy/mission-owner-recovery.e2e.ts` couvre l’isolation entre comptes,
+la migration du stockage antérieur, les pannes de stockage et la reprise expirée.
+
+Dans le formulaire WebMCP, une réponse incertaine peut être rejouée avec les
+arguments réellement approuvés, la même clé d’idempotence et la même clé d’agent.
+Modifier le formulaire pendant cette reprise ne remplace pas la tentative en
+attente. Les soumissions simultanées partagent l’appel en cours ; un succès déjà
+confirmé est réutilisé. Cette protection dure tant que le panneau reste monté,
+sans promesse de conservation après rechargement ou entre onglets. Le récapitulatif
+et son plafond proviennent du résultat confirmé. Une réponse de création incomplète
+reste incertaine au lieu d’annoncer une mission active.
 
 Les missions expirées restent consultables mais ne consomment plus de place
 dans le quota actif. La recherche de résultats conserve les correspondances

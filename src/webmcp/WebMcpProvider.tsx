@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useSyncExternalStore } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useSyncExternalStore } from "react";
 
 import { registerTools, isWebMCPSupported } from "./adapter";
 import { isWebMcpRuntimeEnabled, shouldRegisterOnRoute } from "./config";
@@ -14,9 +14,11 @@ import ConfirmModalHost from "./confirm/ConfirmModalHost";
 import ActivityHud from "./ActivityHud";
 import {
   clearActiveBuyMission,
+  applyBuyMissionUi,
   hydrateWebMcpActionReceipts,
   recordWebMcpActionReceipt,
-  subscribeWebMcpUi
+  subscribeWebMcpUi,
+  type BuyMissionView
 } from "./ui-bridge";
 import {
   ACTION_RECEIPT_TOOL_VERSION,
@@ -33,9 +35,16 @@ import {
 import { getStoredApiKey, subscribeStoredApiKey } from "../ui/developer/storage";
 import type { ToolDef } from "./tools/defs";
 
+export type PendingToolAttempt = {
+  approvedArgs: unknown;
+  idempotencyKey: string | null;
+  result: StableToolResult | null;
+  uncertain: boolean;
+};
+
 type ToolExecutionOptions = {
   signal?: AbortSignal;
-  pendingAttempts?: Map<string, Promise<StableToolResult>>;
+  pendingAttempts?: Map<string, PendingToolAttempt>;
 };
 
 type WebMcpContextValue = {
@@ -227,7 +236,9 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     hydrateWebMcpActionReceipts();
   }, []);
 
-  const executeTool = useCallback(
+  const inFlight = useRef(new Map<string, Promise<StableToolResult>>());
+
+  const executeToolOnce = useCallback(
     async (name: string, args: unknown, options?: ToolExecutionOptions): Promise<StableToolResult> => {
       const tool = getToolByName(name, routeTools);
       const requestId = randomUuid();
@@ -240,11 +251,14 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       }
 
       const attempts = options?.pendingAttempts;
-      const attemptKey = (approvedArgs: unknown) => `${name}\u0000${getStoredApiKey() || ""}\u0000${canonicalJsonStringify(approvedArgs)}`;
-      const previous = attempts?.get(attemptKey(args));
-      if (previous) {
-        const result = await previous;
-        if (result.ok === false) return result;
+      // Capture the actor before confirmation; a key change must not silently
+      // authorize the approved payload as another agent.
+      const invocationKey = getStoredApiKey();
+      const attemptKey = `${name}\u0000${invocationKey || ""}`;
+      const previous = attempts?.get(attemptKey);
+      if (previous?.result?.ok === true && canonicalJsonStringify(previous.approvedArgs) === canonicalJsonStringify(args)) {
+        const result = previous.result;
+        if (name === "create_buy_mission") applyBuyMissionUi((result.data as { mission: BuyMissionView }).mission);
         const capped = capToolOutputBytes(sanitizeToolOutput(result.data), { maxBytes: WEBMCP_TOOL_OUTPUT_MAX_BYTES });
         return {
           ok: true,
@@ -252,20 +266,39 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
           meta: { ...result.meta, ...(capped.truncated ? { truncated: true, max_bytes: capped.maxBytes } : {}) }
         };
       }
+      const recovery = previous?.uncertain ? previous : undefined;
       const executionTool: ToolDef = attempts ? {
         ...tool,
-        execute: (approvedArgs, ctx) => {
-          // Confirmation may edit the request. Cache only the validated payload
-          // actually sent, so retrying it cannot create a fresh idempotency key.
-          const fingerprint = attemptKey(approvedArgs);
-          const pending = attempts.get(fingerprint);
-          if (pending) return pending;
-          const execution = Promise.resolve().then(() => tool.execute(approvedArgs, ctx));
-          attempts.set(fingerprint, execution);
-          void execution.then((result) => {
-            if (result.ok === true || result.error.code !== "OUTCOME_UNKNOWN") attempts.delete(fingerprint);
-          }, () => { /* A rejected execution also has an unknown outcome. */ });
-          return execution;
+        execute: async (approvedArgs, ctx) => {
+          if (getStoredApiKey() !== invocationKey) {
+            return { ok: false, error: { code: "UNAUTHORIZED", message: "Agent changed; confirm again with the current agent", details: {} }, meta: { request_id: ctx.requestId } };
+          }
+          const attempt: PendingToolAttempt = recovery || {
+            approvedArgs: structuredClone(approvedArgs),
+            idempotencyKey: ctx.idempotencyKey,
+            result: null,
+            uncertain: false
+          };
+          attempts.set(attemptKey, attempt);
+          let result: StableToolResult;
+          try {
+            result = await tool.execute(attempt.approvedArgs, {
+              ...ctx,
+              idempotencyKey: attempt.idempotencyKey,
+              apiKey: invocationKey
+            });
+          } catch {
+            result = { ok: false, error: { code: "OUTCOME_UNKNOWN", message: "The action may have completed. Retry this approved request to reconcile it.", details: { safe_to_retry: false } }, meta: { request_id: ctx.requestId } };
+          }
+          attempt.result = result;
+          // A later rejection cannot prove that an earlier unknown write failed.
+          // Keep the original key until a valid response confirms its result.
+          attempt.uncertain = result.ok === false && (attempt.uncertain || UNKNOWN_OUTCOME_CODES.has(result.error.code));
+          if (result.ok === false && !attempt.uncertain) attempts.delete(attemptKey);
+          if (getStoredApiKey() !== invocationKey) {
+            return { ok: false, error: { code: "UNAUTHORIZED", message: "Agent changed; return to the original agent to recover this request", details: {} }, meta: { request_id: ctx.requestId } };
+          }
+          return result;
         }
       } : tool;
 
@@ -274,9 +307,18 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
           requestId,
           tool,
           actor: receiptActor(tool, Boolean(agentKey)),
-          args
+          args: recovery?.approvedArgs ?? args
         })
       );
+
+      if (recovery) {
+        receipt = recordWebMcpActionReceipt(sanitizeActionReceipt({
+          ...receipt,
+          confirmation: "approved",
+          policy: { enforcement: policyEnforcement(tool), scope: tool.scope, decision: "human_approved" },
+          result: { status: "executing" }
+        }));
+      }
 
       const confirmWithReceipt = async (request: Parameters<typeof requestConfirmation>[0]) => {
         const decision = await requestConfirmation(request);
@@ -314,7 +356,11 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
 
       let stable: StableToolResult;
       try {
-        stable = await confirmAndExecute(executionTool as any, args, {
+        // Already approved args must be replayed without reopening an editable
+        // confirmation or revalidating time-sensitive fields (e.g. expiry).
+        stable = recovery ? await executionTool.execute(recovery.approvedArgs, {
+          requestId, idempotencyKey: recovery.idempotencyKey, signal
+        }) : await confirmAndExecute(executionTool as any, args, {
           confirm: confirmWithReceipt,
           requestId,
           timeoutMs: 60_000,
@@ -410,6 +456,21 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
     },
     [agentKey, requestConfirmation, routeTools]
   );
+
+  const executeTool = useCallback((name: string, args: unknown, options?: ToolExecutionOptions) => {
+    if (!options?.pendingAttempts || options.signal?.aborted) return executeToolOnce(name, args, options);
+    const scope = `${name}\u0000${getStoredApiKey() || ""}`;
+    const pending = inFlight.current.get(scope);
+    if (pending) return pending;
+    // Join before the confirmation opens, including simultaneous submissions.
+    const execution = executeToolOnce(name, args, options);
+    inFlight.current.set(scope, execution);
+    const release = () => {
+      if (inFlight.current.get(scope) === execution) inFlight.current.delete(scope);
+    };
+    void execution.then(release, release);
+    return execution;
+  }, [executeToolOnce]);
 
   useEffect(() => {
     return subscribeWebMcpUi((command) => {

@@ -5,26 +5,22 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
-import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 import { BuyMissionForm, MissionSummary, prefillFromListing, type BuyMissionInput } from "../webmcp/BuyMissionPanel";
-import { clearBuyMissionDraft, missionDraftSource } from "../webmcp/buyMissionDraft";
+import { claimLegacyBuyMissionDraft, clearBuyMissionDraft, readBuyMissionDraft, saveBuyMissionDraft, missionDraftSource } from "../webmcp/buyMissionDraft";
 import type { StableToolResult } from "../../webmcp/types";
-import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import { randomUuid } from "../../webmcp/utils";
 import { confirmedOwnerMission, missionPayload, missionRequest, missionView, MissionRequestError, type OwnerMission } from "./missionClient";
+import { clearMissionRequest, readMissionRequest, writeMissionRequest, type PendingMissionRequest } from "./missionRequestRecovery";
 
-type PendingRequest = { fingerprint: string; key: string; input: BuyMissionInput; ownerId: string };
 const subscribeHydration = () => () => {};
 const clientReady = () => true;
 const serverReady = () => false;
-const REQUEST_KEY = "clawdeals:buy-mission-request:v1";
 const single = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] : value;
 const failure = (code: string): StableToolResult => ({ ok: false, error: { code, message: code, details: {} }, meta: { request_id: randomUuid() } });
 
 export default function NewMissionPage() {
   const t = useTranslations("myMissions");
   const router = useRouter();
-  const gate = useOwnerSessionGate();
   const hydrated = useSyncExternalStore(subscribeHydration, clientReady, serverReady);
   const [pending, setPending] = useState<BuyMissionInput | null>(null);
   const [saving, setSaving] = useState(false);
@@ -32,10 +28,33 @@ export default function NewMissionPage() {
   const [uncertain, setUncertain] = useState(false);
   const submittingOwnerId = useRef<string | null>(null);
   const resolveSubmission = useRef<((value: StableToolResult) => void) | null>(null);
-  const request = useRef<PendingRequest | null>(null);
+  const request = useRef<PendingMissionRequest | null>(null);
+  const [prepared, setPrepared] = useState<{ source: string; ownerId: string | null; recovery: PendingMissionRequest | null; error?: string } | null>(null);
+  const preparation = useRef(0);
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const prefix = router.locale && router.locale !== "en" ? `/${router.locale}` : "";
   const source = missionDraftSource(router.query);
+  const prepare = useCallback(async () => {
+    const generation = ++preparation.current;
+    setPrepared(null);
+    const snapshot = await probeOwnerSession({ fresh: true });
+    if (generation !== preparation.current) return;
+    if (snapshot.state === "unknown" || (snapshot.state === "authenticated" && !snapshot.ownerId)) {
+      setPrepared({ source, ownerId: null, recovery: null, error: "sessionCheckFailed" });
+      return;
+    }
+    try {
+      const recovery = snapshot.ownerId ? readMissionRequest(snapshot.ownerId) : null;
+      if (snapshot.ownerId && !claimLegacyBuyMissionDraft(snapshot.ownerId)) throw new Error("Draft ownership storage unavailable");
+      setPrepared({ source, ownerId: snapshot.ownerId, recovery });
+    } catch {
+      setPrepared({ source, ownerId: snapshot.ownerId, recovery: null, error: "requestStorageUnavailable" });
+    }
+  }, [source]);
+  useEffect(() => {
+    if (hydrated && router.isReady) void prepare();
+    return () => { preparation.current += 1; };
+  }, [hydrated, router.isReady, prepare]);
   const prefill = useMemo(() => {
     if (single(router.query.listing)) {
       const number = (value: string | string[] | undefined) => value === undefined ? null : Number(single(value));
@@ -62,21 +81,37 @@ export default function NewMissionPage() {
       void router.push(`${prefix}/auth/login?next=${encodeURIComponent(next)}`, undefined, { locale: false });
       return failure("OWNER_AUTH_REQUIRED");
     }
+    if (!session.ownerId) return failure("OWNER_CREATE_FAILED");
+    if (prepared?.ownerId && session.ownerId !== prepared.ownerId) {
+      setCreateError("sessionChanged");
+      return failure("OWNER_CREATE_FAILED");
+    }
+    if (!prepared?.ownerId) {
+      const anonymousDraft = readBuyMissionDraft(source);
+      if (!anonymousDraft || !saveBuyMissionDraft(source, anonymousDraft, session.ownerId)) return failure("DRAFT_STORAGE_UNAVAILABLE");
+      setPrepared(previous => previous ? { ...previous, ownerId: session.ownerId } : previous);
+    }
     submittingOwnerId.current = session.ownerId;
-    let unconfirmed: PendingRequest | null = null;
+    let unconfirmed: PendingMissionRequest | null = null;
     try {
-      const saved = JSON.parse(sessionStorage.getItem(REQUEST_KEY) || "null");
-      const input = buyMissionZodSchema.safeParse(saved?.input);
-      if (saved?.ownerId === session.ownerId && typeof saved.key === "string" && input.success &&
-        saved.fingerprint === JSON.stringify(missionPayload(input.data))) unconfirmed = saved;
-    } catch { /* Fall back to the same-tab in-memory attempt. */ }
+      unconfirmed = readMissionRequest(session.ownerId!);
+    } catch { setCreateError("requestStorageUnavailable"); return failure("DRAFT_STORAGE_UNAVAILABLE"); }
     unconfirmed ||= request.current?.ownerId === session.ownerId ? request.current : null;
     request.current = unconfirmed;
     setUncertain(Boolean(unconfirmed));
     setCreateError(unconfirmed ? "uncertainResult" : null);
     setPending(unconfirmed?.input || args);
     return new Promise<StableToolResult>((resolve) => { resolveSubmission.current = resolve; });
-  }, [router, prefix]);
+  }, [router, prefix, prepared, source]);
+
+  const resume = () => {
+    if (!prepared?.recovery) return;
+    request.current = prepared.recovery;
+    submittingOwnerId.current = prepared.ownerId;
+    setUncertain(true);
+    setCreateError("uncertainResult");
+    setPending(prepared.recovery.input);
+  };
 
   const cancel = () => {
     if (uncertain) return;
@@ -102,16 +137,10 @@ export default function NewMissionPage() {
     const fingerprint = JSON.stringify(body);
     // A retry, including after reload, keeps its original body and key until
     // the server confirms the outcome. Editing is disabled while it is unknown.
-    if (request.current?.fingerprint !== fingerprint) {
+    if (request.current?.fingerprint !== fingerprint || request.current?.ownerId !== session.ownerId) {
       request.current = { fingerprint, key: randomUuid(), input: pending, ownerId: submittingOwnerId.current || "" };
     }
-    try {
-      const saved = JSON.stringify(request.current);
-      sessionStorage.setItem(REQUEST_KEY, saved);
-      // A successful write alone is insufficient when browser storage silently
-      // drops it. Never send a request that cannot be recovered after reload.
-      if (sessionStorage.getItem(REQUEST_KEY) !== saved) throw new Error("Request storage unavailable");
-    } catch {
+    if (!writeMissionRequest(request.current)) {
       if (!uncertain) request.current = null;
       setCreateError("requestStorageUnavailable");
       setSaving(false);
@@ -125,8 +154,8 @@ export default function NewMissionPage() {
         }, body: fingerprint
       }));
       const view = missionView(created);
-      clearBuyMissionDraft();
-      try { sessionStorage.removeItem(REQUEST_KEY); } catch { /* Storage unavailable. */ }
+      clearBuyMissionDraft(request.current.ownerId);
+      clearMissionRequest(request.current);
       resolveSubmission.current?.({ ok: true, data: { mission: view }, meta: { request_id: randomUuid() } });
       resolveSubmission.current = null;
       void router.push(`${prefix}/my/missions/${encodeURIComponent(created.watchlist_id)}`, undefined, { locale: false });
@@ -140,8 +169,13 @@ export default function NewMissionPage() {
       const ownerChanged = cause instanceof MissionRequestError && cause.code === "OWNER_SESSION_CHANGED";
       setCreateError(ownerChanged ? "sessionChanged" : quotaRejected ? "missionLimitReached" : cause instanceof MissionRequestError && cause.status === 401 ? "sessionExpired" : unknownOutcome ? "uncertainResult" : "createError");
       if (!unknownOutcome) {
-        request.current = null;
-        try { sessionStorage.removeItem(REQUEST_KEY); } catch { /* Storage unavailable. */ }
+        if (clearMissionRequest(request.current!)) {
+          request.current = null;
+          setPrepared(previous => previous ? { ...previous, recovery: null } : previous);
+        } else {
+          setUncertain(true);
+          setCreateError("requestStorageUnavailable");
+        }
       }
       setSaving(false);
     }
@@ -178,8 +212,15 @@ export default function NewMissionPage() {
           </section>
         ) : null}
         <div hidden={Boolean(pending)}>
-          {hydrated && router.isReady ? <BuyMissionForm key={source} prefill={prefill} draftSource={source} executeMission={submit}
-            submitLabel={gate === "authenticated" ? t("review") : t("continue")} submitHint={t("submitHint")} /> : <p className="px-4 text-muted">{t("loading")}</p>}
+          {prepared?.source === source && !pending ? prepared.error ? (
+            <div className="px-4 space-y-3"><p role="alert" className="text-warning">{t(prepared.error)}</p><button onClick={() => void prepare()} className="underline">{t("retry")}</button></div>
+          ) : prepared.recovery ? (
+            <div className="px-4 space-y-3"><p className="text-warning">{t("uncertainResult")}</p><button onClick={resume} className="px-5 py-3 bg-primary text-bg font-semibold">{t("review")}</button></div>
+          ) : <>
+            {createError ? <div className="px-4 space-y-2"><p role="alert" className="text-warning">{t(createError)}</p>{createError === "sessionChanged" ? <button onClick={() => void prepare()} className="text-primary underline">{t("retry")}</button> : null}</div> : null}
+            <BuyMissionForm key={`${source}:${prepared.ownerId || "anonymous"}`} prefill={prefill} draftSource={source} draftOwnerId={prepared.ownerId} executeMission={submit}
+              submitLabel={prepared.ownerId ? t("review") : t("continue")} submitHint={t("submitHint")} />
+          </> : !pending ? <p className="px-4 text-muted">{t("loading")}</p> : null}
         </div>
       </main>
     </div>

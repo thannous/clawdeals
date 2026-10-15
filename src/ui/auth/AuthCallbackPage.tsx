@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
+import { probeOwnerSession } from "./ownerSessionProbe";
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
 import { getBrowserSupabaseClient } from "./supabase-client";
@@ -71,7 +72,8 @@ export default function AuthCallbackPage() {
         const redirectTo = safeRedirectUrl(nextParam || storedNext);
 
         const draftSource = missionDraftSourceFromUrl(redirectTo);
-        if (draftSource !== null && !readBuyMissionDraft(draftSource)) {
+        const owner = draftSource !== null ? await probeOwnerSession({ fresh: true }) : null;
+        if (draftSource !== null && !readBuyMissionDraft(draftSource, owner?.state === "authenticated" ? owner.ownerId : null)) {
           // Email callbacks can open an independent tab. Authentication is
           // shared, but the private mission draft stays in the original tab.
           setMissionReturn(redirectTo);

@@ -50,20 +50,20 @@ test("signup email in an independent tab returns to the original private mission
   expect(signupCallback).not.toBeNull();
   expect(new URL(signupCallback!).pathname).toBe("/auth/callback");
   expect(new URL(signupCallback!).searchParams.get("next")).toBe(missionPath);
-  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v1"));
+  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"));
   expect(originalDraft).toContain("Brouillon privé inscription");
   const width = await browser.evaluate(() => window.innerWidth);
   const surface = surfaceOf(width === 390 ? mobileEngine : desktopEngine)!;
   const emailTab = await surface.context().newPage();
   try {
     await emailTab.goto(signupCallback! + callbackHash());
-    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v1"))).toBeNull();
+    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
     const openWithoutDraft = emailTab.getByRole("link", { name: "Ouvrir la mission ici sans mon brouillon" });
     await openWithoutDraft.waitFor();
     expect(await openWithoutDraft.getAttribute("href")).toBe(missionPath);
     expect(await emailTab.getByTestId("auth-callback-mission-return").innerText()).toContain("Reviens dans l’onglet où tu préparais ta mission");
     expect(new URL(emailTab.url()).pathname).toBe("/fr/auth/callback");
-    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v1"))).toBeNull();
+    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
     expect(emailTab.url()).not.toContain("Brouillon");
     const folder = join(process.env.PARITY_OUTPUT || ".e2e", "handoff-screenshots");
     await mkdir(folder, { recursive: true });
@@ -75,7 +75,7 @@ test("signup email in an independent tab returns to the original private mission
     await emailTab.getByTestId("auth-callback-mission-return").waitFor({ state: "visible" });
     expect(bridgeCalls).toBe(1);
     await emailTab.screenshot({ path: join(folder, `signup-independent-tab-${width}.png`), fullPage: true });
-    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v1"))).toBe(originalDraft);
+    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBe(originalDraft);
     await screen.getByTestId("auth-login-resume-mission").tap();
     await expect(browser).toHaveURL(missionPath);
     await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("Brouillon privé inscription : panier et cadre bas");
@@ -86,9 +86,9 @@ test("signup email in an independent tab returns to the original private mission
   } finally { await emailTab.close(); }
 });
 
-test("signup callback in the original tab resumes its matching draft automatically", async ({ app, browser, screen }) => {
+for (const initiallyAuthenticated of [false, true]) test(`signup callback in the original tab resumes its ${initiallyAuthenticated ? "owned" : "anonymous"} matching draft automatically`, async ({ app, browser, screen }) => {
   const origin = new URL(app.baseUrl!).origin;
-  let authenticated = false;
+  let authenticated = initiallyAuthenticated;
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)
     ? route.continue() : route.abort());
   await browser.route("**/auth/v1/user**", route => route.fulfill({ json: user }));
@@ -102,7 +102,8 @@ test("signup callback in the original tab resumes its matching draft automatical
   await app.open(missionPath);
   await screen.getByRole("textbox", "Exigences minimales").fill("Brouillon dans le même onglet");
   await screen.getByRole("spinbutton", "Prix préféré").fill("72.50");
-  await screen.getByRole("button", "Continuer").tap();
+  authenticated = false;
+  await screen.getByRole("button", initiallyAuthenticated ? "Vérifier ma mission" : "Continuer").tap();
   await expect(screen.getByTestId("auth-login-email")).toBeVisible();
   await app.open(`/auth/callback?next=${encodeURIComponent(missionPath)}${callbackHash()}`);
   await expect(browser).toHaveURL(missionPath);
