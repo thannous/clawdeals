@@ -68,12 +68,12 @@ test("two owners complete a mission, recover an expired approval session and con
   expect(assignedAgent.data?.agent_id).toBe(fixture.buyer.agentId);
   // The public full-text index finds this word only in the description. A
   // mission must retain that result even though the query has no ASCII token.
-  const unicodeMission = exactResponse(await browser.evaluate(async ({ criteria, key }) => {
+  const unicodeMission = exactResponse(await browser.evaluate(async ({ criteria, key, ownerId }) => {
     const response = await fetch("/api/v1/owner/missions", { method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": key, "X-Expected-Owner-Id": ownerId },
       body: JSON.stringify({ market_code: "FR", criteria: { ...criteria, query: "été" } }) });
     return { status: response.status, body: await response.json() };
-  }, { criteria: mission.criteria, key: randomUUID() }), 201);
+  }, { criteria: mission.criteria, key: randomUUID(), ownerId: fixture.buyer.ownerId }), 201);
   const unicodeMatches = exactResponse(await ownerRead(`/api/v1/owner/missions/${unicodeMission.watchlist_id}/matches`), 200);
   expect(unicodeMatches.items.map((row: any) => row.listing_id)).toContain(listing.id);
 

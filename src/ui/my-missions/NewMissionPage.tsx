@@ -11,7 +11,7 @@ import { clearBuyMissionDraft, missionDraftSource } from "../webmcp/buyMissionDr
 import type { StableToolResult } from "../../webmcp/types";
 import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import { randomUuid } from "../../webmcp/utils";
-import { missionPayload, missionRequest, missionView, MissionRequestError, type OwnerMission } from "./missionClient";
+import { confirmedOwnerMission, missionPayload, missionRequest, missionView, MissionRequestError, type OwnerMission } from "./missionClient";
 
 type PendingRequest = { fingerprint: string; key: string; input: BuyMissionInput; ownerId: string };
 const subscribeHydration = () => () => {};
@@ -118,13 +118,16 @@ export default function NewMissionPage() {
       return;
     }
     try {
-      const created = await missionRequest<OwnerMission>("", {
-        method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": request.current.key }, body: fingerprint
-      });
-      if (!created.watchlist_id) throw new MissionRequestError(502, "SERVER_CONTRACT_ERROR");
+      const created = confirmedOwnerMission(await missionRequest<unknown>("", {
+        method: "POST", headers: {
+          "Content-Type": "application/json", "Idempotency-Key": request.current.key,
+          "X-Expected-Owner-Id": request.current.ownerId
+        }, body: fingerprint
+      }));
+      const view = missionView(created);
       clearBuyMissionDraft();
       try { sessionStorage.removeItem(REQUEST_KEY); } catch { /* Storage unavailable. */ }
-      resolveSubmission.current?.({ ok: true, data: { mission: missionView(created) }, meta: { request_id: randomUuid() } });
+      resolveSubmission.current?.({ ok: true, data: { mission: view }, meta: { request_id: randomUuid() } });
       resolveSubmission.current = null;
       void router.push(`${prefix}/my/missions/${encodeURIComponent(created.watchlist_id)}`, undefined, { locale: false });
     } catch (cause) {
@@ -134,7 +137,8 @@ export default function NewMissionPage() {
       const definitiveRejection = cause instanceof MissionRequestError && [400, 401, 403, 404, 422, 429].includes(cause.status);
       const unknownOutcome = !quotaRejected && (uncertain || !definitiveRejection);
       setUncertain(unknownOutcome);
-      setCreateError(quotaRejected ? "missionLimitReached" : cause instanceof MissionRequestError && cause.status === 401 ? "sessionExpired" : unknownOutcome ? "uncertainResult" : "createError");
+      const ownerChanged = cause instanceof MissionRequestError && cause.code === "OWNER_SESSION_CHANGED";
+      setCreateError(ownerChanged ? "sessionChanged" : quotaRejected ? "missionLimitReached" : cause instanceof MissionRequestError && cause.status === 401 ? "sessionExpired" : unknownOutcome ? "uncertainResult" : "createError");
       if (!unknownOutcome) {
         request.current = null;
         try { sessionStorage.removeItem(REQUEST_KEY); } catch { /* Storage unavailable. */ }

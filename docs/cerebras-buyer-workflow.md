@@ -125,7 +125,17 @@ mise exec node@24.19.0 -- npm run agent:cerebras -- \
 ```
 
 Le programme recontrôle les informations publiques et affiche la cible, le prix
-actuel, l’offre, le plafond et l’expiration. Il te demande de saisir exactement :
+actuel, l’offre, le plafond et l’expiration. Il suit les pages de recherche jusqu’à
+retrouver l’annonce ou épuiser les résultats, avec un maximum de 20 pages et
+20 secondes pour cette revérification. Un curseur répété, une limite atteinte ou
+un délai dépassé arrête l’envoi comme vérification incomplète ; cela ne prouve pas
+que l’annonce est hors des critères. Les contrôles de prix, devise et distance
+restent appliqués à l’annonce retrouvée et à ses détails publics.
+Les séquences de contrôle du terminal sont retirées des textes d’annonce et du
+modèle avant affichage, notamment celles qui déplacent le curseur, créent des
+liens ou écrivent dans le presse-papiers. Le nettoyage des rapports et des
+résultats d’outils s’applique à chaque valeur textuelle avant sérialisation, pour
+conserver un JSON valide même face à une séquence incomplète. Il te demande de saisir exactement :
 
 ```text
 ENVOYER <montant> <devise> <identifiant de l’annonce>
@@ -183,7 +193,13 @@ budget/devise, les identifiants inventés, les redirections, les pannes, l’ann
 l’idempotence et les validations propriétaire. Ils vérifient aussi qu’une fin
 sans proposition nécessite une recherche réussie, que les clés ClawDeals complètes
 sont masquées même hors des variables d’environnement, et que la destination du
-rapport est réservée avant tout appel modèle. Les sorties de processus sont
+rapport est réservée avant tout appel modèle.
+Ils couvrent également les séquences de terminal dans la confirmation, une
+annonce retrouvée après la première page, le repli textuel paginé et l’arrêt sans
+offre face à des curseurs répétés, trop de pages ou une annonce hors limites.
+Les séquences C1 incomplètes du modèle ou d’une annonce sont aussi testées lors
+de l’enregistrement des rapports, de leur soumission et des échanges d’outils.
+Les sorties de processus sont
 conservées dans `/private/tmp/clawdeals-cerebras-e2e-*`. Ils ne prouvent ni un appel
 Cerebras réel ni l’enregistrement d’une offre dans la base de production.
 

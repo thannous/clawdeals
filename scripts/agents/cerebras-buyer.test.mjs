@@ -12,6 +12,14 @@ import test from "node:test";
 // model-controlled tool loop, or its human confirmation and credential boundary.
 const listingId = "90000000-0000-4000-8000-000000000001";
 const secret = "csk-cerebras-e2e-secret-never-print";
+const terminalPayload = "\u001b[2J\u001b[H\u001b]8;;https://terminal.invalid\u0007link\u001b]8;;\u0007"
+  + "\u001b]52;c;Y2xpcGJvYXJk\u001b\\\u009d52;c;Y2xpcGJvYXJk\u009c\r\b\u0000\u0085";
+const terminalScenarios = {
+  "terminal-control": terminalPayload,
+  "terminal-open-osc": "\u001b]52;c;Y2xpcGJvYXJk",
+  "terminal-open-c1": "\u009d52;c;Y2xpcGJvYXJk",
+  "terminal-open-dcs": "\u001bPclipboard payload"
+};
 // Match generateApiKey(): 6 prefix bytes and 32 secret bytes, base64url, with a dot.
 const foreignKeys = ["cd_live", "cd_sandbox"].map(namespace => ({
   namespace, prefix: randomBytes(6).toString("base64url"), secret: randomBytes(32).toString("base64url")
@@ -33,20 +41,46 @@ async function fixture(t, scenario = "success") {
     const body = raw ? JSON.parse(raw) : null;
     requests.push({ method: req.method, path: req.url, headers: req.headers, body });
     res.setHeader("content-type", "application/json");
+    const currentListing = terminalScenarios[scenario]
+      ? { ...listing, title: `${listing.title} ${terminalScenarios[scenario]}` }
+      : scenario === "tool-open-c1" ? { ...listing, condition: `GOOD${terminalScenarios["terminal-open-c1"]}` } : listing;
     if (req.url.startsWith("/api/v1/public/listings")) {
       if (scenario === "search-outage") {
         res.writeHead(503);
         res.end(JSON.stringify({ error: { code: "SEARCH_UNAVAILABLE" } }));
         return;
       }
+      if (scenario.startsWith("paged-")) {
+        const params = new URL(req.url, "http://localhost").searchParams;
+        if (scenario === "paged-fallback" && params.has("q")) {
+          res.end(JSON.stringify({ data: [], next_cursor: null }));
+          return;
+        }
+        const cursor = params.get("cursor");
+        const decoys = Array.from({ length: 20 }, (_, index) => ({
+          ...listing, listing_id: `90000000-0000-4000-8000-${String(index + 2).padStart(12, "0")}`, distance_km: 1
+        }));
+        const target = scenario === "paged-outside" ? { ...listing, price: { amount: 1500, currency: "EUR" } } : listing;
+        const keepsPaging = ["paged-loop", "paged-limit"].includes(scenario);
+        res.end(JSON.stringify({
+          data: cursor && !keepsPaging ? [target] : decoys,
+          next_cursor: scenario === "paged-exhausted" ? null
+            : scenario === "paged-loop" ? "same-cursor"
+            : scenario === "paged-limit" ? `page-${Number(cursor?.slice(5) || 1) + 1}`
+            : cursor ? null : "page-2"
+        }));
+        return;
+      }
       const translatedMiss = scenario === "translated-query" && new URL(req.url, "http://localhost").searchParams.has("q");
       const rows = scenario === "foreign-keys"
         ? [{ ...listing, description: foreignKeys.map(key => key.value).join(" ") }]
-        : [listing];
-      res.end(JSON.stringify({ data: translatedMiss || scenario === "empty-search" ? [] : rows, next_cursor: null }));
+        : [currentListing];
+      res.end(JSON.stringify({ data: translatedMiss || ["empty-search", "empty-open-c1"].includes(scenario) ? [] : rows, next_cursor: null }));
     } else if (req.url.startsWith("/browse/")) {
       res.setHeader("content-type", "text/html");
-      res.end(`<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { listing } } })}</script>`);
+      const detailListing = scenario === "paged-detail-overbudget"
+        ? { ...currentListing, price: { amount: 1500, currency: "EUR" } } : currentListing;
+      res.end(`<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { listing: detailListing } } })}</script>`);
     } else if (req.url === "/v1/models") {
       res.end(JSON.stringify({ data: [{ id: "gpt-oss-120b" }] }));
     } else if (req.url === "/v1/chat/completions") {
@@ -63,9 +97,9 @@ async function fixture(t, scenario = "success") {
         return;
       }
       let name, args;
-      if (scenario === "finish-immediately" || (["search-outage", "empty-search"].includes(scenario) && calls > 1)) {
+      if (scenario === "finish-immediately" || (["search-outage", "empty-search", "empty-open-c1"].includes(scenario) && calls > 1)) {
         name = "finish_without_offer";
-        args = { reason: "Aucune annonce vérifiée pour cette mission." };
+        args = { reason: `Aucune annonce vérifiée pour cette mission.${scenario === "empty-open-c1" ? terminalScenarios["terminal-open-c1"] : ""}` };
       } else if (calls === 1) {
         name = "search_listings";
         args = { query: "vélo", cursor: null };
@@ -78,8 +112,8 @@ async function fixture(t, scenario = "success") {
           listing_id: scenario === "invented" ? "90000000-0000-4000-8000-000000000099" : listingId,
           amount: scenario === "overbudget" && calls === 3 ? 1500 : 1100,
           currency: scenario === "currency" ? "GBP" : "EUR",
-          rationale: `Batterie annoncée à 88%. ${secret} ${scenario === "foreign-keys" ? foreignKeys.map(key => key.value).join(" ") : ""}`,
-          unknowns: ["Vérifier la facture et l’état sur place."]
+          rationale: `Batterie annoncée à 88%. ${secret} ${["foreign-keys", "model-open-c1"].includes(scenario) ? foreignKeys.map(key => key.value).join(" ") : ""}${scenario === "model-open-c1" ? terminalScenarios["terminal-open-c1"] : ""}`,
+          unknowns: [`Vérifier la facture et l’état sur place.${scenario === "model-open-c1" ? terminalScenarios["terminal-open-c1"] : ""}`]
         };
       }
       res.end(JSON.stringify({ choices: [{ finish_reason: "tool_calls", message: {
@@ -121,7 +155,109 @@ async function fixture(t, scenario = "success") {
     return result;
   }
   const plan = () => run(["--output", report]);
-  return { root, report, requests, reportsAtModelCall, run, plan };
+  return { root, report, requests, reportsAtModelCall, run, plan, setScenario(value) { scenario = value; } };
+}
+
+test("model C1 commands preserve valid proposal JSON and a readable confirmed submission", async t => {
+  const f = await fixture(t, "model-open-c1");
+  assert.equal((await f.plan()).code, 0);
+  const raw = await readFile(f.report, "utf8");
+  const report = JSON.parse(raw);
+  assert.equal(report.status, "proposed");
+  assert.ok(report.proposed_offer.rationale.startsWith("Batterie annoncée à 88%."));
+  assert.deepEqual(report.proposed_offer.unknowns, ["Vérifier la facture et l’état sur place."]);
+  assert.equal(raw.includes("Y2xpcGJvYXJk") || raw.includes(secret), false);
+  for (const key of foreignKeys) assert.ok(!raw.includes(key.prefix) && !raw.includes(key.secret));
+  const result = await f.run(["--submit", f.report], `ENVOYER 1100 EUR ${listingId}\n`);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/u.test(result.stdout + result.stderr), false);
+  assert.ok(result.stdout.includes("Offre : 1100 EUR") && result.stdout.includes("Plafond : 1300 EUR"));
+  assert.ok(result.stdout.includes(`ENVOYER 1100 EUR ${listingId}`));
+  assert.equal(f.requests.filter(request => request.path.includes("/offers")).length, 1);
+  assert.equal(JSON.parse(await readFile(`${f.report}.submission.json`, "utf8")).status, "submitted");
+});
+
+test("model C1 commands preserve a valid no_match report", async t => {
+  const f = await fixture(t, "empty-open-c1");
+  assert.equal((await f.plan()).code, 0);
+  const report = JSON.parse(await readFile(f.report, "utf8"));
+  assert.equal(report.status, "no_match");
+  assert.equal(report.reason, "Aucune annonce vérifiée pour cette mission.");
+  assert.ok(report.trace.some(event => event.tool === "search_listings" && !event.error));
+});
+
+test("listing C1 commands cannot truncate the JSON tool messages sent to the model", async t => {
+  const f = await fixture(t, "tool-open-c1");
+  assert.equal((await f.plan()).code, 0);
+  const modelCalls = f.requests.filter(request => request.path === "/v1/chat/completions");
+  const toolResults = modelCalls.at(-1).body.messages.filter(message => message.role === "tool")
+    .map(message => JSON.parse(message.content));
+  assert.equal(toolResults.length, 2);
+  assert.equal(toolResults[0].items[0].condition, "GOOD");
+  assert.equal(toolResults[1].condition, "GOOD");
+  assert.equal(toolResults[1].price.amount, 1150);
+});
+
+for (const [scenario, payload] of Object.entries(terminalScenarios)) {
+  test(`${scenario}: untrusted terminal commands cannot alter the offer confirmation`, async t => {
+    const f = await fixture(t);
+    assert.equal((await f.plan()).code, 0);
+    f.setScenario(scenario);
+    const report = JSON.parse(await readFile(f.report, "utf8"));
+    report.proposed_offer.rationale = `Batterie annoncée. ${payload}`;
+    report.proposed_offer.unknowns = [`Vérifier sur place. ${payload}`];
+    await writeFile(f.report, JSON.stringify(report));
+    const result = await f.run(["--submit", f.report], "non\n");
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/u.test(result.stdout + result.stderr), false,
+      "terminal output must contain no escape, cursor, clipboard or C0/C1 controls");
+    assert.equal(result.stdout.includes("terminal.invalid") || result.stdout.includes("Y2xpcGJvYXJk"), false,
+      "OSC command payloads must be removed completely");
+    assert.ok(result.stdout.includes("Offre : 1100 EUR") && result.stdout.includes("Plafond : 1300 EUR"));
+    assert.ok(result.stdout.includes(`ENVOYER 1100 EUR ${listingId}`));
+    assert.equal(f.requests.filter(request => request.path.includes("/offers")).length, 0);
+  });
+}
+
+for (const scenario of ["paged-submit", "paged-fallback"]) {
+  test(`${scenario}: submission finds the reviewed listing beyond the first twenty matches`, async t => {
+    const f = await fixture(t);
+    assert.equal((await f.plan()).code, 0);
+    f.setScenario(scenario);
+    const start = f.requests.length;
+    const result = await f.run(["--submit", f.report], `ENVOYER 1100 EUR ${listingId}\n`);
+    assert.equal(result.code, 0, result.stderr);
+    const requests = f.requests.slice(start);
+    const pages = requests.filter(request => request.path.includes("/public/listings"));
+    assert.equal(pages.length, scenario === "paged-fallback" ? 3 : 2);
+    const continuation = new URL(pages.at(-1).path, "http://localhost").searchParams;
+    assert.equal(continuation.get("cursor"), "page-2");
+    if (scenario === "paged-fallback") assert.equal(continuation.has("q"), false);
+    assert.ok(pages.every(request => request.path.includes("price_max=1300") && request.path.includes("distance_km=25")));
+    assert.equal(requests.filter(request => request.path.includes("/offers")).length, 1);
+    assert.equal(requests.filter(request => request.path === "/v1/chat/completions").length, 0);
+  });
+}
+
+for (const [scenario, error, maximumPages] of [
+  ["paged-loop", "PAGINATION_LOOP", 2],
+  ["paged-limit", "SEARCH_PAGE_LIMIT_REACHED", 20],
+  ["paged-exhausted", "PROPOSAL_OUTSIDE_MISSION", 1],
+  ["paged-outside", "PROPOSAL_OUTSIDE_MISSION", 2],
+  ["paged-detail-overbudget", "PROPOSAL_OUTSIDE_MISSION", 2]
+]) {
+  test(`${scenario}: bounded revalidation cannot bypass the mission constraints`, async t => {
+    const f = await fixture(t);
+    assert.equal((await f.plan()).code, 0);
+    f.setScenario(scenario);
+    const start = f.requests.length;
+    const result = await f.run(["--submit", f.report], `ENVOYER 1100 EUR ${listingId}\n`);
+    assert.notEqual(result.code, 0);
+    assert.match(result.stderr, new RegExp(error));
+    const requests = f.requests.slice(start);
+    assert.equal(requests.filter(request => request.path.includes("/public/listings")).length, maximumPages);
+    assert.equal(requests.filter(request => request.path.includes("/offers")).length, 0);
+  });
 }
 
 for (const scenario of ["finish-immediately", "search-outage"]) {

@@ -9,7 +9,7 @@ type Fixture = {
   id: string;
   email: string;
   db: SupabaseClient;
-  missionWrites: { idempotencyKey: string; body: string }[];
+  missionWrites: { idempotencyKey: string; expectedOwnerId: string; body: string }[];
   createListing: (market: "FR" | "GB", price: number) => Promise<{ id: string; title: string }>;
 };
 
@@ -28,7 +28,7 @@ export const test = base.extend<{ missionFixture: Fixture }>({
     const origin = new URL(app.baseUrl!).origin;
     const authOrigin = new URL(url).origin;
     const refused: { method: string; origin: string; path: string }[] = [];
-    const missionWrites: { idempotencyKey: string; body: string }[] = [];
+    const missionWrites: { idempotencyKey: string; expectedOwnerId: string; body: string }[] = [];
     await browser.route("**/*", async route => {
       const requestUrl = new URL(route.request.url);
       const { method } = route.request;
@@ -40,7 +40,7 @@ export const test = base.extend<{ missionFixture: Fixture }>({
       const login = requestUrl.origin === authOrigin && method === "POST" &&
         requestUrl.pathname === "/auth/v1/token" && requestUrl.searchParams.get("grant_type") === "password";
       if (appWrite && requestUrl.pathname === "/api/v1/owner/missions") {
-        missionWrites.push({ idempotencyKey: route.request.headers["idempotency-key"], body: route.request.postData || "" });
+        missionWrites.push({ idempotencyKey: route.request.headers["idempotency-key"], expectedOwnerId: route.request.headers["x-expected-owner-id"], body: route.request.postData || "" });
       }
       if ((sameOrigin && read) || appWrite || login) await route.continue();
       else {

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { parseArgs } from "node:util";
+import { parseArgs, stripVTControlCharacters } from "node:util";
 import { z } from "zod";
 
 const options = {
@@ -46,11 +46,23 @@ function failure(code) {
 }
 
 function safeText(value) {
-  let text = String(value ?? "");
+  // Remove terminal command strings including OSC hyperlinks/clipboard writes
+  // and their C1 forms before stripping other cursor/style/control sequences.
+  let text = stripVTControlCharacters(String(value ?? "")
+    .replace(/(?:\u001b\]|\u009d)[\s\S]*?(?:\u0007|\u001b\\|\u009c|$)/gu, "")
+    .replace(/(?:\u001b[P^_X]|[\u0090\u0098\u009e\u009f])[\s\S]*?(?:\u001b\\|\u009c|$)/gu, ""))
+    // Keep readable newlines/tabs, but never carriage returns or backspaces.
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/gu, "");
   for (const key of [env.CEREBRAS_API_KEY, env.CLAWDEALS_API_KEY, env.CLAWDEALS_BUYER_API_KEY].filter(Boolean)) {
     text = text.replaceAll(key, "<redacted>");
   }
   return text.replace(/\b(?:csk-[A-Za-z0-9_-]+|cd_(?:live|sandbox|at)_[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)/g, "<redacted>");
+}
+
+function safeJson(value, space) {
+  // Strip controls within each value: an unterminated command must never
+  // consume the surrounding JSON syntax or the fields that follow it.
+  return JSON.stringify(value, (_key, item) => typeof item === "string" ? safeText(item) : item, space);
 }
 
 function endpoint(raw, hosts, pathname) {
@@ -135,9 +147,30 @@ async function detail(siteBase, listingId, deadline) {
   return listing;
 }
 
+async function findCurrentListing(apiBase, constraints, listingId, title, deadline) {
+  const cursors = new Set();
+  let query = title;
+  let cursor = null;
+  for (let page = 0; page < 20; page++) {
+    const found = await search(apiBase, constraints, query, cursor, deadline);
+    const current = found.items.find(item => item.listing_id === listingId);
+    if (current) return current;
+    if (found.next_cursor === null) return null;
+    if (typeof found.next_cursor !== "string" || !found.next_cursor || found.next_cursor.length > 2000) {
+      throw failure("INVALID_LISTINGS_RESPONSE");
+    }
+    if (cursors.has(found.next_cursor)) throw failure("PAGINATION_LOOP");
+    cursors.add(found.next_cursor);
+    cursor = found.next_cursor;
+    // A cursor belongs to its effective query, including the text-free fallback.
+    if (found.text_query_fallback) query = null;
+  }
+  throw failure("SEARCH_PAGE_LIMIT_REACHED");
+}
+
 async function save(path, report, exclusive = true) {
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, safeText(JSON.stringify(report, null, 2)) + "\n", { mode: 0o600, flag: exclusive ? "wx" : "w" });
+  await writeFile(path, safeJson(report, 2) + "\n", { mode: 0o600, flag: exclusive ? "wx" : "w" });
 }
 
 async function plan(config, constraints, output) {
@@ -218,7 +251,7 @@ async function plan(config, constraints, output) {
       report.trace.push(event);
       console.log(`  ${event.tool} : ${event.error || "OK"}`);
       if (report.status !== "running") break;
-      messages.push({ role: "tool", tool_call_id: call.id, content: safeText(JSON.stringify(result)) });
+      messages.push({ role: "tool", tool_call_id: call.id, content: safeJson(result) });
     }
     if (report.status === "running") throw failure("STEP_LIMIT_REACHED");
   } catch (error) {
@@ -230,7 +263,7 @@ async function plan(config, constraints, output) {
   await save(output, report, false);
   console.log(`Rapport : ${output}`);
   if (report.proposed_offer) {
-    console.log(safeText(`${report.listing.title}\nOffre proposée : ${report.proposed_offer.amount} ${report.proposed_offer.currency}\n${report.proposed_offer.rationale}\nÀ vérifier : ${report.proposed_offer.unknowns.join(" ; ")}\nAnnonce : ${config.siteBase}/browse/${report.proposed_offer.listing_id}\nAucune offre envoyée.`));
+    console.log(safeText(`${report.listing.title}\nOffre proposée : ${report.proposed_offer.amount} ${report.proposed_offer.currency}\n${safeText(report.proposed_offer.rationale)}\nÀ vérifier : ${report.proposed_offer.unknowns.map(safeText).join(" ; ")}\nAnnonce : ${config.siteBase}/browse/${report.proposed_offer.listing_id}\nAucune offre envoyée.`));
   } else console.log(safeText(report.reason || report.error));
   if (report.status === "failed") process.exitCode = 1;
 }
@@ -246,13 +279,15 @@ async function submit(config, path) {
   if (!/^cerebras-[a-f0-9-]{36}$/.test(report.idempotency_key || "")) throw failure("INVALID_IDEMPOTENCY_KEY");
   const expiry = Date.parse(report.expires_at);
   if (!Number.isFinite(expiry) || expiry - Date.now() < 10 * 60000 || expiry - Date.now() > 7 * 86400000) throw failure("PROPOSAL_EXPIRED");
-  const row = await detail(config.siteBase, offer.listing_id);
-  const found = await search(config.apiBase, constraints, row.title, null);
-  const current = found.items.find(item => item.listing_id === offer.listing_id);
+  const deadline = Date.now() + 20000;
+  const row = await detail(config.siteBase, offer.listing_id, deadline);
+  const current = await findCurrentListing(config.apiBase, constraints, offer.listing_id, row.title, deadline);
   if (!current || !fits(current, constraints) || !fits(compactListing(row, current.distance_km), constraints) ||
       offer.currency !== row.price.currency || offer.amount > constraints.budget) throw failure("PROPOSAL_OUTSIDE_MISSION");
   const confirmation = `ENVOYER ${offer.amount} ${offer.currency} ${offer.listing_id}`;
-  console.log(safeText(`\nCible : ${config.apiBase}\nAnnonce : ${row.title}\nPrix actuel : ${row.price.amount} ${row.price.currency}\nOffre : ${offer.amount} ${offer.currency}\nPlafond : ${constraints.budget} ${offer.currency}\nExpiration : ${report.expires_at}\n${offer.rationale}\nÀ vérifier : ${offer.unknowns.join(" ; ")}\nPour envoyer, saisis exactement :\n${confirmation}`));
+  // Sanitize each untrusted field before interpolation: an unterminated OSC
+  // must not swallow the trusted price, limits or confirmation instructions.
+  console.log(safeText(`\nCible : ${config.apiBase}\nAnnonce : ${safeText(row.title)}\nPrix actuel : ${row.price.amount} ${row.price.currency}\nOffre : ${offer.amount} ${offer.currency}\nPlafond : ${constraints.budget} ${offer.currency}\nExpiration : ${safeText(report.expires_at)}\n${safeText(offer.rationale)}\nÀ vérifier : ${offer.unknowns.map(safeText).join(" ; ")}\nPour envoyer, saisis exactement :\n${confirmation}`));
   let answer = "";
   if (process.stdin.isTTY) {
     const input = createInterface({ input: process.stdin, output: process.stdout });

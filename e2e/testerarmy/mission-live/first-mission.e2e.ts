@@ -75,6 +75,7 @@ for (const entry of ["search", "listing"] as const) {
     expect(missionFixture.missionWrites).toHaveLength(1);
     const firstWrite = missionFixture.missionWrites[0];
     expect(firstWrite.idempotencyKey).toBeTruthy();
+    expect(firstWrite.expectedOwnerId).toMatch(/^[0-9a-f-]{36}$/);
 
     const missionResponse = await browser.evaluate(async (id) => {
       const response = await fetch(`/api/v1/owner/missions/${id}`, { credentials: "include", cache: "no-store" });
@@ -94,9 +95,9 @@ for (const entry of ["search", "listing"] as const) {
     const noKeys = await missionFixture.db.from("api_keys").select("api_key_id").eq("agent_id", persisted.data!.agent_id);
     expect(noKeys.error).toBeNull();
     expect(noKeys.data).toHaveLength(0);
-    const replay = await browser.evaluate(async ({ idempotencyKey, body }) => {
+    const replay = await browser.evaluate(async ({ idempotencyKey, body, expectedOwnerId }) => {
       const response = await fetch("/api/v1/owner/missions", {
-        method: "POST", credentials: "include", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey }, body
+        method: "POST", credentials: "include", headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey, "X-Expected-Owner-Id": expectedOwnerId }, body
       });
       return { status: response.status, body: await response.json() };
     }, firstWrite);

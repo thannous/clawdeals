@@ -3,6 +3,10 @@ import { useTranslations } from "next-intl";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
 import { clearApprovalRecovery, readApprovalRecovery, writeApprovalRecovery, type ApprovalAction, type ApprovalActionInput, type ApprovalAttempt } from "./approvalRecovery";
 
+const DEFINITIVE_APPROVAL_CONFLICTS = new Set([
+  "APPROVAL_EXPIRED", "APPROVAL_INVALID", "APPROVAL_STALE", "APPROVAL_ALREADY_RESOLVED"
+]);
+
 interface UseMyApprovalActionOptions {
   onSuccess?: () => void;
   ownerId?: string;
@@ -85,11 +89,17 @@ export function useMyApprovalAction({ onSuccess, ownerId, approvalId }: UseMyApp
       }
       if (!isCurrent()) return;
       if (!resp.ok) {
+        const definitiveConflict = resp.status === 409 && DEFINITIVE_APPROVAL_CONFLICTS.has(payload?.error?.code);
         // A fresh request rejected before execution is editable again. A prior
         // unknown outcome must retain its request even when this retry is 401.
-        if (!previousAttempt && [400, 401, 403, 404, 422, 429].includes(resp.status)) {
+        // These explicit business refusals also settle a replay; other 409s
+        // (including idempotency conflicts) must retain the original attempt.
+        if (definitiveConflict || (!previousAttempt && [400, 401, 403, 404, 422, 429].includes(resp.status))) {
           if (writeApprovalRecovery({ ...recovery, pending: undefined })) setPending(null);
         }
+        // Both callers refresh the authoritative detail/list through this
+        // callback. Keep the refusal visible rather than reporting success.
+        if (definitiveConflict) onSuccess?.();
         if (resp.status === 401) {
           setAuthRequired(true);
           throw new Error(t("sessionExpired"));

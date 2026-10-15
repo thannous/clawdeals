@@ -41,10 +41,28 @@ le stockage de l’onglet avant tout envoi, même après connexion. En cas d’�
 le formulaire explique comment rétablir le stockage et aucun POST n’est envoyé.
 La confirmation revérifie le compte actif avant l’envoi : un changement dans un
 autre onglet bloque la création et conserve la tentative pour le compte initial.
+Le POST transmet aussi `X-Expected-Owner-Id`, issu du compte qui a confirmé le
+brief. Le serveur le compare à l’identité authentifiée de cette même requête
+avant toute création : une bascule de cookie après la sonde est refusée avec
+`403 OWNER_SESSION_CHANGED`. Cet identifiant n’est pas un moyen d’authentification.
+Le corps et la clé d’une tentative au résultat inconnu restent inchangés au
+retour sur le compte initial. Les appels GET et l’API agent restent inchangés.
+Une réponse `201` contenant seulement un identifiant ne suffit pas à confirmer
+la création : les critères, la zone, le budget et les permissions doivent être
+valides avant d’effacer le brouillon et la reprise. Un succès incomplet ou
+corrompu garde donc la même clé et le même corps après rechargement.
 Le lien de connexion par email conserve une destination locale validée. Si sa
 vérification est ouverte dans un autre onglet sans le brouillon, elle propose
 explicitement de revenir à l’onglet d’origine ; elle ne prétend pas transférer
 les modifications du brouillon.
+
+Les régressions navigateur de ces deux garanties sont dans
+`e2e/testerarmy/mission-create-contract.e2e.ts` (API interceptée, aucune écriture
+externe). Le test HTTP `src/__tests__/pages-api/v1/owner/missions.test.ts`
+complète cette preuve : le navigateur simulé ne peut pas prouver que le vrai
+handler refuse la bascule de compte avant d’appeler le service de création.
+Les appels directs des fixtures réelles conservent eux aussi le propriétaire
+attendu avec leur clé ; le parcours réel reste qualifié séparément.
 
 Les missions expirées restent consultables mais ne consomment plus de place
 dans le quota actif. La recherche de résultats conserve les correspondances

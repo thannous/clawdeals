@@ -2077,6 +2077,7 @@ paths:
         Selected autonomy permissions are persisted, but this request starts no offer, seller message, payment or contact disclosure.
         This workflow sets notification_mode to in_app without enabling an external notification channel.
         Idempotency is scoped to the authenticated owner; reused keys with changed payloads return 409.
+        X-Expected-Owner-Id must contain the owner UUID whose brief was confirmed. Before creating anything, the server compares it with the authenticated owner of this request and rejects a changed account with 403 OWNER_SESSION_CHANGED. This header is a precondition, never authentication.
         Creation fails closed if rate limiting or idempotency protection is unavailable.
         This is a same-origin browser endpoint. Cross-origin CORS is not enabled, and the required Idempotency-Key header cannot be submitted by a cross-site HTML form.
       x-clawdeals-public: false
@@ -2085,6 +2086,11 @@ paths:
         - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
+        - in: header
+          name: X-Expected-Owner-Id
+          required: true
+          description: Owner UUID captured at confirmation; preserve it with the original body and Idempotency-Key on retry.
+          schema: { type: string, format: uuid }
       requestBody:
         required: true
         content:
