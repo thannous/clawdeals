@@ -31,7 +31,81 @@ Les anciennes attentes de connexion sont actualisées uniquement pour conserver
 Les contre-exemples couvrent une mission localisée et une destination externe
 refusée. Les protections et contrôles de livraison ne sont pas assouplis.
 
-## Rejeu avec TesterArmy e2e 0.21.0
+## Nouveautés 0.21 et poursuite du dogfooding
+
+Le commit `491563b6412c66a2e3d0b741859e9e55fe25af84` poursuit les parcours
+développeur, règles d'achat et console. Quatre frictions supplémentaires ont été
+reproduites puis corrigées :
+
+- Une validation de clé terminée après Annuler ne peut plus enregistrer la clé
+  ni afficher une erreur tardive. Annuler seul, remplacer la clé et oublier une
+  clé pendant son test sont couverts, avec succès et refus retardés.
+- Sur un écran de 390 px, le formulaire de clé débordait jusqu'à 419 px et
+  coupait Annuler. Le champ occupe désormais une ligne et les actions restent
+  visibles ; son nom accessible est traduit en FR/EN/ES.
+- Les champs modifiés pendant l'enregistrement des règles ne sont plus écrasés
+  par l'ancienne réponse. Les champs inchangés acceptent la normalisation du
+  serveur ; les modifications restantes sont signalées. Nouvelle version
+  `If-Match`, rejet 503, nouvelle sauvegarde et validation du rayon sont vérifiés.
+- Recliquer un filtre actif des rapports conserve lignes, sélection et curseur.
+  Changer réellement de filtre continue de rafraîchir les données et d'effacer
+  l'ancienne sélection ; les filtres exposent leur état accessible.
+
+Les 24 nouveaux cas desktop/mobile utilisent des réponses réseau synthétiques
+contrôlées : ils prouvent les transitions de l'interface, pas la persistance
+des règles ou la modération sur le backend. Aucune clé réelle n'est utilisée.
+Les reproductions rouges sont conservées dans `developer-cancel-red-021`
+(6 échecs), `developer-entry-layout-red-021` (1 échec mobile),
+`policy-editing-red-ready-021` (2 échecs et 2 contre-exemples réussis) et
+`dogfood-reports-red-021-20261015` sous `.e2e/validation/`.
+Les premiers passages effectués pendant les éditions concurrentes ne constituent
+pas une qualification stable ; leurs résultats restent inchangés.
+
+La campagne complète sur `491563b` passe **126/126** en **248,24 s**, sur
+ordinateur et mobile : code de sortie 0, entrées stables, aucune erreur du
+journal du runner. Rapport canonique :
+`.e2e/validation/dogfood-021-continued-491563b/summary.md` ; reçu de fin et
+identité du commit dans `completion.json` et `command.json` du même dossier.
+Les **126 pages de trace** sont conservées. Cela comprend les 102 cas existants
+et les 24 nouveaux cas, sans modèle ni paiement.
+
+La nouveauté `openHost` est utilisée par `npm run testerarmy:dogfood` : un hôte
+mobile réutilisé, deux sessions isolées FR/ES, filtres et sortie d'état vide sur
+le catalogue réel sans réponses simulées. Sur `491563b`, les **56 étapes**,
+**2 traces** et **4 captures** sont réussies, sans appel modèle ni erreur de
+fermeture. Un cookie et un marqueur localStorage survivent au rechargement FR
+mais sont absents de la nouvelle session ES. Reçu exploratoire séparé :
+`.e2e/validation/dogfood-host-021-491563b/host-result.json`.
+Les deux premiers essais du pilote ont corrigé une attente de casse CSS et la
+résolution du chemin de capture renvoyé par le SDK, sans changement applicatif.
+
+Les sources applicatives correspondent au commit ; les modifications de skills
+préexistantes restent hors livraison. `verify:pr` sur `491563b` réussit avec
+**10 contrôles exécutés, 2 réutilisés**, dont **817 tests unitaires réussis et
+1 ignoré**. Les 181 cas historiques de `549cadd` et les quatre missions réelles
+de `48ab9e6` restent des preuves réutilisées, détaillées ci-dessous.
+
+Rejeu, avec l'application déjà démarrée sur le même backend autorisé :
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/continued-UNIQUE \
+  mise exec node@24.19.0 -- npm run test:testerarmy -- --max-duration 600000
+
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/host-UNIQUE \
+  mise exec node@24.19.0 -- npm run testerarmy:dogfood
+```
+
+La limite de durée est une autre nouveauté 0.21 : un dépassement interrompt la
+campagne et échoue, sans transformer les cas non exécutés en réussites.
+L'exploration autonome avec modèle n'a pas été lancée : aucun login ChatGPT
+n'est enregistré pour e2e. Les sessions `openHost` et les assertions exactes
+fonctionnent sans cette connexion, sans nouveau fournisseur ni budget.
+
+## Rejeu initial avec TesterArmy e2e 0.21.0
 
 Le runner est fixé à **0.21.0**, avec `@e2e-dev/web` **0.13.0**, Playwright
 **1.63.0**, son Chromium déjà installé et Node **24.19.0**. Le pair déclaré du moteur web accepte cette
