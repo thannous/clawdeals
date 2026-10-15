@@ -126,23 +126,31 @@ export function useMyOffers() {
 
   const setStatus = useCallback(
     (val: string | null) => {
+      if (val === status) return;
       setStatusVal(val);
       setItems([]);
       setNextCursor(null);
       syncUrl(val, agentId);
     },
-    [syncUrl, agentId]
+    [syncUrl, agentId, status]
   );
 
   const setAgentId = useCallback(
     (val: string | null) => {
+      if (val === agentId) return;
       setAgentIdVal(val);
       setItems([]);
       setNextCursor(null);
       syncUrl(status, val);
     },
-    [syncUrl, status]
+    [syncUrl, status, agentId]
   );
+
+  const resetFilters = useCallback(() => {
+    setStatusVal(null);
+    setAgentIdVal(null);
+    syncUrl(null, null);
+  }, [syncUrl]);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadMoreState === "loading") return;
@@ -159,6 +167,6 @@ export function useMyOffers() {
     status, setStatus,
     agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
-    loadMore, refetch,
+    loadMore, refetch, resetFilters,
   };
 }

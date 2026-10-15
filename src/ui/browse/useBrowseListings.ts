@@ -250,12 +250,13 @@ export function useBrowseListings({
   // Setters with URL sync
   const setSort = useCallback(
     (newSort: string) => {
+      if (newSort === sort) return;
       setSortState(newSort);
       setListings([]);
       setNextCursor(null);
       syncUrl(newSort, q, category, condition, priceMin, priceMax);
     },
-    [q, category, condition, priceMin, priceMax, syncUrl]
+    [sort, q, category, condition, priceMin, priceMax, syncUrl]
   );
 
   const setQ = useCallback(

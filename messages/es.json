@@ -1836,7 +1836,13 @@
       "saving": "guardando…",
       "saveSuccess": "Perfil guardado",
       "saveError": "Error al guardar el perfil",
-      "loadError": "Error al cargar el perfil"
+      "loadError": "Error al cargar el perfil",
+      "loading": "Cargando perfil…",
+      "retry": "Reintentar",
+      "location": "Ubicación",
+      "locationHint": "Ayuda a compradores y vendedores a encontrarte",
+      "preferences": "Preferencias de contacto",
+      "countryHint": "Código de país de dos letras, por ejemplo ES o US"
     },
     "account": {
       "pageTitle": "Cuenta // CLAWDEALS",
@@ -1978,6 +1984,9 @@
     "detailPageTitle": "Anuncio // CLAWDEALS"
   },
   "myDeals": {
+    "clearFilters": "Borrar filtros",
+    "browseCatalog": "Explorar ofertas",
+    "noDealsHint": "Las ofertas compartidas por tus agentes aparecerán aquí.",
     "pageTitle": "Mis Ofertas // CLAWDEALS",
     "title": "MIS OFERTAS",
     "failedToLoad": "Error al cargar las ofertas",
@@ -2073,6 +2082,9 @@
     "list": { "listing": "Anuncio", "buyer": "Comprador", "seller": "Vendedor", "status": "Estado", "created": "Creado", "agent": "Agente" }
   },
   "myOffers": {
+    "viewListing": "Ver anuncio",
+    "clearFilters": "Borrar filtros",
+    "browseCatalog": "Explorar anuncios",
     "pageTitle": "Mis ofertas // CLAWDEALS",
     "title": "MIS OFERTAS",
     "failedToLoad": "Error al cargar las ofertas",
@@ -2820,6 +2832,12 @@
         "storage": "Tu navegador no puede conservar el borrador. Permite el almacenamiento de este sitio antes de continuar.",
         "ownerAuth": "Inicia sesión para guardar tu misión. Al crearla no se contacta con ningún vendedor.",
         "ownerFailed": "No se pudo confirmar la creación. Reintenta con los mismos criterios: la solicitud está protegida contra duplicados."
+      },
+      "validation": {
+        "query": "Describe lo que buscas; los espacios solos no son suficientes.",
+        "budget": "El precio preferido no puede superar el presupuesto máximo. Reduce el precio preferido o aumenta el presupuesto.",
+        "requirements": "Introduce hasta 10 requisitos de 120 caracteres cada uno.",
+        "expiry": "Elige una fecha futura dentro de los próximos 90 días."
       }
     },
     "confirm": {
@@ -2968,5 +2986,43 @@
     "googleError": "No se pudo iniciar sesión con Google.",
     "authError": "No se pudo iniciar sesión.",
     "resetError": "No se pudo enviar el email de restablecimiento."
+  },
+  "ownerReset": {
+    "title": "Restablecer contraseña",
+    "intro": "Elige una contraseña nueva de al menos 8 caracteres para tu cuenta.",
+    "checking": "Comprobando el enlace…",
+    "password": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "submit": "Guardar contraseña",
+    "saving": "Guardando…",
+    "invalidLink": "Este enlace no es válido o ha caducado. Solicita uno nuevo desde la página de inicio de sesión.",
+    "tooShort": "Usa al menos 8 caracteres para tu contraseña.",
+    "mismatch": "Las contraseñas no coinciden.",
+    "updateError": "No se pudo guardar la contraseña. Inténtalo de nuevo.",
+    "updated": "Contraseña guardada. Ya puedes iniciar sesión.",
+    "error": "Restablecimiento no disponible",
+    "success": "Contraseña guardada",
+    "requestLink": "Solicitar un nuevo enlace",
+    "backToLogin": "Volver a iniciar sesión"
+  },
+  "pair": {
+    "title": "Vincular Telegram",
+    "subtitle": "Confirma la vinculación entre Telegram y tu cuenta de ClawDeals.",
+    "missingToken": "Falta el enlace de vinculación",
+    "newLink": "Vuelve a Telegram y envía /connect para obtener un nuevo enlace.",
+    "ready": "Tu enlace de vinculación está listo. Confirma solo si lo solicitaste desde tu cuenta de Telegram.",
+    "expired": "Este enlace de vinculación ha caducado. Vuelve a Telegram y envía /connect para obtener uno nuevo.",
+    "used": "Este enlace de vinculación ya se ha usado. Revisa tus aplicaciones conectadas o envía /connect de nuevo en Telegram.",
+    "invalid": "Este enlace de vinculación no es válido. Vuelve a Telegram y envía /connect para obtener uno nuevo.",
+    "alreadyPaired": "Esta cuenta de Telegram ya está vinculada a otro propietario.",
+    "signInRequired": "Inicia sesión para confirmar la vinculación. Volverás a este mismo enlace.",
+    "signIn": "Iniciar sesión",
+    "confirming": "Confirmando…",
+    "confirm": "Confirmar vinculación",
+    "paired": "Vinculación completada. Telegram ya está conectado a tu cuenta.",
+    "pending": "La vinculación está pendiente de aprobación. Revísala en tu lista de aprobaciones.",
+    "confirmed": "Vinculación confirmada.",
+    "connectedApps": "Aplicaciones conectadas",
+    "approvals": "Mis aprobaciones"
   }
 }

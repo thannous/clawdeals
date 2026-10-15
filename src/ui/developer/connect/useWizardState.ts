@@ -284,8 +284,9 @@ export function useWizardState() {
           if (me?.agent_id && !cancelled && mountedRef.current) {
             setAgentMe(me);
             setAgentId(me.agent_id);
-            setMethod("apikey");
-            setVerifiedState(true);
+            // Resolving ownership must not skip the selected setup flow. In
+            // particular an MCP key still needs its installation step; the
+            // wizard's explicit verification advances it when the user is ready.
           }
         } catch {
           return;

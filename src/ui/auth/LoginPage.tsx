@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
 import { getBrowserSupabaseClient } from "./supabase-client";
+import { localePrefixFor, resolveSupportedLocale } from "../../shared/i18n";
 
 function getErrorMessage(body: any, status: number) {
   const error = body?.error;
@@ -123,11 +124,15 @@ function useLoginPageView() {
   const t = useTranslations("ownerLogin");
   const router = useRouter();
   const hasCheckedExistingSessionRef = useRef(false);
+  const emailInputRef = useRef<HTMLInputElement>(null);
   const [modeOverride, setModeOverride] = useState<"login" | "signup" | null>(null);
   const requestedMode = resolveRequestedAuthMode(router.isReady, router.query.mode);
   const mode = modeOverride || requestedMode;
   const selectMode = useCallback((nextMode: "login" | "signup") => {
     setModeOverride(nextMode);
+    setError(null);
+    setNotice(null);
+    setSubmitState("idle");
   }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -140,7 +145,8 @@ function useLoginPageView() {
 
   const redirectTarget = resolveRedirectTarget(router.isReady, router.query.next);
   const missionReturn = redirectHintReady && /^\/(?:fr\/|en\/|es\/)?my\/missions\/new(?:[?#]|$)/.test(redirectTarget);
-  const canSubmit = Boolean(email.trim() && password.trim() && submitState !== "loading");
+  const busy = submitState === "loading" || forgotState === "loading";
+  const canSubmit = Boolean(email.trim() && password && !busy);
   const hardRedirect = useCallback((target: string) => {
     window.location.assign(target);
   }, []);
@@ -269,13 +275,17 @@ function useLoginPageView() {
     if (!email.trim()) {
       setForgotState("error");
       setError(t("enterEmail"));
+      emailInputRef.current?.focus();
       return;
     }
+    if (!emailInputRef.current?.reportValidity()) return;
     setForgotState("loading");
     setError(null);
+    setNotice(null);
     try {
       const supabase = getBrowserSupabaseClient();
-      const redirectTo = `${window.location.origin}/auth/reset`;
+      const localePrefix = localePrefixFor(resolveSupportedLocale(router.locale));
+      const redirectTo = `${window.location.origin}${localePrefix}/auth/reset?next=${encodeURIComponent(redirectTarget)}`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
       if (resetError) throw resetError;
       setForgotState("done");
@@ -284,7 +294,7 @@ function useLoginPageView() {
       setForgotState("error");
       setError(String(err?.message || t("resetError")));
     }
-  }, [email, t]);
+  }, [email, redirectTarget, router.locale, t]);
 
   return (
     <div data-testid="auth-login-page" className="min-h-screen bg-bg relative overflow-hidden flex flex-col lg:flex-row">
@@ -382,7 +392,7 @@ function useLoginPageView() {
               <button
                 data-testid="auth-login-google"
                 onClick={onGoogle}
-                disabled={submitState === "loading"}
+                disabled={busy}
                 className="w-full px-4 py-3 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
               >
                 {t("google")}
@@ -396,9 +406,12 @@ function useLoginPageView() {
               </div>
 
               {/* Tab toggle + fields */}
-              <div className="space-y-5">
+              <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void onEmailPassword(); }}>
                 <div className="flex gap-2 bg-bg/50 p-1 w-fit border border-border rounded">
                   <button
+                    type="button"
+                    aria-pressed={mode === "login"}
+                    disabled={busy}
                     onClick={() => selectMode("login")}
                     className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-colors ${
                       mode === "login" ? "bg-text text-bg" : "text-subtle hover:text-text"
@@ -407,6 +420,9 @@ function useLoginPageView() {
                     {t("login")}
                   </button>
                   <button
+                    type="button"
+                    aria-pressed={mode === "signup"}
+                    disabled={busy}
                     onClick={() => selectMode("signup")}
                     className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-colors ${
                       mode === "signup" ? "bg-text text-bg" : "text-subtle hover:text-text"
@@ -422,6 +438,9 @@ function useLoginPageView() {
                   </label>
                   <input
                     id="auth-email"
+                    ref={emailInputRef}
+                    required
+                    disabled={busy}
                     name="email"
                     type="email"
                     inputMode="email"
@@ -444,6 +463,8 @@ function useLoginPageView() {
                   <div className="relative">
                     <input
                       id="auth-password"
+                      required
+                      disabled={busy}
                       name="password"
                       type={isPasswordVisible ? "text" : "password"}
                       autoCapitalize="none"
@@ -470,14 +491,14 @@ function useLoginPageView() {
                 </div>
 
                 {error && (
-                  <div data-testid="auth-login-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                  <div role="alert" data-testid="auth-login-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-error">{t("error")}</div>
                     <div className="text-xs font-mono text-muted mt-1">{error}</div>
                   </div>
                 )}
 
                 {notice && (
-                  <div data-testid="auth-login-notice" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
+                  <div role="status" data-testid="auth-login-notice" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-secondary">{t("notice")}</div>
                     <div className="text-xs font-mono text-muted mt-1">{notice}</div>
                   </div>
@@ -487,7 +508,7 @@ function useLoginPageView() {
                 <div className="flex flex-col gap-3 pt-1">
                   <button
                     data-testid="auth-login-submit"
-                    onClick={onEmailPassword}
+                    type="submit"
                     disabled={!canSubmit}
                     className="w-full px-4 py-3 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
@@ -500,6 +521,7 @@ function useLoginPageView() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <button
+                      type="button"
                       data-testid="auth-login-forgot"
                       onClick={onForgotPassword}
                       disabled={forgotState === "loading" || submitState === "loading"}
@@ -516,7 +538,7 @@ function useLoginPageView() {
                     </Link>
                   </div>
                 </div>
-              </div>
+              </form>
             </div>
 
             {/* Footer hint */}

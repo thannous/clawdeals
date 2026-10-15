@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { localePrefixFor, resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
 import type { ReactNode } from "react";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -209,7 +210,7 @@ export default function PolicyPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const redirectToLogin = useCallback(() => {
-    const next = encodeURIComponent(router.asPath || "/settings/policy");
+    const next = encodeURIComponent(`${localePrefixFor(resolveSupportedLocale(router.locale))}${stripLocalePrefix(router.asPath || "/settings/policy")}`);
     void router.replace(`/auth/login?next=${next}`);
   }, [router]);
 

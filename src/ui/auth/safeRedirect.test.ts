@@ -9,6 +9,15 @@ describe("safeRedirectUrl", () => {
     expect(safeRedirectUrl("/fr/deals#active")).toBe("/fr/deals#active");
   });
 
+  it("preserves exact pairing destinations without allowing similar paths or external hosts", () => {
+    expect(safeRedirectUrl("/pair?token=synthetic")).toBe("/pair?token=synthetic");
+    expect(safeRedirectUrl("/fr/pair?token=synthetic")).toBe("/fr/pair?token=synthetic");
+    expect(safeRedirectUrl("/fr/pair-extra?token=synthetic")).toBe("/settings/account");
+    expect(safeRedirectUrl("/pair/other")).toBe("/settings/account");
+    expect(safeRedirectUrl("//outside.example/fr/pair?token=synthetic")).toBe("/settings/account");
+    expect(safeRedirectUrl("/fr/pair/../../api/v1/owner")).toBe("/settings/account");
+  });
+
   it("rejects paths not in allowed prefixes", () => {
     expect(safeRedirectUrl("/admin")).toBe("/settings/account");
     expect(safeRedirectUrl("/foo")).toBe("/settings/account");

@@ -41,6 +41,7 @@ export default function BrowseDealsToolbar({
               key={opt.value}
               data-testid={`sort-${opt.value}`}
               onClick={() => onSortChange(opt.value)}
+              aria-pressed={sort === opt.value}
               className={`px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
                 sort === opt.value
                   ? "border-primary text-primary bg-primary/10 shadow-[0_0_8px_rgb(var(--theme-primary-rgb)/0.2)]"
@@ -72,10 +73,11 @@ export default function BrowseDealsToolbar({
         <button
           data-testid="browse-deals-filters-toggle"
           onClick={() => setFiltersOpen(!filtersOpen)}
-          aria-label={t("filters")}
-          className="sm:hidden px-3 py-1.5 text-xs font-mono border border-border rounded text-muted hover:text-text"
+          aria-expanded={filtersOpen}
+          className="sm:hidden inline-flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-mono border border-border rounded text-muted hover:text-text"
         >
-          <SlidersHorizontal size={14} />
+          <SlidersHorizontal size={14} aria-hidden="true" />
+          <span>{t("filters")}{status ? " (1)" : ""}</span>
         </button>
       </div>
 
@@ -88,6 +90,7 @@ export default function BrowseDealsToolbar({
             key={s}
             data-testid={`status-${s}`}
             onClick={() => onStatusChange(status === s ? "" : s)}
+            aria-pressed={status === s}
             className={`px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
               status === s
                 ? "border-secondary text-secondary bg-secondary/10"

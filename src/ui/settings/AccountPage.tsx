@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { localePrefixFor, resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import ConfirmModal from "../console/shared/ConfirmModal";
@@ -149,7 +150,7 @@ function useAccountPageView() {
   const abortRef = useRef<AbortController | null>(null);
 
   const redirectToLogin = useCallback(() => {
-    const next = encodeURIComponent(router.asPath || "/settings/account");
+    const next = encodeURIComponent(`${localePrefixFor(resolveSupportedLocale(router.locale))}${stripLocalePrefix(router.asPath || "/settings/account")}`);
     void router.replace(`/auth/login?next=${next}`);
   }, [router]);
 

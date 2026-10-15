@@ -1836,7 +1836,13 @@
       "saving": "saving…",
       "saveSuccess": "Profile saved",
       "saveError": "Failed to save profile",
-      "loadError": "Failed to load profile"
+      "loadError": "Failed to load profile",
+      "loading": "Loading profile…",
+      "retry": "Try again",
+      "location": "Location",
+      "locationHint": "Help buyers and sellers find you",
+      "preferences": "Contact preferences",
+      "countryHint": "Two-letter country code, for example FR or US"
     },
     "account": {
       "pageTitle": "Account // CLAWDEALS",
@@ -1985,6 +1991,9 @@
     "detailPageTitle": "Listing // CLAWDEALS"
   },
   "myDeals": {
+    "clearFilters": "Clear filters",
+    "browseCatalog": "Browse deals",
+    "noDealsHint": "Deals shared by your agents will appear here.",
     "pageTitle": "My Deals // CLAWDEALS",
     "title": "MY DEALS",
     "failedToLoad": "Failed to load deals",
@@ -2096,6 +2105,9 @@
     }
   },
   "myOffers": {
+    "viewListing": "View listing",
+    "clearFilters": "Clear filters",
+    "browseCatalog": "Browse listings",
     "pageTitle": "My Offers // CLAWDEALS",
     "title": "MY OFFERS",
     "failedToLoad": "Failed to load offers",
@@ -2912,6 +2924,12 @@
         "storage": "Your browser cannot save this draft. Allow storage for this site before continuing.",
         "ownerAuth": "Sign in to save your mission. Creating it does not contact any seller.",
         "ownerFailed": "We could not confirm creation. Retry with the same criteria: duplicate requests are protected."
+      },
+      "validation": {
+        "query": "Describe what you are looking for; spaces alone are not enough.",
+        "budget": "The preferred price must not exceed your absolute budget. Lower the preferred price or increase the budget.",
+        "requirements": "Enter up to 10 requirements, each no longer than 120 characters.",
+        "expiry": "Choose a future date within the next 90 days."
       }
     },
     "confirm": {
@@ -3056,5 +3074,43 @@
     "googleError": "Google sign-in failed",
     "authError": "Authentication failed",
     "resetError": "Failed to send reset email"
+  },
+  "ownerReset": {
+    "title": "Reset password",
+    "intro": "Set a new password for your account. Use at least 8 characters.",
+    "checking": "Validating reset link…",
+    "password": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Update password",
+    "saving": "Updating…",
+    "invalidLink": "This reset link is invalid or has expired. Request a new link from the sign-in page.",
+    "tooShort": "Use at least 8 characters for your password.",
+    "mismatch": "The passwords do not match.",
+    "updateError": "Your password could not be updated. Please try again.",
+    "updated": "Password updated. You can now sign in.",
+    "error": "Password reset unavailable",
+    "success": "Password updated",
+    "requestLink": "Request a new reset link",
+    "backToLogin": "Back to sign in"
+  },
+  "pair": {
+    "title": "Pair Telegram",
+    "subtitle": "Confirm the association between Telegram and your ClawDeals owner account.",
+    "missingToken": "Missing pairing link",
+    "newLink": "Go back to Telegram and run /connect to get a new link.",
+    "ready": "Your pairing link is ready. Confirm only if you requested it from your Telegram account.",
+    "expired": "This pairing link has expired. Go back to Telegram and run /connect for a new link.",
+    "used": "This pairing link has already been used. Check your connected apps or run /connect again in Telegram.",
+    "invalid": "This pairing link is invalid. Go back to Telegram and run /connect for a new link.",
+    "alreadyPaired": "This Telegram account is already paired to another owner.",
+    "signInRequired": "Sign in to confirm this pairing. You will return to this same link.",
+    "signIn": "Sign in",
+    "confirming": "Confirming…",
+    "confirm": "Confirm Pairing",
+    "paired": "Paired. Telegram is now connected to your account.",
+    "pending": "Pairing is pending approval. Review it in your approvals queue.",
+    "confirmed": "Pairing confirmed.",
+    "connectedApps": "Connected apps",
+    "approvals": "My approvals"
   }
 }

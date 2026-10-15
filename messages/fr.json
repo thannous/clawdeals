@@ -1836,7 +1836,13 @@
       "saving": "enregistrement…",
       "saveSuccess": "Profil enregistré",
       "saveError": "Échec de l'enregistrement du profil",
-      "loadError": "Impossible de charger le profil"
+      "loadError": "Impossible de charger le profil",
+      "loading": "Chargement du profil…",
+      "retry": "Réessayer",
+      "location": "Localisation",
+      "locationHint": "Aide les acheteurs et vendeurs à te trouver",
+      "preferences": "Préférences de contact",
+      "countryHint": "Code pays à deux lettres, par exemple FR ou US"
     },
     "account": {
       "pageTitle": "Mon compte // CLAWDEALS",
@@ -1978,6 +1984,9 @@
     "detailPageTitle": "Annonce // CLAWDEALS"
   },
   "myDeals": {
+    "clearFilters": "Effacer les filtres",
+    "browseCatalog": "Parcourir les bons plans",
+    "noDealsHint": "Les bons plans partagés par vos agents apparaîtront ici.",
     "pageTitle": "Mes Deals // CLAWDEALS",
     "title": "MES DEALS",
     "failedToLoad": "Impossible de charger les deals",
@@ -2073,6 +2082,9 @@
     "list": { "listing": "Annonce", "buyer": "Acheteur", "seller": "Vendeur", "status": "Statut", "created": "Créé le", "agent": "Agent" }
   },
   "myOffers": {
+    "viewListing": "Voir l’annonce",
+    "clearFilters": "Effacer les filtres",
+    "browseCatalog": "Parcourir les annonces",
     "pageTitle": "Mes offres // CLAWDEALS",
     "title": "MES OFFRES",
     "failedToLoad": "Impossible de charger les offres",
@@ -2820,6 +2832,12 @@
         "storage": "Ton navigateur ne permet pas de conserver le brouillon. Autorise le stockage pour ce site avant de continuer.",
         "ownerAuth": "Connecte-toi pour enregistrer ta mission. Aucun vendeur n’est contacté lors de sa création.",
         "ownerFailed": "La création n’a pas pu être confirmée. Réessaie avec les mêmes critères : la demande est protégée contre les doublons."
+      },
+      "validation": {
+        "query": "Décris ce que tu cherches ; des espaces seuls ne suffisent pas.",
+        "budget": "Le prix préféré ne peut pas dépasser le plafond absolu. Réduis le prix préféré ou augmente le plafond.",
+        "requirements": "Saisis au maximum 10 exigences de 120 caractères chacune.",
+        "expiry": "Choisis une date future dans les 90 jours à venir."
       }
     },
     "confirm": {
@@ -2968,5 +2986,43 @@
     "googleError": "La connexion avec Google a échoué.",
     "authError": "La connexion a échoué.",
     "resetError": "L’email de réinitialisation n’a pas pu être envoyé."
+  },
+  "ownerReset": {
+    "title": "Réinitialiser le mot de passe",
+    "intro": "Choisis un nouveau mot de passe d’au moins 8 caractères pour ton compte.",
+    "checking": "Vérification du lien…",
+    "password": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "submit": "Enregistrer le mot de passe",
+    "saving": "Enregistrement…",
+    "invalidLink": "Ce lien est invalide ou a expiré. Demande un nouveau lien depuis la page de connexion.",
+    "tooShort": "Utilise au moins 8 caractères pour ton mot de passe.",
+    "mismatch": "Les mots de passe ne correspondent pas.",
+    "updateError": "Le mot de passe n’a pas pu être enregistré. Réessaie.",
+    "updated": "Mot de passe enregistré. Tu peux maintenant te connecter.",
+    "error": "Réinitialisation indisponible",
+    "success": "Mot de passe enregistré",
+    "requestLink": "Demander un nouveau lien",
+    "backToLogin": "Revenir à la connexion"
+  },
+  "pair": {
+    "title": "Associer Telegram",
+    "subtitle": "Confirme l’association entre Telegram et ton compte ClawDeals.",
+    "missingToken": "Lien d’association manquant",
+    "newLink": "Retourne dans Telegram et envoie /connect pour obtenir un nouveau lien.",
+    "ready": "Ton lien d’association est prêt. Confirme uniquement si tu l’as demandé depuis ton compte Telegram.",
+    "expired": "Ce lien d’association a expiré. Retourne dans Telegram et envoie /connect pour en obtenir un nouveau.",
+    "used": "Ce lien d’association a déjà été utilisé. Consulte tes applications connectées ou envoie à nouveau /connect dans Telegram.",
+    "invalid": "Ce lien d’association est invalide. Retourne dans Telegram et envoie /connect pour en obtenir un nouveau.",
+    "alreadyPaired": "Ce compte Telegram est déjà associé à un autre propriétaire.",
+    "signInRequired": "Connecte-toi pour confirmer cette association. Tu reviendras sur ce même lien.",
+    "signIn": "Se connecter",
+    "confirming": "Confirmation…",
+    "confirm": "Confirmer l’association",
+    "paired": "Association réussie. Telegram est maintenant connecté à ton compte.",
+    "pending": "L’association attend une approbation. Consulte ta liste d’approbations.",
+    "confirmed": "Association confirmée.",
+    "connectedApps": "Applications connectées",
+    "approvals": "Mes approbations"
   }
 }

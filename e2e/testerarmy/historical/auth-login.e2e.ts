@@ -8,7 +8,7 @@ test.describe("Auth: Login", () => {
     await expect(page.getByTestId("auth-login-page")).toBeVisible();
     await expect(page.getByTestId("auth-login-google")).toBeVisible();
     await expect(page.getByTestId("auth-login-submit")).toBeVisible();
-    await expect(page.getByTestId("auth-login-legacy-link")).toHaveAttribute("href", "/auth/login-legacy");
+    await expect(page.getByTestId("auth-login-legacy-link")).toHaveAttribute("href", "/auth/login-legacy?next=%2Fsettings%2Faccount");
   });
 
   test("toggles password visibility", async ({ page }) => {
@@ -62,7 +62,7 @@ test.describe("Auth: Login", () => {
     await expect(page.getByTestId("auth-login-token")).toContainText("cd_os_test_123");
     await expect(page.getByTestId("auth-login-verify-link")).toHaveAttribute(
       "href",
-      "/auth/verify?session_id=22222222-2222-4222-8222-222222222222&token=cd_os_test_123"
+      "/auth/verify?session_id=22222222-2222-4222-8222-222222222222&token=cd_os_test_123&next=%2Fsettings%2Fidentities"
     );
     expect(loginStarted).toBe(true);
   });

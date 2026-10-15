@@ -325,6 +325,25 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
     code: string | null;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [fieldError, setFieldError] = useState<{ name: string; key: string } | null>(null);
+
+  useEffect(() => {
+    if (!fieldError) return;
+    const field = formRef.current?.elements.namedItem(fieldError.name);
+    if (!(field instanceof HTMLElement)) return;
+    const section = field.closest("details");
+    if (section) section.open = true;
+    field.focus();
+    field.scrollIntoView({ block: "center", behavior: "instant" });
+  }, [fieldError]);
+
+  const invalid = (name: string) => fieldError?.name === name
+    ? { "aria-invalid": true as const, "aria-describedby": `mission-error-${name}` }
+    : {};
+  const errorHint = (name: string) => fieldError?.name === name
+    ? <p id={`mission-error-${name}`} className="text-sm text-warning">{t(fieldError.key)}</p>
+    : null;
 
   const draft = { query, marketCode, cityPreset, locationLabel, latitude, longitude, radiusKm,
     preferredPriceMax, hardBudgetMax, requirements, autonomousActions: autonomousActions as BuyMissionInput["autonomous_actions"], expiresAt };
@@ -449,6 +468,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
     event.preventDefault();
     setSubmitting(true);
     setResultMessage(null);
+    setFieldError(null);
     const args = {
       query,
       market_code: marketCode,
@@ -468,7 +488,16 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
     };
     const parsed = buyMissionZodSchema.safeParse(args);
     if (!parsed.success) {
-      setResultMessage({ key: "mission.result.validation", code: "VALIDATION_ERROR" });
+      const path = String(parsed.error.issues[0]?.path[0] || "");
+      const errors: Record<string, { name: string; key: string }> = {
+        query: { name: "query", key: "mission.validation.query" },
+        preferred_price_max: { name: "preferred_price_max", key: "mission.validation.budget" },
+        requirements: { name: "requirements_text", key: "mission.validation.requirements" },
+        expires_at: { name: "expires_at", key: "mission.validation.expiry" }
+      };
+      const error = errors[path];
+      if (error) setFieldError(error);
+      setResultMessage({ key: error?.key || "mission.result.validation", code: "VALIDATION_ERROR" });
       setSubmitting(false);
       return;
     }
@@ -501,9 +530,11 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
   const options = (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <label className="space-y-1">
-        <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.expires")}</span>
+        <span id="mission-label-expires" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.expires")}</span>
         <input
           {...param(t("mission.params.expires"))}
+          {...invalid("expires_at")}
+          aria-labelledby="mission-label-expires"
           required
           name="expires_at"
           type="datetime-local"
@@ -511,6 +542,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
           onChange={(event) => setExpiresAt(event.target.value)}
           className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
         />
+        {errorHint("expires_at")}
       </label>
       <fieldset className="space-y-1" data-testid="buy-mission-autonomy">
         <legend className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.autonomy")}</legend>
@@ -566,8 +598,12 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
       {!draftSource && activeMission ? <MissionSummary mission={activeMission} /> : null}
 
       <form
+        ref={formRef}
         {...(draftSource ? {} : webMcpFormAttributes)}
-        onChangeCapture={() => { edited.current = true; }}
+        onChangeCapture={() => {
+          edited.current = true;
+          if (fieldError) { setFieldError(null); setResultMessage(null); }
+        }}
         onSubmit={submitMission}
         className="border border-border bg-surface rounded clip-corner p-4"
         data-testid="buy-mission-form"
@@ -590,9 +626,11 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1 lg:col-span-2">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.query")}</span>
+            <span id="mission-label-query" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.query")}</span>
             <input
               {...param(t("mission.params.query"))}
+              {...invalid("query")}
+              aria-labelledby="mission-label-query"
               required
               maxLength={80}
               name="query"
@@ -600,6 +638,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
               onChange={(event) => setQuery(event.target.value)}
               className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
             />
+            {errorHint("query")}
           </label>
           <label className="space-y-1">
             <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.city")}</span>
@@ -646,9 +685,11 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
             />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.preferred")}</span>
+            <span id="mission-label-preferred" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.preferred")}</span>
             <input
               {...param(t("mission.params.preferred"))}
+              {...invalid("preferred_price_max")}
+              aria-labelledby="mission-label-preferred"
               name="preferred_price_max"
               type="number"
               min="0.01"
@@ -657,6 +698,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
               onChange={(event) => setPreferredPriceMax(event.target.value)}
               className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
             />
+            {errorHint("preferred_price_max")}
           </label>
           <label className="space-y-1">
             <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.ceiling")}</span>
@@ -673,9 +715,11 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
             />
           </label>
           <label className="space-y-1 lg:col-span-2">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.requirements")}</span>
+            <span id="mission-label-requirements" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.requirements")}</span>
             <textarea
               {...param(t("mission.params.requirements"))}
+              {...invalid("requirements_text")}
+              aria-labelledby="mission-label-requirements"
               maxLength={1210}
               name="requirements_text"
               rows={3}
@@ -683,6 +727,7 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
               onChange={(event) => setRequirements(event.target.value)}
               className="w-full border border-border bg-bg px-3 py-2 text-sm font-mono text-text"
             />
+            {errorHint("requirements_text")}
           </label>
 
         </div>
