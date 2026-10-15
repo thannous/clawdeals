@@ -1,10 +1,13 @@
 # Dogfooding commerce — 15 octobre 2026
 
-**Brouillon : qualification finale en attente.** Cette note décrit les changements
-en cours depuis `97eff873c191e705f4a6cb095d57dd3b4697107a` et les vérifications
-ciblées obtenues pendant leur développement. Les preuves ci-dessous portent sur
-un checkout modifié ; elles ne qualifient pas encore le commit final. Aucun
-résultat de qualification du commit final n'est déclaré dans cette version.
+**Qualification navigateur réussie : 166/166 cas client et 2/2 cycles commerce
+réels, ordinateur et mobile.** Les deux campagnes portent sur le commit
+applicatif `6a2f86439b2767364a1011c6c292bd479efcc896`, avec entrées stables.
+Les commits suivants adaptent une assertion unitaire à la nouvelle signature
+interne et consignent ce rapport : aucun code applicatif ni scénario navigateur
+n'a changé. Leurs preuves navigateur sont donc réutilisées dans ce périmètre,
+sans prétendre à un nouveau rejeu. Les modifications locales indépendantes de
+skills ont été conservées hors des commits.
 
 ## Parcours et rôles
 
@@ -77,7 +80,28 @@ un rechargement ou plusieurs onglets. Les couches HTTP et mission-tools
 renvoient néanmoins `OUTCOME_UNKNOWN` avec `safe_to_retry: false` pour ces appels
 lorsque le résultat d'une écriture est indéterminé.
 
-## Preuves ciblées avant qualification finale
+## Qualification et preuves de développement
+
+| Campagne finale sur `6a2f864` | Résultat | Preuve locale |
+| --- | --- | --- |
+| Client, 44 fichiers/cibles | **166/166**, 236,66 s | `.e2e/validation/commerce-client-6a2f864/summary.md` ; 166 traces Markdown |
+| Commerce réel desktop/mobile | **2/2**, 75,43 s | `.e2e/validation/commerce-live-6a2f864/summary.md` ; reçus privés `commerce-fixtures/*.json` |
+
+Les deux rapports terminent avec `primaryCode: 0`, `inputStable: true`,
+`journeysPassed: true`, `evidenceComplete: true`, sans erreur de manifeste.
+Les deux fixtures réelles ont chacune deux identités Auth nettoyées, un graphe
+contrôlé, aucune erreur de nettoyage et zéro résidu dans tous les scopes vérifiés.
+Leurs 14 appels d'agent par parcours sont distincts des actions navigateur.
+Le code de contrôle des preuves passe aussi ses 20 tests.
+
+Les passages ciblés suivants expliquent les reproductions et corrections. Ils
+ne s'ajoutent pas au total final de 166 cas.
+
+La reproduction réelle de la reconnexion est conservée dans
+`.e2e/validation/commerce-live-pilot7-021/summary.md` : pont de session HTTP 200,
+mais URL toujours sur la connexion après 15 s. Le pilote 8 a franchi ce point
+et s'est arrêté sur une assertion de casse CSS (`Acceptée`/`ACCEPTÉE`), corrigée
+dans le test ; cet arrêt n'est pas présenté comme un défaut métier.
 
 Les chemins désignent des sorties locales ignorées par Git. Les nombres
 comptent les cas sélectionnés et exécutés ; les déclarations marquées `skipped`
@@ -91,26 +115,28 @@ transformer le checkout modifié en preuve du commit final.
 | Filtre `COUNTERED`, EN/FR/ES, desktop/mobile | 6/6, code primaire 0, `inputStable: false` | `.e2e/validation/dogfood-commerce-countered-green` ; diagnostic fonctionnel, entrées modifiées pendant l'exécution |
 | Badge et filtre, EN/FR/ES mobile | 3/3, code primaire 0, `inputStable: true` | `.e2e/validation/dogfood-countered-badge-green` ; trois captures/traces, débordement mobile reproduit avant correction |
 | Reprise d'approbation : session, réponse perdue/tronquée, stockage, compte, file et note | 14/14 desktop/mobile, code primaire 0, `inputStable: true` | `.e2e/validation/approval-recovery-stable-021` ; Auth et API d'approbation simulées |
-| Contexte des approbations | 2/2 desktop/mobile, huit contextes par cas, code primaire 0, `inputStable: true` | `.e2e/validation/approval-context-green-021` ; destinations des liens vérifiées, clic après réservation ajouté au parcours réel restant à qualifier |
+| Contexte des approbations | 2/2 desktop/mobile, huit contextes par cas, code primaire 0, `inputStable: true` | `.e2e/validation/approval-context-green-021` ; clic après réservation également vérifié dans la campagne réelle finale |
 | Callback d'inscription : même onglet ou onglet indépendant | 4/4, code primaire 0, `inputStable: true` | `.e2e/validation/signup-callback-final-021` ; Auth simulée, aucun email envoyé |
 | Capture et pont de session du callback mobile | 2/2, code primaire 0, `inputStable: true` | `.e2e/validation/signup-callback-mobile-proof-021` ; preuve complémentaire ciblée, pas deux parcours commerce supplémentaires |
 | Retour automatique après renouvellement de session | 2/2 desktop/mobile, `inputStable: true` | `.e2e/validation/auth-auto-recovery-green-021` ; pont Auth retardé et mise à jour du routeur simulés, retour au montant conservé sans POST d'approbation |
 | Réponses WebMCP inexploitables et second envoi | 8/8 desktop/mobile, code primaire 0, `inputStable: true` | `.e2e/validation/commerce-webmcp-contract-green-021-20261015` ; quatre types de réponse, API interceptée, aucune création réelle |
+| Confirmation WebMCP modifiée A → B, puis nouvel essai B | 10/10 incluant les huit cas précédents, code primaire 0, `inputStable: true` | `.e2e/validation/commerce-webmcp-edited-green-021-20261015` ; B reste bloqué après résultat inconnu, A reste confirmable |
 
 Le pilote commerce desktop `commerce-live-pilot9-021` a ensuite terminé le cycle
 complet en 30,34 s, avec zéro résidu dans les scopes contrôlés et un reçu stable.
-Il reste une preuve de développement sur checkout modifié ; la campagne finale
-ci-dessous sera liée au commit. Le wrapper contrôle désormais les empreintes
+Il reste une preuve de développement sur checkout modifié ; les deux campagnes
+finales ci-dessus sont liées au commit. Le wrapper contrôle désormais les empreintes
 de tous les fichiers source de l'application, en plus des tests et messages,
 pour détecter une modification pendant un essai.
 
 Les contrôles de service ciblés ont également obtenu 18/18 sur la sélection
 d'agent et les missions propriétaire, et 11/11 sur HTTP WebMCP. Ils couvrent
 notamment suspension, absence d'agent, contraintes de recherche et annulation
-de POST. Ce sont des résultats de développement reçus avant le gel ; les
-contrôles du commit final restent à consigner. Un cas supplémentaire de
-confirmation WebMCP avec JSON modifié est encore en correction : les huit
-résultats ci-dessus ne valent pas rejeu de cette correction ultérieure.
+de POST. Ce sont des résultats de développement reçus avant le gel. Le premier
+`verify:pr` a détecté une assertion unitaire encore limitée aux deux anciens
+arguments de `executeTool`. Elle vérifie maintenant aussi la mémoire des essais
+transmise au provider, en gardant les assertions de budget ; les deux cas du
+fichier passent. Le contre-exemple A → B reste couvert par les vrais navigateurs.
 
 ## Données fictives, garde et nettoyage
 
@@ -152,7 +178,7 @@ des jetons Auth. Le wrapper génère le mot de passe utilisé via les credential
 opaques du SDK. Aucun secret n'est inscrit dans le reçu ; les rapports commerce
 restent privés et exclus des bundles publics.
 
-## Reproduction et clôture à compléter
+## Reproduction et livraison
 
 La commande et les prérequis complets sont maintenus dans
 [TesterArmy — transaction acheteur/vendeur](./testerarmy-e2e.md#verify-a-complete-buyerseller-transaction).
@@ -174,11 +200,27 @@ configurés selon le guide ; ne pas les copier dans cette note. Le wrapper
 fournit le mot de passe éphémère. Pour le pilote desktop seulement, ajouter
 `-- --target desktop` ; la qualification attendue couvre les deux cibles.
 
+La campagne client utilise la même application avec des réponses contrôlées :
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+TESTERARMY_AI=0 PARITY_OUTPUT=.e2e/validation/client-UNIQUE \
+  mise exec node@24.19.0 -- npm run test:testerarmy
+```
+
+`verify:pr` a réussi sur `fbe9c7bec6fe20181dce9fda4b1d89405254dacb` :
+4 contrôles exécutés, 8 réutilisés selon leurs empreintes, 0 hors périmètre ;
+835 tests unitaires réussis, 1 ignoré. Arbre vérifié :
+`d32e4c704078339a10749c65703a42751a6a0dc4`. Le commit documentaire de ce rapport
+repasse `verify:pr` avant push ; son SHA et son reçu exact figurent dans la PR.
+Commande : `mise exec node@24.19.0 java@temurin-17.0.20+101 python@3.11.17 -- npm run verify:pr`.
+
 | Clôture finale | Statut |
 | --- | --- |
-| Commit et arbre source qualifiés | À compléter après gel |
-| Suite navigateur sur ce commit | En attente ; sortie, sélection, comptes et `inputStable` à renseigner |
-| Commerce réel desktop/mobile sur ce commit | En attente ; aucune réussite complète déclarée ici |
-| Reçus Auth/Postgres/Redis, zéro résidu dans les scopes vérifiés | À confirmer pour chaque invocation finale |
-| `npm run verify:pr` sur le commit à publier | En attente |
-| Mise à jour PR #26 | Après vérification ; sans fusion ni déploiement |
+| Commit applicatif qualifié | `6a2f86439b2767364a1011c6c292bd479efcc896` |
+| Suite navigateur sur ce commit | 166/166, entrées stables |
+| Commerce réel desktop/mobile sur ce commit | 2/2, entrées stables |
+| Reçus Auth/Postgres/Redis, zéro résidu dans les scopes vérifiés | Confirmé pour les deux fixtures finales |
+| `npm run verify:pr` | Réussi sur `fbe9c7b` ; contrôle du dernier commit documentaire avant publication de la branche |
+| PR #26 | Livraison sur `codex/first-buy-mission` après `verify:pr` ; fusion CTO et production soumises aux autorisations distinctes |
