@@ -60,4 +60,31 @@ describe("owner-login-email", () => {
       code: "EMAIL_SEND_FAILED"
     });
   });
+
+  // Browser routes simulate delivery, so only this transport test inspects the
+  // actual generated email. The provider fetch is stubbed; no mail is sent.
+  it.each([
+    ["/fr/my/missions/new?query=velo&price_max=83.25", "/fr/auth/verify", "/fr/my/missions/new?query=velo&price_max=83.25"],
+    ["/es/settings/profile", "/es/auth/verify", "/es/settings/profile"],
+    ["https://outside.example/my/missions", "/auth/verify", "/settings/account"],
+    ["//outside.example/my/missions", "/auth/verify", "/settings/account"],
+    [undefined, "/auth/verify", "/settings/identities"]
+  ])("includes only a safe, localized return in the delivered link: %s", async (next, pathname, destination) => {
+    process.env.OWNER_LOGIN_EMAIL_PROVIDER = "resend";
+    process.env.OWNER_LOGIN_EMAIL_FROM = "Clawdeals <no-reply@example.test>";
+    process.env.RESEND_API_KEY = "synthetic-test-key";
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ id: "synthetic-message" }) });
+    const result = await sendOwnerLoginMagicLinkEmail({
+      email: "owner@example.test", sessionId: VALID_SESSION_ID, token: VALID_TOKEN, next
+    });
+    const url = new URL(result.verify_url);
+    expect(url.origin).toBe("https://app.example.test");
+    expect(url.pathname).toBe(pathname);
+    expect(url.searchParams.get("next")).toBe(destination);
+    expect(url.searchParams.get("session_id")).toBe(VALID_SESSION_ID);
+    expect(url.searchParams.get("token")).toBe(VALID_TOKEN);
+    const email = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(email.text).toContain(result.verify_url);
+    expect(email.html).toContain(`href="${result.verify_url}"`);
+  });
 });

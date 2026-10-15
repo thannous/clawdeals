@@ -16,8 +16,11 @@ participants humains ni une mesure de satisfaction. Aucun déploiement.
 | 5 | Réglages et profil | Retour localisé après connexion pour les six réglages ; profil réessayable après erreur, champs et préférences nommés pour les technologies d’assistance. |
 | 6 | Agent API/MCP | Le mode choisi reste actif ; l’installation MCP n’est pas sautée par la résolution du propriétaire. Une vérification échouée est réessayable sans recréer de clé. |
 | 7 | Appairage Telegram | FR/EN/ES, connexion avec retour au lien exact, validation unique et sortie vers les applications connectées. `/pair` est autorisé exactement dans la redirection sûre. |
-| 8 | Mes bons plans et mes offres | Filtres répétés sans perte de données, remise à zéro, sortie des états vides, accès aux détails ; prix et statut visibles sur mobile. |
+| 8 | Mes bons plans et mes offres | Filtres répétés sans perte de données, remise à zéro, sortie des états vides, accès aux détails publics ; prix et statut visibles sur mobile. Une annonce réservée ou retirée n’affiche plus de lien public condamné à une 404. |
 | 9 | Console et autres parcours historiques | Corpus existant rejoué ; les résultats et limites sont consignés dans les rapports ci-dessous. |
+| 10 | Reprise et lien de connexion par email | Aucun envoi de mission sans stockage de reprise vérifié. Destination sûre conservée dans le lien ; indication explicite de retour à l’onglet d’origine si le brouillon n’est pas dans le nouvel onglet. |
+| 11 | Résultats et quota des missions | Correspondances en description conservées ; contraintes non textuelles maintenues, ponctuation seule refusée. Les missions expirées ne consomment plus le quota actif. |
+| 12 | Page introuvable → catalogue localisé | Rendu initial stable, sans erreur d’hydratation française ; lien de sortie conservé. |
 
 Les tests ajoutés sont `auth-settings-dogfood.e2e.ts`, `catalog-dogfood.e2e.ts`,
 `mission-usability.e2e.ts` et `onboarding-dogfood.e2e.ts`, dans `e2e/testerarmy/`.

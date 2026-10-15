@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useCallback, useMemo, useReducer } from "react";
 import { safeRedirectUrl } from "./safeRedirect";
+import { missionDraftSourceFromUrl } from "../webmcp/buyMissionDraft";
 
 import {
   clearStoredOwnerAuth,
@@ -61,6 +63,7 @@ function legacyLoginReducer(state: LegacyLoginState, action: LegacyLoginAction):
 }
 
 export default function LegacyLoginPage() {
+  const t = useTranslations("auth.legacy");
   const router = useRouter();
   const redirectTarget = safeRedirectUrl(router.query.next ?? "/settings/identities");
   const [state, dispatch] = useReducer(legacyLoginReducer, undefined, initLegacyLoginState);
@@ -108,8 +111,8 @@ export default function LegacyLoginPage() {
     });
 
     setStoredOwnerEmail(state.email.trim());
-    // The emailed URL has no next parameter. Preserve the return in this tab;
-    // the manual verification link also carries it if storage is unavailable.
+    // Keep compatibility with previously issued links. New emails and the
+    // manual verification link also carry the safe return across tabs.
     try { sessionStorage.setItem("clawdeals.auth_next", redirectTarget); } catch { /* URL fallback below. */ }
 
     try {
@@ -118,7 +121,7 @@ export default function LegacyLoginPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email: state.email.trim() })
+        body: JSON.stringify({ email: state.email.trim(), next: redirectTarget })
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -223,6 +226,12 @@ export default function LegacyLoginPage() {
                 <div className="text-xs font-mono text-muted">
                   Check your inbox for the login link. You can also verify manually below.
                 </div>
+                {missionDraftSourceFromUrl(redirectTarget) !== null && (
+                  <div className="text-sm text-muted space-y-2">
+                    <p>{t("missionReturnHint")}</p>
+                    <Link data-testid="auth-login-resume-mission" href={redirectTarget} locale={false} className="inline-block text-primary underline">{t("resumeMission")}</Link>
+                  </div>
+                )}
                 {state.expiresAt && (
                   <div className="text-xs font-mono text-subtle">Expires: {formatExpiresAt(state.expiresAt)}</div>
                 )}

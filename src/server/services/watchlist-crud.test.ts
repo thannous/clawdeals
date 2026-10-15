@@ -15,6 +15,7 @@ function createAwaitableQuery(result: any) {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
     is: vi.fn(() => query),
+    or: vi.fn(() => query),
     then: vi.fn((resolve: any) => Promise.resolve(resolve(result)))
   };
   return query;

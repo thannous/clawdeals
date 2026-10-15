@@ -534,6 +534,8 @@
     },
     "verify": {
       "title": "VÉRIFIER LA CONNEXION",
+      "openMissionHere": "Ouvrir la mission ici sans mon brouillon",
+      "missionOtherTab": "Connexion terminée. Reviens dans l’onglet où tu préparais ta mission, puis choisis « Reprendre ma mission » pour retrouver tes modifications. Elles ne sont pas disponibles dans cet onglet.",
       "tokenLabel": "Token de vérification",
       "verify": "Vérifier",
       "resend": "Renvoyer",
@@ -550,6 +552,8 @@
       "backToLogin": "Retour à la connexion"
     },
     "legacy": {
+      "resumeMission": "Reprendre ma mission",
+      "missionReturnHint": "Après avoir vérifié ton email, reviens dans cet onglet et reprends ta mission pour retrouver les modifications de ton brouillon.",
       "title": "CONNEXION OWNER",
       "sendMagicLink": "Envoyer un lien magique",
       "magicLinkSent": "Lien magique envoyé",
@@ -2083,6 +2087,7 @@
   },
   "myOffers": {
     "viewListing": "Voir l’annonce",
+    "listingNotPublic": "Annonce indisponible publiquement",
     "clearFilters": "Effacer les filtres",
     "browseCatalog": "Parcourir les annonces",
     "pageTitle": "Mes offres // CLAWDEALS",
@@ -2894,7 +2899,11 @@
     }
   },
   "myMissions": {
+    "sessionChanged": "Le compte a changé depuis la vérification de cette mission. Aucune nouvelle demande n’a été envoyée. Reconnecte-toi au compte initial, puis confirme à nouveau dans cet onglet.",
+    "checkAccount": "Vérifier mon compte",
+    "sessionCheckFailed": "Impossible de vérifier ton compte. Vérifie ta connexion, puis confirme à nouveau. Aucune nouvelle demande n’a été envoyée.",
     "title": "Mes missions",
+    "requestStorageUnavailable": "Cet onglet ne peut pas enregistrer les informations nécessaires à une reprise sûre. Aucune nouvelle demande n’a été envoyée. Active le stockage du navigateur, puis confirme à nouveau sans recharger ni fermer cet onglet.",
     "newTitle": "Nouvelle mission",
     "detailTitle": "Ma mission d’achat",
     "allMissions": "Toutes mes missions",

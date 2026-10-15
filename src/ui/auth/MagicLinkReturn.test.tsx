@@ -27,12 +27,18 @@ vi.mock("./ownerSessionReady", () => ({
 import LoginPage from "./LoginPage";
 import LegacyLoginPage from "./LegacyLoginPage";
 import VerifyPage from "./VerifyPage";
+import { missionDraftSourceFromUrl, saveBuyMissionDraft } from "../webmcp/buyMissionDraft";
 
 // The password browser journey does not visit this alternative login path.
 // These regressions keep email/verification HTTP calls simulated: no mail is sent.
 const missionPath = "/fr/my/missions/new?query=velo&price_max=83.25";
 const nextKey = "clawdeals.auth_next";
 const reply = (data: object) => ({ ok: true, status: 200, json: async () => ({ data }) });
+const withMessages = (child: React.ReactNode) => <NextIntlClientProvider locale="en" messages={messages}>{child}</NextIntlClientProvider>;
+const savedDraft = {
+  query: "velo", marketCode: "FR" as const, cityPreset: "paris", locationLabel: "Paris", latitude: "48.85", longitude: "2.35", radiusKm: "20",
+  preferredPriceMax: "75.50", hardBudgetMax: "83.25", requirements: "Private draft edits", autonomousActions: [] as [], expiresAt: ""
+};
 
 describe("Magic link mission return", () => {
   beforeEach(() => {
@@ -62,7 +68,7 @@ describe("Magic link mission return", () => {
   });
 
   it("carries the safe destination to verification and keeps it for a same-tab emailed link", async () => {
-    render(<LegacyLoginPage />);
+    render(withMessages(<LegacyLoginPage />));
     fireEvent.change(screen.getByTestId("auth-login-email"), { target: { value: "buyer@example.test" } });
     fireEvent.click(screen.getByTestId("auth-login-submit"));
     await waitFor(() => expect(screen.queryByTestId("auth-login-verify-link")).not.toBeNull());
@@ -70,7 +76,7 @@ describe("Magic link mission return", () => {
     expect(link.searchParams.get("next")).toBe(missionPath);
     expect(sessionStorage.getItem(nextKey)).toBe(missionPath);
     expect(mocks.fetch).toHaveBeenCalledWith("/api/v1/auth/login:start", expect.objectContaining({
-      method: "POST", body: JSON.stringify({ email: "buyer@example.test" })
+      method: "POST", body: JSON.stringify({ email: "buyer@example.test", next: missionPath })
     }));
   });
 
@@ -78,22 +84,47 @@ describe("Magic link mission return", () => {
     mocks.router.query = { session_id: "synthetic-session", token: "synthetic-token",
       ...(source === "query" ? { next: missionPath } : {}) };
     sessionStorage.setItem(nextKey, source === "stored" ? missionPath : "/settings/account");
-    sessionStorage.setItem("clawdeals:buy-mission-draft:v1", "retained-private-draft");
+    saveBuyMissionDraft(missionDraftSourceFromUrl(missionPath)!, savedDraft);
+    const rawDraft = sessionStorage.getItem("clawdeals:buy-mission-draft:v1");
     mocks.waitForOwnerSessionReady.mockResolvedValue(true);
-    render(<VerifyPage />);
+    render(withMessages(<VerifyPage />));
     fireEvent.click(screen.getByTestId("auth-verify-submit"));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(missionPath, undefined, { locale: false }));
     expect(sessionStorage.getItem(nextKey)).toBeNull();
-    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v1")).toBe("retained-private-draft");
+    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v1")).toBe(rawDraft);
   });
 
   it("rejects an external destination even when a previous stored destination exists", async () => {
     mocks.router.query = { session_id: "synthetic-session", token: "synthetic-token", next: "https://outside.example/my/missions" };
     sessionStorage.setItem(nextKey, missionPath);
     mocks.waitForOwnerSessionReady.mockResolvedValue(true);
-    render(<VerifyPage />);
+    render(withMessages(<VerifyPage />));
     fireEvent.click(screen.getByTestId("auth-verify-submit"));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith("/settings/account", undefined, { locale: false }));
+  });
+
+  it.each(["missing", "unrelated"])("explains original-tab recovery when the mission draft is %s", async (draft) => {
+    mocks.router.query = { session_id: "synthetic-session", token: "synthetic-token", next: missionPath };
+    if (draft === "unrelated") saveBuyMissionDraft("search:[\"different\",\"\"]", savedDraft);
+    mocks.waitForOwnerSessionReady.mockResolvedValue(true);
+    render(withMessages(<VerifyPage />));
+    fireEvent.click(screen.getByTestId("auth-verify-submit"));
+    const link = await screen.findByRole("link", { name: "Open mission here without my draft" });
+    expect(link.getAttribute("href")).toBe(missionPath);
+    expect(screen.getByText(/Return to the tab where you prepared your mission/)).toBeTruthy();
+    expect(mocks.replace).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v1")).toEqual(draft === "missing" ? null : expect.any(String));
+  });
+
+  it.each(["query", "stored"])("keeps the %s destination when requesting a replacement email", async (source) => {
+    mocks.router.query = source === "query" ? { next: missionPath } : {};
+    if (source === "stored") sessionStorage.setItem(nextKey, missionPath);
+    localStorage.setItem("clawdeals.owner_email", "buyer@example.test");
+    render(withMessages(<VerifyPage />));
+    fireEvent.click(screen.getByTestId("auth-verify-resend"));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("/api/v1/auth/login:start", expect.objectContaining({
+      body: JSON.stringify({ email: "buyer@example.test", next: missionPath })
+    })));
   });
 });
 

@@ -4,7 +4,7 @@ import { test } from "./fixtures";
 for (const entry of ["search", "listing"] as const) {
   test(`a buyer creates and retrieves a real ${entry === "search" ? "French search with no matches" : "British listing mission with a match"}`, { trace: "off", video: "off" }, async ({ app, browser, screen, missionFixture }) => {
     const listing = entry === "listing" ? await missionFixture.createListing("GB", 75) : null;
-    const query = listing?.title || `Introuvable ${missionFixture.id}`;
+    const query = listing ? `${listing.title} foldable` : `Introuvable ${missionFixture.id}`;
     const preferred = "75.50";
     const ceiling = "83.25";
     const city = entry === "listing" ? "custom" : "lyon";
@@ -15,6 +15,10 @@ for (const entry of ["search", "listing"] as const) {
       await expect(browser).toHaveURL(/\/fr\/my\/missions\/new\?/);
       await expect(screen.getByRole("spinbutton", "Prix préféré")).toHaveValue("75");
       await expect(screen.getByRole("spinbutton", "Plafond absolu")).toHaveValue("75");
+      await expect(screen.getByRole("textbox", "Objet recherché")).toHaveValue(listing.title);
+      // This term occurs only in the description: catalogue full-text matches
+      // must survive the owner mission's budget, location and category checks.
+      await screen.getByRole("textbox", "Objet recherché").fill(query);
     } else {
       await app.open("/fr/browse");
       await screen.getByTestId("browse-search").fill(query);

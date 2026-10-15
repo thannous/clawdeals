@@ -70,13 +70,34 @@ describe("owner buy missions", () => {
       { ...listing, listing_id: "over-budget", price_amount: 101 },
       { ...listing, listing_id: "outside", distance_m: 25_001 },
       { ...listing, listing_id: "missing-geo", distance_m: null },
-      { ...listing, listing_id: "irrelevant", title: "City table" },
       { ...listing, listing_id: "sold", status: "SOLD" }
     ], nextCursor: null });
     const result = await listOwnerBuyMissionMatches({ ownerId, missionId });
     expect(result.items.map((item) => item.listing_id)).toEqual(["listing-1", "decimal"]);
     expect(result.items[0]).not.toHaveProperty("seller_agent_id");
     expect(listListings).toHaveBeenCalledWith(expect.objectContaining({ includeHidden: false, q: "bike", priceMax: 101, geo: { lat: 48.85, lng: 2.35, distanceKm: 25 } }));
+  });
+
+  it("keeps full-text catalogue matches whose query terms occur only in the description", async () => {
+    // The geo RPC returns a projection without the description/search_tsv that matched q.
+    vi.mocked(listListings).mockResolvedValue({ items: [{
+      listing_id: "description-match", title: "Weekend commuter", category: "cycling",
+      status: "LIVE", market_code: "FR", currency: "EUR", price_amount: 90, distance_m: 1_000
+    }], nextCursor: null });
+    const result = await listOwnerBuyMissionMatches({ ownerId, missionId });
+    expect(result.items.map((item) => item.listing_id)).toEqual(["description-match"]);
+    expect(listListings).toHaveBeenCalledWith(expect.objectContaining({ q: "bike" }));
+  });
+
+  it("does not turn a punctuation-only mission query into unfiltered results", async () => {
+    const input = body();
+    input.criteria.query = "!!!";
+    vi.mocked(getWatchlistForOwner).mockResolvedValue({ ...input, watchlist_id: missionId, active: true, currency: "EUR" });
+    vi.mocked(listListings).mockResolvedValue({ items: [{
+      listing_id: "unfiltered", title: "City bike", status: "LIVE", market_code: "FR", currency: "EUR",
+      price_amount: 90, distance_m: 1_000
+    }], nextCursor: null });
+    expect((await listOwnerBuyMissionMatches({ ownerId, missionId })).items).toEqual([]);
   });
 
   it("shows an expired mission without searching or activating new work", async () => {
@@ -97,7 +118,7 @@ describe("owner buy missions", () => {
       criteria: { ...input.criteria, tags: ["cycling"], delivery_method: "PICKUP" }
     });
     const listing = {
-      listing_id: "pickup", title: "City bike", status: "LIVE", market_code: "FR", currency: "EUR",
+      listing_id: "pickup", title: "Weekend commuter", status: "LIVE", market_code: "FR", currency: "EUR",
       price_amount: 90, distance_m: 1_000, category: "cycling", delivery_method: "PICKUP"
     };
     vi.mocked(listListings).mockResolvedValue({ items: [

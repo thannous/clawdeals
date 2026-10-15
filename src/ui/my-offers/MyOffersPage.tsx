@@ -32,10 +32,14 @@ export default function MyOffersPage() {
       label: t("list.listing"),
       cell: (row: any) => row.listing_id ? (
         <div className="flex flex-col gap-1">
-          <Link href={`/browse/${row.listing_id}`} data-testid="my-offers-item-link"
-            className="text-sm font-medium text-primary hover:underline">
-            {t("viewListing")}
-          </Link>
+          {row.listing_status === "LIVE" ? (
+            <Link href={`/browse/${row.listing_id}`} data-testid="my-offers-item-link"
+              className="text-sm font-medium text-primary hover:underline">
+              {t("viewListing")}
+            </Link>
+          ) : (
+            <span className="max-w-[140px] whitespace-normal text-xs text-subtle">{t("listingNotPublic")}</span>
+          )}
           <TruncatedId id={row.listing_id} />
         </div>
       ) : <span className="text-subtle">-</span>,

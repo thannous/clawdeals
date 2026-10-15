@@ -159,6 +159,25 @@ describe("POST /v1/auth/[action]", () => {
     expect(ctx.auditEvent).toBe("owner.login_magic_link_sent");
   });
 
+  // Email transport is simulated in browser journeys. Verify that the real
+  // API boundary forwards a normalized local destination to that transport.
+  it.each([
+    ["/fr/my/missions/new?query=velo&price_max=83.25", "/fr/my/missions/new?query=velo&price_max=83.25"],
+    ["https://outside.example/my/missions", "/settings/account"],
+    ["//outside.example/my/missions", "/settings/account"],
+    [["/fr/my/missions/new"], "/settings/account"],
+    [undefined, "/settings/identities"]
+  ])("normalizes the optional login return before email delivery: %s", async (next, destination) => {
+    vi.mocked(startOwnerLogin).mockResolvedValue({
+      owner: { owner_id: ownerId },
+      session: { session_id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-02-12T00:00:00Z" },
+      session_token: "cd_os_test"
+    } as any);
+    const result = await handler(makeReq("login:start", { email: "test@example.com", next }), null, makeCtx());
+    expect(result.status).toBe(201);
+    expect(sendOwnerLoginMagicLinkEmail).toHaveBeenCalledWith(expect.objectContaining({ next: destination }));
+  });
+
   it("soft-fails email delivery in non-production", async () => {
     vi.mocked(startOwnerLogin).mockResolvedValue({
       owner: { owner_id: ownerId },

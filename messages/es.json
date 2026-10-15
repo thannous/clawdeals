@@ -534,6 +534,8 @@
     },
     "verify": {
       "title": "VERIFICAR INICIO DE SESIÓN",
+      "openMissionHere": "Abrir la misión aquí sin mi borrador",
+      "missionOtherTab": "Sesión iniciada. Vuelve a la pestaña donde preparabas tu misión y elige « Retomar mi misión » para recuperar tus cambios. No están disponibles en esta pestaña.",
       "tokenLabel": "Token de verificación",
       "verify": "Verificar",
       "resend": "Reenviar",
@@ -550,6 +552,8 @@
       "backToLogin": "Volver al inicio de sesión"
     },
     "legacy": {
+      "resumeMission": "Retomar mi misión",
+      "missionReturnHint": "Después de verificar tu correo, vuelve a esta pestaña y retoma tu misión para recuperar los cambios del borrador.",
       "title": "INICIO DE SESIÓN OWNER",
       "sendMagicLink": "Enviar enlace mágico",
       "magicLinkSent": "Enlace mágico enviado",
@@ -2083,6 +2087,7 @@
   },
   "myOffers": {
     "viewListing": "Ver anuncio",
+    "listingNotPublic": "Anuncio no disponible públicamente",
     "clearFilters": "Borrar filtros",
     "browseCatalog": "Explorar anuncios",
     "pageTitle": "Mis ofertas // CLAWDEALS",
@@ -2894,7 +2899,11 @@
     }
   },
   "myMissions": {
+    "sessionChanged": "La cuenta ha cambiado desde que revisaste esta misión. No se ha enviado ninguna nueva solicitud. Inicia sesión con la cuenta original y vuelve a confirmar en esta pestaña.",
+    "checkAccount": "Comprobar mi cuenta",
+    "sessionCheckFailed": "No se pudo verificar tu cuenta. Comprueba tu conexión y vuelve a confirmar. No se ha enviado ninguna nueva solicitud.",
     "title": "Mis misiones",
+    "requestStorageUnavailable": "Esta pestaña no puede guardar los datos necesarios para reintentar con seguridad. No se ha enviado ninguna nueva solicitud. Activa el almacenamiento del navegador y vuelve a confirmar sin recargar ni cerrar esta pestaña.",
     "newTitle": "Nueva misión",
     "detailTitle": "Mi misión de compra",
     "allMissions": "Todas mis misiones",

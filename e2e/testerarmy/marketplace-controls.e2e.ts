@@ -95,6 +95,6 @@ test("an owner requests the legacy sign-in link for exactly the entered address"
   await expect(screen.getByTestId("auth-login-token")).toContainText("cd_os_test_123");
   await expect(screen.getByTestId("auth-login-verify-link")).toHaveAttribute("href",
     "/auth/verify?session_id=22222222-2222-4222-8222-222222222222&token=cd_os_test_123&next=%2Fsettings%2Fidentities");
-  expect(submissions).toEqual([{ email: "owner@example.com" }]);
+  expect(submissions).toEqual([{ email: "owner@example.com", next: "/settings/identities" }]);
   await app.screenshot("legacy-signin-link-requested");
 });

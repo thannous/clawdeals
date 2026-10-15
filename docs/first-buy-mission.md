@@ -35,6 +35,23 @@ sont traduits en français, anglais et espagnol. Après la connexion, la créati
 attend toujours la confirmation du récapitulatif. Cette conservation ne promet
 pas une synchronisation entre appareils ou des onglets ouverts indépendamment.
 
+Le [dogfooding du 2026-10-15](dogfooding-2026-10-15.md) ajoute les garanties
+suivantes : la requête et sa clé de reprise doivent être écrites puis relues dans
+le stockage de l’onglet avant tout envoi, même après connexion. En cas d’échec,
+le formulaire explique comment rétablir le stockage et aucun POST n’est envoyé.
+La confirmation revérifie le compte actif avant l’envoi : un changement dans un
+autre onglet bloque la création et conserve la tentative pour le compte initial.
+Le lien de connexion par email conserve une destination locale validée. Si sa
+vérification est ouverte dans un autre onglet sans le brouillon, elle propose
+explicitement de revenir à l’onglet d’origine ; elle ne prétend pas transférer
+les modifications du brouillon.
+
+Les missions expirées restent consultables mais ne consomment plus de place
+dans le quota actif. La recherche de résultats conserve les correspondances
+trouvées dans la description par le catalogue, tout en appliquant encore les
+contraintes de pays, devise, prix, distance, catégorie et livraison. Une requête
+composée uniquement de ponctuation ne devient pas une recherche sans filtre.
+
 Validation complémentaire du 2026-10-11 sur la branche `codex/first-buy-mission` :
 
 - `.e2e/validation/listing-mission-draft-verified-20261011/report.json` : **6/6**,

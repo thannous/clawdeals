@@ -57,8 +57,16 @@ test("a visitor can hide a revealed password again", async ({ app, screen, brows
 });
 
 test("a French visitor recovers from a missing page into listings", async ({ app, screen, browser }) => {
+  await browser.addInitScript(() => {
+    const errors: string[] = [];
+    Object.assign(window, { missingPageErrors: errors });
+    window.addEventListener("error", (event) => { errors.push(event.message); });
+  }, null);
   await app.open("/fr/testerarmy-missing-page");
   await expect(screen.getByRole("main")).toContainText("Cette page n'existe pas");
+  await expect.poll(() => browser.evaluate(() =>
+    (window as unknown as { missingPageErrors: string[] }).missingPageErrors.filter((message) => /hydration|server rendered/i.test(message))
+  )).toEqual([]);
   await screen.getByRole("link", "Parcourir les annonces").click();
 
   await expect(browser).toHaveURL("/fr/browse");

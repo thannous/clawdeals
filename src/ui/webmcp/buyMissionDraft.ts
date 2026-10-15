@@ -20,6 +20,22 @@ const draftSchema = z.object({
 
 export type BuyMissionDraft = z.infer<typeof draftSchema>;
 
+export function missionDraftSource(query: Record<string, string | string[] | undefined>): string {
+  const one = (name: string) => Array.isArray(query[name]) ? query[name][0] : query[name];
+  return one("from") ? `mission:${one("from")}`
+    : one("listing") ? `listing:${JSON.stringify([one("listing"), one("price"), one("market"), one("lat"), one("lng")])}`
+      : `search:${JSON.stringify([one("query") || "", one("price_max") || ""])}`;
+}
+
+// Called with the already validated local auth return URL. Match the same
+// source as NewMissionPage, so an unrelated draft does not hide recovery help.
+export function missionDraftSourceFromUrl(next: string): string | null {
+  const url = new URL(next, "http://localhost");
+  if (!/^\/(?:(?:en|fr|es)\/)?my\/missions\/new\/?$/.test(url.pathname)) return null;
+  const query = Object.fromEntries([...url.searchParams.keys()].map(key => [key, url.searchParams.get(key) || ""]));
+  return missionDraftSource(query);
+}
+
 // Tab-scoped storage survives sign-in redirects without putting a private brief
 // in URLs or keeping it indefinitely on a shared computer.
 export function readBuyMissionDraft(source: string): BuyMissionDraft | null {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -14,6 +15,7 @@ import {
 } from "./ownerAuth";
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
+import { missionDraftSourceFromUrl, readBuyMissionDraft } from "../webmcp/buyMissionDraft";
 
 function getErrorMessage(body: any, status: number) {
   const error = body?.error;
@@ -42,6 +44,8 @@ export default function VerifyPage() {
 
 function useVerifyPageView() {
   const router = useRouter();
+  const t = useTranslations("auth.verify");
+  const [missionReturn, setMissionReturn] = useState<string | null>(null);
   const queryNext = router.query?.next;
   const queryToken = resolveQueryParam(router.query?.token).trim();
   const querySessionId = (() => {
@@ -50,9 +54,9 @@ function useVerifyPageView() {
     return resolveQueryParam(router.query?.sessionId).trim();
   })();
 
-  const [email] = useState<string | null>(() => getStoredOwnerEmail());
-  const [sessionId, setSessionId] = useState<string>(() => getStoredOwnerSessionId() || "");
-  const [token, setToken] = useState<string>(() => getStoredOwnerSessionToken() || "");
+  const [email, setEmail] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState("");
+  const [token, setToken] = useState("");
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +103,15 @@ function useVerifyPageView() {
           if (next === undefined) next = sessionStorage.getItem("clawdeals.auth_next");
           sessionStorage.removeItem("clawdeals.auth_next");
         } catch { /* An explicit next URL also works without browser storage. */ }
-        void router.replace(safeRedirectUrl(next ?? "/settings/identities"), undefined, { locale: false });
+        const destination = safeRedirectUrl(next ?? "/settings/identities");
+        const draftSource = missionDraftSourceFromUrl(destination);
+        if (draftSource !== null && !readBuyMissionDraft(draftSource)) {
+          // sessionStorage belongs to the original tab. Do not imply that its
+          // private edits followed the email link into this independent tab.
+          setMissionReturn(destination);
+          return;
+        }
+        void router.replace(destination, undefined, { locale: false });
       } catch (err: any) {
         setError(String(err?.message || "Verification failed"));
         setSubmitState("error");
@@ -110,18 +122,21 @@ function useVerifyPageView() {
 
   useEffect(() => {
     if (!router.isReady) return;
+    // Browser storage is unavailable during SSR. Load it after hydration so an
+    // email opened in a new tab does not replace mismatched server markup.
+    setEmail(getStoredOwnerEmail());
+    setSessionId(querySessionId || getStoredOwnerSessionId() || "");
+    setToken(queryToken || getStoredOwnerSessionToken() || "");
     if (querySessionId) {
-      setSessionId(querySessionId);
       persistOwnerSessionId(querySessionId);
     }
     if (queryToken) {
-      setToken(queryToken);
       persistOwnerSessionToken(queryToken);
     }
 
   }, [router.isReady, querySessionId, queryToken]);
 
-  const canSubmit = Boolean(sessionId.trim() && token.trim() && submitState !== "loading");
+  const canSubmit = Boolean(sessionId.trim() && token.trim() && submitState !== "loading" && submitState !== "success");
 
   const onVerify = useCallback(async () => {
     await confirm({ sessionId, token });
@@ -138,12 +153,14 @@ function useVerifyPageView() {
     setError(null);
 
     try {
+      let next: unknown = queryNext;
+      try { if (next === undefined) next = sessionStorage.getItem("clawdeals.auth_next"); } catch { /* URL return remains available. */ }
       const res = await fetch("/api/v1/auth/login:start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, next: safeRedirectUrl(next ?? "/settings/identities") })
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -168,11 +185,12 @@ function useVerifyPageView() {
       setError(String(err?.message || "Failed to resend"));
       setSubmitState("error");
     }
-  }, [email]);
+  }, [email, queryNext]);
 
   const onReset = useCallback(() => {
     void fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
     clearStoredOwnerAuth();
+    setMissionReturn(null);
     setSessionId("");
     setToken("");
     setExpiresAt(null);
@@ -190,7 +208,7 @@ function useVerifyPageView() {
           <div className="bg-surface border border-border rounded clip-corner p-5 space-y-4">
             <div className="space-y-1">
               <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-                <span className="text-primary">/ </span>VERIFY LOGIN
+                <span className="text-primary">/ </span>{t("title")}
               </h1>
               <p className="text-xs font-mono text-subtle">
                 Enter the token from your magic link to complete owner login.
@@ -211,7 +229,7 @@ function useVerifyPageView() {
 
             <div className="space-y-2">
               <label className="block text-xs font-mono text-subtle uppercase" htmlFor="auth-token">
-                Verification token
+                {t("tokenLabel")}
               </label>
               <input
                 id="auth-token"
@@ -244,8 +262,9 @@ function useVerifyPageView() {
               <div data-testid="auth-verify-success" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
                 <div className="text-xs font-mono text-secondary">Verified</div>
                 <div className="text-xs font-mono text-muted mt-1">
-                  Login completed. You can now open your account dashboard.
+                  {missionReturn ? t("missionOtherTab") : "Login completed. You can now open your account dashboard."}
                 </div>
+                {missionReturn && <Link href={missionReturn} locale={false} className="inline-block mt-3 text-sm text-primary underline">{t("openMissionHere")}</Link>}
               </div>
             )}
 
@@ -256,27 +275,27 @@ function useVerifyPageView() {
                 disabled={!canSubmit}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
               >
-                {submitState === "loading" ? "Verifying…" : "Verify"}
+                {submitState === "loading" ? t("verifying") : t("verify")}
               </button>
               <button
                 data-testid="auth-verify-resend"
                 onClick={onResend}
-                disabled={!email || submitState === "loading"}
+                disabled={!email || submitState === "loading" || submitState === "success"}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors disabled:opacity-50"
               >
-                Resend
+                {t("resend")}
               </button>
               <Link
                 href="/settings/account"
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                My account
+                {t("myAccount")}
               </Link>
               <button
                 onClick={onReset}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                Start over
+                {t("startOver")}
               </button>
             </div>
           </div>

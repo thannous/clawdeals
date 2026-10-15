@@ -1,6 +1,104 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 
+for (const storageFailure of ["throws", "drops-write"]) {
+  test(`mission creation waits for durable retry state when storage ${storageFailure}`, async ({ app, browser, screen }) => {
+    const origin = new URL(app.baseUrl!).origin;
+    const ownerId = "11111111-1111-4111-8111-111111111111";
+    const writes: { key: string; body: string }[] = [];
+    await browser.route("**/*", async route => {
+      if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)) await route.continue();
+      else await route.abort();
+    });
+    await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: { authenticated: true, owner_id: ownerId } } }));
+    await browser.route("**/api/v1/policies", route => route.fulfill({ json: { data: {} } }));
+    await browser.route("**/api/v1/owner/missions", async route => {
+      writes.push({ key: route.request.headers["idempotency-key"], body: route.request.postData || "" });
+      // An uncertain response keeps the persisted state available for inspection.
+      await route.abort();
+    });
+    await browser.addInitScript((failure) => {
+      const setItem = Storage.prototype.setItem;
+      (window as any).__restoreRequestStorage = () => { Storage.prototype.setItem = setItem; };
+      Storage.prototype.setItem = function(key, value) {
+        if (key === "clawdeals:buy-mission-request:v1") {
+          if (failure === "throws") throw new DOMException("Storage denied", "QuotaExceededError");
+          return;
+        }
+        return setItem.call(this, key, value);
+      };
+    }, storageFailure);
+    await app.open("/fr/my/missions/new?query=Vélo%20pliant");
+    await screen.getByRole("spinbutton", "Prix préféré").fill("75.50");
+    await screen.getByRole("spinbutton", "Plafond absolu").fill("83.25");
+    await screen.getByRole("button", "Vérifier ma mission").click();
+    const review = screen.getByRole("region", "Vérifier ma mission");
+    await review.getByRole("button", "Confirmer la mission").click();
+    await expect(review.getByRole("alert")).toContainText("Active le stockage");
+    expect(writes).toHaveLength(0);
+    await expect(review.getByRole("button", "Modifier")).toBeEnabled();
+    await app.screenshot(`mission-storage-${storageFailure}-blocked`);
+    await browser.evaluate(() => { (window as any).__restoreRequestStorage(); return null; });
+    await review.getByRole("button", "Confirmer la mission").click();
+    await expect.poll(() => writes.length).toBe(1);
+    await expect(review.getByRole("button", "Confirmer la mission")).toBeEnabled();
+    await expect(review.getByRole("button", "Modifier")).toBeDisabled();
+    const saved = await browser.evaluate(() => JSON.parse(sessionStorage.getItem("clawdeals:buy-mission-request:v1")!));
+    expect(saved).toMatchObject({ ownerId, key: writes[0].key, fingerprint: writes[0].body });
+    expect(saved.input.hard_budget_max).toBe(83.25);
+    await browser.reload();
+    await browser.evaluate(() => { (window as any).__restoreRequestStorage(); return null; });
+    await screen.getByRole("button", "Vérifier ma mission").click();
+    await screen.getByRole("region", "Vérifier ma mission").getByRole("button", "Confirmer la mission").click();
+    await expect.poll(() => writes.length).toBe(2);
+    expect(writes[1]).toEqual(writes[0]);
+  });
+}
+
+for (const scenario of ["changed-owner", "signed-out", "changed-owner-after-uncertain-response"]) {
+  test(`mission confirmation keeps its original owner when ${scenario}`, async ({ app, browser, screen }) => {
+    const origin = new URL(app.baseUrl!).origin;
+    const originalOwner = "11111111-1111-4111-8111-111111111111";
+    let activeOwner: string | null = originalOwner;
+    const writes: { key: string; body: string }[] = [];
+    await browser.route("**/*", async route => {
+      if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)) await route.continue();
+      else await route.abort();
+    });
+    await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: {
+      authenticated: Boolean(activeOwner), ...(activeOwner ? { owner_id: activeOwner } : {})
+    } } }));
+    await browser.route("**/api/v1/policies", route => route.fulfill({ json: { data: {} } }));
+    await browser.route("**/api/v1/owner/missions", async route => {
+      writes.push({ key: route.request.headers["idempotency-key"], body: route.request.postData || "" });
+      await route.abort();
+    });
+    await app.open("/fr/my/missions/new?query=Vélo%20pliant&price_max=83.25");
+    await screen.getByRole("textbox", "Exigences minimales").fill("Brouillon privé du compte initial");
+    await screen.getByRole("button", "Vérifier ma mission").click();
+    const review = screen.getByRole("region", "Vérifier ma mission");
+    const recovering = scenario.endsWith("uncertain-response");
+    if (recovering) {
+      await review.getByRole("button", "Confirmer la mission").click();
+      await expect.poll(() => writes.length).toBe(1);
+      await expect(review.getByRole("button", "Confirmer la mission")).toBeEnabled();
+      await expect(review.getByRole("button", "Modifier")).toBeDisabled();
+    }
+    const originalRequest = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v1"));
+    activeOwner = scenario === "signed-out" ? null : "22222222-2222-4222-8222-222222222222";
+    await review.getByRole("button", "Confirmer la mission").click();
+    await expect(review.getByRole("alert")).toContainText(scenario === "signed-out" ? "session a expiré" : "compte a changé");
+    expect(writes).toHaveLength(recovering ? 1 : 0);
+    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v1"))).toBe(originalRequest);
+    await app.screenshot(`mission-owner-guard-${scenario}`);
+    activeOwner = originalOwner;
+    await review.getByRole("button", "Confirmer la mission").click();
+    await expect.poll(() => writes.length).toBe(recovering ? 2 : 1);
+    if (recovering) expect(writes[1]).toEqual(writes[0]);
+    expect(JSON.parse(writes.at(-1)!.body).criteria.mission.requirements).toEqual(["Brouillon privé du compte initial"]);
+  });
+}
+
 // Client recovery only: a modeled server commits once, loses the first response,
 // then returns the same record for an identical idempotency key and payload.
 // The separate mission-live selection proves real Auth/database persistence.

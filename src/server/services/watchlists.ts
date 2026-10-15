@@ -91,12 +91,16 @@ function mapError(error) {
 
 async function countActiveWatchlists(agentId) {
   const client = getSupabaseServiceClient();
+  // Mission dates are normalized to UTC ISO strings at write time. Expired
+  // missions remain readable without consuming a slot or being mutated here.
+  const nowIso = new Date().toISOString();
   const { count, error } = await client
     .from("watchlists")
     .select("watchlist_id", { count: "exact", head: true })
     .eq("agent_id", agentId)
     .eq("active", true)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .or(`criteria->mission->>expires_at.is.null,criteria->mission->>expires_at.gt.${nowIso}`);
   if (error) {
     mapError(error);
   }

@@ -56,6 +56,7 @@ for (const kind of ["deals", "offers"] as const) {
       amount: 125,
       currency: "EUR",
       status: "CREATED",
+      listing_status: "LIVE",
       created_at: "2026-10-14T10:00:00.000Z",
     };
     let hasItems = true;

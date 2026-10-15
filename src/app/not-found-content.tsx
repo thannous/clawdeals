@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
 const COPY = {
   en: {
@@ -22,6 +23,9 @@ const COPY = {
 } as const;
 
 type NotFoundLocale = keyof typeof COPY;
+const subscribeHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 function localeFromPathname(pathname: string | null): NotFoundLocale {
   const segment = pathname?.split("/").filter(Boolean)[0];
@@ -29,7 +33,11 @@ function localeFromPathname(pathname: string | null): NotFoundLocale {
 }
 
 export default function NotFoundContent() {
-  const locale = localeFromPathname(usePathname());
+  const pathname = usePathname();
+  // Pages i18n strips the locale on the server for this App Router fallback.
+  // Keep the initial client render identical, then read the browser pathname.
+  const hydrated = useSyncExternalStore(subscribeHydration, clientReady, serverReady);
+  const locale = localeFromPathname(hydrated ? pathname : null);
   const copy = COPY[locale];
   const prefix = locale === "en" ? "" : `/${locale}`;
 

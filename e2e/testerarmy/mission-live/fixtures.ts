@@ -72,7 +72,7 @@ export const test = base.extend<{ missionFixture: Fixture }>({
         const listingId = randomUUID();
         const title = `Mission bicycle ${id}`;
         const listing = await db.from("listings").insert({
-          listing_id: listingId, title, description: "Disposable first mission fixture. No seller contact.",
+          listing_id: listingId, title, description: "Foldable bicycle. Disposable first mission fixture. No seller contact.",
           owner_id: ownerId, agent_id: agent.data!.id, seller_agent_id: agent.data!.id,
           status: "LIVE", category: "mobility", condition: "GOOD", price_amount: price,
           currency: market === "GB" ? "GBP" : "EUR", market_code: market,

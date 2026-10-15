@@ -534,6 +534,8 @@
     },
     "verify": {
       "title": "VERIFY LOGIN",
+      "openMissionHere": "Open mission here without my draft",
+      "missionOtherTab": "Login completed. Return to the tab where you prepared your mission and choose “Resume my mission” to recover your edits. They are not available in this tab.",
       "tokenLabel": "Verification token",
       "verify": "Verify",
       "resend": "Resend",
@@ -551,6 +553,8 @@
     },
     "legacy": {
       "title": "OWNER LOGIN",
+      "resumeMission": "Resume my mission",
+      "missionReturnHint": "After verifying your email, return to this tab and resume your mission to keep your draft edits.",
       "sendMagicLink": "Send magic link",
       "magicLinkSent": "Magic link sent",
       "verifyNow": "Verify now",
@@ -2106,6 +2110,7 @@
   },
   "myOffers": {
     "viewListing": "View listing",
+    "listingNotPublic": "Listing unavailable publicly",
     "clearFilters": "Clear filters",
     "browseCatalog": "Browse listings",
     "pageTitle": "My Offers // CLAWDEALS",
@@ -2982,7 +2987,11 @@
     }
   },
   "myMissions": {
+    "sessionChanged": "The account has changed since you reviewed this mission. No new request was sent. Sign in with the original account, then confirm again in this tab.",
+    "checkAccount": "Check my account",
+    "sessionCheckFailed": "Your account could not be verified. Check your connection, then confirm again. No new request was sent.",
     "title": "My missions",
+    "requestStorageUnavailable": "This tab cannot save the information needed to retry safely. No new request was sent. Enable browser storage, then confirm again without reloading or closing this tab.",
     "newTitle": "New mission",
     "detailTitle": "My buying mission",
     "allMissions": "All my missions",

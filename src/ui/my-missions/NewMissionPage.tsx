@@ -7,7 +7,7 @@ import PageHeader from "../shared/PageHeader";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
 import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 import { BuyMissionForm, MissionSummary, prefillFromListing, type BuyMissionInput } from "../webmcp/BuyMissionPanel";
-import { clearBuyMissionDraft } from "../webmcp/buyMissionDraft";
+import { clearBuyMissionDraft, missionDraftSource } from "../webmcp/buyMissionDraft";
 import type { StableToolResult } from "../../webmcp/types";
 import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import { randomUuid } from "../../webmcp/utils";
@@ -35,9 +35,7 @@ export default function NewMissionPage() {
   const request = useRef<PendingRequest | null>(null);
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const prefix = router.locale && router.locale !== "en" ? `/${router.locale}` : "";
-  const source = single(router.query.from) ? `mission:${single(router.query.from)}`
-    : single(router.query.listing) ? `listing:${JSON.stringify([single(router.query.listing), single(router.query.price), single(router.query.market), single(router.query.lat), single(router.query.lng)])}`
-      : `search:${JSON.stringify([single(router.query.query) || "", single(router.query.price_max) || ""])}`;
+  const source = missionDraftSource(router.query);
   const prefill = useMemo(() => {
     if (single(router.query.listing)) {
       const number = (value: string | string[] | undefined) => value === undefined ? null : Number(single(value));
@@ -92,6 +90,14 @@ export default function NewMissionPage() {
     if (!pending || saving) return;
     setSaving(true);
     setCreateError(null);
+    // The session cookie can change in another tab while this review is open.
+    // Never submit the previous owner's private brief under the new account.
+    const session = await probeOwnerSession({ fresh: true });
+    if (session.state !== "authenticated" || session.ownerId !== submittingOwnerId.current) {
+      setCreateError(session.state === "unknown" ? "sessionCheckFailed" : session.state === "anonymous" ? "sessionExpired" : "sessionChanged");
+      setSaving(false);
+      return;
+    }
     const body = missionPayload(pending);
     const fingerprint = JSON.stringify(body);
     // A retry, including after reload, keeps its original body and key until
@@ -99,7 +105,18 @@ export default function NewMissionPage() {
     if (request.current?.fingerprint !== fingerprint) {
       request.current = { fingerprint, key: randomUuid(), input: pending, ownerId: submittingOwnerId.current || "" };
     }
-    try { sessionStorage.setItem(REQUEST_KEY, JSON.stringify(request.current)); } catch { /* In-memory retry remains safe. */ }
+    try {
+      const saved = JSON.stringify(request.current);
+      sessionStorage.setItem(REQUEST_KEY, saved);
+      // A successful write alone is insufficient when browser storage silently
+      // drops it. Never send a request that cannot be recovered after reload.
+      if (sessionStorage.getItem(REQUEST_KEY) !== saved) throw new Error("Request storage unavailable");
+    } catch {
+      if (!uncertain) request.current = null;
+      setCreateError("requestStorageUnavailable");
+      setSaving(false);
+      return;
+    }
     try {
       const created = await missionRequest<OwnerMission>("", {
         method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": request.current.key }, body: fingerprint
@@ -148,6 +165,7 @@ export default function NewMissionPage() {
             <p className="text-sm text-muted">{t("inAppHint")}</p>
             {createError ? <p role="alert" className="text-sm text-warning">{t(createError)}</p> : null}
             {createError === "sessionExpired" ? <a className="text-sm text-primary underline" href={`${prefix}/auth/login?next=${encodeURIComponent(router.asPath.startsWith(`${prefix}/my/`) ? router.asPath : `${prefix}${router.asPath}`)}`}>{t("signIn")}</a> : null}
+            {createError === "sessionChanged" ? <Link href="/settings/account" className="text-sm text-primary underline">{t("checkAccount")}</Link> : null}
             {uncertain || createError === "missionLimitReached" ? <Link href="/my/missions" className="inline-block text-primary underline">{t("checkMissions")}</Link> : null}
             <div className="flex flex-wrap gap-3">
               <button type="button" disabled={saving} onClick={() => void confirm()} className="px-5 py-3 bg-primary text-bg font-semibold disabled:opacity-50">{saving ? t("saving") : t("confirm")}</button>

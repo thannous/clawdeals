@@ -86,7 +86,9 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
   const items = [];
   let nextCursor: string | null = null;
   const queryTokens = tokenize(row.criteria.query);
-  const watchlist = { ...row, tags: row.criteria.tags ?? [] };
+  // listListings applies q to the full-text index, including description. The
+  // geo projection omits that text, so only recheck non-text constraints here.
+  const watchlist = { ...row, query_text: null, criteria: { ...row.criteria, query: null }, tags: row.criteria.tags ?? [] };
   const budget = Math.min(mission.hard_budget_max, row.criteria.price_max ?? mission.hard_budget_max);
   // Read through the same LIVE and moderation-filtered catalogue as public search.
   // Continue bounded pages because filtering another market must not mask later matches.

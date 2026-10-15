@@ -19,6 +19,7 @@ import { getOwner, getOwnerByEmail, upsertOwner } from "../../../../server/servi
 import { normalizeEmail } from "../../../../server/utils/owner-verification";
 import { hashOwnerSessionToken, isOwnerSessionToken } from "../../../../server/utils/session-tokens";
 import { isUuid } from "../../../../server/utils/validators";
+import { safeRedirectUrl } from "../../../../ui/auth/safeRedirect";
 
 function resolveParam(value: any) {
   if (Array.isArray(value)) return value[0];
@@ -166,7 +167,8 @@ export async function handler(req: any, _res: any, ctx: any) {
           sessionId: result.session?.session_id,
           token: result.session_token,
           expiresAt: result.session?.expires_at || null,
-          appUrl: resolveRequestOrigin(req)
+          appUrl: resolveRequestOrigin(req),
+          next: safeRedirectUrl(body.next ?? "/settings/identities")
         });
       } catch (deliveryError: any) {
         const code = String(deliveryError?.code || "");
