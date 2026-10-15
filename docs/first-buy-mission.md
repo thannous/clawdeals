@@ -86,6 +86,23 @@ sans repli. Les deux derniers utilisent le constructeur de requêtes Supabase
 réel avec un transport PostgREST contrôlé ; ils ne constituent pas une nouvelle
 preuve de persistance sur le backend réel ni un rejeu navigateur.
 
+Avant de publier son annonce LIVE, le fixture `mission-live` vérifie les
+watchlists actives non supprimées du même marché, avec le matcher utilisé par
+la file de notifications. Une correspondance hors du fixture, une erreur de
+lecture ou un scan incomplet bloque l’insertion. Le scan est borné à 100 pages
+de 500 lignes ; le compte exact détecte aussi une limite serveur plus basse.
+Les critères tiers ne sont ni modifiés ni enregistrés dans les preuves.
+Cette vérification décrit un instantané, pas un verrou contre des modifications
+concurrentes. Le reçu ne conserve que l’identifiant fictif, le nombre de lignes
+vérifiées et la complétude. Le nettoyage inclut l’entrée de file portant
+exactement le type `listing` et l’identifiant de l’annonce du fixture.
+
+`src/__tests__/e2e/mission-fixture-notifications.test.ts` exécute le fixture et
+le constructeur HTTP Supabase réels sur un transport simulé : correspondance
+en première ou seconde page, mode `in_app`, critères nuls, erreurs, pagination
+incomplète et nettoyage borné. Ces cas ne doivent pas publier une annonce à
+risque sur le backend réel pour démontrer le refus.
+
 Validation complémentaire du 2026-10-11 sur la branche `codex/first-buy-mission` :
 
 - `.e2e/validation/listing-mission-draft-verified-20261011/report.json` : **6/6**,

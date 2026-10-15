@@ -200,6 +200,10 @@ l’idempotence et les validations propriétaire. Ils vérifient aussi qu’une 
 sans proposition nécessite une recherche réussie, que les clés ClawDeals complètes
 sont masquées même hors des variables d’environnement, et que la destination du
 rapport est réservée avant tout appel modèle.
+Le masquage couvre les clés API `cd_live_`/`cd_sandbox_`, les jetons OAuth
+`cd_at_`/`cd_rt_`, les secrets de connexion `cd_poll_`/`cd_claim_`/`cd_dev_` et les
+sessions propriétaire `cd_os_`, y compris dans les textes publics non fiables.
+Les identifiants publics et le nom de cookie `cd_owner_session` restent lisibles.
 Ils couvrent également les séquences de terminal dans la confirmation, une
 annonce retrouvée après la première page, le repli textuel paginé et l’arrêt sans
 offre face à des curseurs répétés, trop de pages ou une annonce hors limites.

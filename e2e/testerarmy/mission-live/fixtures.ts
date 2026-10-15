@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { test as base } from "@e2e-dev/web";
 import { assertNonProdFromEnv } from "../../../scripts/lib/assert-non-prod-target.mjs";
+import { evaluateWatchlistMatchListing } from "../../../src/server/utils/matching";
 
 type Fixture = {
   id: string;
@@ -50,7 +51,9 @@ export const test = base.extend<{ missionFixture: Fixture }>({
     });
 
     const ownerIds: string[] = [];
+    const agentIds: string[] = [];
     const listingIds: string[] = [];
+    const notificationPreflights: { listingId: string; checked: number; complete: boolean }[] = [];
     let userId: string | undefined;
     let primary: unknown;
     let failed = false;
@@ -69,18 +72,57 @@ export const test = base.extend<{ missionFixture: Fixture }>({
         ownerIds.push(ownerId);
         const agent = await db.from("agents").insert({ owner_id: ownerId, name: `Mission fixture ${id}` }).select("id").single();
         check(agent.error, "Create synthetic seller agent");
+        agentIds.push(agent.data!.id);
         const listingId = randomUUID();
         const title = `Mission bicycle ${id}`;
-        const listing = await db.from("listings").insert({
+        const listingRow = {
           listing_id: listingId, title, description: "Foldable bicycle. Disposable first mission fixture. No seller contact.",
           owner_id: ownerId, agent_id: agent.data!.id, seller_agent_id: agent.data!.id,
           status: "LIVE", category: "mobility", condition: "GOOD", price_amount: price,
           currency: market === "GB" ? "GBP" : "EUR", market_code: market,
           geo_lat: market === "GB" ? 51.5074 : 48.8566, geo_lng: market === "GB" ? -0.1278 : 2.3522,
           photos: [], delivery_method: "PICKUP"
-        });
-        check(listing.error, "Create synthetic listing");
+        };
+        const preflight = { listingId, checked: 0, complete: false };
+        notificationPreflights.push(preflight);
+        // Direct LIVE inserts also wake the matching queue. Read every active
+        // watchlist in this market; never mutate or export another owner's brief.
+        // This is a snapshot, not a lock against concurrent watchlist creation.
+        let cursor: string | null = null;
+        for (let page = 0; page < 100; page++) {
+          let scan = db.from("watchlists")
+            .select("watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at", { count: "exact" })
+            .eq("active", true).is("deleted_at", null).eq("market_code", market)
+            .order("watchlist_id").limit(500);
+          if (cursor) scan = scan.gt("watchlist_id", cursor);
+          const { data, error, count } = await scan;
+          if (error || !Array.isArray(data) || !Number.isSafeInteger(count) || count! < data.length || (!data.length && count !== 0)) {
+            throw new Error("Notification preflight could not verify all watchlists; no listing created.");
+          }
+          for (const watchlist of data) {
+            if (!watchlist || typeof watchlist.watchlist_id !== "string" || typeof watchlist.agent_id !== "string" ||
+              watchlist.active !== true || watchlist.deleted_at !== null || watchlist.market_code !== market ||
+              !("criteria" in watchlist) || (watchlist.criteria !== null &&
+                (typeof watchlist.criteria !== "object" || Array.isArray(watchlist.criteria)))) {
+              throw new Error("Notification preflight received incomplete watchlist evidence; no listing created.");
+            }
+            preflight.checked++;
+            if (!agentIds.includes(watchlist.agent_id) && evaluateWatchlistMatchListing({ listing: listingRow, watchlist }).matched) {
+              throw new Error("Notification preflight found a matching watchlist outside the fixture; no listing created.");
+            }
+          }
+          // The exact count also detects a backend row cap below our page size.
+          if (data.length === count) { preflight.complete = true; break; }
+          const next = data.at(-1)!.watchlist_id;
+          if (cursor && next <= cursor) throw new Error("Notification preflight cursor did not advance; no listing created.");
+          cursor = next;
+        }
+        if (!preflight.complete) throw new Error("Notification preflight exceeded its bounded scan; no listing created.");
+        // Track the known ID before insertion so a lost insert response still
+        // permits scoped cleanup of this fixture's listing and queue entry.
         listingIds.push(listingId);
+        const listing = await db.from("listings").insert(listingRow);
+        check(listing.error, "Create synthetic listing");
         return { id: listingId, title };
       } });
     } catch (error) { failed = true; primary = error; }
@@ -94,7 +136,11 @@ export const test = base.extend<{ missionFixture: Fixture }>({
       if (links.error) cleanupErrors.push(`Resolve owned account: ${links.error.message}`);
       else ownerIds.push(...(links.data || []).map(row => row.owner_id));
     }
-    if (listingIds.length) await cleanup("Delete fixture listings", () => db.from("listings").delete().in("listing_id", listingIds));
+    if (listingIds.length) {
+      await cleanup("Delete fixture listing match queue", () => db.from("watchlist_match_queue").delete()
+        .eq("entity_type", "listing").in("entity_id", listingIds));
+      await cleanup("Delete fixture listings", () => db.from("listings").delete().in("listing_id", listingIds));
+    }
     if (ownerIds.length) {
       await cleanup("Revoke fixture owner sessions", () => db.from("owner_sessions").delete().in("owner_id", ownerIds));
       // Agent deletion cascades to only its watchlists and matches.
@@ -104,7 +150,8 @@ export const test = base.extend<{ missionFixture: Fixture }>({
     if (userId) await cleanup("Delete synthetic Auth user", () => db.auth.admin.deleteUser(userId!));
     const remaining: Record<string, number | null> = {};
     for (const [table, column, values] of [
-      ["owners", "owner_id", ownerIds], ["agents", "owner_id", ownerIds], ["listings", "listing_id", listingIds]
+      ["owners", "owner_id", ownerIds], ["agents", "owner_id", ownerIds], ["listings", "listing_id", listingIds],
+      ["watchlist_match_queue", "entity_id", listingIds]
     ] as const) {
       if (!values.length) continue;
       const result = await db.from(table).select(column, { head: true, count: "exact" }).in(column, values);
@@ -119,6 +166,7 @@ export const test = base.extend<{ missionFixture: Fixture }>({
       realServices: ["app API", "Supabase Auth", "Postgres persistence"],
       redisFixture: process.env.TESTERARMY_REDIS_FIXTURE || "configured service; not independently qualified",
       fixtureError: failed, cleanupErrors, remaining, refused, missionWriteCount: missionWrites.length,
+      notificationPreflights, notificationPreflightSnapshotOnly: true, criteriaRecorded: false,
       testOutcome: "See the SDK report; fixture teardown is independent of the test verdict.",
       credentialsRecorded: false, networkTrace: false
     }, null, 2) + "\n", { flag: "wx" });

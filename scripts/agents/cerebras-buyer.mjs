@@ -64,7 +64,9 @@ function safeText(value) {
   for (const key of [env.CEREBRAS_API_KEY, env.CLAWDEALS_API_KEY, env.CLAWDEALS_BUYER_API_KEY].filter(Boolean)) {
     text = text.replaceAll(key, "<redacted>");
   }
-  return text.replace(/\b(?:csk-[A-Za-z0-9_-]+|cd_(?:live|sandbox|at)_[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)/g, "<redacted>");
+  // API keys plus OAuth, connect/device and owner-session credentials. Keep
+  // explicit namespaces so public identifiers such as cd_owner_session survive.
+  return text.replace(/\b(?:csk-[A-Za-z0-9_-]+|cd_(?:live|sandbox)_[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*|cd_(?:at|rt|poll|claim|dev|os)_[A-Za-z0-9_-]+)/g, "<redacted>");
 }
 
 function safeJson(value, space) {
