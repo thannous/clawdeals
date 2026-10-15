@@ -31,7 +31,49 @@ Les anciennes attentes de connexion sont actualisées uniquement pour conserver
 Les contre-exemples couvrent une mission localisée et une destination externe
 refusée. Les protections et contrôles de livraison ne sont pas assouplis.
 
-## Qualification complète après les corrections de revue
+## Rejeu avec TesterArmy e2e 0.21.0
+
+Le runner est fixé à **0.21.0**, avec `@e2e-dev/web` **0.13.0**, Playwright
+**1.63.0**, son Chromium déjà installé et Node **24.19.0**. Le pair déclaré du moteur web accepte cette
+version ; aucun navigateur, fournisseur ou appel de modèle supplémentaire.
+Les traces Markdown de 0.21 et les anciennes traces ZIP de 0.18 sont contrôlées
+par l’index de preuves. Ses **20 tests de contrôle** passent.
+
+| Campagne | Résultat | Source | Rapport local |
+| --- | --- | --- | --- |
+| Client desktop/mobile | **102/102**, 235,62 s | `48ab9e6beef9301bbbd79de3298b66af74c871a8` | `.e2e/validation/dogfood-021-client-48ab9e6/summary.md` |
+| Missions avec Auth/Postgres réels | **4/4**, 55,86 s | `48ab9e6beef9301bbbd79de3298b66af74c871a8` | `.e2e/validation/dogfood-021-live-48ab9e6/summary.md` |
+| Corpus historique complet après stabilisation | **181/181**, 252,84 s | `549cadd3e610c0a7dfbd55a1f991c387d17a80aa` | `.e2e/validation/dogfood-021-historical-549cadd/summary.md` |
+
+Ces trois campagnes sont sorties à 0, avec des entrées stables. Les **102 pages
+de trace et 68 médias** client ainsi que les **181 pages de trace** historiques
+ont été contrôlés. Les quatre fixtures réelles
+ont été nettoyées sans erreur, sans ligne propriétaire/agent/annonce restante
+parmi leurs identités ; Redis reste simulé, les traces Auth désactivées.
+`verify:pr` sur `48ab9e6` a réexécuté ses **12 contrôles**, tous réussis,
+dont **817 tests unitaires**, avec un test ignoré, et le lint de tous les fichiers.
+`verify:pr` sur `549cadd` est également réussi : quatre contrôles exécutés,
+huit réutilisés. Les 102 cas client et les quatre missions restent les exécutions
+fraîches de `48ab9e6`, réutilisées après la seule correction des deux tests de
+mesure de l’accueil. Le reçu `.e2e/dogfood-20261015/qualified-source-021.json`
+consigne cette portée et les mises à jour de skills préservées hors livraison.
+La PR indique la vérification du dernier commit documentaire livré.
+
+Le premier corpus historique sous 0.21 conserve son résultat **180/181**,
+294,79 s, entrées stables, dans
+`.e2e/validation/dogfood-021-historical-48ab9e6/summary.md`.
+Son seul échec comptait les mots avant la levée du masquage initial de Next dev :
+`body.innerText` lisait alors les données sérialisées, soit **1 531 mots**,
+contre **441** après affichage, encore stables une et trois secondes plus tard.
+Les deux versions du test attendent désormais le corps, le hero et les polices
+avant de mesurer. Les limites restent **450 mots, six sections et six écrans**.
+Le contre-exemple de 20 mots visibles ajoutés porte bien le compte à **461** ;
+la hauteur mobile rendue mesure **5,68 écrans**. Ce correctif de test ne modifie
+pas l’application. Diagnostic : `.e2e/dogfood-20261015/landing-021-fouc-diagnostic.json`.
+Le pilote initial de dix cas sous Node 26 reste un diagnostic de compatibilité,
+pas une qualification sur le runtime du dépôt.
+
+## Qualification précédente sous e2e 0.18 après les corrections de revue
 
 Le commit applicatif `12f7c626658974556afa11c93656d37e4a7c9291` a été qualifié
 sur l’application locale à `http://localhost:4327` :
