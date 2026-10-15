@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { isUuid } from "../../../../server/utils/validators";
 import { listDealsByOwner } from "../../../../server/services/deals-list";
+import type { OwnerDealsResponse } from "../../../../shared/owner-deals";
 
 const VALID_STATUSES = new Set(["NEW", "ACTIVE", "EXPIRED"]);
 
@@ -96,7 +97,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         deals: result.items,
         next_cursor: result.nextCursor
       }
-    }, { "Cache-Control": "no-store" });
+    } satisfies OwnerDealsResponse, { "Cache-Control": "no-store" });
   } catch (error: any) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
   }

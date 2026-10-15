@@ -121,7 +121,8 @@ export function useMyApprovals() {
 
   useEffect(() => {
     if (!authRequired) return;
-    const next = encodeURIComponent(router.asPath || "/my/approvals");
+    const localePrefix = router.locale && router.locale !== "en" ? `/${router.locale}` : "";
+    const next = encodeURIComponent(`${localePrefix}${router.asPath || "/my/approvals"}`);
     void router.replace(`/auth/login?next=${next}`);
   }, [authRequired, router]);
 

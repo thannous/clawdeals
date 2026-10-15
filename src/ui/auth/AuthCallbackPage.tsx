@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
+import { probeOwnerSession } from "./ownerSessionProbe";
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
 import { getBrowserSupabaseClient } from "./supabase-client";
+import { missionDraftSourceFromUrl, readBuyMissionDraft } from "../webmcp/buyMissionDraft";
 
 function getErrorMessage(body: any, status: number) {
   const error = body?.error;
@@ -28,6 +31,9 @@ async function bridgeOwnerSession(accessToken: string) {
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const t = useTranslations("auth.callback");
+  const verify = useTranslations("auth.verify");
+  const [missionReturn, setMissionReturn] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
   const hasRunRef = useRef(false);
@@ -65,7 +71,21 @@ export default function AuthCallbackPage() {
         try { storedNext = sessionStorage.getItem("clawdeals.auth_next"); sessionStorage.removeItem("clawdeals.auth_next"); } catch {}
         const redirectTo = safeRedirectUrl(nextParam || storedNext);
 
-        void router.replace(redirectTo);
+        const draftSource = missionDraftSourceFromUrl(redirectTo);
+        const owner = draftSource !== null ? await probeOwnerSession({ fresh: true }) : null;
+        if (draftSource !== null && !readBuyMissionDraft(draftSource, owner?.state === "authenticated" ? owner.ownerId : null)) {
+          // Email callbacks can open an independent tab. Authentication is
+          // shared, but the private mission draft stays in the original tab.
+          setMissionReturn(redirectTo);
+          const returnLocale = /^\/(en|fr|es)\//.exec(redirectTo)?.[1] || "en";
+          if (router.locale !== returnLocale) {
+            // Keep the provider callback URL unchanged; localize only the
+            // already authenticated recovery page, without auth tokens.
+            await router.replace({ pathname: "/auth/callback", query: { next: redirectTo } }, undefined, { locale: returnLocale });
+          }
+          return;
+        }
+        void router.replace(redirectTo, undefined, { locale: false });
       } catch (err: any) {
         setState("error");
         setError(String(err?.message || "Authentication callback failed"));
@@ -83,18 +103,24 @@ export default function AuthCallbackPage() {
         <div className="w-full max-w-xl space-y-4">
           <div className="bg-surface border border-border rounded clip-corner p-5 space-y-4">
             <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-              <span className="text-primary">/ </span>AUTH CALLBACK
+              <span className="text-primary">/ </span>{t("title")}
             </h1>
-            {state === "loading" && <div className="text-xs font-mono text-subtle">Finalizing sign-in…</div>}
+            {state === "loading" && !missionReturn && <div className="text-xs font-mono text-subtle">{t("finalizing")}</div>}
+            {missionReturn && (
+              <div data-testid="auth-callback-mission-return" role="status" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3 space-y-3">
+                <p className="text-sm text-muted">{verify("missionOtherTab")}</p>
+                <Link href={missionReturn} locale={false} className="inline-block text-sm text-primary underline">{verify("openMissionHere")}</Link>
+              </div>
+            )}
             {state === "error" && (
               <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-error">Error</div>
+                <div className="text-xs font-mono text-error">{verify("error")}</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
                 <Link
                   href="/auth/login"
                   className="inline-block mt-3 px-3 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
                 >
-                  Back to login
+                  {t("backToLogin")}
                 </Link>
               </div>
             )}

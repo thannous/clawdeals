@@ -1,5 +1,6 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { assertNativeMarketCurrency } from "../config/markets";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -88,14 +89,22 @@ function mapError(error) {
   throw buildServiceError(mapped.message, mapped.status, mapped.code);
 }
 
-async function countActiveWatchlists(agentId) {
+function countsTowardsActiveQuota(active: boolean, criteria: any, nowIso: string) {
+  const expiresAt = criteria?.mission?.expires_at;
+  return active === true && (expiresAt == null || String(expiresAt) > nowIso);
+}
+
+async function countActiveWatchlists(agentId, nowIso = new Date().toISOString()) {
   const client = getSupabaseServiceClient();
+  // Mission dates are normalized to UTC ISO strings at write time. Expired
+  // missions remain readable without consuming a slot or being mutated here.
   const { count, error } = await client
     .from("watchlists")
     .select("watchlist_id", { count: "exact", head: true })
     .eq("agent_id", agentId)
     .eq("active", true)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .or(`criteria->mission->>expires_at.is.null,criteria->mission->>expires_at.gt.${nowIso}`);
   if (error) {
     mapError(error);
   }
@@ -171,21 +180,24 @@ export async function createWatchlist({
   return data;
 }
 
-export async function listWatchlists({ agentId, active, limit, cursor }: any = {}) {
+export async function listWatchlists({ agentId, ownerId, active, limit, cursor, missionOnly = false }: any = {}) {
   const client = getSupabaseServiceClient();
   const pageLimit = limit ?? DEFAULT_LIMIT;
   let query = client
     .from("watchlists")
-    .select("*")
-    .eq("agent_id", agentId)
+    .select(ownerId ? "*,agents!inner(owner_id,suspended_at)" : "*")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .order("watchlist_id", { ascending: false })
     .limit(pageLimit + 1);
 
+  query = ownerId ? query.eq("agents.owner_id", ownerId) : query.eq("agent_id", agentId);
+
   if (typeof active === "boolean") {
     query = query.eq("active", active);
   }
+
+  if (missionOnly) query = query.contains("criteria", { mission: { kind: "BUY" } });
 
   if (cursor?.created_at && cursor?.watchlist_id) {
     const createdAt = formatFilterValue(cursor.created_at);
@@ -276,6 +288,19 @@ export async function getWatchlistForAgent({ watchlistId, agentId }: any = {}) {
   return record;
 }
 
+export async function getWatchlistForOwner({ watchlistId, ownerId }: { watchlistId: string; ownerId: string }) {
+  if (!ownerId) throw buildServiceError("ownerId is required", 400, "VALIDATION_ERROR");
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.from("watchlists")
+    .select("*,agents!inner(owner_id,suspended_at)")
+    .eq("watchlist_id", watchlistId)
+    .eq("agents.owner_id", ownerId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) mapError(error);
+  return data || null;
+}
+
 export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: any = {}) {
   const existing = await getWatchlistById(watchlistId);
   if (!existing) return null;
@@ -286,9 +311,22 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
     });
   }
 
+  const nextCriteria = patch?.criteria ?? existing.criteria;
+  if (nextCriteria?.mission) {
+    try {
+      assertNativeMarketCurrency(patch?.marketCode ?? existing.market_code, nextCriteria.mission.currency);
+    } catch (error: any) {
+      throw buildServiceError(error.message, 400, "VALIDATION_ERROR");
+    }
+  }
+
   const nextActive = typeof patch?.active === "boolean" ? patch.active : existing.active;
-  if (nextActive === true && existing.active === false) {
-    const activeCount = await countActiveWatchlists(agentId);
+  const nowIso = new Date().toISOString();
+  // Renewing an expired mission (or removing its expiry) consumes a slot even
+  // when its stored active flag never changed. Already-counted edits do not.
+  if (countsTowardsActiveQuota(nextActive, nextCriteria, nowIso) &&
+    !countsTowardsActiveQuota(existing.active, existing.criteria, nowIso)) {
+    const activeCount = await countActiveWatchlists(agentId, nowIso);
     if (activeCount >= MAX_ACTIVE_WATCHLISTS) {
       throw buildServiceError(
         "Watchlist limit reached",
@@ -299,7 +337,6 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
     }
   }
 
-  const nowIso = new Date().toISOString();
   const payload: any = {
     updated_at: nowIso
   };
@@ -311,7 +348,9 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
     payload.active = patch.active;
   }
   if (patch && Object.prototype.hasOwnProperty.call(patch, "criteria")) {
-    payload.criteria = patch.criteria;
+    payload.criteria = existing.criteria?.notification_mode === "in_app"
+      ? { ...patch.criteria, notification_mode: "in_app" }
+      : patch.criteria;
     payload.query_text = patch.queryText ?? null;
     payload.tags = patch.tags ?? [];
     payload.price_max = patch.priceMax ?? null;

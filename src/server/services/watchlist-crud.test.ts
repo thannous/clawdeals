@@ -15,6 +15,7 @@ function createAwaitableQuery(result: any) {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
     is: vi.fn(() => query),
+    or: vi.fn(() => query),
     then: vi.fn((resolve: any) => Promise.resolve(resolve(result)))
   };
   return query;
@@ -139,5 +140,29 @@ describe("watchlist CRUD service", () => {
     expect(updateQuery.eq).toHaveBeenCalledWith("watchlist_id", "wl-1");
     expect(updateQuery.eq).toHaveBeenCalledWith("agent_id", "agent-1");
     expect(result).toMatchObject({ market_code: "GB", currency: "GBP" });
+  });
+
+  it("does not allow an agent criteria update to enable external delivery for an owner mission", async () => {
+    const lookup = createMaybeSingleQuery({ data: {
+      watchlist_id: "wl-1", agent_id: "agent-1", active: true, market_code: "FR",
+      criteria: { notification_mode: "in_app", mission: { currency: "EUR" } }
+    }, error: null });
+    let payload: any;
+    const update: any = createMaybeSingleQuery({ data: {}, error: null });
+    update.update = vi.fn((value) => { payload = value; return update; });
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({ from: vi.fn().mockReturnValueOnce(lookup).mockReturnValueOnce(update) } as any);
+    await updateWatchlistForAgent({ watchlistId: "wl-1", agentId: "agent-1", patch: { criteria: { query: "bike", mission: { currency: "EUR" } } } });
+    expect(payload.criteria.notification_mode).toBe("in_app");
+  });
+
+  it("rejects changing a mission market independently from its budget currency", async () => {
+    const lookup = createMaybeSingleQuery({ data: {
+      watchlist_id: "wl-1", agent_id: "agent-1", active: true, market_code: "FR",
+      criteria: { mission: { currency: "EUR" } }
+    }, error: null });
+    const update: any = createMaybeSingleQuery({ data: { market_code: "GB", currency: "GBP" }, error: null });
+    update.update = vi.fn(() => update);
+    vi.mocked(getSupabaseServiceClient).mockReturnValue({ from: vi.fn().mockReturnValueOnce(lookup).mockReturnValueOnce(update) } as any);
+    await expect(updateWatchlistForAgent({ watchlistId: "wl-1", agentId: "agent-1", patch: { marketCode: "GB", currency: "GBP" } })).rejects.toMatchObject({ code: "VALIDATION_ERROR", status: 400 });
   });
 });

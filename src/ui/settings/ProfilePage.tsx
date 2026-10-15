@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { localePrefixFor, resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -50,7 +51,7 @@ function useProfilePageView() {
   const [available, setAvailable] = useState(true);
 
   const redirectToLogin = useCallback(() => {
-    const next = encodeURIComponent(router.asPath || "/settings/profile");
+    const next = encodeURIComponent(`${localePrefixFor(resolveSupportedLocale(router.locale))}${stripLocalePrefix(router.asPath || "/settings/profile")}`);
     void router.replace(`/auth/login?next=${next}`);
   }, [router]);
 
@@ -185,7 +186,7 @@ function useProfilePageView() {
               <div className="absolute inset-2 rounded-full border border-dashed border-primary/20 animate-spin-slow" />
             </div>
             <span className="text-[11px] font-mono text-subtle tracking-[0.3em] uppercase">
-              Loading profile&hellip;
+              {t("profile.loading")}
             </span>
           </div>
         )}
@@ -196,7 +197,10 @@ function useProfilePageView() {
             <div className="inline-flex items-center justify-center h-10 w-10 rounded-full border border-error/30 bg-error/10 text-error text-lg mb-3">
               !
             </div>
-            <div className="text-sm font-mono font-semibold text-error">{t("profile.loadError")}</div>
+            <div role="alert" className="text-sm font-mono font-semibold text-error">{t("profile.loadError")}</div>
+            <button type="button" onClick={() => void fetchProfile()} className="mt-4 rounded border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10">
+              {t("profile.retry")}
+            </button>
           </div>
         )}
 
@@ -264,10 +268,12 @@ function useProfilePageView() {
 
                     {/* Preset grid */}
                     <div className="flex gap-1.5">
-                      {PRESET_AVATARS.map((url) => (
+                      {PRESET_AVATARS.map((url, index) => (
                         <button
                           key={url}
                           type="button"
+                          aria-label={`${t("profile.avatar.choosePreset")} ${index + 1}`}
+                          aria-pressed={avatarUrl === url}
                           onClick={() => selectAvatar(url)}
                           className={[
                             "h-8 w-8 rounded-full border overflow-hidden transition-all duration-200",
@@ -295,6 +301,7 @@ function useProfilePageView() {
                       <div className="flex items-center gap-1.5 w-full max-w-[280px]">
                         <input
                           type="url"
+                          aria-label={t("profile.avatar.customUrl")}
                           value={customAvatarUrl}
                           onChange={(e) => setCustomAvatarUrl(e.target.value)}
                           onBlur={applyCustomAvatar}
@@ -317,13 +324,14 @@ function useProfilePageView() {
                   <div className="flex-1 space-y-4">
                     {/* Display name */}
                     <div>
-                      <label className="flex items-center gap-2 mb-2">
+                      <label htmlFor="profile-display-name" className="flex items-center gap-2 mb-2">
                         <span className="text-[10px] font-mono text-subtle uppercase tracking-widest">
                           {t("profile.fields.displayName")}
                         </span>
-                        {nameComplete && <span className="text-[8px] text-success">&#9632;</span>}
+                        {nameComplete && <span aria-hidden="true" className="text-[8px] text-success">&#9632;</span>}
                       </label>
                       <input
+                        id="profile-display-name"
                         type="text"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value.slice(0, 60))}
@@ -335,7 +343,7 @@ function useProfilePageView() {
                     {/* Bio */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-[10px] font-mono text-subtle uppercase tracking-widest">
+                        <label htmlFor="profile-bio" className="text-[10px] font-mono text-subtle uppercase tracking-widest">
                           {t("profile.fields.bio")}
                         </label>
                         <span className="text-[10px] font-mono text-subtle tabular-nums">
@@ -344,6 +352,7 @@ function useProfilePageView() {
                         </span>
                       </div>
                       <textarea
+                        id="profile-bio"
                         value={bio}
                         onChange={(e) => setBio(e.target.value.slice(0, 2000))}
                         placeholder={t("profile.fields.bioPlaceholder")}
@@ -439,20 +448,21 @@ function useProfilePageView() {
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-primary text-sm">&#128205;</span>
                   <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary font-bold">
-                    location
+                    {t("profile.location")}
                   </span>
                   <div className="flex-1 h-px bg-linear-to-r from-primary/20 to-transparent" />
                   <span className="text-[9px] font-mono text-warning uppercase tracking-wider">
-                    important &mdash; helps agents find you
+                    {t("profile.locationHint")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                    <label htmlFor="profile-city" className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
                       {t("profile.fields.city")}
                     </label>
                     <input
+                      id="profile-city"
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value.slice(0, 100))}
@@ -461,10 +471,11 @@ function useProfilePageView() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                    <label htmlFor="profile-region" className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
                       {t("profile.fields.stateRegion")}
                     </label>
                     <input
+                      id="profile-region"
                       type="text"
                       value={stateRegion}
                       onChange={(e) => setStateRegion(e.target.value.slice(0, 100))}
@@ -473,17 +484,20 @@ function useProfilePageView() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                    <label htmlFor="profile-country" className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
                       {t("profile.fields.country")}
                     </label>
                     <input
+                      id="profile-country"
+                      aria-describedby="profile-country-hint"
                       type="text"
                       value={country}
                       onChange={(e) => setCountry(e.target.value.toUpperCase().slice(0, 2))}
-                      placeholder={t("profile.fields.countryPlaceholder")}
+                      placeholder="FR"
                       maxLength={2}
                       className="w-full px-3 py-2.5 text-sm font-mono bg-bg/60 border-l-2 border-l-primary/30 border border-border rounded-r text-text placeholder:text-subtle focus:border-primary focus:border-l-primary focus:outline-none uppercase transition-colors"
                     />
+                    <p id="profile-country-hint" className="mt-1.5 text-xs text-muted">{t("profile.countryHint")}</p>
                   </div>
                 </div>
               </div>
@@ -500,7 +514,7 @@ function useProfilePageView() {
                 <div className="flex items-center gap-2 mb-5">
                   <span className="h-1.5 w-1.5 rounded-sm bg-secondary/50" />
                   <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-secondary/70 font-bold">
-                    system flags
+                    {t("profile.preferences")}
                   </span>
                   <div className="flex-1 h-px bg-linear-to-r from-secondary/15 to-transparent" />
                 </div>
@@ -522,6 +536,7 @@ function useProfilePageView() {
                     <button
                       type="button"
                       role="switch"
+                      aria-label={t("profile.fields.available")}
                       aria-checked={available}
                       onClick={() => setAvailable(!available)}
                       className={[
@@ -560,6 +575,7 @@ function useProfilePageView() {
                     <button
                       type="button"
                       role="switch"
+                      aria-label={t("profile.fields.showEmail")}
                       aria-checked={showEmail}
                       onClick={() => setShowEmail(!showEmail)}
                       className={[

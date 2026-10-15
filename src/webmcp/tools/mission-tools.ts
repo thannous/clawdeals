@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getStoredApiKey } from "../../ui/developer/storage";
 import { callClawdealsWebmcp } from "../http";
 import { applyBuyMissionUi, type BuyMissionView } from "../ui-bridge";
 import type { StableToolResult } from "../types";
@@ -65,6 +66,31 @@ export const buyMissionZodSchema = z
     }
   });
 
+// Validate fields used by the success view. WatchlistV1 has no owner-only
+// status field; an idempotent success may also have an expiry in the past.
+const missionResponseSchema = z.object({
+  watchlist_id: z.string().uuid(),
+  criteria: z.object({
+    query: z.string().trim().min(1).max(80),
+    mission: z.object({
+      version: z.literal(1), kind: z.literal("BUY"),
+      preferred_price_max: z.number().positive().nullable(),
+      hard_budget_max: z.number().positive(),
+      currency: z.enum(["EUR", "GBP"]),
+      requirements: z.array(z.string().trim().min(1).max(120)).max(10),
+      autonomous_actions: z.array(autonomousAction).min(1).max(3)
+        .refine(actions => actions.includes("search") && new Set(actions).size === actions.length),
+      contact_reveal: z.literal("manual_bilateral_approval"),
+      expires_at: z.string().datetime({ offset: true }),
+      location: z.object({
+        label: z.string().max(80).nullable(),
+        lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180),
+        radius_km: z.number().int().min(1).max(300)
+      })
+    }).refine(mission => mission.preferred_price_max === null || mission.preferred_price_max <= mission.hard_budget_max)
+  })
+});
+
 export const buyMissionInputJsonSchema: Record<string, unknown> = {
   type: "object",
   additionalProperties: false,
@@ -88,8 +114,8 @@ export const buyMissionInputJsonSchema: Record<string, unknown> = {
     latitude: { type: "number", minimum: -90, maximum: 90 },
     longitude: { type: "number", minimum: -180, maximum: 180 },
     radius_km: { type: "integer", minimum: 1, maximum: 300 },
-    preferred_price_max: { type: "number", exclusiveMinimum: 0 },
-    hard_budget_max: { type: "number", exclusiveMinimum: 0 },
+    preferred_price_max: { type: "number", exclusiveMinimum: 0, description: "Preferred price in major units of the market currency (EUR or GBP), e.g. 75.50." },
+    hard_budget_max: { type: "number", exclusiveMinimum: 0, description: "Absolute budget in major units of the market currency (EUR or GBP), e.g. 100 for 100 EUR." },
     requirements: {
       type: "array",
       maxItems: 10,
@@ -107,13 +133,13 @@ export const buyMissionInputJsonSchema: Record<string, unknown> = {
   }
 };
 
-function contractError(requestId: string): StableToolResult<never> {
+function unknownMissionOutcome(requestId: string): StableToolResult<never> {
   return {
     ok: false,
     error: {
-      code: "SERVER_CONTRACT_ERROR",
-      message: "Mission creation returned an invalid response",
-      details: {}
+      code: "OUTCOME_UNKNOWN",
+      message: "Mission creation returned an invalid response, so its outcome is unknown",
+      details: { safe_to_retry: false }
     },
     meta: { request_id: requestId }
   };
@@ -164,36 +190,26 @@ export const missionTools: ToolDef[] = [
         },
         requestId: ctx.requestId,
         idempotencyKey: ctx.idempotencyKey,
-        signal: ctx.signal
+        signal: ctx.signal,
+        apiKey: ctx.apiKey
       });
       if (!result.ok) return result;
 
-      const data = result.data as any;
-      const mission = data?.criteria?.mission;
-      if (!data?.watchlist_id || !mission) return contractError(ctx.requestId);
-
+      const parsed = missionResponseSchema.safeParse(result.data);
+      if (!parsed.success) return unknownMissionOutcome(result.meta.request_id || ctx.requestId);
+      const { watchlist_id: missionId, criteria } = parsed.data;
+      const mission = criteria.mission;
+      if (mission.currency !== currency) return unknownMissionOutcome(result.meta.request_id || ctx.requestId);
       const view: BuyMissionView = {
-        mission_id: String(data.watchlist_id),
+        ...mission,
+        preferred_price_max: mission.preferred_price_max ?? null,
+        location: { ...mission.location, label: mission.location.label ?? null },
+        mission_id: missionId,
         status: "ACTIVE",
-        query: String(data.criteria.query),
-        preferred_price_max:
-          typeof mission.preferred_price_max === "number" ? mission.preferred_price_max : null,
-        hard_budget_max: Number(mission.hard_budget_max),
-        currency: String(mission.currency),
-        requirements: Array.isArray(mission.requirements) ? mission.requirements.map(String) : [],
-        autonomous_actions: Array.isArray(mission.autonomous_actions)
-          ? mission.autonomous_actions.map(String)
-          : [],
-        contact_reveal: "manual_bilateral_approval",
-        expires_at: String(mission.expires_at),
-        location: {
-          label: mission.location?.label ? String(mission.location.label) : null,
-          lat: Number(mission.location?.lat),
-          lon: Number(mission.location?.lon),
-          radius_km: Number(mission.location?.radius_km)
-        }
+        query: criteria.query
       };
-      applyBuyMissionUi(view);
+      // An old agent's late response must not repopulate the current agent's UI.
+      if (ctx.apiKey === undefined || getStoredApiKey() === ctx.apiKey) applyBuyMissionUi(view);
 
       return {
         ok: true,

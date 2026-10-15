@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useReducer, useRef } from "react";
 
 import { getBrowserSupabaseClient } from "./supabase-client";
+import { safeRedirectUrl } from "./safeRedirect";
 
 function resolveQueryParam(value: unknown): string {
   if (Array.isArray(value)) return value[0] || "";
@@ -16,6 +18,7 @@ type ResetPasswordState = {
   status: "checking" | "ready" | "saving" | "success" | "error";
   error: string | null;
   notice: string | null;
+  recoveryReady: boolean;
 };
 
 type ResetPasswordAction =
@@ -31,7 +34,8 @@ const INITIAL_STATE: ResetPasswordState = {
   confirmPassword: "",
   status: "checking",
   error: null,
-  notice: null
+  notice: null,
+  recoveryReady: false
 };
 
 function resetPasswordReducer(state: ResetPasswordState, action: ResetPasswordAction): ResetPasswordState {
@@ -41,7 +45,7 @@ function resetPasswordReducer(state: ResetPasswordState, action: ResetPasswordAc
     case "setConfirmPassword":
       return { ...state, confirmPassword: action.value };
     case "setReady":
-      return { ...state, status: "ready", error: null };
+      return { ...state, status: "ready", recoveryReady: true, error: null };
     case "setSaving":
       return { ...state, status: "saving", error: null, notice: null };
     case "setSuccess":
@@ -55,6 +59,7 @@ function resetPasswordReducer(state: ResetPasswordState, action: ResetPasswordAc
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const t = useTranslations("ownerReset");
   const [state, dispatch] = useReducer(resetPasswordReducer, INITIAL_STATE);
   const hasCheckedRef = useRef(false);
 
@@ -66,9 +71,8 @@ export default function ResetPasswordPage() {
     async function checkRecoverySession() {
       try {
         const queryError = resolveQueryParam(router.query?.error).trim();
-        const queryErrorDescription = resolveQueryParam(router.query?.error_description).trim();
         if (queryError) {
-          throw new Error(queryErrorDescription || queryError);
+          throw new Error(t("invalidLink"));
         }
 
         const supabase = getBrowserSupabaseClient();
@@ -83,26 +87,26 @@ export default function ResetPasswordPage() {
         }
 
         if (!session) {
-          throw new Error("Recovery session not found. Please open the reset link from your email.");
+          throw new Error(t("invalidLink"));
         }
 
         dispatch({ type: "setReady" });
-      } catch (err: any) {
-        dispatch({ type: "setError", error: String(err?.message || "Invalid or expired reset link") });
+      } catch {
+        dispatch({ type: "setError", error: t("invalidLink") });
       }
     }
 
     void checkRecoverySession();
-  }, [router]);
+  }, [router, t]);
 
   const onUpdatePassword = useCallback(async () => {
-    if (state.status === "saving") return;
+    if (!state.recoveryReady || state.status === "saving" || state.status === "success") return;
     if (state.password.length < 8) {
-      dispatch({ type: "setError", error: "Password must be at least 8 characters." });
+      dispatch({ type: "setError", error: t("tooShort") });
       return;
     }
     if (state.password !== state.confirmPassword) {
-      dispatch({ type: "setError", error: "Passwords do not match." });
+      dispatch({ type: "setError", error: t("mismatch") });
       return;
     }
 
@@ -114,11 +118,11 @@ export default function ResetPasswordPage() {
       if (updated.error) throw updated.error;
 
       await supabase.auth.signOut().catch(() => {});
-      dispatch({ type: "setSuccess", notice: "Password updated. You can now sign in." });
-    } catch (err: any) {
-      dispatch({ type: "setError", error: String(err?.message || "Failed to update password") });
+      dispatch({ type: "setSuccess", notice: t("updated") });
+    } catch {
+      dispatch({ type: "setError", error: t("updateError") });
     }
-  }, [state.confirmPassword, state.password, state.status]);
+  }, [state.confirmPassword, state.password, state.status, state.recoveryReady, t]);
 
   return (
     <div data-testid="auth-reset-page" className="min-h-screen bg-bg relative overflow-hidden">
@@ -130,24 +134,27 @@ export default function ResetPasswordPage() {
           <div className="bg-surface border border-border rounded clip-corner p-5 space-y-4">
             <div className="space-y-1">
               <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-                <span className="text-primary">/ </span>RESET PASSWORD
+                <span className="text-primary">/ </span>{t("title")}
               </h1>
               <p className="text-xs font-mono text-subtle">
-                Set a new password for your account. Use at least 8 characters.
+                {t("intro")}
               </p>
             </div>
 
-            {state.status === "checking" && <div className="text-xs font-mono text-subtle">Validating reset link...</div>}
+            {state.status === "checking" && <div role="status" className="text-xs font-mono text-subtle">{t("checking")}</div>}
 
-            {(state.status === "ready" || state.status === "saving" || state.status === "error") && (
-              <div className="space-y-3">
+            {state.recoveryReady && state.status !== "success" && (
+              <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); void onUpdatePassword(); }}>
                 <div className="space-y-2">
                   <label className="block text-xs font-mono text-subtle uppercase" htmlFor="auth-reset-password">
-                    New password
+                    {t("password")}
                   </label>
                   <input
                     id="auth-reset-password"
                     name="password"
+                    required
+                    minLength={8}
+                    disabled={state.status === "saving"}
                     type="password"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -166,11 +173,14 @@ export default function ResetPasswordPage() {
                     className="block text-xs font-mono text-subtle uppercase"
                     htmlFor="auth-reset-password-confirm"
                   >
-                    Confirm password
+                    {t("confirmPassword")}
                   </label>
                   <input
                     id="auth-reset-password-confirm"
                     name="confirmPassword"
+                    required
+                    minLength={8}
+                    disabled={state.status === "saving"}
                     type="password"
                     autoCapitalize="none"
                     autoCorrect="off"
@@ -186,18 +196,18 @@ export default function ResetPasswordPage() {
 
                 <button
                   data-testid="auth-reset-submit"
-                  onClick={onUpdatePassword}
+                  type="submit"
                   disabled={state.status === "saving"}
                   className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
                 >
-                  {state.status === "saving" ? "Updating..." : "Update password"}
+                  {t(state.status === "saving" ? "saving" : "submit")}
                 </button>
-              </div>
+              </form>
             )}
 
             {state.error && (
-              <div data-testid="auth-reset-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-error">Error</div>
+              <div role="alert" data-testid="auth-reset-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+                <div className="text-xs font-mono text-error">{t("error")}</div>
                 <div className="text-xs font-mono text-muted mt-1">{state.error}</div>
               </div>
             )}
@@ -205,19 +215,20 @@ export default function ResetPasswordPage() {
             {state.notice && (
               <div
                 data-testid="auth-reset-notice"
+                role="status"
                 className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3"
               >
-                <div className="text-xs font-mono text-secondary">Success</div>
+                <div className="text-xs font-mono text-secondary">{t("success")}</div>
                 <div className="text-xs font-mono text-muted mt-1">{state.notice}</div>
               </div>
             )}
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
-                href="/auth/login"
+                href={`/auth/login?next=${encodeURIComponent(safeRedirectUrl(router.query.next))}`}
                 className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
               >
-                Back to login
+                {t(state.status === "error" && !state.recoveryReady ? "requestLink" : "backToLogin")}
               </Link>
             </div>
           </div>

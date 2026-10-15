@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { localePrefixFor, resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import ConsoleTable, { type Column } from "../console/shared/ConsoleTable";
@@ -72,7 +73,7 @@ function useIdentitiesPageView() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const redirectToLogin = useCallback(() => {
-    const next = encodeURIComponent(router.asPath || "/settings/identities");
+    const next = encodeURIComponent(`${localePrefixFor(resolveSupportedLocale(router.locale))}${stripLocalePrefix(router.asPath || "/settings/identities")}`);
     void router.replace(`/auth/login?next=${next}`);
   }, [router]);
 

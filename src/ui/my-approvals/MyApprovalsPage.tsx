@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
 import { useMyApprovals } from "./useMyApprovals";
@@ -26,7 +27,7 @@ export default function MyApprovalsPage() {
   } = useMyApprovals();
   const { agents, agentMap } = useOwnerAgents();
 
-  const { execute, submitState } = useMyApprovalAction({ onSuccess: refetch });
+  const { execute, submitState, error: actionError, activeApprovalId, pending } = useMyApprovalAction({ onSuccess: refetch });
 
   const columns: Column[] = [
     {
@@ -68,10 +69,10 @@ export default function MyApprovalsPage() {
           <span className="flex items-center gap-1.5">
             <button
               type="button"
-              disabled={submitState === "loading"}
+              disabled={submitState === "loading" || Boolean(pending)}
               onClick={(e) => {
                 e.stopPropagation();
-                execute(row.approval_id, "approve");
+                execute(row.approval_id, "approve", {}, row.owner_id);
               }}
               className="px-2 py-1 text-[11px] font-mono font-bold uppercase border border-success/50 text-success hover:bg-success/10 transition-colors disabled:opacity-50"
             >
@@ -79,10 +80,10 @@ export default function MyApprovalsPage() {
             </button>
             <button
               type="button"
-              disabled={submitState === "loading"}
+              disabled={submitState === "loading" || Boolean(pending)}
               onClick={(e) => {
                 e.stopPropagation();
-                execute(row.approval_id, "deny");
+                execute(row.approval_id, "deny", {}, row.owner_id);
               }}
               className="px-2 py-1 text-[11px] font-mono font-bold uppercase border border-error/50 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
             >
@@ -102,6 +103,13 @@ export default function MyApprovalsPage() {
 
       <main id="main-content" tabIndex={-1} className="w-full px-4 py-6 space-y-6">
         <MyApprovalsToolbar state={state} onStateChange={setState} agents={agents} selectedAgentId={agentId} onAgentChange={setAgentId} />
+
+        {actionError && (
+          <div className="space-y-2">
+            <p role="alert" className="text-sm text-error">{actionError}</p>
+            {activeApprovalId && <Link href={`/my/approvals/${activeApprovalId}`} className="text-sm text-primary underline">{t("detail.recovery.openApproval")}</Link>}
+          </div>
+        )}
 
         {fetchState === "loading" && <SkeletonTable columns={6} rows={10} />}
         {fetchState === "error" && <ErrorState message={error || t("failedToLoad")} onRetry={refetch} />}

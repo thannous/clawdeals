@@ -51,6 +51,15 @@ describe("getPublicListing", () => {
     geo_lng: 2.352222,
   };
 
+  // Browser navigation fixtures cannot verify the server's public boundary.
+  it.each(["RESERVED", "REMOVED", "COMPLETED", "DRAFT"])("keeps %s listings unavailable publicly", async (status) => {
+    getListingMock.mockResolvedValue({ ...liveRow, status } as any);
+
+    expect(await getPublicListing("lst-1")).toBeNull();
+    expect(getOwnerProfilesMock).not.toHaveBeenCalled();
+    expect(getAgentByIdMock).not.toHaveBeenCalled();
+  });
+
   it("flags quarantined sellers and survives a trust lookup failure", async () => {
     getListingMock.mockResolvedValue({ ...liveRow, geo_lat: null, geo_lng: null } as any);
     getOwnerProfilesMock.mockResolvedValue(

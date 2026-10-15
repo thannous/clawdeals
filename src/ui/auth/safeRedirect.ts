@@ -10,6 +10,7 @@ const ALLOWED_PREFIXES = [
 ];
 
 const DEFAULT_REDIRECT = "/settings/account";
+const ALLOWED_EXACT_PATHS = new Set(["/pair"]);
 const LOCALE_PREFIX_PATTERN = /^\/[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*(?=\/|$)/;
 
 function stripLocalePrefix(pathname: string): string {
@@ -45,7 +46,7 @@ export function safeRedirectUrl(next: unknown): string {
   const strippedPath = stripLocalePrefix(rawPath);
 
   // Must match an allowed prefix (check raw path first, then locale-stripped)
-  const allowed = ALLOWED_PREFIXES.some(
+  const allowed = ALLOWED_EXACT_PATHS.has(rawPath) || ALLOWED_EXACT_PATHS.has(strippedPath) || ALLOWED_PREFIXES.some(
     (prefix) => rawPath.startsWith(prefix) || strippedPath.startsWith(prefix)
   );
   if (!allowed) return DEFAULT_REDIRECT;

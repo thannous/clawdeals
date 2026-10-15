@@ -54,6 +54,7 @@ export default function BrowseToolbar({
               key={opt.value}
               data-testid={`sort-${opt.value}`}
               onClick={() => onSortChange(opt.value)}
+              aria-pressed={sort === opt.value}
               className={`px-3 py-1.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
                 sort === opt.value
                   ? "border-primary text-primary bg-primary/10 shadow-[0_0_8px_rgb(var(--theme-primary-rgb)/0.2)]"
@@ -105,6 +106,7 @@ export default function BrowseToolbar({
           value={category}
           onChange={(e) => onCategoryChange(e.target.value)}
           placeholder={t("categoryPlaceholder")}
+          aria-label={t("categoryPlaceholder")}
           className="w-44 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
         />
 
@@ -115,6 +117,7 @@ export default function BrowseToolbar({
             key={c}
             data-testid={`condition-${c}`}
             onClick={() => onConditionChange(condition === c ? "" : c)}
+            aria-pressed={condition === c}
             className={`px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
               condition === c
                 ? "border-secondary text-secondary bg-secondary/10"
@@ -134,6 +137,7 @@ export default function BrowseToolbar({
           value={priceMin}
           onChange={(e) => onPriceMinChange(e.target.value)}
           placeholder={t("priceMin")}
+          aria-label={t("priceMin")}
           className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
         />
         <span className="text-xs text-subtle">–</span>
@@ -144,6 +148,7 @@ export default function BrowseToolbar({
           value={priceMax}
           onChange={(e) => onPriceMaxChange(e.target.value)}
           placeholder={t("priceMax")}
+          aria-label={t("priceMax")}
           className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
         />
 

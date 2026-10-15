@@ -1,10 +1,10 @@
 # TesterArmy browser tests
 
-ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.18.0 and `@e2e-dev/web` 0.13.0 are pinned development dependencies. The engine requires `e2e >=0.18.0 <1` and pins `playwright-core` 1.63.0 itself; the retained Playwright suites stay on 1.63.0.
+ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.21.0 and `@e2e-dev/web` 0.13.0 are pinned development dependencies. The engine requires `e2e >=0.18.0 <1`, which includes 0.21.0, and pins `playwright-core` 1.63.0 itself; the retained Playwright suites stay on 1.63.0.
 
-The [official 0.18.0 release](https://github.com/tester-army/e2e/releases/tag/e2e%400.18.0) requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
+The installed 0.21.0 package requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
 
-Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and the relevant reference, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`. The full versioned documentation is under `node_modules/e2e/docs/`.
+Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and its relevant `references/` topic, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`.
 
 ## Current contracts and proportional evidence
 
@@ -20,6 +20,39 @@ identity, exact rerun and useful failure media. Reference verified outputs inste
 of copying or fully rehashing them at each review. Reused evidence remains labelled
 as reuse. Documentation-only follow-ups need diff/link checks, not another browser
 corpus or production campaign. See [operating policy](../AGENTS.md).
+
+The [15 October dogfooding report](dogfooding-2026-10-15.md) records the current
+catalogue, mission validation, authentication, profile and agent-setup regressions,
+their desktop/mobile results, real-service boundaries and exact replay commands.
+
+## Explore isolated sessions with 0.21
+
+`npm run testerarmy:dogfood` uses the new `openHost` API from `e2e/runner`.
+It attaches to a running local app, reuses one mobile browser host, and opens
+two fresh sequential sessions in French and Spanish. It exercises the real
+catalogue, filters, an empty search and filter reset, and verifies that a
+synthetic cookie/localStorage marker survives reload in the first session but
+does not leak into the second. No API mocks, model calls or account writes.
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/host-dogfood-UNIQUE \
+  mise exec node@24.19.0 -- npm run testerarmy:dogfood
+```
+
+The host is bounded to three minutes, with one minute per session. Every session
+and host is closed even after failure; cleanup errors fail the command. The
+separate `host-result.json` records source revision and harness hash, runtime,
+steps, capture hashes and SDK trace paths. Its source identity is not a hash of
+every app input. SDK files remain untouched in the `sdk/` subdirectory.
+This exploratory receipt is not a CLI `report.json` and cannot be used as a
+release qualification. Reproduce confirmed defects through `test:testerarmy`
+with exact assertions and the usual source receipts.
+
+The 0.21 CLI also supports `--max-duration` to bound a qualification campaign.
+Markdown traces and visual screenshot comparisons were introduced before 0.21;
+they are retained, not claimed as new features of this upgrade.
 
 ## Run the public journeys
 
@@ -44,6 +77,202 @@ The original navigation journeys run on Chromium at 1280×720 and 390×844:
 No account or seeded listing is required. These journeys verify navigation and hydrated controls; they do not qualify database persistence, transactions or authentication. Those remain covered by the existing integration suites. `npm run test:e2e`, `test:ui` and `test:integration` retain their Playwright runner.
 
 The configuration loads `.env.testerarmy.local`, then `.env.local`, without overwriting shell variables. Next.js also loads its normal local environment. The configuration passes selected database/Redis variables to the child app so shell overrides select the same backend the target guard checks. Follow [local setup](./local-supabase-development.md) when using the local backend.
+
+## Verify a complete buyer–seller transaction
+
+`npm run test:commerce` selects the private `commerce-live` suite, exclusively
+of the default, historical, public-production, mission and AI selections.
+It uses e2e 0.21, exact desktop/mobile browser actions, real password sessions
+and real agent API calls; no model is called.
+
+The fixture requires a local application connected to the explicitly opted-in
+disposable ClawDeals backend. It creates two synthetic Auth users with silent
+notification preferences, three owned agents (including one suspended selection
+counterexample), temporary API keys and one listing. Before publishing that
+listing, it checks active watchlists against the real matcher and fails closed
+if another agent would match. This is a snapshot, not a lock against concurrent
+watchlist creation. The current disposable-data policy remains a prerequisite.
+
+The journey creates a mission in the UI, checks description-only Unicode search,
+negotiates 120 → 135 EUR against a 130 EUR ceiling, then has the buyer edit the
+approval to 129 EUR. It expires the actual owner session and checks the edited
+amount survives reload and session restoration using the still-valid Supabase
+authentication. Initial buyer and seller logins use their real passwords. The seller accepts;
+both owners separately consent to contact sharing; both agents confirm completion.
+No payment is made and no email, SMS or third-party message is sent.
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+TESTERARMY_REDIS_FIXTURE=local-mock \
+UPSTASH_REDIS_REST_URL=http://127.0.0.1:4413 \
+UPSTASH_REDIS_REST_TOKEN=clawdeals-e2e-upstash-token \
+PARITY_OUTPUT=.e2e/validation/commerce-UNIQUE \
+  mise exec node@24.19.0 -- npm run test:commerce
+```
+
+Start the app with the same Redis fixture and local public/API origin. Its
+Supabase credentials follow the first-mission prerequisites below. The wrapper
+generates the ephemeral password; do not set or export it yourself. For a bounded
+pilot, append `-- --target desktop` to `npm run test:commerce`.
+
+Network traces and videos are off. `commerce-fixtures/*.json` records only safe
+identities, API paths/statuses and cleanup counts. Reports stay private and cannot
+enter public evidence bundles. Cleanup verifies the owned business graph before
+cascading deletion, removes synthetic Auth users and owned Redis caches/streams,
+and checks for residual rows. Shared ops streams and expiring rate counters stay
+untouched. Local Redis emulation qualifies the application contract, not a hosted
+Upstash deployment. A cleanup failure remains distinct from the primary journey
+failure and must be resolved before accepting the campaign.
+
+## Verify the real first purchase mission
+
+Use `npm run test:mission` for the real authenticated first-mission journeys.
+The shortcut selects `TESTERARMY_MISSION_LIVE=1` and disables AI mode.
+This selection is exclusive of the public, historical and AI campaigns. It uses
+the same pinned SDK, exact browser steps, desktop/mobile viewports and one worker.
+It never calls a model. The default public suite cannot create these fixtures.
+
+```bash
+TESTERARMY_MISSION_LIVE=1 TESTERARMY_AI=0 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+  npm run test:testerarmy:list
+
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/first-mission-UNIQUE \
+  npm run test:mission
+```
+
+Prerequisites: an app using that exact browser/API origin, the matching
+`SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and
+the server-only `SUPABASE_SERVICE_ROLE_KEY`. Use an existing local database or the
+explicitly authorized disposable ClawDeals production project; do not infer the
+database target from a localhost browser URL. No additional provider is required.
+
+The app also requires its configured Redis/Upstash dependency for rate limits and
+idempotency. An unreachable dependency correctly fails mission writes with 503.
+For an isolated local run, the existing `scripts/mock-upstash-redis-rest.mjs` can
+serve the local REST fixture on port 4413 using the configured synthetic token.
+Set `TESTERARMY_REDIS_FIXTURE=local-mock` on that test invocation so its receipt
+labels the boundary: real app API, Auth and database persistence, simulated Redis.
+Such a run does not qualify the deployed Redis service or its durability. Keep
+the middleware guards active; do not bypass them to accommodate a missing service.
+
+Each attempt creates its own confirmed synthetic Auth user without sending an
+email. The maintained runner generates an ephemeral password in memory and the
+test fills it through the SDK's opaque credential. The browser performs the real
+password login and owner-session bridge; mission creation, readback and catalogue
+matching are not mocked. The listing case seeds one synthetic seller and public
+listing. Teardown deletes only identities and rows belonging to that attempt.
+
+Browser traffic allows same-origin reads, the password sign-in, the owner-session
+bridge and mission creation. Offers, seller messages, payments and other browser
+writes are blocked. These cases qualify mission creation and retrieval, not
+negotiation, notification delivery or purchases.
+
+Live results are private evidence: exact assertions, target/source receipts and
+safe fixture/cleanup summaries in `mission-fixtures/`. Network traces are disabled
+because real authentication contains session tokens; the SDK also suppresses
+screenshots after password entry. Do not export these runs with the public bundle.
+An incomplete cleanup remains a failed campaign, separate from a passed UI body.
+Local results describe the local app against its named backend. CI and deployed
+UI qualification require their own identified executions.
+
+The default client suite also covers a listing draft returning from the localized
+sign-in/sign-up screen, its explicitly edited budget and allowed actions after
+reload, an anonymous draft returning from sign-in, the same search started with
+a different price limit, and recovery when the
+server commits a mission but its response is lost. The recovery case models only
+that network failure: it verifies that editing is blocked while the outcome is
+unknown, and that reload/retry preserves the exact body and idempotency key. The
+live cases above independently verify the real mission write/readback and replay.
+`mission-owner-recovery.e2e.ts` additionally checks A → B → A in one tab,
+per-owner drafts and attempts, legacy storage migration, expired-request replay
+and storage failures. These are intercepted client regressions, not real backend
+account-switch evidence.
+Draft regressions also cover separate mission sources, clearing only the completed
+source, and quarantining unowned v1 drafts even when an unrelated legacy request
+exists. Explicitly owned v1/v2 drafts and v2 anonymous drafts migrate by source.
+A server-paused mission remains paused in the list and detail even if its stored
+active flag is true. Confirmed quota rejections release editing and the rejected
+idempotency key, including after a lost rejection response; uncertain creation
+outcomes retain their key. The full client shortcut now selects 20 cases.
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/mission-client-UNIQUE \
+  npm run test:mission:client
+```
+
+### Local qualification on 2026-10-11
+
+Runs on commit `dd9e76eee1ba37578f785513bbd32e578549d72b`
+used Node 24.19.0, Next.js 16.4.0, `e2e` 0.18.0 and `@e2e-dev/web` 0.13.0:
+
+- `test:mission`: **4/4 passed**, desktop and mobile, in 28.76 s.
+  Canonical report: `.e2e/validation/first-mission-dd9e76e-20261011/report.json`.
+- `test:mission:client`: **16/16 passed**, comprising WebMCP 8, draft 4,
+  lost-response recovery 2 and server-paused status 2, in 20.87 s. Report:
+  `.e2e/validation/mission-client-dd9e76e-20261011/report.json`.
+
+Both wrappers exited 0 with unchanged inputs; only `docs/first-buy-mission.md`
+was uncommitted, so receipts identify a dirty checkout. The live run used the local app
+at `http://localhost:4327`, real Auth/database services on the authorized
+disposable ClawDeals project and the existing local Redis mock on port 4413
+(`TESTERARMY_REDIS_FIXTURE=local-mock`). All four fixture receipts report no
+cleanup errors and zero remaining owned owner/agent/listing rows. Runtime logs
+in `.e2e/validation/mission-dd9e76e-runtime-20261011/app.log` contain no hydration
+or `getServerSnapshot` warnings during these journeys. These are local results,
+not CI, a deployed UI check or qualification of the deployed Redis service.
+
+The later quota correction was reproduced red and then qualified with **6/6**
+recovery cases in 8.74 s (lost creation response, direct quota rejection and lost
+quota response). Report: `.e2e/validation/mission-recovery-quota-fixed-20261011/report.json`.
+Its `source-scope.json` identifies the five stable changed inputs on top of
+`dd9e76e`. The unchanged live and client results above are reused, not a fresh
+20-case client run. To replay this affected subset, use the same client command
+environment with `npm run test:testerarmy -- e2e/testerarmy/mission-recovery.e2e.ts`.
+
+The earlier reports `first-mission-realdb-20261011` (4/4) and
+`mission-client-regressions-20261011` (14/14) used Next.js 16.3.3 on the
+pre-integration working tree. They remain historical evidence, not the current
+qualification. The original draft-loss reproduction is retained separately in
+`mission-draft-before-browser-20261011`; intermediate failed runs are not recast
+as passes.
+
+## Mission form and price-unit regressions
+
+`e2e/testerarmy/webmcp-mission-regression.e2e.ts` covers human and agent submissions,
+missing-key recovery, refusal without a write, explicit approval with decimal budgets,
+rejection of zero budgets, and the shared 100-unit search limit on desktop and mobile.
+The browser contract for `SubmitEvent.respondWith` is modeled strictly: only an
+agent-invoked, prevented event can respond. The synthetic agent key and intercepted
+watchlist POST validate the client journey; they do not prove authenticated backend
+persistence. The price comparison uses 75- and 180-unit listing fixtures. Public
+GETs not intercepted by these fixtures may reach the configured backend; all other
+mutations and external requests are blocked.
+
+`webmcp-response-recovery.e2e.ts` checks uncertain creation replies and retries
+using the originally approved arguments, idempotency key and agent identity,
+including edited confirmation JSON, duplicate submissions, agent-key changes,
+late responses and malformed success payloads. Retry state belongs to the mounted
+panel; this suite does not claim persistence across reloads or independent tabs.
+
+Run against a local app with `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_API_BASE_URL`
+pointing at that app. WebMCP is enabled on these marketplace routes automatically:
+
+```bash
+TESTERARMY_AI=0 E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/mission-regression-UNIQUE \
+  npm run test:testerarmy -- e2e/testerarmy/webmcp-mission-regression.e2e.ts
+```
+
+No account or backend write fixture is needed. Pair a native WebMCP browser check
+and real public price search with these client regressions when qualifying native
+support; the modeled browser API alone is not native implementation evidence.
 
 ## Select an authorized target
 
@@ -154,15 +383,23 @@ Verified `agent.act` steps may replay from `.e2e/cache/`; assertions still run. 
 
 ### Decision models, including Jev
 
-The shipped 0.18.0 [decision-model guide](https://e2e.tester.army/docs/decision-models) documents the optional `@e2e-dev/decision` executor. It chooses bounded actions from the semantic tree using a decision model, such as `typeSafeAi.decisionModel('jev-latest')`, rather than generating selectors or URLs. A separate text model supplies field values and the judgment tier. The runner still authorizes actions and applies its budgets; this executor has no vision and does not offer drag, upload or hover.
+The [decision-model guide](https://e2e.tester.army/docs/decision-models) was inspected with 0.18.0 and documents the optional `@e2e-dev/decision` executor. It chooses bounded actions from the semantic tree using a decision model, such as `typeSafeAi.decisionModel('jev-latest')`, rather than generating selectors or URLs. A separate text model supplies field values and the judgment tier. The runner still authorizes actions and applies its budgets; this executor has no vision and does not offer drag, upload or hover.
 
-This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.18.0 itself requires `ai ^7.0.0`, which the current 7.0.107 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
+This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.21.0 itself requires `ai ^7.0.0`, which the current 7.0.107 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
 
 ## Reports, CI and MCP
 
 The maintained `npm run test:testerarmy` and historical entry reserve one new directory per invocation: `.e2e/runs/<selection>/<timestamp>-<uuid>`, or a fresh explicit `PARITY_OUTPUT`. The AI npm entry uses the same reservation without changing providers or budgets; it is excluded from public bundles. Discovery writes no report or app log. The raw SDK/MCP entry is an exploration interface, not this guarded qualification entry.
 
 Reports, JUnit, Markdown, SDK artifacts, `runner.log`, `logs/app.log`, `command.json` and `completion.json` share the reserved directory. The receipts record exact arguments, source HEAD/dirty state, input SHA256 before and after, the primary exit/signal and any log failure. Inputs are checked in memory; a log/receipt failure makes an otherwise successful command fail, and does not replace the original failing exit. The historical fixture independently attempts screenshot, attachment index and structured error capture: original error object/stack survives a failing write. A successful body with collection failure stays red.
+
+With 0.21, SDK media lives under `results/` and each executed public/historical
+result must retain its `results/<test>/trace.md`. The evidence index checks the
+result identity, run identity and runner version, and records each page's digest.
+It still reads the earlier 0.18 `artifacts/` layout and requires its attempt ZIP
+traces. The command receipt records the effective runner and layout; mismatches,
+missing pages and unsupported layouts prevent complete evidence. Live mission
+runs remain private and keep network traces disabled.
 
 CI (`ci.yml`, manual dispatch only) runs the public journeys at the end of its single `test-ci` job (15-minute budget), once lint, contracts and unit tests have passed. Deterministic evidence controls precede a 5-minute public step (about 1 minute observed), leaving time for teardown, packaging and upload. The complete historical corpus runs in the separate `Historical browser corpus` workflow (`.github/workflows/historical-corpus.yml`), also on manual dispatch only, with a 15-minute step in a 20-minute job; it skips a commit that already passed it. For changes touching the historical suites or before a release, a production deployment waits for its success on the deployed SHA, run locally (the `historical-corpus` check of `npm run verify:release`) or by dispatch ([hosting](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28)). When a branch changes the historical suites, run it locally or dispatch it there with `gh workflow run historical-corpus.yml --ref <branch>`. Actions, assertions, test timeouts and zero retries are unchanged. Once the journeys have started, collection and uploads use `always()`. A forced termination, missing completion or skipped case is explicitly incomplete qualification, even if upload succeeds. The legacy commands are retained.
 

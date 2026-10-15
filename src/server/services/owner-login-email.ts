@@ -1,4 +1,6 @@
 import { getPublicAppUrl, joinUrl } from "../../shared/urls";
+import { splitLocalePrefix } from "../../shared/i18n";
+import { safeRedirectUrl } from "../../ui/auth/safeRedirect";
 import { isUuid } from "../utils/validators";
 import { normalizeEmail } from "../utils/owner-verification";
 import { isOwnerSessionToken } from "../utils/session-tokens";
@@ -137,13 +139,15 @@ export async function sendOwnerLoginMagicLinkEmail({
   sessionId,
   token,
   expiresAt,
-  appUrl
+  appUrl,
+  next
 }: {
   email: string;
   sessionId: string;
   token: string;
   expiresAt?: string | null;
   appUrl?: string | null;
+  next?: string;
 }): Promise<OwnerLoginEmailResult> {
   const toEmail = normalizeEmail(email);
   if (!toEmail) {
@@ -161,7 +165,9 @@ export async function sendOwnerLoginMagicLinkEmail({
   }
 
   const baseUrl = normalizeNonEmptyString(appUrl) || getPublicAppUrl();
-  const verifyPath = `/auth/verify?session_id=${encodeURIComponent(resolvedSessionId)}&token=${encodeURIComponent(resolvedToken)}`;
+  const destination = safeRedirectUrl(next ?? "/settings/identities");
+  const { localePrefix } = splitLocalePrefix(destination);
+  const verifyPath = `${localePrefix}/auth/verify?session_id=${encodeURIComponent(resolvedSessionId)}&token=${encodeURIComponent(resolvedToken)}&next=${encodeURIComponent(destination)}`;
   const verifyUrl = joinUrl(baseUrl, verifyPath);
   const provider = resolveProvider();
   if (provider === "none") {

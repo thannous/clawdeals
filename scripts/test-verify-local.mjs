@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import net from 'node:net';
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { after, describe, test } from 'node:test';
@@ -55,7 +55,9 @@ const ENGINE = fileURLToPath(new URL('./verify-local.mjs', import.meta.url));
 // The engine's sha256 is pinned in this repository's own verify-local.config.mjs
 // (export ENGINE_SHA256). No other repository is read or compared.
 const CONFIG_PATH = fileURLToPath(new URL('../verify-local.config.mjs', import.meta.url));
-const scratch = mkdtempSync(path.join(os.tmpdir(), 'verify-local-test-'));
+// Match the engine's physical paths (macOS /var is a symlink to /private/var).
+// Explicit symlink fixtures below still exercise repository-boundary rejection.
+const scratch = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'verify-local-test-')));
 
 /** Whether a process is gone (or a zombie waiting to be reaped), within about 5 s. */
 async function gone(pid) {

@@ -250,12 +250,13 @@ export function useBrowseListings({
   // Setters with URL sync
   const setSort = useCallback(
     (newSort: string) => {
+      if (newSort === sort) return;
       setSortState(newSort);
       setListings([]);
       setNextCursor(null);
       syncUrl(newSort, q, category, condition, priceMin, priceMax);
     },
-    [q, category, condition, priceMin, priceMax, syncUrl]
+    [sort, q, category, condition, priceMin, priceMax, syncUrl]
   );
 
   const setQ = useCallback(
@@ -360,15 +361,24 @@ export function useBrowseListings({
     [syncUrl]
   );
 
-  // Cleanup debounce on unmount
+  // Cancel delayed URL updates as soon as navigation starts. Waiting for
+  // unmount lets a debounce replace() cancel a user's click to another page.
   useEffect(() => {
-    return () => {
+    const clearPendingFilters = () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (categoryDebounceRef.current) clearTimeout(categoryDebounceRef.current);
       if (priceMinDebounceRef.current) clearTimeout(priceMinDebounceRef.current);
       if (priceMaxDebounceRef.current) clearTimeout(priceMaxDebounceRef.current);
     };
-  }, []);
+    const onNavigation = (_url: string, { shallow }: { shallow: boolean }) => {
+      if (!shallow) clearPendingFilters();
+    };
+    router.events?.on("routeChangeStart", onNavigation);
+    return () => {
+      clearPendingFilters();
+      router.events?.off("routeChangeStart", onNavigation);
+    };
+  }, [router.events]);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadMoreState === "loading") return;

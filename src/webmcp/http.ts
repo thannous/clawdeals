@@ -10,6 +10,7 @@ type CallOptions = {
   requestId?: string;
   idempotencyKey?: string | null;
   signal?: AbortSignal;
+  apiKey?: string | null;
 };
 
 type AuthMode = "required" | "owner_session" | "none";
@@ -46,12 +47,21 @@ function stableError<T = any>(
   };
 }
 
+function unknownWriteOutcome(requestId: string): StableToolResult<any> {
+  return stableError(
+    requestId,
+    "OUTCOME_UNKNOWN",
+    "The write may have reached the server, so its outcome is unknown",
+    { safe_to_retry: false }
+  );
+}
+
 async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }): Promise<StableToolResult<T>> {
   const requestId = options.requestId || randomUuid();
   if (options.signal?.aborted) {
     return stableError(requestId, "ABORTED", "Tool execution was cancelled");
   }
-  const apiKey = options.auth === "required" ? getStoredApiKey() : null;
+  const apiKey = options.auth === "required" ? (options.apiKey === undefined ? getStoredApiKey() : options.apiKey) : null;
   if (options.auth === "required" && !apiKey) {
     return stableError(requestId, "UNAUTHORIZED", "API key required; go to /start");
   }
@@ -84,16 +94,35 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
 
     const resRequestId = getHeaderValue(res.headers, "x-request-id") || requestId;
 
-    const contentType = res.headers.get("content-type") || "";
+    const contentType = (res.headers.get("content-type") || "").toLowerCase();
     const isJson = contentType.includes("application/json");
-    const payload = isJson ? await res.json().catch(() => null) : await res.text().catch(() => "");
+    let payload: unknown = null;
+    let parsedJson = false;
+    try {
+      if (isJson) {
+        payload = await res.json();
+        parsedJson = true;
+      } else {
+        payload = await res.text();
+      }
+    } catch { /* An HTTP status alone cannot confirm a successful operation. */ }
 
     if (res.ok) {
+      if (!parsedJson) {
+        return options.method === "POST"
+          ? unknownWriteOutcome(resRequestId)
+          : stableError(resRequestId, "INVALID_RESPONSE", "Server returned an unreadable JSON response");
+      }
       return {
         ok: true,
-        data: (payload as any) ?? ({} as any),
+        data: payload as T,
         meta: { request_id: resRequestId }
       };
+    }
+
+    // A server/gateway timeout or failure may occur after the mutation commits.
+    if (options.method === "POST" && (res.status >= 500 || res.status === 408)) {
+      return unknownWriteOutcome(resRequestId);
     }
 
     const err = (payload as any)?.error;
@@ -111,16 +140,12 @@ async function callWebmcpHttp<T = any>(options: CallOptions & { auth: AuthMode }
 
     return stableError(resRequestId, "ERROR", typeof payload === "string" && payload ? payload : `Request failed (${res.status})`);
   } catch (error: any) {
+    // Once fetch has started, cancelling a write cannot undo server-side work.
+    if (options.method === "POST") {
+      return unknownWriteOutcome(requestId);
+    }
     if (error?.name === "AbortError") {
       return stableError(requestId, "ABORTED", "Tool execution was cancelled");
-    }
-    if (options.method === "POST") {
-      return stableError(
-        requestId,
-        "OUTCOME_UNKNOWN",
-        "The write may have reached the server, so its outcome is unknown",
-        { safe_to_retry: false }
-      );
     }
     return stableError(requestId, "NETWORK_ERROR", error?.message || "Network error");
   }

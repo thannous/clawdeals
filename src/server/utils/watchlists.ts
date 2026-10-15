@@ -160,6 +160,7 @@ export function parseWatchlistCriteria(raw) {
     ) {
       throw new Error("criteria geo must match criteria.mission.location");
     }
+    priceMax = priceMax === null ? mission.hard_budget_max : Math.min(priceMax, mission.hard_budget_max);
   }
 
   const criteria = {

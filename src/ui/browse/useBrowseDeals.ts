@@ -158,12 +158,13 @@ export function useBrowseDeals({
   // Setters with URL sync
   const setSort = useCallback(
     (newSort: string) => {
+      if (newSort === sort) return;
       setSortState(newSort);
       setDeals([]);
       setNextCursor(null);
       syncUrl(newSort, q, status);
     },
-    [q, status, syncUrl]
+    [sort, q, status, syncUrl]
   );
 
   const setQ = useCallback(

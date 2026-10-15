@@ -6,6 +6,7 @@ const test = createHistoricalTest();
 const MOCK_DEAL = {
   deal_id: "aaaa-1111-2222-3333-444444444444",
   title: "Owner deal",
+  public_available: true,
   price: 19.99,
   currency: "EUR",
   status: "ACTIVE",

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMyOffers } from "./useMyOffers";
 import ConsoleTable, { type Column } from "../console/shared/ConsoleTable";
@@ -13,7 +14,7 @@ import PageHeader from "../shared/PageHeader";
 import AgentDropdown from "../shared/AgentDropdown";
 import { useOwnerAgents } from "../shared/useOwnerAgents";
 
-const STATUS_OPTIONS = ["CREATED", "ACCEPTED", "DECLINED", "CANCELLED", "EXPIRED"];
+const STATUS_OPTIONS = ["CREATED", "COUNTERED", "ACCEPTED", "DECLINED", "CANCELLED", "EXPIRED"];
 
 export default function MyOffersPage() {
   const t = useTranslations("myOffers");
@@ -21,7 +22,7 @@ export default function MyOffersPage() {
     items, status, setStatus,
     agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
-    loadMore, refetch,
+    loadMore, refetch, resetFilters,
   } = useMyOffers();
   const { agents, agentMap } = useOwnerAgents();
 
@@ -29,7 +30,19 @@ export default function MyOffersPage() {
     {
       key: "listing_id",
       label: t("list.listing"),
-      cell: (row: any) => row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>,
+      cell: (row: any) => row.listing_id ? (
+        <div className="flex flex-col gap-1">
+          {row.listing_status === "LIVE" ? (
+            <Link href={`/browse/${row.listing_id}`} data-testid="my-offers-item-link"
+              className="text-sm font-medium text-primary hover:underline">
+              {t("viewListing")}
+            </Link>
+          ) : (
+            <span className="max-w-[140px] whitespace-normal text-xs text-subtle">{t("listingNotPublic")}</span>
+          )}
+          <TruncatedId id={row.listing_id} />
+        </div>
+      ) : <span className="text-subtle">-</span>,
     },
     {
       key: "amount",
@@ -39,15 +52,21 @@ export default function MyOffersPage() {
     {
       key: "status",
       label: t("list.status"),
-      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />,
+      cell: (row: any) => (
+        <div className="max-w-24 whitespace-normal [overflow-wrap:anywhere]">
+          <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />
+        </div>
+      ),
     },
     {
       key: "agent",
+      className: "hidden sm:table-cell",
       label: t("list.agent"),
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</span>,
     },
     {
       key: "created_at",
+      className: "hidden sm:table-cell",
       label: t("list.created"),
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
     },
@@ -66,6 +85,7 @@ export default function MyOffersPage() {
             <span className="text-xs font-mono text-subtle uppercase mr-1">{t("toolbar.statusLabel")}</span>
             <button
               onClick={() => setStatus(null)}
+              aria-pressed={!status}
               className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
                 !status ? "border-primary/40 text-primary bg-primary/10" : "border-border text-subtle hover:border-border-strong"
               }`}
@@ -76,6 +96,7 @@ export default function MyOffersPage() {
               <button
                 key={s}
                 onClick={() => setStatus(status === s ? null : s)}
+                aria-pressed={status === s}
                 className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
                   status === s ? "border-primary/40 text-primary bg-primary/10" : "border-border text-subtle hover:border-border-strong"
                 }`}
@@ -90,10 +111,22 @@ export default function MyOffersPage() {
         {fetchState === "loading" && <SkeletonTable columns={5} rows={10} />}
         {fetchState === "error" && <ErrorState message={error || t("failedToLoad")} onRetry={refetch} />}
         {fetchState === "done" && items.length === 0 && (
-          <EmptyState
-            title={status ? t("noOffers") : t("noOffersYet")}
-            subtitle={status ? t("adjustFilters") : t("noOffersHint")}
-          />
+          <div className="text-center">
+            <EmptyState
+              title={status || agentId ? t("noOffers") : t("noOffersYet")}
+              subtitle={status || agentId ? t("adjustFilters") : t("noOffersHint")}
+            />
+            {status || agentId ? (
+              <button type="button" onClick={resetFilters} data-testid="my-offers-clear-filters"
+                className="inline-flex min-h-11 items-center justify-center px-4 py-2 border border-primary text-primary hover:bg-primary/10 text-sm font-semibold">
+                {t("clearFilters")}
+              </button>
+            ) : (
+              <Link href="/browse" data-testid="my-offers-empty-browse" className="inline-flex min-h-11 items-center justify-center px-4 py-2 border border-primary text-primary hover:bg-primary/10 text-sm font-semibold">
+                {t("browseCatalog")}
+              </Link>
+            )}
+          </div>
         )}
         {fetchState === "done" && items.length > 0 && (
           <>

@@ -392,7 +392,7 @@ function useStepConnectView({
   const isClaimed = pollStatus === "claimed";
 
   // --- MCP configure: full-page view ---
-  if (mcpSubStep === "configure") {
+  if (method === "mcp" && mcpSubStep === "configure") {
     return (
       <div className="space-y-10">
         <div className="space-y-3">

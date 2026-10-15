@@ -8,6 +8,7 @@ export type ToolExecutionContext = {
   requestId: string;
   idempotencyKey: string | null;
   signal?: AbortSignal;
+  apiKey?: string | null;
 };
 
 export type ToolAnnotations = {

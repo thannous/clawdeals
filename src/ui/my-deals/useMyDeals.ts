@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
+import type { OwnerDeal, OwnerDealsResponse } from "../../shared/owner-deals";
 
 const PAGE_SIZE = 50;
 
@@ -25,7 +26,7 @@ export function useMyDeals() {
   const [authRequired, setAuthRequired] = useState(false);
   const sessionGate = useOwnerSessionGate();
 
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<OwnerDeal[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [fetchState, setFetchState] = useState("idle");
   const [loadMoreState, setLoadMoreState] = useState("idle");
@@ -81,7 +82,7 @@ export function useMyDeals() {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body?.error?.message || `HTTP ${resp.status}`);
       }
-      const data = await resp.json();
+      const data: OwnerDealsResponse = await resp.json();
       const deals = data?.data?.deals || [];
       if (append) {
         setItems((prev) => [...prev, ...deals]);
@@ -121,23 +122,31 @@ export function useMyDeals() {
 
   const setStatus = useCallback(
     (val: string | null) => {
+      if (val === status) return;
       setStatusState(val);
       setItems([]);
       setNextCursor(null);
       syncUrl(val, agentId);
     },
-    [syncUrl, agentId]
+    [syncUrl, agentId, status]
   );
 
   const setAgentId = useCallback(
     (val: string | null) => {
+      if (val === agentId) return;
       setAgentIdState(val);
       setItems([]);
       setNextCursor(null);
       syncUrl(status, val);
     },
-    [syncUrl, status]
+    [syncUrl, status, agentId]
   );
+
+  const resetFilters = useCallback(() => {
+    setStatusState(null);
+    setAgentIdState(null);
+    syncUrl(null, null);
+  }, [syncUrl]);
 
   const loadMore = useCallback(() => {
     if (!nextCursor || loadMoreState === "loading") return;
@@ -153,6 +162,6 @@ export function useMyDeals() {
     items, status, setStatus,
     agentId, setAgentId,
     nextCursor, fetchState, loadMoreState, error,
-    loadMore, refetch,
+    loadMore, refetch, resetFilters,
   };
 }

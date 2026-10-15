@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { apiRequest, maskApiKey } from "./api";
 import { clearStoredApiKey, getStoredApiKey, setStoredApiKey } from "./storage";
@@ -21,10 +21,14 @@ function useDeveloperDashboardView() {
   const [message, setMessage] = useState<string>("");
   const [showPasteInput, setShowPasteInput] = useState(false);
   const [pasteValue, setPasteValue] = useState("");
+  const requestVersion = useRef(0);
+
+  useEffect(() => () => { requestVersion.current += 1; }, []);
 
   const masked = useMemo(() => (apiKey ? maskApiKey(apiKey) : null), [apiKey]);
 
   const handleForget = useCallback(() => {
+    requestVersion.current += 1;
     clearStoredApiKey();
     setKeyOverride(null);
     setStatus("idle");
@@ -33,30 +37,47 @@ function useDeveloperDashboardView() {
 
   const handleTest = useCallback(async () => {
     if (!apiKey) return;
+    const request = ++requestVersion.current;
     setStatus("loading");
     setMessage("");
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey });
+      if (request !== requestVersion.current) return;
       setStatus("ok");
       setMessage(t("apiReachable"));
     } catch (error: any) {
+      if (request !== requestVersion.current) return;
       setStatus("error");
       setMessage(error?.message || t("apiTestFailed"));
     }
   }, [apiKey, t]);
 
   const handlePaste = useCallback(() => {
+    requestVersion.current += 1;
+    setStatus("idle");
+    setMessage("");
     setShowPasteInput(true);
     setPasteValue("");
+  }, []);
+
+  const handleCancelPaste = useCallback(() => {
+    // A cancelled validation must never save its key or replace later feedback.
+    requestVersion.current += 1;
+    setShowPasteInput(false);
+    setPasteValue("");
+    setStatus("idle");
+    setMessage("");
   }, []);
 
   const handlePasteSubmit = useCallback(async () => {
     const key = pasteValue.trim();
     if (!key) return;
+    const request = ++requestVersion.current;
     setStatus("loading");
     setMessage("");
     try {
       await apiRequest({ path: "/v1/deals?limit=1", method: "GET", apiKey: key });
+      if (request !== requestVersion.current) return;
       setStoredApiKey(key);
       setKeyOverride(key);
       setStatus("ok");
@@ -64,6 +85,7 @@ function useDeveloperDashboardView() {
       setShowPasteInput(false);
       setPasteValue("");
     } catch (error: any) {
+      if (request !== requestVersion.current) return;
       setStatus("error");
       setMessage(error?.message || t("invalidKey"));
     }
@@ -126,14 +148,15 @@ function useDeveloperDashboardView() {
           )}
 
           {showPasteInput && (
-            <div className="flex gap-2 items-center">
+            <div className="flex flex-wrap gap-2 items-center sm:flex-nowrap">
               <input
                 value={pasteValue}
                 onChange={(e) => setPasteValue(e.target.value)}
+                aria-label={t("apiKeyInputLabel")}
                 placeholder={t("apiKeyPlaceholder")}
                 autoComplete="off"
                 spellCheck={false}
-                className="flex-1 h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
+                className="w-full min-w-0 sm:w-auto sm:flex-1 h-10 px-3 bg-bg border border-border text-text font-mono text-xs focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
                 disabled={status === "loading"}
                 onKeyDown={(e) => { if (e.key === "Enter") handlePasteSubmit(); }}
               />
@@ -149,7 +172,7 @@ function useDeveloperDashboardView() {
                 {status === "loading" ? "..." : t("save")}
               </button>
               <button
-                onClick={() => { setShowPasteInput(false); setPasteValue(""); }}
+                onClick={handleCancelPaste}
                 className="h-10 px-3 text-xs font-bold uppercase tracking-widest border border-border hover:border-border-strong transition-colors"
               >
                 {t("cancel")}

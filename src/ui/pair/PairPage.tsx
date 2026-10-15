@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { localePrefixFor } from "../../shared/seo";
 
 function randomIdempotencyKey(): string {
   try {
@@ -16,60 +18,55 @@ function resolveQueryParam(value: unknown) {
   return "";
 }
 
-function getErrorMessage(body: any, status: number): string {
-  const code = body?.error?.code || null;
-
-  if (code === "PAIR_TOKEN_EXPIRED") {
-    return "Pair token expired. Go back to Telegram and run /connect to get a new link.";
-  }
-  if (code === "PAIR_TOKEN_USED") {
-    return "Pair token already used. Go back to Telegram and run /connect to get a new link.";
-  }
-  if (code === "PAIR_TOKEN_INVALID") {
-    return "Invalid pair token. Go back to Telegram and run /connect to get a new link.";
-  }
-  if (code === "CHANNEL_ALREADY_PAIRED") {
-    return "This Telegram account is already paired to another owner.";
-  }
-
-  return body?.error?.message || body?.message || `HTTP ${status}`;
-}
-
 export default function PairPage() {
   const router = useRouter();
+  const t = useTranslations("pair");
+  const common = useTranslations("common");
   const token = useMemo(() => resolveQueryParam(router.query?.token).trim(), [router.query?.token]);
+  const locale = router.locale === "fr" || router.locale === "es" ? router.locale : "en";
+  const returnPath = `${localePrefixFor(locale)}/pair?${new URLSearchParams({ token })}`;
+  const loginHref = `/auth/login?next=${encodeURIComponent(returnPath)}`;
 
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [authRequired, setAuthRequired] = useState(false);
   const [resultState, setResultState] = useState<string | null>(null);
 
   const onConfirm = useCallback(async () => {
-    if (submitState === "loading") return;
+    if (submitState === "loading" || submitState === "done") return;
     if (!token) {
-      setError("Missing token. Go back to Telegram and run /connect to get a new link.");
+      setError(t("newLink"));
       setSubmitState("error");
       return;
     }
 
     setSubmitState("loading");
     setError(null);
-
-    const idempotencyKey = randomIdempotencyKey();
+    setAuthRequired(false);
 
     try {
       const resp = await fetch("/api/console/channels/telegram/pair:confirm", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKey
+          "Idempotency-Key": randomIdempotencyKey()
         },
         body: JSON.stringify({ pair_token: token })
       });
 
       const body = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        const message = getErrorMessage(body, resp.status);
-        setError(message);
+        const code = body?.error?.code;
+        const knownErrors: Record<string, string> = {
+          PAIR_TOKEN_EXPIRED: t("expired"),
+          PAIR_TOKEN_USED: t("used"),
+          PAIR_TOKEN_INVALID: t("invalid"),
+          CHANNEL_ALREADY_PAIRED: t("alreadyPaired")
+        };
+        setAuthRequired(resp.status === 401);
+        setError(resp.status === 401
+          ? t("signInRequired")
+          : knownErrors[code] || body?.error?.message || common("somethingWentWrong"));
         setSubmitState("error");
         return;
       }
@@ -77,88 +74,82 @@ export default function PairPage() {
       const state = body?.data?.state || body?.state || null;
       setResultState(state ? String(state) : null);
       setSubmitState("done");
-    } catch (err: any) {
-      setError(String(err?.message || "Request failed"));
+    } catch {
+      setError(common("somethingWentWrong"));
       setSubmitState("error");
     }
-  }, [submitState, token]);
+  }, [submitState, token, t, common]);
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-4 py-10">
+    <main id="main-content" tabIndex={-1} className="min-h-screen bg-bg flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-lg bg-surface border border-border rounded clip-corner p-5 space-y-4">
         <div className="space-y-1">
           <h1 className="text-lg font-bold tracking-wider text-text text-shadow-glow">
-            <span className="text-primary">/ </span>PAIR
+            <span className="text-primary">/ </span>{t("title")}
           </h1>
-          <p className="text-xs font-mono text-subtle">
-            Confirm the association between Telegram and your Clawdeals owner account.
-          </p>
+          <p className="text-xs font-mono text-subtle">{t("subtitle")}</p>
         </div>
 
-        {!token && (
-          <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-error">Missing token</div>
-            <div className="text-xs font-mono text-muted mt-1">
-              Go back to Telegram and run <span className="text-text">/connect</span> to get a new link.
-            </div>
+        {!token && router.isReady && (
+          <div role="alert" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-error">{t("missingToken")}</div>
+            <div className="text-xs font-mono text-muted mt-1">{t("newLink")}</div>
           </div>
         )}
 
-        {token && (
-          <div className="text-xs font-mono text-muted break-all">
-            token=<span className="text-text">{token}</span>
-          </div>
+        {token && submitState !== "done" && (
+          <p className="text-xs font-mono text-muted">{t("ready")}</p>
         )}
 
         {error && (
-          <div className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-error">Error</div>
-            <div className="text-xs font-mono text-muted mt-1">{error}</div>
+          <div role="alert" className="border border-error/30 bg-error/5 rounded clip-corner p-3 space-y-3">
+            <div className="text-xs font-mono text-error">{error}</div>
+            {authRequired && (
+              <Link
+                href={loginHref}
+                className="inline-block px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
+              >
+                {t("signIn")}
+              </Link>
+            )}
           </div>
         )}
 
         {submitState === "done" && (
-          <div className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
-            <div className="text-xs font-mono text-secondary">Success</div>
+          <div role="status" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
+            <div className="text-xs font-mono text-secondary">{common("success")}</div>
             <div className="text-xs font-mono text-muted mt-1">
-              {resultState === "PAIRED"
-                ? "Paired. You should receive a confirmation in Telegram."
-                : resultState === "PENDING_APPROVAL"
-                  ? "Pairing is pending approval. Approve it in the console approvals queue."
-                  : "Pairing confirmed."}
+              {resultState === "PAIRED" ? t("paired") : resultState === "PENDING_APPROVAL" ? t("pending") : t("confirmed")}
             </div>
           </div>
         )}
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            disabled={!token || submitState === "loading"}
+            disabled={!token || submitState === "loading" || submitState === "done" || authRequired}
             onClick={onConfirm}
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors disabled:opacity-50"
           >
-            {submitState === "loading" ? "Confirming…" : "Confirm Pairing"}
+            {submitState === "loading" ? t("confirming") : t("confirm")}
           </button>
-
           <Link
-            href="/console/channels"
+            href="/settings/connected-apps"
             className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
           >
-            Console Channels
+            {t("connectedApps")}
           </Link>
-
-          <Link
-            href="/console/approvals"
-            className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
-          >
-            Console Approvals
-          </Link>
+          {resultState === "PENDING_APPROVAL" && (
+            <Link
+              href="/my/approvals"
+              className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border text-muted rounded hover:border-border-strong hover:text-text transition-colors"
+            >
+              {t("approvals")}
+            </Link>
+          )}
         </div>
 
-        <div className="text-xs font-mono text-subtle">
-          Tip: in Telegram, send <span className="text-text">/connect</span> anytime to generate a new pairing link.
-        </div>
+        <p className="text-xs font-mono text-subtle">{t("newLink")}</p>
       </div>
-    </div>
+    </main>
   );
 }
-

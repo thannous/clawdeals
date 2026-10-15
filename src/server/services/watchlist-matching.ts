@@ -317,8 +317,12 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
 
   try {
     const map = new Map<string, { watchlistIds: string[] }>();
+    const inAppOnly = new Set(matches
+      .filter(({ watchlist }) => watchlist.criteria?.notification_mode === "in_app")
+      .map(({ watchlist }) => watchlist.watchlist_id));
     for (const [agentId, st] of insertedByAgent.entries()) {
-      map.set(agentId, { watchlistIds: st.watchlistIds || [] });
+      const watchlistIds = (st.watchlistIds || []).filter((id) => !inAppOnly.has(id));
+      if (watchlistIds.length) map.set(agentId, { watchlistIds });
     }
     await enqueueWatchlistMatchOutbox({
       client: supabase,
@@ -482,8 +486,12 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
 
   try {
     const map = new Map<string, { watchlistIds: string[] }>();
+    const inAppOnly = new Set(matches
+      .filter(({ watchlist }) => watchlist.criteria?.notification_mode === "in_app")
+      .map(({ watchlist }) => watchlist.watchlist_id));
     for (const [agentId, st] of insertedByAgent.entries()) {
-      map.set(agentId, { watchlistIds: st.watchlistIds || [] });
+      const watchlistIds = (st.watchlistIds || []).filter((id) => !inAppOnly.has(id));
+      if (watchlistIds.length) map.set(agentId, { watchlistIds });
     }
     await enqueueWatchlistMatchOutbox({
       client: supabase,

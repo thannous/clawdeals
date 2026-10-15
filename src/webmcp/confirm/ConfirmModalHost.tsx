@@ -285,9 +285,9 @@ function ConfirmModal({
                   }}
                   data-testid="webmcp-confirm-primary-field"
                   type="number"
-                  inputMode="numeric"
+                  inputMode={field.allowDecimal ? "decimal" : "numeric"}
                   min={0}
-                  step={1}
+                  step={field.allowDecimal ? "any" : 1}
                   value={fieldValue}
                   onChange={(event) => onFieldChange(event.target.value)}
                   className="w-full border border-border bg-bg px-3 py-2 font-mono text-lg font-bold text-text focus:border-primary focus:outline-none"

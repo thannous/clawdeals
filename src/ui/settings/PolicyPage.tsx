@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { localePrefixFor, resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
 import type { ReactNode } from "react";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -209,7 +210,7 @@ export default function PolicyPage() {
   const abortRef = useRef<AbortController | null>(null);
 
   const redirectToLogin = useCallback(() => {
-    const next = encodeURIComponent(router.asPath || "/settings/policy");
+    const next = encodeURIComponent(`${localePrefixFor(resolveSupportedLocale(router.locale))}${stripLocalePrefix(router.asPath || "/settings/policy")}`);
     void router.replace(`/auth/login?next=${next}`);
   }, [router]);
 
@@ -302,6 +303,8 @@ export default function PolicyPage() {
     };
   }, [form, policy]);
 
+  const hasUnsavedChanges = policy !== null && JSON.stringify(form) !== JSON.stringify(hydrateForm(policy));
+
   const previewDecision = useMemo(
     () =>
       evaluatePolicyAction({
@@ -340,7 +343,14 @@ export default function PolicyPage() {
 
         const nextPolicy = body.data as PolicyData;
         setPolicy(nextPolicy);
-        setForm(hydrateForm(nextPolicy));
+        setForm((current) => {
+          // The request saved this render's form. Keep any fields edited while
+          // it was pending, while accepting server normalization for the rest.
+          const newerEdits = Object.fromEntries(Object.entries(current).filter(([key, value]) =>
+            JSON.stringify(value) !== JSON.stringify(form[key as keyof PolicyForm])
+          ));
+          return { ...hydrateForm(nextPolicy), ...newerEdits };
+        });
         show(`Policy v${nextPolicy.version} saved`, "success");
       } catch (err: any) {
         const message = String(err?.message || "Policy update failed");
@@ -350,7 +360,7 @@ export default function PolicyPage() {
         setSaveState("idle");
       }
     },
-    [policy, policyDraft, redirectToLogin, saveState, show]
+    [form, policy, policyDraft, redirectToLogin, saveState, show]
   );
 
   const updateForm = <K extends keyof PolicyForm>(key: K, value: PolicyForm[K]) => {
@@ -432,6 +442,12 @@ export default function PolicyPage() {
               <div role="alert" className="border border-error/30 bg-error/5 px-4 py-3 text-xs font-mono text-error">
                 {error}
               </div>
+            ) : null}
+
+            {hasUnsavedChanges && saveState === "idle" ? (
+              <p role="status" className="border border-warning/30 bg-warning/5 px-4 py-3 text-xs font-mono text-warning">
+                Unsaved changes. Save changes to apply them.
+              </p>
             ) : null}
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(360px,0.7fr)]">

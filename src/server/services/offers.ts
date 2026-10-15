@@ -302,7 +302,25 @@ export async function listOffersByAgent({ agentIds, status, limit = 50, cursor }
 
   const rows = data || [];
   const hasMore = rows.length > cappedLimit;
-  const items = hasMore ? rows.slice(0, cappedLimit) : rows;
+  const pageItems = hasMore ? rows.slice(0, cappedLimit) : rows;
+  // Only inspect listings referenced by the already participant-scoped page.
+  // A nonpublic or missing listing keeps its reference without a public link.
+  const listingIds = Array.from(new Set<string>(pageItems.map((row: any) => row.listing_id).filter(Boolean)));
+  const listingStatuses = new Map<string, string>();
+  if (listingIds.length > 0) {
+    const { data: listings, error: listingsError } = await client
+      .from("listings")
+      .select("listing_id,status")
+      .in("listing_id", listingIds);
+    if (listingsError) mapError(listingsError);
+    for (const listing of listings || []) {
+      listingStatuses.set(listing.listing_id, listing.status);
+    }
+  }
+  const items = pageItems.map((row: any) => ({
+    ...row,
+    listing_status: listingStatuses.get(row.listing_id) || null,
+  }));
 
   const nextCursor = hasMore && items.length > 0
     ? Buffer.from(JSON.stringify({

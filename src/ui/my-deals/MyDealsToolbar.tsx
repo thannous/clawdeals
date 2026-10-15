@@ -21,10 +21,11 @@ export default function MyDealsToolbar({ status, onStatusChange, agents, selecte
 
   return (
     <div data-testid="my-deals-toolbar" className="space-y-3">
-      <div className="flex gap-2 items-center overflow-x-auto">
+      <div className="flex flex-wrap gap-2 items-center">
         <span className="text-xs font-mono text-subtle uppercase mr-1 whitespace-nowrap">{t("toolbar.statusLabel")}</span>
         <button
           onClick={() => onStatusChange(null)}
+          aria-pressed={status === null}
           className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             status === null
               ? "border-primary/40 text-primary bg-primary/10"
@@ -37,6 +38,7 @@ export default function MyDealsToolbar({ status, onStatusChange, agents, selecte
           <button
             key={s}
             onClick={() => onStatusChange(status === s ? null : s)}
+            aria-pressed={status === s}
             className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               status === s
                 ? "border-primary/40 text-primary bg-primary/10"

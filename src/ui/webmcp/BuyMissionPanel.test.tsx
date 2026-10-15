@@ -40,17 +40,20 @@ vi.mock("../../webmcp/WebMcpProvider", () => ({
 }));
 
 import { clearActiveBuyMission } from "../../webmcp/ui-bridge";
+import { clearStoredApiKey, setStoredApiKey } from "../developer/storage";
 import BuyMissionPanel, { prefillFromListing } from "./BuyMissionPanel";
 
 describe("BuyMissionPanel", () => {
   afterEach(() => {
     cleanup();
     clearActiveBuyMission();
+    clearStoredApiKey();
     vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    setStoredApiKey("cd_test_dummy");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
     executeTool.mockResolvedValue({
       ok: true,
@@ -74,7 +77,7 @@ describe("BuyMissionPanel", () => {
       listingTitle: "Used e-bike urban commute - battery health 88%",
       marketCode: "FR",
       preferredPriceMax: "1150",
-      hardBudgetMax: "1265",
+      hardBudgetMax: "1150",
       latitude: "48.86",
       longitude: "2.35",
       locationLabelKey: "mission.listingLocation",
@@ -96,8 +99,11 @@ describe("BuyMissionPanel", () => {
         latitude: 48.86,
         longitude: 2.35,
         preferred_price_max: 1150,
-        hard_budget_max: 1265
-      })
+        hard_budget_max: 1150
+      }),
+      // Confirmation may edit the payload; the provider receives the mounted
+      // panel's attempt memory to protect the arguments actually approved.
+      { pendingAttempts: expect.any(Map) }
     );
   });
 

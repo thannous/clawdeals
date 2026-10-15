@@ -19,6 +19,7 @@ type Props = {
 };
 
 type StepVerifyState = {
+  verifyAttempt: number;
   verifyStatus: "idle" | "loading" | "done" | "error";
   verifyError: string | null;
   agentMe: AgentMeResponse | null;
@@ -33,6 +34,7 @@ type StepVerifyState = {
 
 type StepVerifyAction =
   | { type: "verifyLoading" }
+  | { type: "retryVerify" }
   | { type: "verifySuccess"; agentMe: AgentMeResponse }
   | { type: "verifyFailure"; error: string }
   | { type: "setAgentMe"; agentMe: AgentMeResponse }
@@ -52,6 +54,7 @@ function initStepVerifyState({
   apiKey: string | null;
 }): StepVerifyState {
   return {
+    verifyAttempt: 0,
     verifyStatus: method === "apikey" && apiKey ? "loading" : "idle",
     verifyError: null,
     agentMe: null,
@@ -67,6 +70,8 @@ function initStepVerifyState({
 
 function stepVerifyReducer(state: StepVerifyState, action: StepVerifyAction): StepVerifyState {
   switch (action.type) {
+    case "retryVerify":
+      return { ...state, verifyStatus: "loading", verifyError: null, verifyAttempt: state.verifyAttempt + 1 };
     case "verifyLoading":
       return { ...state, verifyStatus: "loading", verifyError: null };
     case "verifySuccess":
@@ -154,7 +159,7 @@ export default function StepVerify({
       cancelled = true;
       verifyStartedRef.current = false;
     };
-  }, [method, apiKey, acquisitionId, onVerified]);
+  }, [method, apiKey, acquisitionId, onVerified, state.verifyAttempt]);
 
   // Auto-exchange when claim is successful
   useEffect(() => {
@@ -426,8 +431,18 @@ export default function StepVerify({
           )}
 
           {state.verifyError && (
-            <div className="border border-error/30 bg-error/5 p-3 clip-corner">
+            <div role="alert" className="border border-error/30 bg-error/5 p-3 clip-corner">
               <div className="text-xs font-mono text-error">{state.verifyError}</div>
+              <button
+                type="button"
+                onClick={() => {
+                  verifyStartedRef.current = false;
+                  dispatch({ type: "retryVerify" });
+                }}
+                className="mt-3 px-3 py-2 text-xs font-mono font-bold border border-primary text-primary hover:bg-primary/10 transition-colors"
+              >
+                {t("common.tryAgain")}
+              </button>
             </div>
           )}
         </div>
