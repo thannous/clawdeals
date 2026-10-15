@@ -23,13 +23,18 @@ for (const scenario of ["session expired", "response lost", "response truncated"
     const writes: { key: string; body: string }[] = [];
     let release!: () => void;
     const responseGate = new Promise<void>(resolve => { release = resolve; });
+    let holdLoginProbe = false;
+    let loginProbes = 0;
+    let releaseLogin!: () => void;
+    const loginGate = new Promise<void>(resolve => { releaseLogin = resolve; });
     await browser.route("**/*", async route => {
       if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)) await route.continue();
       else await route.abort();
     });
-    await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: {
-      authenticated: Boolean(activeOwner), owner_id: activeOwner
-    } } }));
+    await browser.route("**/api/v1/auth/session", async route => {
+      if (holdLoginProbe) { loginProbes += 1; await loginGate; }
+      await route.fulfill({ json: { data: { authenticated: Boolean(activeOwner), owner_id: activeOwner } } });
+    });
     await browser.route(`**/api/v1/approvals/${approvalId}`, route => route.fulfill(activeOwner === ownerId
       ? { json: { data: current } }
       : { status: 401, json: { error: { code: "SESSION_EXPIRED", message: "Session expired" } } }));
@@ -75,10 +80,18 @@ for (const scenario of ["session expired", "response lost", "response truncated"
         const signIn = screen.getByRole("link", "Se reconnecter");
         await expect(signIn).toBeVisible();
         await expect(signIn).toHaveAttribute("href", `/fr/auth/login?next=${encodeURIComponent(path)}`);
+        // Hold LoginPage's actual session probe until the login screen mounts.
+        // Restoring the fixture then releases its own redirect; a second
+        // app.open(path) would race window.location.assign and cause ERR_ABORTED.
+        holdLoginProbe = true;
         await signIn.tap();
         await expect(browser).toHaveURL(`/fr/auth/login?next=${encodeURIComponent(path)}`);
+        await expect(screen.getByTestId("auth-login-email")).toBeVisible();
+        await expect.poll(() => loginProbes).toBe(1);
         activeOwner = ownerId;
-        await app.open(path);
+        holdLoginProbe = false;
+        releaseLogin();
+        await expect(browser).toHaveURL(path);
         await expect(screen.getByTestId("approval-offer-amount")).toHaveValue("1290");
         await browser.reload();
         await expect(screen.getByTestId("approval-offer-amount")).toHaveValue("1290");
@@ -107,7 +120,7 @@ for (const scenario of ["session expired", "response lost", "response truncated"
       await expect(screen.getByRole("button", "Approuver")).toHaveCount(0);
       await expect(screen.getByRole("button", "Vérifier le résultat")).toHaveCount(0);
       await app.screenshot(`approval-recovered-${scenario.replaceAll(" ", "-")}`);
-    } finally { release(); }
+    } finally { release(); releaseLogin(); }
   });
 }
 
