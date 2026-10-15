@@ -1,7 +1,9 @@
 import { beforeEach, test, type Browser } from "@e2e-dev/web";
-import { expect } from "e2e";
+import { expect, type Screen } from "e2e";
 
-async function revealSubmit(browser: Browser) {
+async function revealSubmit(browser: Browser, screen: Screen) {
+  const minimizeActivity = screen.getByRole("button", "Réduire");
+  if (await minimizeActivity.isVisible()) await minimizeActivity.tap();
   await browser.evaluate(() => {
     document.querySelector('[data-testid="buy-mission-form"] button[type="submit"]')?.scrollIntoView({ block: "center" });
     return null;
@@ -55,7 +57,7 @@ for (const response of [
     await app.open("/fr/webmcp");
     await screen.getByRole("textbox", "Objet recherché").fill("Objet synthétique de reprise");
     await screen.getByRole("textbox", "Exigences minimales").fill("");
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
     await screen.getByTestId("webmcp-confirm-modal").getByRole("button", "Approuver").tap();
@@ -74,7 +76,7 @@ for (const response of [
     // with the exact body/key first; only then allow a separately approved intent.
     await screen.getByRole("textbox", "Objet recherché").fill("Autre mission synthétique");
     await screen.getByRole("spinbutton", "Plafond absolu").fill("2500");
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("buy-mission-summary").getByText("Objet synthétique de reprise")).toBeVisible();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toHaveCount(0);
@@ -86,12 +88,12 @@ for (const response of [
 
     await screen.getByRole("textbox", "Objet recherché").fill("Objet synthétique de reprise");
     await screen.getByRole("spinbutton", "Plafond absolu").fill("1300");
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toHaveCount(0);
     expect(writes).toBe(2);
     await screen.getByRole("textbox", "Objet recherché").fill("Autre mission synthétique");
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
     expect(writes).toBe(2);
@@ -121,8 +123,8 @@ test("an edited confirmation replays the approved payload before accepting a dif
   await app.open("/fr/webmcp");
   await screen.getByRole("textbox", "Objet recherché").fill("Mission initiale A");
   await screen.getByRole("textbox", "Exigences minimales").fill("");
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
   await screen.getByText("Avancé · paramètres bruts").tap();
   const editedJson = await browser.evaluate(() => {
@@ -143,21 +145,21 @@ test("an edited confirmation replays the approved payload before accepting a dif
     document.querySelector('[data-testid="buy-mission-form"] button[type="submit"]')?.scrollIntoView({ block: "center" });
     return true;
   });
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toHaveCount(0);
   await expect(screen.getByTestId("buy-mission-summary").getByText("Mission approuvée B")).toBeVisible();
   expect(submittedQueries).toEqual(["Mission approuvée B", "Mission approuvée B"]);
   expect(requests[1]).toEqual(requests[0]);
   await screen.getByRole("textbox", "Objet recherché").fill("Mission approuvée B");
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toHaveCount(0);
   expect(submittedQueries).toHaveLength(2);
 
   await screen.getByRole("textbox", "Objet recherché").fill("Mission initiale A");
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
   expect(submittedQueries).toEqual(["Mission approuvée B", "Mission approuvée B"]);
   await screen.getByRole("button", "Approuver", { exact: true }).tap();
@@ -199,7 +201,7 @@ test("concurrent submissions join the pending confirmation and request", async (
     expect(writes).toBe(1);
     release();
     await expect(screen.getByTestId("buy-mission-summary").getByText("Mission simultanée")).toBeVisible();
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toHaveCount(0);
     expect(writes).toBe(1);
@@ -215,8 +217,8 @@ test("a key changed during confirmation must approve again as the new agent", as
   await app.open("/fr/webmcp");
   await screen.getByRole("textbox", "Objet recherché").fill("Mission changement agent");
   await screen.getByRole("textbox", "Exigences minimales").fill("");
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
   await browser.evaluate(() => {
     localStorage.setItem("clawdeals_api_key", "cd_test_agent_B");
@@ -226,8 +228,8 @@ test("a key changed during confirmation must approve again as the new agent", as
   await screen.getByRole("button", "Approuver", { exact: true }).tap();
   await expect(screen.getByTestId("buy-mission-result")).toHaveAttribute("data-code", "UNAUTHORIZED");
   expect(actors).toHaveLength(0);
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
   await screen.getByRole("button", "Approuver", { exact: true }).tap();
   await expect(screen.getByTestId("buy-mission-summary")).toBeVisible();
@@ -248,7 +250,7 @@ test("a late response remains with its original agent and known success restores
     await app.open("/fr/webmcp");
     await screen.getByRole("textbox", "Objet recherché").fill("Mission agent A");
     await screen.getByRole("textbox", "Exigences minimales").fill("");
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
     await screen.getByRole("button", "Approuver", { exact: true }).tap();
@@ -266,7 +268,7 @@ test("a late response remains with its original agent and known success restores
       window.dispatchEvent(new Event("clawdeals:api-key-change"));
     return null;
     });
-    await revealSubmit(browser);
+    await revealSubmit(browser, screen);
     await screen.getByRole("button", "Créer la mission").tap();
     await expect(screen.getByTestId("buy-mission-summary").getByText("Mission agent A")).toBeVisible();
     await expect(screen.getByTestId("webmcp-confirm-modal")).toHaveCount(0);
@@ -284,13 +286,13 @@ test("an initial definitive rejection permits a newly confirmed request", async 
   await app.open("/fr/webmcp");
   await screen.getByRole("textbox", "Objet recherché").fill("Mission rejet puis nouvelle demande");
   await screen.getByRole("textbox", "Exigences minimales").fill("");
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
   await screen.getByRole("button", "Approuver", { exact: true }).tap();
   await expect(screen.getByTestId("buy-mission-result")).toHaveAttribute("data-code", "FORBIDDEN");
-  await revealSubmit(browser);
-    await screen.getByRole("button", "Créer la mission").tap();
+  await revealSubmit(browser, screen);
+  await screen.getByRole("button", "Créer la mission").tap();
   await expect(screen.getByTestId("webmcp-confirm-modal")).toBeVisible();
   await screen.getByRole("button", "Approuver", { exact: true }).tap();
   await expect(screen.getByTestId("buy-mission-summary")).toBeVisible();
