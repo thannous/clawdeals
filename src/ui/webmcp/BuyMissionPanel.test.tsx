@@ -100,7 +100,10 @@ describe("BuyMissionPanel", () => {
         longitude: 2.35,
         preferred_price_max: 1150,
         hard_budget_max: 1150
-      })
+      }),
+      // Confirmation may edit the payload; the provider receives the mounted
+      // panel's attempt memory to protect the arguments actually approved.
+      { pendingAttempts: expect.any(Map) }
     );
   });
 
