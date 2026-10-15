@@ -22,7 +22,7 @@ function inputFiles(directory) {
       const path = join(directory, entry.name);
       return entry.isDirectory()
         ? inputFiles(path)
-        : /\.(ts|mjs)$/.test(path)
+        : /\.(ts|tsx|js|jsx|mjs|cjs|json|css)$/.test(path)
           ? [path]
           : [];
     },
@@ -34,13 +34,12 @@ function inputs() {
     "package.json",
     "package-lock.json",
     "e2e/ui/helpers/api.ts",
-    "src/ui/Landing.tsx",
-    "src/ui/developer/connect/StepConnect.tsx",
-    "src/ui/webmcp/CatalogAvailabilityNotice.tsx",
+    "next.config.js",
+    "scripts/mock-upstash-redis-rest.mjs",
     "messages/en.json",
     "messages/fr.json",
     "messages/es.json",
-    "src/shared/i18n.ts",
+    ...inputFiles("src"),
     ...inputFiles("e2e/testerarmy"),
   ];
   return Object.fromEntries(
@@ -84,6 +83,8 @@ export async function execute({ historical = false } = {}) {
     ? "historical"
     : process.env.TESTERARMY_MISSION_LIVE === "1"
       ? "mission-live"
+      : process.env.TESTERARMY_COMMERCE_LIVE === "1"
+        ? "commerce-live"
       : process.env.TESTERARMY_PRODUCTION_PUBLIC === "1"
         ? "production-public"
         : process.env.TESTERARMY_AI === "1"
@@ -98,6 +99,9 @@ export async function execute({ historical = false } = {}) {
     // One ephemeral password is shared with the worker's opaque credential.
     // It is never persisted to the receipt, command line or repository.
     env.TESTERARMY_MISSION_PASSWORD = randomBytes(32).toString("base64url");
+  }
+  if (selection === "commerce-live") {
+    env.TESTERARMY_COMMERCE_PASSWORD = randomBytes(32).toString("base64url");
   }
   if (historical)
     Object.assign(env, {
@@ -135,9 +139,9 @@ export async function execute({ historical = false } = {}) {
         {
           format: "clawdeals-testerarmy-command-v1",
           selection,
-          publicEvidence: selection !== "ai" && selection !== "mission-live",
+          publicEvidence: !["ai", "mission-live", "commerce-live"].includes(selection),
           // A trace is an attempt ZIP in 0.18 and a result page in 0.21.
-          requiredArtifactKinds: selection === "mission-live" ? [] : ["trace"],
+          requiredArtifactKinds: ["mission-live", "commerce-live"].includes(selection) ? [] : ["trace"],
           runner,
           evidenceLayout,
           command: [

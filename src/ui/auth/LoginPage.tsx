@@ -122,6 +122,7 @@ export default function LoginPage() {
 
 function useLoginPageView() {
   const t = useTranslations("ownerLogin");
+  const legacy = useTranslations("auth.legacy");
   const router = useRouter();
   const hasCheckedExistingSessionRef = useRef(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -164,11 +165,12 @@ function useLoginPageView() {
       try {
         const supabase = getBrowserSupabaseClient();
         const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) return;
+        if (sessionError || cancelled) return;
 
         const accessToken = data?.session?.access_token || null;
         if (accessToken) {
           await bridgeOwnerSession(accessToken);
+          if (cancelled) return;
           await waitForOwnerSessionReady();
           if (!cancelled) {
             hardRedirect(redirectTarget);
@@ -188,8 +190,9 @@ function useLoginPageView() {
     void resolveExistingSession();
     return () => {
       cancelled = true;
+      hasCheckedExistingSessionRef.current = false;
     };
-  }, [router, redirectTarget, hardRedirect]);
+  }, [router.isReady, redirectTarget, hardRedirect]);
 
   const onGoogle = useCallback(async () => {
     setSubmitState("loading");
@@ -501,6 +504,12 @@ function useLoginPageView() {
                   <div role="status" data-testid="auth-login-notice" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
                     <div className="text-xs font-mono text-secondary">{t("notice")}</div>
                     <div className="text-xs font-mono text-muted mt-1">{notice}</div>
+                    {mode === "signup" && submitState === "done" && missionReturn && (
+                      <div className="mt-3 space-y-2 text-sm text-muted">
+                        <p>{legacy("missionReturnHint")}</p>
+                        <Link data-testid="auth-login-resume-mission" href={redirectTarget} locale={false} className="inline-block text-primary underline">{legacy("resumeMission")}</Link>
+                      </div>
+                    )}
                   </div>
                 )}
 

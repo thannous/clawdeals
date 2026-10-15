@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
 
 import { useWebMcp } from "../../webmcp/WebMcpProvider";
 import { getActiveBuyMission, subscribeActiveBuyMission, type BuyMissionView } from "../../webmcp/ui-bridge";
@@ -282,15 +283,17 @@ type FormProps = {
 
 export default function BuyMissionPanel({ prefill }: { prefill?: BuyMissionPrefill | null } = {}) {
   const { executeTool } = useWebMcp();
+  const attempts = useRef(new Map<string, Promise<StableToolResult>>());
   return <BuyMissionForm prefill={prefill} executeMission={async (args) => {
-    if (!getStoredApiKey()) {
+    const apiKey = getStoredApiKey();
+    if (!apiKey) {
       return {
         ok: false,
         error: { code: "MISSING_API_KEY", message: "Connect an agent key first", details: {} },
         meta: { request_id: randomUuid() }
       };
     }
-    return executeTool("create_buy_mission", args);
+    return executeTool("create_buy_mission", args, { pendingAttempts: attempts.current });
   }} />;
 }
 
@@ -823,6 +826,11 @@ export function BuyMissionForm({ prefill, draftSource, submitLabel, submitHint, 
           >
             {t(resultMessage.key, resultMessage.values)}
           </p>
+        ) : null}
+        {resultMessage?.code === "OUTCOME_UNKNOWN" ? (
+          <Link href="/my/missions" data-testid="buy-mission-check-missions" className="mt-3 inline-block text-sm text-primary underline">
+            {t("mission.result.checkMissions")}
+          </Link>
         ) : null}
       </form>
     </div>

@@ -27,6 +27,10 @@ const aiEnabled = process.env.TESTERARMY_AI === "1";
 const historical = process.env.TESTERARMY_HISTORICAL === "1";
 const productionPublic = process.env.TESTERARMY_PRODUCTION_PUBLIC === "1";
 const missionLive = process.env.TESTERARMY_MISSION_LIVE === "1";
+const commerceLive = process.env.TESTERARMY_COMMERCE_LIVE === "1";
+if (commerceLive && (aiEnabled || historical || productionPublic || missionLive)) {
+  throw new Error("Live commerce selection is exclusive of other suites.");
+}
 if (missionLive && (aiEnabled || historical || productionPublic)) {
   throw new Error("Live mission selection is exclusive of AI, historical and public production suites.");
 }
@@ -105,20 +109,25 @@ export default {
     : historical ? "e2e/testerarmy/historical/**/*.e2e.ts"
     : productionPublic ? "e2e/testerarmy/production/**/*.e2e.ts"
     : missionLive ? "e2e/testerarmy/mission-live/**/*.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts"],
+    : commerceLive ? "e2e/testerarmy/commerce-live/**/*.e2e.ts"
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts"],
   targets: [
     { name: "desktop", engine: productionPublic ? web({ viewport: { width: 1280, height: 720 }, headers: {} }) : desktopEngine, app },
     { name: "mobile", engine: productionPublic ? web({ viewport: { width: 390, height: 844 }, headers: {} }) : mobileEngine, app }
   ],
   workers: 1,
   ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),
-  timeout: aiEnabled || missionLive ? 180_000 : 60_000,
+  timeout: commerceLive ? 300_000 : aiEnabled || missionLive ? 180_000 : 60_000,
   assertionTimeout: 15_000,
   // Live password authentication carries real session tokens. Keep the exact
   // report and safe fixture receipts, never a network trace with auth payloads.
-  trace: missionLive ? "off" : "on",
+  trace: missionLive || commerceLive ? "off" : "on",
   ...(missionLive ? { credentials: {
     mission: { username: "synthetic-mission", password: () => process.env.TESTERARMY_MISSION_PASSWORD || "" }
+  } } : {}),
+  ...(commerceLive ? { credentials: {
+    buyer: { username: "synthetic-buyer", password: () => process.env.TESTERARMY_COMMERCE_PASSWORD || "" },
+    seller: { username: "synthetic-seller", password: () => process.env.TESTERARMY_COMMERCE_PASSWORD || "" }
   } } : {}),
   output: process.env.PARITY_OUTPUT ?? (productionPublic ? ".e2e/production-public" : ".e2e"),
   reporters: ["list", "junit", "markdown"],

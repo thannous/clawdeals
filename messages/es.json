@@ -561,7 +561,7 @@
       "returnToLogin": "Volver al inicio de sesión"
     },
     "callback": {
-      "title": "CALLBACK DE AUTH",
+      "title": "Inicio de sesión",
       "finalizing": "Finalizando inicio de sesión…",
       "backToLogin": "Volver al inicio de sesión"
     },
@@ -2080,6 +2080,20 @@
         "consequencesLabel": "Límite de privacidad",
         "consequences": "Tu aprobación por sí sola no revela nada. Solo después de ambas aprobaciones, cada agente recibe el contacto verificado de la contraparte. Los operadores y registros de auditoría permanecen enmascarados.",
         "revokeHint": "Puedes revocar este consentimiento mientras el otro propietario no haya completado la aprobación bilateral."
+      },
+      "viewListing": "Ver anuncio",
+      "viewMission": "Ver misión",
+      "recovery": {
+        "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión para continuar.",
+        "sessionCheckFailed": "No se pudo verificar tu sesión. Comprueba tu conexión e inténtalo de nuevo.",
+        "sessionChanged": "Tu cuenta ha cambiado. Vuelve a la cuenta propietaria de esta aprobación antes de continuar.",
+        "storageUnavailable": "No se ha enviado ninguna solicitud nueva porque esta pestaña no pudo guardar los datos de recuperación. Permite el almacenamiento del navegador e inténtalo de nuevo.",
+        "unknown": "El resultado de la última solicitud no está confirmado. Comprueba su resultado antes de tomar otra decisión.",
+        "retry": "Comprobar resultado",
+        "signIn": "Volver a iniciar sesión",
+        "originalTab": "Tus cambios permanecen en esta pestaña. Después de iniciar sesión, vuelve a esta pestaña original para continuar.",
+        "reviewDraft": "Revisa tus cambios guardados en la página de aprobación antes de decidir.",
+        "openApproval": "Abrir aprobación para continuar"
       }
     }
   },
@@ -2115,6 +2129,7 @@
       "statusLabel": "Estado:",
       "all": "Todos",
       "status_CREATED": "Creada",
+      "status_COUNTERED": "Contraofertada",
       "status_ACCEPTED": "Aceptada",
       "status_DECLINED": "Rechazada",
       "status_CANCELLED": "Cancelada",
@@ -2542,7 +2557,7 @@
     "actions": {
       "lead": "¿Te interesa? Tu agente puede seguir desde aquí, dentro de los límites que fijes.",
       "askAgent": "Crear una misión",
-      "askAgentHint": "Abre una misión precargada con este anuncio: precio preferido = precio pedido, techo = +10 %. No se envía nada hasta que crees la misión.",
+      "askAgentHint": "Abre una misión con el precio preferido y el presupuesto máximo iguales al precio del anuncio. Puedes ajustarlos antes de crear la misión.",
       "follow": "Seguir",
       "following": "Siguiendo",
       "followSaving": "Guardando…",
@@ -2829,7 +2844,7 @@
       "toolDescription": "Rellena el formulario visible de la misión de compra de Clawdeals. La persona lo revisa y envía antes de crear la misión.",
       "eyebrow": "Misión de compra",
       "title": "Delega la búsqueda. Conserva los límites.",
-      "prefill": "Rellenado desde el anuncio «{title}»: precio preferido = precio pedido, tope = +10 %. Ajusta lo necesario antes de crear la misión.",
+      "prefill": "Rellenado desde el anuncio «{title}»: el precio preferido y el presupuesto máximo coinciden con el precio del anuncio. Puedes ajustarlos antes de crear la misión.",
       "mode": "WebMCP declarativo + imperativo",
       "customCoordinates": "Coordenadas personalizadas…",
       "manualBilateral": "Aprobación bilateral manual",
@@ -2847,7 +2862,8 @@
         "denied": "Confirmación rechazada. No se creó nada.",
         "auth": "Conecta primero una clave de agente y crea después la misión.",
         "validation": "El servidor rechazó la misión. Revisa los campos e inténtalo de nuevo.",
-        "unknown": "El resultado es desconocido. Revisa la actividad del agente antes de reintentar.",
+        "unknown": "Es posible que esta misión ya se haya creado. Revisa tus misiones guardadas antes de crear otra solicitud.",
+        "checkMissions": "Revisar mis misiones",
         "failed": "No se pudo crear la misión. Inténtalo de nuevo o revisa la actividad del agente.",
         "storage": "Tu navegador no puede conservar el borrador. Permite el almacenamiento de este sitio antes de continuar.",
         "ownerAuth": "Inicia sesión para guardar tu misión. Al crearla no se contacta con ningún vendedor.",

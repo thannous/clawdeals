@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -9,11 +9,17 @@ import TruncatedId from "../console/shared/TruncatedId";
 import ErrorState from "../console/shared/ErrorState";
 import { formatDate } from "../console/shared/formatDate";
 import { useMyApprovalAction } from "./useMyApprovalAction";
+import { readApprovalRecovery, writeApprovalRecovery } from "./approvalRecovery";
 
 export default function MyApprovalDetailPage() {
   const t = useTranslations("myApprovals");
   const router = useRouter();
+  const { replace } = router;
+  const loadRequest = useRef<AbortController | null>(null);
   const approvalId = Array.isArray(router.query.id) ? router.query.id[0] : router.query.id;
+  const localePrefix = router.locale && router.locale !== "en" ? `/${router.locale}` : "";
+  const returnPath = `${localePrefix}/my/approvals/${approvalId || ""}`;
+  const signInHref = `${localePrefix}/auth/login?next=${encodeURIComponent(returnPath)}`;
 
   const [approval, setApproval] = useState<any>(null);
   const [fetchState, setFetchState] = useState("idle");
@@ -21,12 +27,14 @@ export default function MyApprovalDetailPage() {
   const [editedAmount, setEditedAmount] = useState("");
 
   const fetchApproval = useCallback(async (id: string) => {
+    loadRequest.current?.abort();
+    const controller = new AbortController();
+    loadRequest.current = controller;
     setFetchState("loading");
     try {
-      const resp = await fetch(`/api/v1/approvals/${id}`);
+      const resp = await fetch(`/api/v1/approvals/${id}`, { signal: controller.signal, cache: "no-store" });
       if (resp.status === 401) {
-        const next = encodeURIComponent(router.asPath || "/my/approvals");
-        void router.replace(`/auth/login?next=${next}`);
+        void replace(signInHref, undefined, { locale: false });
         return;
       }
       if (!resp.ok) {
@@ -34,29 +42,51 @@ export default function MyApprovalDetailPage() {
         throw new Error(body?.error?.message || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
+      if (controller.signal.aborted) return;
       const loaded = data?.data || null;
       setApproval(loaded);
       const proposedAmount = loaded?.action_payload_redacted?.offer?.amount ?? loaded?.action_ref?.amount;
-      setEditedAmount(typeof proposedAmount === "number" ? String(proposedAmount) : "");
+      const recovery = loaded?.owner_id ? readApprovalRecovery(loaded.owner_id, id) : null;
+      setEditedAmount(recovery?.amount ?? (typeof proposedAmount === "number" ? String(proposedAmount) : ""));
       setFetchState("done");
     } catch (err: any) {
+      if (controller.signal.aborted) return;
       setError(err.message);
       setFetchState("error");
     }
-  }, [router]);
+  }, [replace, signInHref]);
 
   useEffect(() => {
-    if (!approvalId) return;
+    if (!router.isReady || !approvalId) return;
     fetchApproval(approvalId);
-  }, [approvalId, fetchApproval]);
+    return () => loadRequest.current?.abort();
+  }, [router.isReady, approvalId, fetchApproval]);
 
-  const { execute, submitState, error: submitError } = useMyApprovalAction({
+  const { execute, submitState, error: submitError, authRequired, pending } = useMyApprovalAction({
+    ownerId: approval?.owner_id,
+    approvalId,
     onSuccess: () => { if (approvalId) fetchApproval(approvalId); },
   });
 
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const missionId = approval?.action_ref?.mission_id;
+  const listingId = approval?.action_ref?.listing_id;
+  const validMissionId = typeof missionId === "string" && uuid.test(missionId);
+  const validListingId = typeof listingId === "string" && uuid.test(listingId);
+  const ownListingId = validListingId ? listingId : uuid.test(approval?.action_ref_id || "") ? approval.action_ref_id : null;
   const missionOfferApproval =
-    approval?.action_type === "offer_over_budget" && Boolean(approval?.action_ref?.mission_id);
+    approval?.action_type === "offer_over_budget" && Boolean(missionId);
   const contactRevealConsent = approval?.action_type === "contact_reveal_consent";
+  // Public listings disappear after reservation. Owner mission/listing pages
+  // remain useful after resolution; consent references are not listing links.
+  const contextLink = contactRevealConsent ? null
+    : approval?.action_type === "listing_publish"
+      ? ownListingId ? { href: `/my/listings/${ownListingId}`, label: "detail.viewListing" } : null
+      : validMissionId ? { href: `/my/missions/${missionId}`, label: "detail.viewMission" }
+        : approval?.state === "PENDING" && validListingId
+          ? { href: `/browse/${listingId}`, label: "detail.viewListing" }
+          : null;
+
   const contactRevealRole = String(approval?.action_ref?.party_role || "").toUpperCase();
   const currency = String(
     approval?.action_payload_redacted?.offer?.currency || approval?.action_ref?.currency || "EUR"
@@ -148,7 +178,15 @@ export default function MyApprovalDetailPage() {
                       max="2147483647"
                       step="1"
                       value={editedAmount}
-                      onChange={(event) => setEditedAmount(event.target.value)}
+                      disabled={submitState === "loading" || Boolean(pending) || approval.state !== "PENDING"}
+                      onChange={(event) => {
+                        const amount = event.target.value;
+                        setEditedAmount(amount);
+                        if (approval.owner_id) writeApprovalRecovery({
+                          ...readApprovalRecovery(approval.owner_id, approval.approval_id),
+                          ownerId: approval.owner_id, approvalId: approval.approval_id, amount
+                        });
+                      }}
                       className="min-w-0 flex-1 border border-border bg-bg px-3 py-2 text-sm font-mono text-text focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                     />
                     <span className="text-sm font-mono text-muted">{currency}</span>
@@ -211,7 +249,7 @@ export default function MyApprovalDetailPage() {
             )}
 
             {/* Action buttons for PENDING */}
-            {approval.state === "PENDING" && (
+            {approval.state === "PENDING" && (!pending || submitState === "loading") && (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <button
@@ -238,13 +276,12 @@ export default function MyApprovalDetailPage() {
                     {t("detail.deny")}
                   </button>
                 </div>
-                {submitError && <p className="text-xs font-mono text-error">{submitError}</p>}
               </div>
             )}
 
             {contactRevealConsent &&
               approval.state === "APPROVED" &&
-              approval.contact_reveal_state === "REQUESTED" && (
+              approval.contact_reveal_state === "REQUESTED" && !pending && (
                 <div className="space-y-3">
                   <p className="text-xs text-muted">{t("detail.contactReveal.revokeHint")}</p>
                   <button
@@ -255,9 +292,35 @@ export default function MyApprovalDetailPage() {
                   >
                     {t("detail.revoke")}
                   </button>
-                  {submitError && <p className="text-xs font-mono text-error">{submitError}</p>}
                 </div>
               )}
+
+            {(submitError || pending || authRequired) && (
+              <div className="space-y-3">
+                {submitError && <p role="alert" className="text-xs font-mono text-error">{submitError}</p>}
+                {pending && submitState !== "loading" && (
+                  <>
+                    <p className="text-sm text-muted">{t("detail.recovery.unknown")}</p>
+                    <button
+                      type="button"
+                      disabled={submitState === "loading"}
+                      onClick={() => execute(approval.approval_id, pending.action)}
+                      className="px-4 py-2 text-xs font-mono font-bold border border-primary text-primary disabled:opacity-50"
+                    >
+                      {t("detail.recovery.retry")}
+                    </button>
+                  </>
+                )}
+                {authRequired && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted">{t("detail.recovery.originalTab")}</p>
+                    <Link href={signInHref} locale={false} className="text-sm text-primary underline">
+                      {t("detail.recovery.signIn")}
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Detail grid */}
             <div className="bg-surface border border-border p-4 space-y-3">
@@ -268,12 +331,12 @@ export default function MyApprovalDetailPage() {
                 <span className="text-sm font-mono">{approval.action_type || "—"}</span>
               </DetailRow>
               <DetailRow label={t("detail.reference")}>
-                {approval.action_ref_id && !contactRevealConsent ? (
+                {contextLink ? (
                   <Link
-                    href={`/my/listings/${approval.action_ref_id}`}
+                    href={contextLink.href}
                     className="text-xs font-mono text-primary hover:underline"
                   >
-                    {approval.action_ref_id}
+                    {t(contextLink.label)}
                   </Link>
                 ) : approval.action_ref_id ? (
                   <TruncatedId id={approval.action_ref_id} />

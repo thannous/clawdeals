@@ -10,7 +10,7 @@ import ErrorState from "../console/shared/ErrorState";
 import { formatDate } from "../console/shared/formatDate";
 
 function formatPrice(amount: number, currency?: string): string {
-  return `${(amount / 100).toFixed(2)} ${currency || ""}`.trim();
+  return `${amount.toFixed(2)} ${currency || ""}`.trim();
 }
 
 export default function MyListingDetailPage() {

@@ -51,6 +51,21 @@ describe("owner buy missions", () => {
     vi.mocked(getAgentById).mockResolvedValue({ id: "agent-1", owner_id: ownerId, suspended_at: new Date().toISOString() });
     await expect(createOwnerBuyMission({ ownerId, body: body() })).rejects.toMatchObject({ status: 403, code: "AGENT_SUSPENDED" });
     expect(createWatchlist).not.toHaveBeenCalled();
+    expect(getAgentIdByOwnerId).toHaveBeenNthCalledWith(2, ownerId, { preferUnsuspended: true });
+  });
+
+  it("prefers an available owned agent without provisioning another", async () => {
+    await createOwnerBuyMission({ ownerId, body: body() });
+    expect(getAgentIdByOwnerId).toHaveBeenCalledWith(ownerId, { preferUnsuspended: true });
+    expect(createWatchlist).toHaveBeenCalledWith(expect.objectContaining({ agentId: "agent-1" }));
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
+  });
+
+  it("still refuses an owner whose only agent is suspended without bypassing the agent limit", async () => {
+    vi.mocked(getAgentById).mockResolvedValue({ id: "agent-1", owner_id: ownerId, suspended_at: new Date().toISOString() });
+    await expect(createOwnerBuyMission({ ownerId, body: body() })).rejects.toMatchObject({ status: 403, code: "AGENT_SUSPENDED" });
+    expect(createAgentWithOwnerLimit).not.toHaveBeenCalled();
+    expect(createWatchlist).not.toHaveBeenCalled();
   });
 
   it("applies decimal budgets to search without narrowing explicitly selected permissions", async () => {
@@ -98,6 +113,17 @@ describe("owner buy missions", () => {
       price_amount: 90, distance_m: 1_000
     }], nextCursor: null });
     expect((await listOwnerBuyMissionMatches({ ownerId, missionId })).items).toEqual([]);
+  });
+
+  it.each(["été", "自行车", "é"])("keeps catalogue matches for the Unicode query %s", async (query) => {
+    const input = body();
+    input.criteria.query = query;
+    vi.mocked(getWatchlistForOwner).mockResolvedValue({ ...input, watchlist_id: missionId, active: true, currency: "EUR" });
+    vi.mocked(listListings).mockResolvedValue({ items: [{
+      listing_id: "unicode-match", title: "Catalogue match", status: "LIVE", market_code: "FR", currency: "EUR",
+      price_amount: 90, distance_m: 1_000
+    }], nextCursor: null });
+    expect((await listOwnerBuyMissionMatches({ ownerId, missionId })).items.map(item => item.listing_id)).toEqual(["unicode-match"]);
   });
 
   it("shows an expired mission without searching or activating new work", async () => {

@@ -561,7 +561,7 @@
       "returnToLogin": "Return to sign in"
     },
     "callback": {
-      "title": "AUTH CALLBACK",
+      "title": "Sign in",
       "finalizing": "Finalizing sign-in…",
       "backToLogin": "Back to login"
     },
@@ -2096,6 +2096,20 @@
         "consequencesLabel": "Privacy boundary",
         "consequences": "Your approval alone reveals nothing. Only after both approvals will each agent receive the counterparty's verified contact. Operators and audit logs stay masked.",
         "revokeHint": "You may revoke this consent while the other owner has not completed the bilateral approval."
+      },
+      "viewListing": "View listing",
+      "viewMission": "View mission",
+      "recovery": {
+        "sessionExpired": "Your session expired. Sign in again to continue.",
+        "sessionCheckFailed": "We could not verify your session. Check your connection and try again.",
+        "sessionChanged": "Your account changed. Return to the account that owns this approval before continuing.",
+        "storageUnavailable": "No new request was sent because this tab could not save its recovery data. Allow browser storage and try again.",
+        "unknown": "The result of the last request is not confirmed. Check its result before making another decision.",
+        "retry": "Check result",
+        "signIn": "Sign in again",
+        "originalTab": "Your changes stay in this tab. After signing in, return to this original tab to continue.",
+        "reviewDraft": "Review your saved changes on the approval page before deciding.",
+        "openApproval": "Open approval to continue"
       }
     }
   },
@@ -2138,6 +2152,7 @@
       "statusLabel": "Status:",
       "all": "All",
       "status_CREATED": "Created",
+      "status_COUNTERED": "Countered",
       "status_ACCEPTED": "Accepted",
       "status_DECLINED": "Declined",
       "status_CANCELLED": "Cancelled",
@@ -2572,7 +2587,7 @@
     "actions": {
       "lead": "Interested? Your agent can take it from here, inside the limits you set.",
       "askAgent": "Create a mission",
-      "askAgentHint": "Opens a Deal Mission prefilled with this listing: preferred price = asking price, ceiling = +10 %. Nothing is sent until you create the mission.",
+      "askAgentHint": "Opens a mission with the preferred price and budget ceiling set to the listing price. You can adjust them before creating the mission.",
       "follow": "Follow",
       "following": "Following",
       "followSaving": "Saving…",
@@ -2921,7 +2936,7 @@
       "toolDescription": "Fill the visible Clawdeals buying mission form. The human reviews and submits it before the mission is created.",
       "eyebrow": "Deal Mission",
       "title": "Delegate the search. Keep the limits.",
-      "prefill": "Prefilled from the listing “{title}”: preferred price = asking price, ceiling = +10 %. Adjust anything before creating the mission.",
+      "prefill": "Prefilled from the listing “{title}”: the preferred price and budget ceiling match the listing price. You can adjust them before creating the mission.",
       "mode": "Declarative + imperative WebMCP",
       "customCoordinates": "Custom coordinates…",
       "manualBilateral": "Manual bilateral approval",
@@ -2939,7 +2954,8 @@
         "denied": "Confirmation declined. Nothing was created.",
         "auth": "Connect an agent key first, then create the mission.",
         "validation": "The server rejected the mission. Check the fields and try again.",
-        "unknown": "The result is unknown. Check Agent Activity before retrying.",
+        "unknown": "This mission may already have been created. Check your saved missions before creating another request.",
+        "checkMissions": "Check my missions",
         "failed": "The mission could not be created. Try again or inspect Agent Activity.",
         "storage": "Your browser cannot save this draft. Allow storage for this site before continuing.",
         "ownerAuth": "Sign in to save your mission. Creating it does not contact any seller.",

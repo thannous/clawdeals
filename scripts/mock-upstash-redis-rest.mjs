@@ -227,6 +227,9 @@ export function createMockUpstashRedisServer({
       streams.delete(key);
       return "OK";
     }
+    if (name === "exists") {
+      return command.slice(1).filter(key => exists(String(key))).length;
+    }
     if (name === "del") {
       let deleted = 0;
       for (const rawKey of command.slice(1)) {

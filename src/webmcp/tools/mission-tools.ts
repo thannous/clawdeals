@@ -107,13 +107,13 @@ export const buyMissionInputJsonSchema: Record<string, unknown> = {
   }
 };
 
-function contractError(requestId: string): StableToolResult<never> {
+function unknownMissionOutcome(requestId: string): StableToolResult<never> {
   return {
     ok: false,
     error: {
-      code: "SERVER_CONTRACT_ERROR",
-      message: "Mission creation returned an invalid response",
-      details: {}
+      code: "OUTCOME_UNKNOWN",
+      message: "Mission creation returned an invalid response, so its outcome is unknown",
+      details: { safe_to_retry: false }
     },
     meta: { request_id: requestId }
   };
@@ -170,7 +170,7 @@ export const missionTools: ToolDef[] = [
 
       const data = result.data as any;
       const mission = data?.criteria?.mission;
-      if (!data?.watchlist_id || !mission) return contractError(ctx.requestId);
+      if (!data?.watchlist_id || !mission) return unknownMissionOutcome(result.meta.request_id || ctx.requestId);
 
       const view: BuyMissionView = {
         mission_id: String(data.watchlist_id),

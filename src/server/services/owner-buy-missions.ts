@@ -4,14 +4,14 @@ import { getWatchlistForOwner, listWatchlists } from "./watchlists";
 import { listListings } from "./listings";
 import { decodeListingsCursor } from "./listings-cursor";
 import { mapPublicListingRow } from "./public-listings";
-import { evaluateWatchlistMatchListing, tokenize } from "../utils/matching";
+import { evaluateWatchlistMatchListing } from "../utils/matching";
 
 function serviceError(message: string, status: number, code: string) {
   return Object.assign(new Error(message), { status, code });
 }
 
 async function ownerAgentId(ownerId: string, create = false): Promise<string | null> {
-  let agentId = await getAgentIdByOwnerId(ownerId);
+  let agentId = await getAgentIdByOwnerId(ownerId, { preferUnsuspended: true });
   if (!agentId && create) {
     try {
       const agent = await createAgentWithOwnerLimit({
@@ -24,7 +24,7 @@ async function ownerAgentId(ownerId: string, create = false): Promise<string | n
     } catch (error: any) {
       // A parallel first mission may have provisioned the account meanwhile.
       if (error?.code !== "OWNER_AGENT_LIMIT_REACHED") throw error;
-      agentId = await getAgentIdByOwnerId(ownerId);
+      agentId = await getAgentIdByOwnerId(ownerId, { preferUnsuspended: true });
       if (!agentId) throw error;
     }
   }
@@ -85,7 +85,9 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
   }
   const items = [];
   let nextCursor: string | null = null;
-  const queryTokens = tokenize(row.criteria.query);
+  // PostgreSQL owns full-text matching, including non-ASCII words. This guard
+  // rejects only queries with no letters/numbers, not an ASCII token subset.
+  const hasSearchText = /[\p{L}\p{N}]/u.test(row.criteria.query || "");
   // listListings applies q to the full-text index, including description. The
   // geo projection omits that text, so only recheck non-text constraints here.
   const watchlist = { ...row, query_text: null, criteria: { ...row.criteria, query: null }, tags: row.criteria.tags ?? [] };
@@ -110,7 +112,7 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
       if (listing.status !== "LIVE" || listing.market_code !== row.market_code ||
         listing.currency !== mission.currency || listing.price_amount == null || !Number.isFinite(price) || price < 0 || price > budget ||
         listing.distance_m == null || !Number.isFinite(distance) || distance < 0 || distance > geo.distanceKm * 1000 ||
-        !queryTokens.length) continue;
+        !hasSearchText) continue;
       if (!evaluateWatchlistMatchListing({ listing, watchlist, listingDistanceKm: distance / 1000 }).matched) continue;
       items.push(mapPublicListingRow(listing));
     }

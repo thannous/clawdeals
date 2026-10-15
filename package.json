@@ -45,6 +45,7 @@
     "test:testerarmy": "E2E_TELEMETRY_DISABLED=1 node e2e/testerarmy/run.mjs run",
     "test:testerarmy:list": "E2E_TELEMETRY_DISABLED=1 node e2e/testerarmy/run.mjs list",
     "test:mission": "TESTERARMY_MISSION_LIVE=1 TESTERARMY_AI=0 npm run test:testerarmy",
+    "test:commerce": "TESTERARMY_COMMERCE_LIVE=1 TESTERARMY_AI=0 npm run test:testerarmy --",
     "test:mission:client": "TESTERARMY_AI=0 npm run test:testerarmy -- e2e/testerarmy/mission-draft.e2e.ts e2e/testerarmy/mission-recovery.e2e.ts e2e/testerarmy/mission-status.e2e.ts e2e/testerarmy/webmcp-mission-regression.e2e.ts",
     "test:testerarmy:ai": "E2E_TELEMETRY_DISABLED=1 TESTERARMY_AI=1 node e2e/testerarmy/run.mjs run",
     "testerarmy:mcp": "E2E_TELEMETRY_DISABLED=1 e2e mcp --target desktop",

@@ -7,7 +7,7 @@ import { getToolByName, getToolsForRoute } from "./tools";
 import type { StableToolResult } from "./types";
 import { capToolOutputBytes, WEBMCP_TOOL_OUTPUT_MAX_BYTES } from "./security/output-cap";
 import { sanitizeToolOutput } from "./security/sanitize";
-import { randomUuid } from "./utils";
+import { canonicalJsonStringify, randomUuid } from "./utils";
 import { confirmAndExecute } from "./confirm/gate";
 import { WebMcpConfirmProvider, useWebMcpConfirm } from "./confirm/context";
 import ConfirmModalHost from "./confirm/ConfirmModalHost";
@@ -33,13 +33,18 @@ import {
 import { getStoredApiKey, subscribeStoredApiKey } from "../ui/developer/storage";
 import type { ToolDef } from "./tools/defs";
 
+type ToolExecutionOptions = {
+  signal?: AbortSignal;
+  pendingAttempts?: Map<string, Promise<StableToolResult>>;
+};
+
 type WebMcpContextValue = {
   enabled: boolean;
   supported: boolean;
   registered: boolean;
   registeredToolNames: string[];
   lastRegisterError: RegistrationError | null;
-  executeTool: (name: string, args: unknown, options?: { signal?: AbortSignal }) => Promise<StableToolResult>;
+  executeTool: (name: string, args: unknown, options?: ToolExecutionOptions) => Promise<StableToolResult>;
 };
 
 const WebMcpContext = createContext<WebMcpContextValue | null>(null);
@@ -223,7 +228,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const executeTool = useCallback(
-    async (name: string, args: unknown, options?: { signal?: AbortSignal }): Promise<StableToolResult> => {
+    async (name: string, args: unknown, options?: ToolExecutionOptions): Promise<StableToolResult> => {
       const tool = getToolByName(name, routeTools);
       const requestId = randomUuid();
       const signal = options?.signal;
@@ -233,6 +238,36 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
       if (signal?.aborted) {
         return { ok: false, error: { code: "ABORTED", message: "Cancelled", details: {} }, meta: { request_id: requestId } };
       }
+
+      const attempts = options?.pendingAttempts;
+      const attemptKey = (approvedArgs: unknown) => `${name}\u0000${getStoredApiKey() || ""}\u0000${canonicalJsonStringify(approvedArgs)}`;
+      const previous = attempts?.get(attemptKey(args));
+      if (previous) {
+        const result = await previous;
+        if (result.ok === false) return result;
+        const capped = capToolOutputBytes(sanitizeToolOutput(result.data), { maxBytes: WEBMCP_TOOL_OUTPUT_MAX_BYTES });
+        return {
+          ok: true,
+          data: capped.value,
+          meta: { ...result.meta, ...(capped.truncated ? { truncated: true, max_bytes: capped.maxBytes } : {}) }
+        };
+      }
+      const executionTool: ToolDef = attempts ? {
+        ...tool,
+        execute: (approvedArgs, ctx) => {
+          // Confirmation may edit the request. Cache only the validated payload
+          // actually sent, so retrying it cannot create a fresh idempotency key.
+          const fingerprint = attemptKey(approvedArgs);
+          const pending = attempts.get(fingerprint);
+          if (pending) return pending;
+          const execution = Promise.resolve().then(() => tool.execute(approvedArgs, ctx));
+          attempts.set(fingerprint, execution);
+          void execution.then((result) => {
+            if (result.ok === true || result.error.code !== "OUTCOME_UNKNOWN") attempts.delete(fingerprint);
+          }, () => { /* A rejected execution also has an unknown outcome. */ });
+          return execution;
+        }
+      } : tool;
 
       let receipt = recordWebMcpActionReceipt(
         await pendingReceiptForInvocation({
@@ -279,7 +314,7 @@ function WebMcpInnerProvider({ children }: { children: React.ReactNode }) {
 
       let stable: StableToolResult;
       try {
-        stable = await confirmAndExecute(tool as any, args, {
+        stable = await confirmAndExecute(executionTool as any, args, {
           confirm: confirmWithReceipt,
           requestId,
           timeoutMs: 60_000,

@@ -14,7 +14,7 @@ import PageHeader from "../shared/PageHeader";
 import AgentDropdown from "../shared/AgentDropdown";
 import { useOwnerAgents } from "../shared/useOwnerAgents";
 
-const STATUS_OPTIONS = ["CREATED", "ACCEPTED", "DECLINED", "CANCELLED", "EXPIRED"];
+const STATUS_OPTIONS = ["CREATED", "COUNTERED", "ACCEPTED", "DECLINED", "CANCELLED", "EXPIRED"];
 
 export default function MyOffersPage() {
   const t = useTranslations("myOffers");
@@ -52,7 +52,11 @@ export default function MyOffersPage() {
     {
       key: "status",
       label: t("list.status"),
-      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />,
+      cell: (row: any) => (
+        <div className="max-w-24 whitespace-normal [overflow-wrap:anywhere]">
+          <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="listing" />
+        </div>
+      ),
     },
     {
       key: "agent",

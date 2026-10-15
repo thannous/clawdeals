@@ -28,6 +28,17 @@ async function startMock() {
 }
 
 describe("local Upstash REST test mock", () => {
+  it("checks owned string and stream cleanup without touching another key", async () => {
+    const { redis } = await startMock();
+    await redis.set("fixture:key", "owned");
+    await redis.xadd("fixture:stream", "*", { event: "synthetic" });
+    await redis.set("other:key", "retained");
+    expect(await redis.exists("fixture:key", "fixture:stream", "missing")).toBe(2);
+    await redis.del("fixture:key", "fixture:stream");
+    expect(await redis.exists("fixture:key", "fixture:stream")).toBe(0);
+    expect(await redis.get("other:key")).toBe("retained");
+  });
+
   it("refuses to bind outside loopback", () => {
     expect(() =>
       createMockUpstashRedisServer({

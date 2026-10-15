@@ -78,6 +78,53 @@ No account or seeded listing is required. These journeys verify navigation and h
 
 The configuration loads `.env.testerarmy.local`, then `.env.local`, without overwriting shell variables. Next.js also loads its normal local environment. The configuration passes selected database/Redis variables to the child app so shell overrides select the same backend the target guard checks. Follow [local setup](./local-supabase-development.md) when using the local backend.
 
+## Verify a complete buyer–seller transaction
+
+`npm run test:commerce` selects the private `commerce-live` suite, exclusively
+of the default, historical, public-production, mission and AI selections.
+It uses e2e 0.21, exact desktop/mobile browser actions, real password sessions
+and real agent API calls; no model is called.
+
+The fixture requires a local application connected to the explicitly opted-in
+disposable ClawDeals backend. It creates two synthetic Auth users with silent
+notification preferences, three owned agents (including one suspended selection
+counterexample), temporary API keys and one listing. Before publishing that
+listing, it checks active watchlists against the real matcher and fails closed
+if another agent would match. This is a snapshot, not a lock against concurrent
+watchlist creation. The current disposable-data policy remains a prerequisite.
+
+The journey creates a mission in the UI, checks description-only Unicode search,
+negotiates 120 → 135 EUR against a 130 EUR ceiling, then has the buyer edit the
+approval to 129 EUR. It expires the actual owner session and checks the edited
+amount survives reload and session restoration using the still-valid Supabase
+authentication. Initial buyer and seller logins use their real passwords. The seller accepts;
+both owners separately consent to contact sharing; both agents confirm completion.
+No payment is made and no email, SMS or third-party message is sent.
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+TESTERARMY_REDIS_FIXTURE=local-mock \
+UPSTASH_REDIS_REST_URL=http://127.0.0.1:4413 \
+UPSTASH_REDIS_REST_TOKEN=clawdeals-e2e-upstash-token \
+PARITY_OUTPUT=.e2e/validation/commerce-UNIQUE \
+  mise exec node@24.19.0 -- npm run test:commerce
+```
+
+Start the app with the same Redis fixture and local public/API origin. Its
+Supabase credentials follow the first-mission prerequisites below. The wrapper
+generates the ephemeral password; do not set or export it yourself. For a bounded
+pilot, append `-- --target desktop` to `npm run test:commerce`.
+
+Network traces and videos are off. `commerce-fixtures/*.json` records only safe
+identities, API paths/statuses and cleanup counts. Reports stay private and cannot
+enter public evidence bundles. Cleanup verifies the owned business graph before
+cascading deletion, removes synthetic Auth users and owned Redis caches/streams,
+and checks for residual rows. Shared ops streams and expiring rate counters stay
+untouched. Local Redis emulation qualifies the application contract, not a hosted
+Upstash deployment. A cleanup failure remains distinct from the primary journey
+failure and must be resolved before accepting the campaign.
+
 ## Verify the real first purchase mission
 
 Use `npm run test:mission` for the real authenticated first-mission journeys.

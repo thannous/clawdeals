@@ -561,7 +561,7 @@
       "returnToLogin": "Revenir à la connexion"
     },
     "callback": {
-      "title": "CALLBACK D'AUTH",
+      "title": "Connexion",
       "finalizing": "Finalisation de la connexion…",
       "backToLogin": "Retour à la connexion"
     },
@@ -2080,6 +2080,20 @@
         "consequencesLabel": "Limite de confidentialité",
         "consequences": "Ton approbation seule ne révèle rien. Après les deux approbations, chaque agent reçoit uniquement les coordonnées vérifiées de l'autre partie. Les opérateurs et journaux d'audit restent masqués.",
         "revokeHint": "Tu peux révoquer ce consentement tant que l'autre propriétaire n'a pas terminé l'approbation bilatérale."
+      },
+      "viewListing": "Voir l'annonce",
+      "viewMission": "Voir la mission",
+      "recovery": {
+        "sessionExpired": "Votre session a expiré. Reconnectez-vous pour continuer.",
+        "sessionCheckFailed": "Impossible de vérifier votre session. Vérifiez votre connexion puis réessayez.",
+        "sessionChanged": "Votre compte a changé. Revenez au compte propriétaire de cette approbation avant de continuer.",
+        "storageUnavailable": "Aucune nouvelle demande n’a été envoyée car cet onglet n’a pas pu enregistrer sa reprise. Autorisez le stockage du navigateur puis réessayez.",
+        "unknown": "Le résultat de la dernière demande n’est pas confirmé. Vérifiez son résultat avant de prendre une autre décision.",
+        "retry": "Vérifier le résultat",
+        "signIn": "Se reconnecter",
+        "originalTab": "Vos modifications restent dans cet onglet. Après connexion, revenez dans cet onglet d’origine pour continuer.",
+        "reviewDraft": "Vérifiez vos modifications enregistrées sur la page d’approbation avant de décider.",
+        "openApproval": "Ouvrir l’approbation pour continuer"
       }
     }
   },
@@ -2115,6 +2129,7 @@
       "statusLabel": "Statut :",
       "all": "Tous",
       "status_CREATED": "Créée",
+      "status_COUNTERED": "Contre-proposée",
       "status_ACCEPTED": "Acceptée",
       "status_DECLINED": "Refusée",
       "status_CANCELLED": "Annulée",
@@ -2542,7 +2557,7 @@
     "actions": {
       "lead": "Intéressé ? Ton agent peut prendre le relais, dans les limites que tu fixes.",
       "askAgent": "Créer une mission",
-      "askAgentHint": "Ouvre une mission pré-remplie avec cette annonce : prix préféré = prix affiché, plafond = +10 %. Rien n'est envoyé avant que tu crées la mission.",
+      "askAgentHint": "Ouvre une mission dont le prix préféré et le budget plafond correspondent au prix de l'annonce. Tu peux les ajuster avant de créer la mission.",
       "follow": "Suivre",
       "following": "Suivi",
       "followSaving": "Enregistrement…",
@@ -2829,7 +2844,7 @@
       "toolDescription": "Remplissez le formulaire visible de mission d’achat Clawdeals. La personne le vérifie et l’envoie avant la création de la mission.",
       "eyebrow": "Mission d’achat",
       "title": "Déléguez la recherche. Gardez les limites.",
-      "prefill": "Prérempli depuis l’annonce « {title} » : prix préféré = prix demandé, plafond = +10 %. Ajustez avant de créer la mission.",
+      "prefill": "Prérempli depuis l’annonce « {title} » : le prix préféré et le budget plafond correspondent au prix de l’annonce. Vous pouvez les ajuster avant de créer la mission.",
       "mode": "WebMCP déclaratif + impératif",
       "customCoordinates": "Coordonnées personnalisées…",
       "manualBilateral": "Approbation bilatérale manuelle",
@@ -2847,7 +2862,8 @@
         "denied": "Confirmation refusée. Rien n’a été créé.",
         "auth": "Connectez d’abord une clé agent, puis créez la mission.",
         "validation": "Le serveur a refusé la mission. Vérifiez les champs puis réessayez.",
-        "unknown": "Le résultat est inconnu. Vérifiez l’activité de l’agent avant de réessayer.",
+        "unknown": "La mission a peut-être déjà été créée. Vérifiez vos missions enregistrées avant de créer une nouvelle demande.",
+        "checkMissions": "Vérifier mes missions",
         "failed": "La mission n’a pas pu être créée. Réessayez ou consultez l’activité de l’agent.",
         "storage": "Ton navigateur ne permet pas de conserver le brouillon. Autorise le stockage pour ce site avant de continuer.",
         "ownerAuth": "Connecte-toi pour enregistrer ta mission. Aucun vendeur n’est contacté lors de sa création.",

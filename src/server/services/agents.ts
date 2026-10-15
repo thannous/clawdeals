@@ -29,10 +29,17 @@ export async function deleteAgentById(agentId: string) {
   }
 }
 
-export async function getAgentIdByOwnerId(ownerId: string): Promise<string | null> {
+export async function getAgentIdByOwnerId(ownerId: string, { preferUnsuspended = false }: { preferUnsuspended?: boolean } = {}): Promise<string | null> {
   if (!ownerId) return null;
   const client = getSupabaseServiceClient();
-  const { data, error } = await client.from("agents").select("id").eq("owner_id", ownerId).limit(1).maybeSingle();
+  let query = client.from("agents").select("id").eq("owner_id", ownerId);
+  if (preferUnsuspended) {
+    // Keep a suspended fallback so the caller can reject it instead of creating
+    // another agent and bypassing the owner's suspension/agent-limit checks.
+    query = query.order("suspended_at", { ascending: true, nullsFirst: true })
+      .order("created_at", { ascending: true }).order("id", { ascending: true });
+  }
+  const { data, error } = await query.limit(1).maybeSingle();
   if (error) {
     const mapped = mapSupabaseError(error);
     throw Object.assign(new Error(mapped.message), { status: mapped.status, code: mapped.code });
