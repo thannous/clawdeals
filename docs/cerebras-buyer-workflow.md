@@ -89,7 +89,9 @@ conserve les paramètres Paris/FR/1 300 € de la démonstration.
 Le programme affiche une sélection, un prix proposé, une justification et les
 points à vérifier. Il enregistre un JSON avec l’annonce, les contraintes, les
 temps des outils et les tokens déclarés par Cerebras. Il peut aussi terminer
-sans proposition si les critères ne peuvent pas être établis.
+sans proposition si les critères ne peuvent pas être établis, après au moins
+une recherche réussie. Une recherche en panne ne suffit pas à conclure qu’il
+n’existe aucun résultat.
 
 Si la recherche textuelle ne trouve rien, le programme relit une fois les annonces
 dans les mêmes limites de prix et de distance, sans le filtre de texte. Cerebras
@@ -105,6 +107,9 @@ utilisées dans la requête de recherche ClawDeals.
 
 Chaque rapport utilise un nouveau chemin par défaut. Un chemin fourni avec
 `--output` doit être libre : le programme refuse d’écraser un ancien rapport.
+Il réserve et écrit ce rapport avant le premier appel de génération ; un chemin
+existant ou inutilisable arrête donc la mission sans consommer d’appel modèle.
+Si le modèle échoue ensuite, le rapport réservé conserve le résultat d’échec.
 Les rapports sous `test-results/` sont ignorés par Git.
 
 ## 3. Relire, puis éventuellement envoyer
@@ -175,7 +180,10 @@ Ce sont des E2E **CLI**, avec de vrais processus et des serveurs HTTP simulant
 Cerebras et ClawDeals sur `127.0.0.1`, sans accès à la production, sans clé réelle
 et sans prérequis Supabase. Ils couvrent le parcours complet, les sorties hors
 budget/devise, les identifiants inventés, les redirections, les pannes, l’annulation,
-l’idempotence et les validations propriétaire. Les sorties de processus sont
+l’idempotence et les validations propriétaire. Ils vérifient aussi qu’une fin
+sans proposition nécessite une recherche réussie, que les clés ClawDeals complètes
+sont masquées même hors des variables d’environnement, et que la destination du
+rapport est réservée avant tout appel modèle. Les sorties de processus sont
 conservées dans `/private/tmp/clawdeals-cerebras-e2e-*`. Ils ne prouvent ni un appel
 Cerebras réel ni l’enregistrement d’une offre dans la base de production.
 

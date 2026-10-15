@@ -89,11 +89,15 @@ function mapError(error) {
   throw buildServiceError(mapped.message, mapped.status, mapped.code);
 }
 
-async function countActiveWatchlists(agentId) {
+function countsTowardsActiveQuota(active: boolean, criteria: any, nowIso: string) {
+  const expiresAt = criteria?.mission?.expires_at;
+  return active === true && (expiresAt == null || String(expiresAt) > nowIso);
+}
+
+async function countActiveWatchlists(agentId, nowIso = new Date().toISOString()) {
   const client = getSupabaseServiceClient();
   // Mission dates are normalized to UTC ISO strings at write time. Expired
   // missions remain readable without consuming a slot or being mutated here.
-  const nowIso = new Date().toISOString();
   const { count, error } = await client
     .from("watchlists")
     .select("watchlist_id", { count: "exact", head: true })
@@ -317,8 +321,12 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
   }
 
   const nextActive = typeof patch?.active === "boolean" ? patch.active : existing.active;
-  if (nextActive === true && existing.active === false) {
-    const activeCount = await countActiveWatchlists(agentId);
+  const nowIso = new Date().toISOString();
+  // Renewing an expired mission (or removing its expiry) consumes a slot even
+  // when its stored active flag never changed. Already-counted edits do not.
+  if (countsTowardsActiveQuota(nextActive, nextCriteria, nowIso) &&
+    !countsTowardsActiveQuota(existing.active, existing.criteria, nowIso)) {
+    const activeCount = await countActiveWatchlists(agentId, nowIso);
     if (activeCount >= MAX_ACTIVE_WATCHLISTS) {
       throw buildServiceError(
         "Watchlist limit reached",
@@ -329,7 +337,6 @@ export async function updateWatchlistForAgent({ watchlistId, agentId, patch }: a
     }
   }
 
-  const nowIso = new Date().toISOString();
   const payload: any = {
     updated_at: nowIso
   };

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../db/supabase", () => ({ getSupabaseServiceClient: vi.fn() }));
 
 import { getSupabaseServiceClient } from "../db/supabase";
-import { createWatchlist, updateWatchlistForAgent } from "./watchlists";
+import { createWatchlist, deleteWatchlistForAgent, updateWatchlistForAgent } from "./watchlists";
 
 const NOW = "2026-10-15T10:00:00.000Z";
 const FUTURE = "2026-10-16T10:00:00.000Z";
@@ -14,7 +14,7 @@ type Row = Record<string, any>;
 function row(id: string, expiresAt?: string): Row {
   return {
     watchlist_id: id, agent_id: "agent-1", active: true, deleted_at: null, market_code: "FR",
-    criteria: expiresAt ? { mission: { kind: "BUY", expires_at: expiresAt } } : { query: "bike" }
+    criteria: expiresAt ? { mission: { kind: "BUY", currency: "EUR", expires_at: expiresAt } } : { query: "bike" }
   };
 }
 
@@ -101,6 +101,53 @@ describe("active watchlist quota", () => {
       expect(await result).toMatchObject({ watchlist_id: "paused", active: true });
       expect(writes).toEqual([{ method: "PATCH", ids: ["paused"] }]);
     }
+  });
+
+  it.each([
+    [49, "renew"], [50, "renew"], [49, "ordinary"], [50, "ordinary"]
+  ] as const)("checks %i occupied slots when an expired mission becomes %s", async (occupied, change) => {
+    const expired = row("expired", PAST);
+    const rows = [...Array.from({ length: occupied }, (_, i) => row(`ordinary-${i}`)), expired];
+    const writes = installDatabase(rows);
+    const criteria = change === "renew"
+      ? { mission: { ...expired.criteria.mission, expires_at: FUTURE } }
+      : { query: "bike" };
+    const update = () => updateWatchlistForAgent({ watchlistId: "expired", agentId: "agent-1", patch: { criteria } });
+    if (occupied === 50) {
+      await expect(update()).rejects.toMatchObject({ status: 409, code: "WATCHLIST_LIMIT_REACHED" });
+      expect(expired.criteria.mission.expires_at).toBe(PAST);
+      expect(writes).toEqual([]);
+    } else {
+      expect(await update()).toMatchObject({ watchlist_id: "expired", active: true, criteria });
+      // Repeating the same update already occupies one of the fifty slots.
+      expect(await update()).toMatchObject({ watchlist_id: "expired", active: true, criteria });
+      expect(rows).toHaveLength(50);
+      expect(writes).toEqual([
+        { method: "PATCH", ids: ["expired"] }, { method: "PATCH", ids: ["expired"] }
+      ]);
+    }
+  });
+
+  it.each([{ name: "Renamed expired mission" }, { active: true }, { active: false }])(
+    "allows a full-quota update that leaves the mission expired: %j", async patch => {
+      const expired = row("expired", PAST);
+      const writes = installDatabase([...Array.from({ length: 50 }, (_, i) => row(`ordinary-${i}`)), expired]);
+      expect(await updateWatchlistForAgent({ watchlistId: "expired", agentId: "agent-1", patch }))
+        .toMatchObject({ watchlist_id: "expired", ...patch, criteria: { mission: { expires_at: PAST } } });
+      expect(writes).toEqual([{ method: "PATCH", ids: ["expired"] }]);
+    }
+  );
+
+  it("does not consume a slot when a paused mission stays expired or is deleted", async () => {
+    const expired = { ...row("expired", PAST), active: false };
+    const writes = installDatabase([...Array.from({ length: 50 }, (_, i) => row(`ordinary-${i}`)), expired]);
+    expect(await updateWatchlistForAgent({ watchlistId: "expired", agentId: "agent-1", patch: { active: true } }))
+      .toMatchObject({ watchlist_id: "expired", active: true, criteria: { mission: { expires_at: PAST } } });
+    expect(await deleteWatchlistForAgent({ watchlistId: "expired", agentId: "agent-1" }))
+      .toMatchObject({ watchlist_id: "expired", active: false, deleted_at: NOW });
+    expect(writes).toEqual([
+      { method: "PATCH", ids: ["expired"] }, { method: "PATCH", ids: ["expired"] }
+    ]);
   });
 
   it("continues excluding other agents, paused and deleted watchlists", async () => {
