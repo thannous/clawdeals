@@ -304,6 +304,14 @@ The maintained `npm run test:testerarmy` and historical entry reserve one new di
 
 Reports, JUnit, Markdown, SDK artifacts, `runner.log`, `logs/app.log`, `command.json` and `completion.json` share the reserved directory. The receipts record exact arguments, source HEAD/dirty state, input SHA256 before and after, the primary exit/signal and any log failure. Inputs are checked in memory; a log/receipt failure makes an otherwise successful command fail, and does not replace the original failing exit. The historical fixture independently attempts screenshot, attachment index and structured error capture: original error object/stack survives a failing write. A successful body with collection failure stays red.
 
+With 0.21, SDK media lives under `results/` and each executed public/historical
+result must retain its `results/<test>/trace.md`. The evidence index checks the
+result identity, run identity and runner version, and records each page's digest.
+It still reads the earlier 0.18 `artifacts/` layout and requires its attempt ZIP
+traces. The command receipt records the effective runner and layout; mismatches,
+missing pages and unsupported layouts prevent complete evidence. Live mission
+runs remain private and keep network traces disabled.
+
 CI (`ci.yml`, manual dispatch only) runs the public journeys at the end of its single `test-ci` job (15-minute budget), once lint, contracts and unit tests have passed. Deterministic evidence controls precede a 5-minute public step (about 1 minute observed), leaving time for teardown, packaging and upload. The complete historical corpus runs in the separate `Historical browser corpus` workflow (`.github/workflows/historical-corpus.yml`), also on manual dispatch only, with a 15-minute step in a 20-minute job; it skips a commit that already passed it. For changes touching the historical suites or before a release, a production deployment waits for its success on the deployed SHA, run locally (the `historical-corpus` check of `npm run verify:release`) or by dispatch ([hosting](./hosting-cloudflare-vercel.md#current-development-topology-2026-09-28)). When a branch changes the historical suites, run it locally or dispatch it there with `gh workflow run historical-corpus.yml --ref <branch>`. Actions, assertions, test timeouts and zero retries are unchanged. Once the journeys have started, collection and uploads use `always()`. A forced termination, missing completion or skipped case is explicitly incomplete qualification, even if upload succeeds. The legacy commands are retained.
 
 ### Complete bounded public artifacts

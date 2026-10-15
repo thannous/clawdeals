@@ -28,6 +28,12 @@ test.describe("Landing page", () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto("/");
 
+    // Next dev can finish navigation while its FOUC guard still hides the body.
+    // Measure rendered copy, not the hidden body's serialized page data.
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.getByTestId("hero-section")).toBeVisible();
+    await page.evaluate(async () => { await document.fonts.ready; });
+
     const desktopWordCount = await page.evaluate(() =>
       document.body.innerText.trim().split(/\s+/).filter(Boolean).length
     );
@@ -39,6 +45,9 @@ test.describe("Landing page", () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.getByTestId("hero-section")).toBeVisible();
+    await page.evaluate(async () => { await document.fonts.ready; });
 
     const mobileScreenCount = await page.evaluate(
       () => document.documentElement.scrollHeight / window.innerHeight
