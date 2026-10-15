@@ -1,7 +1,9 @@
 # Dogfooding ClawDeals — 15 octobre 2026
 
-Cette campagne utilise l’application locale, Node 24.19.0, Next.js 16.4.0,
-TesterArmy e2e 0.18.0 et @e2e-dev/web 0.13.0. Les parcours affectés tournent
+La première campagne utilise l’application locale, Node 24.19.0, Next.js 16.4.0,
+TesterArmy e2e 0.18.0 et @e2e-dev/web 0.13.0. Le rejeu demandé ensuite utilise
+e2e **0.21.0**, avec le même moteur web compatible et le même navigateur installé.
+Les résultats de chaque version sont distingués ci-dessous. Les parcours affectés tournent
 à 1280×720 et 390×844. Les observations sont celles d’agents de QA, pas de
 participants humains ni une mesure de satisfaction. Aucun déploiement.
 

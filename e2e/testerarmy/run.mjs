@@ -9,6 +9,7 @@ import {
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { reserveOutput, describeError } from "./evidence.mjs";
+import { reportLayout } from "./manifest.mjs";
 import dotenv from "dotenv";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -83,11 +84,11 @@ export async function execute({ historical = false } = {}) {
     ? "historical"
     : process.env.TESTERARMY_MISSION_LIVE === "1"
       ? "mission-live"
-    : process.env.TESTERARMY_PRODUCTION_PUBLIC === "1"
-      ? "production-public"
-      : process.env.TESTERARMY_AI === "1"
-        ? "ai"
-        : "public";
+      : process.env.TESTERARMY_PRODUCTION_PUBLIC === "1"
+        ? "production-public"
+        : process.env.TESTERARMY_AI === "1"
+          ? "ai"
+          : "public";
   const env = {
     ...process.env,
     E2E_TELEMETRY_DISABLED: "1",
@@ -118,6 +119,13 @@ export async function execute({ historical = false } = {}) {
   ];
   let output, before, log;
   if (command === "run") {
+    const runner = {
+      name: "e2e",
+      version: JSON.parse(
+        readFileSync(join(root, "node_modules/e2e/package.json"), "utf8"),
+      ).version,
+    };
+    const evidenceLayout = reportLayout(runner);
     output = reserveOutput(root, process.env.PARITY_OUTPUT, selection);
     env.PARITY_OUTPUT = output;
     before = inputs();
@@ -128,7 +136,10 @@ export async function execute({ historical = false } = {}) {
           format: "clawdeals-testerarmy-command-v1",
           selection,
           publicEvidence: selection !== "ai" && selection !== "mission-live",
+          // A trace is an attempt ZIP in 0.18 and a result page in 0.21.
           requiredArtifactKinds: selection === "mission-live" ? [] : ["trace"],
+          runner,
+          evidenceLayout,
           command: [
             process.execPath,
             historical

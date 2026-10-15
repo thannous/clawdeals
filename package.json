@@ -120,7 +120,7 @@
     "@vitest/coverage-v8": "4.1.11",
     "ai": "7.0.107",
     "dotenv": "^16.6.1",
-    "e2e": "0.18.0",
+    "e2e": "0.21.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.3",
     "eslint-plugin-react-hooks": "7.0.1",

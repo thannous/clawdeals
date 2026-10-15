@@ -177,6 +177,191 @@ function fixture(root) {
   return { directory, run };
 }
 
+function currentFixture(root) {
+  const fixtureData = fixture(root);
+  const { directory, run } = fixtureData;
+  run.runner.version = "0.21.0";
+  for (const result of run.results) {
+    result.id = sha256(Buffer.from(`${result.targetId}/${result.testId}`));
+    result.file = "tests/catalog.e2e.ts";
+    result.titlePath = ["a public journey"];
+    if (!result.attempts.length) continue;
+    const segment = `catalog-a-public-journey-${result.id.slice(0, 16)}`;
+    const folder = join(root, directory, "results", segment);
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(
+      join(folder, "trace.md"),
+      `# ✓ a public journey\n\n<sub>e2e 0.21.0 · run \`${run.id}\` · the whole run is in \`report.json\`</sub>\n`,
+    );
+    const mediaPath = `${segment}/attempt-1/screen.png`;
+    const bytes = Buffer.from(`synthetic screenshot ${result.targetId}`);
+    mkdirSync(join(folder, "attempt-1"));
+    writeFileSync(join(root, directory, "results", mediaPath), bytes);
+    result.attempts[0].artifacts.push({
+      id: `${result.id}:screen`,
+      kind: "screenshot",
+      path: mediaPath,
+      size: bytes.length,
+      sha256: sha256(bytes),
+    });
+  }
+  writeFileSync(
+    join(root, directory, "report.json"),
+    JSON.stringify({ schemaVersion: "report-1", run }),
+  );
+  const commandPath = join(root, directory, "command.json");
+  const command = JSON.parse(readFileSync(commandPath, "utf8"));
+  Object.assign(command, {
+    runner: run.runner,
+    evidenceLayout: { artifactsDirectory: "results", traceFormat: "markdown" },
+    requiredArtifactKinds: ["trace"],
+  });
+  writeFileSync(commandPath, JSON.stringify(command));
+  return fixtureData;
+}
+
+test("0.21 result media and one trace page per executed result round-trip in a public bundle", (t) => {
+  const root = temporary(t),
+    { directory } = currentFixture(root);
+  const index = inspectReport(root, directory, {
+    requiredArtifactKinds: ["trace"],
+  });
+  assert.equal(index.evidenceComplete, true);
+  assert.equal(index.journeysPassed, true);
+  assert.equal(index.tracePages.length, 2);
+  assert.equal(new Set(index.tracePages.map((page) => page.resultId)).size, 2);
+  assert.equal(index.artifacts.length, 2);
+  const bundle = bundleRuns(root, ".e2e/bundles/current", [directory]);
+  assert.equal(bundle.evidenceComplete, true);
+  assert.equal(
+    bundle.files.filter((file) => file.path.endsWith("/trace.md")).length,
+    2,
+  );
+  assert.equal(verifyBundle(root, bundle.output).journeysPassed, true);
+});
+
+for (const defect of [
+  "missing",
+  "empty",
+  "other-run",
+  "duplicate",
+  "symlink",
+]) {
+  test(`0.21 required trace pages reject ${defect} evidence`, (t) => {
+    const root = temporary(t),
+      { directory, run } = currentFixture(root);
+    const result = run.results[0];
+    const folder = join(
+      root,
+      directory,
+      "results",
+      `catalog-a-public-journey-${result.id.slice(0, 16)}`,
+    );
+    const trace = join(folder, "trace.md");
+    if (defect === "missing") rmSync(trace);
+    if (defect === "empty") writeFileSync(trace, "");
+    if (defect === "other-run")
+      writeFileSync(
+        trace,
+        readFileSync(trace, "utf8").replace(run.id, "different-run"),
+      );
+    if (defect === "duplicate") {
+      const duplicate = join(
+        root,
+        directory,
+        "results",
+        `duplicate-${result.id.slice(0, 16)}`,
+      );
+      mkdirSync(duplicate);
+      writeFileSync(join(duplicate, "trace.md"), readFileSync(trace));
+    }
+    if (defect === "symlink") {
+      const bytes = readFileSync(trace);
+      rmSync(trace);
+      writeFileSync(join(root, "unowned.md"), bytes);
+      symlinkSync(join(root, "unowned.md"), trace);
+    }
+    const index = inspectReport(root, directory, {
+      requiredArtifactKinds: ["trace"],
+    });
+    assert.equal(index.evidenceComplete, false);
+    assert.ok(
+      index.errors.some(
+        (error) =>
+          error.code === "TRACE_PAGE_MISSING_OR_INVALID" &&
+          error.resultId === result.id,
+      ),
+    );
+  });
+}
+
+test("0.21 changed media and a mismatched runner receipt cannot qualify", (t) => {
+  const root = temporary(t),
+    { directory, run } = currentFixture(root);
+  const artifact = run.results[0].attempts[0].artifacts[0];
+  writeFileSync(join(root, directory, "results", artifact.path), "tampered");
+  assert.ok(
+    inspectReport(root, directory).errors.some(
+      (error) => error.code === "ARTIFACT_MISSING_OR_CHANGED",
+    ),
+  );
+  const commandPath = join(root, directory, "command.json");
+  const command = JSON.parse(readFileSync(commandPath, "utf8"));
+  command.runner.version = "0.18.0";
+  writeFileSync(commandPath, JSON.stringify(command));
+  const bundle = bundleRuns(root, ".e2e/bundles/mismatched", [directory]);
+  assert.equal(bundle.evidenceComplete, false);
+  assert.ok(
+    bundle.runs[0].errors.some(
+      (error) => error.code === "RUNNER_RECEIPT_MISMATCH",
+    ),
+  );
+});
+
+test("0.18 keeps requiring and hashing its actual per-attempt ZIP trace", (t) => {
+  const root = temporary(t),
+    { directory, run } = fixture(root);
+  for (const result of run.results) {
+    for (const attempt of result.attempts) {
+      const path = `${attempt.id}/trace.zip`;
+      const bytes = Buffer.from(`synthetic trace ${attempt.id}`);
+      mkdirSync(join(root, directory, "artifacts", attempt.id), {
+        recursive: true,
+      });
+      writeFileSync(join(root, directory, "artifacts", path), bytes);
+      attempt.artifacts.push({
+        id: `${attempt.id}:trace`,
+        kind: "trace",
+        path,
+        size: bytes.length,
+        sha256: sha256(bytes),
+      });
+    }
+  }
+  writeFileSync(
+    join(root, directory, "report.json"),
+    JSON.stringify({ schemaVersion: "report-1", run }),
+  );
+  assert.equal(
+    inspectReport(root, directory, { requiredArtifactKinds: ["trace"] })
+      .evidenceComplete,
+    true,
+  );
+  rmSync(
+    join(
+      root,
+      directory,
+      "artifacts",
+      run.results[0].attempts[0].artifacts[0].path,
+    ),
+  );
+  assert.equal(
+    inspectReport(root, directory, { requiredArtifactKinds: ["trace"] })
+      .evidenceComplete,
+    false,
+  );
+});
+
 test("same test on two targets and excluded results retain distinct identities", (t) => {
   const root = temporary(t),
     { directory } = fixture(root);

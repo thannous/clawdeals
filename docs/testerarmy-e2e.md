@@ -1,10 +1,10 @@
 # TesterArmy browser tests
 
-ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.18.0 and `@e2e-dev/web` 0.13.0 are pinned development dependencies. The engine requires `e2e >=0.18.0 <1` and pins `playwright-core` 1.63.0 itself; the retained Playwright suites stay on 1.63.0.
+ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.21.0 and `@e2e-dev/web` 0.13.0 are pinned development dependencies. The engine requires `e2e >=0.18.0 <1`, which includes 0.21.0, and pins `playwright-core` 1.63.0 itself; the retained Playwright suites stay on 1.63.0.
 
-The [official 0.18.0 release](https://github.com/tester-army/e2e/releases/tag/e2e%400.18.0) requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
+The installed 0.21.0 package requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
 
-Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and the relevant reference, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`. The full versioned documentation is under `node_modules/e2e/docs/`.
+Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and its relevant `references/` topic, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`.
 
 ## Current contracts and proportional evidence
 
@@ -294,9 +294,9 @@ Verified `agent.act` steps may replay from `.e2e/cache/`; assertions still run. 
 
 ### Decision models, including Jev
 
-The shipped 0.18.0 [decision-model guide](https://e2e.tester.army/docs/decision-models) documents the optional `@e2e-dev/decision` executor. It chooses bounded actions from the semantic tree using a decision model, such as `typeSafeAi.decisionModel('jev-latest')`, rather than generating selectors or URLs. A separate text model supplies field values and the judgment tier. The runner still authorizes actions and applies its budgets; this executor has no vision and does not offer drag, upload or hover.
+The [decision-model guide](https://e2e.tester.army/docs/decision-models) was inspected with 0.18.0 and documents the optional `@e2e-dev/decision` executor. It chooses bounded actions from the semantic tree using a decision model, such as `typeSafeAi.decisionModel('jev-latest')`, rather than generating selectors or URLs. A separate text model supplies field values and the judgment tier. The runner still authorizes actions and applies its budgets; this executor has no vision and does not offer drag, upload or hover.
 
-This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.18.0 itself requires `ai ^7.0.0`, which the current 7.0.107 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
+This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.21.0 itself requires `ai ^7.0.0`, which the current 7.0.107 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
 
 ## Reports, CI and MCP
 

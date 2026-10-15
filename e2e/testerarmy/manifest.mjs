@@ -5,6 +5,13 @@ import { isDeepStrictEqual } from "node:util";
 
 export const sha256 = (bytes) =>
   createHash("sha256").update(bytes).digest("hex");
+export function reportLayout(runner) {
+  if (runner?.name === "e2e" && /^0\.18\.\d+$/.test(runner.version))
+    return { artifactsDirectory: "artifacts", traceFormat: "zip" };
+  if (runner?.name === "e2e" && /^0\.21\.\d+$/.test(runner.version))
+    return { artifactsDirectory: "results", traceFormat: "markdown" };
+  throw new Error("Unsupported TesterArmy evidence layout.");
+}
 export function safeFile(root, path) {
   const absolute = resolve(root, path);
   const rel = relative(root, absolute);
@@ -55,6 +62,7 @@ export function inspectReport(
   )
     throw new Error("Unsupported TesterArmy report schema.");
   const run = document.run;
+  const evidenceLayout = reportLayout(run.runner);
   if (
     !["passed", "failed", "error", "interrupted", "blocked"].includes(
       run.status,
@@ -160,8 +168,11 @@ export function inspectReport(
     seenAttempts = new Set(),
     seenArtifacts = new Set();
   const seenContexts = new Set();
+  const seenTracePages = new Set();
   const pairs = [],
-    artifacts = [];
+    artifacts = [],
+    tracePages = [];
+  let resultDirectories;
   for (const result of run.results) {
     const key = JSON.stringify([
       run.id,
@@ -174,12 +185,60 @@ export function inspectReport(
     seenPairs.add(key);
     if (!run.targets.some((target) => target.id === result.targetId))
       errors.push({ code: "UNKNOWN_TARGET", key });
+    // Since 0.21, the runner writes one Markdown trace per executed result,
+    // outside attempt.artifacts. Its result-ID suffix owns the page; the footer
+    // identifies the run and runner. Skipped results without attempts have none.
+    if (
+      evidenceLayout.traceFormat === "markdown" &&
+      requiredArtifactKinds.includes("trace") &&
+      result.attempts.length > 0
+    ) {
+      try {
+        if (!/^[a-f0-9]{64}$/.test(result.id))
+          throw new Error("Malformed trace result identity.");
+        resultDirectories ??= readdirSync(
+          join(root, directory, evidenceLayout.artifactsDirectory),
+        );
+        const matches = resultDirectories.filter((name) =>
+          name.endsWith(`-${result.id.slice(0, 16)}`),
+        );
+        if (matches.length !== 1)
+          throw new Error("Required trace page is missing or ambiguous.");
+        const path = join(
+          directory,
+          evidenceLayout.artifactsDirectory,
+          matches[0],
+          "trace.md",
+        );
+        if (seenTracePages.has(path))
+          throw new Error("Trace page belongs to more than one result.");
+        seenTracePages.add(path);
+        const bytes = readFileSync(safeFile(root, path));
+        const page = bytes.toString("utf8");
+        const footer = `<sub>e2e ${run.runner.version} · run \`${run.id}\` · the whole run is in \`report.json\`</sub>`;
+        if (!/^# [✓✗] /.test(page) || !page.trimEnd().endsWith(footer))
+          throw new Error("Trace page does not identify this run.");
+        tracePages.push({
+          resultId: result.id,
+          path,
+          bytes: bytes.length,
+          sha256: sha256(bytes),
+        });
+      } catch {
+        errors.push({
+          code: "TRACE_PAGE_MISSING_OR_INVALID",
+          resultId: result.id,
+        });
+      }
+    }
     const attempts = result.attempts.map((attempt) => {
       const contextKey = `${run.id}/${result.targetId}/${attempt.id}`;
       if (seenContexts.has(contextKey))
         errors.push({ code: "DUPLICATE_CONTEXT", key: contextKey });
       seenContexts.add(contextKey);
       for (const kind of requiredArtifactKinds) {
+        if (kind === "trace" && evidenceLayout.traceFormat === "markdown")
+          continue;
         if (!attempt.artifacts.some((artifact) => artifact.kind === kind))
           errors.push({
             code: "REQUIRED_MEDIA_MISSING",
@@ -202,7 +261,11 @@ export function inspectReport(
             artifact.path.split("/").includes("..")
           )
             throw new Error("Artifact path is not local to the run.");
-          const path = join(directory, "artifacts", artifact.path);
+          const path = join(
+            directory,
+            evidenceLayout.artifactsDirectory,
+            artifact.path,
+          );
           const bytes = readFileSync(safeFile(root, path));
           if (
             bytes.length !== artifact.size ||
@@ -294,10 +357,12 @@ export function inspectReport(
     status: run.status,
     vcs: run.vcs,
     runner: run.runner,
+    evidenceLayout,
     targets: run.targets,
     summary: run.summary,
     pairs,
     artifacts,
+    tracePages,
     errors,
     evidenceComplete: errors.length === 0,
     journeysPassed: passed,

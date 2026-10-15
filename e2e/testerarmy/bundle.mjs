@@ -73,6 +73,16 @@ export function bundleRuns(
       const report = inspectReport(repository, directory, {
         requiredArtifactKinds: command.requiredArtifactKinds ?? [],
       });
+      if (
+        command.runner !== undefined &&
+        !isDeepStrictEqual(command.runner, report.runner)
+      )
+        report.errors.push({ code: "RUNNER_RECEIPT_MISMATCH" });
+      if (
+        command.evidenceLayout !== undefined &&
+        !isDeepStrictEqual(command.evidenceLayout, report.evidenceLayout)
+      )
+        report.errors.push({ code: "EVIDENCE_LAYOUT_MISMATCH" });
       const completion = JSON.parse(
         readFileSync(
           safeFile(repository, join(directory, "completion.json")),
