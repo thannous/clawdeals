@@ -67,12 +67,12 @@ function useVerifyPageView() {
       const tok = rawToken.trim();
 
       if (!sid) {
-        setError("Missing session ID. Start from the login page.");
+        setError(t("missingSession"));
         setSubmitState("error");
         return;
       }
       if (!tok) {
-        setError("Enter your verification token.");
+        setError(t("enterToken"));
         setSubmitState("error");
         return;
       }
@@ -113,11 +113,11 @@ function useVerifyPageView() {
         }
         void router.replace(destination, undefined, { locale: false });
       } catch (err: any) {
-        setError(String(err?.message || "Verification failed"));
+        setError(String(err?.message || t("failed")));
         setSubmitState("error");
       }
     },
-    [router, queryNext]
+    [router, queryNext, t]
   );
 
   useEffect(() => {
@@ -144,7 +144,7 @@ function useVerifyPageView() {
 
   const onResend = useCallback(async () => {
     if (!email) {
-      setError("Missing email. Start from the login page.");
+      setError(t("missingEmail"));
       setSubmitState("error");
       return;
     }
@@ -182,10 +182,10 @@ function useVerifyPageView() {
       setExpiresAt(nextExpires || null);
       setSubmitState("idle");
     } catch (err: any) {
-      setError(String(err?.message || "Failed to resend"));
+      setError(String(err?.message || t("resendError")));
       setSubmitState("error");
     }
-  }, [email, queryNext]);
+  }, [email, queryNext, t]);
 
   const onReset = useCallback(() => {
     void fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
@@ -211,19 +211,19 @@ function useVerifyPageView() {
                 <span className="text-primary">/ </span>{t("title")}
               </h1>
               <p className="text-xs font-mono text-subtle">
-                Enter the token from your magic link to complete owner login.
+                {t("intro")}
               </p>
             </div>
 
             {email && (
               <div className="text-xs font-mono text-subtle">
-                Email: <span className="text-text">{email}</span>
+                {t("email")}: <span className="text-text">{email}</span>
               </div>
             )}
 
             {sessionId.trim() && (
               <div className="text-xs font-mono text-subtle">
-                Session ID: <span className="text-text">{sessionId}</span>
+                {t("session")}: <span className="text-text">{sessionId}</span>
               </div>
             )}
 
@@ -241,28 +241,28 @@ function useVerifyPageView() {
                 data-testid="auth-verify-token"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="Paste token…"
+                placeholder={t("placeholder")}
                 autoComplete="one-time-code"
                 className="w-full px-3 py-2 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg transition-colors"
               />
             </div>
 
             {expiresAt && (
-              <div className="text-xs font-mono text-subtle">Expires: {formatExpiresAt(expiresAt)}</div>
+              <div className="text-xs font-mono text-subtle">{t("expires")}: {formatExpiresAt(expiresAt)}</div>
             )}
 
             {error && (
               <div data-testid="auth-verify-error" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-error">Error</div>
+                <div className="text-xs font-mono text-error">{t("error")}</div>
                 <div className="text-xs font-mono text-muted mt-1">{error}</div>
               </div>
             )}
 
             {submitState === "success" && (
               <div data-testid="auth-verify-success" className="border border-secondary/30 bg-secondary/5 rounded clip-corner p-3">
-                <div className="text-xs font-mono text-secondary">Verified</div>
+                <div className="text-xs font-mono text-secondary">{t("verified")}</div>
                 <div className="text-xs font-mono text-muted mt-1">
-                  {missionReturn ? t("missionOtherTab") : "Login completed. You can now open your account dashboard."}
+                  {missionReturn ? t("missionOtherTab") : t("completed")}
                 </div>
                 {missionReturn && <Link href={missionReturn} locale={false} className="inline-block mt-3 text-sm text-primary underline">{t("openMissionHere")}</Link>}
               </div>
@@ -302,9 +302,9 @@ function useVerifyPageView() {
 
           {!sessionId.trim() && (
             <div className="text-xs font-mono text-subtle">
-              Missing session ID. Return to{" "}
+              {t("missingSession")}
               <Link href={`/auth/login-legacy?next=${encodeURIComponent(safeRedirectUrl(queryNext ?? "/settings/identities"))}`} className="text-text underline">
-                /auth/login-legacy
+                {t("returnToLogin")}
               </Link>
               .
             </div>

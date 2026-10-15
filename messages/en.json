@@ -544,7 +544,21 @@
       "verifying": "Verifying…",
       "resending": "Resending…",
       "resent": "Code resent",
-      "invalidToken": "Invalid or expired token"
+      "invalidToken": "Invalid or expired token",
+      "intro": "Confirm this link to finish signing in. If needed, paste the code from your email.",
+      "email": "Email",
+      "session": "Session",
+      "placeholder": "Paste code…",
+      "expires": "Expires",
+      "error": "Error",
+      "verified": "Verified",
+      "completed": "You are signed in. You can now open your account.",
+      "missingSession": "This link is incomplete. Start again from the sign-in page.",
+      "enterToken": "Enter the verification code from your email.",
+      "missingEmail": "Your email address is missing. Start again from the sign-in page.",
+      "failed": "Verification failed. Try again or request a new link.",
+      "resendError": "The link could not be resent. Please try again.",
+      "returnToLogin": "Return to sign in"
     },
     "callback": {
       "title": "AUTH CALLBACK",

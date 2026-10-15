@@ -544,7 +544,21 @@
       "verifying": "Vérification…",
       "resending": "Renvoi…",
       "resent": "Code renvoyé",
-      "invalidToken": "Token invalide ou expiré"
+      "invalidToken": "Token invalide ou expiré",
+      "intro": "Confirme ce lien pour terminer la connexion. Si nécessaire, colle le code reçu par email.",
+      "email": "Adresse email",
+      "session": "Session",
+      "placeholder": "Coller le code…",
+      "expires": "Expiration",
+      "error": "Erreur",
+      "verified": "Connexion vérifiée",
+      "completed": "Tu es connecté. Tu peux maintenant ouvrir ton compte.",
+      "missingSession": "Ce lien est incomplet. Recommence depuis la page de connexion.",
+      "enterToken": "Saisis le code de vérification reçu par email.",
+      "missingEmail": "Ton adresse email est manquante. Recommence depuis la page de connexion.",
+      "failed": "La vérification a échoué. Réessaie ou demande un nouveau lien.",
+      "resendError": "Le lien n’a pas pu être renvoyé. Réessaie.",
+      "returnToLogin": "Revenir à la connexion"
     },
     "callback": {
       "title": "CALLBACK D'AUTH",

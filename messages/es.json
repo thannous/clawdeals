@@ -544,7 +544,21 @@
       "verifying": "Verificando…",
       "resending": "Reenviando…",
       "resent": "Código reenviado",
-      "invalidToken": "Token inválido o expirado"
+      "invalidToken": "Token inválido o expirado",
+      "intro": "Confirma este enlace para terminar de iniciar sesión. Si es necesario, pega el código recibido por correo.",
+      "email": "Correo electrónico",
+      "session": "Sesión",
+      "placeholder": "Pegar código…",
+      "expires": "Caducidad",
+      "error": "Error",
+      "verified": "Sesión verificada",
+      "completed": "Has iniciado sesión. Ya puedes abrir tu cuenta.",
+      "missingSession": "Este enlace está incompleto. Vuelve a empezar desde la página de inicio de sesión.",
+      "enterToken": "Introduce el código de verificación recibido por correo.",
+      "missingEmail": "Falta tu correo electrónico. Vuelve a empezar desde la página de inicio de sesión.",
+      "failed": "La verificación ha fallado. Inténtalo de nuevo o solicita otro enlace.",
+      "resendError": "No se pudo reenviar el enlace. Inténtalo de nuevo.",
+      "returnToLogin": "Volver al inicio de sesión"
     },
     "callback": {
       "title": "CALLBACK DE AUTH",

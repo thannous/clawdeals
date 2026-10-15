@@ -29,9 +29,42 @@ Les anciennes attentes de connexion sont actualisées uniquement pour conserver
 Les contre-exemples couvrent une mission localisée et une destination externe
 refusée. Les protections et contrôles de livraison ne sont pas assouplis.
 
-## Résultats et identité
+## Qualification complète après les corrections de revue
 
-Les campagnes finales ont exécuté le commit propre
+Le commit applicatif `12f7c626658974556afa11c93656d37e4a7c9291` a été qualifié
+sur l’application locale à `http://localhost:4327` :
+
+| Vérification | Résultat | Rapport local conservé |
+| --- | --- | --- |
+| Campagne desktop/mobile complète | **102/102**, 211,27 s | `.e2e/validation/dogfood-qualified-12f7c62/summary.md` |
+| Missions avec Auth/Postgres réels | **4/4**, 86,81 s | `.e2e/validation/dogfood-live-12f7c62/summary.md` |
+| Authentification historique affectée | **3/3**, 34,50 s | `.e2e/validation/dogfood-historical-auth-12f7c62/summary.md` |
+| Contrats PR | **Réussis**, 6 contrôles exécutés et 6 réutilisés | Arbre `39f3822c8a15c9cc3fcbbb9d301ddc41b9037131` |
+
+Les trois wrappers sont sortis à 0 avec des entrées stables. Les sources
+applicatives correspondent au commit ; des mises à jour de skills sans rapport
+sont présentes dans le checkout, hors de cette livraison. Le périmètre exact est
+consigné dans `.e2e/dogfood-20261015/qualified-source.json`. Le vérificateur PR
+utilise sa copie isolée du commit. Il a exécuté **219 fichiers de tests unitaires,
+817 réussis et 1 ignoré**, ainsi que lint, types, traductions et SDK.
+
+Le scénario réel d’annonce exige désormais un terme présent uniquement dans sa
+description. Les quatre fixtures ont été nettoyées sans erreur et sans ligne
+propriétaire/agent/annonce restante parmi les identités créées par les tests.
+Le filtre du quota a également été accepté par le vrai backend lors d’un comptage
+en lecture seule sur un identifiant synthétique inexistant. Cette requête valide
+la syntaxe PostgREST ; la frontière 49/50, l’expiration et la réactivation sont
+couvertes séparément par les tests de service à transport simulé.
+
+Les 178 cas historiques hors authentification restent une réutilisation du
+premier passage décrit ci-dessous, pas un nouveau corpus intégral. Les textes
+résiduels de la vérification de connexion ont ensuite été traduits en FR/EN/ES,
+sans changer le parcours ; les preuves applicatives ci-dessus restent identifiées
+à leur commit d’exécution. La PR indique la vérification du dernier commit livré.
+
+## Premier passage et historique conservé
+
+Le premier passage a exécuté le commit propre
 `e0a868f81dc3bdb1518ed925b29a4406191d2923`, sur l’application locale à
 `http://localhost:4327`. Les trois reçus finaux ci-dessous indiquent un code de
 sortie 0, des entrées stables et aucune erreur du journal du runner.
