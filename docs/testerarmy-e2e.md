@@ -191,6 +191,9 @@ live cases above independently verify the real mission write/readback and replay
 per-owner drafts and attempts, legacy storage migration, expired-request replay
 and storage failures. These are intercepted client regressions, not real backend
 account-switch evidence.
+Draft regressions also cover separate mission sources, clearing only the completed
+source, and quarantining unowned v1 drafts even when an unrelated legacy request
+exists. Explicitly owned v1/v2 drafts and v2 anonymous drafts migrate by source.
 A server-paused mission remains paused in the list and detail even if its stored
 active flag is true. Confirmed quota rejections release editing and the rejected
 idempotency key, including after a lost rejection response; uncertain creation

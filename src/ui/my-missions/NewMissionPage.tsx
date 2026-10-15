@@ -6,7 +6,7 @@ import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
 import { BuyMissionForm, MissionSummary, prefillFromListing, type BuyMissionInput } from "../webmcp/BuyMissionPanel";
-import { claimLegacyBuyMissionDraft, clearBuyMissionDraft, readBuyMissionDraft, saveBuyMissionDraft, missionDraftSource } from "../webmcp/buyMissionDraft";
+import { clearBuyMissionDraft, readBuyMissionDraft, saveBuyMissionDraft, missionDraftSource } from "../webmcp/buyMissionDraft";
 import type { StableToolResult } from "../../webmcp/types";
 import { randomUuid } from "../../webmcp/utils";
 import { confirmedOwnerMission, missionPayload, missionRequest, missionView, MissionRequestError, type OwnerMission } from "./missionClient";
@@ -27,6 +27,7 @@ export default function NewMissionPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [uncertain, setUncertain] = useState(false);
   const submittingOwnerId = useRef<string | null>(null);
+  const submittingDraftSource = useRef<string | null>(null);
   const resolveSubmission = useRef<((value: StableToolResult) => void) | null>(null);
   const request = useRef<PendingMissionRequest | null>(null);
   const [prepared, setPrepared] = useState<{ source: string; ownerId: string | null; recovery: PendingMissionRequest | null; error?: string } | null>(null);
@@ -45,7 +46,6 @@ export default function NewMissionPage() {
     }
     try {
       const recovery = snapshot.ownerId ? readMissionRequest(snapshot.ownerId) : null;
-      if (snapshot.ownerId && !claimLegacyBuyMissionDraft(snapshot.ownerId)) throw new Error("Draft ownership storage unavailable");
       setPrepared({ source, ownerId: snapshot.ownerId, recovery });
     } catch {
       setPrepared({ source, ownerId: snapshot.ownerId, recovery: null, error: "requestStorageUnavailable" });
@@ -98,6 +98,7 @@ export default function NewMissionPage() {
     } catch { setCreateError("requestStorageUnavailable"); return failure("DRAFT_STORAGE_UNAVAILABLE"); }
     unconfirmed ||= request.current?.ownerId === session.ownerId ? request.current : null;
     request.current = unconfirmed;
+    submittingDraftSource.current = unconfirmed ? unconfirmed.draftSource || null : source;
     setUncertain(Boolean(unconfirmed));
     setCreateError(unconfirmed ? "uncertainResult" : null);
     setPending(unconfirmed?.input || args);
@@ -107,6 +108,7 @@ export default function NewMissionPage() {
   const resume = () => {
     if (!prepared?.recovery) return;
     request.current = prepared.recovery;
+    submittingDraftSource.current = prepared.recovery.draftSource || null;
     submittingOwnerId.current = prepared.ownerId;
     setUncertain(true);
     setCreateError("uncertainResult");
@@ -138,7 +140,8 @@ export default function NewMissionPage() {
     // A retry, including after reload, keeps its original body and key until
     // the server confirms the outcome. Editing is disabled while it is unknown.
     if (request.current?.fingerprint !== fingerprint || request.current?.ownerId !== session.ownerId) {
-      request.current = { fingerprint, key: randomUuid(), input: pending, ownerId: submittingOwnerId.current || "" };
+      request.current = { fingerprint, key: randomUuid(), input: pending, ownerId: submittingOwnerId.current || "",
+        ...(submittingDraftSource.current ? { draftSource: submittingDraftSource.current } : {}) };
     }
     if (!writeMissionRequest(request.current)) {
       if (!uncertain) request.current = null;
@@ -154,7 +157,7 @@ export default function NewMissionPage() {
         }, body: fingerprint
       }));
       const view = missionView(created);
-      clearBuyMissionDraft(request.current.ownerId);
+      if (request.current.draftSource) clearBuyMissionDraft(request.current.draftSource, request.current.ownerId);
       clearMissionRequest(request.current);
       resolveSubmission.current?.({ ok: true, data: { mission: view }, meta: { request_id: randomUuid() } });
       resolveSubmission.current = null;

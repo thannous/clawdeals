@@ -3,7 +3,7 @@ import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import type { BuyMissionInput } from "../webmcp/BuyMissionPanel";
 import { missionPayload } from "./missionClient";
 
-export type PendingMissionRequest = { fingerprint: string; key: string; input: BuyMissionInput; ownerId: string };
+export type PendingMissionRequest = { fingerprint: string; key: string; input: BuyMissionInput; ownerId: string; draftSource?: string };
 const LEGACY_KEY = "clawdeals:buy-mission-request:v1";
 const ownerKey = (ownerId: string) => `clawdeals:buy-mission-request:v2:${ownerId}`;
 // Creation's relative expiry checks do not apply to an already-sent request.
@@ -18,13 +18,10 @@ function parse(raw: string | null): PendingMissionRequest | null {
     const saved = JSON.parse(raw);
     const input = inputSchema.safeParse(saved?.input);
     if (!z.string().uuid().safeParse(saved?.ownerId).success || typeof saved?.key !== "string" || !saved.key ||
+      (saved.draftSource !== undefined && (typeof saved.draftSource !== "string" || !saved.draftSource)) ||
       !input.success || saved.fingerprint !== JSON.stringify(missionPayload(input.data))) return null;
     return saved;
   } catch { return null; }
-}
-
-export function legacyMissionRequestOwner(): string | null {
-  return parse(sessionStorage.getItem(LEGACY_KEY))?.ownerId || null;
 }
 
 export function readMissionRequest(ownerId: string): PendingMissionRequest | null {
@@ -38,8 +35,8 @@ export function readMissionRequest(ownerId: string): PendingMissionRequest | nul
   }
   if (saved) return saved;
   if (!ownedLegacy) return null;
-  // Keep the legacy copy until a confirmed result. Besides safe migration, its
-  // owner attributes a legacy unscoped form draft without showing it to B.
+  // Keep the legacy copy until a confirmed result. Its missing draftSource
+  // stays unknown; an unrelated current URL cannot supply that provenance.
   const serialized = JSON.stringify(ownedLegacy);
   sessionStorage.setItem(ownerKey(ownerId), serialized);
   if (sessionStorage.getItem(ownerKey(ownerId)) !== serialized) throw new Error("Recovery storage unavailable");
@@ -49,7 +46,7 @@ export function readMissionRequest(ownerId: string): PendingMissionRequest | nul
 export function writeMissionRequest(request: PendingMissionRequest): boolean {
   try {
     const prior = readMissionRequest(request.ownerId);
-    if (prior && (prior.key !== request.key || prior.fingerprint !== request.fingerprint)) return false;
+    if (prior && (prior.key !== request.key || prior.fingerprint !== request.fingerprint || prior.draftSource !== request.draftSource)) return false;
     const saved = JSON.stringify(request);
     if (!parse(saved)) return false;
     sessionStorage.setItem(ownerKey(request.ownerId), saved);

@@ -50,20 +50,20 @@ test("signup email in an independent tab returns to the original private mission
   expect(signupCallback).not.toBeNull();
   expect(new URL(signupCallback!).pathname).toBe("/auth/callback");
   expect(new URL(signupCallback!).searchParams.get("next")).toBe(missionPath);
-  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"));
+  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"));
   expect(originalDraft).toContain("Brouillon privé inscription");
   const width = await browser.evaluate(() => window.innerWidth);
   const surface = surfaceOf(width === 390 ? mobileEngine : desktopEngine)!;
   const emailTab = await surface.context().newPage();
   try {
     await emailTab.goto(signupCallback! + callbackHash());
-    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
+    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"))).toBeNull();
     const openWithoutDraft = emailTab.getByRole("link", { name: "Ouvrir la mission ici sans mon brouillon" });
     await openWithoutDraft.waitFor();
     expect(await openWithoutDraft.getAttribute("href")).toBe(missionPath);
     expect(await emailTab.getByTestId("auth-callback-mission-return").innerText()).toContain("Reviens dans l’onglet où tu préparais ta mission");
     expect(new URL(emailTab.url()).pathname).toBe("/fr/auth/callback");
-    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
+    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"))).toBeNull();
     expect(emailTab.url()).not.toContain("Brouillon");
     const folder = join(process.env.PARITY_OUTPUT || ".e2e", "handoff-screenshots");
     await mkdir(folder, { recursive: true });
@@ -75,7 +75,7 @@ test("signup email in an independent tab returns to the original private mission
     await emailTab.getByTestId("auth-callback-mission-return").waitFor({ state: "visible" });
     expect(bridgeCalls).toBe(1);
     await emailTab.screenshot({ path: join(folder, `signup-independent-tab-${width}.png`), fullPage: true });
-    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBe(originalDraft);
+    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"))).toBe(originalDraft);
     await screen.getByTestId("auth-login-resume-mission").tap();
     await expect(browser).toHaveURL(missionPath);
     await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("Brouillon privé inscription : panier et cadre bas");

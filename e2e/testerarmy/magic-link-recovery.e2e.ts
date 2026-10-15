@@ -37,7 +37,7 @@ test("a magic link in a separate tab preserves the private draft in its original
   await screen.getByTestId("auth-login-submit").click();
   await expect(screen.getByTestId("auth-login-resume-mission")).toBeVisible();
   expect(sends).toEqual([{ email: "synthetic-owner@example.test", next: missionPath }]);
-  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"));
+  const originalDraft = await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"));
   expect(originalDraft).toContain("Mon brouillon privé");
 
   // The engine's browser fixture exposes one active tab. Its supported surface
@@ -48,7 +48,7 @@ test("a magic link in a separate tab preserves the private draft in its original
   try {
     const emailUrl = `${origin}/fr/auth/verify?session_id=synthetic-session&token=synthetic-token&next=${encodeURIComponent(sends[0].next)}`;
     await emailTab.goto(emailUrl);
-    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
+    expect(await emailTab.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"))).toBeNull();
     await emailTab.getByTestId("auth-verify-resend").click();
     await expect.poll(() => sends.length).toBe(2);
     expect(sends[1]).toEqual(sends[0]);
@@ -60,9 +60,9 @@ test("a magic link in a separate tab preserves the private draft in its original
     const folder = join(process.env.PARITY_OUTPUT || ".e2e", "handoff-screenshots");
     await mkdir(folder, { recursive: true });
     await emailTab.screenshot({ path: join(folder, `magic-link-independent-tab-${width}.png`), fullPage: true });
-    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBeNull();
+    expect(await emailTab.evaluate(() => localStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"))).toBeNull();
     expect(emailTab.url()).not.toContain("brouillon");
-    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous"))).toBe(originalDraft);
+    expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D"))).toBe(originalDraft);
     await screen.getByTestId("auth-login-resume-mission").click();
     await expect(browser).toHaveURL(missionPath);
     await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("Mon brouillon privé, cadre bas et panier");

@@ -42,7 +42,7 @@ for (const legacy of [false, true]) {
       const scoped = `clawdeals:buy-mission-request:v2:${id}`;
       const saved = sessionStorage.getItem(scoped);
       if (saved) { sessionStorage.setItem("clawdeals:buy-mission-request:v1", saved); sessionStorage.removeItem(scoped); }
-      const draftKey = `clawdeals:buy-mission-draft:v2:${id}`;
+      const draftKey = `clawdeals:buy-mission-draft:v3:${id}:${encodeURIComponent('search:["Vélo","80"]')}`;
       const draft = JSON.parse(sessionStorage.getItem(draftKey) || "null");
       if (draft) { delete draft.ownerId; sessionStorage.setItem("clawdeals:buy-mission-draft:v1", JSON.stringify(draft)); sessionStorage.removeItem(draftKey); }
       return null;
@@ -158,7 +158,10 @@ for (const mode of ["expired", "migration-write-fails", "confirmed-remove-fails"
       await expect(screen.getByRole("button", "Modifier")).toBeEnabled();
       expect(await browser.evaluate(() => sessionStorage.getItem("clawdeals:buy-mission-request:v1"))).toBeNull();
       await screen.getByRole("button", "Modifier").click();
-      await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("Privé legacy A");
+      // An unmarked v1 draft is quarantined even beside a valid request;
+      // it may belong to another account. Its raw bytes remain unclaimed.
+      await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("");
+      expect(await browser.evaluate(() => JSON.parse(sessionStorage.getItem("clawdeals:buy-mission-draft:v1")!).ownerId ?? null)).toBeNull();
       owner = ownerB;
       await browser.reload();
       await expect(screen.getByRole("textbox", "Exigences minimales")).toHaveValue("");

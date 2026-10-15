@@ -45,8 +45,13 @@ Le POST transmet aussi `X-Expected-Owner-Id`, issu du compte qui a confirmé le
 brief. Le serveur le compare à l’identité authentifiée de cette même requête
 avant toute création : une bascule de cookie après la sonde est refusée avec
 `403 OWNER_SESSION_CHANGED`. Cet identifiant n’est pas un moyen d’authentification.
-Les brouillons et les tentatives sont isolés par compte dans le stockage de
-l’onglet ; un brouillon anonyme dispose de son propre emplacement. Un second
+Les brouillons sont isolés par compte et par source de mission dans le stockage
+de l’onglet ; les brouillons anonymes disposent des mêmes emplacements par source.
+La réussite d’une création efface uniquement le brouillon de cette tentative.
+Les anciens brouillons v1 sans propriétaire explicite restent en quarantaine :
+une requête v1 voisine ne suffit pas à leur attribuer un compte. Leur contenu
+n’est ni affiché à un autre compte, ni réattribué, ni effacé automatiquement.
+Les tentatives déjà envoyées restent isolées par compte. Un second
 compte peut créer sa mission sans écraser la tentative incertaine du premier.
 Le corps et la clé d’une tentative au résultat inconnu restent inchangés au
 retour sur le compte initial, même si sa date d’expiration est passée : la reprise

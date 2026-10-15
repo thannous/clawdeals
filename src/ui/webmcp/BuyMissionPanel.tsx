@@ -10,7 +10,7 @@ import type { StableToolResult } from "../../webmcp/types";
 import { randomUuid } from "../../webmcp/utils";
 import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import type { z } from "zod";
-import { clearBuyMissionDraft, readBuyMissionDraft, saveBuyMissionDraft } from "./buyMissionDraft";
+import { readBuyMissionDraft, saveBuyMissionDraft } from "./buyMissionDraft";
 
 export type BuyMissionInput = z.infer<typeof buyMissionZodSchema>;
 
@@ -519,7 +519,6 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
 
     // Observe completion for both human and agent submits, including rejected executions.
     void execution.then((result) => {
-      if (result.ok && draftSource) clearBuyMissionDraft(draftOwnerId);
       setResultMessage(describeMissionResult(result, formatCeiling(hardBudgetMax, marketCode, locale), locale));
       setSubmitting(false);
     });

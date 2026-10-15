@@ -85,13 +85,13 @@ describe("Magic link mission return", () => {
       ...(source === "query" ? { next: missionPath } : {}) };
     sessionStorage.setItem(nextKey, source === "stored" ? missionPath : "/settings/account");
     saveBuyMissionDraft(missionDraftSourceFromUrl(missionPath)!, savedDraft);
-    const rawDraft = sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous");
+    const rawDraft = sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D");
     mocks.waitForOwnerSessionReady.mockResolvedValue(true);
     render(withMessages(<VerifyPage />));
     fireEvent.click(screen.getByTestId("auth-verify-submit"));
     await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(missionPath, undefined, { locale: false }));
     expect(sessionStorage.getItem(nextKey)).toBeNull();
-    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous")).toBe(rawDraft);
+    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v3:anonymous:search%3A%5B%22velo%22%2C%2283.25%22%5D")).toBe(rawDraft);
   });
 
   it("rejects an external destination even when a previous stored destination exists", async () => {
@@ -113,7 +113,7 @@ describe("Magic link mission return", () => {
     expect(link.getAttribute("href")).toBe(missionPath);
     expect(screen.getByText(/Return to the tab where you prepared your mission/)).toBeTruthy();
     expect(mocks.replace).not.toHaveBeenCalled();
-    expect(sessionStorage.getItem("clawdeals:buy-mission-draft:v2:anonymous")).toEqual(draft === "missing" ? null : expect.any(String));
+    expect(sessionStorage.getItem(`clawdeals:buy-mission-draft:v3:anonymous:${encodeURIComponent(draft === "missing" ? missionDraftSourceFromUrl(missionPath)! : 'search:["different",""]')}`)).toEqual(draft === "missing" ? null : expect.any(String));
   });
 
   it.each(["query", "stored"])("keeps the %s destination when requesting a replacement email", async (source) => {
