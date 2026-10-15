@@ -2149,6 +2149,7 @@
     "forget": "Oublier",
     "testApi": "Tester l'API",
     "testing": "Test…",
+    "apiKeyInputLabel": "Clé API",
     "apiKeyPlaceholder": "cd_live_...",
     "connected": "Connecté",
     "disconnected": "Déconnecté",

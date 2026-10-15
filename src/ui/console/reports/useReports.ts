@@ -128,6 +128,7 @@ export function useReports() {
 
   const setStatus = useCallback(
     (val: string) => {
+      if (val === status) return;
       setStatusVal(val);
       setItems([]);
       setNextCursor(null);
@@ -135,11 +136,12 @@ export function useReports() {
       syncUrl(val, entityType, reasonCode, reporterOwnerId);
       trackReportsFilterChanged({ status: val });
     },
-    [entityType, reasonCode, reporterOwnerId, syncUrl]
+    [status, entityType, reasonCode, reporterOwnerId, syncUrl]
   );
 
   const setEntityType = useCallback(
     (val: string | null) => {
+      if (val === entityType) return;
       setEntityTypeState(val);
       setItems([]);
       setNextCursor(null);
@@ -147,11 +149,12 @@ export function useReports() {
       syncUrl(status, val, reasonCode, reporterOwnerId);
       trackReportsFilterChanged({ entityType: val });
     },
-    [status, reasonCode, reporterOwnerId, syncUrl]
+    [status, entityType, reasonCode, reporterOwnerId, syncUrl]
   );
 
   const setReasonCode = useCallback(
     (val: string | null) => {
+      if (val === reasonCode) return;
       setReasonCodeState(val);
       setItems([]);
       setNextCursor(null);
@@ -159,11 +162,12 @@ export function useReports() {
       syncUrl(status, entityType, val, reporterOwnerId);
       trackReportsFilterChanged({ reasonCode: val });
     },
-    [status, entityType, reporterOwnerId, syncUrl]
+    [status, entityType, reasonCode, reporterOwnerId, syncUrl]
   );
 
   const setReporterOwnerId = useCallback(
     (val: string) => {
+      if (val === reporterOwnerId) return;
       setReporterOwnerIdState(val);
       setItems([]);
       setNextCursor(null);
@@ -171,7 +175,7 @@ export function useReports() {
       syncUrl(status, entityType, reasonCode, val);
       trackReportsFilterChanged({ reporterOwnerId: val });
     },
-    [status, entityType, reasonCode, syncUrl]
+    [status, entityType, reasonCode, reporterOwnerId, syncUrl]
   );
 
   const toggleSelection = useCallback((id: string) => {

@@ -25,6 +25,35 @@ The [15 October dogfooding report](dogfooding-2026-10-15.md) records the current
 catalogue, mission validation, authentication, profile and agent-setup regressions,
 their desktop/mobile results, real-service boundaries and exact replay commands.
 
+## Explore isolated sessions with 0.21
+
+`npm run testerarmy:dogfood` uses the new `openHost` API from `e2e/runner`.
+It attaches to a running local app, reuses one mobile browser host, and opens
+two fresh sequential sessions in French and Spanish. It exercises the real
+catalogue, filters, an empty search and filter reset, and verifies that a
+synthetic cookie/localStorage marker survives reload in the first session but
+does not leak into the second. No API mocks, model calls or account writes.
+
+```bash
+E2E_BASE_URL=http://localhost:4327 \
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/host-dogfood-UNIQUE \
+  mise exec node@24.19.0 -- npm run testerarmy:dogfood
+```
+
+The host is bounded to three minutes, with one minute per session. Every session
+and host is closed even after failure; cleanup errors fail the command. The
+separate `host-result.json` records source revision and harness hash, runtime,
+steps, capture hashes and SDK trace paths. Its source identity is not a hash of
+every app input. SDK files remain untouched in the `sdk/` subdirectory.
+This exploratory receipt is not a CLI `report.json` and cannot be used as a
+release qualification. Reproduce confirmed defects through `test:testerarmy`
+with exact assertions and the usual source receipts.
+
+The 0.21 CLI also supports `--max-duration` to bound a qualification campaign.
+Markdown traces and visual screenshot comparisons were introduced before 0.21;
+they are retained, not claimed as new features of this upgrade.
+
 ## Run the public journeys
 
 Use the repository's Node 24.19.0/npm versions:

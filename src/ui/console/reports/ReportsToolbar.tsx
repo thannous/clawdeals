@@ -34,6 +34,7 @@ export default function ReportsToolbar({
           <button
             key={s}
             onClick={() => onStatusChange(s)}
+            aria-pressed={status === s}
             className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               status === s
                 ? "border-primary/40 text-primary bg-primary/10"
@@ -50,6 +51,7 @@ export default function ReportsToolbar({
         <span className="text-xs font-mono text-subtle uppercase mr-1">Entity:</span>
         <button
           onClick={() => onEntityTypeChange(null)}
+          aria-pressed={entityType === null}
           className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             entityType === null
               ? "border-secondary/40 text-secondary bg-secondary/10"
@@ -62,6 +64,7 @@ export default function ReportsToolbar({
           <button
             key={t}
             onClick={() => onEntityTypeChange(entityType === t ? null : t)}
+            aria-pressed={entityType === t}
             className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               entityType === t
                 ? "border-secondary/40 text-secondary bg-secondary/10"
@@ -78,6 +81,7 @@ export default function ReportsToolbar({
         <span className="text-xs font-mono text-subtle uppercase mr-1">Reason:</span>
         <button
           onClick={() => onReasonCodeChange(null)}
+          aria-pressed={reasonCode === null}
           className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
             reasonCode === null
               ? "border-secondary/40 text-secondary bg-secondary/10"
@@ -90,6 +94,7 @@ export default function ReportsToolbar({
           <button
             key={r}
             onClick={() => onReasonCodeChange(reasonCode === r ? null : r)}
+            aria-pressed={reasonCode === r}
             className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               reasonCode === r
                 ? "border-secondary/40 text-secondary bg-secondary/10"
