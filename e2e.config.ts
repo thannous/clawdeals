@@ -28,6 +28,10 @@ const historical = process.env.TESTERARMY_HISTORICAL === "1";
 const productionPublic = process.env.TESTERARMY_PRODUCTION_PUBLIC === "1";
 const missionLive = process.env.TESTERARMY_MISSION_LIVE === "1";
 const commerceLive = process.env.TESTERARMY_COMMERCE_LIVE === "1";
+const commerceProduction = process.env.TESTERARMY_COMMERCE_PRODUCTION === "1";
+if (commerceProduction && (!commerceLive || process.env.E2E_BASE_URL !== "https://app.clawdeals.com")) {
+  throw new Error("Connected production commerce requires its live selection and E2E_BASE_URL=https://app.clawdeals.com exactly.");
+}
 if (commerceLive && (aiEnabled || historical || productionPublic || missionLive)) {
   throw new Error("Live commerce selection is exclusive of other suites.");
 }
@@ -112,8 +116,8 @@ export default {
     : commerceLive ? "e2e/testerarmy/commerce-live/**/*.e2e.ts"
     : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts"],
   targets: [
-    { name: "desktop", engine: productionPublic ? web({ viewport: { width: 1280, height: 720 }, headers: {} }) : desktopEngine, app },
-    { name: "mobile", engine: productionPublic ? web({ viewport: { width: 390, height: 844 }, headers: {} }) : mobileEngine, app }
+    { name: "desktop", engine: productionPublic || commerceProduction ? web({ viewport: { width: 1280, height: 720 }, headers: {} }) : desktopEngine, app },
+    { name: "mobile", engine: productionPublic || commerceProduction ? web({ viewport: { width: 390, height: 844 }, headers: {} }) : mobileEngine, app }
   ],
   workers: 1,
   ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),

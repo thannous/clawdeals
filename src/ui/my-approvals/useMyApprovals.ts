@@ -4,6 +4,7 @@ import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 
 const PAGE_SIZE = 50;
 const DEFAULT_STATE = "PENDING";
+const ALL_STATES = "ALL";
 
 function resolveQueryParam(value: unknown) {
   if (Array.isArray(value)) return value[0];
@@ -14,16 +15,10 @@ export function useMyApprovals() {
   const router = useRouter();
   const routerReady = router.isReady ?? true;
 
-  const [state, setStateVal] = useState(() => {
-    if (!routerReady) return DEFAULT_STATE;
-    return resolveQueryParam(router.query?.state) || DEFAULT_STATE;
-  });
-  const [agentId, setAgentIdVal] = useState<string | null>(() => {
-    if (!routerReady) return null;
-    return resolveQueryParam(router.query?.agent_id) || null;
-  });
-
-  const [isInitializedFromQuery, setIsInitializedFromQuery] = useState(() => routerReady);
+  // The URL owns the filters so reload and browser history restore the same
+  // view. An absent state starts with pending; ALL explicitly selects history.
+  const state = resolveQueryParam(router.query?.state) || DEFAULT_STATE;
+  const agentId = resolveQueryParam(router.query?.agent_id) || null;
 
   const [items, setItems] = useState<any[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -33,19 +28,12 @@ export function useMyApprovals() {
 
   const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    if (!routerReady || isInitializedFromQuery) return;
-    setStateVal(resolveQueryParam(router.query?.state) || DEFAULT_STATE);
-    setAgentIdVal(resolveQueryParam(router.query?.agent_id) || null);
-    setIsInitializedFromQuery(true);
-  }, [routerReady, isInitializedFromQuery, router.query]);
-
   const syncUrl = useCallback(
     (st: string, aid: string | null) => {
       const query: Record<string, string> = {};
       if (st && st !== DEFAULT_STATE) query.state = st;
       if (aid) query.agent_id = aid;
-      router.replace({ pathname: router.pathname, query }, undefined, { shallow: true });
+      void router.replace({ pathname: router.pathname, query }, undefined, { shallow: true });
     },
     [router]
   );
@@ -67,7 +55,7 @@ export function useMyApprovals() {
 
     const searchParams = new URLSearchParams();
     searchParams.set("limit", String(PAGE_SIZE));
-    if (params.state) searchParams.set("state", params.state);
+    if (params.state && params.state !== ALL_STATES) searchParams.set("state", params.state);
     if (params.agentId) searchParams.set("agent_id", params.agentId);
     if (params.cursor) searchParams.set("cursor", params.cursor);
 
@@ -86,6 +74,7 @@ export function useMyApprovals() {
       }
 
       const data = await resp.json();
+      if (controller.signal.aborted) return;
       const approvals = data?.data?.approvals || [];
       const cursor = data?.data?.next_cursor || null;
 
@@ -106,7 +95,7 @@ export function useMyApprovals() {
   }, []);
 
   useEffect(() => {
-    if (!routerReady || !isInitializedFromQuery) return;
+    if (!routerReady) return;
     if (sessionGate === "pending") return;
     if (sessionGate === "anonymous") {
       setAuthRequired(true);
@@ -117,7 +106,7 @@ export function useMyApprovals() {
       clearTimeout(timer);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [routerReady, isInitializedFromQuery, sessionGate, state, agentId, fetchItems]);
+  }, [routerReady, sessionGate, state, agentId, fetchItems]);
 
   useEffect(() => {
     if (!authRequired) return;
@@ -128,23 +117,23 @@ export function useMyApprovals() {
 
   const setState = useCallback(
     (val: string | null) => {
-      const resolved = val || DEFAULT_STATE;
-      setStateVal(resolved);
+      const resolved = val || ALL_STATES;
+      if (resolved === state) return;
       setItems([]);
       setNextCursor(null);
       syncUrl(resolved, agentId);
     },
-    [syncUrl, agentId]
+    [syncUrl, agentId, state]
   );
 
   const setAgentId = useCallback(
     (val: string | null) => {
-      setAgentIdVal(val);
+      if (val === agentId) return;
       setItems([]);
       setNextCursor(null);
       syncUrl(state, val);
     },
-    [syncUrl, state]
+    [syncUrl, state, agentId]
   );
 
   const loadMore = useCallback(() => {
@@ -153,9 +142,9 @@ export function useMyApprovals() {
   }, [nextCursor, loadMoreState, state, agentId, fetchItems]);
 
   const refetch = useCallback(() => {
-    if (!routerReady || !isInitializedFromQuery) return;
+    if (!routerReady) return;
     fetchItems({ state, agentId });
-  }, [routerReady, isInitializedFromQuery, state, agentId, fetchItems]);
+  }, [routerReady, state, agentId, fetchItems]);
 
   return {
     items,

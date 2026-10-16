@@ -109,7 +109,7 @@ export async function handler(req: any, _res: any, ctx: any) {
       }, { "Cache-Control": "no-store" });
     }
 
-    const result = await listOffersByAgent({ agentIds, status, limit, cursor });
+    const result = await listOffersByAgent({ agentIds, ownerId, status, limit, cursor });
 
     return jsonResponse(200, {
       data: {

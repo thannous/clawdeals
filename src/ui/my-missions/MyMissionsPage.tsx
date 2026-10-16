@@ -25,7 +25,7 @@ export default function MyMissionsPage() {
           <div data-testid="owner-missions" className="space-y-3">
             {!data?.items.length ? <div className="border border-border bg-surface p-6 space-y-2"><h2 className="font-semibold text-text">{t("emptyTitle")}</h2><p className="text-sm text-muted">{t("emptyHint")}</p></div> : data.items.map((item) => (
               <article key={item.watchlist_id} className="border border-border bg-surface p-5 space-y-2">
-                <div className="flex flex-wrap justify-between gap-3"><Link href={`/my/missions/${item.watchlist_id}`} className="font-semibold text-lg text-text hover:text-primary underline underline-offset-4">{item.criteria.query}</Link><span className="text-sm text-primary">{t(`status.${missionStatus(item)}`)}</span></div>
+                <div className="flex flex-wrap justify-between gap-3"><Link href={`/my/missions/${item.watchlist_id}`} className="min-w-0 max-w-full font-semibold text-lg text-text hover:text-primary underline underline-offset-4 [overflow-wrap:anywhere]">{item.criteria.query}</Link><span className="text-sm text-primary">{t(`status.${missionStatus(item)}`)}</span></div>
                 <p className="text-sm text-muted">{item.criteria.mission.location.label || t("selectedArea")} · {item.criteria.mission.location.radius_km} km · {t("budget", { amount: new Intl.NumberFormat(locale, { style: "currency", currency: item.criteria.mission.currency }).format(item.criteria.mission.hard_budget_max) })}</p>
               </article>
             ))}

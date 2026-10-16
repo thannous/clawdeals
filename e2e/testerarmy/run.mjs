@@ -146,13 +146,26 @@ export async function execute({ historical = false } = {}) {
           evidenceLayout,
           command: [
             process.execPath,
-            historical
+            process.env.TESTERARMY_COMMERCE_PRODUCTION === "1"
+              ? "e2e/testerarmy/run-commerce-production.mjs"
+              : historical
               ? "e2e/testerarmy/run-historical.mjs"
               : "e2e/testerarmy/run.mjs",
             command,
             ...args,
           ],
           output,
+          target: {
+            appOrigin: process.env.E2E_BASE_URL ? new URL(process.env.E2E_BASE_URL).origin : "local managed app",
+            commerceProduction: process.env.TESTERARMY_COMMERCE_PRODUCTION === "1",
+            redisFixture: process.env.TESTERARMY_REDIS_FIXTURE || "configured service; not independently qualified",
+          },
+          ...(process.env.TESTERARMY_COMMERCE_PRODUCTION === "1" ? {
+            rerunEnvironment: {
+              CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS: "gztfmpuqtpvncdcuhqxy",
+              PARITY_OUTPUT: "choose a fresh .e2e directory",
+            },
+          } : {}),
           node: process.version,
           sourceRevision: git(["rev-parse", "HEAD"]),
           sourceDirty: Boolean(

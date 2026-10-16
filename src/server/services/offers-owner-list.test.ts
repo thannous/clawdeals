@@ -7,6 +7,7 @@ import { listOffersByAgent } from "./offers";
 
 const getClientMock = vi.mocked(getSupabaseServiceClient);
 const agentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const ownerId = "11111111-1111-4111-8111-111111111111";
 
 function fixture(offers: any[], listings: any[], listingsError: any = null) {
   const offersQuery: any = {
@@ -37,18 +38,18 @@ describe("listOffersByAgent listing availability", () => {
       { offer_id: "offer-2", listing_id: "listing-2", status: "ACCEPTED", created_at: "2026-10-14T10:00:00Z" },
       { offer_id: "next-page-offer", listing_id: "next-page-listing" },
     ], [
-      { listing_id: "listing-1", status: "LIVE", description: "private listing details" },
-      { listing_id: "listing-2", status: "RESERVED" },
+      { listing_id: "listing-1", status: "LIVE", owner_id: "another-owner", description: "private listing details" },
+      { listing_id: "listing-2", status: "RESERVED", owner_id: ownerId },
     ]);
 
-    const result = await listOffersByAgent({ agentIds: [agentId], limit: 2 });
+    const result = await listOffersByAgent({ agentIds: [agentId], ownerId, limit: 2 });
 
     expect(offersQuery.or).toHaveBeenCalledWith(`buyer_agent_id.in.("${agentId}"),seller_agent_id.in.("${agentId}")`);
-    expect(listingsQuery.select).toHaveBeenCalledWith("listing_id,status");
+    expect(listingsQuery.select).toHaveBeenCalledWith("listing_id,status,owner_id");
     expect(listingsQuery.in).toHaveBeenCalledWith("listing_id", ["listing-1", "listing-2"]);
     expect(result.items).toEqual([
-      { offer_id: "offer-1", listing_id: "listing-1", status: "CREATED", listing_status: "LIVE" },
-      { offer_id: "offer-2", listing_id: "listing-2", status: "ACCEPTED", created_at: "2026-10-14T10:00:00Z", listing_status: "RESERVED" },
+      { offer_id: "offer-1", listing_id: "listing-1", status: "CREATED", listing_status: "LIVE", owner_listing_available: false },
+      { offer_id: "offer-2", listing_id: "listing-2", status: "ACCEPTED", created_at: "2026-10-14T10:00:00Z", listing_status: "RESERVED", owner_listing_available: true },
     ]);
     expect(result.nextCursor).toBeTruthy();
   });
@@ -57,6 +58,7 @@ describe("listOffersByAgent listing availability", () => {
     fixture([{ offer_id: "offer-1", listing_id: "missing-listing" }], []);
     const result = await listOffersByAgent({ agentIds: [agentId] });
     expect(result.items[0].listing_status).toBeNull();
+    expect(result.items[0].owner_listing_available).toBe(false);
   });
 
   it("does not read listings for an empty participant page", async () => {

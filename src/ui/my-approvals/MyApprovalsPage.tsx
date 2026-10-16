@@ -15,6 +15,7 @@ import { formatDate } from "../console/shared/formatDate";
 import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
 import { useOwnerAgents } from "../shared/useOwnerAgents";
+import { approvalActionLabelKey, unrecognizedApprovalAction } from "./approvalActionLabel";
 
 export default function MyApprovalsPage() {
   const t = useTranslations("myApprovals");
@@ -33,31 +34,41 @@ export default function MyApprovalsPage() {
     {
       key: "action_type",
       label: t("list.action"),
-      cell: (row: any) => <span className="text-sm font-mono">{row.action_type || "-"}</span>,
+      cell: (row: any) => {
+        const rawType = unrecognizedApprovalAction(row.action_type);
+        return <span className="block min-w-24 max-w-48 whitespace-normal break-words text-sm font-medium">
+          {t(approvalActionLabelKey(row.action_type))}
+          {rawType ? <code className="mt-1 block break-all text-xs text-subtle">{rawType}</code> : null}
+        </span>;
+      },
     },
     {
       key: "action_ref_id",
       label: t("list.reference"),
+      className: "hidden sm:table-cell",
       cell: (row: any) => row.action_ref_id ? <TruncatedId id={row.action_ref_id} /> : <span className="text-subtle">-</span>,
     },
     {
       key: "state",
       label: t("list.state"),
-      cell: (row: any) => <ConsoleStatusBadge value={row.state} label={t(`toolbar.state_${row.state}`)} variant="approval" />,
+      cell: (row: any) => <div className="max-w-24 whitespace-normal break-words"><ConsoleStatusBadge value={row.state} label={t(`toolbar.state_${row.state}`)} variant="approval" /></div>,
     },
     {
       key: "agent",
       label: t("list.agent"),
-      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.created_by_agent_id ? (agentMap[row.created_by_agent_id] || "\u2014") : "-"}</span>,
+      className: "hidden md:table-cell",
+      cell: (row: any) => <span className="block max-w-44 whitespace-normal break-words text-xs font-mono text-subtle">{row.created_by_agent_id ? (agentMap[row.created_by_agent_id] || "\u2014") : "-"}</span>,
     },
     {
       key: "created_at",
       label: t("list.created"),
+      className: "hidden lg:table-cell",
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
     },
     {
       key: "resolved_at",
       label: t("list.decided"),
+      className: "hidden xl:table-cell",
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.resolved_at ? formatDate(row.resolved_at) : "-"}</span>,
     },
     {
@@ -66,7 +77,7 @@ export default function MyApprovalsPage() {
       cell: (row: any) => {
         if (row.state !== "PENDING") return null;
         return (
-          <span className="flex items-center gap-1.5">
+          <span className="flex max-w-44 flex-wrap items-center gap-1.5">
             <button
               type="button"
               disabled={submitState === "loading" || Boolean(pending)}

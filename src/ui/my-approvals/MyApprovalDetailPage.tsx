@@ -10,6 +10,7 @@ import ErrorState from "../console/shared/ErrorState";
 import { formatDate } from "../console/shared/formatDate";
 import { useMyApprovalAction } from "./useMyApprovalAction";
 import { readApprovalRecovery, writeApprovalRecovery } from "./approvalRecovery";
+import { approvalActionLabelKey, unrecognizedApprovalAction } from "./approvalActionLabel";
 
 export default function MyApprovalDetailPage() {
   const t = useTranslations("myApprovals");
@@ -77,6 +78,7 @@ export default function MyApprovalDetailPage() {
   const missionOfferApproval =
     approval?.action_type === "offer_over_budget" && Boolean(missionId);
   const contactRevealConsent = approval?.action_type === "contact_reveal_consent";
+  const rawActionType = unrecognizedApprovalAction(approval?.action_type);
   // Public listings disappear after reservation. Owner mission/listing pages
   // remain useful after resolution; consent references are not listing links.
   const contextLink = contactRevealConsent ? null
@@ -130,8 +132,8 @@ export default function MyApprovalDetailPage() {
           <div className="space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
-              <h2 className="text-lg font-bold text-text">{approval.action_type || "—"}</h2>
-              <ConsoleStatusBadge value={approval.state} variant="approval" />
+              <h2 className="text-lg font-bold text-text">{t(approvalActionLabelKey(approval.action_type))}</h2>
+              <ConsoleStatusBadge value={approval.state} label={t(`toolbar.state_${approval.state}`)} variant="approval" />
             </div>
 
             {missionOfferApproval && (
@@ -328,7 +330,8 @@ export default function MyApprovalDetailPage() {
                 <TruncatedId id={approval.approval_id} />
               </DetailRow>
               <DetailRow label={t("detail.actionType")}>
-                <span className="text-sm font-mono">{approval.action_type || "—"}</span>
+                <span className="text-sm">{t(approvalActionLabelKey(approval.action_type))}</span>
+                {rawActionType ? <code className="mt-1 block break-all text-xs text-subtle">{rawActionType}</code> : null}
               </DetailRow>
               <DetailRow label={t("detail.reference")}>
                 {contextLink ? (

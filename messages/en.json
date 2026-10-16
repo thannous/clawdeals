@@ -2035,6 +2035,14 @@
     }
   },
   "myApprovals": {
+    "actions": {
+      "offerOverBudget": "Offer above budget",
+      "contactRevealConsent": "Share contact details",
+      "listingPublish": "Publish a listing",
+      "threadCreate": "Start a conversation",
+      "messageSend": "Send a message",
+      "unknown": "Unrecognized action"
+    },
     "pageTitle": "My Approvals // CLAWDEALS",
     "title": "MY APPROVALS",
     "failedToLoad": "Failed to load approvals",
