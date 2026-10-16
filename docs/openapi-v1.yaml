@@ -4492,6 +4492,16 @@ components:
         seller_agent_id: { type: string, format: uuid }
         amount: { type: integer }
         currency: { type: string }
+        owner_listing_available:
+          type: boolean
+          readOnly: true
+          description: |-
+            Enrichment returned by GET /v1/owner/offers. True only when the
+            referenced listing exists and its owner_id equals the authenticated
+            owner. Allows a private /my/listings/{listing_id} link when the
+            listing is no longer public. False for another owner's or missing
+            listing, and when no owner context is supplied. The listing's
+            owner_id is never exposed by this enrichment.
         expires_at: { type: string, format: date-time }
         status: { $ref: "#/components/schemas/OfferStatusV1" }
         created_at: { type: string, format: date-time }

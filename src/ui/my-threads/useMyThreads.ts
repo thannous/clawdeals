@@ -126,22 +126,24 @@ export function useMyThreads() {
 
   const setStatus = useCallback(
     (val: string | null) => {
+      if (val === status) return;
       setStatusVal(val);
       setItems([]);
       setNextCursor(null);
       syncUrl(val, agentId);
     },
-    [syncUrl, agentId]
+    [syncUrl, agentId, status]
   );
 
   const setAgentId = useCallback(
     (val: string | null) => {
+      if (val === agentId) return;
       setAgentIdVal(val);
       setItems([]);
       setNextCursor(null);
       syncUrl(status, val);
     },
-    [syncUrl, status]
+    [syncUrl, status, agentId]
   );
 
   const loadMore = useCallback(() => {

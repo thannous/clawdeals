@@ -125,6 +125,40 @@ untouched. Local Redis emulation qualifies the application contract, not a hoste
 Upstash deployment. A cleanup failure remains distinct from the primary journey
 failure and must be resolved before accepting the campaign.
 
+### Connected buyer and seller journeys on the deployed app
+
+Use the dedicated command to exercise the actual Vercel application, Supabase
+Auth/Postgres and remote Redis with the same isolated commerce fixture:
+
+```bash
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+PARITY_OUTPUT=.e2e/validation/commerce-production-UNIQUE \
+  mise exec node@24.19.0 -- npm run test:commerce:production
+```
+
+For a pilot, append `-- --target desktop` and optionally the exact spec path.
+The command accepts only `https://app.clawdeals.com`; the existing disposable
+ClawDeals opt-in remains mandatory. It resolves remote Redis credentials from
+the configured `UPSTASH_*` pair, or the existing `KV_REST_API_*` aliases when
+local development uses a Redis mock. This selection stays in process memory;
+local environment files are not rewritten. Missing remote credentials and hosted
+Vercel execution are refused.
+
+The production mode uses `TESTERARMY_COMMERCE_PRODUCTION=1`, exclusively with
+the commerce selection. Browser reads can follow the canonical marketing host;
+authenticated mutations remain restricted to the fixture's application entities.
+The fixture retains the build/SHA identity and verifies the owned Redis cache
+against an authenticated deployed request. The normal password-login lifecycle
+and cookie-authenticated connected journeys cover different entry paths. The
+cookie helper exchanges a real Supabase token through the real owner-session
+bridge; it introduces no authentication shortcut into the app.
+
+Network traces and video remain off. Cookie-authenticated journeys can retain
+screenshots of synthetic accounts without displaying passwords. Command and
+fixture receipts stay private and distinguish deployed execution from a local
+replay. Only rows, sessions, keys and streams allocated to the fixture are cleaned
+up; a fixture graph involving another party stops cascading cleanup.
+
 ## Verify the real first purchase mission
 
 Use `npm run test:mission` for the real authenticated first-mission journeys.

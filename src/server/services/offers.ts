@@ -264,7 +264,7 @@ export async function cancelOffer({ offerId, actorAgentId }: any) {
   return data;
 }
 
-export async function listOffersByAgent({ agentIds, status, limit = 50, cursor }: any = {}) {
+export async function listOffersByAgent({ agentIds, ownerId, status, limit = 50, cursor }: any = {}) {
   const ids = Array.isArray(agentIds) ? agentIds.filter((id) => typeof id === "string" && id.trim()) : [];
   if (ids.length === 0) return { items: [], nextCursor: null };
 
@@ -304,22 +304,28 @@ export async function listOffersByAgent({ agentIds, status, limit = 50, cursor }
   const hasMore = rows.length > cappedLimit;
   const pageItems = hasMore ? rows.slice(0, cappedLimit) : rows;
   // Only inspect listings referenced by the already participant-scoped page.
-  // A nonpublic or missing listing keeps its reference without a public link.
+  // Only the listing's exact owner can open its private detail. Agent ownership
+  // alone is insufficient, and listing owner IDs never leave this lookup.
   const listingIds = Array.from(new Set<string>(pageItems.map((row: any) => row.listing_id).filter(Boolean)));
   const listingStatuses = new Map<string, string>();
+  const ownedListingIds = new Set<string>();
   if (listingIds.length > 0) {
     const { data: listings, error: listingsError } = await client
       .from("listings")
-      .select("listing_id,status")
+      .select("listing_id,status,owner_id")
       .in("listing_id", listingIds);
     if (listingsError) mapError(listingsError);
     for (const listing of listings || []) {
       listingStatuses.set(listing.listing_id, listing.status);
+      if (typeof ownerId === "string" && ownerId && listing.owner_id === ownerId) {
+        ownedListingIds.add(listing.listing_id);
+      }
     }
   }
   const items = pageItems.map((row: any) => ({
     ...row,
     listing_status: listingStatuses.get(row.listing_id) || null,
+    owner_listing_available: ownedListingIds.has(row.listing_id),
   }));
 
   const nextCursor = hasMore && items.length > 0

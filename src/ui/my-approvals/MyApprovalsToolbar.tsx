@@ -25,8 +25,9 @@ export default function MyApprovalsToolbar({ state, onStateChange, agents, selec
         <span className="text-xs font-mono text-subtle uppercase mr-1">{t("toolbar.stateLabel")}</span>
         <button
           onClick={() => onStateChange(null)}
+          aria-pressed={state === "ALL"}
           className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
-            !state
+            state === "ALL"
               ? "border-primary/40 text-primary bg-primary/10"
               : "border-border text-subtle hover:border-border-strong"
           }`}
@@ -36,7 +37,8 @@ export default function MyApprovalsToolbar({ state, onStateChange, agents, selec
         {STATE_OPTIONS.map((s) => (
           <button
             key={s}
-            onClick={() => onStateChange(state === s ? null : s)}
+            onClick={() => onStateChange(s)}
+            aria-pressed={state === s}
             className={`px-2 py-0.5 text-xs font-mono font-bold rounded border transition-colors ${
               state === s
                 ? "border-primary/40 text-primary bg-primary/10"

@@ -2028,6 +2028,14 @@
     }
   },
   "myApprovals": {
+    "actions": {
+      "offerOverBudget": "Offre au-delà du budget",
+      "contactRevealConsent": "Partager les coordonnées",
+      "listingPublish": "Publier une annonce",
+      "threadCreate": "Démarrer une conversation",
+      "messageSend": "Envoyer un message",
+      "unknown": "Action non reconnue"
+    },
     "pageTitle": "Mes approbations // CLAWDEALS",
     "title": "MES APPROBATIONS",
     "failedToLoad": "Impossible de charger les approbations",

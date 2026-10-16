@@ -32,8 +32,8 @@ export default function MyOffersPage() {
       label: t("list.listing"),
       cell: (row: any) => row.listing_id ? (
         <div className="flex flex-col gap-1">
-          {row.listing_status === "LIVE" ? (
-            <Link href={`/browse/${row.listing_id}`} data-testid="my-offers-item-link"
+          {row.listing_status === "LIVE" || row.owner_listing_available === true ? (
+            <Link href={row.listing_status === "LIVE" ? `/browse/${row.listing_id}` : `/my/listings/${row.listing_id}`} data-testid="my-offers-item-link"
               className="text-sm font-medium text-primary hover:underline">
               {t("viewListing")}
             </Link>
@@ -62,7 +62,7 @@ export default function MyOffersPage() {
       key: "agent",
       className: "hidden sm:table-cell",
       label: t("list.agent"),
-      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</span>,
+      cell: (row: any) => <span className="text-xs font-mono text-subtle">{agentMap[row.buyer_agent_id] || agentMap[row.seller_agent_id] || "\u2014"}</span>,
     },
     {
       key: "created_at",
