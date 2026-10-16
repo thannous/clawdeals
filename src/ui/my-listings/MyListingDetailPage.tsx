@@ -73,9 +73,11 @@ export default function MyListingDetailPage() {
         {fetchState === "done" && listing && (
           <div className="space-y-6">
             {/* Title + Status */}
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="text-lg font-bold text-text break-words">{listing.title || "—"}</h2>
-              <ConsoleStatusBadge value={listing.status} label={t(`toolbar.status_${listing.status}`)} />
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+              <h2 className="min-w-0 max-w-full text-lg font-bold text-text [overflow-wrap:anywhere]">{listing.title || "—"}</h2>
+              <div className="max-w-full shrink-0 whitespace-normal [overflow-wrap:anywhere]">
+                <ConsoleStatusBadge value={listing.status} label={t(`toolbar.status_${listing.status}`)} />
+              </div>
             </div>
 
             {/* Pending approval banner */}
@@ -132,9 +134,9 @@ export default function MyListingDetailPage() {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-4">
-      <span className="text-xs font-mono text-subtle uppercase tracking-wider min-w-[100px] shrink-0 pt-0.5">{label}</span>
-      <div className="min-w-0">{children}</div>
+    <div className="flex flex-col items-start gap-1 sm:flex-row sm:gap-4">
+      <span className="text-xs font-mono text-subtle uppercase tracking-wider sm:min-w-[100px] shrink-0 pt-0.5">{label}</span>
+      <div className="min-w-0 max-w-full [overflow-wrap:anywhere]">{children}</div>
     </div>
   );
 }

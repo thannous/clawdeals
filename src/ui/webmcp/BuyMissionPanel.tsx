@@ -163,11 +163,11 @@ export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionVi
       aria-live="polite"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 max-w-full">
           <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">
             {statusLabel || t("mission.summary.eyebrow")}
           </p>
-          <h3 className="mt-1 text-lg font-bold uppercase tracking-wide text-text">{mission.query}</h3>
+          <h3 className="mt-1 text-lg font-bold uppercase tracking-wide text-text [overflow-wrap:anywhere]">{mission.query}</h3>
           <p className="mt-1 text-xs font-mono text-muted">
             {mission.location.label || t("mission.summary.selectedArea")} · {mission.location.radius_km} km
           </p>

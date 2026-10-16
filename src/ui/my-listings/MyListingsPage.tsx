@@ -32,11 +32,19 @@ export default function MyListingsPage() {
     {
       key: "title",
       label: t("list.title"),
-      cell: (row: any) => <span title={row.title} className="text-sm font-medium text-text truncate max-w-[300px] block">{row.title || "-"}</span>,
+      cell: (row: any) => (
+        <div className="max-w-[120px] whitespace-normal [overflow-wrap:anywhere] sm:max-w-[300px]">
+          <span title={row.title} className="text-sm font-medium text-text block sm:truncate">{row.title || "-"}</span>
+          <span className="mt-1 block text-xs font-mono text-subtle sm:hidden">
+            {row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "category",
       label: t("list.category"),
+      className: "hidden sm:table-cell",
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.category || "-"}</span>,
     },
     {
@@ -47,16 +55,22 @@ export default function MyListingsPage() {
     {
       key: "status",
       label: t("list.status"),
-      cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />,
+      cell: (row: any) => (
+        <div className="max-w-24 whitespace-normal [overflow-wrap:anywhere] sm:max-w-none">
+          <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />
+        </div>
+      ),
     },
     {
       key: "agent",
       label: t("list.agent"),
+      className: "hidden sm:table-cell",
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>,
     },
     {
       key: "created_at",
       label: t("list.created"),
+      className: "hidden sm:table-cell",
       cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
     },
   ];

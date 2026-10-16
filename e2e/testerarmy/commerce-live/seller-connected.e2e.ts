@@ -1,5 +1,15 @@
-import { expect } from "e2e";
+import { expect, type Locator } from "e2e";
 import { test } from "./fixtures";
+
+async function expectFullyVisible(locator: Locator, viewport: { width: number; height: number }) {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height);
+}
 
 // The fixture supplies isolated real owners and an owned listing. Sign-in uses
 // real server-issued cookies without entering a Secret into the browser, so
@@ -11,6 +21,12 @@ test("a connected seller keeps their listing when selecting All twice and can op
   await expect(listingRow).toBeVisible();
   await expect(listingRow).toContainText("125.00 EUR");
   await expect(listingRow).toContainText(/en ligne/i);
+  const viewport = await browser.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  if (viewport.width < 640) {
+    await app.screenshot("seller-listing-overview-loaded");
+    await expectFullyVisible(listingRow.getByText("125.00 EUR", { exact: true }), viewport);
+    await expectFullyVisible(listingRow.getByText(/^en ligne$/i), viewport);
+  }
 
   await listingRow.click();
   await expect(browser).toHaveURL(`/fr/my/listings/${fixture.listing.id}`);
@@ -20,6 +36,10 @@ test("a connected seller keeps their listing when selecting All twice and can op
   await expect(detail.getByRole("button", fixture.listing.id.slice(0, 8), { exact: true }))
     .toHaveAttribute("title", fixture.listing.id);
   await app.screenshot("seller-owned-listing-detail");
+  await expectFullyVisible(detail.getByRole("heading", fixture.listing.title, { exact: true }), viewport);
+  await expectFullyVisible(detail.getByText(/^en ligne$/i), viewport);
+  await expectFullyVisible(detail.getByText(`${fixture.listing.query} été`, { exact: true }), viewport);
+  await expectFullyVisible(detail.getByText("unknown", { exact: true }), viewport);
   await detail.getByRole("button", /Retour/).click();
   await expect(browser).toHaveURL("/fr/my/listings");
   await expect(listingRow).toBeVisible();
@@ -116,4 +136,9 @@ test("a seller opens their private reserved listing from an accepted offer", { t
   await expect(detail).toContainText(/réservé/i);
   await expect(detail).toContainText("125.00 EUR");
   await app.screenshot("seller-reserved-private-listing-from-offer");
+  const viewport = await browser.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  await expectFullyVisible(detail.getByRole("heading", fixture.listing.title, { exact: true }), viewport);
+  await expectFullyVisible(detail.getByText(/^réservé$/i), viewport);
+  await expectFullyVisible(detail.getByText(`${fixture.listing.query} été`, { exact: true }), viewport);
+  await expectFullyVisible(detail.getByText("unknown", { exact: true }), viewport);
 });

@@ -27,6 +27,19 @@ test("a connected buyer finds their mission and starts new criteria without losi
   expect(original.criteria.mission).toMatchObject({ preferred_price_max: 120, hard_budget_max: 130 });
   await expect(browser).toHaveURL(`/fr/my/missions/${original.watchlist_id}`);
   await expect(screen.getByTestId("mission-matches").getByRole("heading", new RegExp(`^${listing.title}$`, "i"))).toBeVisible();
+  // The real fixture title has no spaces: its rendered text must stay readable
+  // inside the summary, rather than merely existing outside a clipped card.
+  expect(await browser.evaluate(() => {
+    const summary = document.querySelector('[data-testid="buy-mission-summary"]');
+    const title = summary?.querySelector("h3");
+    if (!summary || !title) return false;
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    const text = range.getBoundingClientRect();
+    const card = summary.getBoundingClientRect();
+    return text.width > 0 && text.left >= card.left && text.right <= card.right + 1 &&
+      document.documentElement.scrollWidth <= window.innerWidth + 1;
+  })).toBe(true);
   await app.screenshot("buyer-mission-matching-listing");
 
   await screen.getByTestId("app-nav").getByRole("link", "Mes missions").click();
@@ -65,6 +78,16 @@ test("a connected buyer finds their mission and starts new criteria without losi
   await expect(screen.getByTestId("owner-missions").getByRole("link", listing.title, { exact: true })).toHaveCount(2);
   await expect(browser.locator(`article:has(a[href="/fr/my/missions/${original.watchlist_id}"])`)).toContainText(/Plafond : 130,00\s*€/);
   await expect(browser.locator(`article:has(a[href="/fr/my/missions/${revised.watchlist_id}"])`)).toContainText(/Plafond : 100,00\s*€/);
+  expect(await browser.evaluate(() => {
+    const links = document.querySelectorAll('[data-testid="owner-missions"] article a');
+    return links.length === 2 && [...links].every(link => {
+      const range = document.createRange();
+      range.selectNodeContents(link);
+      const text = range.getBoundingClientRect();
+      const card = link.closest("article")!.getBoundingClientRect();
+      return text.width > 0 && text.left >= card.left && text.right <= card.right + 1;
+    }) && document.documentElement.scrollWidth <= window.innerWidth + 1;
+  })).toBe(true);
   await app.screenshot("buyer-two-independent-missions");
   await browser.reload();
   await expect(screen.getByTestId("owner-missions").getByRole("link", listing.title, { exact: true })).toHaveCount(2);

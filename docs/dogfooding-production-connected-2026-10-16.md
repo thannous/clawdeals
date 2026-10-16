@@ -33,6 +33,7 @@ Redis. Il n'y a ni paiement ni envoi d'email, de SMS ou de message à un tiers.
 | Conversations vendeur | Le même recliquage fait disparaître la conversation de la vente. |
 | Offre acceptée vendeur | Après réservation, la liste ne propose plus de lien vers l'annonce ; le vendeur ne peut pas ouvrir sa fiche privée depuis l'offre. |
 | Lisibilité des décisions | Les codes `offer_over_budget` et `contact_reveal_consent` sont affichés comme libellés principaux ; les captures montrent aussi des actions débordantes avec les colonnes secondaires. |
+| Mobile, textes longs | Les captures du runtime local montrent le prix hors écran dans la liste vendeur, le badge de la fiche privée repoussé par le titre et les titres de missions débordant de leurs cartes. |
 
 Le refus du partage de coordonnées est vérifié des deux côtés : l'état devient
 `DENIED` et aucune coordonnée de l'autre partie n'est révélée. Les écritures de
@@ -99,3 +100,33 @@ précontrôle de notifications ; ils ne sont pas une preuve d'exécution en prod
 L'identité et le rejeu de la version publiée seront ajoutés au compte rendu de
 livraison. Les reproductions initiales restent conservées avec leurs résultats
 d'origine.
+
+### Contrôle visuel mobile et reprise finale
+
+Les captures ont conduit à renforcer les assertions sur les dimensions réellement
+rendues. `seller-mobile-layout-red-real`, run
+`01a1453f-d884-7eed-bcec-7b57f3c21844`, reproduit deux débordements à 555 et
+450 px pour une largeur de 390 px. Le parcours conversation réussit ses assertions
+mais échoue au nettoyage ; les trois fixtures ont un contrôle Redis inconnu et
+tous leurs compteurs Auth/Postgres à zéro. Le runner utilisait l'ancien Redis
+local arrêté, sans la surcharge KV distante de l'application. Un premier essai
+`seller-mobile-layout-red` avait seulement échoué au lancement du navigateur
+dans le sandbox ; ce n'est pas une preuve produit.
+
+Une récupération distincte a supprimé quatre streams parmi les onze clés
+agent/conversation exactement identifiées : `EXISTS` après suppression vaut zéro,
+sans `SCAN` ni opération sur les clés partagées. Les préfixes des caches API
+n'étant pas conservés, leur absence n'a pas été observée. Leur expiration est
+attendue selon le TTL par défaut de 60 s ; la valeur effective héritée par le
+runtime n'a pas été vérifiée. Les reçus SDK initiaux n'ont pas été réécrits.
+Le reçu de récupération est dans
+`.e2e/validation/release-connected-20261016/redis-recovery.json`.
+
+Les titres, descriptions et badges se replient désormais dans la fiche vendeur ;
+la liste mobile garde le prix et le statut à l'écran et les missions acceptent
+les titres sans espaces. `local-final-green`, run
+`01a14542-650b-7d92-ac31-774a33c11db4`, valide le résultat : **12/12 réussis en
+186,86 s**, entrées stables, captures remplies inspectées, douze fixtures sans
+erreur de nettoyage et tous leurs compteurs contrôlés à zéro. Le runner et
+l'application utilisent cette fois explicitement la même paire Redis distante.
+Ce résultat reste une preuve locale avec services réels, avant publication.
