@@ -157,3 +157,22 @@ lignes. La table des conversations conserve aussi son défilement horizontal sur
 mobile, avec le statut et la date hors champ. Ces observations justifient une
 passe complémentaire ciblée ; le résultat 12/12 précédent ne prouve pas leur
 correction.
+
+### Lisibilité complémentaire des listes vendeur
+
+Le correctif borne les noms d'agents sur ordinateur sans les tronquer et garde
+le badge sur une ligne. Sur mobile, la table des conversations regroupe les noms
+sous l'annonce et conserve le statut et la date à l'écran. Les assertions
+mesurent les lignes de texte réellement rendues et les limites du viewport.
+
+`local-polish-final`, run `01a14559-82a3-7a83-82f2-19787eee0b00`, valide les six
+parcours vendeur sur ordinateur/mobile, avec les services réels : **6/6 réussis**,
+entrées stables, six fixtures sans erreur ni résidu contrôlé. Les captures de la
+liste desktop et des conversations mobiles ont été relues. Les parcours acheteur
+ne sont pas rejoués dans cette campagne ciblée, car leurs sources sont inchangées.
+
+L'essai local précédent `local-polish-green` avait lui aussi six assertions de
+parcours réussies, mais son enveloppe de commande appelait deux fois le runner :
+le second appel a été refusé par la réservation du dossier (`EEXIST`) sans lancer
+de nouvelle fixture. La commande a été corrigée pour le résultat final ci-dessus.
+Cette erreur technique n'est pas une régression produit et reste dans son log.
