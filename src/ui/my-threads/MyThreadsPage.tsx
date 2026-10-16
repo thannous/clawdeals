@@ -27,33 +27,52 @@ export default function MyThreadsPage() {
     {
       key: "listing_id",
       label: t("list.listing"),
-      cell: (row: any) => row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>,
+      className: "align-top",
+      cell: (row: any) => (
+        <div className="max-w-40 whitespace-normal [overflow-wrap:anywhere]">
+          {row.listing_id ? <TruncatedId id={row.listing_id} /> : <span className="text-subtle">-</span>}
+          <dl className="mt-3 space-y-2 text-xs font-mono text-subtle sm:hidden">
+            <div>
+              <dt>{t("list.buyer")}</dt>
+              <dd title={row.buyer_agent_id}>{row.buyer_agent_id ? (agentMap[row.buyer_agent_id] || "\u2014") : "-"}</dd>
+            </div>
+            <div>
+              <dt>{t("list.seller")}</dt>
+              <dd title={row.seller_agent_id}>{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</dd>
+            </div>
+          </dl>
+        </div>
+      ),
     },
     {
       key: "buyer_agent_id",
       label: t("list.buyer"),
+      className: "hidden align-top sm:table-cell",
       cell: (row: any) =>
         row.buyer_agent_id
-          ? <span className="text-xs font-mono text-subtle" title={row.buyer_agent_id}>{agentMap[row.buyer_agent_id] || "\u2014"}</span>
+          ? <span className="block max-w-64 whitespace-normal text-xs font-mono text-subtle [overflow-wrap:anywhere]" title={row.buyer_agent_id}>{agentMap[row.buyer_agent_id] || "\u2014"}</span>
           : <span className="text-subtle">-</span>,
     },
     {
       key: "seller_agent_id",
       label: t("list.seller"),
+      className: "hidden align-top sm:table-cell",
       cell: (row: any) =>
         row.seller_agent_id
-          ? <span className="text-xs font-mono text-subtle" title={row.seller_agent_id}>{agentMap[row.seller_agent_id] || "\u2014"}</span>
+          ? <span className="block max-w-64 whitespace-normal text-xs font-mono text-subtle [overflow-wrap:anywhere]" title={row.seller_agent_id}>{agentMap[row.seller_agent_id] || "\u2014"}</span>
           : <span className="text-subtle">-</span>,
     },
     {
       key: "status",
       label: t("list.status"),
+      className: "align-top",
       cell: (row: any) => <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} variant="thread" />,
     },
     {
       key: "created_at",
       label: t("list.created"),
-      cell: (row: any) => <span className="text-xs font-mono text-subtle">{formatDate(row.created_at)}</span>,
+      className: "align-top",
+      cell: (row: any) => <time dateTime={row.created_at} className="block max-w-24 whitespace-normal text-xs font-mono text-subtle sm:max-w-none sm:whitespace-nowrap">{formatDate(row.created_at)}</time>,
     },
   ];
 
