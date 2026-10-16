@@ -130,3 +130,49 @@ les titres sans espaces. `local-final-green`, run
 erreur de nettoyage et tous leurs compteurs contrôlés à zéro. Le runner et
 l'application utilisent cette fois explicitement la même paire Redis distante.
 Ce résultat reste une preuve locale avec services réels, avant publication.
+
+## Publication et dogfooding du correctif
+
+La [PR #27](https://github.com/thannous/clawdeals/pull/27) a été fusionnée en
+`f59df5ffdc7bf555f3881c8f5025cd588aa43c6d`, après revue automatique sans finding
+et deux relectures indépendantes. `verify:release` a exécuté **16/16 contrôles**
+sans réutilisation sur ce SHA, dont 906 tests unitaires réussis (1 ignoré) et
+181/181 tests du corpus navigateur. Le déploiement Vercel
+`dpl_9nCkyYqdtKuj8CJUYsipyfxnXXKm`, région `dub1`, sert ce SHA avec le build
+`J6gTP9jqQEFcYYoecfGpz` sur l'app et le marketing.
+
+`production-green`, run `01a14551-a1a5-76cb-b7f0-1a7ecef29f7b`, valide **12/12
+parcours connectés en 177,23 s** sur le runtime Vercel publié, Auth/Postgres et
+Redis réels. Les douze fixtures ont des entrées stables, la même identité de
+déploiement avant/après, le cache Redis vérifié pour les deux rôles et zéro
+résidu dans leurs compteurs contrôlés. Les dix parcours publics du run
+`01a14551-a442-7bfc-b39b-fc8d354aca0a`, les cinq pages d'identité, les six lectures
+API et les assets de huit pages sont également validés. Le reçu agrégé est
+`.e2e/validation/release-connected-20261016/public-proof.json`.
+
+La lecture des captures de cette exécution a néanmoins trouvé une régression de
+lisibilité que les assertions fonctionnelles ne couvraient pas : un nom d'agent
+long comprime le badge « En ligne » sur ordinateur, qui se fragmente en trois
+lignes. La table des conversations conserve aussi son défilement horizontal sur
+mobile, avec le statut et la date hors champ. Ces observations justifient une
+passe complémentaire ciblée ; le résultat 12/12 précédent ne prouve pas leur
+correction.
+
+### Lisibilité complémentaire des listes vendeur
+
+Le correctif borne les noms d'agents sur ordinateur sans les tronquer et garde
+le badge sur une ligne. Sur mobile, la table des conversations regroupe les noms
+sous l'annonce et conserve le statut et la date à l'écran. Les assertions
+mesurent les lignes de texte réellement rendues et les limites du viewport.
+
+`local-polish-final`, run `01a14559-82a3-7a83-82f2-19787eee0b00`, valide les six
+parcours vendeur sur ordinateur/mobile, avec les services réels : **6/6 réussis**,
+entrées stables, six fixtures sans erreur ni résidu contrôlé. Les captures de la
+liste desktop et des conversations mobiles ont été relues. Les parcours acheteur
+ne sont pas rejoués dans cette campagne ciblée, car leurs sources sont inchangées.
+
+L'essai local précédent `local-polish-green` avait lui aussi six assertions de
+parcours réussies, mais son enveloppe de commande appelait deux fois le runner :
+le second appel a été refusé par la réservation du dossier (`EEXIST`) sans lancer
+de nouvelle fixture. La commande a été corrigée pour le résultat final ci-dessus.
+Cette erreur technique n'est pas une régression produit et reste dans son log.

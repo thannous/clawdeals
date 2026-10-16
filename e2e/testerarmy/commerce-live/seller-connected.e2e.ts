@@ -21,11 +21,23 @@ test("a connected seller keeps their listing when selecting All twice and can op
   await expect(listingRow).toBeVisible();
   await expect(listingRow).toContainText("125.00 EUR");
   await expect(listingRow).toContainText(/en ligne/i);
+  await expect(listingRow).toContainText(`Commerce seller ${fixture.id}`);
   const viewport = await browser.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  await app.screenshot("seller-listing-overview-loaded");
   if (viewport.width < 640) {
-    await app.screenshot("seller-listing-overview-loaded");
     await expectFullyVisible(listingRow.getByText("125.00 EUR", { exact: true }), viewport);
     await expectFullyVisible(listingRow.getByText(/^en ligne$/i), viewport);
+  } else {
+    // A visible badge can still be fragmented into letters by a long agent
+    // name. Count the rendered text lines rather than its CSS classes.
+    expect(await browser.evaluate(() => {
+      const badge = [...document.querySelectorAll('[data-testid="my-listings-page"] tbody span')]
+        .find(element => element.textContent?.trim().toLowerCase() === "en ligne");
+      if (!badge) return 0;
+      const range = document.createRange();
+      range.selectNodeContents(badge);
+      return [...range.getClientRects()].filter(rect => rect.width > 0 && rect.height > 0).length;
+    })).toBe(1);
   }
 
   await listingRow.click();
@@ -78,6 +90,30 @@ test("a connected seller keeps their owned conversation when selecting All twice
   await expect(rows).toHaveCount(1);
   await expect(rows).toContainText(/ouvert/i);
   await expect(listingReference).toHaveAttribute("title", fixture.listing.id);
+  const viewport = await browser.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  if (viewport.width < 640) {
+    const people = browser.locator("table tbody dl");
+    await expect(people).toContainText("Acheteur");
+    await expect(people).toContainText("Vendeur");
+    await expect(people).toContainText(`Commerce seller ${fixture.id}`);
+    const date = browser.locator("table tbody time");
+    await expect(date).toContainText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+    await app.screenshot("seller-thread-overview-loaded");
+    await expectFullyVisible(screen.getByRole("table"), viewport);
+    await expectFullyVisible(rows.getByText(/^ouvert$/i), viewport);
+    await expectFullyVisible(date, viewport);
+    expect(await browser.evaluate(() => {
+      const names = [...document.querySelectorAll("table tbody dl dd")];
+      return names.length === 2 && names.every(name => {
+        const range = document.createRange();
+        range.selectNodeContents(name);
+        const rects = [...range.getClientRects()];
+        return rects.length > 0 && rects.every(rect =>
+          rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth &&
+          rect.top >= 0 && rect.bottom <= window.innerHeight);
+      });
+    })).toBe(true);
+  }
 
   const toolbar = screen.getByTestId("my-threads-toolbar");
   const all = toolbar.getByRole("button", "Tous", { exact: true });

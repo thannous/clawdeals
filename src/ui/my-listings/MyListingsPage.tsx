@@ -56,7 +56,7 @@ export default function MyListingsPage() {
       key: "status",
       label: t("list.status"),
       cell: (row: any) => (
-        <div className="max-w-24 whitespace-normal [overflow-wrap:anywhere] sm:max-w-none">
+        <div className="max-w-24 whitespace-normal [overflow-wrap:anywhere] sm:max-w-none sm:whitespace-nowrap sm:[overflow-wrap:normal]">
           <ConsoleStatusBadge value={row.status} label={t(`toolbar.status_${row.status}`)} />
         </div>
       ),
@@ -65,7 +65,7 @@ export default function MyListingsPage() {
       key: "agent",
       label: t("list.agent"),
       className: "hidden sm:table-cell",
-      cell: (row: any) => <span className="text-xs font-mono text-subtle">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>,
+      cell: (row: any) => <span className="block max-w-64 whitespace-normal text-xs font-mono text-subtle [overflow-wrap:anywhere]">{row.seller_agent_id ? (agentMap[row.seller_agent_id] || "\u2014") : "-"}</span>,
     },
     {
       key: "created_at",
