@@ -3026,6 +3026,29 @@
       "links": { "sandbox": "Authenticated sandbox", "guide": "Full judge guide", "chromeDocs": "Chrome WebMCP docs", "ledger": "Full eligibility ledger", "repository": "Public repository", "evals": "WebMCP evals", "plan": "Victory plan" }
     }
   },
+  "missionChatGPT": {
+    "title": "Compare with ChatGPT",
+    "intro": "Connect your ChatGPT account to compare up to five listings matching this mission.",
+    "usageHint": "This local test uses your subscription limits. Only the mission criteria and selected listings are sent to OpenAI.",
+    "loading": "Checking the connection…",
+    "connected": "Connected account: {account}",
+    "model": "Model",
+    "analyzing": "Comparing…",
+    "analyze": "Compare listings",
+    "disconnect": "Disconnect ChatGPT",
+    "working": "ChatGPT is preparing the comparison. You can stay on this page.",
+    "connect": "Continue with ChatGPT",
+    "otherOwner": "This local ChatGPT profile is already linked to another ClawDeals account.",
+    "quota": "Your subscription limit has been reached. Check your usage in ChatGPT.",
+    "noMatches": "There are no listings to compare yet. Broaden your mission criteria.",
+    "inactive": "Reactivate this mission before comparing its listings.",
+    "sessionChanged": "Your ClawDeals session has changed. Reload the page before continuing.",
+    "error": "The ChatGPT connection failed. Check that the local service is running and try again.",
+    "retry": "Retry connection",
+    "manage": "View my ChatGPT usage",
+    "result": "Comparison of {count, plural, one {# listing} other {# listings}}",
+    "reviewHint": "Confirm the details with the seller. This comparison does not make an offer or purchase."
+  },
   "myMissions": {
     "sessionChanged": "The account has changed since you reviewed this mission. No new request was sent. Sign in with the original account, then confirm again in this tab.",
     "checkAccount": "Check my account",

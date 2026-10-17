@@ -10,6 +10,7 @@ import { saveBuyMissionDraft } from "../webmcp/buyMissionDraft";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
 import { missionRequest, missionView, missionStatus, type OwnerMission } from "./missionClient";
 import { useMissionResource } from "./useMissionResource";
+import MissionChatGPT from "./MissionChatGPT";
 
 export default function MissionDetailPage() {
   const t = useTranslations("myMissions");
@@ -83,6 +84,7 @@ export default function MissionDetailPage() {
             <button onClick={() => void adjust()} className="px-4 py-2 border border-primary text-primary">{t("adjust")}</button>
             {draftError ? <p role="alert" className="text-warning">{t("draftError")}</p> : null}
           </section>
+          {process.env.NEXT_PUBLIC_CLAWDEALS_CHATGPT_LOCAL === "1" ? <MissionChatGPT key={item.watchlist_id} mission={item} /> : null}
         </> : null}
       </main>
     </div>

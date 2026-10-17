@@ -2938,6 +2938,29 @@
       "links": { "sandbox": "Sandbox authentifié", "guide": "Guide juge complet", "chromeDocs": "Documentation WebMCP Chrome", "ledger": "Registre d’éligibilité complet", "repository": "Dépôt public", "evals": "Évaluations WebMCP", "plan": "Plan de victoire" }
     }
   },
+  "missionChatGPT": {
+    "title": "Comparer avec ChatGPT",
+    "intro": "Connecte ton compte ChatGPT pour comparer jusqu’à cinq annonces correspondant à cette mission.",
+    "usageHint": "Ce test local utilise les limites de ton abonnement. Seuls les critères de la mission et les annonces sélectionnées sont transmis à OpenAI.",
+    "loading": "Vérification de la connexion…",
+    "connected": "Compte connecté : {account}",
+    "model": "Modèle",
+    "analyzing": "Comparaison en cours…",
+    "analyze": "Comparer les annonces",
+    "disconnect": "Déconnecter ChatGPT",
+    "working": "ChatGPT prépare la comparaison. Tu peux rester sur cette page.",
+    "connect": "Continuer avec ChatGPT",
+    "otherOwner": "Ce profil ChatGPT local est déjà associé à un autre compte ClawDeals.",
+    "quota": "La limite de ton abonnement est atteinte. Consulte ton utilisation dans ChatGPT.",
+    "noMatches": "Aucune annonce à comparer pour le moment. Élargis les critères de ta mission.",
+    "inactive": "Réactive cette mission avant de comparer ses annonces.",
+    "sessionChanged": "Ta session ClawDeals a changé. Recharge la page avant de continuer.",
+    "error": "La connexion à ChatGPT a échoué. Vérifie que le service local est démarré puis réessaie.",
+    "retry": "Réessayer la connexion",
+    "manage": "Voir mon utilisation ChatGPT",
+    "result": "Comparaison de {count, plural, one {# annonce} other {# annonces}}",
+    "reviewHint": "Vérifie les informations avec le vendeur. Cette comparaison ne lance aucune offre ni aucun achat."
+  },
   "myMissions": {
     "sessionChanged": "Le compte a changé depuis la vérification de cette mission. Aucune nouvelle demande n’a été envoyée. Reconnecte-toi au compte initial, puis confirme à nouveau dans cet onglet.",
     "checkAccount": "Vérifier mon compte",
