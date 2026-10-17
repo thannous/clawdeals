@@ -2938,6 +2938,29 @@
       "links": { "sandbox": "Sandbox autenticado", "guide": "Guía completa del jurado", "chromeDocs": "Documentación WebMCP de Chrome", "ledger": "Registro completo de elegibilidad", "repository": "Repositorio público", "evals": "Evaluaciones WebMCP", "plan": "Plan de victoria" }
     }
   },
+  "missionChatGPT": {
+    "title": "Comparar con ChatGPT",
+    "intro": "Conecta tu cuenta ChatGPT para comparar hasta cinco anuncios que coincidan con esta misión.",
+    "usageHint": "Esta prueba local utiliza los límites de tu suscripción. Solo se envían a OpenAI los criterios de la misión y los anuncios seleccionados.",
+    "loading": "Comprobando la conexión…",
+    "connected": "Cuenta conectada: {account}",
+    "model": "Modelo",
+    "analyzing": "Comparando…",
+    "analyze": "Comparar anuncios",
+    "disconnect": "Desconectar ChatGPT",
+    "working": "ChatGPT está preparando la comparación. Puedes permanecer en esta página.",
+    "connect": "Continuar con ChatGPT",
+    "otherOwner": "Este perfil local de ChatGPT ya está vinculado a otra cuenta ClawDeals.",
+    "quota": "Has alcanzado el límite de tu suscripción. Consulta tu uso en ChatGPT.",
+    "noMatches": "Todavía no hay anuncios que comparar. Amplía los criterios de tu misión.",
+    "inactive": "Reactiva esta misión antes de comparar sus anuncios.",
+    "sessionChanged": "Tu sesión de ClawDeals ha cambiado. Recarga la página antes de continuar.",
+    "error": "La conexión con ChatGPT ha fallado. Comprueba que el servicio local esté iniciado e inténtalo de nuevo.",
+    "retry": "Reintentar conexión",
+    "manage": "Ver mi uso de ChatGPT",
+    "result": "Comparación de {count, plural, one {# anuncio} other {# anuncios}}",
+    "reviewHint": "Confirma los detalles con el vendedor. Esta comparación no realiza ofertas ni compras."
+  },
   "myMissions": {
     "sessionChanged": "La cuenta ha cambiado desde que revisaste esta misión. No se ha enviado ninguna nueva solicitud. Inicia sesión con la cuenta original y vuelve a confirmar en esta pestaña.",
     "checkAccount": "Comprobar mi cuenta",

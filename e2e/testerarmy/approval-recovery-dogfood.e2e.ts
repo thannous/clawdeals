@@ -148,7 +148,9 @@ test("approval context stays usable after resolution and never treats internal h
     current = scenario.data;
     if (index === 0) await app.open(path);
     else await browser.reload();
-    await expect(screen.getByText(scenario.data.state, { exact: true })).toBeVisible();
+    // Resolution changes the API state; the French status badge stays localized.
+    const stateLabel = scenario.data.state === "APPROVED" ? "Approuvé" : "En attente";
+    await expect(screen.getByText(stateLabel, { exact: true })).toBeVisible();
     if (scenario.href) {
       await expect(screen.getByRole("link", scenario.label!)).toHaveAttribute("href", scenario.href);
       await expect(screen.getByRole("link", scenario.label === "Voir la mission" ? "Voir l'annonce" : "Voir la mission")).toHaveCount(0);

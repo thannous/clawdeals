@@ -28,6 +28,9 @@ export const test = base.extend<{ missionFixture: Fixture }>({
     const email = `mission-${id}@example.test`;
     const origin = new URL(app.baseUrl!).origin;
     const authOrigin = new URL(url).origin;
+    const localChatGPT = process.env.TESTERARMY_CHATGPT_LOCAL === "1" &&
+      new URL(origin).hostname === "127.0.0.1" && new URL(origin).protocol === "http:";
+    const bridgeOrigin = `http://127.0.0.1:${process.env.CLAWDEALS_CHATGPT_LOCAL_PORT || 4318}`;
     const refused: { method: string; origin: string; path: string }[] = [];
     const missionWrites: { idempotencyKey: string; expectedOwnerId: string; body: string }[] = [];
     await browser.route("**/*", async route => {
@@ -36,14 +39,16 @@ export const test = base.extend<{ missionFixture: Fixture }>({
       const sameOrigin = requestUrl.origin === origin;
       const read = ["GET", "HEAD"].includes(method);
       const appWrite = sameOrigin && method === "POST" && [
-        "/api/v1/auth/session:bridge", "/api/v1/owner/missions"
+        "/api/v1/auth/session:bridge", "/api/v1/owner/missions",
+        ...(localChatGPT ? ["/api/local/chatgpt"] : [])
       ].includes(requestUrl.pathname);
+      const connectionRedirect = localChatGPT && requestUrl.origin === bridgeOrigin && method === "GET" && requestUrl.pathname === "/connect";
       const login = requestUrl.origin === authOrigin && method === "POST" &&
         requestUrl.pathname === "/auth/v1/token" && requestUrl.searchParams.get("grant_type") === "password";
       if (appWrite && requestUrl.pathname === "/api/v1/owner/missions") {
         missionWrites.push({ idempotencyKey: route.request.headers["idempotency-key"], expectedOwnerId: route.request.headers["x-expected-owner-id"], body: route.request.postData || "" });
       }
-      if ((sameOrigin && read) || appWrite || login) await route.continue();
+      if ((sameOrigin && read) || appWrite || login || connectionRedirect) await route.continue();
       else {
         refused.push({ method, origin: requestUrl.origin, path: requestUrl.pathname });
         await route.abort();

@@ -114,7 +114,10 @@ export default {
     : productionPublic ? "e2e/testerarmy/production/**/*.e2e.ts"
     : missionLive ? "e2e/testerarmy/mission-live/**/*.e2e.ts"
     : commerceLive ? "e2e/testerarmy/commerce-live/**/*.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts"],
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts",
+      // Optional local-panel coverage has its own opt-in qualification. A public
+      // evidence bundle must execute every selected case rather than skip it.
+      ...(process.env.TESTERARMY_CHATGPT_UI === "1" ? [] : ["!e2e/testerarmy/chatgpt-local-recovery.e2e.ts"])],
   targets: [
     { name: "desktop", engine: productionPublic || commerceProduction ? web({ viewport: { width: 1280, height: 720 }, headers: {} }) : desktopEngine, app },
     { name: "mobile", engine: productionPublic || commerceProduction ? web({ viewport: { width: 390, height: 844 }, headers: {} }) : mobileEngine, app }

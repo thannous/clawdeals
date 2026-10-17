@@ -20,9 +20,9 @@ jobs:
     # Keeps the `test-ci` status name of the former aggregate job.
     name: test-ci
     runs-on: ubuntu-latest
-    # About 4 minutes observed; the margin covers a slow registry during
-    # `npm ci` and lets evidence upload after a browser step timeout.
-    timeout-minutes: 15
+    # The maintained browser selection now includes 266 desktop/mobile cases.
+    # Leave time for a complete run and for evidence after a step timeout.
+    timeout-minutes: 25
     env:
       E2E_TELEMETRY_DISABLED: "1"
       NEXT_TELEMETRY_DISABLED: "1"
@@ -84,19 +84,32 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Check evidence preservation and bounded archive controls
         run: node --test e2e/testerarmy/evidence.test.mjs
-      - name: Run public journeys with time for evidence
+      - name: Run public desktop journeys
         id: public_journeys
-        # About 1 minute observed. This bounded step leaves time for teardown
-        # and upload within the job budget; a forced runner stop can still
-        # prevent collection and is never complete qualification.
-        timeout-minutes: 5
+        # A fresh Next.js process per viewport avoids a memory-threshold restart
+        # interrupting a later navigation. Keep every assertion and zero retries.
+        timeout-minutes: 10
+        env:
+          # Public client fixtures only: auth calls are intercepted by the tests.
+          # No service key, live provider, database or credential is configured.
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: testerarmy-public-anon-placeholder
         run: |
-          PARITY_OUTPUT="$E2E_CI_ROOT/public" npm run test:testerarmy
+          PARITY_OUTPUT="$E2E_CI_ROOT/public-desktop" npm run test:testerarmy -- --target desktop
+      - name: Run public mobile journeys
+        id: public_mobile
+        if: ${{ !cancelled() && steps.public_journeys.outcome != 'skipped' }}
+        timeout-minutes: 10
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: testerarmy-public-anon-placeholder
+        run: |
+          PARITY_OUTPUT="$E2E_CI_ROOT/public-mobile" npm run test:testerarmy -- --target mobile
       - name: Prepare complete bounded public evidence
         id: bundle
         if: ${{ always() && steps.public_journeys.outcome != 'skipped' }}
         run: |
-          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "$E2E_CI_ROOT/public"
+          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "$E2E_CI_ROOT/public-desktop" "$E2E_CI_ROOT/public-mobile"
       - name: Retain evidence index including incomplete campaigns
         if: ${{ always() && steps.public_journeys.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
