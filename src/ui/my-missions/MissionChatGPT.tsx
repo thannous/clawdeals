@@ -50,7 +50,9 @@ export default function MissionChatGPT({ mission }: { mission: OwnerMission }) {
   }, []);
   useEffect(() => { void loadConnection(); return () => { generation.current += 1; }; }, [loadConnection]);
   const refresh = async () => {
-    setLoading(true); setError(null); setAnalysis(null); setConnection(null);
+    // The new connection generation also owns the idle state. A completed
+    // disconnect cannot clear busy later through its previous generation.
+    setLoading(true); setBusy(false); setError(null); setAnalysis(null); setConnection(null);
     await loadConnection();
   };
 

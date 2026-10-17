@@ -419,7 +419,7 @@ Verified `agent.act` steps may replay from `.e2e/cache/`; assertions still run. 
 
 The [decision-model guide](https://e2e.tester.army/docs/decision-models) was inspected with 0.18.0 and documents the optional `@e2e-dev/decision` executor. It chooses bounded actions from the semantic tree using a decision model, such as `typeSafeAi.decisionModel('jev-latest')`, rather than generating selectors or URLs. A separate text model supplies field values and the judgment tier. The runner still authorizes actions and applies its budgets; this executor has no vision and does not offer drag, upload or hover.
 
-This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.21.0 itself requires `ai ^7.0.0`, which the current 7.0.107 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
+This is documented support, with no live Jev qualification in this project. Enabling it later requires explicit provider configuration, `@e2e-dev/decision`, a decision provider, a text provider and `ai ^7.0.128` (within 7.x). This is the optional executor's peer requirement; `e2e` 0.21.2 itself requires `ai ^7.0.0`, which the current 7.0.143 satisfies. The existing providers remain unchanged. No decision package, provider credential, executor, budget or model call is added by the upgrade; default and CI journeys remain exact and model-free.
 
 ## Reports, CI and MCP
 

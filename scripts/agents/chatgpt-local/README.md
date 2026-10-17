@@ -110,6 +110,25 @@ Cela libère l'association au propriétaire QA supprimé ; ne pas remplacer les
 jetons par une ancienne copie et ne pas supprimer le profil personnel.
 Utiliser `--target mobile` dans une invocation séparée pour le second viewport.
 
+## Régression de reconnexion sans accès personnel
+
+Le panneau doit permettre une nouvelle connexion après la déconnexion, même si
+le rafraîchissement du statut échoue. Cette régression utilise la vraie page de
+mission avec Auth, missions et réponses ChatGPT simulées dans le navigateur :
+aucune requête ne rejoint le connecteur ou OpenAI, et aucun jeton n'est révoqué.
+Après démarrage de `npm run dev:chatgpt`, lancer :
+
+```sh
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+TESTERARMY_CHATGPT_UI=1 TESTERARMY_AI=0 E2E_BASE_URL=http://127.0.0.1:4327 \
+PARITY_OUTPUT=.e2e/validation/chatgpt-recovery-UNIQUE \
+mise exec node@24.19.0 -- npm run test:testerarmy -- \
+  e2e/testerarmy/chatgpt-local-recovery.e2e.ts
+```
+
+Sans l'opt-in UI, ces cas sont ignorés : le panneau expérimental est absent du
+serveur de tests standard. Les parcours OAuth réels restent qualifiés séparément.
+
 ## Références
 
 - [Inscription et OAuth local](https://developers.openai.com/siwc/token-sharing-open-source/sign-in)
