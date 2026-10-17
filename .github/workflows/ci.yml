@@ -84,23 +84,32 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Check evidence preservation and bounded archive controls
         run: node --test e2e/testerarmy/evidence.test.mjs
-      - name: Run public journeys with time for evidence
+      - name: Run public desktop journeys
         id: public_journeys
-        # Keep every assertion and zero retries. This is a larger selection than
-        # the historical navigation smoke; leave time for teardown and uploads.
-        timeout-minutes: 15
+        # A fresh Next.js process per viewport avoids a memory-threshold restart
+        # interrupting a later navigation. Keep every assertion and zero retries.
+        timeout-minutes: 10
         env:
           # Public client fixtures only: auth calls are intercepted by the tests.
           # No service key, live provider, database or credential is configured.
           NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: testerarmy-public-anon-placeholder
         run: |
-          PARITY_OUTPUT="$E2E_CI_ROOT/public" npm run test:testerarmy
+          PARITY_OUTPUT="$E2E_CI_ROOT/public-desktop" npm run test:testerarmy -- --target desktop
+      - name: Run public mobile journeys
+        id: public_mobile
+        if: ${{ !cancelled() && steps.public_journeys.outcome != 'skipped' }}
+        timeout-minutes: 10
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: testerarmy-public-anon-placeholder
+        run: |
+          PARITY_OUTPUT="$E2E_CI_ROOT/public-mobile" npm run test:testerarmy -- --target mobile
       - name: Prepare complete bounded public evidence
         id: bundle
         if: ${{ always() && steps.public_journeys.outcome != 'skipped' }}
         run: |
-          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "$E2E_CI_ROOT/public"
+          node e2e/testerarmy/bundle.mjs create "$E2E_CI_ROOT/bundle" "$E2E_CI_ROOT/public-desktop" "$E2E_CI_ROOT/public-mobile"
       - name: Retain evidence index including incomplete campaigns
         if: ${{ always() && steps.public_journeys.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
