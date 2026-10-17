@@ -14,6 +14,7 @@ const approval = {
 
 // These fixtures exercise real UI recovery with controlled API responses only.
 // No authentication provider or backend mutation is contacted.
+// API states remain raw; the French detail page renders translated status labels.
 for (const code of ["APPROVAL_EXPIRED", "APPROVAL_INVALID", "APPROVAL_STALE", "APPROVAL_ALREADY_RESOLVED"]) {
   for (const interrupted of [false, true]) {
     test(`a definitive ${code} after a ${interrupted ? "lost response" : "fresh request"} releases approval recovery`, async ({ app, browser, screen }) => {
@@ -60,16 +61,16 @@ for (const code of ["APPROVAL_EXPIRED", "APPROVAL_INVALID", "APPROVAL_STALE", "A
         // must remain possible instead of silently replaying the failed approval.
         await expect(screen.getByRole("button", "Refuser")).toBeEnabled();
         await screen.getByRole("button", "Refuser").tap();
-        await expect(screen.getByText("DENIED", { exact: true })).toBeVisible();
+        await expect(screen.getByText("Refusé", { exact: true })).toBeVisible();
         expect(writes.at(-1)?.action).toBe("deny");
         expect(writes.at(-1)?.key).not.toBe(writes[0].key);
       } else {
-        await expect(screen.getByText("DENIED", { exact: true })).toBeVisible();
+        await expect(screen.getByText("Refusé", { exact: true })).toBeVisible();
         await expect(screen.getByRole("button", "Approuver")).toHaveCount(0);
       }
       const finalWrites = writes.length;
       await browser.reload();
-      await expect(screen.getByText("DENIED", { exact: true })).toBeVisible();
+      await expect(screen.getByText("Refusé", { exact: true })).toBeVisible();
       await expect(screen.getByRole("button", "Vérifier le résultat")).toHaveCount(0);
       expect(writes).toHaveLength(finalWrites);
       await app.screenshot(`approval-definitive-${code}-${interrupted ? "replay" : "fresh"}`);
@@ -109,7 +110,7 @@ for (const code of ["IDEMPOTENCY_IN_PROGRESS", "IDEMPOTENCY_KEY_REUSE", "CONFLIC
     await browser.reload();
     await expect(screen.getByRole("button", "Vérifier le résultat")).toBeEnabled();
     await screen.getByRole("button", "Vérifier le résultat").tap();
-    await expect(screen.getByText("APPROVED", { exact: true })).toBeVisible();
+    await expect(screen.getByText("Approuvé", { exact: true })).toBeVisible();
     expect(writes).toHaveLength(2);
     expect(writes[1]).toEqual(writes[0]);
     await expect(screen.getByRole("button", "Vérifier le résultat")).toHaveCount(0);

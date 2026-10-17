@@ -163,8 +163,12 @@ function useLoginPageView() {
     let cancelled = false;
     async function resolveExistingSession() {
       try {
-        const supabase = getBrowserSupabaseClient();
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        let supabase;
+        try { supabase = getBrowserSupabaseClient(); }
+        catch { /* An existing server owner session can outlive client configuration. */ }
+        const { data, error: sessionError } = supabase
+          ? await supabase.auth.getSession()
+          : { data: { session: null }, error: null };
         if (sessionError || cancelled) return;
 
         const accessToken = data?.session?.access_token || null;

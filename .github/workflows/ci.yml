@@ -20,9 +20,9 @@ jobs:
     # Keeps the `test-ci` status name of the former aggregate job.
     name: test-ci
     runs-on: ubuntu-latest
-    # About 4 minutes observed; the margin covers a slow registry during
-    # `npm ci` and lets evidence upload after a browser step timeout.
-    timeout-minutes: 15
+    # The maintained browser selection now includes 270 desktop/mobile cases.
+    # Leave time for a complete run and for evidence after a step timeout.
+    timeout-minutes: 25
     env:
       E2E_TELEMETRY_DISABLED: "1"
       NEXT_TELEMETRY_DISABLED: "1"
@@ -86,10 +86,14 @@ jobs:
         run: node --test e2e/testerarmy/evidence.test.mjs
       - name: Run public journeys with time for evidence
         id: public_journeys
-        # About 1 minute observed. This bounded step leaves time for teardown
-        # and upload within the job budget; a forced runner stop can still
-        # prevent collection and is never complete qualification.
-        timeout-minutes: 5
+        # Keep every assertion and zero retries. This is a larger selection than
+        # the historical navigation smoke; leave time for teardown and uploads.
+        timeout-minutes: 15
+        env:
+          # Public client fixtures only: auth calls are intercepted by the tests.
+          # No service key, live provider, database or credential is configured.
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: testerarmy-public-anon-placeholder
         run: |
           PARITY_OUTPUT="$E2E_CI_ROOT/public" npm run test:testerarmy
       - name: Prepare complete bounded public evidence
