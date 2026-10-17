@@ -20,7 +20,7 @@ jobs:
     # Keeps the `test-ci` status name of the former aggregate job.
     name: test-ci
     runs-on: ubuntu-latest
-    # The maintained browser selection now includes 270 desktop/mobile cases.
+    # The maintained browser selection now includes 266 desktop/mobile cases.
     # Leave time for a complete run and for evidence after a step timeout.
     timeout-minutes: 25
     env:
