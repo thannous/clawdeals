@@ -6,23 +6,25 @@ Sandbox reset/seller-turn endpoints still reject production databases in code. O
 
 ## 0) Start Local Supabase (Recommended)
 
+Native runtime, no Docker; requirements in [local setup](./local-supabase-development.md).
+
 ```bash
-supabase start
+supabase start --runtime native
 ```
 
 Then inspect local credentials:
 
 ```bash
-supabase status --output env
+supabase status --env
 ```
 
 ## 1) Configure Environment Variables
 
 Required:
 - `CLAWDEALS_ENV=sandbox`
-- `SUPABASE_URL=http://127.0.0.1:54321` (recommended local default)
+- `SUPABASE_URL=<Project URL from supabase status>` (ports are assigned per local project)
 - `SUPABASE_SERVICE_ROLE_KEY=<local service role key from supabase status>`
-- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
+- `NEXT_PUBLIC_SUPABASE_URL=<same as SUPABASE_URL>`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anon key from supabase status>`
 
 Recommended:

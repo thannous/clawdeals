@@ -1,33 +1,60 @@
 # Local Supabase Development Workflow
 
-Updated 2026-09-28. Optional local backend setup; a prerequisite only for tests/features that need this stack. See [current environment policy](./release-environments.md).
+Updated 2026-10-19. Optional local backend setup; a prerequisite only for tests/features that need this stack. See [current environment policy](./release-environments.md).
 
 ## Goal
 Run deterministic sandbox fixtures locally when needed. This is not a mandatory staging gate for ordinary development or deployment.
 
 ## Prerequisites
-- Docker installed and running.
-- Supabase CLI installed (`supabase --version`).
+Local Supabase runs on the Supabase CLI native runtime: every service is a process on the host, with no Docker. Docker is not a supported path for this repository.
+
+- Linux on `amd64` or `arm64` with glibc 2.35 or later (Ubuntu 22.04 or later; check with `ldd --version`), or macOS 14 or later on Apple silicon. Windows and Intel Macs are not supported.
+- Supabase CLI v2.121.0 or later (`supabase --version`). The native runtime needs v2.119.0; v2.121.0 is needed for native `pg_cron` jobs (this repository schedules one) and to apply port changes to a stopped local project.
+- `tar` on the host and, on the first start, network access to the service archive hosts (`supabase/slim-services` GitHub releases, with `supabase-cli-artifacts.s3.us-east-1.amazonaws.com` as a fallback). Archives are cached in `~/.supabase/cache/stack`, shared by every local project on the machine.
+- A non-root user: Postgres `initdb` cannot run as `root`. When you must run as `root` (a CI container), set `SUPABASE_NATIVE_POSTGRES_USER` to an existing non-root account.
+
+`supabase/config.toml` sets `stack = true` under `[experimental]`, which routes `supabase start`, `status`, `stop` and the local `db`, `migration`, `test` and `gen` commands to the experimental stack. Its flags and output can change between CLI releases.
 
 ## Start Local Stack
 
 ```bash
-supabase start
+supabase start --runtime native
 ```
 
-Get local credentials:
+The first start downloads the enabled services; add `--preparation on-demand` to download each one on its first request instead. Postgres starts at once, applies `supabase/migrations` and `supabase/seed.sql`; the other services start on their first request and stop again after 60 s idle (Studio after 5 minutes). Add `--eager` to start everything up front. The runtime is fixed when the local project is created; later starts reuse it.
+
+Each project root and git branch (so each git worktree) gets its own local project, ports and data. `config.toml` sets no fixed ports, so the CLI assigns them from 20000 to 32767 and keeps them stable across restarts. Do not assume `54321`: read the ports with
 
 ```bash
-supabase status --output env
+supabase status
 ```
 
 ## Required Local Environment Values
 
-Use local values in `.env.local`:
-- `SUPABASE_URL=http://127.0.0.1:54321`
-- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
-- `SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY from supabase status>`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from supabase status>`
+Export the local values for `.env.local`:
+
+```bash
+supabase status --env --override-name API_URL=SUPABASE_URL,SERVICE_ROLE_KEY=SUPABASE_SERVICE_ROLE_KEY,ANON_KEY=NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+
+Then set `NEXT_PUBLIC_SUPABASE_URL` to the same value as `SUPABASE_URL`. `DB_URL` in the same output is the local database URL (password `postgres`). The legacy `supabase status --output env` (`-o env`) is not available with the stack.
+
+## Reset, Stop and Remove
+
+```bash
+supabase db reset           # re-apply migrations and seed on this branch's local project
+supabase stop               # stop it, keeping data and ports
+supabase stack destroy --yes  # delete its data and free its ports
+supabase stack list         # every local project on the machine
+```
+
+## Limits
+
+- `config.toml` settings that the stack does not support make `supabase start` fail with a message naming the setting: `api.tls` enabled, Analytics backends other than Postgres, custom Auth email templates with `content_path`, Storage Analytics and vector buckets, a custom `edge_runtime.deno_version`, `db.major_version` other than 15 or 17, and the `experimental.s3_*` OrioleDB settings. None is enabled here.
+- Database commands do not accept `--stack`; they target the current branch's default local project. Switching branches or moving the directory starts a different local project with its own data.
+- Native local projects share the host process table and file locks; run one per worktree and stop it when done.
+- If Postgres is slow to become ready on a cold start, raise `health_timeout` under `[db]`.
+- A native `pg_cron` job runs in a background worker, so its body cannot contain `BEGIN` or `COMMIT`.
 
 ## Run App And Tests
 
@@ -70,12 +97,6 @@ Playwright starts a local server by default; `E2E_DEV_PORT` selects its port. So
 ## Current guard behavior
 
 Playwright and smoke scripts reject production by default. The explicit project-scoped development opt-in and its limits are documented in [release-environments.md](./release-environments.md). Sandbox reset endpoints remain restricted to a non-production backend.
-
-## Stop Local Stack
-
-```bash
-supabase stop
-```
 
 ## Remote Validation
 - The former remote staging project is retired. Use the current environment policy to select an authorized target.

@@ -151,13 +151,12 @@ Immediately after cleanup, enforce local-first dev/test defaults:
 
 1. Ensure local Supabase is the default dev target:
 ```bash
-supabase start
-supabase status --output env
+supabase start --runtime native
+supabase status --env
 ```
 2. Ensure local `.env.local` uses local values:
-- `SUPABASE_URL=http://127.0.0.1:54321`
-- `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321`
-- local anon/service-role keys from `supabase status --output env`
+- `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL` set to the Project URL from `supabase status`
+- local anon/service-role keys from `supabase status --env`
 3. Verify guardrail behavior:
 - with prod target env, `npm run test:integration` fails early
 - with local target env, `npm run test:integration -- --list` starts normally
