@@ -22,10 +22,9 @@ const PUBLIC = String.raw`(?:"public"|public)`;
 const IDENT = String.raw`${PUBLIC}\s*\.\s*(${NAME})`;
 const CREATE_HEAD = String.raw`\bcreate\s+(?:(?:global|local)\s+)?(?:(temporary|temp|unlogged|foreign)\s+)?table\s+(?:if\s+not\s+exists\s+)?`;
 const CREATE = new RegExp(String.raw`${CREATE_HEAD}(?:(${NAME})\s*\.\s*)?(${NAME})`, "gi");
-const RLS = new RegExp(
-  String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${IDENT}[^;]*?\b(enable|disable)\s+row\s+level\s+security`,
-  "gi",
-);
+// One `alter table public.X ...` statement; every RLS action in it is replayed in order.
+const RLS = new RegExp(String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${IDENT}([^;]*)`, "gi");
+const RLS_ACTION = /\b(enable|disable)\s+row\s+level\s+security\b/gi;
 const PRIVILEGE = /\b(grant|revoke)\s+([^;]*?)\s+on\s+([^;]*?)\s+(to|from)\s+([^;]*?)\s*;/gi;
 const IN_LIST = new RegExp(String.raw`^${IDENT}$`, "i");
 // `select ... into [table] public.X` also creates a table (not `insert into`
@@ -37,9 +36,9 @@ const SELECT_INTO = new RegExp(
 const SERIAL = new RegExp(String.raw`(?:^|[(,])\s*(?:add\s+(?:column\s+)?(?:if\s+not\s+exists\s+)?)?(${NAME})\s+(?:small|big)?serial\b`, "gi");
 // `alter table public.T add [column] C serial` creates the sequence T_C_seq.
 const ALTER_ADD = new RegExp(String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${IDENT}([^;]*)`, "gi");
-// `alter [foreign] table|[materialized] view <schema>.T set schema public` brings it into public.
+// `alter [foreign] table|[materialized] view|sequence <schema>.T set schema public` brings it into public.
 const SET_SCHEMA = new RegExp(
-  String.raw`\balter\s+(foreign\s+table|table|materialized\s+view|view)\s+(?:if\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})\s+set\s+schema\s+${PUBLIC}\b`,
+  String.raw`\balter\s+(foreign\s+table|table|materialized\s+view|view|sequence)\s+(?:if\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})\s+set\s+schema\s+${PUBLIC}\b`,
   "gi",
 );
 // The schema group is optional so that an unqualified view or sequence is rejected.
@@ -144,7 +143,7 @@ function privilegesAtEnd(statements, at, kind, name) {
   const held = new Set();
   for (const statement of statements) {
     if (statement.index < at) continue;
-    const roles = splitList(statement.roles.replace(/\bwith\s+grant\s+option\b|\bcascade\b|\brestrict\b/gi, ""))
+    const roles = splitList(statement.roles.replace(/\bwith\s+grant\s+option\b|\bgranted\s+by\s+\S+|\bcascade\b|\brestrict\b/gi, ""))
       .map((role) => role.toLowerCase());
     if (!roles.includes("service_role") || !covers(statement.objects, kind, name)) continue;
     if (statement.verb === "revoke" && /^grant\s+option\s+for\b/i.test(statement.privileges)) continue;
@@ -198,6 +197,10 @@ export function lintMigration(sql) {
   for (const match of text.matchAll(SET_SCHEMA)) {
     if (match[2] && unquote(match[2]) === "public") continue;
     const kind = match[1].toLowerCase().replace(/\s+/g, " ");
+    if (kind === "sequence") {
+      sequences.set(unquote(match[3]), { at: match.index, table: null, column: null });
+      continue;
+    }
     create(unquote(match[3]), match.index, kind === "table" ? "table" : kind);
   }
   for (const match of text.matchAll(VIEW)) {
@@ -231,9 +234,11 @@ export function lintMigration(sql) {
   })).filter((statement) => (statement.verb === "grant") === (statement.direction === "to"));
   for (const [name, { at, kind }] of created) {
     if (kind === "table") {
-      const rls = [...text.matchAll(RLS)].filter((match) => match.index > at && unquote(match[1]) === name);
+      const rls = [...text.matchAll(RLS)]
+        .filter((match) => match.index > at && unquote(match[1]) === name)
+        .flatMap((match) => [...match[2].matchAll(RLS_ACTION)].map((action) => action[1].toLowerCase()));
       if (!rls.length) problems.push(`public.${name}: no "alter table public.${name} enable row level security" after its create table`);
-      else if (rls.at(-1)[2].toLowerCase() === "disable") problems.push(`public.${name}: row level security is disabled again later in the migration`);
+      else if (rls.at(-1) === "disable") problems.push(`public.${name}: row level security is disabled again later in the migration`);
     }
     const held = privilegesAtEnd(statements, at, "table", name);
     if (!DATA_API.some((privilege) => held.has(privilege))) {

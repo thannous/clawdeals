@@ -190,6 +190,24 @@ alter materialized view private.summary set schema public;`,
     "create foreign table public.remote_items (id int) server remote;",
     /public\.remote_items: no explicit "grant .* after its create foreign table/,
   ],
+  rlsDisabledInSameStatement: [
+    `create table public.items (id int);
+alter table public.items enable row level security, disable row level security;
+grant select on public.items to service_role;`,
+    /disabled again/,
+  ],
+  revokeGrantedBy: [
+    `create table public.items (id int);
+alter table public.items enable row level security;
+grant select on public.items to service_role;
+revoke select on public.items from service_role granted by postgres;`,
+    /left in force/,
+  ],
+  sequenceMovedIntoPublic: [
+    `create sequence private.counter;
+alter sequence private.counter set schema public;`,
+    /public\.counter: sequence needs "grant usage/,
+  ],
   quotedNameMismatch: [
     `create table public."Items" (id int);
 alter table public.items enable row level security;
