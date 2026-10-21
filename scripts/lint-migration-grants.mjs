@@ -34,7 +34,24 @@ const SELECT_INTO = new RegExp(
   String.raw`(?<!\b(?:insert|merge)\s+)\binto\s+(?:(temporary|temp|unlogged)\s+)?(?:table\s+)?${IDENT}`,
   "gi",
 );
-const SERIAL = new RegExp(String.raw`(?:^|[(,])\s*(${NAME})\s+(?:small|big)?serial\b`, "gi");
+const SERIAL = new RegExp(String.raw`(?:^|[(,])\s*(?:add\s+(?:column\s+)?(?:if\s+not\s+exists\s+)?)?(${NAME})\s+(?:small|big)?serial\b`, "gi");
+// `alter table public.T add [column] C serial` creates the sequence T_C_seq.
+const ALTER_ADD = new RegExp(String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${IDENT}([^;]*)`, "gi");
+// `alter table <schema>.T set schema public` brings a table into public.
+const SET_SCHEMA = new RegExp(
+  String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})\s+set\s+schema\s+${PUBLIC}\b`,
+  "gi",
+);
+const VIEW = new RegExp(
+  String.raw`\bcreate\s+(?:or\s+replace\s+)?(?:(temporary|temp)\s+)?(?:recursive\s+|materialized\s+)?view\s+(?:if\s+not\s+exists\s+)?${IDENT}`,
+  "gi",
+);
+const SEQUENCE = new RegExp(
+  String.raw`\bcreate\s+(?:(temporary|temp|unlogged)\s+)?sequence\s+(?:if\s+not\s+exists\s+)?${IDENT}`,
+  "gi",
+);
+// The privileges PostgREST needs: at least one of them must be held.
+const DATA_API = ["select", "insert", "update", "delete"];
 
 /** A name as Postgres resolves it: unquoted names fold to lower case. */
 function unquote(raw) {
@@ -138,11 +155,24 @@ function privilegesAtEnd(statements, at, kind, name) {
   return held;
 }
 
-/** Problems of one migration: one entry per table missing RLS or an explicit service_role grant. */
+/** Problems of one migration: one entry per object missing RLS or an explicit service_role grant. */
 export function lintMigration(sql) {
   const text = maskSql(sql);
   const problems = [];
+  // Tables and views made public in this migration, by name; the last creation counts
+  // (a drop and re-create discards earlier RLS and grants).
   const created = new Map();
+  const sequences = new Map();
+  const statementAt = (index) => {
+    const end = text.indexOf(";", index);
+    return text.slice(index, end === -1 ? text.length : end);
+  };
+  const serialsOf = (table, body, at) => {
+    for (const column of body.matchAll(SERIAL)) sequences.set(`${table}_${unquote(column[1])}_seq`, { at, table, column: unquote(column[1]) });
+  };
+  const create = (name, at, kind) => {
+    if (!created.has(name) || created.get(name).at <= at) created.set(name, { at, kind });
+  };
   for (const match of text.matchAll(CREATE)) {
     const [, temporary, schema, table] = match;
     if (temporary && /^temp/i.test(temporary)) continue;
@@ -152,17 +182,25 @@ export function lintMigration(sql) {
     }
     if (unquote(schema) !== "public") continue;
     const name = unquote(table);
-    // The last creation counts: a drop and re-create discards earlier RLS and grants.
-    const end = text.indexOf(";", match.index);
-    const body = text.slice(match.index, end === -1 ? text.length : end);
-    const serials = [...body.matchAll(SERIAL)].map((column) => unquote(column[1]));
-    created.set(name, { at: match.index, serials });
+    create(name, match.index, "table");
+    serialsOf(name, statementAt(match.index), match.index);
   }
   for (const match of text.matchAll(SELECT_INTO)) {
-    const [, temporary, table] = match;
-    if (temporary && /^temp/i.test(temporary)) continue;
-    const name = unquote(table);
-    if (!created.has(name) || created.get(name).at < match.index) created.set(name, { at: match.index, serials: [] });
+    if (match[1] && /^temp/i.test(match[1])) continue;
+    create(unquote(match[2]), match.index, "table");
+  }
+  for (const match of text.matchAll(SET_SCHEMA)) {
+    if (match[1] && unquote(match[1]) === "public") continue;
+    create(unquote(match[2]), match.index, "table");
+  }
+  for (const match of text.matchAll(VIEW)) {
+    if (match[1]) continue;
+    create(unquote(match[2]), match.index, "view");
+  }
+  for (const match of text.matchAll(ALTER_ADD)) serialsOf(unquote(match[1]), match[2], match.index);
+  for (const match of text.matchAll(SEQUENCE)) {
+    if (match[1] && /^temp/i.test(match[1])) continue;
+    sequences.set(unquote(match[2]), { at: match.index, table: null, column: null });
   }
   const statements = [...text.matchAll(PRIVILEGE)].map((match) => ({
     index: match.index,
@@ -172,19 +210,22 @@ export function lintMigration(sql) {
     roles: match[5],
     direction: match[4].toLowerCase(),
   })).filter((statement) => (statement.verb === "grant") === (statement.direction === "to"));
-  for (const [name, { at, serials }] of created) {
-    const rls = [...text.matchAll(RLS)].filter((match) => match.index > at && unquote(match[1]) === name);
-    if (!rls.length) problems.push(`public.${name}: no "alter table public.${name} enable row level security" after its create table`);
-    else if (rls.at(-1)[2].toLowerCase() === "disable") problems.push(`public.${name}: row level security is disabled again later in the migration`);
-    if (!privilegesAtEnd(statements, at, "table", name).size) {
-      problems.push(`public.${name}: no explicit "grant ... on public.${name} to service_role" left in force after its create table`);
+  for (const [name, { at, kind }] of created) {
+    if (kind === "table") {
+      const rls = [...text.matchAll(RLS)].filter((match) => match.index > at && unquote(match[1]) === name);
+      if (!rls.length) problems.push(`public.${name}: no "alter table public.${name} enable row level security" after its create table`);
+      else if (rls.at(-1)[2].toLowerCase() === "disable") problems.push(`public.${name}: row level security is disabled again later in the migration`);
     }
-    for (const column of serials) {
-      const sequence = `${name}_${column}_seq`;
-      const held = privilegesAtEnd(statements, at, "sequence", sequence);
-      if (!held.has("usage") && !held.has("update")) {
-        problems.push(`public.${name}: serial column ${column} needs "grant usage, select on sequence public.${sequence} to service_role" (nextval needs usage or update)`);
-      }
+    const held = privilegesAtEnd(statements, at, "table", name);
+    if (!DATA_API.some((privilege) => held.has(privilege))) {
+      problems.push(`public.${name}: no explicit "grant select|insert|update|delete on public.${name} to service_role" left in force after its create ${kind}`);
+    }
+  }
+  for (const [sequence, { at, table, column }] of sequences) {
+    const held = privilegesAtEnd(statements, at, "sequence", sequence);
+    if (!held.has("usage") && !held.has("update")) {
+      const what = table ? `public.${table}: serial column ${column}` : `public.${sequence}: sequence`;
+      problems.push(`${what} needs "grant usage, select on sequence public.${sequence} to service_role" (nextval needs usage or update)`);
     }
   }
   return problems;

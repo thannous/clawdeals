@@ -49,6 +49,12 @@ revoke select on public.items from service_role;`,
 alter table public.items enable row level security;
 grant select on public.items to service_role with grant option;
 revoke grant option for select on public.items from service_role;`,
+  viewWithGrant: `create or replace view public.summary as select 1 as n;
+grant select on public.summary to service_role;`,
+  sequenceWithUsage: `create sequence if not exists public.counter_seq;
+grant usage, select on sequence public.counter_seq to service_role;`,
+  addSerialWithGrant: `alter table public.existing add column if not exists n bigserial;
+grant usage on sequence public.existing_n_seq to service_role;`,
   insertIntoAndPlpgsqlInto: `create table public.items (id int);
 alter table public.items enable row level security;
 grant select, insert on public.items to service_role;
@@ -139,6 +145,29 @@ create table public.items (id int);`,
   selectIntoTable: [
     "select 1 as id into table public.items;",
     /public\.items: no explicit "grant/,
+  ],
+  onlyNonDataApiPrivilege: [
+    `create table public.items (id int);
+alter table public.items enable row level security;
+grant trigger, references on public.items to service_role;`,
+    /no explicit "grant select\|insert/,
+  ],
+  viewWithoutGrant: [
+    "create view public.summary as select 1 as n;",
+    /public\.summary: no explicit "grant .* after its create view/,
+  ],
+  movedIntoPublic: [
+    `create table private.items (id int);
+alter table private.items set schema public;`,
+    /public\.items: no "alter table/,
+  ],
+  sequenceWithoutGrant: [
+    "create sequence public.counter_seq;",
+    /public\.counter_seq: sequence needs "grant usage/,
+  ],
+  addSerialWithoutGrant: [
+    "alter table public.existing add column n serial;",
+    /public\.existing: serial column n needs/,
   ],
   quotedNameMismatch: [
     `create table public."Items" (id int);
