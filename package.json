@@ -125,7 +125,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/node": "^24.19.2",
     "@types/react": "19.3.0",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
     "ai": "7.0.148",
     "braces": "file:tools/braces",
     "dotenv": "^16.6.1",
@@ -137,7 +137,7 @@
     "postcss": "^8.5.26",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.3",
-    "vitest": "4.1.11",
+    "vitest": "4.1.12",
     "wrangler": "^4.5.0"
   },
   "overrides": {
