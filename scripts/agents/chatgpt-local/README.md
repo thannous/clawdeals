@@ -12,8 +12,8 @@ de proposer cette fonction dans le service commercial hébergé ClawDeals.
 Depuis la racine du dépôt :
 
 ```sh
-mise exec node@24.19.0 -- npm --prefix scripts/agents/chatgpt-local ci --ignore-scripts
-mise exec node@24.19.0 -- npm run dev:chatgpt
+mise exec node@24.22.1 -- npm --prefix scripts/agents/chatgpt-local ci --ignore-scripts
+mise exec node@24.22.1 -- npm run dev:chatgpt
 ```
 
 Ouvrir <http://127.0.0.1:4327/fr/browse>, choisir une annonce, puis
@@ -46,8 +46,8 @@ le jeton de renouvellement OpenAI, puis efface les identifiants locaux.
 Depuis la racine du dépôt, avec les versions Node/npm du projet :
 
 ```sh
-mise exec node@24.19.0 -- npm --prefix scripts/agents/chatgpt-local ci --ignore-scripts
-mise exec node@24.19.0 -- npm --prefix scripts/agents/chatgpt-local start
+mise exec node@24.22.1 -- npm --prefix scripts/agents/chatgpt-local ci --ignore-scripts
+mise exec node@24.22.1 -- npm --prefix scripts/agents/chatgpt-local start
 ```
 
 Ouvrir <http://127.0.0.1:4318>, sélectionner **Continue with ChatGPT**, puis
@@ -100,7 +100,7 @@ l'isolation du profil doit refuser après la première association.
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
 TESTERARMY_CHATGPT_LOCAL=1 TESTERARMY_REDIS_FIXTURE=local-mock \
 E2E_BASE_URL=http://127.0.0.1:4327 PARITY_OUTPUT=.e2e/validation/chatgpt-local-UNIQUE \
-mise exec node@24.19.0 -- npm run test:mission -- \
+mise exec node@24.22.1 -- npm run test:mission -- \
   e2e/testerarmy/mission-live/chatgpt-local.e2e.ts --target desktop
 ```
 
@@ -122,7 +122,7 @@ Après démarrage de `npm run dev:chatgpt`, lancer :
 CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
 TESTERARMY_CHATGPT_UI=1 TESTERARMY_AI=0 E2E_BASE_URL=http://127.0.0.1:4327 \
 PARITY_OUTPUT=.e2e/validation/chatgpt-recovery-UNIQUE \
-mise exec node@24.19.0 -- npm run test:testerarmy -- \
+mise exec node@24.22.1 -- npm run test:testerarmy -- \
   e2e/testerarmy/chatgpt-local-recovery.e2e.ts
 ```
 
