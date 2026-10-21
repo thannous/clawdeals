@@ -48,6 +48,10 @@ supabase stack destroy --yes  # delete its data and free its ports
 supabase stack list         # every local project on the machine
 ```
 
+## Database Grant Check
+
+`npm run check:db-grants` starts a native stack (or reuses this checkout's running one), runs `supabase db reset`, reads `pg_catalog`, then stops and destroys the stack. It fails when a public table or partition lacks RLS or an explicit `service_role` grant, when `anon` or `authenticated` hold a public table privilege not listed in `supabase/db-grants-allowlist.json` (each entry needs a reason), or when a SECURITY DEFINER function in public is executable by `PUBLIC` or `anon`. It reports public views and SECURITY DEFINER functions `authenticated` can execute. `npm run verify:pr` runs it when `supabase/**` or the check changes. Because it destroys the stack, stop any local work on it first.
+
 ## Limits
 
 - `config.toml` settings that the stack does not support make `supabase start` fail with a message naming the setting: `api.tls` enabled, Analytics backends other than Postgres, custom Auth email templates with `content_path`, Storage Analytics and vector buckets, a custom `edge_runtime.deno_version`, `db.major_version` other than 15 or 17, and the `experimental.s3_*` OrioleDB settings. None is enabled here.

@@ -1,0 +1,4 @@
+{
+  "comment": "Table privileges that anon or authenticated may hold in public, each with its reason. Empty: the app is server-only and talks to PostgREST with service_role.",
+  "tables": []
+}
