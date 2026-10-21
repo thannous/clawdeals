@@ -48,9 +48,18 @@ test("fails anon or authenticated table privileges unless the allowlist names th
   ]);
 });
 
+test("a column-level grant is a privilege like any other", () => {
+  const { failures } = evaluate({ relations: [table("deals", { exposed: ["anon:SELECT(columns)"] })], functions: [] });
+  assert.deepEqual(failures, ["public.deals: anon:SELECT(columns) is granted, and supabase/db-grants-allowlist.json does not list it"]);
+});
+
+test("an empty public schema after the reset fails", () => {
+  assert.deepEqual(evaluate({ relations: [], functions: [] }).failures, ["public: no tables after the reset, so the migrations were not applied"]);
+});
+
 test("a view exposed to anon fails like a table", () => {
   const { failures, views } = evaluate({
-    relations: [{ name: "v", kind: "v", partition: false, rls: false, service_role: [], exposed: ["anon:SELECT"] }],
+    relations: [table("deals"), { name: "v", kind: "v", partition: false, rls: false, service_role: [], exposed: ["anon:SELECT"] }],
     functions: [],
   });
   assert.equal(views.length, 1);
@@ -59,7 +68,7 @@ test("a view exposed to anon fails like a table", () => {
 
 test("fails security definer functions PUBLIC or anon can execute, reports authenticated", () => {
   const { failures, notes } = evaluate({
-    relations: [],
+    relations: [table("deals")],
     functions: [
       { signature: "open_door()", public_exec: true, anon_exec: true, authenticated_exec: true, service_role_exec: true },
       { signature: "for_users()", public_exec: false, anon_exec: false, authenticated_exec: true, service_role_exec: true },

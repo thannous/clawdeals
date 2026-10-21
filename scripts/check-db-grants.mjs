@@ -28,7 +28,13 @@ select c.relname as name, c.relkind as kind, c.relispartition as partition, c.re
         where a.grantee = 'service_role'::regrole order by 1) as service_role,
   array(select r || ':' || p from unnest(array['anon','authenticated']) r,
         unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) p
-        where has_table_privilege(r, c.oid, p) order by 1) as exposed
+        where has_table_privilege(r, c.oid, p)
+        union all
+        -- Column-level grants, which has_table_privilege does not see.
+        select r || ':' || p || '(columns)' from unnest(array['anon','authenticated']) r,
+        unnest(array['SELECT','INSERT','UPDATE','REFERENCES']) p
+        where has_any_column_privilege(r, c.oid, p) and not has_table_privilege(r, c.oid, p)
+        order by 1) as exposed
 from pg_catalog.pg_class c
 join pg_catalog.pg_namespace n on n.oid = c.relnamespace
 where n.nspname = 'public' and c.relkind in ('r', 'p', 'v', 'm', 'f')
@@ -89,6 +95,10 @@ export function evaluate({ relations, functions }, allowlist = { tables: [] }) {
       if (!allowed.has(`${row.name} ${grant}`)) failures.push(`${label}: ${grant} is granted, and supabase/db-grants-allowlist.json does not list it`);
     }
   }
+  // A reset that applied nothing must not pass on an empty catalog.
+  if (!relations.some((row) => row.kind === "r" || row.kind === "p")) {
+    failures.push("public: no tables after the reset, so the migrations were not applied");
+  }
   for (const row of functions) {
     const label = `public.${row.signature}`;
     if (row.public_exec) failures.push(`${label} (security definer): PUBLIC can execute it`);
@@ -141,16 +151,22 @@ function supabase(args, { timeout = 300000, quiet = false } = {}) {
 
 // Nothing to clean up until the CLI is known to be there.
 let cleaned = true;
-/** Stops and destroys this project's stack; safe to call more than once. */
+/**
+ * Stops and destroys this project's stack; safe to call more than once.
+ * Returns false when either step did not succeed, so the run cannot pass.
+ */
 function cleanup() {
-  if (cleaned) return;
+  if (cleaned) return true;
   cleaned = true;
+  let ok = true;
   for (const args of [["stop", "--output-format", "json"], ["stack", "destroy", "--yes", "--output-format", "json"]]) {
     const result = spawnSync("supabase", args, { encoding: "utf8", timeout: 120000 });
     if (result.status !== 0 && !/No managed stack/i.test(`${result.stdout}${result.stderr}`)) {
-      console.error(`${PREFIX} supabase ${args.join(" ")} did not succeed: ${(result.stderr || result.stdout || "").trim().slice(-500)}`);
+      ok = false;
+      console.error(`${PREFIX} FAIL supabase ${args.join(" ")} did not succeed (${result.error?.message ?? `exit ${result.status}`}): ${(result.stderr || result.stdout || "").trim().slice(-500)}`);
     }
   }
+  return ok;
 }
 
 function seconds(since) {
@@ -176,7 +192,7 @@ async function main() {
   try {
     const status = await supabase(["status", "--output-format", "json"], { quiet: true, timeout: 60000 });
     if (status.status === 0) {
-      console.log(`${PREFIX} reusing the running stack of this checkout (CLI ${version})`);
+      console.log(`${PREFIX} reusing the running stack of this checkout (CLI ${version}); the reset wipes its data and the stack is destroyed at the end`);
     } else {
       await supabase(["start", "--runtime", "native", "--output-format", "json"]);
       console.log(`${PREFIX} native stack started (CLI ${version}) in ${seconds(started)}`);
@@ -199,7 +215,10 @@ async function main() {
       console.log(`${PREFIX} passed in ${seconds(started)} (stack teardown follows)`);
     }
   } finally {
-    cleanup();
+    if (!cleanup()) {
+      console.error(`${PREFIX} the stack teardown failed; run \`supabase stop\` and \`supabase stack destroy --yes\` here`);
+      process.exitCode = 1;
+    }
   }
 }
 

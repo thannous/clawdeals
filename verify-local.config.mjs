@@ -155,7 +155,8 @@ const config = {
       // destroys a native stack, about 15 s; only when the database side changes.
       name: "db-grants",
       command: "npm run test:db-grants && npm run check:db-grants",
-      when: ["supabase/**", "scripts/check-db-grants.mjs", "scripts/check-db-grants.test.mjs"],
+      // package.json holds the npm scripts the step runs.
+      when: ["supabase/**", "scripts/check-db-grants.mjs", "scripts/check-db-grants.test.mjs", "package.json"],
       inputs: ["supabase/**", "scripts/check-db-grants.mjs", "scripts/check-db-grants.test.mjs", "package.json"],
       // Time for the stack teardown when the step is stopped.
       env: { VERIFY_LOCAL_STEP_GRACE_MS: "30000" },
