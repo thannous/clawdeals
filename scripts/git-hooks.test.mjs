@@ -251,5 +251,5 @@ test("without node the hook stops with a clear message", () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /node is not on PATH/);
-  assert.match(result.stderr, /Node 24\.19\.0/);
+  assert.match(result.stderr, /Node 24\.22\.1/);
 });
