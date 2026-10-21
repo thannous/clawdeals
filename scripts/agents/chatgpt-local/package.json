@@ -7,7 +7,7 @@
     "start": "node pilot.mjs"
   },
   "engines": {
-    "node": ">=24.19.0 <25"
+    "node": ">=24.22.1 <25"
   },
   "dependencies": {
     "jose": "6.2.12"
