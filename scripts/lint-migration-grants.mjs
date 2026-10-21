@@ -28,6 +28,12 @@ const RLS = new RegExp(
 );
 const PRIVILEGE = /\b(grant|revoke)\s+([^;]*?)\s+on\s+([^;]*?)\s+(to|from)\s+([^;]*?)\s*;/gi;
 const IN_LIST = new RegExp(String.raw`^${IDENT}$`, "i");
+// `select ... into [table] public.X` also creates a table (not `insert into`
+// or `merge into`, and not a PL/pgSQL `into` a variable, which has no schema).
+const SELECT_INTO = new RegExp(
+  String.raw`(?<!\b(?:insert|merge)\s+)\binto\s+(?:(temporary|temp|unlogged)\s+)?(?:table\s+)?${IDENT}`,
+  "gi",
+);
 const SERIAL = new RegExp(String.raw`(?:^|[(,])\s*(${NAME})\s+(?:small|big)?serial\b`, "gi");
 
 /** A name as Postgres resolves it: unquoted names fold to lower case. */
@@ -99,17 +105,37 @@ function covers(objects, kind, name) {
   });
 }
 
-/** Whether the latest grant to service_role on public.<name> after <at> is not undone by a later revoke. */
-function grantedAtEnd(statements, at, kind, name) {
-  let state = false;
+const ALL_PRIVILEGES = {
+  table: ["select", "insert", "update", "delete", "truncate", "references", "trigger", "maintain"],
+  sequence: ["usage", "select", "update"],
+};
+
+/** The privileges a grant or revoke list names ("all [privileges]" expands; column lists drop). */
+function privilegeNames(list, kind) {
+  const names = splitList(list.replace(/\([^)]*\)/g, "")).map((item) => item.toLowerCase().replace(/\s+/g, " "));
+  if (names.some((item) => item === "all" || item === "all privileges")) return ALL_PRIVILEGES[kind];
+  return names;
+}
+
+/**
+ * The privileges service_role holds on public.<name> at the end of the
+ * migration, from the grants and revokes after <at> replayed in order (a
+ * `revoke grant option for` keeps the privilege).
+ */
+function privilegesAtEnd(statements, at, kind, name) {
+  const held = new Set();
   for (const statement of statements) {
     if (statement.index < at) continue;
     const roles = splitList(statement.roles.replace(/\bwith\s+grant\s+option\b|\bcascade\b|\brestrict\b/gi, ""))
       .map((role) => role.toLowerCase());
     if (!roles.includes("service_role") || !covers(statement.objects, kind, name)) continue;
-    state = statement.verb === "grant";
+    if (statement.verb === "revoke" && /^grant\s+option\s+for\b/i.test(statement.privileges)) continue;
+    for (const privilege of privilegeNames(statement.privileges, kind)) {
+      if (statement.verb === "grant") held.add(privilege);
+      else held.delete(privilege);
+    }
   }
-  return state;
+  return held;
 }
 
 /** Problems of one migration: one entry per table missing RLS or an explicit service_role grant. */
@@ -126,15 +152,22 @@ export function lintMigration(sql) {
     }
     if (unquote(schema) !== "public") continue;
     const name = unquote(table);
-    if (created.has(name)) continue;
+    // The last creation counts: a drop and re-create discards earlier RLS and grants.
     const end = text.indexOf(";", match.index);
     const body = text.slice(match.index, end === -1 ? text.length : end);
     const serials = [...body.matchAll(SERIAL)].map((column) => unquote(column[1]));
     created.set(name, { at: match.index, serials });
   }
+  for (const match of text.matchAll(SELECT_INTO)) {
+    const [, temporary, table] = match;
+    if (temporary && /^temp/i.test(temporary)) continue;
+    const name = unquote(table);
+    if (!created.has(name) || created.get(name).at < match.index) created.set(name, { at: match.index, serials: [] });
+  }
   const statements = [...text.matchAll(PRIVILEGE)].map((match) => ({
     index: match.index,
     verb: match[1].toLowerCase(),
+    privileges: match[2],
     objects: match[3],
     roles: match[5],
     direction: match[4].toLowerCase(),
@@ -143,13 +176,14 @@ export function lintMigration(sql) {
     const rls = [...text.matchAll(RLS)].filter((match) => match.index > at && unquote(match[1]) === name);
     if (!rls.length) problems.push(`public.${name}: no "alter table public.${name} enable row level security" after its create table`);
     else if (rls.at(-1)[2].toLowerCase() === "disable") problems.push(`public.${name}: row level security is disabled again later in the migration`);
-    if (!grantedAtEnd(statements, at, "table", name)) {
+    if (!privilegesAtEnd(statements, at, "table", name).size) {
       problems.push(`public.${name}: no explicit "grant ... on public.${name} to service_role" left in force after its create table`);
     }
     for (const column of serials) {
       const sequence = `${name}_${column}_seq`;
-      if (!grantedAtEnd(statements, at, "sequence", sequence)) {
-        problems.push(`public.${name}: serial column ${column} needs "grant usage, select on sequence public.${sequence} to service_role"`);
+      const held = privilegesAtEnd(statements, at, "sequence", sequence);
+      if (!held.has("usage") && !held.has("update")) {
+        problems.push(`public.${name}: serial column ${column} needs "grant usage, select on sequence public.${sequence} to service_role" (nextval needs usage or update)`);
       }
     }
   }

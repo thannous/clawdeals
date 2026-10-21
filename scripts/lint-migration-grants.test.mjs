@@ -41,6 +41,19 @@ alter table public.items enable row level security;
 revoke all on public.items from public, anon, authenticated, service_role;
 grant select on public.items to service_role;`,
   temporaryUnqualified: "create temporary table scratch (id int);",
+  partialRevokeKeepsInsert: `create table public.items (id int);
+alter table public.items enable row level security;
+grant select, insert on public.items to service_role;
+revoke select on public.items from service_role;`,
+  revokeGrantOptionOnly: `create table public.items (id int);
+alter table public.items enable row level security;
+grant select on public.items to service_role with grant option;
+revoke grant option for select on public.items from service_role;`,
+  insertIntoAndPlpgsqlInto: `create table public.items (id int);
+alter table public.items enable row level security;
+grant select, insert on public.items to service_role;
+insert into public.items (id) values (1);
+do $$ declare n int; begin select count(*) into n from public.items; end $$;`,
 };
 
 const failing = {
@@ -107,6 +120,25 @@ grant select, insert on public.items to service_role;`,
   unqualifiedCreate: [
     "create table if not exists items (id int);",
     /items: "create table" without a schema/,
+  ],
+  sequenceSelectOnly: [
+    `create table public.items (id serial primary key);
+alter table public.items enable row level security;
+grant select, insert on public.items to service_role;
+grant select on sequence public.items_id_seq to service_role;`,
+    /nextval needs usage or update/,
+  ],
+  recreatedAfterGrant: [
+    `create table public.items (id int);
+alter table public.items enable row level security;
+grant select on public.items to service_role;
+drop table public.items;
+create table public.items (id int);`,
+    /public\.items: no "alter table/,
+  ],
+  selectIntoTable: [
+    "select 1 as id into table public.items;",
+    /public\.items: no explicit "grant/,
   ],
   quotedNameMismatch: [
     `create table public."Items" (id int);
