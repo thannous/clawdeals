@@ -27,7 +27,8 @@ select c.relname as name, c.relkind as kind, c.relispartition as partition, c.re
   array(select distinct a.privilege_type from aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) a
         where a.grantee = 'service_role'::regrole order by 1) as service_role,
   array(select r || ':' || p from unnest(array['anon','authenticated']) r,
-        unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) p
+        -- MAINTAIN is a table privilege from PostgreSQL 17 (supabase/config.toml major_version).
+        unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN']) p
         where has_table_privilege(r, c.oid, p)
         union all
         -- Column-level grants, which has_table_privilege does not see.
@@ -159,8 +160,11 @@ function cleanup() {
   if (cleaned) return true;
   cleaned = true;
   let ok = true;
-  for (const args of [["stop", "--output-format", "json"], ["stack", "destroy", "--yes", "--output-format", "json"]]) {
-    const result = spawnSync("supabase", args, { encoding: "utf8", timeout: 120000 });
+  // 15 s + 12 s: both fit in the 30 s step grace verify:pr gives on a stop
+  // (VERIFY_LOCAL_STEP_GRACE_MS in verify-local.config.mjs); each takes a
+  // second or two normally.
+  for (const [args, timeout] of [[["stop", "--output-format", "json"], 15000], [["stack", "destroy", "--yes", "--output-format", "json"], 12000]]) {
+    const result = spawnSync("supabase", args, { encoding: "utf8", timeout, killSignal: "SIGKILL" });
     if (result.status !== 0 && !/No managed stack/i.test(`${result.stdout}${result.stderr}`)) {
       ok = false;
       console.error(`${PREFIX} FAIL supabase ${args.join(" ")} did not succeed (${result.error?.message ?? `exit ${result.status}`}): ${(result.stderr || result.stdout || "").trim().slice(-500)}`);

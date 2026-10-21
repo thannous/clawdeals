@@ -48,6 +48,11 @@ test("fails anon or authenticated table privileges unless the allowlist names th
   ]);
 });
 
+test("MAINTAIN counts as a table privilege", () => {
+  const { failures } = evaluate({ relations: [table("deals", { exposed: ["authenticated:MAINTAIN"] })], functions: [] });
+  assert.deepEqual(failures, ["public.deals: authenticated:MAINTAIN is granted, and supabase/db-grants-allowlist.json does not list it"]);
+});
+
 test("a column-level grant is a privilege like any other", () => {
   const { failures } = evaluate({ relations: [table("deals", { exposed: ["anon:SELECT(columns)"] })], functions: [] });
   assert.deepEqual(failures, ["public.deals: anon:SELECT(columns) is granted, and supabase/db-grants-allowlist.json does not list it"]);
