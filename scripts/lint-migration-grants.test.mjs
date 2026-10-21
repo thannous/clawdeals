@@ -55,6 +55,10 @@ grant select on public.summary to service_role;`,
 grant usage, select on sequence public.counter_seq to service_role;`,
   addSerialWithGrant: `alter table public.existing add column if not exists n bigserial;
 grant usage on sequence public.existing_n_seq to service_role;`,
+  foreignTableWithGrant: `create foreign table public.remote_items (id int) server remote;
+grant select on public.remote_items to service_role;`,
+  privateViewAndSequence: `create view private.summary as select 1 as n;
+create sequence private.counter_seq;`,
   insertIntoAndPlpgsqlInto: `create table public.items (id int);
 alter table public.items enable row level security;
 grant select, insert on public.items to service_role;
@@ -168,6 +172,23 @@ alter table private.items set schema public;`,
   addSerialWithoutGrant: [
     "alter table public.existing add column n serial;",
     /public\.existing: serial column n needs/,
+  ],
+  unqualifiedView: [
+    "create or replace view summary as select 1 as n;",
+    /summary: "create view" without a schema/,
+  ],
+  unqualifiedSequence: [
+    "create sequence if not exists counter_seq;",
+    /counter_seq: "create sequence" without a schema/,
+  ],
+  viewMovedIntoPublic: [
+    `create materialized view private.summary as select 1 as n;
+alter materialized view private.summary set schema public;`,
+    /public\.summary: no explicit "grant .* after its create materialized view/,
+  ],
+  foreignTableWithoutGrant: [
+    "create foreign table public.remote_items (id int) server remote;",
+    /public\.remote_items: no explicit "grant .* after its create foreign table/,
   ],
   quotedNameMismatch: [
     `create table public."Items" (id int);

@@ -20,7 +20,7 @@ export const RULE_AFTER = "20260708221322";
 const NAME = String.raw`(?:"(?:[^"]|"")+"|[A-Za-z_][A-Za-z0-9_$]*)`;
 const PUBLIC = String.raw`(?:"public"|public)`;
 const IDENT = String.raw`${PUBLIC}\s*\.\s*(${NAME})`;
-const CREATE_HEAD = String.raw`\bcreate\s+(?:(?:global|local)\s+)?(?:(temporary|temp|unlogged)\s+)?table\s+(?:if\s+not\s+exists\s+)?`;
+const CREATE_HEAD = String.raw`\bcreate\s+(?:(?:global|local)\s+)?(?:(temporary|temp|unlogged|foreign)\s+)?table\s+(?:if\s+not\s+exists\s+)?`;
 const CREATE = new RegExp(String.raw`${CREATE_HEAD}(?:(${NAME})\s*\.\s*)?(${NAME})`, "gi");
 const RLS = new RegExp(
   String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${IDENT}[^;]*?\b(enable|disable)\s+row\s+level\s+security`,
@@ -37,17 +37,18 @@ const SELECT_INTO = new RegExp(
 const SERIAL = new RegExp(String.raw`(?:^|[(,])\s*(?:add\s+(?:column\s+)?(?:if\s+not\s+exists\s+)?)?(${NAME})\s+(?:small|big)?serial\b`, "gi");
 // `alter table public.T add [column] C serial` creates the sequence T_C_seq.
 const ALTER_ADD = new RegExp(String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?${IDENT}([^;]*)`, "gi");
-// `alter table <schema>.T set schema public` brings a table into public.
+// `alter [foreign] table|[materialized] view <schema>.T set schema public` brings it into public.
 const SET_SCHEMA = new RegExp(
-  String.raw`\balter\s+table\s+(?:if\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})\s+set\s+schema\s+${PUBLIC}\b`,
+  String.raw`\balter\s+(foreign\s+table|table|materialized\s+view|view)\s+(?:if\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})\s+set\s+schema\s+${PUBLIC}\b`,
   "gi",
 );
+// The schema group is optional so that an unqualified view or sequence is rejected.
 const VIEW = new RegExp(
-  String.raw`\bcreate\s+(?:or\s+replace\s+)?(?:(temporary|temp)\s+)?(?:recursive\s+|materialized\s+)?view\s+(?:if\s+not\s+exists\s+)?${IDENT}`,
+  String.raw`\bcreate\s+(?:or\s+replace\s+)?(?:(temporary|temp)\s+)?(?:recursive\s+|materialized\s+)?view\s+(?:if\s+not\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})`,
   "gi",
 );
 const SEQUENCE = new RegExp(
-  String.raw`\bcreate\s+(?:(temporary|temp|unlogged)\s+)?sequence\s+(?:if\s+not\s+exists\s+)?${IDENT}`,
+  String.raw`\bcreate\s+(?:(temporary|temp|unlogged)\s+)?sequence\s+(?:if\s+not\s+exists\s+)?(?:(${NAME})\s*\.\s*)?(${NAME})`,
   "gi",
 );
 // The privileges PostgREST needs: at least one of them must be held.
@@ -182,6 +183,11 @@ export function lintMigration(sql) {
     }
     if (unquote(schema) !== "public") continue;
     const name = unquote(table);
+    // A foreign table is a PostgREST endpoint too, but takes no RLS rule here.
+    if (temporary && /^foreign/i.test(temporary)) {
+      create(name, match.index, "foreign table");
+      continue;
+    }
     create(name, match.index, "table");
     serialsOf(name, statementAt(match.index), match.index);
   }
@@ -190,17 +196,30 @@ export function lintMigration(sql) {
     create(unquote(match[2]), match.index, "table");
   }
   for (const match of text.matchAll(SET_SCHEMA)) {
-    if (match[1] && unquote(match[1]) === "public") continue;
-    create(unquote(match[2]), match.index, "table");
+    if (match[2] && unquote(match[2]) === "public") continue;
+    const kind = match[1].toLowerCase().replace(/\s+/g, " ");
+    create(unquote(match[3]), match.index, kind === "table" ? "table" : kind);
   }
   for (const match of text.matchAll(VIEW)) {
-    if (match[1]) continue;
-    create(unquote(match[2]), match.index, "view");
+    const [, temporary, schema, view] = match;
+    if (temporary) continue;
+    if (!schema) {
+      problems.push(`${unquote(view)}: "create view" without a schema; write public.${unquote(view)} (or the schema it belongs to)`);
+      continue;
+    }
+    if (unquote(schema) !== "public") continue;
+    create(unquote(view), match.index, "view");
   }
   for (const match of text.matchAll(ALTER_ADD)) serialsOf(unquote(match[1]), match[2], match.index);
   for (const match of text.matchAll(SEQUENCE)) {
-    if (match[1] && /^temp/i.test(match[1])) continue;
-    sequences.set(unquote(match[2]), { at: match.index, table: null, column: null });
+    const [, temporary, schema, sequence] = match;
+    if (temporary && /^temp/i.test(temporary)) continue;
+    if (!schema) {
+      problems.push(`${unquote(sequence)}: "create sequence" without a schema; write public.${unquote(sequence)} (or the schema it belongs to)`);
+      continue;
+    }
+    if (unquote(schema) !== "public") continue;
+    sequences.set(unquote(sequence), { at: match.index, table: null, column: null });
   }
   const statements = [...text.matchAll(PRIVILEGE)].map((match) => ({
     index: match.index,
