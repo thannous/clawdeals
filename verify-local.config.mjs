@@ -33,6 +33,8 @@ const NOT_APP = [
   "scripts/verify-sdk.sh",
   "scripts/lint-migration-grants.mjs",
   "scripts/lint-migration-grants.test.mjs",
+  "scripts/check-db-grants.mjs",
+  "scripts/check-db-grants.test.mjs",
 ];
 
 // sha256 of this repository's own copy of scripts/verify-local.mjs (engine v3,
@@ -94,6 +96,9 @@ const config = {
     "scripts/git-hooks.test.mjs",
     "scripts/verify-local.config.test.mjs",
     "scripts/lint-migration-grants.test.mjs",
+    // The post-reset database grant check and its tests.
+    "scripts/check-db-grants.mjs",
+    "scripts/check-db-grants.test.mjs",
   ],
   checks: [
     {
@@ -139,6 +144,22 @@ const config = {
         "scripts/lint-migration-grants.test.mjs",
         "package.json",
       ],
+    },
+    {
+      // After a native `supabase db reset`, pg_catalog must show RLS and an
+      // explicit service_role grant on every public table (partitions
+      // included), no anon/authenticated table privilege outside
+      // supabase/db-grants-allowlist.json, and no SECURITY DEFINER function in
+      // public executable by PUBLIC or anon (scripts/check-db-grants.mjs, issue
+      // #32). Needs the supabase CLI and fails without it. Starts and always
+      // destroys a native stack, about 15 s; only when the database side changes.
+      name: "db-grants",
+      command: "npm run test:db-grants && npm run check:db-grants",
+      // package.json holds the npm scripts the step runs.
+      when: ["supabase/**", "scripts/check-db-grants.mjs", "scripts/check-db-grants.test.mjs", "package.json"],
+      inputs: ["supabase/**", "scripts/check-db-grants.mjs", "scripts/check-db-grants.test.mjs", "package.json"],
+      // Time for the stack teardown when the step is stopped.
+      env: { VERIFY_LOCAL_STEP_GRACE_MS: "30000" },
     },
     {
       // ESLint on the JS/TS files changed since the merge base with

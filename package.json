@@ -87,6 +87,8 @@
     "test:git-hooks": "node --test scripts/git-hooks.test.mjs",
     "lint:migration-grants": "node scripts/lint-migration-grants.mjs",
     "test:migration-grants": "node --test scripts/lint-migration-grants.test.mjs",
+    "check:db-grants": "node scripts/check-db-grants.mjs",
+    "test:db-grants": "node --test scripts/check-db-grants.test.mjs",
     "test:verify-local": "node --test scripts/test-verify-local.mjs",
     "verify:pr": "node scripts/verify-local.mjs pr",
     "verify:release": "node scripts/verify-local.mjs release"
