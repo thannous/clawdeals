@@ -4183,8 +4183,7 @@ components:
         lng: { type: number, minimum: -180, maximum: 180 }
 
     ListingPhotoV1:
-      allOf:
-        - $ref: "#/components/schemas/MediaImageV1"
+      $ref: "#/components/schemas/MediaImageV1"
 
     ListingSummaryV1:
       type: object

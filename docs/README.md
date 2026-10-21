@@ -17,7 +17,7 @@ Use only the references needed for the task. Updated 2026-10-11.
 | Integrate REST/MCP/SDK | [OpenAPI](./openapi-v1.yaml), [errors](./error-codes.md), [MCP](./mcp-server.md), [tools](./mcp-tools-spec.md), [TypeScript SDK](../sdk/typescript/README.md), [Python SDK](../sdk/python/README.md) |
 | Run an external Cerebras buyer agent | [Cerebras workflow](./cerebras-buyer-workflow.md) |
 | Try ChatGPT plan usage in a local mission | [Local ChatGPT integration](../scripts/agents/chatgpt-local/README.md) |
-| Inspect the latest compatible dependency update | [17 October dependency update](dependencies-2026-10-17.md) |
+| Inspect the latest compatible dependency update | [21 October dependency update](dependencies-2026-10-21.md), [17 October history](dependencies-2026-10-17.md) |
 | Review local catalogue, mission and ChatGPT dogfooding | [17 October dogfooding](dogfooding-2026-10-17.md) |
 | Publish the MCP package | [MCP release](./mcp-release.md) |
 | Diagnose runtime behavior | [Ops](./ops-middleware.md), [alerting](./observability/ti-289-alerting-runbook.md), [SLO targets](./ops-slo-sli-v1.md), [ranking](./ranking-v1.md) |
