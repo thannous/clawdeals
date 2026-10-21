@@ -21,6 +21,26 @@ alter table public.a enable row level security, force row level security;
 grant select, insert on all tables in schema public to service_role;`,
   otherSchema: "create table private.state (id int);",
   dynamic: "execute format('create table if not exists public.%I partition of public.audit_logs', name);",
+  serialWithSequenceGrant: `create table public.items (id bigserial primary key, label text);
+alter table public.items enable row level security;
+grant select, insert on public.items to service_role;
+grant usage, select on sequence public.items_id_seq to service_role;`,
+  serialWithSchemaSequences: `create table public.items (id serial primary key);
+alter table public.items enable row level security;
+grant all on all tables in schema public to service_role;
+grant usage, select on all sequences in schema public to service_role;`,
+  identityNeedsNoSequenceGrant: `create table public.items (id bigint generated always as identity primary key);
+alter table public.items enable row level security;
+grant select, insert on public.items to service_role;`,
+  revokeOtherRolesOnly: `create table public.items (id int);
+alter table public.items enable row level security;
+grant select on public.items to service_role;
+revoke all on public.items from anon, authenticated;`,
+  regrantAfterRevoke: `create table public.items (id int);
+alter table public.items enable row level security;
+revoke all on public.items from public, anon, authenticated, service_role;
+grant select on public.items to service_role;`,
+  temporaryUnqualified: "create temporary table scratch (id int);",
 };
 
 const failing = {
@@ -51,6 +71,42 @@ alter table public.items enable row level security;`,
 -- alter table public.items enable row level security;
 /* grant select on public.items to service_role; */`,
     /enable row level security/,
+  ],
+  grantOnlyInLiteral: [
+    `create table public.items (id int);
+alter table public.items enable row level security;
+comment on table public.items is 'grant select on public.items to service_role;';`,
+    /no explicit "grant/,
+  ],
+  rlsOnlyInLiteral: [
+    `create table public.items (id int);
+select 'alter table public.items enable row level security';
+grant select on public.items to service_role;`,
+    /enable row level security/,
+  ],
+  revokedAfterGrant: [
+    `create table public.items (id int);
+alter table public.items enable row level security;
+grant select on public.items to service_role;
+revoke all on public.items from anon, authenticated, service_role;`,
+    /left in force/,
+  ],
+  rlsDisabledAfterEnable: [
+    `create table public.items (id int);
+alter table public.items enable row level security;
+grant select on public.items to service_role;
+alter table public.items disable row level security;`,
+    /disabled again/,
+  ],
+  serialWithoutSequenceGrant: [
+    `create table public.items (id serial primary key);
+alter table public.items enable row level security;
+grant select, insert on public.items to service_role;`,
+    /serial column id needs "grant usage, select on sequence public\.items_id_seq/,
+  ],
+  unqualifiedCreate: [
+    "create table if not exists items (id int);",
+    /items: "create table" without a schema/,
   ],
   quotedNameMismatch: [
     `create table public."Items" (id int);
