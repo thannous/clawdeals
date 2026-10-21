@@ -31,6 +31,8 @@ const NOT_APP = [
   "scripts/verify-local.config.test.mjs",
   "scripts/has-playwright-browser.mjs",
   "scripts/verify-sdk.sh",
+  "scripts/lint-migration-grants.mjs",
+  "scripts/lint-migration-grants.test.mjs",
 ];
 
 // sha256 of this repository's own copy of scripts/verify-local.mjs (engine v3,
@@ -87,9 +89,11 @@ const config = {
     ".redocly.yaml",
     ".redocly.lint-ignore.yaml",
     "e2e/testerarmy/run-historical.mjs",
-    // The tests of the hook and of this config.
+    // The migration grant lint and the tests of the hook, of this config and of that lint.
+    "scripts/lint-migration-grants.mjs",
     "scripts/git-hooks.test.mjs",
     "scripts/verify-local.config.test.mjs",
+    "scripts/lint-migration-grants.test.mjs",
   ],
   checks: [
     {
@@ -121,6 +125,19 @@ const config = {
         "scripts/lint-changed.mjs",
         "scripts/lint-everything.mjs",
         "scripts/verify-local.config.test.mjs",
+      ],
+    },
+    {
+      // Every public table a migration creates enables RLS and grants
+      // service_role explicitly (scripts/lint-migration-grants.mjs), then the
+      // lint's own tests with passing and failing fixtures.
+      name: "migration-grants",
+      command: "npm run lint:migration-grants && npm run test:migration-grants",
+      inputs: [
+        "supabase/migrations/**",
+        "scripts/lint-migration-grants.mjs",
+        "scripts/lint-migration-grants.test.mjs",
+        "package.json",
       ],
     },
     {
