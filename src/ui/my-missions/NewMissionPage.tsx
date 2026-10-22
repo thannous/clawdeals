@@ -46,6 +46,10 @@ export default function NewMissionPage() {
     }
     try {
       const recovery = snapshot.ownerId ? readMissionRequest(snapshot.ownerId) : null;
+      if (!recovery && source.startsWith("smartphone:") && !readBuyMissionDraft(source, snapshot.ownerId)) {
+        setPrepared({ source, ownerId: snapshot.ownerId, recovery: null, error: "smartphoneDraftMissing" });
+        return;
+      }
       setPrepared({ source, ownerId: snapshot.ownerId, recovery });
     } catch {
       setPrepared({ source, ownerId: snapshot.ownerId, recovery: null, error: "requestStorageUnavailable" });
@@ -155,7 +159,7 @@ export default function NewMissionPage() {
           "Content-Type": "application/json", "Idempotency-Key": request.current.key,
           "X-Expected-Owner-Id": request.current.ownerId
         }, body: fingerprint
-      }));
+      }), pending);
       const view = missionView(created);
       if (request.current.draftSource) clearBuyMissionDraft(request.current.draftSource, request.current.ownerId);
       clearMissionRequest(request.current);
@@ -216,7 +220,7 @@ export default function NewMissionPage() {
         ) : null}
         <div hidden={Boolean(pending)}>
           {prepared?.source === source && !pending ? prepared.error ? (
-            <div className="px-4 space-y-3"><p role="alert" className="text-warning">{t(prepared.error)}</p><button onClick={() => void prepare()} className="underline">{t("retry")}</button></div>
+            <div className="px-4 space-y-3"><p role="alert" className="text-warning">{t(prepared.error)}</p><button onClick={() => void prepare()} className="underline">{t("retry")}</button>{prepared.error === "smartphoneDraftMissing" ? <Link href="/my/missions/new" className="ml-4 text-primary underline">{t("newTitle")}</Link> : null}</div>
           ) : prepared.recovery ? (
             <div className="px-4 space-y-3"><p className="text-warning">{t("uncertainResult")}</p><button onClick={resume} className="px-5 py-3 bg-primary text-bg font-semibold">{t("review")}</button></div>
           ) : <>

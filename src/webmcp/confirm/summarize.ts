@@ -1,3 +1,4 @@
+import { normalizeSmartphoneMissionCriteria, type SmartphoneMissionCriteria } from "../../lib/smartphone-mission";
 import type { BuyMissionView } from "../ui-bridge";
 import type { ConfirmRequest } from "./types";
 
@@ -21,6 +22,8 @@ export type ConfirmPolicyHint = {
 };
 
 export type ConfirmSummary = {
+  smartphone?: SmartphoneMissionCriteria;
+  smartphoneInvalid?: boolean;
   title: ConfirmMessage;
   sentence: ConfirmMessage;
   consequence: ConfirmMessage;
@@ -91,11 +94,18 @@ export function summarizeConfirmRequest(request: ConfirmRequest, mission: BuyMis
 
   switch (request.toolName) {
     case "create_buy_mission": {
+      const currency = args.market_code === "GB" ? "GBP" : "EUR";
+      let smartphone: Pick<ConfirmSummary, "smartphone" | "smartphoneInvalid"> = {};
+      if (args.smartphone !== undefined) {
+        try { smartphone = { smartphone: normalizeSmartphoneMissionCriteria(args.smartphone) }; }
+        catch { smartphone = { smartphoneInvalid: true }; }
+      }
       const hard = num(args.hard_budget_max);
       const preferred = num(args.preferred_price_max);
       const radius = num(args.radius_km);
       const where = str(args.location_label);
       return {
+        ...smartphone,
         title: message("confirm.createMission.title"),
         sentence: message("confirm.createMission.sentence", {
           query: str(args.query) || "—",

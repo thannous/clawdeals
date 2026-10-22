@@ -3,10 +3,10 @@ import { useRouter } from "next/router";
 import { useOwnerSessionGate } from "../auth/useOwnerSessionGate";
 import { missionRequest, MissionRequestError } from "./missionClient";
 
-export function useMissionResource<T>(path: string | null) {
+export function useMissionResource<T>(path: string | null, parse?: (value: unknown) => T) {
   const router = useRouter();
   const gate = useOwnerSessionGate();
-  const [result, setResult] = useState<{ key: string; data: T | null; error: string | null } | null>(null);
+  const [result, setResult] = useState<{ key: string; parse?: (value: unknown) => T; data: T | null; error: string | null } | null>(null);
   const [revision, setRevision] = useState(0);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   const next = router.asPath;
@@ -24,15 +24,15 @@ export function useMissionResource<T>(path: string | null) {
     };
     if (gate === "anonymous") { login(); return; }
     void missionRequest<T>(path, { signal: controller.signal }).then((value) => {
-      if (!controller.signal.aborted) setResult({ key, data: value, error: null });
+      if (!controller.signal.aborted) setResult({ key, parse, data: parse ? parse(value) : value, error: null });
     }).catch((cause) => {
       if (controller.signal.aborted) return;
       if (cause instanceof MissionRequestError && cause.status === 401) login();
-      else setResult({ key, data: null, error: cause instanceof MissionRequestError ? cause.code : "NETWORK_ERROR" });
+      else setResult({ key, parse, data: null, error: cause instanceof MissionRequestError ? cause.code : "NETWORK_ERROR" });
     });
     return () => controller.abort();
-  }, [path, gate, next, locale, revision, key, replace]);
+  }, [path, gate, next, locale, revision, key, replace, parse]);
 
-  const current = result?.key === key ? result : null;
+  const current = result?.key === key && result.parse === parse ? result : null;
   return { data: current?.data || null, error: current?.error || null, loading: !current, reload };
 }

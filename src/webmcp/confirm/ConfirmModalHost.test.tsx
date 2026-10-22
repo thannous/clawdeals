@@ -9,7 +9,9 @@ vi.mock("next-intl", () => ({
     const messages: Record<string, string> = {
       "confirm.makeOffer.sentence": "Send a binding offer of €{amount} on listing {listingId}.",
       "confirm.modal.approve": "Approve", "confirm.modal.approveEdited": "Approve edited", "confirm.modal.reject": "Reject",
-      "confirm.modal.editJson": "Edit tool parameters JSON", "confirm.errors.invalidJson": "Invalid JSON. Fix the payload or reset it."
+      "confirm.modal.editJson": "Edit tool parameters JSON", "confirm.errors.invalidJson": "Invalid JSON. Fix the payload or reset it.",
+      "modelSummary": "Exact model: {model}", "batterySummary": "Battery health: {minimum}%", "checkSummary": "Declared OK: {check}",
+      "checks.screen": "Screen", "mission.smartphone.validation": "Invalid smartphone criteria."
     };
     return (messages[key] || key).replace(/\{(\w+)\}/g, (_, name) => {
       const value = values?.[name] ?? "";
@@ -67,6 +69,28 @@ beforeEach(() => {
 });
 
 describe("ConfirmModalHost", () => {
+  // Regression: smartphone constraints were previously absent from the human confirmation.
+  it("shows normalized smartphone criteria and follows edits without approving invalid constraints", () => {
+    const smartphone = { version: 1, model: "  iPhone   14  ", battery_health_min: 85, required_checks: ["screen"] };
+    const args = { query: "iPhone", market_code: "GB", hard_budget_max: 500, radius_km: 25, smartphone };
+    state.pending = { ...offerRequest, toolName: "create_buy_mission", args };
+    render(<ConfirmModalHost />);
+    expect(screen.getByTestId("buy-mission-smartphone-summary").textContent).toContain("Exact model: iPhone 14");
+    expect(screen.getByTestId("buy-mission-smartphone-summary").textContent).toContain("Battery health: 85%");
+    expect(screen.getByTestId("buy-mission-smartphone-summary").textContent).toContain("Declared OK: Screen");
+
+    fireEvent.change(screen.getByLabelText("Edit tool parameters JSON"), { target: { value: JSON.stringify({ ...args, smartphone: { ...smartphone, battery_health_min: 102 } }) } });
+    fireEvent.click(screen.getByRole("button", { name: /Approve/ }));
+    expect(state.decide).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toContain("Invalid smartphone criteria");
+
+    const edited = { ...args, smartphone: { ...smartphone, battery_health_min: 90 } };
+    fireEvent.change(screen.getByLabelText("Edit tool parameters JSON"), { target: { value: JSON.stringify(edited) } });
+    expect(screen.getByTestId("buy-mission-smartphone-summary").textContent).toContain("Battery health: 90%");
+    fireEvent.click(screen.getByRole("button", { name: /Approve/ }));
+    expect(state.decide).toHaveBeenCalledWith({ kind: "approve", args: edited });
+  });
+
   it("rejects only through the explicit button; Escape and overlay never decide", () => {
     render(<ConfirmModalHost />);
     fireEvent.keyDown(document, { key: "Escape" });

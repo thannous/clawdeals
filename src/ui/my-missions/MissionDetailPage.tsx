@@ -6,21 +6,24 @@ import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
 import ListingCard from "../browse/ListingCard";
 import { MissionSummary } from "../webmcp/BuyMissionPanel";
-import { saveBuyMissionDraft } from "../webmcp/buyMissionDraft";
+import { saveBuyMissionDraft, smartphoneMissionDraft } from "../webmcp/buyMissionDraft";
 import { probeOwnerSession } from "../auth/ownerSessionProbe";
-import { missionRequest, missionView, missionStatus, type OwnerMission } from "./missionClient";
+import { confirmedOwnerMission, missionRequest, missionView, missionStatus, type OwnerMission } from "./missionClient";
 import { useMissionResource } from "./useMissionResource";
 import MissionChatGPT from "./MissionChatGPT";
+import { confirmedMissionMatches, confirmedSmartphoneMissionMatches, type MissionMatches } from "./missionMatches";
+import SmartphoneMissionResults from "./SmartphoneMissionResults";
 
 export default function MissionDetailPage() {
   const t = useTranslations("myMissions");
   const router = useRouter();
   const id = typeof router.query.mission_id === "string" ? router.query.mission_id : null;
   const path = router.isReady && id ? `/${encodeURIComponent(id)}` : null;
-  const mission = useMissionResource<OwnerMission>(path);
+  const mission = useMissionResource<OwnerMission>(path, confirmedOwnerMission);
   const [cursor, setCursor] = useState<string | null>(null);
   const [draftError, setDraftError] = useState(false);
-  const matches = useMissionResource<{ items: any[]; next_cursor: string | null; status: string }>(path ? `${path}/matches${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}` : null);
+  const smartphone = Boolean(mission.data?.criteria.mission.smartphone);
+  const matches = useMissionResource<MissionMatches>(path && mission.data ? `${path}/matches${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}` : null, smartphone ? confirmedSmartphoneMissionMatches : confirmedMissionMatches);
   const item = mission.data;
 
   const adjust = async () => {
@@ -31,7 +34,7 @@ export default function MissionDetailPage() {
       if (owner.state !== "authenticated" || !owner.ownerId) { setDraftError(true); return; }
       // Re-read the owner-only resource before copying its private brief. The
       // cookie may have switched accounts since the detail page was opened.
-      const current = await missionRequest<OwnerMission>(path);
+      const current = confirmedOwnerMission(await missionRequest<unknown>(path));
       const checked = await probeOwnerSession({ fresh: true });
       if (checked.ownerId !== owner.ownerId || checked.state !== "authenticated") { setDraftError(true); return; }
       const view = missionView(current);
@@ -41,6 +44,7 @@ export default function MissionDetailPage() {
         query: view.query, marketCode: current.market_code, cityPreset: "custom", locationLabel: view.location.label || "",
         latitude: String(view.location.lat), longitude: String(view.location.lon), radiusKm: String(view.location.radius_km),
         preferredPriceMax: view.preferred_price_max === null ? "" : String(view.preferred_price_max), hardBudgetMax: String(view.hard_budget_max),
+        ...(view.smartphone ? { smartphone: smartphoneMissionDraft(view.smartphone) } : {}),
         requirements: view.requirements.join("\n"), autonomousActions: view.autonomous_actions as ("search" | "ask_question" | "make_offer")[], expiresAt: expiration.toISOString().slice(0, 16)
       }, owner.ownerId);
       if (!saved) { setDraftError(true); return; }
@@ -68,10 +72,10 @@ export default function MissionDetailPage() {
               <h2 id="mission-matches-title" className="font-semibold text-xl text-text">{t("matchesTitle")}</h2>
               <button onClick={refresh} disabled={matches.loading} className="text-primary underline disabled:opacity-50">{t("refresh")}</button>
             </div>
-            <p className="text-sm text-muted">{t("matchesHint")}</p>
+            <p className="text-sm text-muted">{t(smartphone ? "smartphone.matchesHint" : "matchesHint")}</p>
             {matches.loading ? <p role="status" className="text-muted">{t("searching")}</p> : matches.error ? (
               <div role="alert" className="border border-warning p-4 text-warning"><p>{t("matchesError")}</p><button onClick={matches.reload} className="mt-3 underline">{t("retry")}</button></div>
-            ) : matches.data?.items.length ? (
+            ) : smartphone && matches.data && (matches.data.items.length || matches.data.alerts?.length) ? <SmartphoneMissionResults data={matches.data} /> : matches.data?.items.length ? (
               <div className="grid gap-4 sm:grid-cols-2">{matches.data.items.map((listing) => <ListingCard key={listing.listing_id} listing={listing} />)}</div>
             ) : (
               <div className="border border-border bg-surface p-6 space-y-3" data-testid="mission-no-matches">

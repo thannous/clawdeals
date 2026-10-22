@@ -172,7 +172,8 @@ export function parseWatchlistCriteria(raw) {
     deal_type: dealType,
     country,
     delivery_method: deliveryMethod,
-    ...(mission ? { mission } : {})
+    ...(mission ? { mission } : {}),
+    ...(mission?.smartphone ? { notification_mode: "in_app" } : {})
   };
 
   return {

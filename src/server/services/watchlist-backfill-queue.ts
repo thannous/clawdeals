@@ -1,3 +1,4 @@
+import { loadSmartphoneMissionSnapshots, recordSmartphoneMissionMatch } from "./smartphone-mission-matching";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { buildEntityTokensFromDeal, evaluateWatchlistMatch, buildEntityTokensFromListing, evaluateWatchlistMatchListing } from "../utils/matching";
@@ -48,7 +49,7 @@ export async function enqueueWatchlistBackfill({ watchlistId, now = new Date(), 
 async function fetchWatchlist({ client, watchlistId }: any = {}) {
   const { data, error } = await client
     .from("watchlists")
-    .select("watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at")
+    .select("watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at,updated_at")
     .eq("watchlist_id", watchlistId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -150,6 +151,18 @@ export async function runWatchlistBackfillQueue({
       } catch (error) {
         // Best-effort cleanup.
       }
+      continue;
+    }
+
+    if (watchlist.criteria?.mission?.smartphone) {
+      const snapshots = await loadSmartphoneMissionSnapshots(listings.map((listing: any) => listing.listing_id), supabase);
+      for (const snapshot of snapshots.values()) {
+        const result = await recordSmartphoneMissionMatch({ snapshot, watchlist, client: supabase });
+        if (result.alert) insertedCount += 1;
+      }
+      const { error: deleteError } = await supabase.from("watchlist_backfill_queue").delete()
+        .eq("watchlist_id", watchlistId).eq("updated_at", queueUpdatedAt);
+      if (deleteError) mapError(deleteError);
       continue;
     }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
+import { SmartphoneMissionSummary } from "../../ui/my-missions/SmartphoneMissionFields";
 import { canonicalJsonStringify } from "../utils";
 import { getActiveBuyMission, subscribeActiveBuyMission } from "../ui-bridge";
 import { useWebMcpConfirm } from "./context";
@@ -137,6 +138,8 @@ function ConfirmModal({
     }
   }, [edited, t]);
 
+  const liveSummary = useMemo(() => summarizeConfirmRequest({ ...pending, args: parsedEdited.value }, mission), [pending, parsedEdited.value, mission]);
+
   const livePolicyHint = useMemo(() => {
     if (!field || field.kind !== "amount" || !mission) return summary.policyHint;
     const current = Number(fieldValue);
@@ -189,6 +192,7 @@ function ConfirmModal({
       setError(parsedEdited.error);
       return;
     }
+    if (liveSummary.smartphoneInvalid) { setError(t("mission.smartphone.validation")); return; }
     if (field) {
       const applied = applyPrimaryField(parsedEdited.value, field, fieldValue);
       if (applied.error) {
@@ -199,7 +203,7 @@ function ConfirmModal({
       return;
     }
     decide({ kind: "approve", args: parsedEdited.value });
-  }, [decide, field, fieldValue, parsedEdited, t]);
+  }, [decide, field, fieldValue, parsedEdited, t, liveSummary.smartphoneInvalid]);
 
   const edits = useMemo(
     () => canonicalJsonStringify(parsedEdited.value) !== canonicalJsonStringify(pending.args),
@@ -236,7 +240,7 @@ function ConfirmModal({
 
         <div
           ref={dialogRef}
-          className="relative bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4"
+          className="relative max-h-[calc(100dvh-2rem)] overflow-y-auto bg-surface border border-border rounded clip-corner p-6 w-full max-w-2xl space-y-4"
         >
           <div className="space-y-2">
             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">
@@ -256,6 +260,9 @@ function ConfirmModal({
               {t(summary.consequence.key, summary.consequence.values)}
             </p>
           </div>
+
+          {liveSummary.smartphone ? <SmartphoneMissionSummary criteria={liveSummary.smartphone} /> : null}
+          {liveSummary.smartphoneInvalid ? <p role="alert" className="text-sm text-warning">{t("mission.smartphone.validation")}</p> : null}
 
           {hint ? (
             <p
@@ -372,6 +379,7 @@ function ConfirmModal({
                 ref={approveRef}
                 type="button"
                 onClick={handleApprove}
+                disabled={liveSummary.smartphoneInvalid}
                 className="border border-primary bg-primary px-4 py-2 text-xs font-mono font-bold uppercase text-bg hover:brightness-110"
               >
                 {edits ? t("confirm.modal.approveEdited") : t("confirm.modal.approve")}

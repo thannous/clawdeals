@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeSmartphoneMissionCriteria, type SmartphoneMissionCriteria } from "../../lib/smartphone-mission";
 import type { BuyMissionInput } from "../webmcp/BuyMissionPanel";
 import type { BuyMissionView } from "../../webmcp/ui-bridge";
 
@@ -21,6 +22,9 @@ const money = z.number().positive().max(1_000_000_000);
 const latitude = z.number().min(-90).max(90);
 const longitude = z.number().min(-180).max(180);
 const radius = z.number().int().min(1).max(300);
+const smartphoneCriteria = z.custom<SmartphoneMissionCriteria>(value => {
+  try { normalizeSmartphoneMissionCriteria(value); return true; } catch { return false; }
+});
 const ownerMissionResponse = z.object({
   watchlist_id: z.string().uuid(),
   name: z.string().max(80).nullable(),
@@ -37,6 +41,7 @@ const ownerMissionResponse = z.object({
       version: z.literal(1), kind: z.literal("BUY"),
       preferred_price_max: money.nullable(), hard_budget_max: money,
       currency: z.enum(["EUR", "GBP"]),
+      smartphone: smartphoneCriteria.optional(),
       requirements: z.array(z.string().trim().min(1).max(120)).max(10),
       autonomous_actions: z.array(z.enum(["search", "ask_question", "make_offer"])).min(1).max(3)
         .refine(actions => actions.includes("search") && new Set(actions).size === actions.length),
@@ -53,11 +58,17 @@ const ownerMissionResponse = z.object({
     geo.lat === mission.location.lat && geo.lon === mission.location.lon && distance === mission.location.radius_km;
 });
 
-export function confirmedOwnerMission(value: unknown): OwnerMission {
+export function confirmedOwnerMission(value: unknown, expected?: BuyMissionInput): OwnerMission {
   // Do not discard a durable creation attempt until every field consumed by
   // the success view and destination page satisfies the response contract.
   if (!ownerMissionResponse.safeParse(value).success) throw new MissionRequestError(502, "SERVER_CONTRACT_ERROR");
-  return value as OwnerMission;
+  const confirmed = value as OwnerMission;
+  if (expected) {
+    const requested = expected.smartphone ? normalizeSmartphoneMissionCriteria(expected.smartphone) : null;
+    const received = confirmed.criteria.mission.smartphone ? normalizeSmartphoneMissionCriteria(confirmed.criteria.mission.smartphone) : null;
+    if (JSON.stringify(requested) !== JSON.stringify(received)) throw new MissionRequestError(502, "SERVER_CONTRACT_ERROR");
+  }
+  return confirmed;
 }
 
 export function missionView(item: OwnerMission): BuyMissionView {
@@ -87,6 +98,7 @@ export function missionPayload(args: BuyMissionInput) {
         hard_budget_max: args.hard_budget_max,
         currency: args.market_code === "GB" ? "GBP" : "EUR",
         requirements: args.requirements,
+        ...(args.smartphone ? { smartphone: normalizeSmartphoneMissionCriteria(args.smartphone) } : {}),
         autonomous_actions: args.autonomous_actions,
         contact_reveal: args.contact_reveal,
         expires_at: args.expires_at,

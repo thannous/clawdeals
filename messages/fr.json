@@ -2830,6 +2830,29 @@
     "browserRegistry": { "eyebrow": "Rapporté par le navigateur", "title": "Ce que voit le navigateur", "match": "Concordance", "mismatch": "Écart", "toolCount": "{count, plural, one {# outil} other {# outils}}", "reading": "Lecture…", "error": "Erreur getTools()", "unavailable": "getTools() indisponible dans cet environnement", "origin": "origine {origin}", "changeCount": "{count, plural, one {# événement toolchange} other {# événements toolchange}}", "noTools": "Le navigateur ne signale aucun outil.", "readFailed": "Impossible de lire le registre du navigateur.", "legacy": "Les anciens environnements WebMCP exposent uniquement registerTool() ; la liste du fournisseur à gauche reste la référence.", "readOnly": "lecture seule", "descriptionBefore": "À gauche : les outils enregistrés par notre fournisseur. Ici : le même registre relu depuis", "descriptionMiddle": "actualisé à chaque", "descriptionAfter": "Connectez ou retirez une clé agent et observez les deux listes passer ensemble de 6 à 12." },
     "catalog": { "emptyTitle": "Cet hôte ne contient actuellement aucune annonce publique.", "emptyDescription": "Il n'y a pas encore d'annonce à comparer ici. Parcours la marketplace publique sans connecter d'agent.", "browseListings": "Parcourir les annonces" },
     "mission": {
+      "smartphone": {
+        "title": "Filtres smartphone",
+        "enabled": "Rechercher à partir du passeport smartphone",
+        "hint": "Choisis au moins un filtre. Chaque valeur est une déclaration du vendeur, sans certification indépendante.",
+        "model": "Modèle exact (facultatif)",
+        "modelHint": "Par exemple, iPhone 14. Un iPhone 14 Pro est un autre modèle. La casse et les espaces ne changent pas le résultat.",
+        "battery": "Santé de batterie minimale en % (facultatif)",
+        "batteryHint": "De 0 à 100 %. Ce chiffre déclaré ne mesure pas l’autonomie.",
+        "checksTitle": "Ces contrôles doivent être déclarés OK",
+        "checks": {
+          "battery": "Batterie",
+          "screen": "Écran",
+          "functionality": "Caméras, audio, charge et connectivité",
+          "locks": "Verrouillage et provenance",
+          "repairs_accessories": "Réparations et accessoires"
+        },
+        "unknownHint": "Une donnée absente ou un contrôle non applicable reste à confirmer et ne déclenche pas d’alerte. Les photos ne certifient pas l’état.",
+        "validation": "Indique au moins un modèle, un pourcentage entier de 0 à 100 ou un contrôle à exiger.",
+        "modelSummary": "Modèle exact : {model}",
+        "batterySummary": "Santé de batterie déclarée ≥ {minimum} %",
+        "checkSummary": "Déclaré OK : {check}",
+        "prefillHint": "Vérifie les critères repris de la comparaison. La zone est une ville par défaut du marché : choisis ta ville, ton rayon et ton budget avant de continuer."
+      },
       "currencyHint": "Montants en {currency}. Choisis le budget maximum que tu souhaites autoriser.",
       "budgetHint": "Montants en {currency}. Le plafond reprend le prix de l’annonce. Augmente-le seulement si tu souhaites autoriser un budget supérieur.",
       "draftResumed": "Ton brouillon a été repris. Vérifie tes limites avant de continuer.",
@@ -2962,6 +2985,39 @@
     "reviewHint": "Vérifie les informations avec le vendeur. Cette comparaison ne lance aucune offre ni aucun achat."
   },
   "myMissions": {
+    "smartphone": {
+      "matchesHint": "Ces annonces respectent la recherche, le marché, la devise, le budget et la zone. Les filtres smartphone sont évalués à partir du passeport vendeur.",
+      "resultsHint": "Une correspondance porte sur tes critères et les déclarations actuelles du vendeur. Elle ne certifie ni l’état global ni un achat recommandé.",
+      "compatibleTitle": "Compatibles avec tes filtres ({count})",
+      "unknownTitle": "À confirmer ({count})",
+      "unknownHint": "Il manque des informations pour décider. Ces annonces ne déclenchent pas d’alerte de correspondance.",
+      "whyMatches": "Critères remplis",
+      "toConfirm": "Informations à confirmer",
+      "compare": "Ouvrir le comparateur",
+      "alertsTitle": "Alertes dans ClawDeals",
+      "alertsHint": "Les alertes concernent les annonces actuellement compatibles. Aucun email ni message externe n’est envoyé.",
+      "matchedAt": "Détectée le {date}",
+      "priceChanged": "Prix : {previous} → {current}",
+      "changes": {
+        "first_match": "Nouvelle correspondance",
+        "price_changed": "Le prix a changé",
+        "passport_updated": "Le passeport a été mis à jour",
+        "criteria_changed": "Correspondance après modification des critères"
+      },
+      "reasons": {
+        "passport_missing": "Passeport smartphone non renseigné.",
+        "model_matches": "Modèle déclaré : {actual}.",
+        "model_mismatch": "Modèle déclaré {actual} ; modèle recherché {expected}.",
+        "model_unknown": "Modèle {expected} à confirmer.",
+        "battery_meets_minimum": "Santé de batterie déclarée : {actual} % (minimum {expected} %).",
+        "battery_below_minimum": "Batterie déclarée : {actual} %, sous le minimum de {expected} %.",
+        "battery_unknown": "Santé de batterie ≥ {expected} % à confirmer.",
+        "check_ok": "{check} : déclaré OK.",
+        "check_issue": "{check} : problème déclaré.",
+        "check_unknown": "{check} : à confirmer."
+      }
+    },
+    "smartphoneDraftMissing": "Ce brouillon est absent, a expiré ou appartient à un autre compte. Reprends-le dans l’onglet et le compte d’origine, ou prépare une nouvelle mission.",
     "sessionChanged": "Le compte a changé depuis la vérification de cette mission. Aucune nouvelle demande n’a été envoyée. Reconnecte-toi au compte initial, puis confirme à nouveau dans cet onglet.",
     "checkAccount": "Vérifier mon compte",
     "sessionCheckFailed": "Impossible de vérifier ton compte. Vérifie ta connexion, puis confirme à nouveau. Aucune nouvelle demande n’a été envoyée.",
@@ -3188,6 +3244,14 @@
     "lockedError": "L’annonce ne permet plus de modifier le passeport. Votre saisie est conservée dans cet onglet."
   },
   "comparison": {
+    "createMission": "Préviens-moi quand ça correspond",
+    "missionPreparing": "Préparation du brouillon…",
+    "missionDraftError": "Impossible de conserver le brouillon ou de vérifier la session. Autorise le stockage de cet onglet, puis réessaie.",
+    "missionCities": {
+      "FR": "Paris",
+      "GB": "Londres",
+      "ES": "Madrid"
+    },
     "pageTitle": "Comparer des smartphones — ClawDeals",
     "title": "Comparer des smartphones",
     "description": "Comparez deux ou trois annonces selon le prix, la santé de batterie déclarée et les problèmes signalés. Consultez les preuves et les informations encore manquantes.",

@@ -1,3 +1,4 @@
+import type { SmartphoneMissionCriteria } from "../lib/smartphone-mission";
 import { ActionReceiptStore, type ActionReceipt } from "./activity/action-receipts";
 
 export type ListingPolicyFit = {
@@ -32,6 +33,7 @@ export type BuyMissionView = {
   hard_budget_max: number;
   currency: string;
   requirements: string[];
+  smartphone?: SmartphoneMissionCriteria;
   autonomous_actions: string[];
   contact_reveal: "manual_bilateral_approval";
   expires_at: string;

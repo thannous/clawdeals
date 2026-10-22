@@ -1,3 +1,4 @@
+import { loadSmartphoneMissionSnapshots, recordSmartphoneMissionMatch } from "./smartphone-mission-matching";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { safeRecordFirstMatches } from "./acquisition";
 import { mapSupabaseError } from "./supabase-errors";
@@ -46,7 +47,7 @@ function toNumber(value) {
 
 async function fetchCandidateWatchlists({ deal, client }) {
   const select =
-    "watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+    "watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at,updated_at";
 
   const marketCode = typeof deal?.market_code === "string" ? deal.market_code.trim().toUpperCase() : null;
 
@@ -101,7 +102,7 @@ async function fetchCandidateWatchlists({ deal, client }) {
 
 async function fetchCandidateWatchlistsForListing({ listing, client }) {
   const select =
-    "watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at";
+    "watchlist_id,agent_id,active,market_code,currency,query_text,tags,price_max,geo_lat,geo_lon,distance_km,criteria,deleted_at,updated_at";
 
   const marketCode = typeof listing?.market_code === "string" ? listing.market_code.trim().toUpperCase() : null;
 
@@ -150,6 +151,8 @@ async function fetchCandidateWatchlistsForListing({ listing, client }) {
   if (listing?.listing_id) {
     queries.push(baseQuery().contains("criteria", { kind: "listing_follow", listing_id: listing.listing_id }).limit(5000));
   }
+
+  queries.push(client.from("watchlists").select(select).eq("active", true).is("deleted_at", null).not("criteria->mission->smartphone", "is", null).limit(5000));
 
   const results = await Promise.all(
     queries.map(async (q) => {
@@ -318,7 +321,7 @@ export async function matchDealToWatchlists({ deal, now = new Date(), client }: 
   try {
     const map = new Map<string, { watchlistIds: string[] }>();
     const inAppOnly = new Set(matches
-      .filter(({ watchlist }) => watchlist.criteria?.notification_mode === "in_app")
+      .filter(({ watchlist }) => watchlist.criteria?.notification_mode === "in_app" || watchlist.criteria?.mission?.smartphone)
       .map(({ watchlist }) => watchlist.watchlist_id));
     for (const [agentId, st] of insertedByAgent.entries()) {
       const watchlistIds = (st.watchlistIds || []).filter((id) => !inAppOnly.has(id));
@@ -400,7 +403,18 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
   }
 
   const matches = [];
+  const phoneAlerts: any[] = [];
+  let phoneMatchedCount = 0;
+  const phoneCandidates = candidates.filter((row: any) => row.criteria?.mission?.smartphone);
+  const phoneSnapshot = phoneCandidates.length ? (await loadSmartphoneMissionSnapshots([listing.listing_id], supabase)).get(listing.listing_id) : null;
   for (const watchlist of candidates) {
+    if (watchlist.criteria?.mission?.smartphone) {
+      if (!phoneSnapshot) continue;
+      const result = await recordSmartphoneMissionMatch({ snapshot: phoneSnapshot, watchlist, client: supabase });
+      if (result.matched) phoneMatchedCount += 1;
+      if (result.alert) { phoneAlerts.push(result.alert); matches.push({ watchlist, reason: result.alert.reason }); }
+      continue;
+    }
     const evaluated = evaluateWatchlistMatchListing({ listing, watchlist, entityTokens });
     if (evaluated.matched) {
       matches.push({
@@ -419,12 +433,12 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
   }
 
   if (matches.length === 0) {
-    return { ok: true, candidates_count: candidates.length, matched_count: 0, inserted_count: 0 };
+    return { ok: true, candidates_count: candidates.length, matched_count: phoneMatchedCount, inserted_count: 0 };
   }
 
   const matchedAt = now.toISOString();
 
-  const rows = matches.map(({ watchlist, reason }) => ({
+  const rows = matches.filter(({ watchlist }) => !watchlist.criteria?.mission?.smartphone).map(({ watchlist, reason }) => ({
     watchlist_id: watchlist.watchlist_id,
     agent_id: watchlist.agent_id,
     entity_type: "listing",
@@ -439,6 +453,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
       .map(({ watchlist }) => watchlist.watchlist_id)
   );
   const inserted = [
+    ...phoneAlerts,
     ...(await upsertMatches({
       client: supabase,
       rows: rows.filter((row) => !exactFollowIds.has(row.watchlist_id)),
@@ -457,7 +472,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
       ok: true,
       candidates_count: candidates.length,
       market_code: listing.market_code,
-      matched_count: matches.length,
+      matched_count: matches.length - phoneAlerts.length + phoneMatchedCount,
       inserted_count: 0
     };
   }
@@ -487,7 +502,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
   try {
     const map = new Map<string, { watchlistIds: string[] }>();
     const inAppOnly = new Set(matches
-      .filter(({ watchlist }) => watchlist.criteria?.notification_mode === "in_app")
+      .filter(({ watchlist }) => watchlist.criteria?.notification_mode === "in_app" || watchlist.criteria?.mission?.smartphone)
       .map(({ watchlist }) => watchlist.watchlist_id));
     for (const [agentId, st] of insertedByAgent.entries()) {
       const watchlistIds = (st.watchlistIds || []).filter((id) => !inAppOnly.has(id));
@@ -547,7 +562,7 @@ export async function matchListingToWatchlists({ listing, now = new Date(), clie
     ok: true,
     market_code: listing.market_code,
     candidates_count: candidates.length,
-    matched_count: matches.length,
+    matched_count: matches.length - phoneAlerts.length + phoneMatchedCount,
     inserted_count: inserted.length
   };
 }

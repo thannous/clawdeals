@@ -1,3 +1,4 @@
+import { evaluateSmartphoneMission, type SmartphoneMissionPassport } from "../../lib/smartphone-mission";
 function coerceString(value) {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") return null;
@@ -105,6 +106,8 @@ export function evaluateWatchlistMatch({ deal, watchlist, entityTokens }: Evalua
   if (watchlist.active === false || watchlist.deleted_at) {
     return { matched: false, reason: { inactive: true } };
   }
+
+  if (watchlist?.criteria?.mission?.smartphone) return { matched: false, reason: { smartphone_required: true } };
 
   const reason: WatchlistMatchReason = {};
 
@@ -237,13 +240,17 @@ export type EvaluateWatchlistMatchListingArgs = {
   entityTokens?: any;
   // Trusted catalogue distance, when exact seller coordinates are intentionally omitted.
   listingDistanceKm?: number;
+  smartphonePassport?: SmartphoneMissionPassport | null;
+  skipSmartphone?: boolean;
 };
 
 export function evaluateWatchlistMatchListing({
   listing,
   watchlist,
   entityTokens,
-  listingDistanceKm
+  listingDistanceKm,
+  smartphonePassport,
+  skipSmartphone = false
 }: EvaluateWatchlistMatchListingArgs = {}): WatchlistMatchResult {
   if (!listing || typeof listing !== "object") return { matched: false, reason: { invalid: true } };
   if (!watchlist || typeof watchlist !== "object") return { matched: false, reason: { invalid: true } };
@@ -405,6 +412,12 @@ export function evaluateWatchlistMatchListing({
       return { matched: false, reason: { ...reason, delivery_method_ok: false } };
     }
     reason.delivery_method_ok = true;
+  }
+
+  if (mission?.smartphone && !skipSmartphone) {
+    const smartphone = evaluateSmartphoneMission(mission.smartphone, smartphonePassport ?? null);
+    reason.smartphone = smartphone;
+    if (smartphone.status !== "compatible") return { matched: false, reason };
   }
 
   return { matched: true, reason };

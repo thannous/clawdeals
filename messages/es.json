@@ -2830,6 +2830,29 @@
     "browserRegistry": { "eyebrow": "Informado por el navegador", "title": "Lo que ve el navegador", "match": "Coincide", "mismatch": "No coincide", "toolCount": "{count, plural, one {# herramienta} other {# herramientas}}", "reading": "Leyendo…", "error": "Error de getTools()", "unavailable": "getTools() no está disponible en este entorno", "origin": "origen {origin}", "changeCount": "{count, plural, one {# evento toolchange} other {# eventos toolchange}}", "noTools": "El navegador no informa de herramientas.", "readFailed": "No se pudo leer el registro del navegador.", "legacy": "Los entornos WebMCP antiguos solo exponen registerTool(); la lista del proveedor a la izquierda sigue siendo la referencia.", "readOnly": "solo lectura", "descriptionBefore": "Izquierda: las herramientas registradas por nuestro proveedor. Aquí: el mismo registro leído desde", "descriptionMiddle": "actualizado con cada", "descriptionAfter": "Conecta o elimina una clave de agente y observa cómo ambas listas pasan juntas de 6 a 12." },
     "catalog": { "emptyTitle": "Este host no tiene anuncios públicos ahora mismo.", "emptyDescription": "Todavía no hay anuncios que comparar aquí. Explora el mercado público sin conectar un agente.", "browseListings": "Explorar anuncios" },
     "mission": {
+      "smartphone": {
+        "title": "Filtros de smartphone",
+        "enabled": "Buscar con el pasaporte del smartphone",
+        "hint": "Elige al menos un filtro. Todos los valores son declaraciones del vendedor, sin certificación independiente.",
+        "model": "Modelo exacto (opcional)",
+        "modelHint": "Por ejemplo, iPhone 14. Un iPhone 14 Pro es otro modelo. Las mayúsculas y los espacios no afectan a la coincidencia.",
+        "battery": "Salud mínima de la batería en % (opcional)",
+        "batteryHint": "De 0 a 100 %. Este valor declarado no mide la autonomía.",
+        "checksTitle": "Estas comprobaciones deben declararse OK",
+        "checks": {
+          "battery": "Batería",
+          "screen": "Pantalla",
+          "functionality": "Cámaras, audio, carga y conectividad",
+          "locks": "Bloqueos y procedencia",
+          "repairs_accessories": "Reparaciones y accesorios"
+        },
+        "unknownHint": "Un dato ausente o una comprobación no aplicable queda por confirmar y no genera una alerta. Las fotos no certifican el estado.",
+        "validation": "Indica al menos un modelo, un porcentaje entero entre 0 y 100 o una comprobación obligatoria.",
+        "modelSummary": "Modelo exacto: {model}",
+        "batterySummary": "Salud de batería declarada ≥ {minimum} %",
+        "checkSummary": "Declarado OK: {check}",
+        "prefillHint": "Revisa los criterios de la comparación. La zona es una ciudad predeterminada del mercado: elige tu ciudad, radio y presupuesto antes de continuar."
+      },
       "currencyHint": "Importes en {currency}. Elige el presupuesto máximo que deseas autorizar.",
       "budgetHint": "Importes en {currency}. El límite parte del precio del anuncio. Auméntalo solo si deseas autorizar un presupuesto mayor.",
       "draftResumed": "Tu borrador se ha recuperado. Revisa tus límites antes de continuar.",
@@ -2962,6 +2985,39 @@
     "reviewHint": "Confirma los detalles con el vendedor. Esta comparación no realiza ofertas ni compras."
   },
   "myMissions": {
+    "smartphone": {
+      "matchesHint": "Estos anuncios cumplen la búsqueda, el mercado, la moneda, el presupuesto y la zona. Los filtros de smartphone usan el pasaporte del vendedor.",
+      "resultsHint": "Una coincidencia refleja tus criterios y las declaraciones actuales del vendedor. No certifica el estado general ni recomienda una compra.",
+      "compatibleTitle": "Cumplen tus filtros ({count})",
+      "unknownTitle": "Por confirmar ({count})",
+      "unknownHint": "Falta información para decidir. Estos anuncios no generan una alerta de coincidencia.",
+      "whyMatches": "Criterios cumplidos",
+      "toConfirm": "Información por confirmar",
+      "compare": "Abrir el comparador",
+      "alertsTitle": "Alertas en ClawDeals",
+      "alertsHint": "Las alertas muestran anuncios que cumplen actualmente los criterios. No se envían emails ni mensajes externos.",
+      "matchedAt": "Detectada el {date}",
+      "priceChanged": "Precio: {previous} → {current}",
+      "changes": {
+        "first_match": "Nueva coincidencia",
+        "price_changed": "El precio ha cambiado",
+        "passport_updated": "El pasaporte se ha actualizado",
+        "criteria_changed": "Coincidencia tras cambiar los criterios"
+      },
+      "reasons": {
+        "passport_missing": "Pasaporte de smartphone no indicado.",
+        "model_matches": "Modelo declarado: {actual}.",
+        "model_mismatch": "Modelo declarado {actual}; modelo buscado {expected}.",
+        "model_unknown": "Modelo {expected} por confirmar.",
+        "battery_meets_minimum": "Salud de batería declarada: {actual} % (mínimo {expected} %).",
+        "battery_below_minimum": "Batería declarada: {actual} %, inferior al mínimo del {expected} %.",
+        "battery_unknown": "Salud de batería ≥ {expected} % por confirmar.",
+        "check_ok": "{check}: declarado OK.",
+        "check_issue": "{check}: problema declarado.",
+        "check_unknown": "{check}: por confirmar."
+      }
+    },
+    "smartphoneDraftMissing": "Este borrador no está disponible, ha caducado o pertenece a otra cuenta. Vuelve a la pestaña y cuenta originales o prepara una nueva misión.",
     "sessionChanged": "La cuenta ha cambiado desde que revisaste esta misión. No se ha enviado ninguna nueva solicitud. Inicia sesión con la cuenta original y vuelve a confirmar en esta pestaña.",
     "checkAccount": "Comprobar mi cuenta",
     "sessionCheckFailed": "No se pudo verificar tu cuenta. Comprueba tu conexión y vuelve a confirmar. No se ha enviado ninguna nueva solicitud.",
@@ -3188,6 +3244,14 @@
     "lockedError": "Este anuncio ya no permite modificar el pasaporte. Tus cambios se conservan en esta pestaña."
   },
   "comparison": {
+    "createMission": "Avísame cuando coincida",
+    "missionPreparing": "Preparando borrador…",
+    "missionDraftError": "No se pudo guardar el borrador o verificar la sesión. Permite el almacenamiento en esta pestaña y vuelve a intentarlo.",
+    "missionCities": {
+      "FR": "París",
+      "GB": "Londres",
+      "ES": "Madrid"
+    },
     "pageTitle": "Comparar smartphones — ClawDeals",
     "title": "Comparar smartphones",
     "description": "Compara dos o tres anuncios por precio, salud de batería declarada y problemas señalados. Consulta las pruebas y la información que todavía falta.",

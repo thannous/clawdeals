@@ -7,6 +7,7 @@ import { SMARTPHONE_CHECK_IDS } from "../../lib/smartphone-passport";
 import { useTheme } from "../../theme/theme-context";
 import { NavbarCurrent } from "../landing/Navbar";
 import PassportPhoto from "../passport/PassportPhoto";
+import SmartphoneMissionButton from "../my-missions/SmartphoneMissionButton";
 import { failedComparisonItem, fetchComparisonItems } from "./comparison-client";
 import { removeComparisonSelection, replaceComparisonSelection } from "./selection";
 
@@ -153,6 +154,7 @@ export default function SmartphoneComparisonPage({ initialIds, invalidIds, initi
               <button type="button" data-testid={`comparison-item-remove-${item.listing_id}`} onClick={() => remove(item.listing_id)} className="mt-2 text-xs text-muted underline underline-offset-4">{t("remove")}</button>
               {item.availability !== "available" ? <p className="mt-3 text-sm text-warning">{t(`availability.${item.availability}`)}</p> : item.passport_error ? <p className="mt-3 text-sm text-warning">{t("passportError")}</p> : !item.passport ? <p className="mt-3 text-sm text-muted">{t("noPassport")}</p> : <p className="mt-3 text-xs leading-relaxed text-muted">{p("sellerProvided", { date: dates.format(new Date(item.passport.updated_at)) })}</p>}
               {item.availability !== "available" || item.passport_error ? <button type="button" data-testid={`comparison-retry-${item.listing_id}`} disabled={retryIds.includes(item.listing_id)} onClick={() => void retry(item.listing_id)} className={`${buttonClass} mt-3`}>{t(retryIds.includes(item.listing_id) ? "retrying" : "retry")}</button> : null}
+              <SmartphoneMissionButton item={item} />
             </th>)}</tr></thead>
             <tbody className="divide-y divide-border">
               <tr><th scope="row" className="bg-surface p-4 align-top font-semibold text-text">{t("price")}</th>{items.map((item, index) => <td key={item.listing_id} data-testid={`comparison-price-${item.listing_id}`} className="border-l border-border p-4 align-top font-semibold text-primary">{result.facts[index]?.price_amount !== null && result.facts[index]?.currency ? formatPrice(result.facts[index].price_amount!, result.facts[index].currency!) : t("unknown")}</td>)}</tr>
