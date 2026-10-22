@@ -23,6 +23,7 @@ const LISTINGS_TOOL_NAMES = new Set([
   "search_listings",
   "show_listings",
   "open_listing",
+  "get_listing_passport",
   "get_action_receipt"
 ]);
 

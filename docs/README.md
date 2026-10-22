@@ -21,6 +21,7 @@ Use only the references needed for the task. Updated 2026-10-11.
 | Review local catalogue, mission and ChatGPT dogfooding | [17 October dogfooding](dogfooding-2026-10-17.md) |
 | Publish the MCP package | [MCP release](./mcp-release.md) |
 | Diagnose runtime behavior | [Ops](./ops-middleware.md), [alerting](./observability/ti-289-alerting-runbook.md), [SLO targets](./ops-slo-sli-v1.md), [ranking](./ranking-v1.md) |
+| Work on smartphone passports and proof photos | [Passport contract, APIs and validation](./smartphone-passport.md) |
 | Manage owner notifications or verify settings | [Notification settings](./notification-settings.md), [queue dispatch](./queue-event-dispatch.md) |
 | Understand documentation drift and remaining work | [Audit and inventory](./documentation-audit-2026-09-28.md), [implemented fixes and evidence](./development-blockers-verification.md) |
 

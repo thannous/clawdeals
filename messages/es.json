@@ -3096,5 +3096,95 @@
     "confirmed": "Vinculación confirmada.",
     "connectedApps": "Aplicaciones conectadas",
     "approvals": "Mis aprobaciones"
+  },
+  "passport": {
+    "photoCleanupPending": "Eliminando las fotos retiradas…",
+    "photoCleanupError": "Algunas fotos retiradas no se han podido eliminar del almacenamiento. Ya no figuran en tus cambios. Reintenta para liberar su espacio; esto no cambia el resultado del guardado.",
+    "retryPhotoCleanup": "Reintentar la eliminación de fotos",
+    "title": "Pasaporte del smartphone",
+    "editorDescription": "Completa cinco comprobaciones para ayudar al comprador a conocer el estado de tu smartphone.",
+    "loading": "Cargando el pasaporte…",
+    "loadError": "No se ha podido cargar el pasaporte. Vuelve a intentarlo antes de editarlo.",
+    "publicLoadError": "El pasaporte no está disponible temporalmente. Vuelve a intentarlo para consultar la información del vendedor.",
+    "retry": "Reintentar",
+    "enable": "Este artículo es un smartphone",
+    "enableHint": "Activa el pasaporte para añadir el modelo, el estado y fotos que respalden tus declaraciones.",
+    "disclaimer": "Esta información la proporciona el vendedor. «Documentado» significa que una foto acompaña la declaración. No se realiza ninguna certificación independiente.",
+    "model": "Modelo",
+    "modelExample": "Ej.: iPhone 13, 128 GB",
+    "checkResult": "Resultado de la comprobación",
+    "batteryHealth": "Salud de la batería (%)",
+    "batteryHint": "Indica la capacidad máxima medida, no el nivel de carga actual. Déjalo vacío si no la conoces.",
+    "batteryValue": "Capacidad máxima declarada: {value} %",
+    "notes": "Detalles, defectos o límites de la comprobación",
+    "photoPrivacy": "Publica solo fotos del artículo. Oculta los datos personales. No añadas facturas, IMEI, números de serie, datos de contacto ni fotos personales; esto también se aplica a las notas.",
+    "addPhoto": "Añadir una foto justificativa",
+    "photoLimits": "JPEG, PNG o WebP, hasta 2 MB. Dos fotos por comprobación. Las fotos serán públicas cuando se guarde el pasaporte.",
+    "photoFormatError": "Elige una foto JPEG, PNG o WebP de hasta 2 MB.",
+    "photoUploadError": "No se ha podido añadir la foto. Tu información se conserva; vuelve a intentarlo.",
+    "uploading": "Añadiendo foto…",
+    "photoLabel": "{check}: foto {index}, abrir a tamaño completo",
+    "photoSource": "Foto proporcionada por el vendedor el {date}",
+    "removePhoto": "Quitar del pasaporte",
+    "save": "Guardar el pasaporte",
+    "saving": "Guardando…",
+    "saved": "Pasaporte guardado.",
+    "saveError": "El pasaporte no se ha guardado. Tus cambios se conservan; vuelve a intentarlo.",
+    "conflictError": "Se ha guardado otra versión mientras editabas. Tus cambios se conservan. Consulta la versión actual en otra pestaña o sustituye tus cambios por esa versión.",
+    "sessionError": "Tu sesión ha caducado. Tus cambios se conservan en esta pestaña. Inicia sesión en otra pestaña y vuelve a intentarlo.",
+    "replaceDraft": "Recargar y sustituir mis cambios",
+    "lastSaved": "Último guardado: {date}",
+    "empty": "El vendedor aún no ha completado un pasaporte para este smartphone. Pregunta por la batería, la pantalla y las pruebas realizadas antes de decidirte.",
+    "sellerProvided": "Información declarada por el vendedor, actualizada el {date}",
+    "documentedCount": "{count, plural, =0 {Ninguna de las cinco comprobaciones tiene foto} one {# de 5 comprobaciones tiene foto} other {# de 5 comprobaciones tienen fotos}}",
+    "questionsTitle": "Preguntas para el vendedor",
+    "questionsHint": "Estas preguntas se preparan a partir de la información que falta. Tú eliges cuáles enviar.",
+    "photoQuestion": "¿Puedes añadir una foto que respalde tu información sobre este punto: {check}?",
+    "copyQuestions": "Copiar las preguntas",
+    "copied": "Preguntas copiadas.",
+    "copyError": "La copia automática no está disponible. Selecciona las preguntas de arriba para copiarlas.",
+    "noQuestions": "Las cinco comprobaciones tienen información y fotos. Comprueba que estos datos responden a tus necesidades antes de comprometerte.",
+    "statuses": {
+      "missing": "Por completar",
+      "declared": "Declarado",
+      "documented": "Documentado"
+    },
+    "answers": {
+      "unknown": "Sin comprobar",
+      "ok": "Comprobado, sin problemas declarados",
+      "issue": "Problema o limitación que señalar",
+      "not_applicable": "Salud de la batería no disponible"
+    },
+    "checks": {
+      "battery": {
+        "title": "Batería",
+        "hint": "Consulta la salud de la batería en los ajustes o explica cómo se ha medido. Señala una autonomía reducida o una sustitución."
+      },
+      "screen": {
+        "title": "Pantalla y respuesta táctil",
+        "hint": "Revisa arañazos, grietas, píxeles y respuesta táctil. Fotografía los defectos y la pantalla encendida."
+      },
+      "functionality": {
+        "title": "Funcionamiento",
+        "hint": "Prueba las cámaras, el micrófono, los altavoces, la carga, el Wi-Fi, el Bluetooth y la red móvil. Indica qué pruebas no se han realizado."
+      },
+      "locks": {
+        "title": "Bloqueos y procedencia",
+        "hint": "Explica la procedencia del teléfono, tu derecho a venderlo y los posibles bloqueos de cuenta u operador. No publiques documentos personales."
+      },
+      "repairs_accessories": {
+        "title": "Reparaciones y accesorios",
+        "hint": "Enumera las reparaciones conocidas y los accesorios incluidos. Indica también si no conoces reparaciones o si no se incluyen accesorios."
+      }
+    },
+    "questions": {
+      "battery": "¿Cuál es la salud de la batería y cómo se ha medido?",
+      "screen": "¿La pantalla y la respuesta táctil están intactas? ¿Hay arañazos, grietas o píxeles defectuosos?",
+      "functionality": "¿Se han probado las cámaras, el audio, la carga y las conexiones? ¿Qué pruebas faltan?",
+      "locks": "¿El teléfono está libre de bloqueos de cuenta y operador? ¿Cuál es su procedencia? No compartas documentos personales ni identificadores.",
+      "repairs_accessories": "¿Qué reparaciones se han realizado y qué accesorios se incluyen?"
+    },
+    "readOnly": "Este anuncio está reservado o cerrado. Su pasaporte puede consultarse, pero ya no se puede modificar.",
+    "lockedError": "Este anuncio ya no permite modificar el pasaporte. Tus cambios se conservan en esta pestaña."
   }
 }

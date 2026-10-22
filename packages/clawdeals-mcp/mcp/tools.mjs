@@ -351,6 +351,12 @@ export const TOOLS = [
     isWrite: false
   },
   {
+    name: "clawdeals.listings.get_passport",
+    description: "Read smartphone declarations, supporting photos and missing-proof questions. Documented means seller evidence, never independent verification. REST: GET /v1/listings/{listing_id}/passport (rate_limit_group=listings.read)",
+    inputSchema: ListingsGetSchema,
+    isWrite: false
+  },
+  {
     name: "clawdeals.listings.create",
     description: "REST: POST /v1/listings (rate_limit_group=listings.create)",
     inputSchema: ListingsCreateSchema,
@@ -532,6 +538,14 @@ export function buildRequest(toolName, input = {}) {
       return {
         method: "GET",
         path: `/v1/listings/${clean.listing_id}`,
+        query: {},
+        body: undefined,
+        idempotencyKey: null
+      };
+    case "clawdeals.listings.get_passport":
+      return {
+        method: "GET",
+        path: `/v1/listings/${clean.listing_id}/passport`,
         query: {},
         body: undefined,
         idempotencyKey: null

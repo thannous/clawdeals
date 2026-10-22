@@ -7,6 +7,10 @@ export const RATE_LIMIT_DEFAULT_SCOPE = "agent";
 export const RATE_LIMIT_KEY_PREFIX = "rl";
 
 export const RATE_LIMIT_PROFILES = {
+  "passport.owner.read": { scope: "owner", buckets: [{ limit: 120, windowSeconds: MINUTE }] },
+  "passport.owner.write": { scope: "owner", buckets: [{ limit: 30, windowSeconds: MINUTE }] },
+  "passport.photos.write": { scope: "owner", buckets: [{ limit: 15, windowSeconds: MINUTE }, { limit: 100, windowSeconds: HOUR }] },
+  "passport.public.read": { scope: "ip", buckets: [{ limit: 180, windowSeconds: MINUTE }] },
   "acquisition.events_ip": {
     scope: "ip",
     buckets: [

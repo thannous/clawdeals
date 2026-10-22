@@ -30,6 +30,8 @@ function isWriteMethod(method) {
 }
 
 const FAIL_CLOSED_PROTECTION_ROUTE_GROUPS = new Set([
+  "passport.owner.write",
+  "passport.photos.write",
   "auth.session.start",
   "auth.session.confirm",
   "auth.session.end",
@@ -439,7 +441,11 @@ function buildAuditEvent(ctx) {
     },
     security,
     policy: ctx.policy || {},
-    payload: ctx.body || {},
+    // Passport drafts and original photo bytes must never be copied to audit,
+    // including authentication/rate-limit failures before the handler executes.
+    payload: typeof ctx.routeGroup === "string" && ctx.routeGroup.startsWith("passport.")
+      ? { listing_id: typeof ctx.query?.id === "string" ? ctx.query.id : null }
+      : ctx.body || {},
     rateLimit: ctx.rateLimit || null,
     idempotency: ctx.idempotency || null,
     outcome: inferOutcome(ctx)

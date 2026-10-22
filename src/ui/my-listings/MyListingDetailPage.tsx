@@ -6,6 +6,7 @@ import AppNav from "../shared/AppNav";
 import PageHeader from "../shared/PageHeader";
 import ConsoleStatusBadge from "../console/shared/ConsoleStatusBadge";
 import TruncatedId from "../console/shared/TruncatedId";
+import SmartphonePassportEditor from "../passport/SmartphonePassportEditor";
 import ErrorState from "../console/shared/ErrorState";
 import { formatDate } from "../console/shared/formatDate";
 
@@ -92,6 +93,8 @@ export default function MyListingDetailPage() {
                 </Link>
               </div>
             )}
+
+            <SmartphonePassportEditor key={listing.listing_id} listingId={listing.listing_id} listingStatus={listing.status} />
 
             {/* Detail grid */}
             <div className="bg-surface border border-border p-4 space-y-3">

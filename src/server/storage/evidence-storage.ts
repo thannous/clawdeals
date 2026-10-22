@@ -1,4 +1,4 @@
-import { del, get, head, issueSignedToken, presignUrl } from "@vercel/blob";
+import { del, get, head, issueSignedToken, presignUrl, put } from "@vercel/blob";
 
 import { getEvidenceStorageBackend } from "../config/backends";
 import { getEnv } from "../config/env";
@@ -174,4 +174,19 @@ export async function downloadEvidenceObjectBytes(bucket: string, key: string) {
   if (error) throw buildStorageError(error.message || "Storage error");
   if (!data) throw buildStorageError("Evidence file not found", "EVIDENCE_NOT_FOUND", 404);
   return Buffer.from(await (data as any).arrayBuffer());
+}
+
+/** Server-mediated upload; never exposes a bearer upload token or public URL. */
+export async function putPrivateEvidenceObject(bucket: string, key: string, bytes: Buffer, contentType: string) {
+  if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
+    await put(key, bytes, {
+      access: "private", contentType, addRandomSuffix: false, allowOverwrite: false,
+      token: getEvidenceBlobToken()
+    });
+    return;
+  }
+  if (bucket !== SUPABASE_EVIDENCE_BUCKET) throw buildStorageError("Unsupported evidence storage provider");
+  const client = getSupabaseServiceClient();
+  const { error } = await client.storage.from(bucket).upload(key, bytes, { contentType, upsert: false });
+  if (error) throw buildStorageError(error.message || "Storage error");
 }

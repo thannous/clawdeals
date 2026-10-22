@@ -3096,5 +3096,95 @@
     "confirmed": "Association confirmée.",
     "connectedApps": "Applications connectées",
     "approvals": "Mes approbations"
+  },
+  "passport": {
+    "photoCleanupPending": "Suppression des photos retirées…",
+    "photoCleanupError": "Certaines photos retirées n’ont pas pu être supprimées du stockage. Elles ne figurent plus dans votre saisie. Réessayez pour libérer leur espace ; cela ne modifie pas le résultat de l’enregistrement.",
+    "retryPhotoCleanup": "Réessayer la suppression des photos",
+    "title": "Passeport smartphone",
+    "editorDescription": "Renseignez cinq points utiles pour aider l’acheteur à comprendre l’état de votre smartphone.",
+    "loading": "Chargement du passeport…",
+    "loadError": "Le passeport n’a pas pu être chargé. Réessayez avant de le modifier.",
+    "publicLoadError": "Le passeport est momentanément indisponible. Réessayez pour consulter les informations du vendeur.",
+    "retry": "Réessayer",
+    "enable": "Cet objet est un smartphone",
+    "enableHint": "Activez le passeport pour renseigner le modèle, l’état et les photos qui appuient vos déclarations.",
+    "disclaimer": "Ces informations sont fournies par le vendeur. « Documenté » signifie qu’une photo accompagne la déclaration. Aucune certification indépendante n’est effectuée.",
+    "model": "Modèle",
+    "modelExample": "Ex. : iPhone 13, 128 Go",
+    "checkResult": "Résultat du contrôle",
+    "batteryHealth": "État de santé de la batterie (%)",
+    "batteryHint": "Indiquez la capacité maximale mesurée, pas le niveau de charge actuel. Laissez vide si elle est inconnue.",
+    "batteryValue": "Capacité maximale déclarée : {value} %",
+    "notes": "Précisions, défauts ou limites du contrôle",
+    "photoPrivacy": "Publiez uniquement des photos de l’objet. Masquez les données personnelles. N’ajoutez ni facture, ni IMEI, numéro de série, coordonnées ou photo personnelle ; cette règle vaut aussi pour les notes.",
+    "addPhoto": "Ajouter une photo justificative",
+    "photoLimits": "JPEG, PNG ou WebP, 2 Mo maximum. Deux photos par point. Les photos seront publiques après l’enregistrement du passeport.",
+    "photoFormatError": "Choisissez une photo JPEG, PNG ou WebP de 2 Mo maximum.",
+    "photoUploadError": "La photo n’a pas pu être ajoutée. Vos informations sont conservées ; réessayez.",
+    "uploading": "Ajout de la photo…",
+    "photoLabel": "{check} : photo {index}, ouvrir en grand",
+    "photoSource": "Photo fournie par le vendeur le {date}",
+    "removePhoto": "Retirer du passeport",
+    "save": "Enregistrer le passeport",
+    "saving": "Enregistrement…",
+    "saved": "Passeport enregistré.",
+    "saveError": "Le passeport n’a pas été enregistré. Votre saisie est conservée ; réessayez.",
+    "conflictError": "Une autre version a été enregistrée entre-temps. Votre saisie est conservée. Consultez la version actuelle dans un autre onglet, ou remplacez votre saisie par cette version.",
+    "sessionError": "Votre session a expiré. Votre saisie est conservée dans cet onglet. Reconnectez-vous dans un autre onglet, puis réessayez.",
+    "replaceDraft": "Recharger et remplacer ma saisie",
+    "lastSaved": "Dernier enregistrement : {date}",
+    "empty": "Le vendeur n’a pas encore renseigné de passeport pour ce smartphone. Demandez-lui l’état de la batterie, de l’écran et les tests effectués avant de vous décider.",
+    "sellerProvided": "Informations déclarées par le vendeur, mises à jour le {date}",
+    "documentedCount": "{count, plural, =0 {Aucun des cinq points accompagné d’une photo} one {# point sur 5 accompagné d’une photo} other {# points sur 5 accompagnés d’une photo}}",
+    "questionsTitle": "À demander au vendeur",
+    "questionsHint": "Ces questions sont préparées à partir des informations manquantes. Vous choisissez lesquelles transmettre.",
+    "photoQuestion": "Pouvez-vous ajouter une photo qui appuie vos informations sur ce point : {check} ?",
+    "copyQuestions": "Copier les questions",
+    "copied": "Questions copiées.",
+    "copyError": "La copie automatique est indisponible. Sélectionnez les questions ci-dessus pour les copier.",
+    "noQuestions": "Les cinq points sont renseignés et accompagnés de photos. Vérifiez que ces éléments répondent à vos besoins avant de vous engager.",
+    "statuses": {
+      "missing": "À renseigner",
+      "declared": "Déclaré",
+      "documented": "Documenté"
+    },
+    "answers": {
+      "unknown": "Pas encore contrôlé",
+      "ok": "Contrôlé, aucun problème signalé",
+      "issue": "Problème ou limite à signaler",
+      "not_applicable": "Santé de la batterie non accessible"
+    },
+    "checks": {
+      "battery": {
+        "title": "Batterie",
+        "hint": "Consultez la santé de la batterie dans les réglages ou indiquez comment elle a été mesurée. Signalez une autonomie réduite ou un remplacement."
+      },
+      "screen": {
+        "title": "Écran et tactile",
+        "hint": "Inspectez les rayures, fissures, pixels et la réponse tactile. Photographiez les défauts et l’écran allumé."
+      },
+      "functionality": {
+        "title": "Fonctionnement",
+        "hint": "Testez les caméras, le micro, les haut-parleurs, la charge, le Wi-Fi, le Bluetooth et le réseau mobile. Précisez tout test non effectué."
+      },
+      "locks": {
+        "title": "Verrouillages et provenance",
+        "hint": "Précisez l’origine du téléphone, votre droit de le vendre et les éventuels verrouillages de compte ou d’opérateur. Ne publiez aucun document personnel."
+      },
+      "repairs_accessories": {
+        "title": "Réparations et accessoires",
+        "hint": "Listez les réparations connues et les accessoires inclus. Indiquez aussi si aucune réparation n’est connue ou si aucun accessoire n’est fourni."
+      }
+    },
+    "questions": {
+      "battery": "Quelle est la santé de la batterie et comment a-t-elle été mesurée ?",
+      "screen": "L’écran et le tactile sont-ils intacts ? Y a-t-il des rayures, fissures ou pixels défectueux ?",
+      "functionality": "Les caméras, l’audio, la charge et les connexions ont-ils été testés ? Quels tests restent à faire ?",
+      "locks": "Le téléphone est-il libre de tout verrouillage de compte et d’opérateur ? Quelle est sa provenance ? Merci de ne pas partager de document personnel ni d’identifiant.",
+      "repairs_accessories": "Quelles réparations ont été effectuées et quels accessoires sont inclus ?"
+    },
+    "readOnly": "Cette annonce est réservée ou clôturée. Son passeport est consultable, mais ne peut plus être modifié.",
+    "lockedError": "L’annonce ne permet plus de modifier le passeport. Votre saisie est conservée dans cet onglet."
   }
 }
