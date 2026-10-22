@@ -28,7 +28,18 @@ const historical = process.env.TESTERARMY_HISTORICAL === "1";
 const productionPublic = process.env.TESTERARMY_PRODUCTION_PUBLIC === "1";
 const missionLive = process.env.TESTERARMY_MISSION_LIVE === "1";
 const commerceLive = process.env.TESTERARMY_COMMERCE_LIVE === "1";
+const comparisonLive = process.env.TESTERARMY_COMPARISON_LIVE === "1";
 const commerceProduction = process.env.TESTERARMY_COMMERCE_PRODUCTION === "1";
+if (comparisonLive) {
+  if (aiEnabled || historical || productionPublic || missionLive || commerceLive) {
+    throw new Error("Local comparison selection is exclusive of other suites.");
+  }
+  for (const value of [baseURL, process.env.SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_URL]) {
+    if (!value || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(value).hostname)) {
+      throw new Error("Comparison fixtures require a local app and local Supabase URLs.");
+    }
+  }
+}
 if (commerceProduction && (!commerceLive || process.env.E2E_BASE_URL !== "https://app.clawdeals.com")) {
   throw new Error("Connected production commerce requires its live selection and E2E_BASE_URL=https://app.clawdeals.com exactly.");
 }
@@ -114,7 +125,8 @@ export default {
     : productionPublic ? "e2e/testerarmy/production/**/*.e2e.ts"
     : missionLive ? "e2e/testerarmy/mission-live/**/*.e2e.ts"
     : commerceLive ? "e2e/testerarmy/commerce-live/**/*.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts",
+    : comparisonLive ? "e2e/testerarmy/comparison-live/**/*.e2e.ts"
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts", "!e2e/testerarmy/comparison-live/**/*.e2e.ts",
       // Optional local-panel coverage has its own opt-in qualification. A public
       // evidence bundle must execute every selected case rather than skip it.
       ...(process.env.TESTERARMY_CHATGPT_UI === "1" ? [] : ["!e2e/testerarmy/chatgpt-local-recovery.e2e.ts"])],

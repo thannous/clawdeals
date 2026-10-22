@@ -3274,5 +3274,82 @@
     },
     "readOnly": "This listing is reserved or closed. Its passport can be viewed but can no longer be edited.",
     "lockedError": "This listing no longer allows passport changes. Your edits are kept in this tab."
+  },
+  "comparison": {
+    "pageTitle": "Compare smartphones — ClawDeals",
+    "title": "Compare smartphones",
+    "description": "Compare two or three listings by price, reported battery health and disclosed issues. Review the evidence and information that is still missing.",
+    "add": "Add to comparison",
+    "selected": "In comparison",
+    "maximumReached": "3 smartphones maximum",
+    "addNamed": "Compare {title}",
+    "removeNamed": "Remove {title} from comparison",
+    "selectionTitle": "Selected smartphones",
+    "selectionCount": "{count} smartphone(s) selected",
+    "selectionHint": "Choose two or three listings. Your selection stays in this tab for 24 hours.",
+    "limitHint": "Three listings maximum. Remove one to change your selection.",
+    "open": "Compare",
+    "chooseSecond": "Choose a second smartphone",
+    "itemFallback": "Selected listing",
+    "back": "Back to listings",
+    "emptyTitle": "Choose at least two smartphones",
+    "emptyHint": "Add two or three listings to compare their differences side by side.",
+    "invalidTitle": "This selection cannot be compared",
+    "invalidHint": "The link must contain one to three different, valid listing identifiers. Rebuild your selection from the listings.",
+    "browse": "Choose listings",
+    "remove": "Remove",
+    "priorityTitle": "Your priority",
+    "priorities": {
+      "budget": "Budget",
+      "battery": "Battery health",
+      "condition": "Reported condition"
+    },
+    "outcomes": {
+      "budget": "Lowest listed price",
+      "battery": "Highest reported battery health",
+      "condition": "Fewer disclosed issues"
+    },
+    "priorityHints": {
+      "budget": "Listed prices are compared in the same currency. Delivery and repair costs are not included. This result is not a purchase recommendation.",
+      "battery": "Reported maximum battery capacity is compared. It does not predict actual battery life, which depends on the model and usage.",
+      "condition": "The number of checks with a disclosed issue is compared only when all five checks are completed. Issues may differ in severity: read the details."
+    },
+    "states": {
+      "needs_selection": "Two or three listings are needed",
+      "unavailable": "Some listings cannot be compared",
+      "incomplete": "Not enough information to distinguish them",
+      "different_currencies": "The currencies are different"
+    },
+    "incompleteItems": "Check: {titles}",
+    "tieHint": "A tie on this criterion. No single option stands out.",
+    "budgetMissingPassport": "Some listings have no accessible passport. Their condition still needs confirmation, even when their price is lower.",
+    "loading": "Updating the comparison…",
+    "scrollHint": "On a small screen, scroll the table horizontally to see each smartphone.",
+    "tableLabel": "Comparison of the selected smartphones",
+    "criteria": "Criterion",
+    "price": "Listed price",
+    "listingCondition": "Listing condition",
+    "batteryHealth": "Reported battery health",
+    "issues": "Disclosed issues",
+    "unknown": "Unknown",
+    "incompleteChecks": "Incomplete checks: total unknown",
+    "issueCount": "{count, plural, =0 {No issue disclosed} one {# check with a disclosed issue} other {# checks with disclosed issues}}",
+    "knownChecks": "{count} of 5 checks completed",
+    "evidence": "Information and evidence",
+    "documentedCount": "{count} check(s) with photos",
+    "declaredCount": "{count} check(s) declared without photos",
+    "availability": {
+      "unavailable": "This listing is removed, reserved or inaccessible.",
+      "error": "This listing could not be loaded.",
+      "unsupported": "This listing is not identified as a smartphone."
+    },
+    "passportError": "The passport is temporarily unavailable.",
+    "noPassport": "The seller has not completed a passport yet.",
+    "retry": "Retry",
+    "retrying": "Retrying…",
+    "noPassportQuestions": "Ask the seller to complete the five passport checks.",
+    "share": "Copy comparison link",
+    "shareCopied": "Link copied. It opens this selection with your priority.",
+    "shareError": "Copying is unavailable. Copy the link from the address bar."
   }
 }

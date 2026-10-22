@@ -83,6 +83,8 @@ export async function execute({ historical = false } = {}) {
     ? "historical"
     : process.env.TESTERARMY_MISSION_LIVE === "1"
       ? "mission-live"
+      : process.env.TESTERARMY_COMPARISON_LIVE === "1"
+        ? "comparison-live"
       : process.env.TESTERARMY_COMMERCE_LIVE === "1"
         ? "commerce-live"
       : process.env.TESTERARMY_PRODUCTION_PUBLIC === "1"

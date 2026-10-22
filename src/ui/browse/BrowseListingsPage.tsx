@@ -6,6 +6,7 @@ import { useTheme } from "../../theme/theme-context";
 import { getPublicAppEntryHref, getPublicAppHref } from "../../shared/urls";
 import { resolveSupportedLocale } from "../../shared/i18n";
 import { NavbarCurrent } from "../landing/Navbar";
+import ComparisonTray from "../comparison/ComparisonTray";
 import BrowseToolbar from "./BrowseToolbar";
 import ListingCardGrid from "./ListingCardGrid";
 import { useBrowseListings } from "./useBrowseListings";
@@ -61,7 +62,7 @@ export default function BrowseListingsPage({
     <div className="min-h-screen bg-bg">
       <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
 
-      <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
+      <main id="main-content" tabIndex={-1} className="pt-20 pb-48">
         {/* Header */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-8">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-text">
@@ -100,6 +101,7 @@ export default function BrowseListingsPage({
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6">
           <ListingCardGrid
             listings={listings}
+            enableComparison
             fetchState={fetchState}
             loadMoreState={loadMoreState}
             error={error}
@@ -134,6 +136,7 @@ export default function BrowseListingsPage({
           </div>
         </div>
       </main>
+      <ComparisonTray />
     </div>
   );
 }
