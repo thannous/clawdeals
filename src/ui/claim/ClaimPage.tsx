@@ -122,6 +122,8 @@ function describeScope(scope: string, t: ClaimT) {
   if (normalized === "approvals:read") return t("scope.approvalsRead");
   if (normalized === "approvals:write") return t("scope.approvalsWrite");
   if (normalized === "installations:read") return t("scope.installationsRead");
+  if (normalized.endsWith(":read")) return t("scope.agentRead");
+  if (normalized.endsWith(":write")) return t("scope.agentWrite");
   return t("scope.fallback");
 }
 

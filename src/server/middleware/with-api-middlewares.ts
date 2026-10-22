@@ -9,7 +9,7 @@ import { mergeTrustContextIntoPolicy } from "../trustscore/context";
 import { safeAuditLog } from "../audit/singleton";
 import { matchRouteGroupFromRequest } from "../routes/route-groups";
 import { getInstallationOauthScopes } from "../services/installation-scopes-cache";
-import { sortScopesStable } from "../../shared/scopes/v1";
+import { sortScopesStable, V1_SCOPES_WRITE_DEFAULT } from "../../shared/scopes/v1";
 
 const DEFAULT_OPTIONS = {
   enableRateLimit: true,
@@ -325,6 +325,12 @@ const ROUTE_GROUP_REQUIRED_SCOPES: Record<string, string[]> = {
   "escrows.confirm_received": ["escrow:*", "payout:*"]
 };
 
+const ROUTE_GROUP_ANY_OF_SCOPES: Record<string, string[]> = {
+  // Agent profile mutation has no resource-specific v1 scope. It still
+  // requires a write grant so a read-only installation cannot rename it.
+  "agents.me.write": V1_SCOPES_WRITE_DEFAULT
+};
+
 export function resolveRequiredScopesForRouteGroup(routeGroup: any): string[] | null {
   if (!routeGroup || typeof routeGroup !== "string") return null;
   const required = ROUTE_GROUP_REQUIRED_SCOPES[routeGroup];
@@ -339,7 +345,8 @@ export async function enforceInstallationScopesForRouteGroup(ctx: any, routeGrou
   if (!ctx?.installationId) return null;
 
   const requiredScopes = resolveRequiredScopesForRouteGroup(routeGroup);
-  if (!requiredScopes) return null;
+  const anyOfScopes = ROUTE_GROUP_ANY_OF_SCOPES[routeGroup] || null;
+  if (!requiredScopes && !anyOfScopes) return null;
 
   let installationScopes: string[] = [];
   try {
@@ -357,16 +364,18 @@ export async function enforceInstallationScopesForRouteGroup(ctx: any, routeGrou
     ? new Set(Array.from(installationGranted).filter((scope) => tokenScopes.has(scope)))
     : installationGranted;
 
-  const missing = requiredScopes.filter((scope) => !granted.has(scope));
-  if (missing.length === 0) return null;
+  const missing = (requiredScopes || []).filter((scope) => !granted.has(scope));
+  const missingAny = anyOfScopes && !anyOfScopes.some((scope) => granted.has(scope));
+  if (missing.length === 0 && !missingAny) return null;
 
   if (ctx) {
     ctx.outcome = { type: "BLOCKED", reason: "scope" };
     ctx.security = {
       ...(ctx.security || {}),
       installation_id: ctx.installationId,
-      required_scopes: requiredScopes,
-      missing_scopes: missing
+      required_scopes: requiredScopes || [],
+      ...(anyOfScopes ? { any_of_scopes: anyOfScopes } : {}),
+      missing_scopes: missingAny ? anyOfScopes : missing
     };
   }
 
@@ -374,7 +383,8 @@ export async function enforceInstallationScopesForRouteGroup(ctx: any, routeGrou
     403,
     errorPayload("INSUFFICIENT_SCOPE", "Insufficient scope", {
       installation_id: ctx.installationId,
-      required_scopes: requiredScopes
+      required_scopes: requiredScopes || [],
+      ...(anyOfScopes ? { any_of_scopes: anyOfScopes } : {})
     })
   );
 

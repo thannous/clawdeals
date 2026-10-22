@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getConnectSessionByClaimToken } from "../../../../../server/services/connect-sessions";
 import { getOwnerAgentLimit, listOwnerAgentsForClaim } from "../../../../../server/services/agents";
+import { normalizeConnectRequestedScopes } from "../../../../../shared/scopes/v1";
 
 function resolveParam(value: any) {
   if (Array.isArray(value)) return value[0] || null;
@@ -46,6 +47,10 @@ export async function handler(req: any, res: any, ctx: any) {
 
   try {
     const session = await getConnectSessionByClaimToken({ claimToken: String(claimToken), now: new Date() });
+    const effectiveScopes = normalizeConnectRequestedScopes(session.requested_scopes);
+    if (!effectiveScopes) {
+      return jsonResponse(409, errorPayload("INVALID_SCOPE", "Connection permissions are invalid; create a new session"));
+    }
     const ownerContextAvailable = Boolean(ctx?.ownerSessionId && ctx?.actor?.type === "owner" && ctx?.ownerId);
     let ownerContext: any = { owner_context_available: false };
 
@@ -80,7 +85,7 @@ export async function handler(req: any, res: any, ctx: any) {
         session_id: session.session_id,
         status: session.status,
         requested_agent_name: session.requested_agent_name,
-        requested_scopes: session.requested_scopes || [],
+        requested_scopes: effectiveScopes,
         client_type: session.client_type || null,
         client_version: session.client_version || null,
         expires_at: session.expires_at,

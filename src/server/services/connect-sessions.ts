@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { normalizeConnectRequestedScopes } from "../../shared/scopes/v1";
 
 const CONNECT_SESSION_TTL_MINUTES = 10;
 
@@ -61,17 +62,6 @@ function normalizeNonEmptyString(value: any) {
   if (value === null || value === undefined) return null;
   const str = String(value).trim();
   return str ? str : null;
-}
-
-function normalizeTextArray(value: any) {
-  if (!Array.isArray(value)) return [];
-  const out: string[] = [];
-  for (const item of value) {
-    const str = normalizeNonEmptyString(item);
-    if (!str) continue;
-    out.push(str);
-  }
-  return out;
 }
 
 function requireConnectSessionSecret() {
@@ -153,7 +143,10 @@ export async function createConnectSession({
     throw buildServiceError("requestedAgentName is required", 400, "VALIDATION_ERROR");
   }
 
-  const resolvedScopes = normalizeTextArray(requestedScopes);
+  const resolvedScopes = normalizeConnectRequestedScopes(requestedScopes);
+  if (!resolvedScopes) {
+    throw buildServiceError("requestedScopes must contain supported connection scopes", 400, "VALIDATION_ERROR");
+  }
   const resolvedClientType = normalizeNonEmptyString(clientType)?.slice(0, 40) || "other";
   const resolvedClientVersion = normalizeNonEmptyString(clientVersion)?.slice(0, 40) || null;
   const resolvedIp = normalizeNonEmptyString(ipTruncated);

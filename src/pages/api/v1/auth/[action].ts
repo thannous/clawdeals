@@ -300,6 +300,15 @@ export async function handler(req: any, _res: any, ctx: any) {
       let owner: any = null;
 
       if (ownerLink) {
+        // A historical Supabase link may have been created from local
+        // autoconfirmation or editable metadata. Require current mailbox proof
+        // before renewing a link that was recorded as email verified.
+        if (identity.provider === "supabase" && ownerLink.email_verified_at && !emailVerifiedAt) {
+          return jsonResponse(
+            409,
+            errorPayload("OWNER_EMAIL_LINK_CONFLICT", "Email verification required before using this link")
+          );
+        }
         const existingOwner = await getOwner(ownerLink.owner_id);
         const nextEmail = email ?? existingOwner?.email ?? null;
         const existingEmail = normalizeEmail(existingOwner?.email);
@@ -322,7 +331,9 @@ export async function handler(req: any, _res: any, ctx: any) {
           authProvider: identity.provider,
           authSubject,
           email: email ?? null,
-          emailVerifiedAt: resolvedOwnerEmailVerifiedAt,
+          // The owner may have verified through ClawDeals. Do not copy that
+          // proof into the external identity link's provider-proof field.
+          emailVerifiedAt,
           now
         });
       } else {

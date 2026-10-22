@@ -9,6 +9,7 @@ import { getPublicAppUrl, joinUrl } from "../../../../../shared/urls";
 import { normalizeAcquisitionId } from "../../../../../shared/acquisition";
 import { createConnectSession } from "../../../../../server/services/connect-sessions";
 import { safeRecordActivationStarted } from "../../../../../server/services/acquisition";
+import { normalizeConnectRequestedScopes } from "../../../../../shared/scopes/v1";
 
 function getHeaderValue(req: any, name: string) {
   const value = req?.headers?.[name] ?? req?.headers?.[name.toLowerCase()];
@@ -144,6 +145,10 @@ export async function handler(req: any, res: any, ctx: any) {
   if (requestedScopes !== undefined && !Array.isArray(requestedScopes)) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "requested_scopes must be an array"));
   }
+  const effectiveScopes = normalizeConnectRequestedScopes(requestedScopes);
+  if (!effectiveScopes) {
+    return jsonResponse(400, errorPayload("VALIDATION_ERROR", "requested_scopes must contain supported connection scopes"));
+  }
   if (rawAcquisitionId !== undefined && rawAcquisitionId !== null && !acquisitionId) {
     return jsonResponse(400, errorPayload("VALIDATION_ERROR", "acquisition_id must be a UUID"));
   }
@@ -158,7 +163,7 @@ export async function handler(req: any, res: any, ctx: any) {
 
     const created = await createConnectSession({
       requestedAgentName,
-      requestedScopes,
+      requestedScopes: effectiveScopes,
       clientType,
       clientVersion,
       acquisitionId,

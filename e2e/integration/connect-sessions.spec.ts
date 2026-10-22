@@ -81,7 +81,7 @@ test.describe.serial("Integration: Connect Sessions", () => {
       },
       data: {
         requested_agent_name: "Integration Expire",
-        requested_scopes: []
+        requested_scopes: ["agent:read", "agent:write"]
       }
     });
     await expectStatus(create, 201);

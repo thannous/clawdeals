@@ -102,7 +102,7 @@ describe("POST /v1/auth/[action]", () => {
           email: "owner@example.com",
           email_confirmed_at: verifiedAt,
           app_metadata: { provider: "google" },
-          identities: [{ provider: "google", identity_data: { email_verified: true } }]
+          identities: [{ provider: "google", identity_data: { email: "owner@example.com", email_verified: true } }]
         }
       },
       error: null
@@ -298,7 +298,7 @@ describe("POST /v1/auth/[action]", () => {
     expect(ctx.auditEvent).toBe("owner.login_bridged");
   });
 
-  it("preserves existing owner email verification when Supabase omits it for linked login", async () => {
+  it("preserves owner verification without attributing it to an unverified Supabase link", async () => {
     supabaseGetUserMock.mockResolvedValue({
       data: {
         user: {
@@ -341,9 +341,15 @@ describe("POST /v1/auth/[action]", () => {
       expect.objectContaining({
         authProvider: "supabase",
         authSubject: supabaseUserId,
-        emailVerifiedAt: verifiedAt
+        emailVerifiedAt: null
       })
     );
+    const secondBridge: any = await handler(
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
+      null,
+      makeCtx()
+    );
+    expect(secondBridge.status).toBe(200);
   });
 
   it("auto-links by verified email when owner exists", async () => {
@@ -371,7 +377,7 @@ describe("POST /v1/auth/[action]", () => {
         authSubject: supabaseUserId,
         supabaseUserId,
         email: "owner@example.com",
-        emailVerifiedAt: expect.stringContaining("2026-02-12T00:00:00")
+        emailVerifiedAt: expect.any(String)
       })
     );
     expect(ctx.auditEvent).toBe("owner.linked_by_verified_email");
@@ -406,6 +412,118 @@ describe("POST /v1/auth/[action]", () => {
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("OWNER_EMAIL_LINK_CONFLICT");
     expect(createOwnerLink).not.toHaveBeenCalled();
+    expect(issueTrustedOwnerSession).not.toHaveBeenCalled();
+  });
+
+  it("does not link an existing owner from autoconfirmed email or editable metadata", async () => {
+    supabaseGetUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: supabaseUserId,
+          email: "owner@example.com",
+          email_confirmed_at: verifiedAt,
+          confirmed_at: verifiedAt,
+          user_metadata: { email_verified: true },
+          app_metadata: { provider: "email" },
+          identities: [{ provider: "email", identity_data: { email: "owner@example.com", email_verified: true } }]
+        }
+      },
+      error: null
+    } as any);
+    getOwnerByEmailMock.mockResolvedValue({ owner_id: ownerId, email: "owner@example.com" } as any);
+
+    const result: any = await handler(
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
+      null,
+      makeCtx()
+    );
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("OWNER_EMAIL_LINK_CONFLICT");
+    expect(createOwnerLink).not.toHaveBeenCalled();
+    expect(issueTrustedOwnerSession).not.toHaveBeenCalled();
+  });
+
+  it("does not mark a new email/password owner verified from autoconfirmed email", async () => {
+    supabaseGetUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: supabaseUserId,
+          email: "owner@example.com",
+          email_confirmed_at: verifiedAt,
+          user_metadata: { email_verified: true },
+          app_metadata: { provider: "email" },
+          identities: [{ provider: "email", identity_data: { email: "owner@example.com" } }]
+        }
+      },
+      error: null
+    } as any);
+
+    const result: any = await handler(
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
+      null,
+      makeCtx()
+    );
+
+    expect(result.status).toBe(200);
+    expect(upsertOwner).toHaveBeenCalledWith(expect.objectContaining({ emailVerifiedAt: null }));
+    expect(createOwnerLink).toHaveBeenCalledWith(expect.objectContaining({ emailVerifiedAt: null }));
+  });
+
+  it("does not trust a Google assertion for a different email", async () => {
+    supabaseGetUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: supabaseUserId,
+          email: "owner@example.com",
+          email_confirmed_at: verifiedAt,
+          app_metadata: { provider: "email" },
+          identities: [{ provider: "google", identity_data: { email: "other@example.com", email_verified: true } }]
+        }
+      },
+      error: null
+    } as any);
+    getOwnerByEmailMock.mockResolvedValue({ owner_id: ownerId, email: "owner@example.com" } as any);
+
+    const result: any = await handler(
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
+      null,
+      makeCtx()
+    );
+
+    expect(result.status).toBe(409);
+    expect(createOwnerLink).not.toHaveBeenCalled();
+    expect(issueTrustedOwnerSession).not.toHaveBeenCalled();
+  });
+
+  it("refuses to renew a historical verified link when current identity has no mailbox proof", async () => {
+    supabaseGetUserMock.mockResolvedValue({
+      data: {
+        user: {
+          id: supabaseUserId,
+          email: "owner@example.com",
+          email_confirmed_at: verifiedAt,
+          app_metadata: { provider: "email" },
+          identities: [{ provider: "email", identity_data: { email: "owner@example.com" } }]
+        }
+      },
+      error: null
+    } as any);
+    getOwnerLinkBySupabaseUserIdMock.mockResolvedValue({
+      link_id: ownerLinkId,
+      owner_id: ownerId,
+      email_verified_at: verifiedAt
+    } as any);
+
+    const result: any = await handler(
+      makeReq("session:bridge", {}, { authorization: "Bearer supabase-token" }),
+      null,
+      makeCtx()
+    );
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("OWNER_EMAIL_LINK_CONFLICT");
+    expect(upsertOwner).not.toHaveBeenCalled();
     expect(issueTrustedOwnerSession).not.toHaveBeenCalled();
   });
 });

@@ -14,6 +14,9 @@ export const V1_SCOPES_DEFAULT = [
   "notifications:read"
 ];
 
+export const V1_SCOPES_READ_DEFAULT = V1_SCOPES_DEFAULT.filter((scope) => scope.endsWith(":read"));
+export const V1_SCOPES_WRITE_DEFAULT = V1_SCOPES_DEFAULT.filter((scope) => scope.endsWith(":write"));
+
 export const V1_SCOPES_UPGRADE_ONLY = [
   "contacts:reveal",
   "transactions:write",
@@ -85,6 +88,8 @@ export function normalizeRequestedScopes(value: any): {
   for (const scope of requested) {
     if (LEGACY_AGENT_SCOPES.has(scope)) {
       usedLegacyAgentScopes = true;
+      const expanded = scope === "agent:read" ? V1_SCOPES_READ_DEFAULT : V1_SCOPES_WRITE_DEFAULT;
+      expanded.forEach((item) => normalizedSet.add(item));
       continue;
     }
     if (!V1_SCOPE_SET.has(scope)) {
@@ -94,12 +99,17 @@ export function normalizeRequestedScopes(value: any): {
     normalizedSet.add(scope);
   }
 
-  if (usedLegacyAgentScopes) {
-    V1_SCOPES_DEFAULT.forEach((scope) => normalizedSet.add(scope));
-  }
-
   const normalized = sortScopesStable(Array.from(normalizedSet));
   return { normalized, unknown: sortScopesStable(unknown), requested: sortScopesStable(requested), usedLegacyAgentScopes };
+}
+
+export function normalizeConnectRequestedScopes(value: any): string[] | null {
+  const parsed = normalizeRequestedScopes(value);
+  if (parsed.normalized.length === 0 || parsed.unknown.length > 0 ||
+      parsed.normalized.some((scope) => V1_SCOPES_UPGRADE_ONLY.includes(scope))) {
+    return null;
+  }
+  return parsed.normalized;
 }
 
 export function diffScopes(current: string[], target: string[]) {

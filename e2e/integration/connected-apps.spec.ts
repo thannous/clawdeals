@@ -48,7 +48,7 @@ async function createConnectedInstallation(
 
   const create = await request.post("/api/v1/connect/sessions", {
     headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-    data: { requested_agent_name: options.requestedAgentName, requested_scopes: [] }
+    data: { requested_agent_name: options.requestedAgentName, requested_scopes: ["agent:read", "agent:write"] }
   });
   await expectStatus(create, 201);
   const createBody = await create.json();
@@ -124,7 +124,7 @@ test.describe.serial("Integration: Connected Apps", () => {
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-      data: { requested_agent_name: "Integration Connected Apps", requested_scopes: [] },
+      data: { requested_agent_name: "Integration Connected Apps", requested_scopes: ["agent:read", "agent:write"] },
     });
     await expectStatus(create, 201);
     const createBody = await create.json();
@@ -375,7 +375,7 @@ test.describe.serial("Integration: Connected Apps", () => {
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-      data: { requested_agent_name: "Integration Scope Upgrade", requested_scopes: [] },
+      data: { requested_agent_name: "Integration Scope Upgrade", requested_scopes: ["agent:read", "agent:write"] },
     });
     await expectStatus(create, 201);
     const createBody = await create.json();

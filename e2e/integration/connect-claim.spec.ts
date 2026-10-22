@@ -41,7 +41,7 @@ test.describe.serial("Integration: Connect Claim", () => {
       },
       data: {
         requested_agent_name: "Integration Connect",
-        requested_scopes: []
+        requested_scopes: ["agent:read", "agent:write"]
       }
     });
     await expectStatus(create, 201);
@@ -161,7 +161,7 @@ test.describe.serial("Integration: Connect Claim", () => {
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-      data: { requested_agent_name: "Integration Deny", requested_scopes: [] }
+      data: { requested_agent_name: "Integration Deny", requested_scopes: ["agent:read", "agent:write"] }
     });
     await expectStatus(create, 201);
     const body = await create.json();
@@ -200,7 +200,7 @@ test.describe.serial("Integration: Connect Claim", () => {
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-      data: { requested_agent_name: "Integration Owner Limit", requested_scopes: [] }
+      data: { requested_agent_name: "Integration Owner Limit", requested_scopes: ["agent:read", "agent:write"] }
     });
     await expectStatus(create, 201);
     const body = await create.json();
@@ -251,7 +251,7 @@ test.describe.serial("Integration: Connect Claim", () => {
     const createConsoleSession = async () => {
       const create = await request.post("/api/v1/connect/sessions", {
         headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-        data: { requested_agent_name: "Integration Console Claim", requested_scopes: [] }
+        data: { requested_agent_name: "Integration Console Claim", requested_scopes: ["agent:read", "agent:write"] }
       });
       await expectStatus(create, 201);
       const body = await create.json();

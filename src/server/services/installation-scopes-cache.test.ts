@@ -19,14 +19,14 @@ describe("getCachedInstallationOauthScopes", () => {
   });
 
   it("returns cached scopes when value is a JSON string", async () => {
-    mockRedis.get.mockResolvedValueOnce(JSON.stringify({ v: 1, oauth_scopes: ["x"] }));
+    mockRedis.get.mockResolvedValueOnce(JSON.stringify({ v: 2, oauth_scopes: ["x"] }));
 
     const scopes = await getCachedInstallationOauthScopes("inst-2");
     expect(scopes).toEqual(["x"]);
   });
 
-  it("deletes and returns null when cached value is malformed", async () => {
-    mockRedis.get.mockResolvedValueOnce({ v: 2, oauth_scopes: ["x"] });
+  it("rejects an old cache value that may contain pre-migration broad scopes", async () => {
+    mockRedis.get.mockResolvedValueOnce({ v: 1, oauth_scopes: ["watchlists:write"] });
 
     const scopes = await getCachedInstallationOauthScopes("inst-3");
     expect(scopes).toBeNull();

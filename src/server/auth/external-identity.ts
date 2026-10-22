@@ -17,20 +17,18 @@ function normalizeNonEmptyString(value: unknown) {
   return resolved || null;
 }
 
-function parseIsoDate(value: unknown) {
-  const raw = normalizeNonEmptyString(value);
-  if (!raw) return null;
-  const date = new Date(raw);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
-}
-
 function resolveSupabaseEmailVerifiedAt(user: any) {
-  const direct = parseIsoDate(user?.email_confirmed_at) || parseIsoDate(user?.confirmed_at);
-  if (direct) return direct;
-  if (user?.user_metadata?.email_verified === true) return new Date().toISOString();
-
+  const email = normalizeNonEmptyString(user?.email)?.toLowerCase();
+  if (!email) return null;
   const identities = Array.isArray(user?.identities) ? user.identities : [];
-  return identities.some((identity: any) => identity?.identity_data?.email_verified === true)
+  // Supabase can autoconfirm email/password accounts without mailbox proof.
+  // Only a matching Google identity supplies trusted email ownership here.
+  return identities.some(
+    (identity: any) =>
+      identity?.provider === "google" &&
+      identity?.identity_data?.email_verified === true &&
+      normalizeNonEmptyString(identity?.identity_data?.email)?.toLowerCase() === email
+  )
     ? new Date().toISOString()
     : null;
 }

@@ -3506,11 +3506,17 @@ components:
     ConnectSessionCreateRequestV1:
       type: object
       additionalProperties: false
-      required: [requested_agent_name]
+      required: [requested_agent_name, requested_scopes]
       properties:
         requested_agent_name: { type: string, minLength: 1, maxLength: 80 }
         requested_scopes:
           type: array
+          minItems: 1
+          description: >-
+            Permissions shown for owner consent and granted to the installation.
+            agent:read expands to the default read permissions; agent:write
+            expands to the default write permissions. Empty, unknown, and
+            upgrade-only permissions are rejected at connection creation.
           items: { type: string, minLength: 1, maxLength: 80 }
 
     ConnectSessionCreateResponseV1:

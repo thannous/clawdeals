@@ -13,6 +13,7 @@ vi.mock("../../../../server/services/acquisition", () => ({
 import { handler } from "../../../../pages/api/v1/connect/sessions/index";
 import { createConnectSession } from "../../../../server/services/connect-sessions";
 import { safeRecordActivationStarted } from "../../../../server/services/acquisition";
+import { V1_SCOPES_DEFAULT, V1_SCOPES_READ_DEFAULT } from "../../../../shared/scopes/v1";
 
 const createConnectSessionMock = vi.mocked(createConnectSession);
 const safeRecordActivationStartedMock = vi.mocked(safeRecordActivationStarted);
@@ -59,7 +60,42 @@ describe("POST /v1/connect/sessions", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(201);
     expect(result.body.data.claim_url).toBe("http://localhost:3000/claim/cd_claim_local");
+    expect(createConnectSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ requestedScopes: V1_SCOPES_DEFAULT })
+    );
   });
+
+  it("stores exactly the read permissions that will be shown for consent", async () => {
+    createConnectSessionMock.mockResolvedValue({
+      session: { session_id: "11111111-1111-1111-1111-111111111111", expires_at: "2026-02-10T12:00:00.000Z" },
+      claim_token: "cd_claim_read",
+      poll_token: "cd_poll_read",
+      verification_code: "reef-X4B2"
+    } as any);
+    const result: any = await handler({
+      method: "POST",
+      headers: { "idempotency-key": "read-only" },
+      body: { requested_agent_name: "Read Only", requested_scopes: ["agent:read"] }
+    }, null, { ...baseCtx });
+
+    expect(result.status).toBe(201);
+    expect(createConnectSessionMock).toHaveBeenCalledWith(
+      expect.objectContaining({ requestedScopes: V1_SCOPES_READ_DEFAULT })
+    );
+  });
+
+  it.each([[], ["admin:everything"], ["contacts:reveal"]])(
+    "rejects a connection request without a supported default grant: %j",
+    async (requestedScopes) => {
+      const result: any = await handler({
+        method: "POST",
+        headers: { "idempotency-key": "invalid-scopes" },
+        body: { requested_agent_name: "Invalid", requested_scopes: requestedScopes }
+      }, null, { ...baseCtx });
+      expect(result.status).toBe(400);
+      expect(createConnectSessionMock).not.toHaveBeenCalled();
+    }
+  );
 
   it("prefers x-forwarded host/proto for claim_url", async () => {
     createConnectSessionMock.mockResolvedValue({
