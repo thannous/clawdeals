@@ -11,7 +11,7 @@ type CachedInstallationScopesRecord = {
 const DEFAULT_TTL_SECONDS = 60;
 
 function buildCacheKey(installationId: string) {
-  return `auth:installation:oauth_scopes:v1:${installationId}`;
+  return `auth:installation:oauth_scopes:v2:${installationId}`;
 }
 
 function normalizeNonEmptyString(value: any) {
@@ -28,7 +28,7 @@ function normalizeTtlSeconds(ttlSeconds: number) {
 
 function isCachedInstallationScopesRecord(value: any): value is CachedInstallationScopesRecord {
   if (!value || typeof value !== "object") return false;
-  if (value.v !== 1) return false;
+  if (value.v !== 2) return false;
   if (!Array.isArray(value.oauth_scopes) || value.oauth_scopes.some((s: any) => typeof s !== "string")) return false;
   return true;
 }
@@ -93,7 +93,7 @@ export async function setCachedInstallationOauthScopes(
     await redis.set(
       key,
       {
-        v: 1,
+        v: 2,
         oauth_scopes: scopes
       },
       { ex: ttlSeconds }

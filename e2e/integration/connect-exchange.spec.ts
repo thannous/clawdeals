@@ -28,7 +28,7 @@ async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
 async function createConnectSession(request: APIRequestContext, requestedAgentName: string) {
   const create = await request.post("/api/v1/connect/sessions", {
     headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-    data: { requested_agent_name: requestedAgentName, requested_scopes: [] }
+    data: { requested_agent_name: requestedAgentName, requested_scopes: ["agent:read", "agent:write"] }
   });
   await expectStatus(create, 201);
   const createBody = await create.json();
@@ -63,7 +63,7 @@ test.describe.serial("Integration: Connect Exchange", () => {
 
     const create = await request.post("/api/v1/connect/sessions", {
       headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-      data: { requested_agent_name: "Integration Exchange", requested_scopes: [] }
+      data: { requested_agent_name: "Integration Exchange", requested_scopes: ["agent:read", "agent:write"] }
     });
     await expectStatus(create, 201);
     expect(create.headers()["cache-control"]).toBe("no-store");
@@ -175,6 +175,55 @@ test.describe.serial("Integration: Connect Exchange", () => {
 
     const listing = await createListing(request, apiKey, { title: `Exchange listing ${randomId()}` });
     await expectStatus(listing, 201);
+  });
+
+  test("read-only consent creates a read-only installation and rejects writes", async ({ request }) => {
+    const supabase = createSupabaseAdmin();
+    const ownerId = randomId();
+    await createOwner(request, ownerId);
+    await ensureOwnerEmailVerified(supabase, ownerId);
+
+    const create = await request.post("/api/v1/connect/sessions", {
+      headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
+      data: { requested_agent_name: "Read-only installation", requested_scopes: ["agent:read"] }
+    });
+    await expectStatus(create, 201);
+    const created = await create.json();
+    const sessionId = created.data.session_id;
+    const pollToken = created.data.poll_token;
+    const claimToken = extractClaimToken(created.data.claim_url);
+
+    const metadata = await request.get(`/api/v1/connect/claims/${encodeURIComponent(claimToken)}`);
+    await expectStatus(metadata, 200);
+    const shown = (await metadata.json()).data.requested_scopes;
+    expect(shown).toContain("watchlists:read");
+    expect(shown).not.toContain("watchlists:write");
+
+    await claimConnectSession(request, sessionId, ownerId, claimToken, "Read-only agent");
+    const exchange = await request.post(`/api/v1/connect/sessions/${encodeURIComponent(sessionId)}/exchange`, {
+      headers: { Authorization: `Bearer ${pollToken}`, "Idempotency-Key": randomId() },
+      data: { requested_key_scope: "agent_write", installation: { client_type: "openclaw" } }
+    });
+    await expectStatus(exchange, 200);
+    const delivered = (await exchange.json()).data;
+    const { data: installation, error } = await supabase
+      .from("agent_installations")
+      .select("oauth_scopes")
+      .eq("installation_id", delivered.installation_id)
+      .single();
+    expect(error).toBeNull();
+    expect(installation?.oauth_scopes).toEqual(shown);
+
+    const listing = await createListing(request, delivered.api_key, { title: `Denied listing ${randomId()}` });
+    expect(listing.status()).toBe(403);
+    expect((await listing.json())?.error?.code).toBe("INSUFFICIENT_SCOPE");
+
+    const rename = await request.patch("/api/v1/agents/me", {
+      headers: { Authorization: `Bearer ${delivered.api_key}` },
+      data: { name: "Unauthorized rename" }
+    });
+    expect(rename.status()).toBe(403);
+    expect((await rename.json())?.error?.code).toBe("INSUFFICIENT_SCOPE");
   });
 
   test("exchange before claim returns SESSION_NOT_CLAIMED", async ({ request }) => {

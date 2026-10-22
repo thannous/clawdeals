@@ -104,6 +104,13 @@ En tant que client agent (OpenClaw/ClawdBot), je veux démarrer une session de c
 }
 ```
 
+Current contract: `requested_scopes` is required and must contain at least one
+supported default permission. `agent:read` and `agent:write` expand separately
+to their read and write permissions. The claim page shows the resulting exact
+permissions; the exchanged installation receives that same grant. Empty,
+unknown, and upgrade-only requests are rejected. Existing sessions with no
+valid grant cannot be exchanged.
+
 **Response 201**
 ```json
 {

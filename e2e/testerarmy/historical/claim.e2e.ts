@@ -22,6 +22,32 @@ function buildPendingView(overrides: Record<string, any> = {}) {
 }
 
 test.describe("Claim page", () => {
+  test("shows the exact read-only grant without a write permission", async ({ page }) => {
+    await page.route("**/api/v1/connect/claims/**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: buildPendingView({
+            requested_scopes: ["watchlists:read", "listings:read"],
+            owner_context_available: true,
+            owner_agent_limit: 1,
+            owner_agents: [],
+            allow_create_agent: true,
+            default_mode: "create_agent"
+          })
+        })
+      });
+    });
+
+    await page.goto(`/claim/${encodeURIComponent(CLAIM_TOKEN)}`);
+    await expect(page.getByTestId("claim-loaded")).toBeVisible();
+    const permissions = page.getByTestId("claim-requested-scopes");
+    await expect(permissions).toContainText("watchlists:read");
+    await expect(permissions).toContainText("listings:read");
+    await expect(permissions).not.toContainText("watchlists:write");
+  });
+
   test("defaults to attach mode and hides create when owner reached limit", async ({ page }) => {
     let claimCalled = false;
 

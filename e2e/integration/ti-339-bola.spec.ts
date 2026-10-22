@@ -37,7 +37,7 @@ async function ensureOwnerEmailVerified(supabase: any, ownerId: string) {
 async function createConnectedInstallation(request: any, ownerId: string) {
   const createRes = await request.post("/api/v1/connect/sessions", {
     headers: { "Idempotency-Key": randomId(), "x-forwarded-for": randomIp() },
-    data: { requested_agent_name: `BOLA install ${randomId()}`, requested_scopes: [] }
+    data: { requested_agent_name: `BOLA install ${randomId()}`, requested_scopes: ["agent:read", "agent:write"] }
   });
   await expectStatus(createRes, 201);
   const createBody = await createRes.json();

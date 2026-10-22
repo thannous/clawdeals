@@ -55,4 +55,19 @@ describe("withApiMiddlewares scopes", () => {
     expect(response.status).toBe(503);
     expect(response.body.error.code).toBe("AUTH_UNAVAILABLE");
   });
+
+  it("rejects agent profile writes with read-only installation scopes", async () => {
+    const ctx: any = {
+      actor: { type: "agent", id: "agent-1" },
+      installationId: "00000000-0000-4000-a000-000000000223",
+      authError: null
+    };
+    vi.mocked(getInstallationOauthScopes).mockResolvedValueOnce(["watchlists:read", "listings:read"] as any);
+    const denied: any = await enforceInstallationScopesForRouteGroup(ctx, "agents.me.write");
+    expect(denied.status).toBe(403);
+    expect(denied.body.error.code).toBe("INSUFFICIENT_SCOPE");
+
+    vi.mocked(getInstallationOauthScopes).mockResolvedValueOnce(["watchlists:write"] as any);
+    await expect(enforceInstallationScopesForRouteGroup(ctx, "agents.me.write")).resolves.toBeNull();
+  });
 });

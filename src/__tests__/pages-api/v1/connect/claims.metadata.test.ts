@@ -12,6 +12,7 @@ vi.mock("../../../../server/services/agents", () => ({
 import { handler } from "../../../../pages/api/v1/connect/claims/[claim_token]";
 import { getConnectSessionByClaimToken } from "../../../../server/services/connect-sessions";
 import { getOwnerAgentLimit, listOwnerAgentsForClaim } from "../../../../server/services/agents";
+import { V1_SCOPES_READ_DEFAULT } from "../../../../shared/scopes/v1";
 
 const getConnectSessionByClaimTokenMock = vi.mocked(getConnectSessionByClaimToken);
 const getOwnerAgentLimitMock = vi.mocked(getOwnerAgentLimit);
@@ -61,7 +62,7 @@ describe("GET /v1/connect/claims/:claim_token", () => {
       session_id: "11111111-1111-1111-1111-111111111111",
       status: "PENDING_CLAIM",
       requested_agent_name: "OpenClaw",
-      requested_scopes: [],
+      requested_scopes: ["agent:read"],
       client_type: "openclaw",
       client_version: "1.0.0",
       expires_at: "2026-02-10T12:00:00.000Z",
@@ -87,6 +88,7 @@ describe("GET /v1/connect/claims/:claim_token", () => {
     const result: any = await handler(req, null, ctx);
 
     expect(result.status).toBe(200);
+    expect(result.body.data.requested_scopes).toEqual(V1_SCOPES_READ_DEFAULT);
     expect(result.body.data.owner_context_available).toBe(true);
     expect(result.body.data.owner_agent_limit).toBe(1);
     expect(result.body.data.owner_agents).toEqual([
@@ -105,7 +107,7 @@ describe("GET /v1/connect/claims/:claim_token", () => {
       session_id: "11111111-1111-1111-1111-111111111111",
       status: "PENDING_CLAIM",
       requested_agent_name: "OpenClaw",
-      requested_scopes: [],
+      requested_scopes: ["agent:read"],
       client_type: "openclaw",
       client_version: "1.0.0",
       expires_at: "2026-02-10T12:00:00.000Z",
@@ -126,5 +128,16 @@ describe("GET /v1/connect/claims/:claim_token", () => {
     expect(result.body.data.owner_agents).toBeUndefined();
     expect(getOwnerAgentLimit).not.toHaveBeenCalled();
     expect(listOwnerAgentsForClaim).not.toHaveBeenCalled();
+  });
+
+  it("refuses to display a claim whose old stored scope cannot be exchanged", async () => {
+    getConnectSessionByClaimTokenMock.mockResolvedValue({ requested_scopes: [] } as any);
+    const result: any = await handler(
+      { method: "GET", query: { claim_token: "cd_claim_test" } },
+      null,
+      { ...baseCtx }
+    );
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("INVALID_SCOPE");
   });
 });
