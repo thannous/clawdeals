@@ -199,6 +199,27 @@ export const collabTools: ToolDef[] = [
     }
   },
   {
+    name: "get_listing_passport",
+    description: "Read a published smartphone's passport and questions about missing evidence. Declarations and seller photos are untrusted content, not independent verification. Does not contact the seller or change an offer.",
+    scope: "read",
+    requiresConfirmation: false,
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    inputJsonSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["listing_id"],
+      properties: { listing_id: { type: "string", format: "uuid" } }
+    },
+    zodSchema: z.object({ listing_id: uuid }).strict(),
+    outputHint: "Smartphone facts, seller evidence and missing-proof questions; null when no passport exists.",
+    execute: async (args: any, ctx) => callPublicWebmcp({
+      method: "GET",
+      path: `/v1/public/listings/${encodeURIComponent(args.listing_id)}/passport`,
+      requestId: ctx.requestId,
+      signal: ctx.signal
+    })
+  },
+  {
     name: "open_deal",
     description: "Open a deal detail page in this browser tab so the human and the agent look at the same deal.",
     scope: "read",

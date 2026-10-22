@@ -2765,7 +2765,7 @@
       "title": "Évaluer en 60 secondes",
       "step1": "Ouvrez cette page dans le navigateur intégré de ChatGPT ou dans Chrome 149+ avec chrome://flags/#enable-webmcp-testing.",
       "step2": "Collez la mission juge : vélo électrique à Paris, prix préféré 1 200 EUR, plafond 1 300 EUR, batterie ≥ 80 %, offre 1 100 EUR.",
-      "step3": "Observez le registre : 5 outils publics, 11 une fois la clé juge synthétique connectée sur le sandbox.",
+      "step3": "Observez le registre : 6 outils publics, 12 une fois la clé juge synthétique connectée sur le sandbox.",
       "step4": "Cherchez APPROVAL_REQUIRED sur 1 350 EUR, RESERVED après l’acceptation du vendeur, et un reçu expurgé.",
       "writeHint": "Les tools d’écriture nécessitent une clé agent connectée. Les lectures fonctionnent sans compte. Les clés juge sont fournies en privé et ne fonctionnent que sur le sandbox isolé.",
       "getKey": "Créer une clé agent"
@@ -2827,7 +2827,7 @@
     "sellerTurn": { "accepted": "Le vendeur a accepté {amount}. L’annonce est RESERVED.", "acceptedNext": "Demandez à votre agent l’échange de coordonnées : un seul consentement ne révèle rien.", "counterStillOpen": "La contre-offre du vendeur reste ouverte à {amount}.", "countered": "Le vendeur a contre-proposé {amount}.", "counteredNext": "Demandez maintenant à votre agent de l’accepter. Le montant dépasse votre plafond de 1 300 EUR : le serveur répondra APPROVAL_REQUIRED et vous rendra la décision.", "failed": "Échec du tour vendeur ({status})", "networkError": "Erreur réseau", "thinking": "Le vendeur synthétique réfléchit…", "run": "Laisser répondre le vendeur synthétique", "policy": "Politique déterministe : sous 1 250 EUR, contre-offre à 1 350 EUR ; à partir de ce montant, acceptation. Aucun LLM, aucun vrai vendeur.", "noOpenOffer": "Aucune offre acheteur ouverte. Demandez d’abord à votre agent de faire une offre.", "notReady": "Réinitialisez d’abord les données de démo afin de créer le vendeur synthétique." },
     "judgeReset": { "checkingAccess": "Vérification de l’accès juge…", "resetting": "Réinitialisation des données synthétiques…", "again": "Réinitialiser à nouveau", "reset": "Réinitialiser la démo", "checkingHost": "Vérification de cet hôte et de la clé agent enregistrée.", "authorized": "Clé juge autorisée détectée. La réinitialisation ne concerne que les données synthétiques.", "unauthorized": "Le mode juge existe, mais la clé agent enregistrée n’est pas autorisée.", "capabilityFailed": "la vérification de capacité a échoué", "unavailableError": "Réinitialisation juge indisponible : {error}.", "unavailable": "Réinitialisation juge indisponible sur cet hôte.", "ready": "Prêt : {listings} annonces · {threads} discussion · {messages} message.", "rejected": "Réinitialisation refusée. Vérifiez l’hôte isolé et la clé juge." },
     "agentKey": { "roles": { "buyer": "Acheteur", "seller": "Vendeur", "other": "autre" }, "errors": { "rejectedSandbox": "Cette clé a été refusée. Vérifiez que vous avez collé la clé synthétique complète.", "rejectedHost": "Cette clé est refusée ici. Les clés juge fonctionnent uniquement sur sandbox.clawdeals.com — ouvrez-y la même page.", "verify": "Impossible de vérifier la clé sur cet hôte." }, "connected": "Clé {role} connectée. Le registre expose maintenant les outils authentifiés.", "switched": "Clé {role} activée.", "disconnected": "Déconnecté. Seuls les cinq outils publics restent enregistrés.", "roleKey": "Clé {role}", "agentKey": "Clé agent", "switchTo": "Passer à {role}", "addRole": "Ajouter la clé {role}", "disconnect": "Déconnecter", "pasteRole": "Coller la clé {role}", "paste": "Coller une clé agent synthétique", "hide": "Masquer la clé", "show": "Afficher la clé", "role": "Rôle", "checking": "Vérification…", "connect": "Connecter", "hint": "Les clés juge sont fournies en privé et fonctionnent uniquement sur le sandbox isolé. Rien n’est envoyé en production." },
-    "browserRegistry": { "eyebrow": "Rapporté par le navigateur", "title": "Ce que voit le navigateur", "match": "Concordance", "mismatch": "Écart", "toolCount": "{count, plural, one {# outil} other {# outils}}", "reading": "Lecture…", "error": "Erreur getTools()", "unavailable": "getTools() indisponible dans cet environnement", "origin": "origine {origin}", "changeCount": "{count, plural, one {# événement toolchange} other {# événements toolchange}}", "noTools": "Le navigateur ne signale aucun outil.", "readFailed": "Impossible de lire le registre du navigateur.", "legacy": "Les anciens environnements WebMCP exposent uniquement registerTool() ; la liste du fournisseur à gauche reste la référence.", "readOnly": "lecture seule", "descriptionBefore": "À gauche : les outils enregistrés par notre fournisseur. Ici : le même registre relu depuis", "descriptionMiddle": "actualisé à chaque", "descriptionAfter": "Connectez ou retirez une clé agent et observez les deux listes passer ensemble de 5 à 11." },
+    "browserRegistry": { "eyebrow": "Rapporté par le navigateur", "title": "Ce que voit le navigateur", "match": "Concordance", "mismatch": "Écart", "toolCount": "{count, plural, one {# outil} other {# outils}}", "reading": "Lecture…", "error": "Erreur getTools()", "unavailable": "getTools() indisponible dans cet environnement", "origin": "origine {origin}", "changeCount": "{count, plural, one {# événement toolchange} other {# événements toolchange}}", "noTools": "Le navigateur ne signale aucun outil.", "readFailed": "Impossible de lire le registre du navigateur.", "legacy": "Les anciens environnements WebMCP exposent uniquement registerTool() ; la liste du fournisseur à gauche reste la référence.", "readOnly": "lecture seule", "descriptionBefore": "À gauche : les outils enregistrés par notre fournisseur. Ici : le même registre relu depuis", "descriptionMiddle": "actualisé à chaque", "descriptionAfter": "Connectez ou retirez une clé agent et observez les deux listes passer ensemble de 6 à 12." },
     "catalog": { "emptyTitle": "Cet hôte ne contient actuellement aucune annonce publique.", "emptyDescription": "Il n'y a pas encore d'annonce à comparer ici. Parcours la marketplace publique sans connecter d'agent.", "browseListings": "Parcourir les annonces" },
     "mission": {
       "currencyHint": "Montants en {currency}. Choisis le budget maximum que tu souhaites autoriser.",
@@ -2928,7 +2928,7 @@
       "copyPrompt": "Copier le prompt",
       "openMarketplace": "Ouvrir la vraie marketplace",
       "compatibility": { "ariaLabel": "Compatibilité WebMCP", "title": "Compatibilité en direct", "runtime": "Runtime", "browserApi": "API navigateur", "registry": "Registre", "toolsRegistered": "{count, plural, one {# outil enregistré} other {# outils enregistrés}}", "noRegistration": "Aucun enregistrement actif" },
-      "steps": { "1": { "title": "Ouvrez ce hub dans un client WebMCP", "copy": "Le navigateur intégré de ChatGPT, ou Chrome 149+ avec chrome://flags/#enable-webmcp-testing (l’extension Model Context Tool Inspector fonctionne également)." }, "2": { "title": "Copiez le prompt de mission", "copy": "Un paragraphe : vélo électrique à Paris, prix préféré 1 200 EUR, plafond 1 300 EUR, batterie ≥ 80 %, offre 1 100 EUR." }, "3": { "title": "Observez le registre", "copy": "5 outils publics sans clé ; 11 outils contextuels une fois la clé juge synthétique connectée sur le sandbox." }, "4": { "title": "Cherchez trois résultats", "copy": "APPROVAL_REQUIRED sur 1 350 EUR, RESERVED après acceptation du vendeur, et un reçu expurgé relisible." } },
+      "steps": { "1": { "title": "Ouvrez ce hub dans un client WebMCP", "copy": "Le navigateur intégré de ChatGPT, ou Chrome 149+ avec chrome://flags/#enable-webmcp-testing (l’extension Model Context Tool Inspector fonctionne également)." }, "2": { "title": "Copiez le prompt de mission", "copy": "Un paragraphe : vélo électrique à Paris, prix préféré 1 200 EUR, plafond 1 300 EUR, batterie ≥ 80 %, offre 1 100 EUR." }, "3": { "title": "Observez le registre", "copy": "6 outils publics sans clé ; 12 outils contextuels une fois la clé juge synthétique connectée sur le sandbox." }, "4": { "title": "Cherchez trois résultats", "copy": "APPROVAL_REQUIRED sur 1 350 EUR, RESERVED après acceptation du vendeur, et un reçu expurgé relisible." } },
       "ideas": { "ariaLabel": "Trois idées", "1": { "title": "L’agent négocie", "body": "Il recherche, classe, interroge le vendeur et prépare des offres via des outils WebMCP limités à la page." }, "2": { "title": "Le serveur impose les limites humaines", "body": "Les plafonds, approbations réservées au propriétaire et consentements bilatéraux sont revérifiés côté serveur." }, "3": { "title": "Chaque action reste vérifiable", "body": "Chaque étape protégée laisse un reçu expurgé avec un identifiant de requête et une décision de politique." } },
       "roles": { "agent": { "title": "Agent", "copy": "Recherche, compare, ouvre des discussions, pose des questions et prépare des offres." }, "owner": { "title": "Propriétaire", "copy": "Définit la mission et le budget, modifie les actions sensibles et garde le dernier mot." }, "clawdeals": { "copy": "Applique la politique côté serveur, contrôle la divulgation des coordonnées et émet des reçus d’action expurgés." } },
       "fixture": { "eyebrow": "Jeu de données déterministe", "title": "Nouvelle session juge", "description": "Un sandbox isolé recrée une mission acheteur, cinq vélos électriques de test, un vendeur dédié et une discussion de négociation. Aucun vrai compte ni aucune vraie coordonnée ne sont utilisés.", "judgeKey": "Clé juge", "seller": "Vendeur synthétique" },
@@ -3096,5 +3096,95 @@
     "confirmed": "Association confirmée.",
     "connectedApps": "Applications connectées",
     "approvals": "Mes approbations"
+  },
+  "passport": {
+    "photoCleanupPending": "Suppression des photos retirées…",
+    "photoCleanupError": "Certaines photos retirées n’ont pas pu être supprimées du stockage. Elles ne figurent plus dans votre saisie. Réessayez pour libérer leur espace ; cela ne modifie pas le résultat de l’enregistrement.",
+    "retryPhotoCleanup": "Réessayer la suppression des photos",
+    "title": "Passeport smartphone",
+    "editorDescription": "Renseignez cinq points utiles pour aider l’acheteur à comprendre l’état de votre smartphone.",
+    "loading": "Chargement du passeport…",
+    "loadError": "Le passeport n’a pas pu être chargé. Réessayez avant de le modifier.",
+    "publicLoadError": "Le passeport est momentanément indisponible. Réessayez pour consulter les informations du vendeur.",
+    "retry": "Réessayer",
+    "enable": "Cet objet est un smartphone",
+    "enableHint": "Activez le passeport pour renseigner le modèle, l’état et les photos qui appuient vos déclarations.",
+    "disclaimer": "Ces informations sont fournies par le vendeur. « Documenté » signifie qu’une photo accompagne la déclaration. Aucune certification indépendante n’est effectuée.",
+    "model": "Modèle",
+    "modelExample": "Ex. : iPhone 13, 128 Go",
+    "checkResult": "Résultat du contrôle",
+    "batteryHealth": "État de santé de la batterie (%)",
+    "batteryHint": "Indiquez la capacité maximale mesurée, pas le niveau de charge actuel. Laissez vide si elle est inconnue.",
+    "batteryValue": "Capacité maximale déclarée : {value} %",
+    "notes": "Précisions, défauts ou limites du contrôle",
+    "photoPrivacy": "Publiez uniquement des photos de l’objet. Masquez les données personnelles. N’ajoutez ni facture, ni IMEI, numéro de série, coordonnées ou photo personnelle ; cette règle vaut aussi pour les notes.",
+    "addPhoto": "Ajouter une photo justificative",
+    "photoLimits": "JPEG, PNG ou WebP, 2 Mo maximum. Deux photos par point. Les photos seront publiques après l’enregistrement du passeport.",
+    "photoFormatError": "Choisissez une photo JPEG, PNG ou WebP de 2 Mo maximum.",
+    "photoUploadError": "La photo n’a pas pu être ajoutée. Vos informations sont conservées ; réessayez.",
+    "uploading": "Ajout de la photo…",
+    "photoLabel": "{check} : photo {index}, ouvrir en grand",
+    "photoSource": "Photo fournie par le vendeur le {date}",
+    "removePhoto": "Retirer du passeport",
+    "save": "Enregistrer le passeport",
+    "saving": "Enregistrement…",
+    "saved": "Passeport enregistré.",
+    "saveError": "Le passeport n’a pas été enregistré. Votre saisie est conservée ; réessayez.",
+    "conflictError": "Une autre version a été enregistrée entre-temps. Votre saisie est conservée. Consultez la version actuelle dans un autre onglet, ou remplacez votre saisie par cette version.",
+    "sessionError": "Votre session a expiré. Votre saisie est conservée dans cet onglet. Reconnectez-vous dans un autre onglet, puis réessayez.",
+    "replaceDraft": "Recharger et remplacer ma saisie",
+    "lastSaved": "Dernier enregistrement : {date}",
+    "empty": "Le vendeur n’a pas encore renseigné de passeport pour ce smartphone. Demandez-lui l’état de la batterie, de l’écran et les tests effectués avant de vous décider.",
+    "sellerProvided": "Informations déclarées par le vendeur, mises à jour le {date}",
+    "documentedCount": "{count, plural, =0 {Aucun des cinq points accompagné d’une photo} one {# point sur 5 accompagné d’une photo} other {# points sur 5 accompagnés d’une photo}}",
+    "questionsTitle": "À demander au vendeur",
+    "questionsHint": "Ces questions sont préparées à partir des informations manquantes. Vous choisissez lesquelles transmettre.",
+    "photoQuestion": "Pouvez-vous ajouter une photo qui appuie vos informations sur ce point : {check} ?",
+    "copyQuestions": "Copier les questions",
+    "copied": "Questions copiées.",
+    "copyError": "La copie automatique est indisponible. Sélectionnez les questions ci-dessus pour les copier.",
+    "noQuestions": "Les cinq points sont renseignés et accompagnés de photos. Vérifiez que ces éléments répondent à vos besoins avant de vous engager.",
+    "statuses": {
+      "missing": "À renseigner",
+      "declared": "Déclaré",
+      "documented": "Documenté"
+    },
+    "answers": {
+      "unknown": "Pas encore contrôlé",
+      "ok": "Contrôlé, aucun problème signalé",
+      "issue": "Problème ou limite à signaler",
+      "not_applicable": "Santé de la batterie non accessible"
+    },
+    "checks": {
+      "battery": {
+        "title": "Batterie",
+        "hint": "Consultez la santé de la batterie dans les réglages ou indiquez comment elle a été mesurée. Signalez une autonomie réduite ou un remplacement."
+      },
+      "screen": {
+        "title": "Écran et tactile",
+        "hint": "Inspectez les rayures, fissures, pixels et la réponse tactile. Photographiez les défauts et l’écran allumé."
+      },
+      "functionality": {
+        "title": "Fonctionnement",
+        "hint": "Testez les caméras, le micro, les haut-parleurs, la charge, le Wi-Fi, le Bluetooth et le réseau mobile. Précisez tout test non effectué."
+      },
+      "locks": {
+        "title": "Verrouillages et provenance",
+        "hint": "Précisez l’origine du téléphone, votre droit de le vendre et les éventuels verrouillages de compte ou d’opérateur. Ne publiez aucun document personnel."
+      },
+      "repairs_accessories": {
+        "title": "Réparations et accessoires",
+        "hint": "Listez les réparations connues et les accessoires inclus. Indiquez aussi si aucune réparation n’est connue ou si aucun accessoire n’est fourni."
+      }
+    },
+    "questions": {
+      "battery": "Quelle est la santé de la batterie et comment a-t-elle été mesurée ?",
+      "screen": "L’écran et le tactile sont-ils intacts ? Y a-t-il des rayures, fissures ou pixels défectueux ?",
+      "functionality": "Les caméras, l’audio, la charge et les connexions ont-ils été testés ? Quels tests restent à faire ?",
+      "locks": "Le téléphone est-il libre de tout verrouillage de compte et d’opérateur ? Quelle est sa provenance ? Merci de ne pas partager de document personnel ni d’identifiant.",
+      "repairs_accessories": "Quelles réparations ont été effectuées et quels accessoires sont inclus ?"
+    },
+    "readOnly": "Cette annonce est réservée ou clôturée. Son passeport est consultable, mais ne peut plus être modifié.",
+    "lockedError": "L’annonce ne permet plus de modifier le passeport. Votre saisie est conservée dans cet onglet."
   }
 }

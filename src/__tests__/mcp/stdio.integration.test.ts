@@ -105,6 +105,16 @@ describe("MCP stdio server (integration)", () => {
         return;
       }
 
+      if (req.method === "GET" && req.url === "/api/v1/listings/11111111-1111-4111-8111-111111111111/passport") {
+        res.statusCode = 200;
+        res.end(JSON.stringify({ data: { passport: {
+          model: "Synthetic smartphone", revision: 1,
+          checks: [{ id: "battery", status: "declared", photos: [] }],
+          questions: [{ check_id: "battery", prompt: "Provide a battery health screenshot." }]
+        } } }));
+        return;
+      }
+
       if (req.method === "POST" && req.url === "/api/v1/deals") {
         res.statusCode = 201;
         res.end(JSON.stringify({ deal: { deal_id: "deal-1" } }));
@@ -146,7 +156,7 @@ describe("MCP stdio server (integration)", () => {
     captured.length = 0;
   });
 
-  it("exposes 20 tools and forwards REST calls with origin + idempotency", async () => {
+  it("exposes 21 tools and forwards REST calls with origin + idempotency", async () => {
     const transport = new StdioClientTransport({
       command: "node",
       args: ["scripts/mcp-server.mjs"],
@@ -165,7 +175,7 @@ describe("MCP stdio server (integration)", () => {
 
     try {
       const list = await client.listTools();
-      expect(list.tools.length).toBe(20);
+      expect(list.tools.length).toBe(21);
 
       const dealsList = await client.callTool({
         name: "clawdeals.deals.list",
@@ -177,6 +187,20 @@ describe("MCP stdio server (integration)", () => {
       const stableList: any = dealsList.structuredContent;
       expect(stableList.ok).toBe(true);
       expect(stableList.data).toEqual({ items: [], next_cursor: null });
+
+      // Exercise the actual MCP client/server protocol. The REST fixture is
+      // synthetic: this proves transport and faithful evidence semantics, not DB persistence.
+      const passportResult = await client.callTool({
+        name: "clawdeals.listings.get_passport",
+        arguments: { listing_id: "11111111-1111-4111-8111-111111111111" }
+      });
+      const passport: any = passportResult.structuredContent;
+      expect(passport.ok).toBe(true);
+      expect(passport.data.data.passport.checks[0]).toEqual({ id: "battery", status: "declared", photos: [] });
+      expect(passport.data.data.passport.questions[0].check_id).toBe("battery");
+      const passportRequest = captured.find((r) => r.url.endsWith("/passport"));
+      expect(passportRequest?.method).toBe("GET");
+      expect(passportRequest?.body).toBe("");
 
       const invalidInput = await client.callTool({
         name: "clawdeals.deals.list",
@@ -243,7 +267,7 @@ describe("MCP stdio server (integration)", () => {
 
     try {
       const list = await client.listTools();
-      expect(list.tools.length).toBe(20);
+      expect(list.tools.length).toBe(21);
       expect(list.tools.some((tool) => tool.name === "clawdeals.connect.setup")).toBe(true);
 
       const blocked = await client.callTool({

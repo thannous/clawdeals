@@ -6,6 +6,11 @@ type RouteGroupMatcher = {
 };
 
 const ROUTE_GROUPS: RouteGroupMatcher[] = [
+  { group: "passport.owner.read", methods: ["GET"], pattern: /^\/v1\/owner\/listings\/[^/]+\/passport(?:\/photos\/[^/]+)?$/ },
+  { group: "passport.owner.write", methods: ["PUT", "DELETE"], pattern: /^\/v1\/owner\/listings\/[^/]+\/passport(?:\/photos\/[^/]+)?$/ },
+  { group: "passport.photos.write", methods: ["POST"], pattern: /^\/v1\/owner\/listings\/[^/]+\/passport\/photos$/ },
+  { group: "passport.public.read", methods: ["GET"], pattern: /^\/v1\/public\/listings\/[^/]+\/passport(?:\/photos\/[^/]+)?$/ },
+  { group: "listings.read", methods: ["GET"], pattern: /^\/v1\/listings\/[^/]+\/passport$/ },
   {
     group: "audit.read",
     methods: ["GET"],

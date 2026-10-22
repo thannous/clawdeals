@@ -11,6 +11,7 @@ import DealRoomPanel from "../webmcp/DealRoomPanel";
 import PendingApprovalBanner from "../webmcp/PendingApprovalBanner";
 import ListingHumanActions from "./ListingHumanActions";
 import ListingGallery from "./ListingGallery";
+import SmartphonePassport from "../passport/SmartphonePassport";
 import SimilarListings from "./SimilarListings";
 import { getActiveBuyMission, subscribeActiveBuyMission } from "../../webmcp/ui-bridge";
 import { distanceBetweenKm, resolveListingLocation } from "./listing-location";
@@ -144,6 +145,8 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
                   </p>
                 </div>
               )}
+
+              <SmartphonePassport key={listing.listing_id} listingId={listing.listing_id} title={listing.title} category={listing.category} />
 
               {/* Details grid */}
               <div className="bg-surface border border-border p-4 space-y-3">

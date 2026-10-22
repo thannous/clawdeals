@@ -3097,6 +3097,246 @@ paths:
         "500":
           $ref: "#/components/responses/Error500"
 
+  /v1/listings/{listing_id}/passport:
+    get:
+      tags: [Listings]
+      operationId: v1SmartphonePassportAgentGet
+      summary: Read smartphone passport and missing-information questions
+      description: >-
+        Only LIVE listings are readable here; private/removed listings return 404. An absent passport returns data.passport=null. Seller photos document claims and never certify authenticity or functioning. Responses and photos use no-store. Installation-scoped credentials require listings:read.
+      x-clawdeals-rate-limit-group: listings.read
+      security: [{ bearerAuth: [] }, { apiKeyHeaderAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmartphonePassportResponse" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+
+  /v1/public/listings/{listing_id}/passport:
+    get:
+      tags: [Listings]
+      operationId: v1SmartphonePassportPublicGet
+      summary: Read a published smartphone passport
+      description: >-
+        Only LIVE listings are readable here; private/removed listings return 404. An absent passport returns data.passport=null. Seller photos document claims and never certify authenticity or functioning. Responses and photos use no-store.
+      x-clawdeals-rate-limit-group: passport.public.read
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmartphonePassportResponse" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+
+  /v1/owner/listings/{listing_id}/passport:
+    get:
+      tags: [Listings]
+      operationId: v1SmartphonePassportOwnerGet
+      summary: Read your smartphone passport
+      description: >-
+        Requires a server-validated owner session and listing ownership; the owner can read all listing states. An absent passport returns data.passport=null.
+      x-clawdeals-rate-limit-group: passport.owner.read
+      security: [{ ownerSession: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmartphonePassportResponse" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+    put:
+      tags: [Listings]
+      operationId: v1SmartphonePassportOwnerSave
+      summary: Save your smartphone passport with revision protection
+      description: >-
+        Requires same-origin Origin or Referer and application/json. Editable only in DRAFT, PENDING_APPROVAL or LIVE. expected_revision=0 creates revision 1; subsequent saves require the current revision and increment it, or return 409 PASSPORT_REVISION_CONFLICT. Photos must be ready uploads belonging to this listing, owner and check. Issue answers require notes. not_applicable is allowed only for battery, with notes and null battery health. Unknown answers remain missing even with photos. This endpoint uses revision protection instead of Idempotency-Key.
+      x-clawdeals-rate-limit-group: passport.owner.write
+      security: [{ ownerSession: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SmartphonePassportInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmartphonePassportResponse" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+
+  /v1/owner/listings/{listing_id}/passport/photos:
+    post:
+      tags: [Listings]
+      operationId: v1SmartphonePassportPhotoUpload
+      summary: Upload a private supporting smartphone photo
+      description: >-
+        Requires same-origin Origin or Referer, application/json, listing ownership and a mutable listing. JPEG/PNG/WebP source up to 2 MiB; the server decodes, bounds pixel count, strips metadata and stores JPEG privately. The photo becomes public only when attached to a saved passport on a LIVE listing. Maximum two photos per check, fifteen stored photos and 30 MiB per listing including pending uploads. Abandoned/detached photos older than 24 hours are cleaned on subsequent uploads. Photos are not independently verified. Retrying creates a new bounded upload; no Idempotency-Key replay.
+      x-clawdeals-rate-limit-group: passport.photos.write
+      security: [{ ownerSession: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SmartphonePassportPhotoUpload" }
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmartphonePassportPhotoResponse" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+
+  /v1/owner/listings/{listing_id}/passport/photos/{photo_id}:
+    get:
+      tags: [Listings]
+      operationId: v1SmartphonePassportOwnerPhotoGet
+      summary: Read your supporting smartphone photo
+      description: >-
+        Requires a real owner session and listing ownership. Can read ready attached and unattached uploads. Returns private, no-store JPEG bytes; no storage credentials or signed URL are exposed.
+      x-clawdeals-rate-limit-group: passport.owner.read
+      security: [{ ownerSession: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+        - in: path
+          name: photo_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+    delete:
+      tags: [Listings]
+      operationId: v1SmartphonePassportPhotoDelete
+      summary: Delete an unattached supporting photo
+      description: >-
+        Requires same-origin Origin or Referer and listing ownership. An attached photo returns 409 PASSPORT_PHOTO_IN_USE; detach it by saving a new passport revision first. Failed storage deletion remains quota-accounted and retryable.
+      x-clawdeals-rate-limit-group: passport.owner.write
+      security: [{ ownerSession: [] }]
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+        - in: path
+          name: photo_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      deleted: { type: boolean, enum: [true] }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+
+  /v1/public/listings/{listing_id}/passport/photos/{photo_id}:
+    get:
+      tags: [Listings]
+      operationId: v1SmartphonePassportPublicPhotoGet
+      summary: Read an attached photo from a LIVE smartphone listing
+      description: >-
+        The listing must still be LIVE and the photo READY and attached. Authorization is checked again after storage I/O. Returns no-store JPEG bytes with nosniff and same-origin resource policy.
+      x-clawdeals-rate-limit-group: passport.public.read
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ListingId"
+        - in: path
+          name: photo_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+        "429": { $ref: "#/components/responses/Error429" }
+        "500": { $ref: "#/components/responses/Error500" }
+        "503":
+          description: Passport schema or write protection is unavailable.
+
 components:
   securitySchemes:
     bearerAuth:
@@ -3290,6 +3530,107 @@ components:
           schema: { $ref: "#/components/schemas/ErrorResponse" }
 
   schemas:
+    SmartphonePassportCheckInput:
+      type: object
+      additionalProperties: false
+      required: [answer, notes, photo_ids]
+      description: Issue requires nonempty notes. not_applicable is restricted to battery with nonempty notes and null battery health.
+      properties:
+        answer: { type: string, enum: [unknown, ok, issue, not_applicable] }
+        notes: { type: string, maxLength: 800 }
+        photo_ids:
+          type: array
+          maxItems: 2
+          uniqueItems: true
+          items: { type: string, format: uuid }
+    SmartphonePassportInput:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, model, battery_health_percent, checks]
+      properties:
+        expected_revision: { type: integer, minimum: 0, maximum: 2147483646 }
+        model: { type: string, minLength: 1, maxLength: 120 }
+        battery_health_percent: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        checks:
+          type: object
+          additionalProperties: false
+          required: [battery, screen, functionality, locks, repairs_accessories]
+          properties:
+            battery: { $ref: "#/components/schemas/SmartphonePassportCheckInput" }
+            screen: { $ref: "#/components/schemas/SmartphonePassportCheckInput" }
+            functionality: { $ref: "#/components/schemas/SmartphonePassportCheckInput" }
+            locks: { $ref: "#/components/schemas/SmartphonePassportCheckInput" }
+            repairs_accessories: { $ref: "#/components/schemas/SmartphonePassportCheckInput" }
+    SmartphonePassportPhoto:
+      type: object
+      required: [photo_id, url, created_at]
+      properties:
+        photo_id: { type: string, format: uuid }
+        url: { type: string, description: Same-origin API path; rechecks listing visibility and photo attachment on every request. }
+        created_at: { type: string, format: date-time }
+    SmartphonePassportPhotoResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/SmartphonePassportPhoto" }
+    SmartphonePassportPhotoUpload:
+      type: object
+      additionalProperties: false
+      required: [check_id, content_type, data_base64]
+      properties:
+        check_id: { type: string, enum: [battery, screen, functionality, locks, repairs_accessories] }
+        content_type: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        data_base64: { type: string, format: byte, maxLength: 2796204, description: Canonical base64 of at most 2 MiB; original metadata is discarded. }
+    SmartphonePassport:
+      type: object
+      required: [listing_id, revision, model, battery_health_percent, checks, questions, updated_at]
+      properties:
+        listing_id: { type: string, format: uuid }
+        revision: { type: integer, minimum: 1 }
+        model: { type: string }
+        battery_health_percent: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        updated_at: { type: string, format: date-time }
+        checks:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            type: object
+            required: [id, answer, notes, status, photos]
+            properties:
+              id: { type: string, enum: [battery, screen, functionality, locks, repairs_accessories] }
+              answer: { type: string, enum: [unknown, ok, issue, not_applicable] }
+              notes: { type: string, maxLength: 800 }
+              status:
+                type: string
+                enum: [missing, declared, documented]
+                description: Computed by the server. A photo documents a seller claim; it never produces verified or certified status.
+              photos:
+                type: array
+                maxItems: 2
+                items: { $ref: "#/components/schemas/SmartphonePassportPhoto" }
+        questions:
+          type: array
+          items:
+            type: object
+            required: [check_id, reason, prompt]
+            properties:
+              check_id: { type: string, enum: [battery, screen, functionality, locks, repairs_accessories] }
+              reason: { type: string, enum: [answer_missing, photo_missing, battery_health_missing] }
+              prompt: { type: string, description: Deterministic English question; clients can localize by check_id and reason. }
+    SmartphonePassportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [passport]
+          properties:
+            passport:
+              type: object
+              nullable: true
+              allOf:
+                - $ref: "#/components/schemas/SmartphonePassport"
     ErrorResponse:
       type: object
       required: [error]
