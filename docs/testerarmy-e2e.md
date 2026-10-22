@@ -2,7 +2,7 @@
 
 ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.21.2 and `@e2e-dev/web` 0.15.2 are pinned development dependencies. The engine pins `playwright-core` 1.64.0 itself; the retained Playwright suites use `@playwright/test` 1.64.1.
 
-The installed 0.21.2 package requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
+The installed 0.21.2 package requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.22.1. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
 
 Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and its relevant `references/` topic, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`.
 
@@ -56,7 +56,7 @@ they are retained, not claimed as new features of this upgrade.
 
 ## Run the public journeys
 
-Use the repository's Node 24.19.0/npm versions:
+Use the repository's Node 24.22.1/npm versions:
 
 ```bash
 npm ci
@@ -77,6 +77,18 @@ The original navigation journeys run on Chromium at 1280×720 and 390×844:
 No account or seeded listing is required. These journeys verify navigation and hydrated controls; they do not qualify database persistence, transactions or authentication. Those remain covered by the existing integration suites. `npm run test:e2e`, `test:ui` and `test:integration` retain their Playwright runner.
 
 The configuration loads `.env.testerarmy.local`, then `.env.local`, without overwriting shell variables. Next.js also loads its normal local environment. The configuration passes selected database/Redis variables to the child app so shell overrides select the same backend the target guard checks. Follow [local setup](./local-supabase-development.md) when using the local backend.
+
+## Compare smartphones against a local backend
+
+`TESTERARMY_COMPARISON_LIVE=1` selects the connected smartphone comparison
+journeys, exclusively of the other selections. Both the application and Supabase
+must use local loopback origins. Fixtures create and remove their own synthetic
+rows; the browser reads the real API without interception. Separate client
+recovery cases simulate API failures. No authentication, messaging, payments or
+model-provider calls are part of this suite.
+
+See [smartphone comparison](./smartphone-comparison.md#verification) for the
+native local backend prerequisites, command and precise proof boundary.
 
 ## Verify a complete buyer–seller transaction
 

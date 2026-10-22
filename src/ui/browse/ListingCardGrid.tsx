@@ -2,6 +2,7 @@ import { memo } from "react";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import ListingCard from "./ListingCard";
+import ComparisonToggle from "../comparison/ComparisonToggle";
 import type { ListingPolicyFit } from "../../webmcp/ui-bridge";
 
 function SkeletonCard() {
@@ -47,6 +48,7 @@ function ListingCardGrid({
   onResetFilters,
   highlightedIds,
   policyFitById,
+  enableComparison = false,
 }: {
   listings: any[];
   fetchState: string;
@@ -58,6 +60,7 @@ function ListingCardGrid({
   onResetFilters?: () => void;
   highlightedIds?: string[];
   policyFitById?: Record<string, ListingPolicyFit> | null;
+  enableComparison?: boolean;
 }) {
   const t = useTranslations("browse");
 
@@ -115,12 +118,14 @@ function ListingCardGrid({
       )}
       <div data-testid="browse-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {listings.map((listing) => (
-          <ListingCard
-            key={listing.listing_id}
-            listing={listing}
-            highlighted={Boolean(highlightedIds?.includes(listing.listing_id))}
-            policyFit={policyFitById?.[listing.listing_id] ?? null}
-          />
+          <div key={listing.listing_id} className="flex min-w-0 flex-col gap-2">
+            <div className="min-w-0 flex-1"><ListingCard
+              listing={listing}
+              highlighted={Boolean(highlightedIds?.includes(listing.listing_id))}
+              policyFit={policyFitById?.[listing.listing_id] ?? null}
+            /></div>
+            {enableComparison ? <ComparisonToggle listing={listing} /> : null}
+          </div>
         ))}
       </div>
 

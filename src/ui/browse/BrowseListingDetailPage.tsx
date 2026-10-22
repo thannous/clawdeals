@@ -11,6 +11,8 @@ import DealRoomPanel from "../webmcp/DealRoomPanel";
 import PendingApprovalBanner from "../webmcp/PendingApprovalBanner";
 import ListingHumanActions from "./ListingHumanActions";
 import ListingGallery from "./ListingGallery";
+import ComparisonToggle from "../comparison/ComparisonToggle";
+import ComparisonTray from "../comparison/ComparisonTray";
 import SmartphonePassport from "../passport/SmartphonePassport";
 import SimilarListings from "./SimilarListings";
 import { getActiveBuyMission, subscribeActiveBuyMission } from "../../webmcp/ui-bridge";
@@ -77,7 +79,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
     <div className="min-h-screen bg-bg">
       <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
 
-      <main id="main-content" tabIndex={-1} className="pt-20 pb-16">
+      <main id="main-content" tabIndex={-1} className="pt-20 pb-48">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           {/* Back link */}
           <Link
@@ -124,6 +126,8 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
               <div className="text-xl font-mono font-bold text-primary">
                 {formatPrice(listing.price.amount, listing.price.currency, locale)}
               </div>
+
+              <ComparisonToggle listing={listing} />
 
               {/* Human actions: the page is no longer a dead end without an agent */}
               <ListingHumanActions listing={listing} localePrefix={localePrefix} />
@@ -252,6 +256,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
           )}
         </div>
       </main>
+      <ComparisonTray />
     </div>
   );
 }

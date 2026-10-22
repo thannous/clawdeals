@@ -3186,5 +3186,82 @@
     },
     "readOnly": "Este anuncio está reservado o cerrado. Su pasaporte puede consultarse, pero ya no se puede modificar.",
     "lockedError": "Este anuncio ya no permite modificar el pasaporte. Tus cambios se conservan en esta pestaña."
+  },
+  "comparison": {
+    "pageTitle": "Comparar smartphones — ClawDeals",
+    "title": "Comparar smartphones",
+    "description": "Compara dos o tres anuncios por precio, salud de batería declarada y problemas señalados. Consulta las pruebas y la información que todavía falta.",
+    "add": "Añadir al comparador",
+    "selected": "En el comparador",
+    "maximumReached": "3 smartphones como máximo",
+    "addNamed": "Comparar {title}",
+    "removeNamed": "Quitar {title} del comparador",
+    "selectionTitle": "Smartphones seleccionados",
+    "selectionCount": "{count} smartphone(s) seleccionado(s)",
+    "selectionHint": "Elige dos o tres anuncios. Tu selección se conserva en esta pestaña durante 24 horas.",
+    "limitHint": "Tres anuncios como máximo. Quita uno para cambiar tu selección.",
+    "open": "Comparar",
+    "chooseSecond": "Elegir un segundo smartphone",
+    "itemFallback": "Anuncio seleccionado",
+    "back": "Volver a los anuncios",
+    "emptyTitle": "Elige al menos dos smartphones",
+    "emptyHint": "Añade dos o tres anuncios para comparar sus diferencias en paralelo.",
+    "invalidTitle": "No se puede comparar esta selección",
+    "invalidHint": "El enlace debe contener entre uno y tres identificadores de anuncios válidos y diferentes. Vuelve a crear tu selección desde los anuncios.",
+    "browse": "Elegir anuncios",
+    "remove": "Quitar",
+    "priorityTitle": "Tu prioridad",
+    "priorities": {
+      "budget": "Presupuesto",
+      "battery": "Salud de la batería",
+      "condition": "Estado declarado"
+    },
+    "outcomes": {
+      "budget": "Precio anunciado más bajo",
+      "battery": "Salud de batería declarada más alta",
+      "condition": "Menos problemas declarados"
+    },
+    "priorityHints": {
+      "budget": "Se comparan los precios anunciados en la misma moneda. Los gastos de envío y reparación no están incluidos. Este resultado no es una recomendación de compra.",
+      "battery": "Se compara la capacidad máxima declarada. No predice la autonomía real, que depende del modelo y del uso.",
+      "condition": "Se compara el número de comprobaciones con problemas declarados solo cuando las cinco están completas. Los problemas pueden tener distinta gravedad: lee los detalles."
+    },
+    "states": {
+      "needs_selection": "Se necesitan dos o tres anuncios",
+      "unavailable": "Algunos anuncios no se pueden comparar",
+      "incomplete": "No hay información suficiente para diferenciarlos",
+      "different_currencies": "Las monedas son diferentes"
+    },
+    "incompleteItems": "Por comprobar: {titles}",
+    "tieHint": "Empate en este criterio. No hay una única opción que destaque.",
+    "budgetMissingPassport": "Algunos anuncios no tienen un pasaporte accesible. Su estado aún debe confirmarse, aunque el precio sea inferior.",
+    "loading": "Actualizando la comparación…",
+    "scrollHint": "En pantallas pequeñas, desplaza la tabla horizontalmente para ver cada smartphone.",
+    "tableLabel": "Comparación de los smartphones seleccionados",
+    "criteria": "Criterio",
+    "price": "Precio anunciado",
+    "listingCondition": "Estado del anuncio",
+    "batteryHealth": "Salud de batería declarada",
+    "issues": "Problemas declarados",
+    "unknown": "Desconocido",
+    "incompleteChecks": "Comprobaciones incompletas: total desconocido",
+    "issueCount": "{count, plural, =0 {Ningún problema declarado} one {# comprobación con un problema declarado} other {# comprobaciones con problemas declarados}}",
+    "knownChecks": "{count} de 5 comprobaciones completadas",
+    "evidence": "Información y pruebas",
+    "documentedCount": "{count} punto(s) con fotos",
+    "declaredCount": "{count} punto(s) declarado(s) sin fotos",
+    "availability": {
+      "unavailable": "Este anuncio está retirado, reservado o no es accesible.",
+      "error": "No se ha podido cargar este anuncio.",
+      "unsupported": "Este anuncio no está identificado como un smartphone."
+    },
+    "passportError": "El pasaporte no está disponible temporalmente.",
+    "noPassport": "El vendedor aún no ha completado un pasaporte.",
+    "retry": "Reintentar",
+    "retrying": "Reintentando…",
+    "noPassportQuestions": "Pide al vendedor que complete las cinco comprobaciones del pasaporte.",
+    "share": "Copiar enlace de comparación",
+    "shareCopied": "Enlace copiado. Abre esta selección con tu prioridad.",
+    "shareError": "La copia no está disponible. Copia el enlace de la barra de direcciones."
   }
 }

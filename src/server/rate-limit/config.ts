@@ -11,6 +11,7 @@ export const RATE_LIMIT_PROFILES = {
   "passport.owner.write": { scope: "owner", buckets: [{ limit: 30, windowSeconds: MINUTE }] },
   "passport.photos.write": { scope: "owner", buckets: [{ limit: 15, windowSeconds: MINUTE }, { limit: 100, windowSeconds: HOUR }] },
   "passport.public.read": { scope: "ip", buckets: [{ limit: 180, windowSeconds: MINUTE }] },
+  "smartphone_comparison.public.read": { scope: "ip", buckets: [{ limit: 60, windowSeconds: MINUTE }] },
   "acquisition.events_ip": {
     scope: "ip",
     buckets: [
