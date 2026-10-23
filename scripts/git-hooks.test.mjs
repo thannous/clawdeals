@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 
 import {
   ENGINE_FILE_SHA256,
+  loadExternalSources,
+  posixShell,
   PROOF_FORMAT_VERSION,
   writeProof,
 } from "./verify-local.mjs";
@@ -15,13 +17,13 @@ import {
 // Contract of the pre-push hook (common delivery rule v2, section 3) and of the
 // installer that `npm ci` runs, exercised with real `git push` calls into
 // disposable repositories that carry this repository's hook, engine and
-// verify-local.config.mjs.
+// verify-local.config.json.
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const FIXTURE_FILES = [
   ".githooks/pre-push",
   ".gitignore",
   ".nvmrc",
-  "verify-local.config.mjs",
+  "verify-local.config.json",
   "scripts/verify-local.mjs",
   "scripts/install-git-hooks.mjs",
 ];
@@ -105,6 +107,83 @@ function installedRepository() {
   assert.equal(installed.status, 0, installed.stderr);
   return repo;
 }
+
+for (const nonHead of [false, true]) {
+  test(`security: pushing ${nonHead ? "another branch" : "HEAD"} never executes legacy config`, () => {
+    const repo = installedRepository();
+    repo.git("checkout", "--quiet", "-b", "candidate");
+    const marker = join(repo.base, "config-executed");
+    const legacy = join(repo.work, "verify-local.config.mjs");
+    const source = existsSync(legacy) ? readFileSync(legacy, "utf8") : "export default {};\n";
+    repo.commit("untrusted config", {
+      "verify-local.config.mjs": `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(marker)}, "executed");\n${source}`,
+    });
+    if (nonHead) repo.git("checkout", "--quiet", "main");
+    const result = repo.push("origin", "candidate");
+    assert.equal(existsSync(marker), false, "candidate JavaScript must never run in the hook process");
+    assert.equal(result.status, 0, result.output);
+    assert.equal(repo.remoteHas("refs/heads/candidate"), true);
+  });
+}
+
+for (const kind of ["JavaScript", "command", "constructor", "__proto__"]) {
+  test(`security: the hook rejects ${kind} configuration without executing it`, () => {
+    const repo = installedRepository();
+    repo.git("checkout", "--quiet", "-b", "candidate");
+    const marker = join(repo.base, "config-executed");
+    const payload = `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(marker)}, "executed");`;
+    const config = JSON.parse(readFileSync(join(repo.work, "verify-local.config.json"), "utf8"));
+    config.hook.checks = kind === "command" ? [{ name: "gitignore-env", command: "echo executed > config-executed" }] : [kind];
+    repo.commit("untrusted data", {
+      "verify-local.config.json": kind === "JavaScript" ? payload : JSON.stringify(config),
+    });
+    const result = repo.push("origin", "candidate");
+    assert.notEqual(result.status, 0, result.output);
+    assert.match(result.output, /must contain valid JSON|hook.checks accepts only/);
+    assert.equal(existsSync(marker), false);
+    assert.equal(existsSync(join(repo.work, "config-executed")), false);
+    assert.equal(repo.remoteHas("refs/heads/candidate"), false);
+  });
+}
+
+test("security: a historical non-HEAD branch without JSON still scans forbidden files", () => {
+  const repo = installedRepository();
+  repo.git("checkout", "--quiet", "-b", "historical");
+  repo.git("rm", "verify-local.config.json");
+  const marker = join(repo.base, "config-executed");
+  repo.commit("legacy config and private file", {
+    "verify-local.config.mjs": `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(marker)}, "executed"); export default {};`,
+    "private.pem": "disposable fixture\n",
+  });
+  repo.git("checkout", "--quiet", "main");
+  const result = repo.push("origin", "historical");
+  assert.notEqual(result.status, 0, result.output);
+  assert.match(result.output, /Default fast checks only/);
+  assert.match(result.output, /private.pem: forbidden file/);
+  assert.equal(existsSync(marker), false);
+  assert.equal(repo.remoteHas("refs/heads/historical"), false);
+});
+
+test("security: proof-block and external sources parse data without loading legacy code", async () => {
+  const repo = makeRepository();
+  const marker = join(repo.base, "config-executed");
+  const sha = repo.commit("legacy side effect", {
+    "verify-local.config.mjs": `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(marker)}, "executed"); export default {};`,
+  });
+  const tree = repo.git("rev-parse", "HEAD^{tree}");
+  writeProof(join(repo.work, ".git"), {
+    version: PROOF_FORMAT_VERSION, engine: ENGINE_FILE_SHA256, sha, tree,
+    kind: "pr", result: "passed", checks: [], command: "fixture", targets: [],
+  });
+  const block = repo.run(process.execPath, ["scripts/verify-local.mjs", "proof-block"]);
+  assert.match(block.stdout, /## Local proof/);
+  assert.deepEqual(await loadExternalSources({ cwd: repo.work, env: repo.env }), []);
+  assert.equal(existsSync(marker), false);
+  repo.git("rm", "verify-local.config.json");
+  repo.git("commit", "--quiet", "-m", "legacy only");
+  await assert.rejects(loadExternalSources({ cwd: repo.work, env: repo.env }), /verify-local.config.json is missing/);
+  assert.equal(existsSync(marker), false);
+});
 
 test("the installer points Git at .githooks once and announces the fast checks", () => {
   const repo = makeRepository();
@@ -243,7 +322,7 @@ test("the proof of the pushed tree is shown", () => {
 
 test("without node the hook stops with a clear message", () => {
   const repo = makeRepository();
-  const result = spawnSync("/bin/sh", [".githooks/pre-push", "origin", "fixture"], {
+  const result = spawnSync(posixShell(repo.env), [".githooks/pre-push", "origin", "fixture"], {
     cwd: repo.work,
     env: { ...repo.env, PATH: join(repo.base, "empty-path") },
     input: "",

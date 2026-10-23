@@ -1,4 +1,4 @@
 e2e/ui/webmcp.spec.ts whitespace=cr-at-eol
 scripts/verify-local*.mjs text eol=lf
 scripts/test-verify-local.mjs text eol=lf
-verify-local.config.mjs text eol=lf
+verify-local.config.json text eol=lf

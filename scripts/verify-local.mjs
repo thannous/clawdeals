@@ -5,7 +5,7 @@
 //
 // The same engine file in every repository is recommended. Each repository
 // keeps its own copy, pins and verifies only that copy (ENGINE_SHA256 in its
-// verify-local.config.mjs), and describes its checks in verify-local.config.mjs
+// verify-local.config.json), and describes its checks in verify-local.config.json
 // at its root. Nothing here reads or compares another repository.
 //
 //   node scripts/verify-local.mjs pr       [--rev <rev>] [--force] [--keep] [--external <check>=<evidence>]
@@ -79,7 +79,7 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 export const RULE = 'regle-commune-livraison v4';
 // 3: --external is guarded (specialised, probe fails, evidence names the
@@ -90,7 +90,7 @@ export const PROOF_FORMAT_VERSION = 4;
 export const ENGINE_VERSION = 1;
 /** The sha256 of this engine file's own bytes, as it runs. */
 export const ENGINE_FILE_SHA256 = createHash('sha256').update(readFileSync(fileURLToPath(import.meta.url))).digest('hex');
-export const CONFIG_FILE = 'verify-local.config.mjs';
+export const CONFIG_FILE = 'verify-local.config.json';
 export const PROOFS_DIR = 'verify-proofs';
 const PREFIX = '[verify-local]';
 const MAX_PROOF_FILES = 300;
@@ -116,6 +116,7 @@ export function cleanGitEnv(env = process.env) {
 }
 
 class UsageError extends Error {}
+class MissingConfigError extends UsageError {}
 
 // ---------------------------------------------------------------- git
 
@@ -142,25 +143,35 @@ function resolveRepository(cwd, env) {
 
 // ---------------------------------------------------------------- config
 
-/** Load verify-local.config.mjs as committed at <rev>, so the checks match the commit. */
-export async function loadConfig(git, rev, { scratchDir } = {}) {
+/** Load verify-local.config.json as committed at <rev>, so the checks match the commit. */
+function readConfig(git, rev) {
   const source = git(['show', `${rev}:${CONFIG_FILE}`], { allowFailure: true });
   if (source === null) {
-    throw new UsageError(`${CONFIG_FILE} is missing at ${rev}.`);
+    throw new MissingConfigError(`${CONFIG_FILE} is missing at ${rev}.`);
   }
-  const digest = createHash('sha256').update(source).digest('hex').slice(0, 16);
-  const dir = scratchDir ?? path.join(git(['rev-parse', '--path-format=absolute', '--git-common-dir']), 'verify-local');
-  const file = path.join(dir, `config-${digest}.mjs`);
-  if (!existsSync(file)) {
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(file, source);
+  // Candidate revisions supply data, never executable modules (including legacy .mjs).
+  let raw;
+  try {
+    raw = JSON.parse(source);
+  } catch {
+    throw new UsageError(`${CONFIG_FILE} at ${rev} must contain valid JSON.`);
   }
-  const loaded = (await import(pathToFileURL(file).href)).default;
-  return normaliseConfig(loaded);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new UsageError(`${CONFIG_FILE} must contain a JSON object.`);
+  }
+  return raw;
+}
+
+export async function loadConfig(git, rev) {
+  return normaliseConfig(readConfig(git, rev));
 }
 
 export function normaliseConfig(raw) {
-  if (!raw || typeof raw !== 'object') throw new UsageError(`${CONFIG_FILE} must export a default object.`);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new UsageError(`${CONFIG_FILE} must contain a JSON object.`);
+  const hookChecks = raw.hook?.checks ?? [];
+  if (!Array.isArray(hookChecks) || hookChecks.some((name) => name !== 'gitignore-env')) {
+    throw new UsageError('hook.checks accepts only the built-in name "gitignore-env"; shell commands are not supported.');
+  }
   const checks = (raw.checks ?? []).map((check) => {
     if (!check.name || !check.command) throw new UsageError('every check needs a name and a command.');
     const kinds = check.kinds ?? ['pr', 'release'];
@@ -224,7 +235,7 @@ export function normaliseConfig(raw) {
       allow: raw.hook?.allow ?? [],
       secretAllow: raw.hook?.secretAllow ?? [],
       maxFileBytes: raw.hook?.maxFileBytes ?? 10 * 1024 * 1024,
-      checks: raw.hook?.checks ?? [],
+      checks: hookChecks,
     },
   };
 }
@@ -1726,8 +1737,11 @@ export function checkReleaseProof({ cwd = process.cwd(), env = cleanGitEnv(), ta
   } else {
     // The proof and the latest release run must come from the engine pinned
     // at HEAD, and the running engine must be that one too.
-    const configSource = git(['show', `HEAD:${CONFIG_FILE}`], { allowFailure: true }) ?? '';
-    const pinned = /ENGINE_SHA256\s*=\s*['"`]([0-9a-f]{64})['"`]/.exec(configSource)?.[1] ?? null;
+    let pinned = null;
+    try {
+      const value = readConfig(git, 'HEAD').ENGINE_SHA256;
+      if (typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)) pinned = value;
+    } catch { /* An unreadable pin fails the proof-engine gate below. */ }
     if (!pinned) failures.push({ check: 'proof-engine', message: `${CONFIG_FILE} at HEAD pins no ENGINE_SHA256` });
     else {
       if (ENGINE_FILE_SHA256 !== pinned) failures.push({ check: 'proof-engine', message: `the running engine is ${ENGINE_FILE_SHA256.slice(0, 12)}, but HEAD pins ${pinned.slice(0, 12)}; deploy with the engine of HEAD` });
@@ -2031,6 +2045,10 @@ export async function prePush(remote, stdinText, {
   try {
     config = await loadConfig(git, pushes[0].sha);
   } catch (loadError) {
+    if (!(loadError instanceof MissingConfigError)) {
+      error(`${PREFIX} pre-push: ${loadError.message}`);
+      return { status: 1, problems: [loadError.message] };
+    }
     config = normaliseConfig({});
     log(`${PREFIX} pre-push: ${loadError.message} Default fast checks only.`);
   }
@@ -2082,17 +2100,18 @@ export async function prePush(remote, stdinText, {
     }
   }
 
-  const hookShell = posixShell(env, process.platform, { repoDirs: process.platform === 'win32' ? repositoryDirs(git, root, commonDir) : [] });
-  const hookProbe = config.hook.checks.length ? probeShell(hookShell, env) : { ok: true };
-  if (!hookProbe.ok) problems.push(`the shell ${hookShell ?? '(none: no sh.exe of Git for Windows next to the git.exe on PATH)'} failed its sanity probe (${hookProbe.detail}); the hook checks cannot run`);
-  for (const check of hookProbe.ok ? config.hook.checks : []) {
+  for (const name of config.hook.checks) {
     if (pushes.some((push) => push.sha !== head)) {
-      log(`${PREFIX} pre-push: ${check.name} skipped (it reads the checkout, and the pushed commit is not HEAD).`);
+      log(`${PREFIX} pre-push: ${name} skipped (it reads the checkout, and the pushed commit is not HEAD).`);
       continue;
     }
-    const result = spawnSync(hookShell, ['-c', check.command], { cwd: root, env, encoding: 'utf8' });
-    if (result.error || result.status !== 0) {
-      problems.push(`${check.name} failed:\n${`${result.stdout ?? ''}${result.stderr ?? ''}`.trim()}`);
+    // The closed name list above selects fixed operations, not candidate commands.
+    for (const [file, expectedStatus] of [['.env', 0], ['.env.local', 0], ['.env.example', 1]]) {
+      const result = spawnSync('git', ['check-ignore', '-q', file], { cwd: root, env, encoding: 'utf8' });
+      if (result.error || result.status !== expectedStatus) {
+        problems.push(`${name} failed: ${file} must ${expectedStatus === 0 ? '' : 'not '}be ignored (${result.error?.message ?? result.stderr?.trim() ?? result.status}).`);
+        break;
+      }
     }
   }
 

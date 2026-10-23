@@ -161,7 +161,7 @@ function cleanup() {
   cleaned = true;
   let ok = true;
   // 15 s + 12 s: both fit in the 30 s step grace verify:pr gives on a stop
-  // (VERIFY_LOCAL_STEP_GRACE_MS in verify-local.config.mjs); each takes a
+  // (VERIFY_LOCAL_STEP_GRACE_MS in verify-local.config.json); each takes a
   // second or two normally.
   for (const [args, timeout] of [[["stop", "--output-format", "json"], 15000], [["stack", "destroy", "--yes", "--output-format", "json"], 12000]]) {
     const result = spawnSync("supabase", args, { encoding: "utf8", timeout, killSignal: "SIGKILL" });

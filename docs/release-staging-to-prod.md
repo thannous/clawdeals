@@ -12,6 +12,29 @@ Updated 2026-10-11. This filename is retained for existing links; the former sta
 
 Production contains owner-confirmed fictitious test data during this development phase. Relevant test writes are authorized under `AGENTS.md`; supported test commands use the explicit ClawDeals-only opt-in described in the environment policy. Existing sandbox reset endpoints are not production reset endpoints.
 
+## Verification configuration
+
+The verification engine reads `verify-local.config.json` as data from the selected
+commit. Legacy `verify-local.config.mjs` files are never imported. Historical
+commits without JSON retain the default fast push checks; explicit verification
+and proof rendering require the JSON configuration. Invalid JSON or unsupported
+hook operations block a push instead of silently omitting checks.
+
+`hook.checks` accepts only the built-in name `gitignore-env`, which checks that
+`.env` and `.env.local` are ignored and `.env.example` is not. It runs fixed Git
+arguments without a shell and, as before, skips this checkout check when pushing
+another commit. Forbidden-file, size and secret checks still inspect pushed blobs.
+Commands in `checks`, dependency installation and probes remain intentional code
+execution during explicit `verify:pr` and `verify:release`; their isolated copies
+protect working files, not host privileges. Run those modes only on trusted code.
+
+When changing the engine, update the JSON `ENGINE_SHA256` field to the SHA-256 of
+the LF bytes of `scripts/verify-local.mjs`. Keep the JSON check inputs and exclusions
+in sync with renamed tooling. The `lint-changed` scope mirrors
+`scripts/lint-everything.mjs`; its contract tests enforce both lists. Release-only
+checks remain uncached; browser evidence, external-source restrictions and the
+owner's publication approval remain governed by the procedure above.
+
 ## Recovery
 
 For an app regression, select a known-good deployment or prepare a focused revert under the authorized task scope. Check database compatibility first. A Vercel rollback does not undo migrations, data writes or Cloudflare changes. Infrastructure deletion and database restore require their own explicit scope.
