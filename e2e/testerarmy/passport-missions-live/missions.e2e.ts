@@ -203,3 +203,46 @@ test("passport mission connected: invalid criteria create nothing and opting out
   const result = await matches(fixture, id);
   expect(result.items.map((item: any) => item.listing_id)).toEqual(expect.arrayContaining([fixture.entries.lowBattery.id, fixture.entries.defective.id, fixture.entries.otherModel.id]));
 });
+
+
+test("passport mission connected: category filters agree across owner results, UI, backfill and match queues", { trace: "off", video: "off" }, async context => {
+  const { screen, passportMission: fixture } = context;
+  await fixture.setListingCategory("peer", "electronics");
+  const payload = body(fixture);
+  const response = await fixture.api("buyer", "POST", "/api/v1/owner/missions", {
+    ...payload, criteria: { ...payload.criteria, tags: ["smartphones"] },
+  });
+  expect(response.status).toBe(201);
+  const id = response.body.watchlist_id;
+  expect((await fixture.missionRow(id)).criteria.tags).toEqual(["smartphones"]);
+  await drain(fixture, "watchlist-backfill-queue");
+  const backfillAlerts = (await fixture.alertRows(id)).map(row => row.entity_id).sort();
+  // A fresh compatible passport must not override a different category in either worker.
+  expect((await fixture.savePassport("peer", 98)).status).toBe(200);
+  await drain(fixture, "watchlist-match-queue");
+  const workerAlerts = (await fixture.alertRows(id)).map(row => row.entity_id).sort();
+  const result = await matches(fixture, id);
+  await login(context, `/fr/my/missions/${id}`);
+  await expect(screen.getByTestId("mission-matches-compatible").getByTestId(`mission-match-${fixture.entries.compatible.id}`)).toBeVisible();
+  await expect(screen.getByTestId(`mission-alert-${fixture.entries.compatible.id}`)).toBeVisible();
+  // Collect all four real surfaces before asserting, so a mismatch identifies
+  // the owner API/UI independently of the persisted worker result.
+  expect({
+    backfillAlerts,
+    workerAlerts,
+    ownerCompatible: result.items.filter((item: any) => item.smartphone_compatibility.status === "compatible").map((item: any) => item.listing_id).sort(),
+    ownerIncludesWrongCategory: result.items.some((item: any) => item.listing_id === fixture.entries.peer.id),
+    ownerAlerts: result.alerts.map((alert: any) => alert.listing_id).sort(),
+    visibleWrongCategoryCards: await screen.getByTestId(`mission-match-${fixture.entries.peer.id}`).count(),
+    visibleWrongCategoryAlerts: await screen.getByTestId(`mission-alert-${fixture.entries.peer.id}`).count(),
+  }).toEqual({
+    backfillAlerts: [fixture.entries.compatible.id],
+    workerAlerts: [fixture.entries.compatible.id],
+    ownerCompatible: [fixture.entries.compatible.id],
+    ownerIncludesWrongCategory: false,
+    ownerAlerts: [fixture.entries.compatible.id],
+    visibleWrongCategoryCards: 0,
+    visibleWrongCategoryAlerts: 0,
+  });
+  expect(await fixture.externalDeliveries()).toBe(0);
+});

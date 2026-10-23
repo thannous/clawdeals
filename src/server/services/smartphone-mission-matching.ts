@@ -33,7 +33,8 @@ export async function loadSmartphoneMissionSnapshots(ids: string[], client = get
 export function evaluateSmartphoneMissionSnapshot(snapshot: SmartphoneMissionSnapshot, watchlist: any) {
   const smartphone = evaluateSmartphoneMission(watchlist.criteria.mission.smartphone, snapshot.passport);
   const queryMatched = matchesSmartphoneMissionQuery(watchlist.criteria.query, snapshot.listing, snapshot.passport?.model);
-  const effective = { ...watchlist, query_text: null, criteria: { ...watchlist.criteria, query: null } };
+  // Owner responses keep tags inside criteria; queue rows also expose the column.
+  const effective = { ...watchlist, tags: watchlist.tags ?? watchlist.criteria.tags ?? [], query_text: null, criteria: { ...watchlist.criteria, query: null } };
   const base = evaluateWatchlistMatchListing({ listing: snapshot.listing, watchlist: effective, skipSmartphone: true });
   const phone = snapshot.passport !== null || isSmartphoneListing(snapshot.listing.category, snapshot.listing.title);
   const reason: WatchlistMatchReason = { ...base.reason, query_ok: queryMatched, smartphone };

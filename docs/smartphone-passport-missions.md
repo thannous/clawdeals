@@ -88,6 +88,20 @@ Matching considers at most 5,000 candidate missions and records each smartphone
 transition atomically. No large-scale load qualification is claimed. This is not a
 promise to scan every historical listing in one request.
 
+Operational limits of this first version:
+
+- The recorder currently retains rejected snapshots, including non-smartphone
+  listings. State can therefore grow with listings × active smartphone missions.
+  Before scaling this workload, avoid new states for non-phones while retaining
+  reevaluation of any prior state (an item can cease to be a smartphone). A grouped
+  lookup would avoid replacing each unnecessary write with an extra query.
+- A stale snapshot raises a retryable evaluation error. The listing queue retains
+  that event and continues with other listings; its next scheduled pass retries
+  the unfinished work. Backfill currently stops the remaining batch on this
+  error, so concurrent edits can delay later missions until the next pass.
+  Matches already committed remain persisted and deduplicated. Do not clear the
+  pending queue to work around a conflict; investigate repeated retries instead.
+
 ## Verification
 
 Start an isolated native local Supabase stack with all migrations and configure
@@ -107,9 +121,10 @@ PARITY_OUTPUT=.e2e/validation/passport-missions-live-UNIQUE \
 mise exec node@24.22.1 -- npm run test:testerarmy
 ```
 
-Four scenarios run on desktop and mobile: comparison/login/reload/creation,
+Five scenarios run on desktop and mobile: comparison/login/reload/creation,
 real passport/price updates and queue transitions, private/inactive exclusions,
-and validation plus ordinary-mission compatibility. They use real local Auth,
+validation plus ordinary-mission compatibility, and category-filter parity across
+owner results, the interface, backfill and match queues. They use real local Auth,
 owner cookies, application APIs, PostgreSQL and queue endpoints. The fixture
 cleans up its exact records and records a safe receipt. Traces/video are disabled
 around real credentials. Redis is a simulator; external delivery is not invoked.

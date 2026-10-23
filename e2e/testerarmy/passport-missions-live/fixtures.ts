@@ -33,6 +33,7 @@ export type PassportMissionFixture = {
   changePrice: (key: PhoneKey, amount: number) => Promise<Response>;
   setMissionState: (id: string, state: "ACTIVE" | "PAUSED" | "EXPIRED") => Promise<void>;
   hideListing: (key: PhoneKey) => Promise<void>;
+  setListingCategory: (key: PhoneKey, category: string) => Promise<void>;
   missionRow: (id: string) => Promise<any>;
   alertRows: (id: string) => Promise<any[]>;
   externalDeliveries: () => Promise<number>;
@@ -183,6 +184,7 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
           const criteria = { ...row.criteria, mission: { ...row.criteria.mission, expires_at: new Date(Date.now() + (state === "EXPIRED" ? -3_600_000 : 86_400_000)).toISOString() } };
           checked((await db.from("watchlists").update({ active: state !== "PAUSED", criteria }).eq("watchlist_id", missionId).eq("agent_id", row.agent_id)).error, "Change own mission fixture state");
         },
+        setListingCategory: async (phone, category) => checked((await db.from("listings").update({ category }).eq("listing_id", entries[phone].id).eq("owner_id", owners.seller)).error, "Set own fixture listing category"),
         hideListing: async phone => checked((await db.from("moderation_states").upsert({ entity_type: "listing", entity_id: entries[phone].id, hidden: true }, { onConflict: "entity_type,entity_id" })).error, "Hide own fixture phone"),
         alertRows: async missionId => {
           await missionRow(missionId);
