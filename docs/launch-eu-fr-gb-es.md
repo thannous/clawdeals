@@ -38,6 +38,14 @@ is performed.
 
 Updated 2026-09-28: `clawdeals-staging` was deleted. Use the [current environment policy](./release-environments.md): direct `main` deployment, optional local fixtures, and owner-authorized disposable production test data. Region, DNS, database and billing facts must be read from their services before changing infrastructure; repository configuration is not live-state proof.
 
+## Localized content
+
+Maintain content in `src/content/` with complete English, French and Spanish
+copy, metadata and CTAs. Keep canonical URLs, locale alternates and JSON-LD
+consistent. Verify endpoint examples and tool counts against code/OpenAPI;
+publish no performance, adoption or market claims without evidence. Localize
+currency, geography and examples for each market.
+
 ## Expected variables
 
 Configure the selected backend and keep secrets outside Git. Do not restore the retired staging project merely to follow this document.
@@ -80,38 +88,11 @@ do not add replicas merely for launch: <https://upstash.com/docs/redis/features/
 
 ## Crons and plans
 
-Keep the PostgreSQL queues and current cron endpoints. Vercel runs the daily
-trust-score recalculation, which is compatible with Hobby. The Cloudflare Worker
-(`workers/edge-router.ts`) is the scheduler for every other internal cron
-endpoint via four triggers in `wrangler.jsonc` (kept in sync with `CRON_JOBS`):
-
-- `0 */6 * * *`: offers expiration at 00:00, 06:00, 12:00 and 18:00 UTC.
-  Cleanup/status can lag by up to six hours; SQL rejects acceptance after
-  `expires_at` independently of the sweep.
-- `2 * * * *`: hourly recovery for watchlist match/backfill queues,
-  notifications dispatch and trust-score recalc queue.
-- `17 * * * *`: deals lifecycle, transactions auto-close, risk rules,
-  observability alerts.
-- `10 2 * * *`: watchlist digest, audit/reports/idempotency retention,
-  partition maintenance.
-
-`CRON_SECRET` must contain the same random value in Vercel Production and as an
-encrypted secret on the Cloudflare Worker. Never put the value in
-`wrangler.jsonc`, GitHub Actions, or repository files. Configure it with the
-Cloudflare dashboard or `npx wrangler secret put CRON_SECRET`. The scheduled
-handler calls `app.clawdeals.com` directly and does not place normal app or SSE
-traffic behind the Cloudflare proxy.
-
-Cost note: the five-minute trigger was originally held back while the Upstash
-Redis resource was on Pay As You Go (matched rows can emit rate-limit and SSE
-commands billed from the first request). That guardrail was lifted when the
-watchlist queue trigger shipped; the hourly and daily lanes add a negligible
-number of invocations on top of it. If Redis command cost ever becomes a
-concern, thin out the fast lane first.
-
-Do not use a five-minute GitHub Actions schedule for this private repository:
-hosted-runner minutes are billable after the account allowance. Do not subscribe
-to Vercel Pro or any other paid scheduler without explicit approval.
+Keep PostgreSQL as the durable queue. The [hosting guide](hosting-cloudflare-vercel.md#scheduled-jobs)
+owns the Worker/Vercel schedule and shared cron-secret setup. Scheduled calls go
+directly to `app.clawdeals.com`; they do not proxy normal app or SSE traffic.
+Before increasing frequency, verify actual Redis/runner usage and the current
+provider allowance. Paid schedulers or plan upgrades require explicit approval.
 
 ## Observability
 
@@ -131,4 +112,4 @@ Both observability views are service-role only. They must never be granted to
 
 Select relevant market/matching integration checks, including GB/GBP behavior. Verify the deployed SHA, actual region, DNS/proxy routing and SSE behavior when those layers change. Database migrations are separate from Vercel app deployment. Do not reset a database or rerun all tests as a prerequisite for unrelated edits.
 
-See [release procedure](./release-staging-to-prod.md). The cron schedules above are verified against `vercel.json`, `wrangler.jsonc` and `workers/edge-router.ts`; actual scheduler execution and provider plans require live verification.
+See the [release procedure](./release-staging-to-prod.md). Repository configuration does not establish actual scheduler execution or current provider plans; verify those with the services when needed.

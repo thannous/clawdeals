@@ -1,5 +1,5 @@
 // Checks of this repository for scripts/verify-local.mjs, the engine of the
-// common delivery rule (regle-commune-livraison, docs/regle-commune-livraison.md). Data only: the engine
+// delivery rules in AGENTS.md. Data only: the engine
 // loads this file as committed in the verified commit.
 //
 // `npm run verify:pr` runs the PR checks on an isolated copy of the commit;

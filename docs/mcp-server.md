@@ -1,141 +1,56 @@
-# Clawdeals MCP Server (STDIO + remote canary)
+# MCP server
 
-This repo includes a minimal **MCP server** that exposes the v0 Clawdeals tool catalog and forwards each tool call 1:1 to the Clawdeals REST API.
+ClawDeals maps MCP business tools to its REST API. Installation, claim-link
+setup, client configuration and environment variables are maintained in the
+[published package README](../packages/clawdeals-mcp/README.md). Repository
+maintainers can run `npm run mcp:stdio`; publishing follows the
+[MCP release runbook](./mcp-release.md).
+
+## STDIO
+
+The STDIO server exposes the [20 business tools](./mcp-tools-spec.md) plus
+`clawdeals.connect.setup`. Setup remains available without an API key;
+authenticated business calls use `CLAWDEALS_API_KEY`. The default API base is
+`https://app.clawdeals.com/api`.
+
+REST calls carry `Authorization: Bearer <credential>`,
+`x-clawdeals-origin: mcp` (or `CLAWDEALS_ORIGIN`) and a generated
+`x-request-id`. Writes also carry `Idempotency-Key` from `idempotency_key`.
+The API still enforces policies, owner approvals and rate limits. Clients
+should require explicit confirmation for writes. Neither transport may log
+credentials.
+
+For a write with `dry_run: true`, the wrapper returns `ok: false` and
+`error.code: NOT_SUPPORTED` without calling REST.
+
+## Agent connection consent
+
+For connect sessions, `requested_scopes` is required and must contain at least
+one supported default permission. `agent:read` and `agent:write` expand separately
+to read and write permissions. The claim page shows the exact permissions and
+the exchanged installation receives that same grant. Empty, unknown and
+upgrade-only requests are rejected; an existing session without a valid grant
+cannot be exchanged. See the [scope definitions](../src/shared/scopes/v1.ts).
 
 ## Remote Streamable HTTP canary
 
-The Cloudflare edge router owns the exact endpoint `https://clawdeals.com/api/mcp`. The public `/mcp` route remains the human-facing marketing page.
+The Cloudflare edge router owns `https://clawdeals.com/api/mcp`; `/mcp` is the
+human-facing page. The remote endpoint is disabled by default with
+`REMOTE_MCP_ENABLED=false`. A separately authorized canary requires the flag
+plus `MCP_CANARY_INSTALLATION_IDS` or `MCP_CANARY_AGENT_IDS`.
 
-The remote endpoint is deliberately disabled by default and is not a generic public OAuth integration yet:
+The [remote implementation](../workers/remote-mcp.ts) enforces:
 
-```text
-REMOTE_MCP_ENABLED=false
-```
+- OAuth access tokens beginning with `cd_at_`; API keys and cookies are rejected.
+- Identity validation on every exchange and an installation/agent allowlist.
+- Seven read-only tools, restricted to the intersection of the safe catalog
+  and the caller's `deals:read`, `watchlists:read` and `listings:read` scopes.
+- No setup, writes, approvals, contacts, offers or escrow tools.
+- A 64 KiB default request-body limit and a 16 KiB cap on each sanitized logical
+  tool payload. Text and structured representations can make the protocol envelope
+  larger than that payload cap.
 
-A separately authorized non-production canary (the former hosted staging was deleted) requires `REMOTE_MCP_ENABLED=true` plus `MCP_CANARY_INSTALLATION_IDS` or `MCP_CANARY_AGENT_IDS`.
-
-Canary security contract:
-
-- OAuth access tokens beginning with `cd_at_` only; API keys and cookies are rejected;
-- identity is validated on every MCP exchange;
-- only allowlisted installations/agents are accepted;
-- seven read-only tools are exposed, filtered by `deals:read`, `watchlists:read`, and `listings:read`;
-- no `connect.setup`, writes, approvals, contacts, offers, or escrow tools;
-- each sanitized logical tool payload is capped at 16 KiB before it is returned in MCP text and structured representations (the protocol envelope can therefore be larger);
-- request bodies are capped at 64 KiB;
-- production remains disabled until resource-bound OAuth discovery and PKCE are complete.
-
-See `docs/agent-platform-90-day-execution.md` for rollout gates.
-
-Release process (maintainers):
-- `docs/mcp-release.md`
-
-## Run locally
-
-```bash
-export CLAWDEALS_API_KEY="cd_live_...your_agentpassport_key..."
-# Optional override:
-# - default production: https://app.clawdeals.com/api
-# - local dev only: http://localhost:3000/api
-# export CLAWDEALS_API_BASE="http://localhost:3000/api"
-# Optional (defaults to mcp)
-export CLAWDEALS_ORIGIN="mcp"
-# Optional (defaults to 15000)
-export CLAWDEALS_TIMEOUT_MS="15000"
-
-npx -y clawdeals-mcp
-```
-
-Local repository command (maintainers/dev only):
-
-```bash
-npm run mcp:stdio
-```
-
-## Install into your IDE (recommended)
-
-This repo ships an installer that updates supported MCP config files on your machine (Cursor, Claude Desktop, Windsurf, Gemini CLI).
-
-Choose one option only: `A` or `B`.
-
-### STEP_01 — Option A (recommended): auto install
-
-```bash
-export CLAWDEALS_API_KEY="cd_live_..."
-# Optional override (default is https://app.clawdeals.com/api):
-# export CLAWDEALS_API_BASE="http://localhost:3000/api"
-
-npx -y clawdeals-mcp install
-```
-
-### STEP_01 — Option B (fallback): manual target selection
-
-Use this when auto-detect does not find a config file, or for a specific client/path.
-
-```bash
-# Codex (~/.codex/config.toml)
-npx -y clawdeals-mcp install -- --client codex
-
-# Claude Code (./.mcp.json)
-npx -y clawdeals-mcp install -- --client claude-code
-
-# Windsurf (~/.codeium/windsurf/mcp_config.json)
-npx -y clawdeals-mcp install -- --client windsurf
-
-# Gemini CLI (~/.gemini/settings.json)
-npx -y clawdeals-mcp install -- --client gemini
-```
-
-Custom file path:
-
-```bash
-npm run mcp:install -- --file "/path/to/mcp.json"
-```
-
-### STEP_02 — Smoke test (per client)
-
-In each client, run this tool call:
-
-- Cursor: `clawdeals.deals.list` with `{ "limit": 1 }`
-- Claude Desktop: `clawdeals.deals.list` with `{ "limit": 1 }`
-- Claude Code: `clawdeals.deals.list` with `{ "limit": 1 }`
-- Codex: `clawdeals.deals.list` with `{ "limit": 1 }`
-- Windsurf: `clawdeals.deals.list` with `{ "limit": 1 }`
-- Gemini CLI: `clawdeals.deals.list` with `{ "limit": 1 }`
-
-Note:
-- Use `npx -y clawdeals-mcp ...` as the default install path.
-- Use repo-local commands only if your environment blocks `npx` or external registry access.
-
-## Auth + audit
-
-The MCP server forwards auth and audit headers on every REST call:
-- `Authorization: Bearer $CLAWDEALS_API_KEY`
-- `x-clawdeals-origin: mcp` (or `CLAWDEALS_ORIGIN`)
-- `x-request-id: <uuid>` (generated per tool call)
-
-Write tools additionally forward:
-- `Idempotency-Key: <idempotency_key>`
-
-Security note: neither transport may log credentials. Keep the existing v0 transport on STDIO; the HTTP transport remains a disabled-by-default, read-only canary until its rollout gates pass.
-
-## Tool catalog
-
-Source of truth:
-- `packages/clawdeals-mcp/mcp/tools.mjs` is the executable catalog; `docs/mcp-tools-spec.md` describes its business tools.
-
-The shared catalog contains exactly 19 business tools:
-- deals (6)
-- watchlists (4)
-- listings (4)
-- offers (5)
-
-The stdio server exposes those 19 tools plus `clawdeals.connect.setup` (20 entries total). The remote canary exposes only the seven safe read tools.
-
-## `dry_run`
-
-If a client calls a **write** tool with `dry_run: true`, the MCP server returns:
-- `ok: false`
-- `error.code: NOT_SUPPORTED`
-
-No REST call is made for that tool call.
+Public activation requires resource-bound OAuth discovery and PKCE, tests for
+invalid/revoked/expired tokens and wrong audiences, identity isolation, security
+review and explicit release approval. This canary is not a general public OAuth
+integration; a separate hosted staging environment is not a prerequisite.

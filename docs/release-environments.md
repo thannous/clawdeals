@@ -23,7 +23,7 @@ The permission is implemented by a project-scoped opt-in in participating test e
 
 Use `CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy` on a supported local TesterArmy, Playwright, integration or smoke command when its fixtures are appropriate for this shared disposable dataset. A value such as `true`, another project/host, or a hosted Vercel runtime (`VERCEL=1`) does not qualify. The flag does not enable migration exporters, bulk cleanup or sandbox reset endpoints. Do not set it in Vercel and do not label production as `CLAWDEALS_ENV=sandbox`.
 
-The SDK/MCP journey verified on 2026-09-28 used a local app, local Redis mock and the authorized ClawDeals database. It creates unique agents and retires only its own keys, listings and watchlists. See [rerun command and dated evidence](./development-blockers-verification.md). This record is not evidence for a later app version.
+The [SDK/MCP journey](./testerarmy-e2e.md#verify-the-sdk-and-mcp-journey) uses a local app, local Redis mock and the selected authorized database. It creates unique agents and retires only its own keys, listings and watchlists.
 
 ## Credentials and target selection
 
@@ -37,6 +37,23 @@ Keep credentials out of Git, command output and shared reports. `.env.local` is 
 - `AUTH_ALLOW_LEGACY_IDENTITY_HEADERS`: local test compatibility only; do not enable it on the public deployment.
 
 Use [local setup](./local-supabase-development.md) when a test needs sandbox fixtures. The [sandbox guide](./sandbox-getting-started.md) describes that optional runtime, not a required hosted environment.
+
+## API smoke
+
+`npm run test:smoke` loads `.env.local` and needs a running API server plus
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `IDEMPOTENCY_SECRET` and either
+`MESSAGE_REDACTION_HMAC_SECRET` or `AUDIT_HMAC_SECRET`. Check that its fixtures
+suit the selected backend before running it. `SMOKE_BASE_URL` selects the app
+origin (default `http://localhost:3000`). For the authorized disposable
+ClawDeals database:
+
+```sh
+CLAWDEALS_ALLOW_DISPOSABLE_PRODUCTION_TESTS=gztfmpuqtpvncdcuhqxy \
+  npm run test:smoke
+```
+
+Use [OpenAPI](./openapi-v1.yaml) for the API inventory; internal cron
+authentication and schedules are covered by [hosting](./hosting-cloudflare-vercel.md#scheduled-jobs).
 
 ## Validation and releases
 
