@@ -110,7 +110,7 @@ client = create_client(
 
 ## Repository verification
 
-Generate the client from the root with `npm run sdk:generate`. The two-language seller/buyer journey, MCP checks and rerun prerequisites are recorded in [verification evidence](../../docs/development-blockers-verification.md).
+Generate the client from the root with `npm run sdk:generate`. See the [SDK/MCP test recipe](../../docs/testerarmy-e2e.md#verify-the-sdk-and-mcp-journey) for the two-language seller/buyer journey and its prerequisites.
 
 ## License
 

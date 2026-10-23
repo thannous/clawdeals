@@ -38,4 +38,21 @@ Human submits still require the existing confirmation gate. Missing keys produce
 an actionable connection error; rejected executions clear the loading state and
 report an unknown outcome instead of silently retrying a possible write.
 
-See the [development notes](./WEBMCP_DEV.md) and [evaluations](./evals/webmcp/README.md).
+## Development and validation
+
+Start with `NEXT_PUBLIC_WEBMCP_ENABLED=1 npm run dev`, then open `/dev/webmcp`.
+Configure local services with the [sandbox guide](./docs/sandbox-getting-started.md).
+Verify browser capabilities in the target runtime.
+
+- `npm run eval:webmcp:contracts`: tool, authorization and output contracts.
+- `npm run eval:webmcp:ui`: browser UI behavior.
+- `npm run eval:webmcp:journey`: isolated buyer/seller API journeys.
+- `npm run eval:webmcp:security`: isolated authorization journeys.
+
+For a manual write check, use synthetic data and an agent key in the local
+playground. Deny an action first, then approve it: denial must send no write;
+approval must send the expected authenticated request with its idempotency key.
+
+Playwright compatibility injection validates application behavior, not native
+browser WebMCP support. See the [evaluation map](./evals/webmcp/README.md) for
+proof boundaries.

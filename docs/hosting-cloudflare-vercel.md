@@ -28,7 +28,8 @@ Ce repo reste une seule app Next.js (Pages Router). La separation se fait via:
 
 Routage attendu:
 - `www.clawdeals.com/*` redirige vers `clawdeals.com/*` (308).
-- `clawdeals.com/deals*`, `clawdeals.com/console*`, `clawdeals.com/auth*`, `clawdeals.com/start*`, `clawdeals.com/settings*`, `clawdeals.com/developer*` redirigent vers `app.clawdeals.com` (308).
+- Les sections app (`/deals`, `/console`, `/auth`, `/start`, `/settings`, `/developer`, `/dev`, `/claim`, `/device`, `/pair`) redirigent vers `app.clawdeals.com` (308).
+- `/en/*` sur les hosts marketing redirige vers le chemin anglais canonique sans prefixe (308).
 - `clawdeals.com/api/*` est proxifie vers `app.clawdeals.com/api/*` (pas de redirect, pour conserver les flows browser same-origin), sauf le chemin exact `/api/mcp` traite par le Worker et desactive par defaut.
 - Le reste de `clawdeals.com/*` est proxifie vers `MARKETING_ORIGIN`.
 - `app.clawdeals.com/` redirige vers l'entree app (`APP_ENTRY_PATH`, par defaut `/start`).
@@ -71,7 +72,31 @@ Optionnel (SSE hors Vercel):
 - `MARKETING_HOST=clawdeals.com` (host marketing canonique)
 - `APP_ORIGIN=https://app.clawdeals.com` (origin applicatif)
 - `MARKETING_ORIGIN=https://app.clawdeals.com` (origin upstream de la landing; ne doit jamais pointer vers `clawdeals.com`)
-- `REMOTE_MCP_ENABLED=false` (kill switch production; ne pas activer sans les gates du plan 90 jours)
+- `REMOTE_MCP_ENABLED=false` (kill switch production; conditions du canary dans le [guide MCP](./mcp-server.md))
+
+### Scheduled jobs
+
+Le Worker assure les schedules de `wrangler.jsonc`, a garder synchronises avec
+`CRON_JOBS` dans `workers/edge-router.ts` :
+
+| UTC | Traitement |
+| --- | --- |
+| `0 */6 * * *` | Expiration des offres |
+| `2 * * * *` | Recuperation des files watchlist, notifications et trustscore |
+| `17 * * * *` | Cycle de vie des deals, cloture des transactions, risque et alertes |
+| `10 2 * * *` | Digest watchlist, retention et partitions |
+
+Le sweep trustscore quotidien reste sur Vercel a 03:00 UTC. Les evenements de
+base reveillent les consommateurs de files ; le passage horaire est leur filet
+de recuperation. Voir [queue dispatch](./queue-event-dispatch.md) pour les
+identifiants, la recuperation durable et le rollback.
+
+Le statut affiche d'une offre expiree peut attendre le passage des six heures,
+mais `offer_accept_v0` refuse deja l'acceptation via `expires_at`. Preserver le
+secret Worker `CRON_SECRET` pendant tout deploiement ; il authentifie les appels
+internes vers `APP_ORIGIN`. Sa valeur doit correspondre a `CRON_SECRET` sur
+Vercel Production. La configurer via le dashboard Cloudflare ou
+`npx wrangler secret put CRON_SECRET`, jamais dans `wrangler.jsonc` ou Git.
 
 ## CORS (API)
 
@@ -165,14 +190,30 @@ Cloudflare de la zone apres le deploiement Vercel (Dashboard > Caching > Purge E
 
 ## Deploy commands
 
+Appliquer la [procedure de livraison](./release-staging-to-prod.md) et obtenir
+le go de production avant de deployer. Une modification Next.js seule ne demande
+pas de redeployer le Worker.
+
 - Cloudflare edge router (production): `npm run deploy:cloudflare`
 - Cloudflare edge router (local preview): `npm run preview:cloudflare`
 - Legacy OpenNext path (fallback only): `npm run deploy:cloudflare:opennext`
 
+Apres un changement du Worker, verifier les destinations et l'absence de boucle :
+
+```sh
+curl -I https://www.clawdeals.com/fr
+curl -I https://clawdeals.com/en/guides
+curl -I https://clawdeals.com/deals
+curl -I https://clawdeals.com/api/v1/watchlist-signups
+curl -I https://clawdeals.com/
+```
+
+Attendus : www vers apex, anglais sans `/en`, sections app vers app,
+API proxifiee sans redirect cross-origin et landing disponible sur l'apex.
+
 ## Related Runbooks
 
 - Current environment policy and direct-main release procedure: `docs/release-environments.md`, `docs/release-staging-to-prod.md`
-- Edge router deploy details: `docs/deploy-edge-router.md`
 - EU launch and market contract: `docs/launch-eu-fr-gb-es.md`
 
 ## Ignore documentation-only Vercel builds

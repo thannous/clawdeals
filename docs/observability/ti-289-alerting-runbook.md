@@ -1,201 +1,79 @@
-# TI-289 Alerting Runbook (Cron: Observability Alerts)
+# Observability: alerts and triage
 
-> RUNBOOK — scope reviewed 2026-09-28 against the repository cron/migration references. Alert definitions are not evidence that a scheduled job currently runs or an alert channel is connected; verify those services when investigating.
+Use this runbook when API writes fail, rate limits spike or queues stop draining.
+Definitions below describe repository behavior, not proof that the deployed cron
+or an alert destination is working. Inspect current traffic before declaring an
+incident; fictitious development traffic is not an adoption measurement.
 
-This repository exposes an internal cron endpoint that computes basic SLO burn rates and a few anomaly checks from recent `audit_logs`, plus queue depth checks for background workers.
+## Run the check
 
-Endpoint:
-
-- `GET|POST /api/internal/cron/observability-alerts`
-- Auth: header `x-cron-secret: $INTERNAL_CRON_SECRET`
-
-The handler returns JSON and emits structured log lines for any triggered alerts (`observability.alert_triggered`).
-
-## What The Cron Computes
-
-Data sources:
-
-- `audit_logs` (Supabase): used to count v1 API requests and status codes.
-- `trustscore_recalc_queue`, `watchlist_backfill_queue`, and `watchlist_match_queue` (Supabase): used for queue depth and oldest item age.
-
-Windows (defaults, configurable via env):
-
-- Fast window: 5 minutes (`ALERTING_FAST_WINDOW_SECONDS`)
-- Slow window: 60 minutes (`ALERTING_SLOW_WINDOW_SECONDS`)
-
-SLO:
-
-- `v1_write_journeys_success_rate`: success is `outcome='SUCCESS'` for audited write journeys
-  (`action.event` in `deal.create, listing.create, offer.create` by default).
-- Burn rate is computed from the **bad** rate (anything not `SUCCESS`) vs the allowed bad rate `(1 - SLO_TARGET)`.
-
-## Alerts Implemented
-
-These alert names are emitted in logs and included in the JSON `alerts[]` array when triggered.
-
-1. `slo.burn_rate.v1_write_success` (severity: `critical`)
-   - Condition: burn rate is above threshold in both fast and slow windows (write journeys success rate).
-   - Default thresholds:
-     - Fast: `ALERTING_SLO_FAST_BURN_THRESHOLD=14.4`
-     - Slow: `ALERTING_SLO_SLOW_BURN_THRESHOLD=6`
-   - Minimum traffic gates (defaults):
-     - `ALERTING_SLO_FAST_MIN_REQUESTS=20`
-     - `ALERTING_SLO_SLOW_MIN_REQUESTS=100`
-
-2. `anomaly.5xx_spike.v1` (severity: `critical`)
-   - Condition: fast-window 5xx rate (over `/api/v1/%`) crosses an absolute threshold and is “spiky” vs slow window.
-   - Defaults:
-     - `ALERTING_5XX_SPIKE_RATE_THRESHOLD=0.02` (2%)
-     - `ALERTING_5XX_SPIKE_MIN_REQUESTS=50`
-     - `ALERTING_5XX_SPIKE_MIN_ERRORS=5`
-     - `ALERTING_5XX_SPIKE_MULTIPLIER=3` (fast rate must be >= 3x slow rate when slow rate > 0)
-
-3. `anomaly.429_spike.v1` (severity: `warning`)
-   - Condition: fast-window 429 rate crosses an absolute threshold and is “spiky” vs slow window.
-   - Defaults:
-     - `ALERTING_429_SPIKE_RATE_THRESHOLD=0.01` (1%)
-     - `ALERTING_429_SPIKE_MIN_REQUESTS=50`
-     - `ALERTING_429_SPIKE_MIN_ERRORS=10`
-     - `ALERTING_429_SPIKE_MULTIPLIER=3`
-
-4. `queue.depth.trustscore_recalc` (severity: `warning`)
-   - Condition: `trustscore_recalc_queue` row count exceeds threshold.
-   - Default: `ALERTING_TRUSTSCORE_QUEUE_DEPTH_THRESHOLD=1000`
-   - Includes `oldest_updated_at` and `oldest_age_s` to help detect stuck queues.
-
-5. `queue.depth.watchlist_backfill` (severity: `warning`)
-   - Condition: `watchlist_backfill_queue` row count exceeds threshold.
-   - Default: `ALERTING_WATCHLIST_BACKFILL_QUEUE_DEPTH_THRESHOLD=500`
-   - Includes `oldest_updated_at` and `oldest_age_s`.
-
-6. `queue.depth.watchlist_match` (severity: `warning`)
-   - Condition: `watchlist_match_queue` row count exceeds threshold.
-   - Default: `ALERTING_WATCHLIST_MATCH_QUEUE_DEPTH_THRESHOLD=500`
-   - Includes `oldest_updated_at` and `oldest_age_s`.
-
-7. `queue.depth.approvals_pending` (severity: `warning`)
-   - Condition: `approvals` rows with `state=PENDING` exceeds threshold.
-   - Default: `ALERTING_APPROVALS_PENDING_DEPTH_THRESHOLD=200`
-   - Includes `oldest_created_at` and `oldest_age_s`.
-
-## How To Triage
-
-General first steps:
-
-1. Confirm the cron response: check the returned JSON `alerts[]` plus the per-check `triggered` booleans.
-2. Identify whether this is new and acute (fast window) vs sustained (slow window).
-3. Check for a recent deploy/config change around the alert start time.
-
-### `slo.burn_rate.v1_write_success`
-
-Meaning:
-
-- Critical write journeys are failing/being blocked enough to consume error budget at an unsustainable rate.
-
-Immediate actions:
-
-1. Find the failing route groups:
-   - Query `audit_logs` in the fast window, filter on `action.event IN ('deal.create','listing.create','offer.create')`
-     and `outcome <> 'SUCCESS'`, then group by `action.route_group` and `action.path`.
-2. Check upstream dependencies commonly involved in write failures:
-   - Supabase availability and query latency
-   - Redis/rate limiting and idempotency paths
-   - PSP/webhook integrations (if failures align with payment endpoints)
-3. Mitigate quickly:
-   - Roll back the last deploy if correlated.
-   - Temporarily disable or degrade non-critical features (best effort) if they are causing cascading failures.
-
-After stabilizing:
-
-1. Create an incident note with:
-   - Which endpoints failed (route groups), error signatures, and start/end timestamps.
-2. Add a follow-up ticket:
-   - Fix root cause, add tests, and improve targeted alerting/dashboards.
-
-### `anomaly.5xx_spike.v1`
-
-Meaning:
-
-- Sudden increase in 5xx responses (often regressions, dependency outage, or misconfig).
-
-Actions:
-
-1. Confirm it’s not noise:
-   - Ensure the fast-window request volume is meaningful (`total_fast` and `errors_5xx_fast`).
-2. Identify blast radius:
-   - Are 5xx concentrated in one endpoint (single route group) or broad across the API?
-3. Mitigate:
-   - Roll back, feature-flag, or isolate the failing dependency path.
-
-### `anomaly.429_spike.v1`
-
-Meaning:
-
-- Rate limiting is actively blocking traffic; could be abusive clients, a runaway integration, or too-low limits after a config change.
-
-Actions:
-
-1. Identify who is being rate-limited:
-   - Inspect `audit_logs` for 429s and check `auth.agent_id`, `request.ip`, and `action.route_group`.
-2. Decide on response:
-   - If abusive: block at edge / revoke key / tighten per-identity rules.
-   - If legitimate traffic: raise limits cautiously for the impacted route group and verify capacity.
-3. Prevent recurrence:
-   - Add targeted limits for hot paths and improve client backoff guidance.
-
-### Queue Depth Alerts
-
-Meaning:
-
-- Background workers are not keeping up (or are stuck), leading to growing backlog.
-
-Actions:
-
-1. Check if the worker cron is running:
-   - `POST /api/internal/cron/trustscore-recalc-queue`
-   - `POST /api/internal/cron/watchlist-backfill-queue`
-   - `POST /api/internal/cron/watchlist-match-queue`
-   - `POST /api/internal/cron/risk-rules`
-2. Check staleness:
-   - Use `oldest_age_s` to see if the queue is stuck vs just temporarily behind.
-3. For approvals backlog:
-   - Look for a sudden jump in `approvals` with `state=PENDING` (often caused by a downstream failure that prevents auto-resolution).
-4. Mitigate:
-   - Temporarily increase cron frequency or batch limits (via the worker endpoints’ query params where supported).
-   - Investigate Supabase errors/timeouts in logs if processing is failing.
-
-## Environment Variables (Optional Tuning)
-
-All variables are optional; defaults are used if unset.
-
-- `ALERTING_SLO_TARGET` (default `0.99`)
-- `ALERTING_SLO_EVENTS` (default `deal.create,listing.create,offer.create`)
-- `ALERTING_FAST_WINDOW_SECONDS` (default `300`)
-- `ALERTING_SLOW_WINDOW_SECONDS` (default `3600`)
-- `ALERTING_SLO_FAST_BURN_THRESHOLD` (default `14.4`)
-- `ALERTING_SLO_SLOW_BURN_THRESHOLD` (default `6`)
-- `ALERTING_SLO_FAST_MIN_REQUESTS` (default `20`)
-- `ALERTING_SLO_SLOW_MIN_REQUESTS` (default `100`)
-- `ALERTING_5XX_SPIKE_RATE_THRESHOLD` (default `0.02`)
-- `ALERTING_5XX_SPIKE_MIN_REQUESTS` (default `50`)
-- `ALERTING_5XX_SPIKE_MIN_ERRORS` (default `5`)
-- `ALERTING_5XX_SPIKE_MULTIPLIER` (default `3`)
-- `ALERTING_429_SPIKE_RATE_THRESHOLD` (default `0.01`)
-- `ALERTING_429_SPIKE_MIN_REQUESTS` (default `50`)
-- `ALERTING_429_SPIKE_MIN_ERRORS` (default `10`)
-- `ALERTING_429_SPIKE_MULTIPLIER` (default `3`)
-- `ALERTING_TRUSTSCORE_QUEUE_DEPTH_THRESHOLD` (default `1000`)
-- `ALERTING_WATCHLIST_BACKFILL_QUEUE_DEPTH_THRESHOLD` (default `500`)
-- `ALERTING_WATCHLIST_MATCH_QUEUE_DEPTH_THRESHOLD` (default `500`)
-- `ALERTING_APPROVALS_PENDING_DEPTH_THRESHOLD` (default `200`)
-
-## Manual Invocation
-
-Example:
+`GET|POST /api/internal/cron/observability-alerts` returns JSON and emits
+`observability.alert_triggered` for triggered alerts. It accepts a Bearer token
+matching `CRON_SECRET` or `INTERNAL_CRON_SECRET`; `x-cron-secret` accepts only
+`INTERNAL_CRON_SECRET`. See [cron authentication](../../src/server/internal-cron-auth.ts).
 
 ```bash
-curl -sS \\
-  -H "x-cron-secret: $INTERNAL_CRON_SECRET" \\
-  -X POST \\
-  "https://app.clawdeals.com/api/internal/cron/observability-alerts"
+curl --fail-with-body -sS \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -X POST "https://app.clawdeals.com/api/internal/cron/observability-alerts"
 ```
+
+Inspect `skipped`, `alerts[]` and each check's `triggered` field. Missing
+`SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` yields a skipped result, not a healthy
+service. Scheduling is documented in [market infrastructure](../launch-eu-fr-gb-es.md#crons-and-plans).
+
+## Implemented checks
+
+The [implementation](../../src/server/observability/alerts.ts) owns all `ALERTING_*`
+settings and bounds. Defaults use a 5-minute fast window and a 1-hour slow window.
+
+| Alert | Default trigger |
+| --- | --- |
+| `slo.burn_rate.v1_write_success` — critical | Success target 99%; burn ≥14.4 fast **and** ≥6 slow, with at least 20/100 requests respectively. |
+| `anomaly.5xx_spike.v1` — critical | Fast 5xx rate ≥2%, at least 50 requests and 5 errors; ≥3× slow rate when it is positive. |
+| `anomaly.429_spike.v1` — warning | Fast 429 rate ≥1%, at least 50 requests and 10 errors; ≥3× slow rate when it is positive. |
+| `queue.depth.trustscore_recalc` | More than 1,000 rows. |
+| `queue.depth.watchlist_backfill` | More than 500 rows. |
+| `queue.depth.watchlist_match` | More than 500 rows. |
+| `queue.depth.approvals_pending` | More than 200 approvals in `PENDING`. |
+
+Write success counts `audit_logs` for `deal.create`, `listing.create` and
+`offer.create`: only `outcome=SUCCESS` is good. Burn rate is the bad fraction
+divided by `1 - ALERTING_SLO_TARGET`; policy blocks therefore affect it too.
+5xx/429 checks use `/api/v1/%` rows with a recorded status code. Queue responses
+include oldest timestamps and age, so distinguish a brief backlog from a stall.
+
+## Diagnose and recover
+
+1. Confirm the affected deployment/configuration, window, volume and user impact.
+   Check the scheduled invocation itself and retained logs; an empty alert list
+   under a minimum-traffic gate is not a reliability measurement.
+2. For write failures or 5xx, group audit events by route and inspect Supabase,
+   Redis, idempotency and relevant upstream dependencies. Separate policy denials
+   from server errors before changing anything.
+3. For 429, identify the route and caller in private operational records; check
+   client retry/backoff and capacity. Do not raise limits to hide a runaway client.
+4. For queue alerts, check consumer execution and `oldest_age_s`. Follow
+   [queue recovery](../queue-event-dispatch.md); retain durable rows and inspect
+   pending approvals through the authorized console.
+5. Mitigate within the approved scope, checking database compatibility before
+   an app rollback. Verify the affected journey and subsequent queue/alert
+   readings. Record cause, interval, source/deployment and useful evidence.
+
+## Engineering targets
+
+These retained targets are objectives, not measured service levels or customer
+SLAs. Establish a representative baseline before using them as release criteria.
+
+| Journey | Target and measurement |
+| --- | --- |
+| Deal creation | ≥99% success, successful-request p95 ≤1,000 ms over 30 days. |
+| Listing / offer creation | ≥99% success, successful-request p95 ≤1,200 ms over 30 days. |
+| Human approval resolution | p95 ≤4 hours; ≥95% of resolved approvals within 4 hours over 30 days. Also inspect pending age. |
+| SSE, observational | Over 7 days: Redis errors and dropped payloads each <0.1% of publish attempts; gaps <1% of connections. Requires retained, queryable logs. |
+
+API latency uses `audit_logs.request.duration_ms` for status 200–399; exclude
+missing durations. Approval timing uses `created_at` and `resolved_at`.
+SSE has audit disabled: inspect `sse.redis_error`, `sse.payload_dropped`, `sse.gap`
+and connection/replay logs. The cron above does not calculate all these targets.
+No-data or missing telemetry must remain explicit.

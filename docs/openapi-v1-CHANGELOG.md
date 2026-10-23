@@ -6,7 +6,7 @@
 - Owner session cookies replace dev-only identity headers in the supported production contract.
 - Nullable schemas now preserve nullability without ignored `$ref` siblings; both SDKs regenerate successfully.
 - Proprietary license linked to the repository; route coverage/exclusions are machine-checkable with `node scripts/validate-openapi-coverage.mjs`.
-- See [verification evidence](./development-blockers-verification.md) for the actual SDK/MCP/database journey and limitations.
+- The current [SDK/MCP test recipe](./testerarmy-e2e.md#verify-the-sdk-and-mcp-journey) describes how to rerun the integration journey; historical results remain in Git.
 
 This file tracks changes to the canonical OpenAPI specification at `docs/openapi-v1.yaml`.
 
