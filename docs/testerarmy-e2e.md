@@ -54,6 +54,16 @@ Default public journeys run desktop/mobile without accounts or model calls.
 Their intercepted client contracts prove UI behavior, not authentication,
 database persistence, notifications or transactions.
 
+The API-key continuation contract is covered by
+`e2e/testerarmy/keys-next-url.e2e.ts`. Run it with
+`npm run test:testerarmy -- e2e/testerarmy/keys-next-url.e2e.ts --target desktop`.
+It checks both continuation links and synthetic key generation/validation without
+backend credentials. `/keys?next=` accepts canonical relative paths and HTTP(S)
+URLs on `clawdeals.com`, its dot-delimited subdomains, or exact `localhost`
+(including development ports). Lookalike hosts, protocol-relative paths,
+backslashes, control characters, URL credentials and other schemes fall back
+to `/mcp`.
+
 ## Smartphone journeys on a local backend
 
 `TESTERARMY_PASSPORT_MISSIONS_LIVE=1` selects the connected smartphone mission

@@ -71,7 +71,8 @@ export async function confirmAndExecute<TArgs, TOut>(
     outputHint: tool.outputHint,
     args: parsed,
     requestId: resolvedRequestId,
-    timeoutMs
+    timeoutMs,
+    signal
   });
 
   if (decision.kind === "deny") {

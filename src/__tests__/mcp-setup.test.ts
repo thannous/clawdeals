@@ -163,6 +163,8 @@ describe("mcp/setup-cli.mjs", () => {
         cwd,
         env: {
           ...process.env,
+          HOME: path.join(cwd, "home"),
+          USERPROFILE: path.join(cwd, "home"),
           CLAWDEALS_API_BASE: apiBase,
           CLAWDEALS_ORIGIN: "mcp"
         },
@@ -229,5 +231,24 @@ describe("mcp/setup-cli.mjs", () => {
     const finalized = events.find((event) => event.event === "finalized");
     expect(finalized).toBeTruthy();
     expect(finalized?.wrote).toBe(false);
+  });
+
+  it("keeps the existing config in a private restore copy when setup replaces it", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-setup-backup-"));
+    const configPath = path.join(dir, ".mcp.json");
+    const original = '{"mcpServers":{"other":{"command":"other","env":{"API_KEY":"old_test_key"}}}}\n';
+    fs.writeFileSync(configPath, original);
+    const result = await runSetup({ cwd: dir, args: ["--client", "claude-code", "--json"] });
+    expect(result.status).toBe(0);
+    const finalized = parseJsonEvents(result.stdout).find((event) => event.event === "finalized");
+    const backup = String(finalized?.backup_path || "");
+    expect(path.relative(path.join(dir, "home", ".clawdeals", "mcp-backups"), backup).startsWith("..")).toBe(false);
+    expect(fs.readFileSync(backup, "utf8")).toBe(original);
+    expect(fs.readdirSync(dir).some((name) => name.startsWith(".mcp.json.bak-"))).toBe(false);
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    expect(config.mcpServers.other.env.API_KEY).toBe("old_test_key");
+    expect(config.mcpServers.clawdeals.env.CLAWDEALS_API_KEY).toBe("cd_live_secret_setup");
+    expect(result.stdout + result.stderr).not.toContain("old_test_key");
+    expect(result.stdout + result.stderr).not.toContain("cd_live_secret_setup");
   });
 });

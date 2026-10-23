@@ -61,8 +61,16 @@ function writeUtf8(p, content) {
 
 function backupIfExists(filePath) {
   if (!existsFile(filePath)) return null;
-  const backupPath = `${filePath}.bak-${nowStamp()}`;
-  fs.copyFileSync(filePath, backupPath);
+  // Configs can contain credentials for several servers. Keep an exact restore
+  // copy in user storage, never alongside an arbitrary project-local target.
+  const root = path.join(os.homedir(), ".clawdeals", "mcp-backups");
+  fs.mkdirSync(root, { recursive: true, mode: 0o700 });
+  const dir = fs.mkdtempSync(path.join(root, `${nowStamp()}-`));
+  // A user may track their home directory in Git. Each new backup excludes
+  // itself even there, without depending on that repository's ignore rules.
+  fs.writeFileSync(path.join(dir, ".gitignore"), "*\n", { flag: "wx", mode: 0o600 });
+  const backupPath = path.join(dir, `${path.basename(filePath)}.bak`);
+  fs.writeFileSync(backupPath, fs.readFileSync(filePath), { flag: "wx", mode: 0o600 });
   return backupPath;
 }
 

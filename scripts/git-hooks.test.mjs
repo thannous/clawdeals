@@ -280,6 +280,44 @@ test("forbidden files and secrets block the push", () => {
   assert.equal(repo.remoteHas("refs/heads/secret"), false);
 });
 
+test("MCP originals and legacy backups cannot be added or force-pushed at any depth", () => {
+  const repo = installedRepository();
+  const paths = [".mcp.json", ".mcp.json.bak-20261023120000", "apps/web/.mcp.json", "apps/web/.mcp.json.bak-20261023120000", ".clawdeals/mcp-backups/old/custom.json"];
+  for (const [index, file] of paths.entries()) {
+    repo.git("checkout", "--quiet", "-b", `mcp-backup-${index}`, "main");
+    mkdirSync(dirname(join(repo.work, file)), { recursive: true });
+    writeFileSync(join(repo.work, file), "{}\n");
+    assert.equal(repo.run("git", ["check-ignore", "-q", "--", file]).status, 0, file);
+    assert.notEqual(repo.run("git", ["add", "--", file]).status, 0, file);
+    repo.commit("forced MCP config", { [file]: "{}\n" }, { force: true });
+    // The pushed revision is checked even when it is not HEAD.
+    repo.git("checkout", "--quiet", "main");
+    const result = repo.push("origin", `mcp-backup-${index}`);
+    assert.notEqual(result.status, 0, result.output);
+    assert.ok(result.output.includes(`${file}: forbidden file`), result.output);
+    assert.equal(repo.remoteHas(`refs/heads/mcp-backup-${index}`), false);
+  }
+});
+
+test("ClawDeals keys in renamed files block pushes while placeholders remain usable", () => {
+  const repo = installedRepository();
+  for (const namespace of ["cd_live", "cd_sandbox"]) {
+    repo.git("checkout", "--quiet", "-b", namespace, "main");
+    const fake = [namespace, "_a-b_cDef.", "x".repeat(42), "_"].join("");
+    repo.commit("renamed credential", { "config.txt": `key=${fake}\n` });
+    const result = repo.push("origin", namespace);
+    assert.notEqual(result.status, 0, result.output);
+    assert.match(result.output, /config\.txt: looks like a ClawDeals API key/);
+    assert.ok(!result.output.includes(fake), "diagnostics must not disclose the key");
+    assert.equal(repo.remoteHas(`refs/heads/${namespace}`), false);
+  }
+  repo.git("checkout", "--quiet", "-b", "mcp-example", "main");
+  repo.commit("public example", { ".mcp.json.example": '{"env":{"CLAWDEALS_API_KEY":"cd_live_..."}}\n' });
+  const result = repo.push("origin", "mcp-example");
+  assert.equal(result.status, 0, result.output);
+  assert.equal(repo.remoteHas("refs/heads/mcp-example"), true);
+});
+
 test("the .gitignore contract keeps local env files ignored", () => {
   const repo = installedRepository();
   repo.git("checkout", "--quiet", "-b", "ignore");
@@ -288,6 +326,29 @@ test("the .gitignore contract keeps local env files ignored", () => {
   const result = repo.push("origin", "ignore");
   assert.notEqual(result.status, 0, result.output);
   assert.match(result.output, /gitignore-env failed/);
+});
+
+test("removing or replacing credentials before push does not hide outgoing history", () => {
+  const repo = installedRepository();
+  repo.git("checkout", "--quiet", "-b", "deleted-backup", "main");
+  const backup = ".mcp.json.bak-20261023120000";
+  repo.commit("legacy backup", { [backup]: "{}\n" }, { force: true });
+  repo.git("rm", "--", backup);
+  repo.git("commit", "--quiet", "-m", "remove backup");
+  const deleted = repo.push("origin", "deleted-backup");
+  assert.notEqual(deleted.status, 0, deleted.output);
+  assert.ok(deleted.output.includes(`${backup}: forbidden file`), deleted.output);
+  assert.equal(repo.remoteHas("refs/heads/deleted-backup"), false);
+
+  repo.git("checkout", "--quiet", "-b", "replaced-key", "main");
+  const fake = ["cd_live_", "a-b_cDef.", "x".repeat(43)].join("");
+  repo.commit("key in ordinary file", { "settings.txt": `key=${fake}\n` });
+  repo.commit("replace key", { "settings.txt": "key=placeholder\n" });
+  const replaced = repo.push("origin", "replaced-key");
+  assert.notEqual(replaced.status, 0, replaced.output);
+  assert.match(replaced.output, /settings\.txt: looks like a ClawDeals API key/);
+  assert.ok(!replaced.output.includes(fake));
+  assert.equal(repo.remoteHas("refs/heads/replaced-key"), false);
 });
 
 test("the proof of the pushed tree is shown", () => {

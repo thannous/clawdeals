@@ -8,6 +8,7 @@ export type ConfirmRequest = {
   args: unknown;
   requestId: string;
   timeoutMs: number;
+  signal?: AbortSignal;
 };
 
 export type ConfirmDecision =

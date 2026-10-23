@@ -82,6 +82,14 @@ Custom file path:
 npx clawdeals-mcp install -- --file "/path/to/mcp.json"
 ```
 
+When replacing a config, installation and setup keep an exact restore copy under
+`~/.clawdeals/mcp-backups/<unique-directory>/` and print its path. Each backup has
+its own Git ignore rule, including when your home directory is a Git checkout.
+POSIX systems use owner-only directory and file permissions; on Windows, access
+follows your user profile's ACLs. Dry runs create no backups. Backups contain
+credentials: keep them private. Existing sibling `.mcp.json.bak-*` files are not
+moved or deleted; this repository ignores and blocks them at push time.
+
 ### STEP_02 — Smoke test (per client)
 
 In each client, run this tool call:
