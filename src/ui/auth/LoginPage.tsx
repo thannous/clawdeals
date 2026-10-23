@@ -145,7 +145,7 @@ function useLoginPageView() {
   const [redirectHintReady, setRedirectHintReady] = useState(false);
 
   const redirectTarget = resolveRedirectTarget(router.isReady, router.query.next);
-  const missionReturn = redirectHintReady && /^\/(?:fr\/|en\/|es\/)?my\/missions\/new(?:[?#]|$)/.test(redirectTarget);
+  const missionReturn = redirectHintReady && /^\/(?:fr\/|en\/|es\/)?my\/(?:missions|projects)\/new(?:[?#]|$)/.test(redirectTarget);
   const busy = submitState === "loading" || forgotState === "loading";
   const canSubmit = Boolean(email.trim() && password && !busy);
   const hardRedirect = useCallback((target: string) => {

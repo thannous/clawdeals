@@ -5,6 +5,7 @@ import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { beginIdempotency, finalizeIdempotency } from "../idempotency/middleware";
 import { jsonResponse, sendJson } from "../http/response";
 import { errorPayload, sendError } from "../http/errors";
+import { requireProjectOwner } from "../http/project-missions";
 import { mergeTrustContextIntoPolicy } from "../trustscore/context";
 import { safeAuditLog } from "../audit/singleton";
 import { matchRouteGroupFromRequest } from "../routes/route-groups";
@@ -441,11 +442,13 @@ function buildAuditEvent(ctx) {
     },
     security,
     policy: ctx.policy || {},
-    // Passport drafts and original photo bytes must never be copied to audit,
-    // including authentication/rate-limit failures before the handler executes.
+    // Private drafts must not be copied to audit, including authentication and
+    // protection failures before a handler can redact its request body.
     payload: typeof ctx.routeGroup === "string" && ctx.routeGroup.startsWith("passport.")
       ? { listing_id: typeof ctx.query?.id === "string" ? ctx.query.id : null }
-      : ctx.body || {},
+      : typeof ctx.path === "string" && /^\/api\/v1\/owner\/project-missions(?:\/|$)/.test(ctx.path)
+        ? { mission_id: typeof ctx.query?.mission_id === "string" ? ctx.query.mission_id : null }
+        : ctx.body || {},
     rateLimit: ctx.rateLimit || null,
     idempotency: ctx.idempotency || null,
     outcome: inferOutcome(ctx)
@@ -479,6 +482,16 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
         ctx.response = jsonResponse(authError.status || 401, errorPayload(authError.code, authError.message));
         sendJson(res, ctx.response.status, ctx.response.body, {});
         return;
+      }
+      // Project confirmations bind the actual session, expected owner and origin
+      // even when idempotency would otherwise return a cached response early.
+      if (ctx.path === "/api/v1/owner/project-missions" || ctx.path.startsWith("/api/v1/owner/project-missions/")) {
+        const blocked = requireProjectOwner(req, ctx, isWriteMethod(ctx.method));
+        if (blocked) {
+          ctx.response = blocked;
+          sendJson(res, blocked.status, blocked.body, blocked.headers);
+          return;
+        }
       }
       // TI-331: installation-scoped OAuth scopes (v1).
       // Keep this before rate limiting / idempotency: blocked requests should not consume limits or locks.
