@@ -98,3 +98,17 @@ test("parses supabase db query JSON after a preamble", () => {
   assert.deepEqual(parseQueryOutput('note\n{"boundary":"x","rows":[{"a":1}]}'), [{ a: 1 }]);
   assert.throws(() => parseQueryOutput("nothing"), /printed no JSON/);
 });
+
+test("parses native CLI row arrays and still rejects an unsafe schema", () => {
+  assert.deepEqual(parseQueryOutput('[\n  {\n    "ok": 1\n  }\n]\n'), [{ ok: 1 }]);
+  const relations = parseQueryOutput(`note\n${JSON.stringify([table("deals", { rls: false })])}`);
+  const functions = parseQueryOutput("[]\n");
+  assert.deepEqual(evaluate({ relations, functions }).failures, [
+    "public.deals (table): row level security is not enabled",
+  ]);
+});
+
+test("rejects query output without rows or with trailing non-JSON content", () => {
+  assert.throws(() => parseQueryOutput('{"message":"not rows"}'), /returned no rows array/);
+  assert.throws(() => parseQueryOutput('[{"ok":1}]\nnot JSON'), SyntaxError);
+});
