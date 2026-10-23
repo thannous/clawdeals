@@ -262,6 +262,30 @@
       "route": "/v1/owner/notification-preferences",
       "covered_paths": [],
       "exclusion": "Owner-session notification settings for the website; not an agent SDK contract. See docs/notification-settings.md for GET/PATCH behavior."
+    },
+    {
+      "file": "src/pages/api/v1/owner/project-missions/index.ts",
+      "route": "/v1/owner/project-missions",
+      "covered_paths": [],
+      "exclusion": "Owner-session project planning and explicitly approved non-binding seller questions; not an agent SDK endpoint. See docs/project-office-mission.md."
+    },
+    {
+      "file": "src/pages/api/v1/owner/project-missions/[mission_id]/index.ts",
+      "route": "/v1/owner/project-missions/{mission_id}",
+      "covered_paths": [],
+      "exclusion": "Owner-session project planning and explicitly approved non-binding seller questions; not an agent SDK endpoint. See docs/project-office-mission.md."
+    },
+    {
+      "file": "src/pages/api/v1/owner/project-missions/[mission_id]/[action].ts",
+      "route": "/v1/owner/project-missions/{mission_id}/{action}",
+      "covered_paths": [],
+      "exclusion": "Owner-session project planning and explicitly approved non-binding seller questions; not an agent SDK endpoint. See docs/project-office-mission.md."
+    },
+    {
+      "file": "src/pages/api/v1/owner/project-missions/[mission_id]/conversations.ts",
+      "route": "/v1/owner/project-missions/{mission_id}/conversations",
+      "covered_paths": [],
+      "exclusion": "Owner-session project planning and explicitly approved non-binding seller questions; not an agent SDK endpoint. See docs/project-office-mission.md."
     }
   ]
 }

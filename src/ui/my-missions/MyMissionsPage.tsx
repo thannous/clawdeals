@@ -8,6 +8,7 @@ import { useMissionResource } from "./useMissionResource";
 
 export default function MyMissionsPage() {
   const t = useTranslations("myMissions");
+  const projectT = useTranslations("projectMissions");
   const locale = useLocale();
   const [cursor, setCursor] = useState<string | null>(null);
   const { data, error, loading, reload } = useMissionResource<{ items: OwnerMission[]; next_cursor: string | null }>(cursor ? `?cursor=${encodeURIComponent(cursor)}` : "");
@@ -17,7 +18,7 @@ export default function MyMissionsPage() {
       <main id="main-content" tabIndex={-1} className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-muted max-w-xl">{t("listHint")}</p>
-          <Link href="/my/missions/new" className="px-5 py-3 bg-primary text-bg font-semibold">{t("newTitle")}</Link>
+          <div className="flex flex-wrap gap-3"><Link href="/my/projects" className="px-5 py-3 border border-border text-text font-semibold">{projectT("title")}</Link><Link href="/my/projects/new" className="px-5 py-3 border border-primary text-primary font-semibold">{projectT("newTitle")}</Link><Link href="/my/missions/new" className="px-5 py-3 bg-primary text-bg font-semibold">{t("newTitle")}</Link></div>
         </div>
         {loading ? <p role="status" className="text-muted">{t("loading")}</p> : error ? (
           <div role="alert" className="border border-warning p-5 text-warning"><p>{t("loadError")}</p><button onClick={reload} className="mt-3 underline">{t("retry")}</button></div>

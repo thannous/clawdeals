@@ -20,6 +20,7 @@ const failure = (code: string): StableToolResult => ({ ok: false, error: { code,
 
 export default function NewMissionPage() {
   const t = useTranslations("myMissions");
+  const projectT = useTranslations("projectMissions");
   const router = useRouter();
   const hydrated = useSyncExternalStore(subscribeHydration, clientReady, serverReady);
   const [pending, setPending] = useState<BuyMissionInput | null>(null);
@@ -201,6 +202,7 @@ export default function NewMissionPage() {
           <Link href="/my/missions" className="text-sm text-primary underline">{t("allMissions")}</Link>
           <p className="text-sm text-muted max-w-2xl">{t("intro")}</p>
           <p className="text-xs text-subtle">{t("draftHint")}</p>
+          <Link href="/my/projects/new" className="inline-block py-2 text-sm text-primary underline">{projectT("newTitle")}</Link>
         </div>
         {pending && preview ? (
           <section aria-labelledby="mission-review-title" className="mx-4 sm:mx-6 border border-primary/50 bg-surface p-4 space-y-4">
