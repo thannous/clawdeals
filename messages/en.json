@@ -2922,6 +2922,29 @@
     "browserRegistry": { "eyebrow": "Browser-reported", "title": "What the browser sees", "match": "Match", "mismatch": "Mismatch", "toolCount": "{count, plural, one {# tool} other {# tools}}", "reading": "Reading…", "error": "getTools() error", "unavailable": "getTools() unavailable in this runtime", "origin": "origin {origin}", "changeCount": "{count, plural, one {# toolchange event} other {# toolchange events}}", "noTools": "Browser reports no tools.", "readFailed": "The browser registry could not be read.", "legacy": "Older WebMCP runtimes expose registerTool() only; the provider list on the left remains the reference.", "readOnly": "read-only", "descriptionBefore": "Left: the tools our provider registered. Here: the same registry read back from", "descriptionMiddle": "refreshed on every", "descriptionAfter": "Connect or remove an agent key and watch both move from 6 to 12 together." },
     "catalog": { "emptyTitle": "This host has no public listings right now.", "emptyDescription": "There are no listings to compare here yet. Browse the public marketplace without connecting an agent.", "browseListings": "Browse listings" },
     "mission": {
+      "smartphone": {
+        "title": "Smartphone filters",
+        "enabled": "Search using the smartphone passport",
+        "hint": "Choose at least one filter. All values are seller statements, without independent certification.",
+        "model": "Exact model (optional)",
+        "modelHint": "For example, iPhone 14. An iPhone 14 Pro is a different model. Case and spacing do not affect matching.",
+        "battery": "Minimum battery health in % (optional)",
+        "batteryHint": "From 0 to 100%. This declared value does not measure battery life.",
+        "checksTitle": "These checks must be declared OK",
+        "checks": {
+          "battery": "Battery",
+          "screen": "Screen",
+          "functionality": "Cameras, audio, charging and connectivity",
+          "locks": "Locks and provenance",
+          "repairs_accessories": "Repairs and accessories"
+        },
+        "unknownHint": "Missing information or a non-applicable check stays unconfirmed and does not trigger an alert. Photos do not certify condition.",
+        "validation": "Enter at least one model, a whole percentage from 0 to 100, or a required check.",
+        "modelSummary": "Exact model: {model}",
+        "batterySummary": "Declared battery health ≥ {minimum}%",
+        "checkSummary": "Declared OK: {check}",
+        "prefillHint": "Review the criteria carried over from the comparison. The area is a default city for the market: choose your city, radius and budget before continuing."
+      },
       "currencyHint": "Amounts in {currency}. Choose the maximum budget you want to allow.",
       "budgetHint": "Amounts in {currency}. The ceiling starts at the listing price. Increase it only if you want to allow a higher budget.",
       "draftResumed": "Your draft has been restored. Check your limits before continuing.",
@@ -3050,6 +3073,39 @@
     "reviewHint": "Confirm the details with the seller. This comparison does not make an offer or purchase."
   },
   "myMissions": {
+    "smartphone": {
+      "matchesHint": "These listings match the search, market, currency, budget and area. Smartphone filters use the seller’s passport.",
+      "resultsHint": "A match reflects your criteria and the seller’s current statements. It does not certify overall condition or recommend a purchase.",
+      "compatibleTitle": "Match your filters ({count})",
+      "unknownTitle": "To confirm ({count})",
+      "unknownHint": "More information is needed to decide. These listings do not trigger a match alert.",
+      "whyMatches": "Criteria met",
+      "toConfirm": "Information to confirm",
+      "compare": "Open the comparison",
+      "alertsTitle": "Alerts in ClawDeals",
+      "alertsHint": "Alerts cover listings that currently match. No email or external message is sent.",
+      "matchedAt": "Detected on {date}",
+      "priceChanged": "Price: {previous} → {current}",
+      "changes": {
+        "first_match": "New match",
+        "price_changed": "The price changed",
+        "passport_updated": "The passport was updated",
+        "criteria_changed": "Match after criteria changed"
+      },
+      "reasons": {
+        "passport_missing": "No smartphone passport supplied.",
+        "model_matches": "Declared model: {actual}.",
+        "model_mismatch": "Declared model {actual}; requested model {expected}.",
+        "model_unknown": "Model {expected} needs confirmation.",
+        "battery_meets_minimum": "Declared battery health: {actual}% (minimum {expected}%).",
+        "battery_below_minimum": "Declared battery health: {actual}%, below the {expected}% minimum.",
+        "battery_unknown": "Battery health ≥ {expected}% needs confirmation.",
+        "check_ok": "{check}: declared OK.",
+        "check_issue": "{check}: issue declared.",
+        "check_unknown": "{check}: needs confirmation."
+      }
+    },
+    "smartphoneDraftMissing": "This draft is missing, expired or belongs to another account. Resume it in the original tab and account, or prepare a new mission.",
     "sessionChanged": "The account has changed since you reviewed this mission. No new request was sent. Sign in with the original account, then confirm again in this tab.",
     "checkAccount": "Check my account",
     "sessionCheckFailed": "Your account could not be verified. Check your connection, then confirm again. No new request was sent.",
@@ -3276,6 +3332,14 @@
     "lockedError": "This listing no longer allows passport changes. Your edits are kept in this tab."
   },
   "comparison": {
+    "createMission": "Let me know when it matches",
+    "missionPreparing": "Preparing draft…",
+    "missionDraftError": "The draft could not be saved or the session verified. Allow storage in this tab, then try again.",
+    "missionCities": {
+      "FR": "Paris",
+      "GB": "London",
+      "ES": "Madrid"
+    },
     "pageTitle": "Compare smartphones — ClawDeals",
     "title": "Compare smartphones",
     "description": "Compare two or three listings by price, reported battery health and disclosed issues. Review the evidence and information that is still missing.",

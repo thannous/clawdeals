@@ -125,7 +125,8 @@ class MatchingQuery {
         return row?.[filter.column] === filter.value;
       }
       if (filter.operator === "not-is") {
-        return row?.[filter.column] !== filter.value;
+        const value = filter.column.split("->").reduce((record, key) => record?.[key], row) ?? null;
+        return value !== filter.value;
       }
       if (filter.operator === "overlaps") {
         const values = Array.isArray(row?.[filter.column]) ? row[filter.column] : [];

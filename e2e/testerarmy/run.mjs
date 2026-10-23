@@ -81,6 +81,8 @@ export async function execute({ historical = false } = {}) {
   }
   const selection = historical
     ? "historical"
+    : process.env.TESTERARMY_PASSPORT_MISSIONS_LIVE === "1"
+      ? "passport-missions-live"
     : process.env.TESTERARMY_MISSION_LIVE === "1"
       ? "mission-live"
       : process.env.TESTERARMY_COMPARISON_LIVE === "1"
@@ -97,7 +99,7 @@ export async function execute({ historical = false } = {}) {
     E2E_TELEMETRY_DISABLED: "1",
     DO_NOT_TRACK: "1",
   };
-  if (selection === "mission-live") {
+  if (["mission-live", "passport-missions-live"].includes(selection)) {
     // One ephemeral password is shared with the worker's opaque credential.
     // It is never persisted to the receipt, command line or repository.
     env.TESTERARMY_MISSION_PASSWORD = randomBytes(32).toString("base64url");
@@ -141,9 +143,9 @@ export async function execute({ historical = false } = {}) {
         {
           format: "clawdeals-testerarmy-command-v1",
           selection,
-          publicEvidence: !["ai", "mission-live", "commerce-live"].includes(selection),
+          publicEvidence: !["ai", "mission-live", "commerce-live", "passport-missions-live"].includes(selection),
           // A trace is an attempt ZIP in 0.18 and a result page in 0.21.
-          requiredArtifactKinds: ["mission-live", "commerce-live"].includes(selection) ? [] : ["trace"],
+          requiredArtifactKinds: ["mission-live", "commerce-live", "passport-missions-live"].includes(selection) ? [] : ["trace"],
           runner,
           evidenceLayout,
           command: [

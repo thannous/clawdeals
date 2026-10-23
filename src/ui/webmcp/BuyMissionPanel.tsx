@@ -10,7 +10,8 @@ import type { StableToolResult } from "../../webmcp/types";
 import { randomUuid } from "../../webmcp/utils";
 import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import type { z } from "zod";
-import { readBuyMissionDraft, saveBuyMissionDraft } from "./buyMissionDraft";
+import { emptySmartphoneMissionDraft, readBuyMissionDraft, saveBuyMissionDraft } from "./buyMissionDraft";
+import SmartphoneMissionFields, { SmartphoneMissionSummary } from "../my-missions/SmartphoneMissionFields";
 
 export type BuyMissionInput = z.infer<typeof buyMissionZodSchema>;
 
@@ -207,6 +208,7 @@ export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionVi
         </div>
       </dl>
 
+      {mission.smartphone ? <SmartphoneMissionSummary criteria={mission.smartphone} /> : null}
       {mission.requirements.length > 0 ? (
         <div className="mt-4 border-t border-border pt-3">
           <p className="text-[10px] font-mono uppercase text-subtle">{t("mission.summary.requirements")}</p>
@@ -326,6 +328,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
   const [requirements, setRequirements] = useState(prefill?.requirements ?? "battery_health >= 80%");
   const [autonomousActions, setAutonomousActions] = useState<string[]>(draftSource ? ["search"] : ["search", "ask_question", "make_offer"]);
   const [expiresAt, setExpiresAt] = useState(defaultExpirationValue);
+  const [smartphone, setSmartphone] = useState(emptySmartphoneMissionDraft);
   const [resultMessage, setResultMessage] = useState<{
     key: string;
     values?: Record<string, string>;
@@ -353,7 +356,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
     : null;
 
   const draft = { query, marketCode, cityPreset, locationLabel, latitude, longitude, radiusKm,
-    preferredPriceMax, hardBudgetMax, requirements, autonomousActions: autonomousActions as BuyMissionInput["autonomous_actions"], expiresAt };
+    preferredPriceMax, hardBudgetMax, requirements, autonomousActions: autonomousActions as BuyMissionInput["autonomous_actions"], expiresAt, ...(smartphone.enabled || smartphone.model || smartphone.batteryHealthMin || smartphone.requiredChecks.length ? { smartphone } : {}) };
 
   useEffect(() => {
     if (!draftSource) return;
@@ -372,6 +375,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
       setRequirements(saved.requirements);
       setAutonomousActions(saved.autonomousActions);
       setExpiresAt(saved.expiresAt);
+      setSmartphone(saved.smartphone || emptySmartphoneMissionDraft());
     }
     setDraftReady(true);
   }, [draftSource, draftOwnerId]);
@@ -381,7 +385,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
   // Each draft field is intentionally a dependency; never overwrite it with a stale closure.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftSource, draftOwnerId, draftReady, query, marketCode, cityPreset, locationLabel, latitude, longitude,
-    radiusKm, preferredPriceMax, hardBudgetMax, requirements, autonomousActions, expiresAt]);
+    radiusKm, preferredPriceMax, hardBudgetMax, requirements, autonomousActions, expiresAt, smartphone]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -490,6 +494,11 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
         .map((item) => item.trim())
         .filter(Boolean),
       autonomous_actions: autonomousActions,
+      ...(smartphone.enabled ? { smartphone: {
+        version: 1 as const, model: smartphone.model.trim() || null,
+        battery_health_min: smartphone.batteryHealthMin === "" ? null : Number(smartphone.batteryHealthMin),
+        required_checks: smartphone.requiredChecks
+      } } : {}),
       contact_reveal: "manual_bilateral_approval" as const,
       expires_at: Number.isFinite(new Date(expiresAt).getTime()) ? new Date(expiresAt).toISOString() : ""
     };
@@ -498,6 +507,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
       const path = String(parsed.error.issues[0]?.path[0] || "");
       const errors: Record<string, { name: string; key: string }> = {
         query: { name: "query", key: "mission.validation.query" },
+        smartphone: { name: "smartphone_enabled", key: "mission.smartphone.validation" },
         preferred_price_max: { name: "preferred_price_max", key: "mission.validation.budget" },
         requirements: { name: "requirements_text", key: "mission.validation.requirements" },
         expires_at: { name: "expires_at", key: "mission.validation.expiry" }
@@ -628,6 +638,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
         </div>
 
         {draftSource ? <p className="mt-3 text-sm text-muted">{t(prefill?.listingTitle ? "mission.budgetHint" : "mission.currencyHint", { currency: marketCode === "GB" ? "GBP" : "EUR" })}</p> : null}
+        {draftSource?.startsWith("smartphone:") ? <p className="mt-2 text-sm text-muted">{t("mission.smartphone.prefillHint")}</p> : null}
         {draftSource && restoredDraft.current ? <p role="status" className="mt-2 text-sm text-primary">{t("mission.draftResumed")}</p> : null}
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -737,6 +748,9 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
           </label>
 
         </div>
+
+        <SmartphoneMissionFields value={smartphone} onChange={setSmartphone} invalid={fieldError?.name === "smartphone_enabled"} />
+        {errorHint("smartphone_enabled")}
 
         {draftSource ? (
           <details className="mt-4 border border-border bg-bg/40" data-testid="buy-mission-options">

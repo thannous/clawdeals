@@ -1,3 +1,4 @@
+import { loadSmartphoneMissionSnapshots, evaluateSmartphoneMissionSnapshot, getSmartphoneMissionAlerts } from "./smartphone-mission-matching";
 import { createAgentWithOwnerLimit, getAgentById, getAgentIdByOwnerId, getOwnerAgentLimit } from "./agents";
 import { createConfiguredWatchlist, mapWatchlistResponse, parseWatchlistCreation } from "./watchlist-creation";
 import { getWatchlistForOwner, listWatchlists } from "./watchlists";
@@ -91,7 +92,7 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
   const row = await getOwnerBuyMission({ ownerId, missionId });
   if (!row) throw serviceError("Mission not found", 404, "NOT_FOUND");
   const mission = row.criteria.mission;
-  if (row.status !== "ACTIVE") return { items: [], next_cursor: null, status: row.status };
+  if (row.status !== "ACTIVE") return { items: [], next_cursor: null, status: row.status, ...(mission.smartphone ? { alerts: [] } : {}) };
   const geo = { lat: mission.location.lat, lng: mission.location.lon, distanceKm: mission.location.radius_km };
   let cursor = null;
   if (rawCursor) {
@@ -116,7 +117,7 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
   // Continue bounded pages because filtering another market must not mask later matches.
   for (let page = 0; page < 5; page++) {
     const result = await listListings({
-      q: row.criteria.query,
+      q: mission.smartphone ? null : row.criteria.query,
       // The catalogue RPC accepts integer prices; overfetch a fractional ceiling
       // and enforce the exact mission budget below, including decimal amounts.
       priceMax: Math.ceil(budget),
@@ -126,6 +127,7 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
       limit: limit - items.length,
       includeHidden: false
     });
+    const snapshots = mission.smartphone ? await loadSmartphoneMissionSnapshots(result.items.map((listing: any) => listing.listing_id)) : null;
     for (const listing of result.items) {
       const price = Number(listing.price_amount);
       const distance = Number(listing.distance_m);
@@ -133,6 +135,14 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
         listing.currency !== mission.currency || listing.price_amount == null || !Number.isFinite(price) || price < 0 || price > budget ||
         listing.distance_m == null || !Number.isFinite(distance) || distance < 0 || distance > geo.distanceKm * 1000 ||
         !hasSearchText) continue;
+      if (snapshots) {
+        const snapshot = snapshots.get(listing.listing_id);
+        if (!snapshot) continue;
+        const evaluation = evaluateSmartphoneMissionSnapshot(snapshot, row);
+        if (!evaluation.baseMatched || evaluation.smartphone.status === "incompatible") continue;
+        items.push({ ...mapPublicListingRow({ ...listing, ...snapshot.listing }), smartphone_compatibility: evaluation.smartphone });
+        continue;
+      }
       if (!evaluateWatchlistMatchListing({ listing, watchlist, listingDistanceKm: distance / 1000 }).matched) continue;
       items.push(mapPublicListingRow(listing));
     }
@@ -141,5 +151,28 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
     cursor = decodeListingsCursor(nextCursor)?.value;
     if (!cursor) throw serviceError("Invalid catalogue cursor", 500, "ERROR");
   }
-  return { items, next_cursor: nextCursor, status: row.status };
+  if (!mission.smartphone) return { items, next_cursor: nextCursor, status: row.status };
+  const alerts = await getSmartphoneMissionAlerts(row);
+  // Finish the whole page before a final visibility/evaluation barrier, so a
+  // slower alert lookup cannot expose an item hidden in the meantime.
+  const finalSnapshots = await loadSmartphoneMissionSnapshots([...items.map(item => item.listing_id), ...alerts.map(alert => alert.listing_id)]);
+  const currentMission = await getOwnerBuyMission({ ownerId, missionId });
+  if (!currentMission || currentMission.status !== "ACTIVE" ||
+    currentMission.market_code !== row.market_code || currentMission.currency !== row.currency ||
+    currentMission.updated_at !== row.updated_at || JSON.stringify(currentMission.criteria) !== JSON.stringify(row.criteria)) {
+    return { items: [], next_cursor: null, status: currentMission?.status || "PAUSED", alerts: [] };
+  }
+  const currentItems = items.flatMap(item => {
+    const snapshot = finalSnapshots.get(item.listing_id);
+    if (!snapshot) return [];
+    const evaluated = evaluateSmartphoneMissionSnapshot(snapshot, row);
+    if (!evaluated.baseMatched || evaluated.smartphone.status === "incompatible") return [];
+    return [{ ...item, ...mapPublicListingRow({ ...snapshot.listing, distance_m: evaluated.reason.geo_km * 1000 }), smartphone_compatibility: evaluated.smartphone }];
+  });
+  const currentAlerts = alerts.flatMap(alert => {
+    const snapshot = finalSnapshots.get(alert.listing_id);
+    if (!snapshot || !evaluateSmartphoneMissionSnapshot(snapshot, row).matched) return [];
+    return [{ ...alert, listing: mapPublicListingRow(snapshot.listing) }];
+  });
+  return { items: currentItems, next_cursor: nextCursor, status: row.status, alerts: currentAlerts };
 }

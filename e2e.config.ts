@@ -29,7 +29,18 @@ const productionPublic = process.env.TESTERARMY_PRODUCTION_PUBLIC === "1";
 const missionLive = process.env.TESTERARMY_MISSION_LIVE === "1";
 const commerceLive = process.env.TESTERARMY_COMMERCE_LIVE === "1";
 const comparisonLive = process.env.TESTERARMY_COMPARISON_LIVE === "1";
+const passportMissionsLive = process.env.TESTERARMY_PASSPORT_MISSIONS_LIVE === "1";
 const commerceProduction = process.env.TESTERARMY_COMMERCE_PRODUCTION === "1";
+if (passportMissionsLive) {
+  if (aiEnabled || historical || productionPublic || missionLive || commerceLive || comparisonLive || commerceProduction) {
+    throw new Error("Passport mission selection is exclusive of other suites.");
+  }
+  for (const value of [baseURL, process.env.SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_URL]) {
+    if (!value || !["localhost", "127.0.0.1", "[::1]"].includes(new URL(value).hostname)) {
+      throw new Error("Passport mission fixtures require a local app and local Supabase URLs.");
+    }
+  }
+}
 if (comparisonLive) {
   if (aiEnabled || historical || productionPublic || missionLive || commerceLive) {
     throw new Error("Local comparison selection is exclusive of other suites.");
@@ -126,7 +137,8 @@ export default {
     : missionLive ? "e2e/testerarmy/mission-live/**/*.e2e.ts"
     : commerceLive ? "e2e/testerarmy/commerce-live/**/*.e2e.ts"
     : comparisonLive ? "e2e/testerarmy/comparison-live/**/*.e2e.ts"
-    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts", "!e2e/testerarmy/comparison-live/**/*.e2e.ts",
+    : passportMissionsLive ? "e2e/testerarmy/passport-missions-live/**/*.e2e.ts"
+    : ["e2e/testerarmy/**/*.e2e.ts", "!e2e/testerarmy/**/*.agent.e2e.ts", "!e2e/testerarmy/historical/**/*.e2e.ts", "!e2e/testerarmy/production/**/*.e2e.ts", "!e2e/testerarmy/mission-live/**/*.e2e.ts", "!e2e/testerarmy/commerce-live/**/*.e2e.ts", "!e2e/testerarmy/comparison-live/**/*.e2e.ts", "!e2e/testerarmy/passport-missions-live/**/*.e2e.ts",
       // Optional local-panel coverage has its own opt-in qualification. A public
       // evidence bundle must execute every selected case rather than skip it.
       ...(process.env.TESTERARMY_CHATGPT_UI === "1" ? [] : ["!e2e/testerarmy/chatgpt-local-recovery.e2e.ts"])],
@@ -136,12 +148,12 @@ export default {
   ],
   workers: 1,
   ...(aiEnabled ? {} : { retries: 0, cache: "off" as const }),
-  timeout: commerceLive ? 300_000 : aiEnabled || missionLive ? 180_000 : 60_000,
+  timeout: commerceLive ? 300_000 : aiEnabled || missionLive || passportMissionsLive ? 180_000 : 60_000,
   assertionTimeout: 15_000,
   // Live password authentication carries real session tokens. Keep the exact
   // report and safe fixture receipts, never a network trace with auth payloads.
-  trace: missionLive || commerceLive ? "off" : "on",
-  ...(missionLive ? { credentials: {
+  trace: missionLive || commerceLive || passportMissionsLive ? "off" : "on",
+  ...(missionLive || passportMissionsLive ? { credentials: {
     mission: { username: "synthetic-mission", password: () => process.env.TESTERARMY_MISSION_PASSWORD || "" }
   } } : {}),
   ...(commerceLive ? { credentials: {

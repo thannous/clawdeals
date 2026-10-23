@@ -4423,6 +4423,72 @@ components:
           readOnly: true
           description: Set by the owner mission workflow. Prevents external match notifications and is preserved when an agent updates the criteria.
 
+    SmartphoneMissionCriteriaV1:
+      type: object
+      additionalProperties: false
+      required: [version]
+      description: At least one model, battery minimum or required check is mandatory. Model uses exact NFKC, whitespace and case normalized equality. Unknown or inapplicable checks never satisfy a requirement. Seller statements are not certification; photos do not affect compatibility. Smartphone missions use in-app alerts only.
+      properties:
+        version: { type: integer, enum: [1] }
+        model: { type: string, nullable: true, minLength: 1, maxLength: 120 }
+        battery_health_min: { type: integer, nullable: true, minimum: 0, maximum: 100 }
+        required_checks:
+          type: array
+          maxItems: 5
+          uniqueItems: true
+          items: { type: string, enum: [battery, screen, functionality, locks, repairs_accessories] }
+
+    SmartphoneMissionReasonV1:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: { type: string, enum: [passport_missing, model_matches, model_mismatch, model_unknown, battery_meets_minimum, battery_below_minimum, battery_unknown, check_ok, check_issue, check_unknown] }
+        check_id: { type: string, enum: [battery, screen, functionality, locks, repairs_accessories] }
+        expected:
+          oneOf:
+            - { type: string }
+            - { type: number }
+        actual:
+          oneOf:
+            - { type: string }
+            - { type: number }
+
+    SmartphoneMissionEvaluationV1:
+      type: object
+      additionalProperties: false
+      required: [status, reasons]
+      properties:
+        status: { type: string, enum: [compatible, incompatible, unknown] }
+        reasons:
+          type: array
+          maxItems: 7
+          items: { $ref: "#/components/schemas/SmartphoneMissionReasonV1" }
+
+    OwnerBuyMissionMatchV1:
+      allOf:
+        - { $ref: "#/components/schemas/PublicListingSummaryV1" }
+        - type: object
+          properties:
+            smartphone_compatibility: { $ref: "#/components/schemas/SmartphoneMissionEvaluationV1" }
+
+    SmartphoneMissionAlertV1:
+      type: object
+      required: [listing_id, matched_at, listing, reason]
+      properties:
+        listing_id: { type: string, format: uuid }
+        matched_at: { type: string, format: date-time }
+        listing: { $ref: "#/components/schemas/PublicListingSummaryV1" }
+        reason:
+          type: object
+          required: [smartphone, change]
+          properties:
+            smartphone: { $ref: "#/components/schemas/SmartphoneMissionEvaluationV1" }
+            change: { type: string, enum: [first_match, price_changed, passport_updated, criteria_changed] }
+            previous_price: { type: number, minimum: 0 }
+            current_price: { type: number, minimum: 0 }
+            passport_revision: { type: integer, minimum: 0 }
+
     BuyMissionV1:
       type: object
       additionalProperties: false
@@ -4446,6 +4512,7 @@ components:
           multipleOf: 0.01
           description: Absolute budget in major currency units, for example 75.50 EUR. No conversion to cents or between currencies.
         currency: { type: string, enum: [EUR, GBP], description: "Must match market_code: FR/ES use EUR, GB uses GBP." }
+        smartphone: { $ref: "#/components/schemas/SmartphoneMissionCriteriaV1" }
         requirements:
           type: array
           maxItems: 10
@@ -4524,7 +4591,12 @@ components:
       properties:
         items:
           type: array
-          items: { $ref: "#/components/schemas/PublicListingSummaryV1" }
+          items: { $ref: "#/components/schemas/OwnerBuyMissionMatchV1" }
+        alerts:
+          type: array
+          maxItems: 20
+          description: Present for smartphone missions. Current compatible and publicly visible listings only; empty for paused or expired missions. One alert per observed transition into compatibility, with its actual change baseline. Reading does not activate matching or send messages.
+          items: { $ref: "#/components/schemas/SmartphoneMissionAlertV1" }
         next_cursor:
           type: string
           nullable: true

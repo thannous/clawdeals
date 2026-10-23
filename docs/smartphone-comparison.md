@@ -25,6 +25,9 @@ notes, proof photos, source dates and missing-information questions. Unknown dat
 remains unknown. Photos document a seller statement and do not certify it.
 The existing smartphone passport supplies the underlying evidence.
 
+Each available candidate also offers a [passport-based buying mission](./smartphone-passport-missions.md),
+with editable budget, location and structured passport requirements.
+
 ## Explicit comparison rules
 
 There is no overall score, hidden weighting or automatic purchase recommendation.

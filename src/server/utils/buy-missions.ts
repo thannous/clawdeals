@@ -1,3 +1,4 @@
+import { normalizeSmartphoneMissionCriteria, type SmartphoneMissionCriteria } from "../../lib/smartphone-mission";
 export const BUY_MISSION_AUTONOMOUS_ACTIONS = ["search", "ask_question", "make_offer"] as const;
 export const BUY_MISSION_CONTACT_REVEAL = "manual_bilateral_approval" as const;
 
@@ -10,6 +11,7 @@ export type NormalizedBuyMission = {
   hard_budget_max: number;
   currency: "EUR" | "GBP";
   requirements: string[];
+  smartphone?: SmartphoneMissionCriteria;
   autonomous_actions: BuyMissionAutonomousAction[];
   contact_reveal: typeof BUY_MISSION_CONTACT_REVEAL;
   expires_at: string;
@@ -141,6 +143,7 @@ export function normalizeBuyMission(
     hard_budget_max: hardBudgetMax,
     currency,
     requirements: normalizeRequirements(raw.requirements),
+    ...(raw.smartphone === undefined ? {} : { smartphone: normalizeSmartphoneMissionCriteria(raw.smartphone) }),
     autonomous_actions: normalizeActions(raw.autonomous_actions),
     contact_reveal: BUY_MISSION_CONTACT_REVEAL,
     expires_at: expiresAt.toISOString(),

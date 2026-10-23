@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { SMARTPHONE_CHECK_IDS } from "../../lib/smartphone-passport";
+import type { SmartphoneMissionCriteria } from "../../lib/smartphone-mission";
 
 const DRAFT_KEY = "clawdeals:buy-mission-draft:v1";
 const ANONYMOUS_KEY = "clawdeals:buy-mission-draft:v2:anonymous";
@@ -18,13 +20,24 @@ const draftSchema = z.object({
   hardBudgetMax: z.string().max(30),
   requirements: z.string().max(1210),
   autonomousActions: z.array(z.enum(["search", "ask_question", "make_offer"])).max(3),
-  expiresAt: z.string().max(30)
+  expiresAt: z.string().max(30),
+  smartphone: z.object({
+    enabled: z.boolean(), model: z.string().max(120), batteryHealthMin: z.string().max(10),
+    requiredChecks: z.array(z.enum(SMARTPHONE_CHECK_IDS)).max(5).refine(ids => new Set(ids).size === ids.length)
+  }).optional()
 });
 
 export type BuyMissionDraft = z.infer<typeof draftSchema>;
 
+export type SmartphoneMissionDraft = NonNullable<BuyMissionDraft["smartphone"]>;
+export const emptySmartphoneMissionDraft = (): SmartphoneMissionDraft => ({ enabled: false, model: "", batteryHealthMin: "", requiredChecks: [] });
+export function smartphoneMissionDraft(criteria: SmartphoneMissionCriteria): SmartphoneMissionDraft {
+  return { enabled: true, model: criteria.model || "", batteryHealthMin: criteria.battery_health_min === null ? "" : String(criteria.battery_health_min), requiredChecks: [...criteria.required_checks] };
+}
+
 export function missionDraftSource(query: Record<string, string | string[] | undefined>): string {
   const one = (name: string) => Array.isArray(query[name]) ? query[name][0] : query[name];
+  if (query.draft !== undefined) return typeof query.draft === "string" && z.string().uuid().safeParse(query.draft).success ? `smartphone:${query.draft.toLowerCase()}` : "smartphone:invalid";
   return one("from") ? `mission:${one("from")}`
     : one("listing") ? `listing:${JSON.stringify([one("listing"), one("price"), one("market"), one("lat"), one("lng")])}`
       : `search:${JSON.stringify([one("query") || "", one("price_max") || ""])}`;

@@ -108,8 +108,8 @@ export async function recordPublicAcquisitionEvent(event: ReturnType<typeof pars
   }
 }
 
-async function resolveAcquisitionForAgent(agentId: string, client: any) {
-  const { data, error } = await client
+async function resolveAcquisitionForAgent(agentId: string, client: any, signal?: AbortSignal) {
+  const request = client
     .from(TABLE)
     .select("acquisition_id")
     .eq("agent_id", agentId)
@@ -117,6 +117,7 @@ async function resolveAcquisitionForAgent(agentId: string, client: any) {
     .order("occurred_at", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
+  const { data, error } = await (signal ? request.abortSignal(signal) : request);
 
   if (error) {
     throw buildServiceError(`Failed to resolve acquisition activation: ${error.message}`);
@@ -124,13 +125,14 @@ async function resolveAcquisitionForAgent(agentId: string, client: any) {
   return normalizeAcquisitionId(data?.acquisition_id);
 }
 
-async function insertMilestone(row: Record<string, any>, client: any) {
-  const { error } = await client
+async function insertMilestone(row: Record<string, any>, client: any, signal?: AbortSignal) {
+  const request = client
     .from(TABLE)
     .upsert(row, {
       onConflict: "acquisition_id,event_name",
       ignoreDuplicates: true
     });
+  const { error } = await (signal ? request.abortSignal(signal) : request);
   if (error) {
     throw buildServiceError(`Failed to record acquisition milestone: ${error.message}`);
   }
@@ -249,7 +251,8 @@ export async function recordAgentMilestone({
   watchlistMatchId = null,
   marketCode = null,
   occurredAt = new Date(),
-  client
+  client,
+  signal
 }: {
   eventName: "watchlist_created" | "first_match";
   agentId: string;
@@ -258,9 +261,10 @@ export async function recordAgentMilestone({
   marketCode?: string | null;
   occurredAt?: Date;
   client?: any;
+  signal?: AbortSignal;
 }) {
   const supabase = client || getSupabaseServiceClient();
-  const acquisitionId = await resolveAcquisitionForAgent(agentId, supabase);
+  const acquisitionId = await resolveAcquisitionForAgent(agentId, supabase, signal);
   if (!acquisitionId) return { recorded: false };
 
   await insertMilestone({
@@ -271,7 +275,7 @@ export async function recordAgentMilestone({
     watchlist_id: watchlistId,
     watchlist_match_id: watchlistMatchId,
     market_code: marketCode
-  }, supabase);
+  }, supabase, signal);
   return { recorded: true };
 }
 

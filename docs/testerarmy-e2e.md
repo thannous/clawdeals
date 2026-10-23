@@ -78,6 +78,14 @@ No account or seeded listing is required. These journeys verify navigation and h
 
 The configuration loads `.env.testerarmy.local`, then `.env.local`, without overwriting shell variables. Next.js also loads its normal local environment. The configuration passes selected database/Redis variables to the child app so shell overrides select the same backend the target guard checks. Follow [local setup](./local-supabase-development.md) when using the local backend.
 
+## Smartphone passport missions against a local backend
+
+`TESTERARMY_PASSPORT_MISSIONS_LIVE=1` selects the eight connected mission scenarios
+on desktop and mobile. This selection requires loopback app and Supabase URLs;
+it creates synthetic local Auth users and exercises real owner sessions, APIs,
+PostgreSQL and matching queues. The default selection excludes these fixtures.
+See [passport mission prerequisites and commands](./smartphone-passport-missions.md#verification).
+
 ## Compare smartphones against a local backend
 
 `TESTERARMY_COMPARISON_LIVE=1` selects the connected smartphone comparison

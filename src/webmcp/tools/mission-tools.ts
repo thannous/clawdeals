@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { SMARTPHONE_CHECK_IDS } from "../../lib/smartphone-passport";
+import { normalizeSmartphoneMissionCriteria } from "../../lib/smartphone-mission";
 
 import { getStoredApiKey } from "../../ui/developer/storage";
 import { callClawdealsWebmcp } from "../http";
@@ -14,6 +16,15 @@ const MARKET_CURRENCY = {
 
 const autonomousAction = z.enum(["search", "ask_question", "make_offer"]);
 
+export const smartphoneMissionZodSchema = z.object({
+  version: z.literal(1),
+  model: z.string().trim().min(1).max(120).nullable(),
+  battery_health_min: z.number().int().min(0).max(100).nullable(),
+  required_checks: z.array(z.enum(SMARTPHONE_CHECK_IDS)).max(5)
+}).strict().refine(value => {
+  try { normalizeSmartphoneMissionCriteria(value); return true; } catch { return false; }
+}, "At least one valid smartphone requirement is required").transform(value => normalizeSmartphoneMissionCriteria(value));
+
 export const buyMissionZodSchema = z
   .object({
     name: z.string().trim().min(1).max(80).optional(),
@@ -26,6 +37,7 @@ export const buyMissionZodSchema = z
     preferred_price_max: z.number().positive().optional(),
     hard_budget_max: z.number().positive(),
     requirements: z.array(z.string().trim().min(1).max(120)).max(10),
+    smartphone: smartphoneMissionZodSchema.optional(),
     autonomous_actions: z.array(autonomousAction).min(1).max(3),
     contact_reveal: z.literal("manual_bilateral_approval"),
     expires_at: z.string().datetime({ offset: true })
@@ -78,6 +90,7 @@ const missionResponseSchema = z.object({
       hard_budget_max: z.number().positive(),
       currency: z.enum(["EUR", "GBP"]),
       requirements: z.array(z.string().trim().min(1).max(120)).max(10),
+      smartphone: smartphoneMissionZodSchema.optional(),
       autonomous_actions: z.array(autonomousAction).min(1).max(3)
         .refine(actions => actions.includes("search") && new Set(actions).size === actions.length),
       contact_reveal: z.literal("manual_bilateral_approval"),
@@ -121,6 +134,17 @@ export const buyMissionInputJsonSchema: Record<string, unknown> = {
       maxItems: 10,
       items: { type: "string", minLength: 1, maxLength: 120 }
     },
+    smartphone: {
+      type: "object", additionalProperties: false,
+      required: ["version", "model", "battery_health_min", "required_checks"],
+      description: "Optional smartphone passport criteria. At least one criterion is required. Unknown seller information never qualifies.",
+      properties: {
+        version: { type: "integer", const: 1 },
+        model: { type: ["string", "null"], minLength: 1, maxLength: 120 },
+        battery_health_min: { type: ["integer", "null"], minimum: 0, maximum: 100 },
+        required_checks: { type: "array", maxItems: 5, uniqueItems: true, items: { type: "string", enum: [...SMARTPHONE_CHECK_IDS] } }
+      }
+    },
     autonomous_actions: {
       type: "array",
       minItems: 1,
@@ -149,7 +173,7 @@ export const missionTools: ToolDef[] = [
   {
     name: "create_buy_mission",
     description:
-      "Create a monitored buying mission with a hard budget, location radius, autonomy limits, bilateral contact consent, and expiration.",
+      "Create a monitored buying mission with a hard budget, location radius, optional smartphone passport requirements, autonomy limits, bilateral contact consent, and expiration.",
     scope: "write",
     requiresConfirmation: true,
     annotations: { readOnlyHint: false, untrustedContentHint: false },
@@ -176,6 +200,7 @@ export const missionTools: ToolDef[] = [
               hard_budget_max: args.hard_budget_max,
               currency,
               requirements: args.requirements,
+              ...(args.smartphone ? { smartphone: normalizeSmartphoneMissionCriteria(args.smartphone) } : {}),
               autonomous_actions: args.autonomous_actions,
               contact_reveal: args.contact_reveal,
               expires_at: args.expires_at,
@@ -199,6 +224,11 @@ export const missionTools: ToolDef[] = [
       if (!parsed.success) return unknownMissionOutcome(result.meta.request_id || ctx.requestId);
       const { watchlist_id: missionId, criteria } = parsed.data;
       const mission = criteria.mission;
+      const requestedSmartphone = args.smartphone ? normalizeSmartphoneMissionCriteria(args.smartphone) : null;
+      const receivedSmartphone = mission.smartphone ? normalizeSmartphoneMissionCriteria(mission.smartphone) : null;
+      if (JSON.stringify(requestedSmartphone) !== JSON.stringify(receivedSmartphone)) {
+        return unknownMissionOutcome(result.meta.request_id || ctx.requestId);
+      }
       if (mission.currency !== currency) return unknownMissionOutcome(result.meta.request_id || ctx.requestId);
       const view: BuyMissionView = {
         ...mission,

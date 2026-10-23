@@ -28,11 +28,13 @@ export default async function handler(req: any, res: any) {
     const limit = parseOptionalInt(req.query?.limit);
     const dealsLimit = parseOptionalInt(req.query?.deals_limit);
     const listingsLimit = parseOptionalInt(req.query?.listings_limit);
+    const transitionLimit = parseOptionalInt(req.query?.transition_limit);
 
     const result = await withQueueDrainLease("watchlist-backfill-queue", () => runWatchlistBackfillQueue({
       ...(limit ? { limit } : {}),
       ...(dealsLimit ? { dealsLimit } : {}),
-      ...(listingsLimit ? { listingsLimit } : {})
+      ...(listingsLimit ? { listingsLimit } : {}),
+      ...(transitionLimit ? { transitionLimit } : {})
     }));
 
     res.status(200).json(result);
