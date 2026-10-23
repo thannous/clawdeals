@@ -28,12 +28,16 @@ export type PassportMissionFixture = {
   entries: Record<PhoneKey, Entry>;
   missionWrites: { idempotencyKey: string; expectedOwnerId: string; body: string }[];
   api: (role: Role | "anonymous", method: string, path: string, body?: unknown) => Promise<Response>;
-  drain: (queue: "watchlist-backfill-queue" | "watchlist-match-queue") => Promise<Response>;
+  drain: (queue: "watchlist-backfill-queue" | "watchlist-match-queue", options?: { listings_limit?: number; transition_limit?: number }) => Promise<Response>;
+  patchMission: (id: string, patch: { market_code?: "FR" | "ES"; criteria?: unknown }) => Promise<Response>;
+  stateRows: (id: string) => Promise<{ listing_id: string; compatible: boolean; updated_at: string }[]>;
+  backfillRow: (id: string) => Promise<any | null>;
   savePassport: (key: PhoneKey, health: number, note?: string) => Promise<Response>;
   changePrice: (key: PhoneKey, amount: number) => Promise<Response>;
   setMissionState: (id: string, state: "ACTIVE" | "PAUSED" | "EXPIRED") => Promise<void>;
   hideListing: (key: PhoneKey) => Promise<void>;
   setListingCategory: (key: PhoneKey, category: string) => Promise<void>;
+  placeListingLast: (key: PhoneKey) => Promise<void>;
   missionRow: (id: string) => Promise<any>;
   alertRows: (id: string) => Promise<any[]>;
   externalDeliveries: () => Promise<number>;
@@ -73,6 +77,7 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
     const cookies = {} as Record<Role, string>;
     const sellerAgentId = randomUUID();
     const sellerKey = generateApiKey();
+    const agentKeys = new Map([[sellerAgentId, sellerKey]]);
     const entries = Object.fromEntries(Object.entries(definitions).map(([name, value]) => [name, {
       ...value, id: randomUUID(), title: `${query} iPhone 13 ${name}`,
     }])) as Record<PhoneKey, Entry>;
@@ -81,6 +86,7 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
     const requests: { role: string; method: string; path: string; status: number }[] = [];
     const refused: { method: string; origin: string; path: string }[] = [];
     const missionWrites: PassportMissionFixture["missionWrites"] = [];
+    const backfillBatches: { requestedTransitionLimit: number | null; transitions: number | null; completed: number | null; deferred: number | null }[] = [];
     const cleanupErrors: string[] = [];
     const remaining: Record<string, number | null> = {};
     let primary: unknown;
@@ -99,12 +105,23 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
       return route.abort();
     });
     async function api(role: Role | "anonymous", method: string, path: string, body?: unknown): Promise<Response> {
-      if (!path.startsWith("/api/v1/owner/missions") && !listingIds.some(listingId => path === `/api/v1/listings/${listingId}` || path === `/api/v1/owner/listings/${listingId}/passport`)) throw new Error("Fixture request outside owned mission/listing routes.");
+      const buyerMissionPatch = role === "buyer" && method === "PATCH" && [...missionIds].some(missionId => path === `/api/v1/watchlists/${missionId}`);
+      if (!buyerMissionPatch && !path.startsWith("/api/v1/owner/missions") && !listingIds.some(listingId => path === `/api/v1/listings/${listingId}` || path === `/api/v1/owner/listings/${listingId}/passport`)) throw new Error("Fixture request outside owned mission/listing routes.");
       const sellerPriceWrite = role === "seller" && method === "PATCH" && listingIds.some(listingId => path === `/api/v1/listings/${listingId}`);
+      let agentKey = sellerPriceWrite ? sellerKey.apiKey : null;
+      if (buyerMissionPatch) {
+        const row = await missionRow(path.split("/").pop()!);
+        if (!agentKeys.has(row.agent_id)) {
+          const generated = generateApiKey();
+          agentKeys.set(row.agent_id, generated);
+          checked((await db.from("api_keys").insert({ agent_id: row.agent_id, key_prefix: generated.prefix, key_hash: await hashApiKeySecret(generated.secret), key_state: "ACTIVE", scope: "full" })).error, "Seed local mission agent key");
+        }
+        agentKey = agentKeys.get(row.agent_id)!.apiKey;
+      }
       const response = await fetch(new URL(path, origin), {
         method, redirect: "error", signal: AbortSignal.timeout(20_000), headers: {
           Origin: origin, "Content-Type": "application/json", "User-Agent": "ClawDeals-local-mission-QA",
-          ...(sellerPriceWrite ? { Authorization: `Bearer ${sellerKey.apiKey}` } : role === "anonymous" ? {} : { Cookie: cookies[role], "X-Expected-Owner-Id": owners[role] }),
+          ...(agentKey ? { Authorization: `Bearer ${agentKey}` } : role === "anonymous" ? {} : { Cookie: cookies[role], "X-Expected-Owner-Id": owners[role] }),
           ...(["POST", "PATCH", "PUT", "DELETE"].includes(method) ? { "Idempotency-Key": randomUUID() } : {}),
         }, ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
@@ -114,7 +131,7 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
       return { status: response.status, body: parsed };
     }
     async function missionRow(missionId: string) {
-      const row = await db.from("watchlists").select("watchlist_id,agent_id,criteria,active,agents!inner(owner_id)").eq("watchlist_id", missionId).single();
+      const row = await db.from("watchlists").select("watchlist_id,agent_id,market_code,criteria,active,agents!inner(owner_id)").eq("watchlist_id", missionId).single();
       checked(row.error, "Read own fixture mission");
       if ((row.data?.agents as unknown as { owner_id: string })?.owner_id !== owners.buyer) throw new Error("Mission does not belong to fixture buyer.");
       missionIds.add(missionId);
@@ -161,11 +178,36 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
         })).error, "Seed validated local passport");
       }
       await provide({ id, query, email: `buyer-${id}@example.test`, db, owners, entries, missionWrites, api, missionRow,
-        drain: async queue => {
-          const response = await fetch(`${origin}/api/internal/cron/${queue}?limit=100`, {
+        patchMission: async (missionId, patch) => {
+          await missionRow(missionId);
+          return api("buyer", "PATCH", `/api/v1/watchlists/${missionId}`, patch);
+        },
+        stateRows: async missionId => {
+          await missionRow(missionId);
+          const result = await db.from("smartphone_mission_match_state").select("listing_id,compatible,updated_at").eq("watchlist_id", missionId).order("listing_id");
+          checked(result.error, "Read own mission compatibility states");
+          return result.data || [];
+        },
+        backfillRow: async missionId => {
+          await missionRow(missionId);
+          const result = await db.from("watchlist_backfill_queue").select("*").eq("watchlist_id", missionId).maybeSingle();
+          checked(result.error, "Read own mission backfill progress");
+          return result.data;
+        },
+        drain: async (queue, options = {}) => {
+          const params = new URLSearchParams({ limit: "100" });
+          if (options.listings_limit !== undefined) params.set("listings_limit", String(options.listings_limit));
+          if (options.transition_limit !== undefined) params.set("transition_limit", String(options.transition_limit));
+          const response = await fetch(`${origin}/api/internal/cron/${queue}?${params}`, {
             method: "POST", redirect: "error", signal: AbortSignal.timeout(30_000), headers: { Authorization: `Bearer ${cron}` },
           });
           const body = await response.json();
+          if (queue === "watchlist-backfill-queue") backfillBatches.push({
+            requestedTransitionLimit: options.transition_limit ?? null,
+            transitions: typeof body.transition_count === "number" ? body.transition_count : null,
+            completed: typeof body.completed_count === "number" ? body.completed_count : null,
+            deferred: typeof body.deferred_count === "number" ? body.deferred_count : null,
+          });
           requests.push({ role: "local queue", method: "POST", path: `/api/internal/cron/${queue}`, status: response.status });
           return { status: response.status, body };
         },
@@ -184,6 +226,7 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
           const criteria = { ...row.criteria, mission: { ...row.criteria.mission, expires_at: new Date(Date.now() + (state === "EXPIRED" ? -3_600_000 : 86_400_000)).toISOString() } };
           checked((await db.from("watchlists").update({ active: state !== "PAUSED", criteria }).eq("watchlist_id", missionId).eq("agent_id", row.agent_id)).error, "Change own mission fixture state");
         },
+        placeListingLast: async phone => checked((await db.from("listings").update({ created_at: new Date(Date.now() - 10 * 86_400_000).toISOString() }).eq("listing_id", entries[phone].id).eq("owner_id", owners.seller)).error, "Place own fixture at end of backfill"),
         setListingCategory: async (phone, category) => checked((await db.from("listings").update({ category }).eq("listing_id", entries[phone].id).eq("owner_id", owners.seller)).error, "Set own fixture listing category"),
         hideListing: async phone => checked((await db.from("moderation_states").upsert({ entity_type: "listing", entity_id: entries[phone].id, hidden: true }, { onConflict: "entity_type,entity_id" })).error, "Hide own fixture phone"),
         alertRows: async missionId => {
@@ -222,7 +265,7 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
       await remove("fixture listing queue", db.from("watchlist_match_queue").delete().eq("entity_type", "listing").in("entity_id", listingIds));
       await remove("fixture moderation", db.from("moderation_states").delete().eq("entity_type", "listing").in("entity_id", listingIds));
       await remove("fixture listings", db.from("listings").delete().in("listing_id", listingIds));
-      await remove("fixture seller key", db.from("api_keys").delete().eq("agent_id", sellerAgentId));
+      await remove("fixture seller key", db.from("api_keys").delete().in("agent_id", [...agentKeys.keys()]));
       if (ownerIds.length) {
         await remove("fixture owner sessions", db.from("owner_sessions").delete().in("owner_id", ownerIds));
         await remove("fixture agents and missions", db.from("agents").delete().in("owner_id", ownerIds));
@@ -233,13 +276,13 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
       await remove("fixture queue after delete triggers", db.from("watchlist_match_queue").delete().eq("entity_type", "listing").in("entity_id", listingIds));
       try {
         const redis = getRedis();
-        const keys = [`auth:api_key_prefix:${sellerKey.prefix}`, `sse:stream:agent:v1:${sellerAgentId}`];
+        const keys = [...agentKeys].flatMap(([agentId, generated]) => [`auth:api_key_prefix:${generated.prefix}`, `sse:stream:agent:v1:${agentId}`]);
         await redis.del(...keys);
         remaining.redisOwnedKeys = await redis.exists(...keys);
         if (remaining.redisOwnedKeys !== 0) cleanupErrors.push("Residual fixture Redis keys");
       } catch { remaining.redisOwnedKeys = null; cleanupErrors.push("Delete/verify fixture Redis keys"); }
       for (const [table, column, values] of [
-        ["api_keys", "agent_id", [sellerAgentId]],
+        ["api_keys", "agent_id", [...agentKeys.keys()]],
         ["owners", "owner_id", ownerIds], ["agents", "owner_id", ownerIds], ["owner_sessions", "owner_id", ownerIds], ["owner_auth_links", "owner_id", ownerIds],
         ["listings", "listing_id", listingIds], ["smartphone_passports", "listing_id", listingIds], ["moderation_states", "entity_id", listingIds],
         ["watchlist_match_queue", "entity_id", listingIds], ["watchlists", "watchlist_id", [...missionIds]], ["watchlist_matches", "watchlist_id", [...missionIds]],
@@ -259,8 +302,8 @@ export const test = base.extend<{ passportMission: PassportMissionFixture }>({
       const directory = join(process.env.PARITY_OUTPUT || ".e2e", "passport-mission-fixtures");
       mkdirSync(directory, { recursive: true });
       writeFileSync(join(directory, `${id}.json`), JSON.stringify({
-        fixtureId: id, appOrigin: origin, backendOrigin: backend, redisOrigin, sellerAgentId, userIds, ownerIds, listingIds, missionIds: [...missionIds],
-        requests, refused, remaining, cleanupErrors, fixtureFailed: failed, missionWriteCount: missionWrites.length,
+        fixtureId: id, appOrigin: origin, backendOrigin: backend, redisOrigin, sellerAgentId, agentKeyOwnerIds: [...agentKeys.keys()], userIds, ownerIds, listingIds, missionIds: [...missionIds],
+        requests, refused, backfillBatches, remaining, cleanupErrors, fixtureFailed: failed, missionWriteCount: missionWrites.length,
         realServices: ["app API", "Supabase Auth", "owner cookie bridge", "native Postgres", "real local matching queues"],
         redisFixture: process.env.TESTERARMY_REDIS_FIXTURE || "not qualified", credentialsRecorded: false, networkTrace: false,
         externalDeliveryInvoked: false, apiResponseInterception: false,

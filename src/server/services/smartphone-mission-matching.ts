@@ -9,15 +9,18 @@ import { mapPublicListingRow } from "./public-listings";
 const FIELDS = "listing_id,title,description,category,condition,price_amount,currency,market_code,geo_lat,geo_lng,status,delivery_method,created_at,photos,cover_image_index";
 export type SmartphoneMissionSnapshot = { listing: any; passport: SmartphoneMissionPassport | null; revision: number; visible: boolean };
 function unavailable(): never { throw Object.assign(new Error("Smartphone mission evaluation unavailable"), { status: 503, code: "SERVICE_UNAVAILABLE" }); }
-export async function loadSmartphoneMissionSnapshots(ids: string[], client = getSupabaseServiceClient()): Promise<Map<string, SmartphoneMissionSnapshot>> {
+export async function loadSmartphoneMissionSnapshots(ids: string[], client = getSupabaseServiceClient(), signal?: AbortSignal): Promise<Map<string, SmartphoneMissionSnapshot>> {
   const unique = [...new Set(ids)];
   if (!unique.length) return new Map();
-  const passports = await client.from("smartphone_passports").select("listing_id,revision,model,battery_health_percent,checks").in("listing_id", unique);
+  const passportsQuery = client.from("smartphone_passports").select("listing_id,revision,model,battery_health_percent,checks").in("listing_id", unique);
+  const passports = await (signal ? passportsQuery.abortSignal(signal) : passportsQuery);
   if (passports.error || !Array.isArray(passports.data)) unavailable();
   // Read public visibility only after all passport I/O has finished.
-  const listings = await client.from("listings").select(FIELDS).in("listing_id", unique);
+  const listingsQuery = client.from("listings").select(FIELDS).in("listing_id", unique);
+  const listings = await (signal ? listingsQuery.abortSignal(signal) : listingsQuery);
   if (listings.error || !Array.isArray(listings.data)) unavailable();
-  const moderation = await client.from("moderation_states").select("entity_id").eq("entity_type", "listing").in("entity_id", unique).eq("hidden", true);
+  const moderationQuery = client.from("moderation_states").select("entity_id").eq("entity_type", "listing").in("entity_id", unique).eq("hidden", true);
+  const moderation = await (signal ? moderationQuery.abortSignal(signal) : moderationQuery);
   if (moderation.error || !Array.isArray(moderation.data)) unavailable();
   const passportRows = new Map<string, any>((passports.data || []).map((row: any) => [row.listing_id, row]));
   const hidden = new Set((moderation.data || []).map((row: any) => row.entity_id));
@@ -40,14 +43,15 @@ export function evaluateSmartphoneMissionSnapshot(snapshot: SmartphoneMissionSna
   const reason: WatchlistMatchReason = { ...base.reason, query_ok: queryMatched, smartphone };
   return { matched: snapshot.visible && phone && queryMatched && base.matched && smartphone.status === "compatible", baseMatched: snapshot.visible && phone && queryMatched && base.matched, smartphone, reason };
 }
-export async function recordSmartphoneMissionMatch({ snapshot, watchlist, client = getSupabaseServiceClient() }: { snapshot: SmartphoneMissionSnapshot; watchlist: any; client?: any }) {
+export async function recordSmartphoneMissionMatch({ snapshot, watchlist, client = getSupabaseServiceClient(), signal }: { snapshot: SmartphoneMissionSnapshot; watchlist: any; client?: any; signal?: AbortSignal }) {
   const evaluation = evaluateSmartphoneMissionSnapshot(snapshot, watchlist);
-  const { data, error } = await client.rpc("record_smartphone_mission_match_v1", {
+  const request = client.rpc("record_smartphone_mission_match_v1", {
     p_watchlist_id: watchlist.watchlist_id, p_listing_id: snapshot.listing.listing_id,
     p_listing_snapshot: snapshot.listing, p_watchlist_updated_at: watchlist.updated_at,
     p_criteria: watchlist.criteria, p_passport_revision: snapshot.revision,
     p_compatible: evaluation.matched, p_reason: evaluation.reason
   });
+  const { data, error } = await (signal ? request.abortSignal(signal) : request);
   if (error || !data || data.stale) unavailable();
   return { matched: data.matched === true, alert: data.alert || null };
 }

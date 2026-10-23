@@ -246,3 +246,130 @@ test("passport mission connected: category filters agree across owner results, U
   });
   expect(await fixture.externalDeliveries()).toBe(0);
 });
+
+
+test("passport mission connected: a foreign-market candidate creates no compatibility state or alert", { trace: "off", video: "off" }, async context => {
+  const { screen, passportMission: fixture } = context;
+  const response = await fixture.api("buyer", "POST", "/api/v1/owner/missions", { ...body(fixture), market_code: "ES" });
+  expect(response.status).toBe(201);
+  const foreignId = response.body.watchlist_id;
+  expect((await fixture.missionRow(foreignId)).market_code).toBe("ES");
+  await drain(fixture, "watchlist-match-queue");
+  expect((await fixture.savePassport("compatible", 94)).status).toBe(200);
+  await drain(fixture, "watchlist-match-queue");
+  const foreign = await matches(fixture, foreignId);
+  const foreignStates = await fixture.stateRows(foreignId);
+  await login(context, `/fr/my/missions/${foreignId}`);
+  await expect(screen.getByTestId("mission-no-matches")).toBeVisible();
+  expect({ items: foreign.items, alerts: foreign.alerts, states: foreignStates }).toEqual({ items: [], alerts: [], states: [] });
+  // The same event remains eligible for an owned mission in the listing's market.
+  const domesticId = await createMission(fixture);
+  expect((await fixture.savePassport("compatible", 95)).status).toBe(200);
+  await drain(fixture, "watchlist-match-queue");
+  expect((await fixture.stateRows(domesticId)).some(row => row.listing_id === fixture.entries.compatible.id && row.compatible)).toBe(true);
+  expect((await fixture.alertRows(domesticId)).map(row => row.entity_id)).toContain(fixture.entries.compatible.id);
+  expect(await fixture.stateRows(foreignId)).toEqual([]);
+});
+
+test("passport mission connected: market-only edits invalidate immediately and returning home emits a fresh alert", { trace: "off", video: "off" }, async context => {
+  const { browser, screen, passportMission: fixture } = context;
+  const id = await createMission(fixture);
+  await drain(fixture, "watchlist-backfill-queue");
+  const initial = (await fixture.alertRows(id)).find(row => row.entity_id === fixture.entries.compatible.id);
+  expect(initial).toBeTruthy();
+  await login(context, `/fr/my/missions/${id}`);
+  await expect(screen.getByTestId(`mission-alert-${fixture.entries.compatible.id}`)).toBeVisible();
+  expect((await fixture.patchMission(id, { market_code: "ES" })).status).toBe(200);
+  // Inspect before a worker runs: changing only the market must invalidate old evidence.
+  expect((await fixture.missionRow(id)).market_code).toBe("ES");
+  expect(await fixture.alertRows(id)).toEqual([]);
+  expect((await fixture.stateRows(id)).every(row => !row.compatible)).toBe(true);
+  const abroad = await matches(fixture, id);
+  expect(abroad).toMatchObject({ items: [], alerts: [] });
+  await browser.reload();
+  await expect(screen.getByTestId("mission-no-matches")).toBeVisible();
+  await expect(screen.getByTestId(/^mission-alert-/)).toHaveCount(0);
+  expect((await fixture.patchMission(id, { market_code: "FR" })).status).toBe(200);
+  expect(await fixture.alertRows(id)).toEqual([]);
+  await drain(fixture, "watchlist-backfill-queue");
+  const renewed = (await fixture.alertRows(id)).find(row => row.entity_id === fixture.entries.compatible.id);
+  expect(renewed).toBeTruthy();
+  expect(Date.parse(renewed.matched_at)).toBeGreaterThan(Date.parse(initial.matched_at));
+  await browser.reload();
+  await expect(screen.getByTestId(`mission-alert-${fixture.entries.compatible.id}`)).toBeVisible();
+  expect(await fixture.externalDeliveries()).toBe(0);
+});
+
+
+test("passport mission connected: bounded backfill shares its budget fairly and resets progress on a new enqueue", { trace: "off", video: "off" }, async context => {
+  const { screen, passportMission: fixture } = context;
+  await fixture.placeListingLast("compatible");
+  const ids = [await createMission(fixture), await createMission(fixture)];
+  const first = await fixture.drain("watchlist-backfill-queue", { transition_limit: 2 });
+  expect(first.status).toBe(200);
+  expect(first.body.transition_count).toBe(2);
+  const initial = await Promise.all(ids.map(async id => ({ id, row: await fixture.backfillRow(id) })));
+  expect(initial.every(entry => entry.row !== null)).toBe(true);
+  expect(initial.reduce((sum, entry) => sum + entry.row.listings_scanned, 0)).toBe(2);
+  const initialStates = await Promise.all(ids.map(id => fixture.stateRows(id)));
+  let persistedStates = initialStates.reduce((sum, rows) => sum + rows.length, 0);
+  expect(persistedStates).toBeLessThanOrEqual(2);
+  const advanced = initial.find(entry => entry.row.listings_scanned > 0)!;
+  expect(advanced.row.listing_cursor_id).toBeTruthy();
+  for (const id of ids) expect((await fixture.alertRows(id)).some(row => row.entity_id === fixture.entries.compatible.id)).toBe(false);
+  // A newer enqueue must restart from the current brief, not inherit an old cursor.
+  expect((await fixture.patchMission(advanced.id, { criteria: (await fixture.missionRow(advanced.id)).criteria })).status).toBe(200);
+  const reset = await fixture.backfillRow(advanced.id);
+  expect(reset.updated_at).not.toBe(advanced.row.updated_at);
+  expect(reset.listings_scanned).toBe(0);
+  expect(reset.listing_cursor_id).toBeNull();
+  const generations = new Map(initial.map(entry => [entry.id, entry.id === advanced.id ? reset.updated_at : entry.row.updated_at]));
+  const previousScanned = new Map(initial.map(entry => [entry.id, entry.id === advanced.id ? 0 : entry.row.listings_scanned]));
+  const pending = new Set(ids);
+  const progressed = new Set<string>();
+  let totalTransitions = 0;
+  let drains = 0;
+  while (pending.size && drains < 16) {
+    const pendingBefore = pending.size;
+    const batch = await fixture.drain("watchlist-backfill-queue", { transition_limit: 2 });
+    expect(batch.status).toBe(200);
+    // The limit applies to the whole invocation, not once per mission.
+    expect(batch.body.transition_count).toBeGreaterThanOrEqual(0);
+    expect(batch.body.transition_count + batch.body.completed_count).toBeGreaterThan(0);
+    expect(batch.body.transition_count).toBeLessThanOrEqual(2);
+    totalTransitions += batch.body.transition_count;
+    const states = await Promise.all(ids.map(id => fixture.stateRows(id)));
+    const nextPersistedStates = states.reduce((sum, rows) => sum + rows.length, 0);
+    expect(nextPersistedStates - persistedStates).toBeLessThanOrEqual(2);
+    persistedStates = nextPersistedStates;
+    drains += 1;
+    for (const id of [...pending]) {
+      const checkpoint = await fixture.backfillRow(id);
+      if (!checkpoint) {
+        pending.delete(id);
+        progressed.add(id);
+      } else {
+        expect(checkpoint.updated_at).toBe(generations.get(id));
+        expect(checkpoint.listings_scanned).toBeGreaterThanOrEqual(previousScanned.get(id)!);
+        if (checkpoint.listings_scanned > previousScanned.get(id)!) progressed.add(id);
+        previousScanned.set(id, checkpoint.listings_scanned);
+      }
+    }
+    // An empty final page may complete a queue without another transition.
+    if (batch.body.transition_count === 0) expect(pending.size).toBeLessThan(pendingBefore);
+    if (drains === 2) expect(progressed.size).toBe(2);
+  }
+  expect(pending.size).toBe(0);
+  expect(drains).toBeGreaterThan(1);
+  expect(totalTransitions).toBeGreaterThan(2);
+  for (const id of ids) {
+    const alerts = await fixture.alertRows(id);
+    expect(alerts.map(row => row.entity_id).sort()).toEqual([fixture.entries.compatible.id, fixture.entries.peer.id].sort());
+    await drain(fixture, "watchlist-backfill-queue");
+    expect(await fixture.alertRows(id)).toEqual(alerts);
+  }
+  await login(context, `/fr/my/missions/${ids[0]}`);
+  await expect(screen.getByTestId(`mission-alert-${fixture.entries.compatible.id}`)).toBeVisible();
+  await expect(screen.getByTestId(`mission-alert-${fixture.entries.peer.id}`)).toBeVisible();
+  expect(await fixture.externalDeliveries()).toBe(0);
+});

@@ -152,7 +152,7 @@ async function fetchCandidateWatchlistsForListing({ listing, client }) {
     queries.push(baseQuery().contains("criteria", { kind: "listing_follow", listing_id: listing.listing_id }).limit(5000));
   }
 
-  queries.push(client.from("watchlists").select(select).eq("active", true).is("deleted_at", null).not("criteria->mission->smartphone", "is", null).limit(5000));
+  queries.push(baseQuery().not("criteria->mission->smartphone", "is", null).limit(5000));
 
   const results = await Promise.all(
     queries.map(async (q) => {

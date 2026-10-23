@@ -157,7 +157,11 @@ export async function listOwnerBuyMissionMatches({ ownerId, missionId, cursor: r
   // slower alert lookup cannot expose an item hidden in the meantime.
   const finalSnapshots = await loadSmartphoneMissionSnapshots([...items.map(item => item.listing_id), ...alerts.map(alert => alert.listing_id)]);
   const currentMission = await getOwnerBuyMission({ ownerId, missionId });
-  if (!currentMission || currentMission.status !== "ACTIVE" || JSON.stringify(currentMission.criteria) !== JSON.stringify(row.criteria)) return { items: [], next_cursor: null, status: currentMission?.status || "PAUSED", alerts: [] };
+  if (!currentMission || currentMission.status !== "ACTIVE" ||
+    currentMission.market_code !== row.market_code || currentMission.currency !== row.currency ||
+    currentMission.updated_at !== row.updated_at || JSON.stringify(currentMission.criteria) !== JSON.stringify(row.criteria)) {
+    return { items: [], next_cursor: null, status: currentMission?.status || "PAUSED", alerts: [] };
+  }
   const currentItems = items.flatMap(item => {
     const snapshot = finalSnapshots.get(item.listing_id);
     if (!snapshot) return [];

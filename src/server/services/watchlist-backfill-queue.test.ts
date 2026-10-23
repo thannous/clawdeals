@@ -9,6 +9,7 @@ import { runWatchlistBackfillQueue } from "./watchlist-backfill-queue";
 
 function createQueueDeleteChain(filters: Array<{ column: string; value: any }>) {
   const chain: any = {
+    abortSignal: vi.fn(() => chain),
     eq: vi.fn((column: string, value: any) => {
       filters.push({ column, value });
       return chain;
@@ -43,6 +44,7 @@ describe("runWatchlistBackfillQueue", () => {
 
     let queueTable: any;
     queueTable = {
+      abortSignal: vi.fn(() => queueTable),
       select: vi.fn(() => queueTable),
       order: vi.fn(() => queueTable),
       limit: vi.fn(async () => ({
@@ -54,6 +56,7 @@ describe("runWatchlistBackfillQueue", () => {
 
     let dealsTable: any;
     dealsTable = {
+      abortSignal: vi.fn(() => dealsTable),
       select: vi.fn(() => dealsTable),
       in: vi.fn(() => dealsTable),
       order: vi.fn(() => dealsTable),
@@ -65,6 +68,7 @@ describe("runWatchlistBackfillQueue", () => {
 
     let listingsTable: any;
     listingsTable = {
+      abortSignal: vi.fn(() => listingsTable),
       select: vi.fn(() => listingsTable),
       eq: vi.fn(() => listingsTable),
       order: vi.fn(() => listingsTable),
@@ -73,6 +77,7 @@ describe("runWatchlistBackfillQueue", () => {
 
     let watchlistsTable: any;
     watchlistsTable = {
+      abortSignal: vi.fn(() => watchlistsTable),
       select: vi.fn(() => watchlistsTable),
       eq: vi.fn(() => watchlistsTable),
       is: vi.fn(() => watchlistsTable),
@@ -99,12 +104,14 @@ describe("runWatchlistBackfillQueue", () => {
     const matchesTable: any = {
       upsert: vi.fn((rows: any[]) => {
         upsertedRows.push(...rows);
-        return {
+        const result: any = {
+          abortSignal: vi.fn(() => result),
           select: vi.fn(async () => ({
             data: rows.map((_, index) => ({ watchlist_match_id: `match-${index}` })),
             error: null
           }))
         };
+        return result;
       })
     };
 
@@ -164,6 +171,7 @@ describe("runWatchlistBackfillQueue", () => {
 
     let queueTable: any;
     queueTable = {
+      abortSignal: vi.fn(() => queueTable),
       select: vi.fn(() => queueTable),
       order: vi.fn(() => queueTable),
       limit: vi.fn(async () => ({
@@ -207,6 +215,7 @@ describe("runWatchlistBackfillQueue", () => {
     ];
     let dealsTable: any;
     dealsTable = {
+      abortSignal: vi.fn(() => dealsTable),
       select: vi.fn(() => dealsTable),
       in: vi.fn(() => dealsTable),
       order: vi.fn(() => dealsTable),
@@ -241,6 +250,7 @@ describe("runWatchlistBackfillQueue", () => {
     ];
     let listingsTable: any;
     listingsTable = {
+      abortSignal: vi.fn(() => listingsTable),
       select: vi.fn(() => listingsTable),
       eq: vi.fn(() => listingsTable),
       order: vi.fn(() => listingsTable),
@@ -249,6 +259,7 @@ describe("runWatchlistBackfillQueue", () => {
 
     let watchlistsTable: any;
     watchlistsTable = {
+      abortSignal: vi.fn(() => watchlistsTable),
       select: vi.fn(() => watchlistsTable),
       eq: vi.fn(() => watchlistsTable),
       is: vi.fn(() => watchlistsTable),
@@ -275,12 +286,14 @@ describe("runWatchlistBackfillQueue", () => {
     const matchesTable: any = {
       upsert: vi.fn((rows: any[]) => {
         upsertedRows.push(...rows);
-        return {
+        const result: any = {
+          abortSignal: vi.fn(() => result),
           select: vi.fn(async () => ({
             data: rows.map((_, index) => ({ watchlist_match_id: `match-${index}` })),
             error: null
           }))
         };
+        return result;
       })
     };
 

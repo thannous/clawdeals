@@ -80,7 +80,7 @@ The configuration loads `.env.testerarmy.local`, then `.env.local`, without over
 
 ## Smartphone passport missions against a local backend
 
-`TESTERARMY_PASSPORT_MISSIONS_LIVE=1` selects the five connected mission scenarios
+`TESTERARMY_PASSPORT_MISSIONS_LIVE=1` selects the eight connected mission scenarios
 on desktop and mobile. This selection requires loopback app and Supabase URLs;
 it creates synthetic local Auth users and exercises real owner sessions, APIs,
 PostgreSQL and matching queues. The default selection excludes these fixtures.

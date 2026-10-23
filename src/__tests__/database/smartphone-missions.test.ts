@@ -8,7 +8,7 @@ const migration = readFileSync(new URL("../../../supabase/migrations/20261022192
 const L = "20000000-0000-4000-8000-000000000001";
 const W = "30000000-0000-4000-8000-000000000001";
 const A = "40000000-0000-4000-8000-000000000001";
-const criteria = () => ({ mission: { kind: "BUY", expires_at: new Date(Date.now() + 86400000).toISOString(), smartphone: { version: 1, model: null, battery_health_min: 90, required_checks: [] } }, notification_mode: "in_app" });
+const criteria = () => ({ mission: { kind: "BUY", currency: "EUR", expires_at: new Date(Date.now() + 86400000).toISOString(), smartphone: { version: 1, model: null, battery_health_min: 90, required_checks: [] } }, notification_mode: "in_app" });
 
 describe("smartphone mission transitions on PostgreSQL", () => {
   let db: PGlite;
@@ -18,7 +18,7 @@ describe("smartphone mission transitions on PostgreSQL", () => {
       create role anon; create role authenticated; create role service_role bypassrls;
       create table agents(id uuid primary key, suspended_at timestamptz);
       create table listings(listing_id uuid primary key, status text default 'LIVE', title text default 'Phone', description text, category text, condition text, price_amount integer default 400, currency text default 'EUR', market_code text default 'FR', geo_lat double precision, geo_lng double precision, delivery_method text, created_at timestamptz default now());
-      create table watchlists(watchlist_id uuid primary key, agent_id uuid references agents, criteria jsonb not null, updated_at timestamptz default now(), active boolean default true, deleted_at timestamptz);
+      create table watchlists(watchlist_id uuid primary key, agent_id uuid references agents, criteria jsonb not null, market_code text default 'FR', currency text default 'EUR', updated_at timestamptz default now(), active boolean default true, deleted_at timestamptz);
       create table smartphone_passports(listing_id uuid primary key references listings on delete cascade, revision integer, model text, battery_health_percent integer, checks jsonb);
       create table moderation_states(entity_type text, entity_id uuid, hidden boolean, primary key(entity_type,entity_id));
       create table watchlist_matches(watchlist_match_id uuid primary key default gen_random_uuid(),watchlist_id uuid references watchlists on delete cascade,agent_id uuid,entity_type text,entity_id uuid,matched_at timestamptz,reason jsonb,delivered_at timestamptz, unique(watchlist_id,entity_type,entity_id));
@@ -27,6 +27,7 @@ describe("smartphone mission transitions on PostgreSQL", () => {
       grant select,insert,update,delete on all tables in schema public to service_role;
     `);
     await db.exec(migration);
+    await db.exec(readFileSync(new URL("../../../supabase/migrations/20261023152651_smartphone_mission_market_invalidation.sql", import.meta.url), "utf8"));
   }, 30000);
   afterAll(async () => { await db?.close(); });
   beforeEach(async () => {
@@ -95,6 +96,54 @@ describe("smartphone mission transitions on PostgreSQL", () => {
   it.each(["expired", "suspended"])("refuses %s missions at the SQL boundary", async state => {
     if (state === "expired") await db.query("update watchlists set criteria=jsonb_set(criteria,'{mission,expires_at}',to_jsonb('2000-01-01T00:00:00Z'::text)) where watchlist_id=$1",[W]);
     else await db.query("update agents set suspended_at=now() where id=$1",[A]);
+    expect((await record()).matched).toBe(false);
+    expect((await db.query("select * from watchlist_matches")).rows).toEqual([]);
+  });
+  it.each(["market_code", "currency"])("invalidates a moved listing's previous market before candidate filtering (%s)", async field => {
+    await record();
+    const stale = await snapshot();
+    await db.query(`update listings set ${field}=$1 where listing_id=$2`, [field === "market_code" ? "ES" : "GBP", L]);
+    expect((await db.query<any>("select compatible from smartphone_mission_match_state")).rows[0].compatible).toBe(false);
+    expect((await db.query("select * from watchlist_matches")).rows).toEqual([]);
+    expect(await record(true, stale)).toEqual({ stale: true });
+    expect((await record()).matched).toBe(false);
+  });
+  it.each(["market_code", "currency"])("invalidates mission %s changes and refuses same-tick ABA workers", async field => {
+    // Explicit future time makes same-clock-tick/backwards-clock safety deterministic.
+    await db.query("update watchlists set updated_at='2100-01-01T00:00:00Z' where watchlist_id=$1", [W]);
+    const first = await record();
+    const stale = await snapshot();
+    await db.query(`update watchlists set ${field}=$1, updated_at=$2 where watchlist_id=$3`, [field === "market_code" ? "ES" : "GBP", stale.watchlist.updated_at, W]);
+    expect((await db.query<any>("select compatible from smartphone_mission_match_state")).rows[0].compatible).toBe(false);
+    expect((await db.query("select * from watchlist_matches")).rows).toEqual([]);
+    expect((await db.query("select * from watchlist_backfill_queue where watchlist_id=$1", [W])).rows).toHaveLength(1);
+    expect(await record(true, stale)).toEqual({ stale: true });
+    await db.query(`update watchlists set ${field}=$1, updated_at=$2 where watchlist_id=$3`, [field === "market_code" ? "FR" : "EUR", stale.watchlist.updated_at, W]);
+    expect(await record(true, stale)).toEqual({ stale: true });
+    const fresh = await record();
+    expect(fresh.matched).toBe(true);
+    expect(fresh.alert.matched_at > first.alert.matched_at).toBe(true);
+    expect((await record()).alert).toBeNull();
+  });
+  it("records market and currency criteria in the transition baseline", async () => {
+    await record(false);
+    await db.query("update watchlists set market_code='ES' where watchlist_id=$1", [W]);
+    await db.query("update listings set market_code='ES' where listing_id=$1", [L]);
+    const result = await record();
+    expect(result.alert.reason.change).toBe("criteria_changed");
+    const state = (await db.query<any>("select snapshot from smartphone_mission_match_state")).rows[0].snapshot;
+    expect(state).toMatchObject({ market_code: "ES", watchlist_market_code: "ES", currency: "EUR", watchlist_currency: "EUR" });
+  });
+  it("does not invent a criteria change when upgrading an older transition snapshot", async () => {
+    await record(false);
+    await db.query("update smartphone_mission_match_state set snapshot=snapshot-'market_code'-'watchlist_market_code'-'watchlist_currency'");
+    await db.query("insert into smartphone_passports(listing_id,revision) values($1,1)", [L]);
+    expect((await record()).alert.reason.change).toBe("passport_updated");
+  });
+  it.each(["market", "watchlist_currency", "mission_currency"])("refuses %s mismatch even with an otherwise fresh compatible worker result", async mismatch => {
+    if (mismatch === "market") await db.query("update watchlists set market_code='ES' where watchlist_id=$1", [W]);
+    if (mismatch === "watchlist_currency") await db.query("update watchlists set currency='GBP' where watchlist_id=$1", [W]);
+    if (mismatch === "mission_currency") await db.query("update watchlists set criteria=jsonb_set(criteria,'{mission,currency}','\"GBP\"') where watchlist_id=$1", [W]);
     expect((await record()).matched).toBe(false);
     expect((await db.query("select * from watchlist_matches")).rows).toEqual([]);
   });
