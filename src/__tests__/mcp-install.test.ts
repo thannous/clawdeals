@@ -41,6 +41,8 @@ function runNodeScriptToFiles({
       cwd: repoRoot,
       env: {
         ...process.env,
+        HOME: path.join(ioDir, "home"),
+        USERPROFILE: path.join(ioDir, "home"),
         // Required by the installer.
         CLAWDEALS_API_KEY: "test_api_key",
         CLAWDEALS_API_BASE: "https://app.clawdeals.com/api",
@@ -176,8 +178,81 @@ describe("scripts/mcp/install.mjs regression", () => {
     expect(parsed?.servers?.clawdeals?.command).toBe("node");
     expect(parsed?.servers?.clawdeals?.env?.CLAWDEALS_API_KEY).toBe("test_api_key");
 
-    const backups = fs.readdirSync(dir).filter((f) => f.startsWith("mcp.json.bak-"));
-    expect(backups.length).toBe(1);
+    const backupPath = res.stdout.match(/mcp:install: Backup (.+)/)?.[1]?.trim();
+    expect(backupPath).toBeTruthy();
+    expect(fs.readFileSync(backupPath!, "utf8")).toBe("");
+    expect(fs.readdirSync(dir).some((f) => f.startsWith("mcp.json.bak-"))).toBe(false);
+  });
+
+  it.each([".mcp.json", "nested/custom.jsonc", "nested/config.toml"])(
+    "keeps restorable backups private during repeated installs into %s",
+    (name) => {
+      const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-backup-"));
+      const project = path.join(dir, "project");
+      const filePath = path.join(project, name);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      const fakeKey = ["cd_live_", "a-b_cDef", ".", "s".repeat(42), "_"].join("");
+      const original = name.endsWith(".toml")
+        ? `[mcp_servers.other]\ncommand = "other"\nenv = { CLAWDEALS_API_KEY = "${fakeKey}" }\n`
+        : `\uFEFF// keep the existing server\n{"mcpServers":{"other":{"command":"other","env":{"CLAWDEALS_API_KEY":"${fakeKey}"}}}}\n`;
+      fs.writeFileSync(filePath, original);
+      const args = name.endsWith(".toml")
+        ? ["--client", "codex", "--codex-file", filePath]
+        : ["--file", filePath];
+      const run = (extra: string[] = []) => runInstallerRaw({ repoRoot, ioDir: dir, args: [...args, ...extra] });
+      const dryRun = run(["--dry-run"]);
+      expect(dryRun.code).toBe(0);
+      expect(fs.readFileSync(filePath, "utf8")).toBe(original);
+      expect(fs.existsSync(path.join(dir, "home", ".clawdeals"))).toBe(false);
+
+      const first = run();
+      expect(first.code).toBe(0);
+      const backup = first.stdout.match(/mcp:install: Backup (.+)/)?.[1]?.trim();
+      expect(backup).toBeTruthy();
+      expect(path.relative(path.join(dir, "home", ".clawdeals", "mcp-backups"), backup!).startsWith("..")).toBe(false);
+      expect(fs.readFileSync(backup!, "utf8")).toBe(original);
+      expect(fs.readdirSync(path.dirname(filePath))).toEqual([path.basename(filePath)]);
+      const installed = fs.readFileSync(filePath, "utf8");
+      expect(installed).toContain("test_api_key");
+      expect(installed).toContain("other");
+      expect(installed).toContain(fakeKey);
+      expect(first.stdout + first.stderr).not.toContain(fakeKey);
+      if (process.platform !== "win32") {
+        expect(fs.statSync(backup!).mode & 0o777).toBe(0o600);
+        expect(fs.statSync(path.dirname(backup!)).mode & 0o777).toBe(0o700);
+      }
+
+      const second = run();
+      expect(second.code).toBe(0);
+      const nextBackup = second.stdout.match(/mcp:install: Backup (.+)/)?.[1]?.trim();
+      expect(nextBackup).toBeTruthy();
+      expect(nextBackup).not.toBe(backup);
+      expect(fs.readFileSync(nextBackup!, "utf8")).toBe(installed);
+      expect(fs.readFileSync(backup!, "utf8")).toBe(original);
+
+      // Even a home directory tracked by Git must not add the new backup.
+      const gitEnv = { ...process.env };
+      for (const key of Object.keys(gitEnv)) if (key.startsWith("GIT_")) delete gitEnv[key];
+      const git = (gitArgs: string[]) => spawnSync("git", gitArgs, { cwd: dir, env: gitEnv, encoding: "utf8" });
+      expect(git(["init", "--quiet"]).status).toBe(0);
+      expect(git(["check-ignore", "-q", "--", backup!]).status).toBe(0);
+      expect(git(["add", "--", backup!]).status).not.toBe(0);
+    }
+  );
+
+  it("leaves the original config intact when private backup storage cannot be created", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-backup-failure-"));
+    const filePath = path.join(dir, ".mcp.json");
+    const original = '{"mcpServers":{"other":{"command":"other"}}}\n';
+    fs.writeFileSync(filePath, original);
+    fs.mkdirSync(path.join(dir, "home"));
+    fs.writeFileSync(path.join(dir, "home", ".clawdeals"), "not a directory");
+    const result = runInstaller({ repoRoot, ioDir: dir, filePath });
+    expect(result.code).toBe(1);
+    expect(result.stdout).not.toContain("Updated");
+    expect(fs.readFileSync(filePath, "utf8")).toBe(original);
   });
 
   it("exits non-zero and does not claim success when target file is unparseable", () => {

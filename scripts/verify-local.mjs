@@ -1968,6 +1968,9 @@ export const SCOPE_ENV = ['JEST_CHANGED_SINCE', 'TURBO_SCM_BASE', 'TURBO_SCM_HEA
 export const DEFAULT_FORBIDDEN = [
   '**/.env',
   '**/.env.*',
+  '**/.mcp.json',
+  '**/.mcp.json.bak-*',
+  '**/.clawdeals/mcp-backups/**',
   '**/*.pem',
   '**/*.p12',
   '**/*.pfx',
@@ -1980,6 +1983,7 @@ export const DEFAULT_FORBIDDEN = [
 const DEFAULT_ALLOWED_ENV = ['**/.env.example', '**/.env.*.example', '**/.env.sample', '**/.env.template'];
 
 const SECRET_PATTERNS = [
+  { name: 'ClawDeals API key', pattern: /\bcd_(?:live|sandbox)_[A-Za-z0-9_-]{8,12}\.[A-Za-z0-9_-]{43}(?![A-Za-z0-9_-])/ },
   { name: 'private key', pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/ },
   { name: 'AWS access key', pattern: /\bAKIA[0-9A-Z]{16}\b/ },
   { name: 'GitHub token', pattern: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b|\bgithub_pat_[A-Za-z0-9_]{60,}\b/ },
@@ -2056,23 +2060,47 @@ export async function prePush(remote, stdinText, {
   const head = git(['rev-parse', '--verify', '--quiet', 'HEAD^{commit}'], { allowFailure: true });
 
   for (const push of pushes) {
-    // Files the new commits add or change (a merge counts against its first
-    // parent), as they stand in the pushed commit.
-    const names = git(['log', '--no-renames', '--diff-filter=AMT', '--name-only', '--format=', '-z', '-m', '--first-parent',
-      '--max-count=300', push.sha, '--not', `--remotes=${remote}`], { allowFailure: true }) ?? '';
-    const changed = new Set(names.split('\0').map((file) => file.replace(/^\n+/, '')).filter(Boolean));
-    if (changed.size === 0) continue;
+    // Git sends earlier versions too, including files removed before the tip
+    // and commits on merged branches. Inspect each introduced (path, blob) pair.
+    const raw = git(['log', '--root', '--no-renames', '--no-ext-diff', '--no-textconv', '--diff-filter=AMT',
+      '--raw', '--no-abbrev', '--format=', '-z', '-m', push.sha, '--not', `--remotes=${remote}`]);
+    const records = raw.split('\0');
+    if (records.at(-1) === '') records.pop();
     const entries = new Map();
-    const listing = git(['ls-tree', '-r', '-l', '-z', '--full-tree', push.sha]);
-    for (const line of listing.split('\0').filter(Boolean)) {
-      const tab = line.indexOf('\t');
-      const [, type, object, size] = line.slice(0, tab).trim().split(/\s+/);
-      if (type === 'blob') entries.set(line.slice(tab + 1), { object, size: Number(size) });
+    let malformed = false;
+    for (let index = 0; index < records.length; index += 2) {
+      const match = /^:[0-7]{6} ([0-7]{6}) [a-f0-9]{40,64} ([a-f0-9]{40,64}) [AMT]$/.exec(records[index].trim());
+      const file = records[index + 1];
+      if (!match || !file) { malformed = true; break; }
+      if (match[1] === '160000') continue; // Gitlinks are commits, not file blobs.
+      const object = match[2];
+      entries.set(`${object}\0${file}`, { file, object });
+    }
+    if (malformed) {
+      problems.push('could not enumerate pushed file versions, so the secret scan did not run');
+      continue;
+    }
+    if (entries.size === 0) continue;
+    const objects = [...new Set([...entries.values()].map((entry) => entry.object))];
+    const sizes = spawnSync('git', ['cat-file', '--batch-check'], {
+      cwd: root, env, input: `${objects.join('\n')}\n`, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+    });
+    const rows = sizes.stdout?.trim().split('\n') ?? [];
+    const byObject = new Map();
+    for (const [index, row] of rows.entries()) {
+      const [object, type, sizeText, extra] = row.trim().split(/\s+/);
+      const size = Number(sizeText);
+      if (object !== objects[index] || type !== 'blob' || extra !== undefined || !Number.isSafeInteger(size) || size < 0) break;
+      byObject.set(object, size);
+    }
+    if (sizes.error || sizes.status !== 0 || rows.length !== objects.length || byObject.size !== objects.length) {
+      problems.push('could not read pushed blob sizes, so the secret scan did not run');
+      continue;
     }
     const toScan = [];
-    for (const file of changed) {
-      const entry = entries.get(file);
-      if (!entry) continue;
+    for (const entry of entries.values()) {
+      const { file } = entry;
+      entry.size = byObject.get(entry.object);
       const allowed = matchesAny(file, [...DEFAULT_ALLOWED_ENV, ...config.hook.allow]);
       if (!allowed && matchesAny(file, config.hook.forbidden)) {
         problems.push(`${file}: forbidden file (secrets and keys stay out of git; allow it in ${CONFIG_FILE} hook.allow if it is public)`);

@@ -403,6 +403,14 @@ async function enforceInstallationScopes(res: any, ctx: any) {
 }
 
 function buildAuditEvent(ctx) {
+  if (ctx.routeGroup === "connect.claims.read") {
+    // Middleware can reject before the handler redacts the bearer path. Use
+    // the route identity for every audit copy, including encoded/rewritten URLs.
+    // This endpoint has no query/body metadata to retain; aliases may hold the
+    // same credential. Keep the live request/context intact for its consumers.
+    ctx = { ...ctx, path: "/api/v1/connect/claims", query: {}, body: {} };
+  }
+
   const entity = inferAuditEntity(ctx);
   const security: any = {
     ...(ctx.security || {})

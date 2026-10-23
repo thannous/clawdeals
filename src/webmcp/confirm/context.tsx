@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ConfirmDecision, ConfirmHistoryEntry, ConfirmRequest } from "./types";
 import { randomUuid } from "../utils";
@@ -6,6 +6,8 @@ import { randomUuid } from "../utils";
 type PendingState = {
   request: ConfirmRequest;
   resolve: (decision: ConfirmDecision) => void;
+  timer: ReturnType<typeof setTimeout> | null;
+  removeAbortListener: (() => void) | null;
 };
 
 type ConfirmContextValue = {
@@ -32,7 +34,8 @@ export function WebMcpConfirmProvider({ children }: { children: React.ReactNode 
   const [cooldownUntilMs, setCooldownUntilMs] = useState<number | null>(null);
 
   const recentRequestsRef = useRef<number[]>([]);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<PendingState | null>(null);
+  const mountedRef = useRef(true);
 
   const pushHistory = useCallback((entry: ConfirmHistoryEntry) => {
     setHistory((prev) => {
@@ -41,35 +44,55 @@ export function WebMcpConfirmProvider({ children }: { children: React.ReactNode 
     });
   }, []);
 
-  const clearTimer = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }, []);
+  const settle = useCallback(
+    (owner: PendingState, decision: ConfirmDecision) => {
+      // A stale modal, timeout, or cancellation must never decide a newer request.
+      if (pendingRef.current !== owner) return;
+      pendingRef.current = null;
+      if (owner.timer !== null) clearTimeout(owner.timer);
+      owner.removeAbortListener?.();
+
+      if (mountedRef.current) {
+        setPending(null);
+        pushHistory({
+          requestId: owner.request.requestId,
+          toolName: owner.request.toolName,
+          toolScope: owner.request.toolScope,
+          decidedAt: new Date().toISOString(),
+          decision: decision.kind === "approve" ? "APPROVED" : "DENIED",
+          reason: decision.kind === "approve" ? null : decision.reason
+        });
+      }
+      owner.resolve(decision);
+    },
+    [pushHistory]
+  );
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      const owner = pendingRef.current;
+      if (owner) settle(owner, { kind: "deny", code: "USER_DENIED", reason: "provider_unmounted" });
+    };
+  }, [settle]);
 
   const decide = useCallback(
     (decision: ConfirmDecision) => {
-      if (!pending) return;
-      clearTimer();
-
-      pushHistory({
-        requestId: pending.request.requestId,
-        toolName: pending.request.toolName,
-        toolScope: pending.request.toolScope,
-        decidedAt: new Date().toISOString(),
-        decision: decision.kind === "approve" ? "APPROVED" : "DENIED",
-        reason: decision.kind === "approve" ? null : decision.reason
-      });
-
-      pending.resolve(decision);
-      setPending(null);
+      // Keep the decision bound to the request actually rendered to the user.
+      if (pending) settle(pending, decision);
     },
-    [pending, clearTimer, pushHistory]
+    [pending, settle]
   );
 
   const requestConfirmation = useCallback(
     async (req: Omit<ConfirmRequest, "requestId"> & { requestId?: string }): Promise<ConfirmDecision> => {
+      if (!mountedRef.current) {
+        return { kind: "deny", code: "USER_DENIED", reason: "provider_unmounted" };
+      }
+      if (req.signal?.aborted) {
+        return { kind: "deny", code: "USER_DENIED", reason: "aborted" };
+      }
       const now = Date.now();
       const requestId = req.requestId || randomUuid();
 
@@ -79,7 +102,7 @@ export function WebMcpConfirmProvider({ children }: { children: React.ReactNode 
       }
 
       // If another confirmation is already pending, fail closed.
-      if (pending) {
+      if (pendingRef.current) {
         return { kind: "deny", code: "USER_DENIED", reason: "another_confirmation_pending" };
       }
 
@@ -103,25 +126,22 @@ export function WebMcpConfirmProvider({ children }: { children: React.ReactNode 
       };
 
       return new Promise<ConfirmDecision>((resolve) => {
-        clearTimer();
-
-        timeoutRef.current = setTimeout(() => {
-          setPending(null);
-          pushHistory({
-            requestId,
-            toolName: request.toolName,
-            toolScope: request.toolScope,
-            decidedAt: new Date().toISOString(),
-            decision: "DENIED",
-            reason: "timeout"
-          });
-          resolve({ kind: "deny", code: "USER_DENIED", reason: "timeout" });
+        const owner: PendingState = { request, resolve, timer: null, removeAbortListener: null };
+        // Reserve before React commits state so concurrent callers fail closed.
+        pendingRef.current = owner;
+        owner.timer = setTimeout(() => {
+          settle(owner, { kind: "deny", code: "USER_DENIED", reason: "timeout" });
         }, request.timeoutMs);
-
-        setPending({ request, resolve });
+        if (req.signal) {
+          const signal = req.signal;
+          const onAbort = () => settle(owner, { kind: "deny", code: "USER_DENIED", reason: "aborted" });
+          signal.addEventListener("abort", onAbort, { once: true });
+          owner.removeAbortListener = () => signal.removeEventListener("abort", onAbort);
+        }
+        setPending(owner);
       });
     },
-    [pending, clearTimer, pushHistory, cooldownUntilMs]
+    [settle, cooldownUntilMs]
   );
 
   const value = useMemo<ConfirmContextValue>(

@@ -54,11 +54,25 @@ function safeNextUrl(next: unknown): string {
   const fallback = "/mcp";
   if (typeof next !== "string") return fallback;
   const trimmed = next.trim();
-  if (!trimmed) return fallback;
-  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  // Browsers normalize backslashes and remove controls while parsing URLs.
+  if (!trimmed || trimmed.startsWith("//") || trimmed.includes("\\") ||
+      Array.from(trimmed).some((char) => char.charCodeAt(0) <= 31 || char.charCodeAt(0) === 127)) {
+    return fallback;
+  }
   try {
-    const url = new URL(trimmed);
-    if (url.hostname.endsWith("clawdeals.com") || url.hostname === "localhost") return trimmed;
+    const relative = trimmed.startsWith("/");
+    const url = relative ? new URL(trimmed, "https://clawdeals.com") : new URL(trimmed);
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return fallback;
+    if (url.hostname !== "clawdeals.com" &&
+        !url.hostname.endsWith(".clawdeals.com") &&
+        url.hostname !== "localhost") return fallback;
+    // Dot-segment normalization can leave a pathname beginning with //.
+    // Never serialize that pathname into a protocol-relative navigation.
+    if (relative) {
+      if (url.pathname.startsWith("//")) return fallback;
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+    return url.href;
   } catch {}
   return fallback;
 }
