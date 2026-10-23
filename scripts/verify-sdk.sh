@@ -1,6 +1,6 @@
 #!/bin/sh
 # The SDK checks of .github/workflows/sdk-ci.yml, run locally by `verify:pr`
-# (verify-local.config.mjs, check `sdk`) when the OpenAPI contract, scripts/sdk
+# (verify-local.config.json, check `sdk`) when the OpenAPI contract, scripts/sdk
 # or sdk/ change. Needs Java (OpenAPI Generator) and Python 3.11; the Python
 # SDK is installed in a virtual environment under TMPDIR, removed with the
 # isolated copy.

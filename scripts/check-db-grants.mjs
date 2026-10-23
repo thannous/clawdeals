@@ -109,13 +109,14 @@ export function evaluate({ relations, functions }, allowlist = { tables: [] }) {
   return { failures, views, notes };
 }
 
-/** Rows of `supabase db query --output-format json` (its JSON follows an optional preamble). */
+/** Native row arrays and legacy rows objects, after an optional CLI preamble. */
 export function parseQueryOutput(stdout) {
-  const start = stdout.indexOf("{");
+  const start = stdout.search(/[\[{]/);
   if (start === -1) throw new Error(`${PREFIX} supabase db query printed no JSON: ${stdout.slice(0, 200)}`);
   const parsed = JSON.parse(stdout.slice(start));
-  if (!Array.isArray(parsed.rows)) throw new Error(`${PREFIX} supabase db query returned no rows array`);
-  return parsed.rows;
+  const rows = Array.isArray(parsed) ? parsed : parsed?.rows;
+  if (!Array.isArray(rows)) throw new Error(`${PREFIX} supabase db query returned no rows array`);
+  return rows;
 }
 
 let running = null;
@@ -161,7 +162,7 @@ function cleanup() {
   cleaned = true;
   let ok = true;
   // 15 s + 12 s: both fit in the 30 s step grace verify:pr gives on a stop
-  // (VERIFY_LOCAL_STEP_GRACE_MS in verify-local.config.mjs); each takes a
+  // (VERIFY_LOCAL_STEP_GRACE_MS in verify-local.config.json); each takes a
   // second or two normally.
   for (const [args, timeout] of [[["stop", "--output-format", "json"], 15000], [["stack", "destroy", "--yes", "--output-format", "json"], 12000]]) {
     const result = spawnSync("supabase", args, { encoding: "utf8", timeout, killSignal: "SIGKILL" });

@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import config, { CODE, LINT_EVERYTHING as CONFIG_LINT_EVERYTHING } from "../verify-local.config.mjs";
 import { LINT_EVERYTHING } from "./lint-everything.mjs";
 import { matchesAny, normaliseConfig } from "./verify-local.mjs";
 
-// Repository contracts of verify-local.config.mjs that the shared engine
+const config = JSON.parse(readFileSync(new URL("../verify-local.config.json", import.meta.url), "utf8"));
+const CODE = ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"];
+
+// Repository contracts of verify-local.config.json that the shared engine
 // cannot know about. Issue #14: a change that makes scripts/lint-changed.mjs
 // lint every file must also put the `lint-changed` check in scope and in its
 // fingerprint.
@@ -14,22 +16,13 @@ const checks = normaliseConfig(config).checks;
 const lintChanged = checks.find((check) => check.name === "lint-changed");
 
 test("lint-changed is a when-scoped check with explicit inputs", () => {
-  assert.ok(lintChanged, "verify-local.config.mjs declares lint-changed");
+  assert.ok(lintChanged, "verify-local.config.json declares lint-changed");
   assert.ok(Array.isArray(lintChanged.when), "lint-changed has a when list");
   assert.ok(Array.isArray(lintChanged.inputs), "lint-changed has an inputs list");
   assert.ok(LINT_EVERYTHING.length > 0);
 });
 
 const sorted = (values) => [...values].sort();
-
-test("the config's LINT_EVERYTHING equals lint-everything.mjs exactly, both ways", () => {
-  assert.equal(new Set(CONFIG_LINT_EVERYTHING).size, CONFIG_LINT_EVERYTHING.length, "no duplicate in the config list");
-  assert.equal(new Set(LINT_EVERYTHING).size, LINT_EVERYTHING.length, "no duplicate in the module list");
-  const config = new Set(CONFIG_LINT_EVERYTHING);
-  const shared = new Set(LINT_EVERYTHING);
-  assert.deepEqual([...config].filter((file) => !shared.has(file)), [], "config entries missing from lint-everything.mjs");
-  assert.deepEqual([...shared].filter((file) => !config.has(file)), [], "lint-everything.mjs entries missing from the config");
-});
 
 test("lint-changed when and inputs hold exactly CODE plus the lint-everything set", () => {
   // `when` and `inputs` also carry the CODE globs (and package.json for

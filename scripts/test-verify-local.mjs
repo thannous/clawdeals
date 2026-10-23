@@ -52,9 +52,9 @@ import {
 } from './verify-local.mjs';
 
 const ENGINE = fileURLToPath(new URL('./verify-local.mjs', import.meta.url));
-// The engine's sha256 is pinned in this repository's own verify-local.config.mjs
-// (export ENGINE_SHA256). No other repository is read or compared.
-const CONFIG_PATH = fileURLToPath(new URL('../verify-local.config.mjs', import.meta.url));
+// The engine's sha256 is pinned in this repository's own verify-local.config.json
+// (ENGINE_SHA256 field). No other repository is read or compared.
+const CONFIG_PATH = fileURLToPath(new URL('../verify-local.config.json', import.meta.url));
 // Match the engine's physical paths (macOS /var is a symlink to /private/var).
 // Explicit symlink fixtures below still exercise repository-boundary rejection.
 const scratch = realpathSync(mkdtempSync(path.join(os.tmpdir(), 'verify-local-test-')));
@@ -70,8 +70,8 @@ async function gone(pid) {
 }
 after(() => rmSync(scratch, { recursive: true, force: true }));
 
-const CONFIG = `export const ENGINE_SHA256 = '${ENGINE_FILE_SHA256}';
-export default {
+const CONFIG = JSON.stringify({
+  ENGINE_SHA256: ENGINE_FILE_SHA256,
   mainBranch: 'main',
   commands: { pr: 'npm run verify:pr', release: 'npm run verify:release' },
   deps: { mode: 'link', lockfile: 'package-lock.json', install: 'echo install >> "$RUN_LOG" && mkdir -p node_modules' },
@@ -86,8 +86,7 @@ export default {
   ],
   hook: { maxFileBytes: 1024 * 1024, allow: ['public/*.pem'] },
   externalSources: ['https://ci.example/run/'],
-};
-`;
+});
 
 let counter = 0;
 
@@ -122,7 +121,7 @@ function makeRepository() {
     mkdirSync(path.dirname(path.join(work, file)), { recursive: true });
     writeFileSync(path.join(work, file), content);
   };
-  write('verify-local.config.mjs', CONFIG);
+  write('verify-local.config.json', CONFIG);
   write('package.json', '{ "name": "fixture", "packageManager": "npm@11.0.0" }\n');
   write('package-lock.json', '{ "lockfileVersion": 3 }\n');
   write('src/a.js', 'export const value = "ok";\n');
@@ -146,22 +145,22 @@ function makeRepository() {
 
 describe('engine pin', () => {
   test('the engine matches the ENGINE_SHA256 pinned in this repository config', async () => {
-    const { ENGINE_SHA256 } = await import(pathToFileURL(CONFIG_PATH).href);
-    assert.match(ENGINE_SHA256 ?? '', /^[0-9a-f]{64}$/, 'verify-local.config.mjs exports ENGINE_SHA256');
+    const { ENGINE_SHA256 } = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
+    assert.match(ENGINE_SHA256 ?? '', /^[0-9a-f]{64}$/, 'verify-local.config.json declares ENGINE_SHA256');
     const actual = createHash('sha256').update(readFileSync(ENGINE)).digest('hex');
-    assert.equal(actual, ENGINE_SHA256, 'scripts/verify-local.mjs differs from the ENGINE_SHA256 pin of verify-local.config.mjs; update the pin after a deliberate engine edit');
+    assert.equal(actual, ENGINE_SHA256, 'scripts/verify-local.mjs differs from the ENGINE_SHA256 pin of verify-local.config.json; update the pin after a deliberate engine edit');
   });
 
   test('the pin is the hash of the committed (LF) engine blob, and .gitattributes keeps the engine files LF', async () => {
-    const { ENGINE_SHA256 } = await import(pathToFileURL(CONFIG_PATH).href);
+    const { ENGINE_SHA256 } = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
     const root = path.dirname(CONFIG_PATH);
     const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
     const blob = spawnSync('git', ['show', 'HEAD:scripts/verify-local.mjs'], { cwd: root, env, maxBuffer: 64 * 1024 * 1024 });
     assert.equal(blob.status, 0, String(blob.stderr));
     assert.equal(createHash('sha256').update(blob.stdout).digest('hex'), ENGINE_SHA256, 'commit the engine, then pin the hash of its blob');
     const attributes = readFileSync(path.join(root, '.gitattributes'), 'utf8').split(/\r?\n/);
-    for (const line of ['scripts/verify-local*.mjs text eol=lf', 'verify-local.config.mjs text eol=lf']) assert.ok(attributes.includes(line), line);
-    const eol = spawnSync('git', ['check-attr', 'eol', '--', 'scripts/verify-local.mjs', 'verify-local.config.mjs'], { cwd: root, env, encoding: 'utf8' });
+    for (const line of ['scripts/verify-local*.mjs text eol=lf', 'verify-local.config.json text eol=lf']) assert.ok(attributes.includes(line), line);
+    const eol = spawnSync('git', ['check-attr', 'eol', '--', 'scripts/verify-local.mjs', 'verify-local.config.json'], { cwd: root, env, encoding: 'utf8' });
     assert.equal(eol.stdout.trim().split('\n').filter((line) => line.endsWith(': eol: lf')).length, 2, eol.stdout);
   });
 });
@@ -204,8 +203,7 @@ describe('verify:pr', () => {
     assert.ok(existsSync(path.join(commonDir, 'verify-proofs', `${tree}.json`)));
     assert.equal(readFileSync(path.join(repo.work, 'src/a.js'), 'utf8'), 'broken\n');
     assert.equal(repo.git(['worktree', 'list']).split('\n').length, 1, 'the isolated copy is removed');
-    // The committed config is loaded from the clone's own git directory, whatever the current directory.
-    assert.ok(existsSync(path.join(commonDir, 'verify-local')), 'config copy kept in the shared git directory');
+    assert.equal(existsSync(path.join(commonDir, 'verify-local')), false, 'config parsing creates no executable scratch module');
     assert.equal(proof.checks.find((check) => check.name === 'db').result, 'skipped');
   });
 
@@ -504,9 +502,9 @@ describe('verify:pr', () => {
     repo.git(['checkout', '--quiet', '-b', 'feature']);
     const lock = repo.env.VERIFY_LOCAL_HEAVY_LOCK;
     const pidFile = path.join(repo.work, '..', 'background.pid');
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
     repo.commit('daemon', {
-      'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'sleep 30 > /dev/null 2>&1 & echo $! > ${pidFile}; echo lint >> "$RUN_LOG"'`),
+      'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`sleep 30 > /dev/null 2>&1 & echo $! > ${pidFile}; echo lint >> "$RUN_LOG"`)),
     });
     try {
       assert.equal((await verify('pr', [], repo.options)).status, 0);
@@ -531,11 +529,11 @@ describe('verify:pr', () => {
     const lock = repo.env.VERIFY_LOCAL_HEAVY_LOCK;
     const stepPid = path.join(repo.work, '..', 'step.pid');
     const childPid = path.join(repo.work, '..', 'child.pid');
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
     // The step's shell, a background child and a foreground sleep: all of them
     // belong to the step group the engine owns.
     repo.commit('slow', {
-      'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'sleep 300 > /dev/null 2>&1 & echo $! > ${childPid}; echo $$ > ${stepPid}; sleep 300'`),
+      'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`sleep 300 > /dev/null 2>&1 & echo $! > ${childPid}; echo $$ > ${stepPid}; sleep 300`)),
     });
     const run = spawn(process.execPath, [ENGINE, 'pr'], { cwd: repo.work, env: repo.env, stdio: 'ignore' });
     const wait = async (condition) => {
@@ -585,8 +583,8 @@ describe('verify:pr', () => {
       'wait',
       '',
     ].join('\n'));
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
-    repo.commit('server', { 'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'sh ${dir}/step.sh'`) });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
+    repo.commit('server', { 'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`sh ${dir}/step.sh`)) });
     const listening = () => new Promise((resolve) => {
       const socket = net.connect(port, '127.0.0.1');
       socket.on('connect', () => { socket.destroy(); resolve(true); });
@@ -625,8 +623,8 @@ describe('verify:pr', () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
     const pidFile = path.join(repo.work, '..', 'stubborn.pid');
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
-    repo.commit('stubborn', { 'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'trap "" TERM; echo $$ > ${pidFile}; sleep 300'`) });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
+    repo.commit('stubborn', { 'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`trap "" TERM; echo $$ > ${pidFile}; sleep 300`)) });
     const run = spawn(process.execPath, [ENGINE, 'pr'], { cwd: repo.work, env: { ...repo.env, VERIFY_LOCAL_STEP_GRACE_MS: '300' }, stdio: 'ignore' });
     try {
       for (let i = 0; i < 200 && !existsSync(pidFile); i += 1) await new Promise((resolve) => setTimeout(resolve, 50));
@@ -678,8 +676,8 @@ describe('verify:pr', () => {
   test('a check killed by a signal fails and is never passed', async () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
-    repo.commit('killed', { 'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'kill -KILL $$'`) });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
+    repo.commit('killed', { 'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`kill -KILL $$`)) });
     const { status, proof } = await verify('pr', [], repo.options);
     assert.equal(status, 1);
     assert.equal(proof.result, 'failed');
@@ -717,13 +715,11 @@ describe('verify:pr', () => {
   test('variables that narrow what a check runs are stripped from the environment', async () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8')
-      .replace("mainBranch: 'main',", "mainBranch: 'main',\n  stripEnv: ['MY_SCOPE'],")
-      .replace(
-        "command: 'echo lint >> \"$RUN_LOG\"'",
-        "command: 'echo \"lint:${JEST_CHANGED_SINCE-unset}:${TURBO_SCM_HEAD-unset}:${MY_SCOPE-unset}:${TURBO_SCM_BASE-unset}\" >> \"$RUN_LOG\"', env: { TURBO_SCM_BASE: 'origin/main' }",
-      );
-    repo.commit('scope', { 'verify-local.config.mjs': config });
+    const config = JSON.parse(readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8'));
+    config.stripEnv = ['MY_SCOPE'];
+    config.checks[0].command = 'echo "lint:${JEST_CHANGED_SINCE-unset}:${TURBO_SCM_HEAD-unset}:${MY_SCOPE-unset}:${TURBO_SCM_BASE-unset}" >> "$RUN_LOG"';
+    config.checks[0].env = { TURBO_SCM_BASE: 'origin/main' };
+    repo.commit('scope', { 'verify-local.config.json': JSON.stringify(config) });
     const narrowed = { JEST_CHANGED_SINCE: 'HEAD', TURBO_SCM_HEAD: 'HEAD', TURBO_SCM_BASE: 'HEAD', MY_SCOPE: 'x' };
     const { status } = await verify('pr', [], { ...repo.options, env: { ...repo.env, ...narrowed } });
     assert.equal(status, 0);
@@ -779,9 +775,9 @@ describe('verify:release and the deploy guard', () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
     repo.commit('feature', { 'src/b.js': '1\n' });
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8')
-      .replace("command: 'echo lint >> \"$RUN_LOG\"'", "command: 'echo lint:$TMPDIR >> \"$RUN_LOG\" && test -d \"$TMPDIR\"'");
-    repo.commit('tmp', { 'verify-local.config.mjs': config });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8')
+      .replace(JSON.stringify('echo lint >> "$RUN_LOG"'), () => JSON.stringify('echo lint:$TMPDIR >> "$RUN_LOG" && test -d "$TMPDIR"'));
+    repo.commit('tmp', { 'verify-local.config.json': config });
     assert.equal((await verify('pr', [], repo.options)).status, 0);
     const tmp = repo.runs().find((line) => line.startsWith('lint:')).slice('lint:'.length);
     assert.ok(tmp.startsWith(path.join(repo.base, 'worktrees')), tmp);
@@ -1494,11 +1490,11 @@ describe('verify:release and the deploy guard', () => {
   }, async () => {
     const repo = makeRepository();
     repo.env.DB_AVAILABLE = '1';
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
     const flag = path.join(repo.base, 'started');
     const head = repo.commit('slow', {
       'site/index.html': '<p>ok</p>\n',
-      'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'if [ -n "$SLOW" ]; then touch "$SLOW"; sleep 300; fi; echo lint >> "$RUN_LOG"'`),
+      'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`if [ -n "$SLOW" ]; then touch "$SLOW"; sleep 300; fi; echo lint >> "$RUN_LOG"`)),
     });
     repo.git(['push', '--quiet', 'origin', 'main']);
     const guard = () => checkReleaseProof({ cwd: repo.work, env: repo.env, fetch: false }).failures;
@@ -1544,12 +1540,12 @@ describe('verify:release and the deploy guard', () => {
   test('a PR pass that ends while a release fails on the same commit does not erase the failure', async () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
     const flag = path.join(repo.base, 'go');
     // The PR run's lint waits (when asked) until the release run is over.
     const head = repo.commit('wait', {
       'src/b.js': '1\n',
-      'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'if [ -n "$WAIT_FLAG" ]; then touch "$WAIT_FLAG.started"; while [ ! -f "$WAIT_FLAG" ]; do sleep 0.05; done; fi; echo lint >> "$RUN_LOG"'`),
+      'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`if [ -n "$WAIT_FLAG" ]; then touch "$WAIT_FLAG.started"; while [ ! -f "$WAIT_FLAG" ]; do sleep 0.05; done; fi; echo lint >> "$RUN_LOG"`)),
     });
     const pr = spawn(process.execPath, [ENGINE, 'pr'], {
       cwd: repo.work,
@@ -1794,19 +1790,19 @@ describe('verify:release and the deploy guard', () => {
   test('proof-block flags a change to the checks themselves for the owner', async () => {
     const repo = makeRepository();
     repo.git(['checkout', '--quiet', '-b', 'feature']);
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
-    repo.commit('relax', { 'verify-local.config.mjs': config.replace("allow: ['public/*.pem']", "allow: ['public/*.pem', '**/*.key']") });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
+    repo.commit('relax', { 'verify-local.config.json': config.replace(JSON.stringify(["public/*.pem"]), JSON.stringify(["public/*.pem", "**/*.key"])) });
     await verify('pr', [], repo.options);
     repo.lines.length = 0;
     await proofBlock([], repo.options);
-    assert.match(repo.lines.join('\n'), /^- Delivery checks changed: verify-local.config.mjs \(needs the owner's review\)$/m);
+    assert.match(repo.lines.join('\n'), /^- Delivery checks changed: verify-local.config.json \(needs the owner's review\)$/m);
   });
 
   test('proof-block also flags the repository check scripts and package.json changes', async () => {
     const repo = makeRepository();
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8')
-      .replace("mainBranch: 'main',", "mainBranch: 'main',\n  deliveryFiles: ['scripts/lint-changed.mjs'],");
-    repo.commit('declare', { 'verify-local.config.mjs': config });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8')
+      .replace('"mainBranch":"main"', '"mainBranch":"main","deliveryFiles":["scripts/lint-changed.mjs"]');
+    repo.commit('declare', { 'verify-local.config.json': config });
     repo.git(['push', '--quiet', 'origin', 'main']);
     repo.git(['checkout', '--quiet', '-b', 'feature']);
     repo.commit('weaken', {
@@ -1858,8 +1854,8 @@ describe('cleanup of the isolated copy', () => {
     repo.commit('feature', { 'src/b.js': '1\n' });
     assert.equal((await verify('pr', [], repo.options)).status, 0);
     assert.deepEqual(left(repo.options.worktreeRoot), []);
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
-    repo.commit('fail', { 'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, `command: 'exit 3'`) });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
+    repo.commit('fail', { 'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`exit 3`)) });
     assert.notEqual((await verify('pr', [], repo.options)).status, 0);
     assert.deepEqual(left(repo.options.worktreeRoot), []);
   });
@@ -1871,8 +1867,8 @@ describe('cleanup of the isolated copy', () => {
     repo.git(['checkout', '--quiet', '-b', 'feature']);
     const tmp = mkdtempSync(path.join(scratch, 'tmpdir-'));
     const started = path.join(tmp, 'started');
-    const config = readFileSync(path.join(repo.work, 'verify-local.config.mjs'), 'utf8');
-    repo.commit('slow', { 'verify-local.config.mjs': config.replace(`command: 'echo lint >> "$RUN_LOG"'`, () => `command: 'touch ${started}; sleep 300'`) });
+    const config = readFileSync(path.join(repo.work, 'verify-local.config.json'), 'utf8');
+    repo.commit('slow', { 'verify-local.config.json': config.replace(JSON.stringify(`echo lint >> "$RUN_LOG"`), () => JSON.stringify(`touch ${started}; sleep 300`)) });
     const copies = path.join(tmp, 'verify-local');
     const run = spawn(process.execPath, [ENGINE, 'pr'], { cwd: repo.work, env: { ...repo.env, TMPDIR: tmp }, stdio: 'ignore' });
     const wait = async (condition) => {

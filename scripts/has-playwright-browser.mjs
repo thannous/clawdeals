@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 
-// Probe of the `historical-corpus` release check (verify-local.config.mjs):
+// Probe of the `historical-corpus` release check (verify-local.config.json):
 // exits 0 when the Chromium build pinned by playwright-core is installed, as
 // the full browser or as the headless shell that headless runs launch, so the
 // corpus starts without downloading a browser.
