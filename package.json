@@ -115,7 +115,7 @@
   "devDependencies": {
     "@ai-sdk/openai": "4.0.99",
     "@ai-sdk/openai-compatible": "3.0.75",
-    "@e2e-dev/web": "0.15.2",
+    "@e2e-dev/web": "0.15.3",
     "@electric-sql/pglite": "0.5.11",
     "@modelcontextprotocol/client": "2.3.1",
     "@next/bundle-analyzer": "16.4.2",
@@ -131,7 +131,7 @@
     "ai": "7.0.148",
     "braces": "file:tools/braces",
     "dotenv": "^16.6.1",
-    "e2e": "0.21.2",
+    "e2e": "0.21.3",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.3",
     "eslint-plugin-react-hooks": "7.0.1",

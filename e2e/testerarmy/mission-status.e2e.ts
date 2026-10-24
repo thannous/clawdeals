@@ -10,7 +10,7 @@ test("a server-paused mission stays paused in its list and detail", async ({ app
   const mission = {
     watchlist_id: missionId, name: query, active: true, status: "PAUSED", market_code: "FR", currency: "EUR",
     created_at: new Date().toISOString(),
-    criteria: { query, notification_mode: "in_app", mission: {
+    criteria: { query, notification_mode: "in_app", geo: { lat: 45.764, lon: 4.8357 }, distance_km: 12, mission: {
       version: 1, kind: "BUY", preferred_price_max: 75.5, hard_budget_max: 83.25, currency: "EUR",
       requirements: [], autonomous_actions: ["search"], contact_reveal: "manual_bilateral_approval",
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
