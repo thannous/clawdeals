@@ -144,17 +144,23 @@ describe("project mission service trust boundaries", () => {
   });
 
   it("recalculates with a buyer-entered discussion price then drops it after a source change", async () => {
-    seedListings([listing("Bureau compact", 10, 350), listing("Chaise de bureau", 11), listing("Écran HDMI", 12)]);
-    const created = await createOwnerProjectMission(owner, { brief }, creationKey);
-    expect(created.plan.configurations).toEqual([]);
-    const quoted = await mutateOwnerProjectMission(owner, missionId, "facts", { expected_version: 1, listing_id: id(10), facts: { provenance: "user_confirmed", confirmed_at: "2026-10-23T12:00:00.000Z", quoted_price_cents: 18_000, delivery_fee_cents: 0, desk_width_cm: 120, desk_depth_cm: 60, pickup_available_by: "2026-10-24" } });
-    expect(quoted.plan.configurations[0].total_known_cents).toBe(38_000);
-    expect(quoted.plan.configurations[0].items[0].price_cents).toBe(35_000);
-    tables.listings[0].description = "Dimensions et conditions de vente modifiées";
-    tables.listings[0].updated_at = "2026-10-24T12:00:00.000Z";
-    const refreshed = await getOwnerProjectMission(owner, missionId);
-    expect(refreshed.plan.configurations).toEqual([]);
-    expect(refreshed.plan.alternatives.desk[0].facts).toBeNull();
+    // The service stamps confirmed_at with the current time. Pin it before the
+    // later source change so the test does not depend on the day it runs.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(new Date("2026-10-23T12:00:00Z"));
+      seedListings([listing("Bureau compact", 10, 350), listing("Chaise de bureau", 11), listing("Écran HDMI", 12)]);
+      const created = await createOwnerProjectMission(owner, { brief }, creationKey);
+      expect(created.plan.configurations).toEqual([]);
+      const quoted = await mutateOwnerProjectMission(owner, missionId, "facts", { expected_version: 1, listing_id: id(10), facts: { provenance: "user_confirmed", confirmed_at: "2026-10-23T12:00:00.000Z", quoted_price_cents: 18_000, delivery_fee_cents: 0, desk_width_cm: 120, desk_depth_cm: 60, pickup_available_by: "2026-10-24" } });
+      expect(quoted.plan.configurations[0].total_known_cents).toBe(38_000);
+      expect(quoted.plan.configurations[0].items[0].price_cents).toBe(35_000);
+      tables.listings[0].description = "Dimensions et conditions de vente modifiées";
+      tables.listings[0].updated_at = "2026-10-24T12:00:00.000Z";
+      const refreshed = await getOwnerProjectMission(owner, missionId);
+      expect(refreshed.plan.configurations).toEqual([]);
+      expect(refreshed.plan.alternatives.desk[0].facts).toBeNull();
+    } finally { vi.useRealTimers(); }
   });
 
   it("requires an owner session, same-origin request and exact expected owner for mutation", () => {
