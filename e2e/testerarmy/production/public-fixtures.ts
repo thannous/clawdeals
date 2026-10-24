@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { test as base } from "@e2e-dev/web";
 import { expect } from "e2e";
 
@@ -52,10 +52,13 @@ export const test = base.extend<{ publicTraffic: void }>({
         return { url: location.href, title: document.title, buildId: data ? JSON.parse(data).buildId : null };
       });
     });
-    await collect("screenshot", async () => { screenshot = await app.screenshot("production-public-final"); });
-    // app.screenshot returns an attempt-relative artifact path. Use the same
-    // explicit output environment as the config for supplementary JSON proof.
-    const evidenceDirectory = join(process.env.PARITY_OUTPUT ?? ".e2e/production-public", "request-guards");
+    // Same explicit output environment as the config for supplementary JSON proof.
+    const outputRoot = process.env.PARITY_OUTPUT ?? ".e2e/production-public";
+    // Since e2e 0.21.3 app.screenshot returns the absolute path of the file it
+    // wrote (#1326). Record it relative to the run output so the exportable
+    // manifest stays portable and carries no local directory layout.
+    await collect("screenshot", async () => { screenshot = relative(resolve(outputRoot), await app.screenshot("production-public-final")); });
+    const evidenceDirectory = join(outputRoot, "request-guards");
     const evidencePath = join(evidenceDirectory, `${randomUUID()}.json`);
     const writeEvidence = () => {
       mkdirSync(evidenceDirectory, { recursive: true });
