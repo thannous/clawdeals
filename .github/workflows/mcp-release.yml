@@ -16,6 +16,11 @@ on:
         required: true
         type: string
 
+# One publish per ref at a time, never cancelled mid-publish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release_mcp:
     if: github.ref == 'refs/heads/main'

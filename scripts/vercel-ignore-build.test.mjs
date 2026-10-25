@@ -22,6 +22,9 @@ const cases = [
   ["migration", "supabase/migrations/new.sql", 1],
   ["build script", "scripts/build.mjs", 1],
   ["unknown input", "new-build-input.json", 1],
+  ["CI workflow", ".github/workflows/ci.yml", 0],
+  ["git hook", ".githooks/pre-push", 0],
+  ["browser test typechecked by the build", "e2e/journey.e2e.ts", 1],
 ];
 for (const [label, file, expected] of cases) {
   test(label, () => {
@@ -42,17 +45,24 @@ for (const [label, file, expected] of cases) {
       writeFileSync(join(root, file), "fixture\n");
       git("add", ".");
       git("commit", "-qm", label);
-      const run = (previous = base) =>
+      const run = (previous = base, vercelEnv = "preview") =>
         spawnSync(process.execPath, [script], {
           cwd: root,
           encoding: "utf8",
-          env: { ...process.env, VERCEL_GIT_PREVIOUS_SHA: previous },
+          env: {
+            ...process.env,
+            VERCEL_ENV: vercelEnv,
+            VERCEL_GIT_PREVIOUS_SHA: previous,
+          },
         });
       const result = run();
       assert.equal(result.status, expected, result.stdout + result.stderr);
       assert.match(result.stdout, expected ? /BUILD:/ : /SKIP:/);
       assert.equal(run("").status, 1, "first deployment must build");
       assert.equal(run("f".repeat(40)).status, 1, "missing history must build");
+      const production = run(base, "production");
+      assert.equal(production.status, 1, "production must always build");
+      assert.match(production.stdout, /BUILD: production/);
       if (label === "web page") {
         mkdirSync(join(root, "docs"), { recursive: true });
         writeFileSync(join(root, "docs/after.md"), "docs\n");

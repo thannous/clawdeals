@@ -19,8 +19,10 @@ permissions:
   actions: read
   contents: read
 
+# One run per PR or ref, never cancelled: a corpus run is the release
+# evidence for its SHA, and a dispatch of an already passed SHA is skipped.
 concurrency:
-  group: historical-corpus-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -58,9 +60,25 @@ jobs:
       - name: Install dependencies
         if: steps.previous.outputs.skip != 'true'
         run: npm ci --prefer-offline --no-audit --no-fund
-      - name: Install Chromium
+      # Chromium only, cached per Playwright version; a cache hit still installs
+      # the system libraries, which live outside the cache.
+      - name: Read Playwright version
+        id: playwright
         if: steps.previous.outputs.skip != 'true'
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Restore Playwright Chromium
+        id: playwright-cache
+        if: steps.previous.outputs.skip != 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-chromium-${{ steps.playwright.outputs.version }}
+      - name: Install Chromium
+        if: ${{ steps.previous.outputs.skip != 'true' && steps.playwright-cache.outputs.cache-hit != 'true' }}
         run: npx playwright install chromium --with-deps
+      - name: Install Chromium system dependencies
+        if: ${{ steps.previous.outputs.skip != 'true' && steps.playwright-cache.outputs.cache-hit == 'true' }}
+        run: npx playwright install-deps chromium
       - name: Check evidence preservation and bounded archive controls
         if: steps.previous.outputs.skip != 'true'
         run: node --test e2e/testerarmy/evidence.test.mjs

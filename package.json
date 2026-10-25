@@ -91,6 +91,8 @@
     "test:db-grants": "node --test scripts/check-db-grants.test.mjs",
     "test:verify-local": "node --test scripts/test-verify-local.mjs",
     "verify:pr": "node scripts/verify-local.mjs pr",
+    "verify:pr:status": "node scripts/post-verify-status.mjs",
+    "test:verify-status": "node --test scripts/post-verify-status.test.mjs",
     "verify:release": "node scripts/verify-local.mjs release"
   },
   "dependencies": {
