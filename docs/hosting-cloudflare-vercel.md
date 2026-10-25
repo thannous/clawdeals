@@ -219,11 +219,15 @@ API proxifiee sans redirect cross-origin et landing disponible sur l'apex.
 ## Ignore documentation-only Vercel builds
 
 `vercel.json` sets `ignoreCommand` to `node scripts/vercel-ignore-build.mjs`.
-Only root AGENTS/README/LICENSE and `.md`/`.txt` files under internal `docs/`
-are skipped. Public files, source, dependencies, migrations, scripts and unknown
-paths still build. All changes since `VERCEL_GIT_PREVIOUS_SHA` are compared,
+A production deployment (`VERCEL_ENV=production`) always builds. A preview is
+skipped when it only changes root AGENTS/README/LICENSE, `.md`/`.txt` files
+under internal `docs/`, `.github/`, `.githooks/` or `.agents/`. Public files,
+source, browser tests (typechecked by the build), dependencies, migrations,
+scripts and unknown paths still build. `vercel.json` also sets
+`git.deploymentEnabled: false`, so Git pushes create no deployment today and the
+command only matters if Git deployments are turned back on. All changes since `VERCEL_GIT_PREVIOUS_SHA` are compared,
 including deletions/renames; missing history builds by default. An ignored
-build leaves the previous production version active and does not apply SQL.
+preview leaves the previous deployment active and does not apply SQL.
 
 Verify decisions in disposable Git repositories with:
 `mise exec node@24.19.0 -- node --test scripts/vercel-ignore-build.test.mjs`.
