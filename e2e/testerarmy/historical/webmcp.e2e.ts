@@ -173,7 +173,8 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-page")).toBeVisible();
     await expect(page.getByTestId("webmcp-supported")).toContainText("YES");
     await expect(page.getByTestId("webmcp-registered")).toContainText("YES");
-    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("20");
+    await expect(page.getByTestId("webmcp-registered-count")).toHaveText("21");
+    await expect.poll(() => page.evaluate(() => (window as any).__webmcp_tools)).toContain("get_listing_passport");
 
     // Select a write tool and run it: Reject first.
     const createDraftButton = page.locator("button").filter({ hasText: "clawdeals.listings_create_draft" }).first();
@@ -266,7 +267,7 @@ test.describe("Dev WebMCP demo", () => {
 
     await page.goto("/webmcp");
     await expect(page.getByTestId("webmcp-demo-page")).toBeVisible();
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(6)");
 
     const registrationState = () =>
       page.evaluate(() => {
@@ -283,7 +284,7 @@ test.describe("Dev WebMCP demo", () => {
 
     await expect.poll(registrationState).toMatchObject({
       active: expect.arrayContaining(["get_action_receipt"]),
-      total: 5
+      total: 6
     });
 
     await page.evaluate(() => {
@@ -292,16 +293,16 @@ test.describe("Dev WebMCP demo", () => {
     });
     await expect.poll(registrationState).toMatchObject({
       active: expect.arrayContaining(["create_buy_mission", "request_contact_reveal"]),
-      aborted: 5,
-      total: 16
+      aborted: 6,
+      total: 18
     });
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(11)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(12)");
 
     await page.evaluate(() => {
       window.localStorage.setItem("clawdeals_api_key", "cd_test_agent_b");
       window.dispatchEvent(new Event("clawdeals:api-key-change"));
     });
-    await expect.poll(registrationState).toMatchObject({ aborted: 16, total: 27 });
+    await expect.poll(registrationState).toMatchObject({ aborted: 18, total: 30 });
 
     await page.evaluate(() => {
       window.localStorage.removeItem("clawdeals_api_key");
@@ -309,10 +310,10 @@ test.describe("Dev WebMCP demo", () => {
     });
     await expect.poll(registrationState).toMatchObject({
       active: expect.not.arrayContaining(["create_buy_mission"]),
-      aborted: 27,
-      total: 32
+      aborted: 30,
+      total: 36
     });
-    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(5)");
+    await expect(page.getByTestId("webmcp-demo-registered")).toContainText("(6)");
   });
 
   test("keeps get_action_receipt registered after search_listings navigates to /browse", async ({ page }) => {
@@ -350,7 +351,7 @@ test.describe("Dev WebMCP demo", () => {
 
     await page.goto("/webmcp-challenge");
     await expect(page.getByTestId("webmcp-challenge-page")).toBeVisible();
-    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("5 tools registered");
+    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("6 tools registered");
 
     const registrationState = () =>
       page.evaluate(() => {
@@ -367,9 +368,9 @@ test.describe("Dev WebMCP demo", () => {
       });
 
     await expect.poll(registrationState).toMatchObject({
-      active: ["get_page_context", "show_listings", "open_listing", "search_listings", "get_action_receipt"],
+      active: ["get_page_context", "show_listings", "open_listing", "get_listing_passport", "search_listings", "get_action_receipt"],
       aborted: 0,
-      total: 5
+      total: 6
     });
 
     const searchResult: any = await page.evaluate(async () => {
@@ -393,14 +394,14 @@ test.describe("Dev WebMCP demo", () => {
     await expect(page.getByTestId("webmcp-activity-hud")).toContainText("Agent Activity");
     await expect(page.getByTestId("webmcp-activity-hud")).not.toContainText("webmcp.activity.");
     await expect.poll(registrationState).toMatchObject({
-      active: ["get_page_context", "show_listings", "open_listing", "search_listings", "get_action_receipt"]
+      active: ["get_page_context", "show_listings", "open_listing", "get_listing_passport", "search_listings", "get_action_receipt"]
     });
     const afterNav = await registrationState();
     expect(afterNav.active).not.toContain("create_buy_mission");
     expect(afterNav.active).not.toContain("make_offer");
     expect(afterNav.active).not.toContain("resolve_approval");
     expect(afterNav.aborted).toBeGreaterThan(0);
-    expect(afterNav.total).toBeGreaterThan(5);
+    expect(afterNav.total).toBeGreaterThan(6);
   });
 
   test("binds owner approval resolution to the visible page and owner cookies", async ({ page }) => {
