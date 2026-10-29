@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-const PUBLIC_TOOLS = ["get_page_context", "show_listings", "open_listing", "search_listings", "get_action_receipt"];
+const PUBLIC_TOOLS = ["get_page_context", "show_listings", "open_listing", "get_listing_passport", "search_listings", "get_action_receipt"];
 
 const AUTHENTICATED_TOOLS = [
   "get_page_context",
   "show_listings",
   "open_listing",
+  "get_listing_passport",
   "search_listings",
   "create_buy_mission",
   "start_thread",
@@ -89,7 +90,7 @@ test.describe("WebMCP Challenge judge entry", () => {
     await expect(page.getByRole("heading", { name: /Your agent negotiates/i })).toBeVisible();
     await expect(page.getByTestId("webmcp-challenge-launch")).toHaveAttribute("href", "/webmcp");
     await expect(page.getByTestId("webmcp-challenge-supported")).toContainText("Supported");
-    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("5 tools registered");
+    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("6 tools registered");
 
     const registered = await page.getByTestId("webmcp-challenge-registered-tool").allTextContents();
     expect(registered).toEqual(PUBLIC_TOOLS);
@@ -164,7 +165,7 @@ test.describe("WebMCP Challenge judge entry", () => {
     });
 
     await page.goto("/webmcp-challenge");
-    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("11 tools registered");
+    await expect(page.getByTestId("webmcp-challenge-registered")).toContainText("12 tools registered");
     expect(await page.getByTestId("webmcp-challenge-registered-tool").allTextContents()).toEqual(AUTHENTICATED_TOOLS);
     await expect(page.getByTestId("webmcp-challenge-reset")).toBeEnabled();
 
