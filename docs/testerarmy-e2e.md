@@ -6,6 +6,12 @@ and read `node_modules/e2e/skills/e2e/SKILL.md` plus the relevant topic before
 changing the tests or SDK calls. Current functional requirements and
 [AGENTS.md](../AGENTS.md) govern expectations and proportional verification.
 
+The pinned runner is `e2e` 0.21.3 with `@e2e-dev/web` 0.15.3, matching
+Noctalia's web integration. The web engine and the retained Playwright suites
+both use `playwright-core` 1.64.1, so the Chromium installation below serves
+both. Use the repository's Node 24 runtime; native device tooling is not needed
+for this browser application.
+
 ## Start and select a target
 
 ```sh
