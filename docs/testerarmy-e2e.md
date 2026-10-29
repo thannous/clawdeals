@@ -1,8 +1,8 @@
 # TesterArmy browser tests
 
-ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.21.2 and `@e2e-dev/web` 0.15.2 are pinned development dependencies. The engine pins `playwright-core` 1.64.0 itself; the retained Playwright suites use `@playwright/test` 1.64.1.
+ClawDeals uses [tester-army/e2e](https://github.com/tester-army/e2e) alongside its existing Playwright UI and integration suites. `e2e` 0.21.3 and `@e2e-dev/web` 0.15.3 are pinned development dependencies. The engine and the retained Playwright suites share `playwright-core` 1.64.1.
 
-The installed 0.21.2 package requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
+The installed 0.21.3 package requires Node `^22.22.3 || >=24.8.0`; use the repository's Node 24.19.0. Its TypeScript loader uses oxc and Node's `module.registerHooks` instead of tsx. TypeScript config/tests remain ESM in this CommonJS project, with extensionless TypeScript imports and the nearest tsconfig respected. Existing historical entry, matcher preload, fixtures, guards, assertions and CI commands remain in place.
 
 Before writing or running these tests, read `node_modules/e2e/skills/e2e/SKILL.md` and its relevant `references/` topic, or use `npx e2e guide setup`, `npx e2e guide writing-tests` and `npx e2e guide running`.
 
