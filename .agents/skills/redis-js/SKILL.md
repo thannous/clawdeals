@@ -10,7 +10,7 @@ Check the installed SDK version and existing project usage before applying examp
 | Task | Reference |
 |---|---|
 | Initialization, serialization and command overview | [SDK guide](./guide.md) |
-| Data structures | [strings](./data-structures/strings.md), [hashes](./data-structures/hashes.md), [lists](./data-structures/lists.md), [sets](./data-structures/sets.md), [sorted sets](./data-structures/sorted-sets.md), [JSON](./data-structures/json.md), [streams](./data-structures/streams.md) |
+| Data structures | [strings](./data-structures/strings.md), [hashes](./data-structures/hashes.md), [lists](./data-structures/lists.md), [sets](./data-structures/sets.md), [sorted sets](./data-structures/sorted-sets.md), [JSON](./data-structures/json.md), [streams](./data-structures/streams.md), [arrays](./data-structures/arrays.md), [vector indexes](./data-structures/vector-indexes.md) |
 | Caching and sessions | [caching](./patterns/caching.md), [sessions](./patterns/session-management.md) |
 | Rate limits and locks | [rate limiting](./patterns/rate-limiting.md), [locks and limitations](./patterns/distributed-locks.md) |
 | Pipelining and scripts | [auto pipeline](./advanced-features/auto-pipeline.md), [transactions](./advanced-features/pipeline-and-transactions.md), [Lua](./advanced-features/scripting.md) |
