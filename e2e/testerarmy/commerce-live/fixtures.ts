@@ -263,7 +263,8 @@ export const test = base.extend<{ commerceFixture: CommerceFixture }>({
         })).error, `Silence ${role} notifications`);
         checked((await db.from("owner_auth_links").insert({
           owner_id: party.ownerId, auth_provider: "supabase", auth_subject: party.userId,
-          supabase_user_id: party.userId, email: party.email, email_verified_at: now
+          // Admin auto-confirmation permits sign-in but does not prove mailbox ownership.
+          supabase_user_id: party.userId, email: party.email, email_verified_at: null
         })).error, `Link ${role} Auth identity`);
         if (role === "buyer") {
           // Earlier suspended row reproduces the historical unordered limit(1)
