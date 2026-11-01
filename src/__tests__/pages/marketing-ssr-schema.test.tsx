@@ -13,7 +13,7 @@ import OpenClawInstallMethodsGuide from "../../pages/guides/openclaw-skill-vs-mc
 import IntegrationsIndex from "../../pages/integrations";
 import EditorialPage from "../../pages/about/editorial";
 import PricingPage from "../../pages/pricing";
-import { JsonLd } from "../../ui/guides/SeoGuidePage";
+import { JsonLd } from "../../ui/seo/JsonLd";
 
 vi.mock("next/router", () => ({
   useRouter: () => ({
@@ -96,12 +96,12 @@ describe("marketing SSR schema and landmarks", () => {
   ])("renders $name schema in the server HTML", ({ id, type, render }) => {
     const html = renderToStaticMarkup(render());
     const schema = readJsonLd(html, id);
-    const graphTypes = schema["@graph"].map((entry) => entry["@type"]);
+    const graphTypes = schema["@graph"].flatMap((entry) => entry["@type"]);
 
     expect(schema["@context"]).toBe("https://schema.org");
     expect(graphTypes).toContain(type);
     expect(graphTypes).toContain("FAQPage");
-    const article = schema["@graph"].find((entry) => entry["@type"] === type) as { author?: { "@id"?: string; name?: string } };
+    const article = schema["@graph"].find((entry) => [entry["@type"]].flat().includes(type)) as { author?: { "@id"?: string; name?: string } };
     expect(article.author).toMatchObject({ name: "ClawDeals Editorial Team" });
     expect(article.author?.["@id"]).toContain("/about/editorial#team");
     expect(html).not.toContain("afterInteractive");
@@ -149,7 +149,7 @@ describe("marketing SSR schema and landmarks", () => {
     const html = renderToStaticMarkup(render());
     const schema = readJsonLd(html, id);
 
-    expect(schema["@graph"].map((entry) => entry["@type"])).toContain("CollectionPage");
+    expect(schema["@graph"].flatMap((entry) => entry["@type"])).toContain("CollectionPage");
     expectLandmarks(html, false);
   });
 
@@ -210,7 +210,7 @@ describe("marketing SSR schema and landmarks", () => {
     const html = renderToStaticMarkup(render());
     const schema = readJsonLd(html, id);
 
-    expect(schema["@graph"].map((entry) => entry["@type"])).toContain(type);
+    expect(schema["@graph"].flatMap((entry) => entry["@type"])).toContain(type);
     expectLandmarks(html, article);
   });
 

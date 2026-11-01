@@ -7,7 +7,8 @@ import { buildLocaleUrls, hrefLangTags, normalizeMetaDescription, ogLocaleTags }
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
 import { TechBorder } from "../../ui/landing/primitives";
 import MarketingLink from "../../ui/shared/MarketingLink";
-import { JsonLd, getSeoGuideServerSideProps as withMessages, type SeoGuidePageProps } from "../../ui/guides/SeoGuidePage";
+import { getSeoGuideServerSideProps as withMessages, type SeoGuidePageProps } from "../../ui/guides/SeoGuidePage";
+import { JsonLd } from "../../ui/seo/JsonLd";
 
 export const getServerSideProps: typeof withMessages = async (context) => withMessages(context);
 
@@ -125,7 +126,7 @@ export default function GuidesIndex({ baseUrl, isPreviewHost }: SeoGuidePageProp
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
                 { "@type": "ListItem", position: 2, name: copy.allGuides, item: canonicalUrl }
               ]
             }

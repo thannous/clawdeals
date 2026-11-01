@@ -14,7 +14,7 @@ import {
   ShoppingCart
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
-import { JsonLd } from "../../ui/guides/SeoGuidePage";
+import { JsonLd } from "../../ui/seo/JsonLd";
 import GuideEvidenceSections from "../../ui/guides/GuideEvidenceSections";
 import { getLegacyGuideEnhancement } from "../../content/legacy-guide-enhancements";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
@@ -673,9 +673,10 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
               isPartOf: { "@id": `${baseUrl}/#website` }
             },
             {
-              "@type": "HowTo",
+              "@type": ["Article", "HowTo"],
               "@id": `${canonicalUrl}#howto`,
               name: seo.ogTitle,
+              headline: seo.ogTitle,
               description: seo.description,
               url: canonicalUrl,
               inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
@@ -686,7 +687,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
                 name: "ClawDeals Editorial Team",
                 url: editorialUrl
               },
-              publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl },
+              publisher: { "@type": "Organization", "@id": `${baseUrl}/#organization`, name: "ClawDeals", url: baseUrl },
               datePublished: PUBLISHED_AT,
               dateModified: UPDATED_AT,
               mainEntityOfPage: { "@id": `${canonicalUrl}#webpage` },
@@ -710,7 +711,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
                 { "@type": "ListItem", position: 2, name: locale === "es" ? "Guías" : "Guides", item: guidesIndex },
                 { "@type": "ListItem", position: 3, name: "DealWatch", item: canonicalUrl }
               ]

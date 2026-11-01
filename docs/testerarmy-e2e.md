@@ -70,6 +70,14 @@ URLs on `clawdeals.com`, its dot-delimited subdomains, or exact `localhost`
 backslashes, control characters, URL credentials and other schemes fall back
 to `/mcp`.
 
+## Public structured data
+
+`e2e/testerarmy/structured-data.e2e.ts` checks the server HTML of all 54 sitemap
+URLs, visible FAQ answers, and schema replacement during client navigation.
+It runs on desktop/mobile without model calls or account fixtures. See the
+[structured-data audit](structured-data.md#reproduce-local-validation) for the
+loopback-only backend environment and external-validator evidence.
+
 ## Smartphone journeys on a local backend
 
 `TESTERARMY_PASSPORT_MISSIONS_LIVE=1` selects the connected smartphone mission

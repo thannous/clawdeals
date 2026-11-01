@@ -6,7 +6,7 @@ import { withMessages, resolveSupportedLocale, type SupportedLocale } from "../s
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../shared/marketing-request";
 import { buildLocaleUrls, hrefLangTags, normalizeMetaDescription, ogLocaleTags } from "../shared/seo";
 import FeaturePageLayout from "../ui/feature/FeaturePageLayout";
-import { JsonLd } from "../ui/guides/SeoGuidePage";
+import { JsonLd } from "../ui/seo/JsonLd";
 import { SectionHeader, TechBorder } from "../ui/landing/primitives";
 
 type PricingPageProps = {
@@ -118,7 +118,7 @@ export default function PricingPage({ baseUrl, isPreviewHost }: PricingPageProps
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+          { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
           { "@type": "ListItem", position: 2, name: copy.title, item: canonicalUrl }
         ]
       }

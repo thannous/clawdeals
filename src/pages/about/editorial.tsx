@@ -6,7 +6,7 @@ import { withMessages, resolveSupportedLocale, type SupportedLocale } from "../.
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../shared/marketing-request";
 import { buildLocaleUrls, hrefLangTags, normalizeMetaDescription, ogLocaleTags } from "../../shared/seo";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
-import { JsonLd } from "../../ui/guides/SeoGuidePage";
+import { JsonLd } from "../../ui/seo/JsonLd";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
 
 type EditorialPageProps = {
@@ -131,12 +131,12 @@ export default function EditorialPage({ baseUrl, isPreviewHost }: EditorialPageP
         name: "ClawDeals Editorial Team",
         alternateName: locale === "fr" ? "Équipe éditoriale ClawDeals" : locale === "es" ? "Equipo editorial de ClawDeals" : undefined,
         url: canonicalUrl,
-        parentOrganization: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
+        parentOrganization: { "@type": "Organization", "@id": `${baseUrl}/#organization`, name: "ClawDeals", url: baseUrl }
       },
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+          { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
           { "@type": "ListItem", position: 2, name: copy.title, item: canonicalUrl }
         ]
       }

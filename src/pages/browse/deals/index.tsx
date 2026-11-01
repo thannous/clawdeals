@@ -6,7 +6,7 @@ import { listDeals } from "../../../server/services/deals-list";
 import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../../../shared/i18n";
 import { buildLocaleUrls, hrefLangTags, ogLocaleTags, normalizeMetaDescription } from "../../../shared/seo";
 import { isNonIndexableMarketingHostRequest, marketingBaseUrlFromRequest } from "../../../shared/marketing-request";
-import { JsonLd } from "../../../ui/guides/SeoGuidePage";
+import { JsonLd } from "../../../ui/seo/JsonLd";
 
 export const META = {
   en: {

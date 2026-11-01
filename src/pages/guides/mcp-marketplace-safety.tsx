@@ -14,7 +14,7 @@ import {
   Timer
 } from "lucide-react";
 import FeaturePageLayout from "../../ui/feature/FeaturePageLayout";
-import { JsonLd } from "../../ui/guides/SeoGuidePage";
+import { JsonLd } from "../../ui/seo/JsonLd";
 import GuideEvidenceSections from "../../ui/guides/GuideEvidenceSections";
 import { getLegacyGuideEnhancement } from "../../content/legacy-guide-enhancements";
 import { SectionHeader, TechBorder } from "../../ui/landing/primitives";
@@ -367,8 +367,17 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
           "@context": "https://schema.org",
           "@graph": [
             {
-              "@type": "TechArticle",
+              "@type": "WebPage",
               "@id": canonicalUrl,
+              url: canonicalUrl,
+              name: tSeo("guides.mcpSafety.title"),
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB",
+              isPartOf: { "@id": `${baseUrl}/#website` },
+              mainEntity: { "@id": `${canonicalUrl}#article` }
+            },
+            {
+              "@type": "TechArticle",
+              "@id": `${canonicalUrl}#article`,
               url: canonicalUrl,
               name: tSeo("guides.mcpSafety.title"),
               headline: tSeo("guides.mcpSafety.ogTitle"),
@@ -392,13 +401,13 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
               articleSection: "MCP security",
               inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB",
               isPartOf: { "@id": `${baseUrl}/#website` },
-              publisher: { "@type": "Organization", name: "ClawDeals", url: baseUrl }
+              publisher: { "@type": "Organization", "@id": `${baseUrl}/#organization`, name: "ClawDeals", url: baseUrl }
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
-                { "@type": "ListItem", position: 2, name: "Guides", item: guidesIndex },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[resolvedLocale] },
+                { "@type": "ListItem", position: 2, name: resolvedLocale === "es" ? "Guías" : "Guides", item: guidesIndex },
                 { "@type": "ListItem", position: 3, name: t("mcpSafety.pageTitle"), item: canonicalUrl }
               ]
             },

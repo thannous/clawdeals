@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
-import Script from "next/script";
+import { JsonLd } from "../../ui/seo/JsonLd";
 import { useRouter } from "next/router";
 import { resolveSupportedLocale, type SupportedLocale, withMessages } from "../../shared/i18n";
 import Link from "next/link";
@@ -427,8 +427,9 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
         <meta name="twitter:description" content={seo.ogDescription} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
-      <Script id="openclaw-integration-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="openclaw-integration-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -442,21 +443,7 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
               author: { "@type": "Organization", name: c.meta.author, url: baseUrl },
               datePublished: PUBLISHED_AT,
               dateModified: UPDATED_AT,
-              primaryImageOfPage: { "@id": `${canonicalUrl}#primaryimage` },
-              mainEntity: { "@id": `${canonicalUrl}#softwareapplication` }
-            },
-            {
-              "@type": "SoftwareApplication",
-              "@id": `${canonicalUrl}#softwareapplication`,
-              name: "ClawDeals Skill",
-              applicationCategory: "DeveloperApplication",
-              description: seo.ogDescription,
-              url: canonicalUrl,
-              image: { "@id": `${canonicalUrl}#primaryimage` },
-              author: { "@type": "Organization", name: c.meta.author, url: baseUrl },
-              datePublished: PUBLISHED_AT,
-              dateModified: UPDATED_AT,
-              mainEntityOfPage: { "@id": `${canonicalUrl}#webpage` }
+              primaryImageOfPage: { "@id": `${canonicalUrl}#primaryimage` }
             },
             {
               "@type": "ImageObject",
@@ -470,14 +457,14 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
                 { "@type": "ListItem", position: 2, name: locale === "fr" ? "Intégrations" : locale === "es" ? "Integraciones" : "Integrations", item: integrationsIndex },
                 { "@type": "ListItem", position: 3, name: "OpenClaw", item: canonicalUrl }
               ]
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
 
       <FeaturePageLayout
         title="OpenClaw"
