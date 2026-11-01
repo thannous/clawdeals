@@ -46,7 +46,7 @@ export default function Faq() {
   }));
 
   return (
-    <div>
+    <div id="faq">
       <SectionHeader title={t("headers.faq.title")} subtitle={t("headers.faq.subtitle")} />
       <div className="max-w-3xl mx-auto space-y-2">
         {items.map((item) => (

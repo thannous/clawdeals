@@ -45,7 +45,18 @@ export function buildSeoGuideStructuredData({
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": guide.schemaType,
+        "@type": "WebPage",
+        "@id": canonicalUrl,
+        url: canonicalUrl,
+        name: content.title,
+        description: content.metaDescription,
+        inLanguage: languageTag(locale),
+        isPartOf: { "@id": `${baseUrl}/#website` },
+        mainEntity: { "@id": `${canonicalUrl}#article` },
+        breadcrumb: { "@id": `${canonicalUrl}#breadcrumb` }
+      },
+      {
+        "@type": guide.schemaType === "HowTo" ? ["Article", "HowTo"] : "Article",
         "@id": `${canonicalUrl}#article`,
         url: canonicalUrl,
         mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
@@ -63,6 +74,7 @@ export function buildSeoGuideStructuredData({
         },
         publisher: {
           "@type": "Organization",
+          "@id": `${baseUrl}/#organization`,
           name: "ClawDeals",
           url: baseUrl,
           logo: { "@type": "ImageObject", url: `${baseUrl}/favicon-192.png` }
@@ -75,7 +87,7 @@ export function buildSeoGuideStructuredData({
         "@type": "BreadcrumbList",
         "@id": `${canonicalUrl}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+          { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
           { "@type": "ListItem", position: 2, name: GUIDE_LABELS[locale], item: guidesUrl },
           { "@type": "ListItem", position: 3, name: content.title, item: canonicalUrl }
         ]

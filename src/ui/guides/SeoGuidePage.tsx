@@ -13,22 +13,13 @@ import FeaturePageLayout from "../feature/FeaturePageLayout";
 import { SectionHeader, TechBorder } from "../landing/primitives";
 import MarketingLink from "../shared/MarketingLink";
 import ActivationPath from "../seo/ActivationPath";
+import { JsonLd } from "../seo/JsonLd";
 
 export type SeoGuidePageProps = {
   baseUrl: string;
   isPreviewHost: boolean;
   messages: any;
 };
-
-export function JsonLd({ id, data }: { id: string; data: unknown }) {
-  return (
-    <script
-      id={id}
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
-    />
-  );
-}
 
 export const getSeoGuideServerSideProps: GetServerSideProps<SeoGuidePageProps> = async ({ req, res, locale }) => {
   const isPreviewHost = isNonIndexableMarketingHostRequest(req);

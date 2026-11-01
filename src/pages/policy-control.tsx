@@ -1,5 +1,5 @@
 import Head from "next/head";
-import Script from "next/script";
+import { JsonLd } from "../ui/seo/JsonLd";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { Ban, ChevronRight, Clock, DollarSign, ListChecks, Lock, Settings, ShieldAlert, UserCheck } from "lucide-react";
@@ -114,8 +114,9 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
         <meta name="twitter:description" content={tSeo("policyControl.ogDescription")} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
-      <Script id="policy-control-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="policy-control-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -125,18 +126,18 @@ export default function PolicyControl({ baseUrl, isPreviewHost }: PageProps) {
               name: tSeo("policyControl.title"),
               description: tSeo("policyControl.description"),
               isPartOf: { "@id": `${baseUrl}/#website` },
-              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB"
             },
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[resolvedLocale] },
                 { "@type": "ListItem", position: 2, name: t("breadcrumb"), item: canonicalUrl }
               ]
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
       <FeaturePageLayout
         title="Policy Control"
         subtitle={t("subtitle")}

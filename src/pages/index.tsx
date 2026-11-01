@@ -1,5 +1,5 @@
 import Head from "next/head";
-import Script from "next/script";
+import { JsonLd } from "../ui/seo/JsonLd";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import Landing from "../ui/Landing";
@@ -119,8 +119,9 @@ export default function Home({
         <meta name="twitter:image" content={ogImageUrl} />
 
       </Head>
-      <Script id="home-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="home-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
@@ -128,11 +129,8 @@ export default function Home({
               "@id": `${baseUrl}/#organization`,
               name: "ClawDeals",
               url: baseUrl,
-              logo: `${baseUrl}/favicon.svg`,
-              description: t("home.orgDescription"),
-              sameAs: [
-                "https://github.com/clawdeals"
-              ]
+              logo: `${baseUrl}/favicon-192.png`,
+              description: t("home.orgDescription")
             },
             {
               "@type": "WebSite",
@@ -140,7 +138,7 @@ export default function Home({
               url: baseUrl,
               name: "ClawDeals",
               publisher: { "@id": `${baseUrl}/#organization` },
-              inLanguage: [resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"]
+              inLanguage: ["en-GB", "fr-FR", "es-ES"]
             },
             {
               "@type": "WebPage",
@@ -149,19 +147,13 @@ export default function Home({
               name: t("home.title"),
               description: t("home.description"),
               isPartOf: { "@id": `${baseUrl}/#website` },
-              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-US"
-            },
-            {
-              "@type": "SoftwareApplication",
-              name: "ClawDeals",
-              applicationCategory: "BusinessApplication",
-              operatingSystem: "Any",
-              description: t("home.appDescription"),
-              url: baseUrl
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB"
             },
             {
               "@type": "FAQPage",
               "@id": `${canonicalUrl}#faq`,
+              url: `${canonicalUrl}#faq`,
+              inLanguage: resolvedLocale === "fr" ? "fr-FR" : resolvedLocale === "es" ? "es-ES" : "en-GB",
               isPartOf: { "@id": canonicalUrl },
               mainEntity: faqItems.map((item) => ({
                 "@type": "Question",
@@ -173,8 +165,8 @@ export default function Home({
               }))
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
       <Landing
         locale={resolvedLocale}
         buildTimeIso={buildTimeIso}

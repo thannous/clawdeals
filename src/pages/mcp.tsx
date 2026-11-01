@@ -1,5 +1,5 @@
 import Head from "next/head";
-import Script from "next/script";
+import { JsonLd } from "../ui/seo/JsonLd";
 import { useRouter } from "next/router";
 import type { GetServerSideProps } from "next";
 
@@ -102,16 +102,15 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
         <meta name="twitter:description" content={seo.description} />
         <meta name="twitter:image" content={ogImageUrl} />
       </Head>
-      <Script id="mcp-server-json-ld" type="application/ld+json" strategy="afterInteractive">
-        {JSON.stringify({
+      <JsonLd
+        id="mcp-server-json-ld"
+        data={{
           "@context": "https://schema.org",
           "@graph": [
             {
-              "@type": "SoftwareApplication",
+              "@type": "WebPage",
               "@id": canonicalUrl,
               name: seo.applicationName,
-              applicationCategory: "DeveloperApplication",
-              operatingSystem: "Any",
               description: seo.description,
               url: canonicalUrl,
               inLanguage: locale === "fr" ? "fr-FR" : locale === "es" ? "es-ES" : "en-GB",
@@ -120,13 +119,13 @@ export default function Mcp({ baseUrl, isPreviewHost }: McpProps) {
             {
               "@type": "BreadcrumbList",
               itemListElement: [
-                { "@type": "ListItem", position: 1, name: "ClawDeals", item: baseUrl },
+                { "@type": "ListItem", position: 1, name: "ClawDeals", item: buildLocaleUrls(baseUrl, "")[locale] },
                 { "@type": "ListItem", position: 2, name: seo.breadcrumb, item: canonicalUrl }
               ]
             }
           ]
-        }).replace(/</g, "\\u003c")}
-      </Script>
+        }}
+      />
       <McpPage />
     </>
   );
