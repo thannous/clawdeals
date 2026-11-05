@@ -16,7 +16,7 @@ freeze evidence and is always final-import/cutover ineligible.
 
 The reconstructed rehearsal SQL executor currently supports a narrow grammar:
 application schemas, simple typed tables and COPY FROM stdin. It refuses routines,
-views, triggers, extensions, custom types, expressions and dependencies requiring
+views, triggers, extensions, non-enum custom types, expressions and dependencies requiring
 separate review. This is an intentional interim capability boundary, not a claim
 that actual Clawdeals dumps are restorable. The next phase must review actual
 sanitized DDL structurally, its dependencies and privileges; implement explicit
