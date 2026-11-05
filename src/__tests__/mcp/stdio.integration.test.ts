@@ -1,3 +1,4 @@
+import { fixturePort, listenFixture } from "../loopback-fixture";
 import http from "node:http";
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -125,20 +126,7 @@ describe("MCP stdio server (integration)", () => {
       res.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "not found", details: {} } }));
     });
 
-    await new Promise<void>((resolve, reject) => {
-      const onError = (err: unknown) => {
-        apiServer.off("listening", onListening);
-        reject(err);
-      };
-      const onListening = () => {
-        apiServer.off("error", onError);
-        resolve();
-      };
-
-      apiServer.once("error", onError);
-      apiServer.once("listening", onListening);
-      apiServer.listen(0, "127.0.0.1");
-    });
+    await listenFixture(apiServer, fixturePort("CLAWDEALS_TEST_MCP_STDIO_PORT"));
     const addr = apiServer.address();
     if (!addr || typeof addr === "string") throw new Error("Failed to bind test server");
     apiBase = `http://127.0.0.1:${addr.port}/api`;
@@ -171,9 +159,8 @@ describe("MCP stdio server (integration)", () => {
     });
 
     const client = new Client({ name: "mcp-test-client", version: "0.0.0" });
-    await client.connect(transport);
-
     try {
+      await client.connect(transport);
       const list = await client.listTools();
       expect(list.tools.length).toBe(21);
 
@@ -263,9 +250,8 @@ describe("MCP stdio server (integration)", () => {
     });
 
     const client = new Client({ name: "mcp-test-client-bootstrap", version: "0.0.0" });
-    await client.connect(transport);
-
     try {
+      await client.connect(transport);
       const list = await client.listTools();
       expect(list.tools.length).toBe(21);
       expect(list.tools.some((tool) => tool.name === "clawdeals.connect.setup")).toBe(true);

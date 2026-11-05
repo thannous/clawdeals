@@ -1,3 +1,4 @@
+import { fixturePort, listenFixture } from "../../__tests__/loopback-fixture";
 import crypto from "node:crypto";
 import http from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -67,6 +68,27 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("encrypted response headers", () => {
+  it("rejects an occupied fixture port before any client can contact its owner", async () => {
+    let requests = 0;
+    let clientCreated = false;
+    const owner = http.createServer((_req, res) => { requests += 1; res.end("synthetic owner"); });
+    const contender = http.createServer();
+    const port = await listenFixture(owner, fixturePort("CLAWDEALS_TEST_RESPONSE_HTTP_PORT"));
+    try {
+      const startClientAfterListen = async () => {
+        await listenFixture(contender, port);
+        clientCreated = true;
+      };
+      await expect(startClientAfterListen()).rejects.toMatchObject({ code: "EADDRINUSE" });
+      expect(clientCreated).toBe(false);
+      expect(requests).toBe(0);
+      expect(contender.listening).toBe(false);
+    } finally {
+      if (contender.listening) await new Promise<void>((resolve) => contender.close(() => resolve()));
+      await new Promise<void>((resolve, reject) => owner.close((error) => error ? reject(error) : resolve()));
+    }
+  });
+
   it("stores no plaintext body or headers and replays exact header names and arrays", async () => {
     const original = { body, headers };
     const snapshot = JSON.stringify(original);
@@ -85,7 +107,7 @@ describe("encrypted response headers", () => {
     const row = await persist(body, { "Set-Cookie": cookies, "Cache-Control": "no-store" });
     const result = await replay(row);
     const server = http.createServer((_req, res) => sendJson(res, result.status, result.body, result.headers));
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    await listenFixture(server, fixturePort("CLAWDEALS_TEST_RESPONSE_HTTP_PORT"));
     try {
       const address = server.address();
       if (!address || typeof address === "string") throw new Error("Missing local address");

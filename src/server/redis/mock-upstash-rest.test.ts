@@ -1,3 +1,4 @@
+import { fixturePort } from "../../__tests__/loopback-fixture";
 import { Redis } from "@upstash/redis";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -16,7 +17,8 @@ afterEach(async () => {
 
 async function startMock() {
   const server: MockServer = createMockUpstashRedisServer({
-    port: 0,
+    host: "127.0.0.1",
+    port: fixturePort("CLAWDEALS_TEST_REDIS_MOCK_PORT"),
     token: "synthetic-test-token"
   });
   const address = await server.listen();
