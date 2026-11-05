@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { missingRetentionConfiguration } from "../retention/shared";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "../services/supabase-errors";
@@ -205,6 +206,7 @@ export async function runObservabilityAlerts({
   now?: Date;
   client?: any;
 } = {}) {
+  assertRehearsalEffectAllowed("observability/alerts");
   const missing = missingRetentionConfiguration(env);
   if (missing) {
     return {

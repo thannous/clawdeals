@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { matchDealToWatchlists, matchListingToWatchlists } from "./watchlist-matching";
 import { mapSupabaseError } from "./supabase-errors";
@@ -169,6 +170,7 @@ export async function runWatchlistMatchQueue({
   matchDeal?: (input: { deal: any; now?: Date; client?: any }) => Promise<any>;
   matchListing?: (input: { listing: any; now?: Date; client?: any }) => Promise<any>;
 } = {}) {
+  assertRehearsalEffectAllowed("services/watchlist-match-queue");
   const client = injectedClient || getSupabaseServiceClient();
   const effectiveLimit = normalizeLimit(limit);
 

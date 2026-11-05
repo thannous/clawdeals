@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { del, get, head, issueSignedToken, presignUrl, put } from "@vercel/blob";
 
 import { getEvidenceStorageBackend } from "../config/backends";
@@ -83,6 +84,7 @@ export async function createEvidenceUploadUrl({
   expiresInSeconds: number;
   policy: EvidenceStoragePolicy;
 }) {
+  assertRehearsalEffectAllowed("storage/evidence-storage");
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     const validUntil = Date.now() + expiresInSeconds * 1000;
     const token = getEvidenceBlobToken();
@@ -122,6 +124,7 @@ export async function createEvidenceUploadUrl({
 }
 
 export async function deleteEvidenceObject(bucket: string, key: string) {
+  assertRehearsalEffectAllowed("storage/evidence-storage");
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     await del(key, { token: getEvidenceBlobToken() });
     return;
@@ -178,6 +181,7 @@ export async function downloadEvidenceObjectBytes(bucket: string, key: string) {
 
 /** Server-mediated upload; never exposes a bearer upload token or public URL. */
 export async function putPrivateEvidenceObject(bucket: string, key: string, bytes: Buffer, contentType: string) {
+  assertRehearsalEffectAllowed("storage/evidence-storage");
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     await put(key, bytes, {
       access: "private", contentType, addRandomSuffix: false, allowOverwrite: false,

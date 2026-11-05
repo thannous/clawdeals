@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { loadSmartphoneMissionSnapshots, recordSmartphoneMissionMatch } from "./smartphone-mission-matching";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
@@ -29,6 +30,7 @@ function toPositiveInt(value: any, fallback: number) {
 }
 
 export async function enqueueWatchlistBackfill({ watchlistId, now = new Date(), client }: any = {}) {
+  assertRehearsalEffectAllowed("services/watchlist-backfill-queue");
   if (!watchlistId || typeof watchlistId !== "string") {
     throw buildServiceError("watchlistId is required", 400, "VALIDATION_ERROR");
   }
@@ -160,6 +162,7 @@ export async function runWatchlistBackfillQueue({
   now = new Date(),
   client
 }: any = {}) {
+  assertRehearsalEffectAllowed("services/watchlist-backfill-queue");
   const supabase = client || getSupabaseServiceClient();
   const cappedLimit = Math.max(1, Math.min(200, toPositiveInt(limit, 20)));
   const cappedTransitions = Math.min(WATCHLIST_BACKFILL_MAX_TRANSITIONS, toPositiveInt(transitionLimit, WATCHLIST_BACKFILL_MAX_TRANSITIONS));

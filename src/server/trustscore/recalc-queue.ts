@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
   areFlagsEqual,
@@ -63,6 +64,7 @@ export async function recalculateTrustScoreForAgent({
   agentId: string;
   now?: Date;
 }) {
+  assertRehearsalEffectAllowed("trustscore/recalc-queue");
   const client = getSupabaseServiceClient();
   const agent = await fetchAgentForRecalc(client, agentId);
   if (!agent) {
@@ -144,6 +146,7 @@ export async function runTrustScoreRecalcQueue({
   client?: any;
   recalculate?: (input: { agentId: string; now?: Date }) => Promise<any>;
 } = {}) {
+  assertRehearsalEffectAllowed("trustscore/recalc-queue");
   const client = injectedClient || getSupabaseServiceClient();
   const effectiveLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 50;
 

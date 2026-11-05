@@ -11,8 +11,14 @@ try {
   }
 }
 
+const rehearsalValue = String(process.env.CLAWDEALS_REHEARSAL_MODE || "").trim().toLowerCase();
+const rehearsalBuild = Boolean(rehearsalValue && rehearsalValue !== "false" && rehearsalValue !== "0");
+if (rehearsalBuild && process.env.NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND !== "neon") {
+  throw new Error("Rehearsal build requires NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND=neon");
+}
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: { NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE: rehearsalBuild ? "true" : "false" },
   reactStrictMode: true,
   // The root Proxy needs the original URL to distinguish explicit /en from /.
   skipProxyUrlNormalize: true,

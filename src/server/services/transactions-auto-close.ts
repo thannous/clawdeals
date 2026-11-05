@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getAuditLogger } from "../audit/singleton";
 import { publishSseEvent } from "../sse/store";
@@ -20,6 +21,7 @@ export async function runTransactionsAutoClose({
   limit?: number;
   thresholdDays?: number;
 } = {}) {
+  assertRehearsalEffectAllowed("services/transactions-auto-close");
   const client = getSupabaseServiceClient();
   const logger = getAuditLogger();
   const nowIso = now.toISOString();

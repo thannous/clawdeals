@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { safeAuditLog } from "../audit/singleton";
 import { isQuietNow, getLocalMinuteOfDay } from "../utils/quiet-hours";
@@ -412,6 +413,7 @@ export async function runNotificationsDispatch({
   sendTelegram = sendTelegramMessage,
   sendEmail = sendEmailMessage
 }: any = {}) {
+  assertRehearsalEffectAllowed("services/notifications-dispatch");
   const supabase = client || getSupabaseServiceClient();
 
   const cappedOwners = Math.max(1, Math.min(1000, toPositiveInt(limitOwners, DEFAULT_LIMIT_OWNERS)));

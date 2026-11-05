@@ -1,3 +1,4 @@
+import { isRehearsalMode, isRehearsalConfigurationReady } from "../config/rehearsal";
 import { createRequestContext } from "./request-context";
 import { applyCanonicalBody } from "./body";
 import { applyAuthStub } from "./auth-stub";
@@ -467,6 +468,10 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
   const resolved: any = { ...DEFAULT_OPTIONS, ...options };
 
   return async function apiHandler(req, res) {
+    if (!isRehearsalConfigurationReady() || (isRehearsalMode() && isWriteMethod(req.method))) {
+      sendJson(res, 503, { error: { code: "REHEARSAL_EFFECT_BLOCKED", message: "Rehearsal is read-only" } }, {});
+      return;
+    }
     const ctx: any = createRequestContext(req);
     ctx.routeGroup = resolved.routeGroup || matchRouteGroupFromRequest(req) || null;
     const failClosedProtections = shouldFailClosedProtections(ctx.routeGroup);

@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../../config/rehearsal";
 export type EmailSendResult = {
   ok: boolean;
   status?: number;
@@ -45,6 +46,7 @@ export async function sendEmailMessage({
   text: string;
   html?: string;
 }): Promise<EmailSendResult> {
+  assertRehearsalEffectAllowed("channels/email/client");
   const to = normalizeNonEmptyString(toEmail);
   if (!to) {
     return { ok: false, error: "MISSING_RECIPIENT" };

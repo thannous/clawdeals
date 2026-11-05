@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../../config/rehearsal";
 function buildTelegramApiUrl(token: string, path: string) {
   return `https://api.telegram.org/bot${token}/${path}`;
 }
@@ -37,6 +38,7 @@ async function fetchJson(url: string, init: any = {}) {
 }
 
 export async function getTelegramFileInfo({ token, fileId }: { token: string; fileId: string }) {
+  assertRehearsalEffectAllowed("channels/telegram/media");
   const t = requireToken(token);
   if (!fileId || typeof fileId !== "string") {
     const err: any = new Error("fileId is required");
@@ -70,6 +72,7 @@ export async function downloadTelegramFileBytes({
   maxBytes: number;
   timeoutMs?: number;
 }) {
+  assertRehearsalEffectAllowed("channels/telegram/media");
   const t = requireToken(token);
   if (!filePath || typeof filePath !== "string") {
     const err: any = new Error("filePath is required");

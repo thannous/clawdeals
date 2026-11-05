@@ -1,7 +1,9 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import type { PSPAdapter, PspMode, PspProvider } from "./psp-adapter";
 import { MockPspAdapter } from "./mock-psp-adapter";
 
 export function createPspAdapter({ provider, mode }: { provider: PspProvider; mode: PspMode }): PSPAdapter {
+  assertRehearsalEffectAllowed("psp/index");
   if (provider === "mock") {
     return new MockPspAdapter({ mode });
   }

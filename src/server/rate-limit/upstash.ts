@@ -1,8 +1,10 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { Redis } from "@upstash/redis";
 
 const redisClients = new Map<string, Redis>();
 
 export function createUpstashRedis({ url, token }: any = {}) {
+  assertRehearsalEffectAllowed("rate-limit/upstash");
   if (!url || !token) {
     throw new Error("Upstash Redis url/token missing.");
   }

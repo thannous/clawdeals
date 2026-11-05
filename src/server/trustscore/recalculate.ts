@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getAuditLogger } from "../audit/singleton";
 import { isFeatureEnabled } from "../config/feature-flags";
@@ -67,6 +68,7 @@ export async function runTrustScoreRecalculation({
   pageSize = 200,
   limit = null
 } = {}) {
+  assertRehearsalEffectAllowed("trustscore/recalculate");
   const client = getSupabaseServiceClient();
   const useFullFormula = isFeatureEnabled("trustscore.v1_full");
   const summary = {

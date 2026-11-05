@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../../config/rehearsal";
 function sanitizeText(value: string) {
   // Strip ASCII control chars to avoid log/UI issues, but keep newlines.
   return String(value || "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
@@ -12,6 +13,7 @@ export async function sendTelegramMessage({
   text: string;
   replyMarkup?: any;
 }): Promise<{ ok: boolean; status?: number; error?: string }> {
+  assertRehearsalEffectAllowed("channels/telegram/client");
   const token = process.env.TELEGRAM_BOT_TOKEN || "";
   if (!token) {
     return { ok: false, error: "MISSING_TELEGRAM_BOT_TOKEN" };

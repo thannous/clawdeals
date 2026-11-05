@@ -13,3 +13,14 @@ it("constructs Neon with absolute current-origin proxy URL, not external configu
   expect(mocks.neon).toHaveBeenCalledWith(`${window.location.origin}/api/auth`, expect.any(Object));
   expect(mocks.supabase).not.toHaveBeenCalled();
 });
+
+it("blocks external auth in a rehearsal bundle before constructing either client", async () => {
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE", "true");
+  for (const backend of ["neon", "supabase"]) {
+    vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", backend);
+    const { getBrowserAuthClient } = await import("./browser-auth-client");
+    expect(getBrowserAuthClient).toThrow(/disabled in rehearsal/);
+  }
+  expect(mocks.neon).not.toHaveBeenCalled();
+  expect(mocks.supabase).not.toHaveBeenCalled();
+});

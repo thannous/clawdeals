@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { getDeadline, waitUntil } from "@vercel/functions";
 import { ensureNeonRuntimeRole, getNeonSql } from "../db/neon";
@@ -24,6 +25,7 @@ export function resolveNeonQueueOrigin(env: NodeJS.ProcessEnv = process.env): st
   return origin.origin;
 }
 async function dispatchPendingQueues(origin: string, secret: string, timeout: number) {
+  assertRehearsalEffectAllowed("services/neon-queue-wake");
   const signal = AbortSignal.timeout(timeout);
   await ensureNeonRuntimeRole();
   signal.throwIfAborted();
@@ -43,6 +45,7 @@ async function dispatchPendingQueues(origin: string, secret: string, timeout: nu
 }
 /** Register only after commit. Invocation lifetime is not durable scheduling. */
 export async function wakeNeonQueuesAfterCommit() {
+  assertRehearsalEffectAllowed("services/neon-queue-wake");
   if (suppressed.getStore() || !process.env.CLAWDEALS_QUEUE_WAKE_ORIGIN) return;
   try {
     const origin = resolveNeonQueueOrigin();

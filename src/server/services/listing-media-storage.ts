@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import crypto from "node:crypto";
 
 import { getListingStorageBackend } from "../config/backends";
@@ -48,6 +49,7 @@ export async function uploadListingPhoto({
   mime: string;
   bucket?: string;
 }) {
+  assertRehearsalEffectAllowed("services/listing-media-storage");
   if (!listingId || typeof listingId !== "string") {
     throw buildServiceError("listingId is required", 400, "VALIDATION_ERROR");
   }
@@ -107,6 +109,7 @@ export async function deleteListingPhoto({
   storageKey: string;
   bucket?: string;
 }) {
+  assertRehearsalEffectAllowed("services/listing-media-storage");
   const key = typeof storageKey === "string" ? storageKey.trim() : "";
   if (!key) {
     throw buildServiceError("storageKey is required", 400, "VALIDATION_ERROR");

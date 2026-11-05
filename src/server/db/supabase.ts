@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { createClient } from "@supabase/supabase-js";
 import { getDatabaseBackend } from "../config/backends";
 import { getNeonDataClient } from "./neon-client";
@@ -6,6 +7,7 @@ import { getEnv } from "../config/env";
 let serviceClient;
 
 function getSupabaseOnlyClient() {
+  assertRehearsalEffectAllowed("db/supabase");
   if (!serviceClient) {
     const url = getEnv("SUPABASE_URL", { required: true });
     const key = getEnv("SUPABASE_SERVICE_ROLE_KEY", { required: true });

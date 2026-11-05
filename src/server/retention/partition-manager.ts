@@ -1,7 +1,9 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getNeonDataClient } from "../db/neon-client";
 import { getRetentionDatabaseBackend, missingRetentionConfiguration } from "./shared";
 
 export async function ensureFuturePartitions({ env = process.env }: { env?: NodeJS.ProcessEnv } = {}) {
+  assertRehearsalEffectAllowed("retention/partition-manager");
   if (getRetentionDatabaseBackend(env) === "neon") {
     missingRetentionConfiguration(env);
     const { data, error } = await getNeonDataClient().rpc("ensure_audit_log_partitions", {}).abortSignal(AbortSignal.timeout(20_000));

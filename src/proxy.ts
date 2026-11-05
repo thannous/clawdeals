@@ -1,3 +1,4 @@
+import { isRehearsalMode, isRehearsalConfigurationReady } from "./server/config/rehearsal";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -71,6 +72,19 @@ export function proxy(request: NextRequest) {
     return NextResponse.json({ error: { code: "MIGRATION_MAINTENANCE", message: "ClawDeals is temporarily unavailable for maintenance." } }, {
       status: 503,
       headers: { "cache-control": "private, no-store", "retry-after": "300" }
+    });
+  }
+  if (!isRehearsalConfigurationReady()) {
+    return NextResponse.json({ error: { code: "REHEARSAL_CONFIGURATION_REQUIRED" } }, {
+      status: 503, headers: { "cache-control": "private, no-store" }
+    });
+  }
+  if (isRehearsalMode() && (
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
+    /^\/api\/(?:auth(?:\/|$)|internal\/cron(?:\/|$))/.test(new URL(request.url).pathname)
+  )) {
+    return NextResponse.json({ error: { code: "REHEARSAL_EFFECT_BLOCKED" } }, {
+      status: 503, headers: { "cache-control": "private, no-store" }
     });
   }
   // Wider matcher covers every dynamic writer; normal locale routing remains root-only.

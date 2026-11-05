@@ -16,6 +16,9 @@ function getPublicAuthBackend() {
 }
 
 export function getBrowserAuthClient() {
+  if (process.env.NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE === "true") {
+    throw new Error("External authentication is disabled in rehearsal; use isolated fixtures");
+  }
   if (browserClient) return browserClient;
 
   if (getPublicAuthBackend() === "neon") {

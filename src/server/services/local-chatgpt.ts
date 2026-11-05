@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -7,6 +8,7 @@ export function isLocalChatGPTRequest(req: any) {
 }
 
 export async function localChatGPT(action: string, ownerId: string, payload: Record<string, unknown> = {}) {
+  assertRehearsalEffectAllowed("services/local-chatgpt");
   const key = await readFile(join(process.cwd(), "test-results/chatgpt-local/private/bridge-key"), "utf8");
   const port = Number(process.env.CLAWDEALS_CHATGPT_LOCAL_PORT || 4318);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("INVALID_LOCAL_PORT");

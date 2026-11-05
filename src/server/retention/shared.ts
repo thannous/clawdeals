@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getDatabaseBackend } from "../config/backends";
 import { getNeonDataClient } from "../db/neon-client";
 
@@ -45,6 +46,7 @@ export function parseDeletedCount(contentRange) {
 }
 
 export async function restRequest({ supabaseUrl, serviceRoleKey, table, timeColumn, method, cutoff, body, env = process.env }: any) {
+  assertRehearsalEffectAllowed("retention/shared");
   if (getRetentionDatabaseBackend(env) === "neon") {
     const client = getNeonDataClient();
     const query = client.from(table);

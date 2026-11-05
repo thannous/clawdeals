@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { Redis } from "@upstash/redis";
 import { getNumberEnv } from "../config/env";
 
@@ -19,6 +20,7 @@ function resolveUpstashTimeoutMs() {
 }
 
 export function getRedis() {
+  assertRehearsalEffectAllowed("redis/upstash");
   if (!redisClient) {
     const timeoutMs = resolveUpstashTimeoutMs();
     const signalFactory =
