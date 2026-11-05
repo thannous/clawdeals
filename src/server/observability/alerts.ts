@@ -1,3 +1,4 @@
+import { missingRetentionConfiguration } from "../retention/shared";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "../services/supabase-errors";
 
@@ -204,10 +205,11 @@ export async function runObservabilityAlerts({
   now?: Date;
   client?: any;
 } = {}) {
-  if (!env?.SUPABASE_URL || !env?.SUPABASE_SERVICE_ROLE_KEY) {
+  const missing = missingRetentionConfiguration(env);
+  if (missing) {
     return {
       skipped: true,
-      reason: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY."
+      reason: missing
     };
   }
 

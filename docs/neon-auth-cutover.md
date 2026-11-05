@@ -103,13 +103,24 @@ its success responses do not prove server authentication.
 For the browser fixture, use an isolated localhost app bundled with
 `NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND=neon`, local-only backend placeholder values,
 and an already-installed Chromium. Never use real accounts or shared profiles.
-The 2026-11-05 rebuild's browser attempt used installed cached Chromium and a fresh
-profile but failed at macOS MachPort startup under the sandbox before assertions.
-Escalation was then denied because route interception does not contain the
-runner's own telemetry/outbound traffic. No escalation retry, telemetry disabling,
-browser installation, production access or OAuth/email occurred. Browser QA is
-therefore still blocked pending an approved runner/network arrangement; do not
-reuse historical browser or unit results as evidence for this rebuilt tree.
+The initial 2026-11-05 rebuild attempt could not launch Chromium under the
+outer sandbox. The subsequent escalation was denied due to uncontained runner
+telemetry. A separately reviewed OS profile then allowed only localhost:4398 TCP
+for the entire runner/Next/Chromium process tree, leaving telemetry enabled and
+blocking external egress. Under that unchanged profile, the first browser run
+passed three stop paths and failed two continuation paths. Fixes forwarded the
+public Neon selector to the managed app, guarded fixture storage initialization
+by origin, and resolved the browser SDK's `/api/auth` base URL against the current
+origin (the installed SDK rejects relative URLs).
+
+Fresh final confined run `01a1ac70-34fc-7625-a113-6b92d0321be1` passed all five
+browser fixtures on Chromium 156.0.8078.4 in 5.61 seconds. It verifies client
+success/confirmation, interruption, conflict, callback replay, preserved synthetic
+HttpOnly source cookie, and stop paths. It does not prove real Google/provider
+sessions, live JWT claims, remote data parity or production cutover. No browser
+was installed, no shared profile used, and no telemetry setting changed. The
+profile SHA256 remained
+`9c81cad4f533327abfb10afe764b10e9c330237c9f1b17d4740bddb64dbd1ab9`.
 
 Live gates remain: authorized Auth/Google configuration and controlled signup;
 verified public JWT metadata; same-origin fixture preview testing without source

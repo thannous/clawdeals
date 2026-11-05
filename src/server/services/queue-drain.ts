@@ -1,9 +1,11 @@
+import { withoutNeonQueueWakes } from "./neon-queue-wake";
 import { randomUUID } from "node:crypto";
 import { getSupabaseServiceClient } from "../db/supabase";
 
 type QueueName = "watchlist-match-queue" | "watchlist-backfill-queue" | "trustscore-recalc-queue" | "notifications-dispatch";
 
 export async function withQueueDrainLease<T>(queue: QueueName, work: () => Promise<T>, client: any = getSupabaseServiceClient()) {
+  return withoutNeonQueueWakes(async () => {
   const args = { p_queue: queue, p_token: randomUUID() };
   const claim = await client.rpc("queue_drain_claim_v1", args);
   if (claim.error) throw new Error("Unable to claim queue drain lease");
@@ -23,4 +25,5 @@ export async function withQueueDrainLease<T>(queue: QueueName, work: () => Promi
       console.warn("queue.lease_release_failed", { queue });
     }
   }
+  });
 }

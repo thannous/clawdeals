@@ -28,7 +28,9 @@ for (const conflict of [false, true]) {
     const ownerId = "11111111-1111-4111-8111-111111111111";
     const sourceCookie = "fixture-source-session-not-real";
     await browser.setCookies([{ name: "cd_owner_session", value: sourceCookie, url: app.baseUrl!, httpOnly: true, sameSite: "Lax" }]);
-    await browser.addInitScript(id => sessionStorage.setItem("clawdeals.neon_link_owner", id), ownerId);
+    await browser.addInitScript(({ id, origin }) => {
+      if (window.location.origin === origin) sessionStorage.setItem("clawdeals.neon_link_owner", id);
+    }, { id: ownerId, origin: new URL(app.baseUrl!).origin });
     await browser.route("**/api/v1/auth/neon:link-status", route => route.fulfill({ status: 200, json: { data: { owner_id: ownerId, email: "source@example.test" } } }));
     await browser.route("**/api/auth/get-session**", route => route.fulfill({ status: 200, json: {
       session: { id: "fixture-session", userId: "fixture-neon", token: "fixture-jwt", expiresAt: "2099-01-01T00:00:00Z", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },

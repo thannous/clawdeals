@@ -1,3 +1,4 @@
+import { neonCronPaths } from "./neon-cron-schedule";
 import { resolveEdgeRouterDecision, type EdgeRouterEnv } from "../src/shared/edge-router";
 import { buildMarketingRobotsTxt } from "../src/shared/robots";
 import {
@@ -8,6 +9,7 @@ import {
 
 type EdgeRouterWorkerEnv = EdgeRouterEnv & RemoteMcpEnv & {
   CRON_SECRET?: string;
+  CLAWDEALS_CRON_PROFILE?: string;
 };
 
 // Every internal cron endpoint must be reachable from a scheduler; this worker is
@@ -65,12 +67,13 @@ async function runCronEndpoint(env: EdgeRouterWorkerEnv, path: string) {
   }));
 }
 
-async function runScheduledCrons(cron: string, env: EdgeRouterWorkerEnv) {
+async function runScheduledCrons(cron: string, env: EdgeRouterWorkerEnv, scheduledTime: number) {
   if (!env.CRON_SECRET) {
     throw new Error("Missing CRON_SECRET for internal cron dispatch");
   }
 
-  const paths = CRON_JOBS[cron] ?? CRON_JOBS[OFFER_EXPIRATION_CRON];
+  if (env.CLAWDEALS_CRON_PROFILE && env.CLAWDEALS_CRON_PROFILE !== "neon-hourly") throw new Error("Unknown cron profile");
+  const paths = env.CLAWDEALS_CRON_PROFILE === "neon-hourly" ? neonCronPaths(cron, scheduledTime) : CRON_JOBS[cron] ?? CRON_JOBS[OFFER_EXPIRATION_CRON];
   if (!CRON_JOBS[cron]) {
     console.log(JSON.stringify({ event: "cron.unknown_trigger", cron }));
   }
@@ -191,7 +194,7 @@ const edgeRouterWorker = {
     controller: { cron: string; scheduledTime: number },
     env: EdgeRouterWorkerEnv
   ): Promise<void> {
-    await runScheduledCrons(controller.cron, env);
+    await runScheduledCrons(controller.cron, env, controller.scheduledTime);
   }
 };
 

@@ -145,7 +145,10 @@ class FakeSupabaseClient {
 }
 
 describe("runObservabilityAlerts()", () => {
-  it("excludes audit rows missing request.status_code from API error-rate totals", async () => {
+  it("fails closed when Neon is selected without its connection", async () => {
+    await expect(runObservabilityAlerts({ env: { CLAWDEALS_DATABASE_BACKEND: "neon" } })).rejects.toThrow("DATABASE_URL");
+  });
+  it.each(["supabase", "neon"])("excludes audit rows missing request.status_code from API error-rate totals on %s", async (backend) => {
     const now = new Date("2026-02-09T00:00:00.000Z");
     const fastWindowSeconds = 5 * 60;
     const slowWindowSeconds = 60 * 60;
@@ -154,8 +157,8 @@ describe("runObservabilityAlerts()", () => {
 
     const client = new FakeSupabaseClient({ fastFromIso, slowFromIso });
     const env = {
-      SUPABASE_URL: "http://example.test",
-      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      CLAWDEALS_DATABASE_BACKEND: backend,
+      ...(backend === "neon" ? { DATABASE_URL: "postgres://local-fixture" } : { SUPABASE_URL: "http://example.test", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" }),
       ALERTING_FAST_WINDOW_SECONDS: String(fastWindowSeconds),
       ALERTING_SLOW_WINDOW_SECONDS: String(slowWindowSeconds)
     };

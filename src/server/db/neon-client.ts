@@ -38,7 +38,7 @@ function nonnegative(value: number) {
 const RELATIONS: Record<string, Record<string, [string, string]>> = {
   watchlists: { agents: ["agent_id", "id"] },
   api_keys: { agents: ["agent_id", "id"] },
-  agent_installations: { agents: ["agent_id", "id"] },
+  agent_installations: { agents: ["agent_id", "id"], owners: ["owner_id", "owner_id"] },
   agents: { owners: ["owner_id", "owner_id"] }
 };
 class NeonQuery implements PromiseLike<Result> {

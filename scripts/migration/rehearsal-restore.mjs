@@ -81,17 +81,21 @@ export function rehearsalSqlBlockers(sql) {
   if (/\b(?:FUNCTION|PROCEDURE|TRIGGER|VIEW|POLICY|RULE|EXTENSION|FOREIGN|SERVER|SUBSCRIPTION|PUBLICATION|TABLESPACE|SECURITY|OWNER|INHERITS|PARTITION|AS\s+SELECT|GENERATED|DEFAULT|CHECK|REFERENCES)\b/i.test(sql)) blockers.push("Executable definitions or dependencies require separate review");
   if (/\b(?:neon_auth|auth|storage|vault|cron|net|realtime)\b/i.test(sql)) blockers.push("Provider reference refused");
   // Even expressions in CREATE INDEX/type input functions could execute code.
-  if (/\b(?:INDEX|TYPE|USING|COLLATE|OPTIONS|ATTACH|SET\s+SCHEMA)\b/i.test(sql)) blockers.push("Definition requires a reviewed rewrite");
+  if (/\b(?:INDEX|USING|COLLATE|OPTIONS|ATTACH|SET\s+SCHEMA)\b/i.test(sql)) blockers.push("Definition requires a reviewed rewrite");
   try {
-    for (const chunk of splitSqlStatements(sql)) {
+    const chunks = splitSqlStatements(sql);
+    const enumPattern = /^CREATE TYPE (public|private)\.([a-z_][a-z0-9_]*) AS ENUM\s*\(\s*'(?:''|[^'\\])*'(?:\s*,\s*'(?:''|[^'\\])*')*\s*\)\s*;$/i;
+    const enumNames = chunks.map(c => stripComments(c.sql).trim().match(enumPattern)).filter(Boolean).map(m => `${m[1]}.${m[2]}`);
+    for (const chunk of chunks) {
       const text = stripComments(chunk.sql).trim();
       // Narrow grammar: no expressions, implicit function calls, custom types or
       // non-application object destinations. Expand only with a tested parser.
-      const column = '[a-z_][a-z0-9_]*\\s+(?:bigint|integer|int|smallint|text|boolean|uuid|date|timestamp|timestamptz|jsonb|bytea|numeric)(?:\\s+NOT\\s+NULL)?';
+      const enumTypes = enumNames.length ? '|' + enumNames.map(n => n.replace('.', '\\.')).join('|') : '';
+      const column = '[a-z_][a-z0-9_]*\\s+(?:bigint|integer|int|smallint|text|boolean|uuid|date|timestamp|timestamptz|jsonb|bytea|numeric' + enumTypes + ')(?:\\s+NOT\\s+NULL)?';
       const table = new RegExp('^CREATE TABLE (?:public|private)\\.[a-z_][a-z0-9_]*\\s*\\(\\s*' + column + '(?:\\s*,\\s*' + column + ')*\\s*\\)\\s*;$', 'i');
       const schema = /^CREATE SCHEMA (?:public|private)\s*;$/i;
       const copy = /^COPY (?:public|private)\.[a-z_][a-z0-9_]* \([a-z0-9_, ]+\) FROM stdin\s*;$/i;
-      if (!schema.test(text) && !table.test(text) && !(chunk.copy && copy.test(text))) blockers.push("Only reviewed simple application table/schema/COPY grammar is implemented");
+      if (!enumPattern.test(text) && !schema.test(text) && !table.test(text) && !(chunk.copy && copy.test(text))) blockers.push("Only reviewed simple application table/schema/COPY grammar is implemented");
     }
   } catch { blockers.push("Malformed SQL"); }
   return [...new Set(blockers)];

@@ -19,7 +19,8 @@ export function getBrowserAuthClient() {
   if (browserClient) return browserClient;
 
   if (getPublicAuthBackend() === "neon") {
-    const auth = createNeonAuthClient("/api/auth", {
+    if (typeof window === "undefined") throw new Error("Neon browser auth requires a browser origin");
+    const auth = createNeonAuthClient(new URL("/api/auth", window.location.origin).href, {
       adapter: SupabaseAuthAdapter()
     });
     browserClient = { auth };

@@ -9,10 +9,10 @@ describe("Neon compiler PostgreSQL contracts", () => {
     db = new PGlite();
     client = createNeonDataClient(async (sql, params) => (await db.query(sql, params)).rows);
     await db.exec(`
-      create table owners(owner_id text primary key,email_verified_at timestamptz,phone_verified_at timestamptz,secret text);
+      create table owners(owner_id text primary key,email_verified_at timestamptz,phone_verified_at timestamptz,secret text,suspended_at timestamptz);
       create table agents(id text primary key,owner_id text references owners,suspended_at timestamptz,secret text);
       create table api_keys(api_key_id text primary key,agent_id text references agents);
-      create table agent_installations(installation_id text primary key,agent_id text references agents);
+      create table agent_installations(installation_id text primary key,agent_id text references agents,owner_id text references owners);
       create table watchlists(watchlist_id text primary key,agent_id text references agents,title text,tags text[],metadata jsonb,amount integer default 7,created_at timestamptz default now());
       create function adapter_json(p_data jsonb) returns jsonb language sql as $$select p_data$$;
       create function adapter_null(p_data jsonb) returns boolean language sql as $$select p_data is null$$;
@@ -27,13 +27,13 @@ describe("Neon compiler PostgreSQL contracts", () => {
   afterAll(async () => { await db?.close(); });
   beforeEach(async () => {
     await db.exec(`truncate watchlists,api_keys,agent_installations,agents,owners;
-      insert into owners values('owner',null,null,'owner-private'),('other',null,null,'other-private');
+      insert into owners values('owner',null,null,'owner-private',null),('other',null,null,'other-private',null);
       insert into agents values('a','owner',null,'agent-private'),('b','other',null,'other-private');
       insert into watchlists(watchlist_id,agent_id,title,amount,tags,metadata) values
         ('one','a','O''Reilly',1,ARRAY['x','y'],'{"mission":{"kind":"BUY"}}'),
         ('two','a','a,b',2,ARRAY['y'],'{}'),('three','b','Third',3,null,null);
       insert into api_keys values('key','a'),('orphan',null);
-      insert into agent_installations values('install','a');`);
+      insert into agent_installations values('install','a','owner');`);
   });
   it("preserves JSON/arrays/defaults and parameterizes hostile values", async () => {
     const result = await client.from("watchlists").insert({ watchlist_id: "new", title: "');drop table agents;--", tags: ["a,b"], metadata: [{ nested: true }] }).select().single();
@@ -50,7 +50,7 @@ describe("Neon compiler PostgreSQL contracts", () => {
     const result = await client.from("api_keys").select("api_key_id, agents ( owner_id, suspended_at )").order("api_key_id");
     expect(result).toMatchObject({ error: null, data: [{ api_key_id: "key", agents: { owner_id: "owner", suspended_at: null } }, { api_key_id: "orphan", agents: null }] });
     expect(await client.from("agents").select("id,owners(email_verified_at,phone_verified_at)").eq("id", "a").single()).toMatchObject({ error: null, data: { owners: { email_verified_at: null, phone_verified_at: null } } });
-    expect(await client.from("agent_installations").select("installation_id,agents(owner_id)").single()).toMatchObject({ error: null, data: { agents: { owner_id: "owner" } } });
+    expect(await client.from("agent_installations").select("installation_id,agents(owner_id),owners(owner_id,suspended_at)").single()).toMatchObject({ error: null, data: { agents: { owner_id: "owner" }, owners: { owner_id: "owner", suspended_at: null } } });
   });
   it("counts before an empty page and supports count-only mutation responses", async () => {
     expect(await client.from("watchlists").select("watchlist_id", { count: "exact" }).range(20, 21)).toMatchObject({ error: null, data: [], count: 3 });

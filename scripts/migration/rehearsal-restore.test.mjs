@@ -40,7 +40,9 @@ test("native PostgreSQL fixture proves atomic rollback, provider preservation an
     assert.notEqual(restore("CREATE TABLE public.t (id integer);", ev).status, 0);
     assert.equal(query("SELECT to_regclass('public.t') IS NULL"), "t");
     query("ALTER DEFAULT PRIVILEGES REVOKE SELECT ON TABLES FROM fixture_app;");
-    assert.equal(restore("CREATE TABLE public.t (id integer);\nCOPY public.t (id) FROM stdin;\n8\n\\.\n", ev).status, 0);
+    assert.deepEqual(rehearsalSqlBlockers("CREATE TYPE public.fixture_state AS ENUM ('open', 'closed'); CREATE TABLE public.enum_fixture (state public.fixture_state);"), []);
+    assert.ok(rehearsalSqlBlockers("CREATE TYPE public.e (INPUT = public.side_effect);").length);
+    assert.equal(restore("CREATE TYPE public.fixture_state AS ENUM ('open', 'closed'); CREATE TABLE public.enum_fixture (state public.fixture_state); CREATE TABLE public.t (id integer);\nCOPY public.t (id) FROM stdin;\n8\n\\.\n", ev).status, 0);
     assert.equal(query("SELECT id FROM public.t"), "8");
     assert.equal(query("SELECT has_schema_privilege('fixture_app','public','USAGE')"), "f");
     assert.equal(query("SELECT has_table_privilege('fixture_app','public.t','SELECT')"), "f");
