@@ -40,6 +40,14 @@ describe("Neon compiler PostgreSQL contracts", () => {
     expect(result).toMatchObject({ error: null, data: { amount: 7, tags: ["a,b"], metadata: [{ nested: true }] } });
     expect(await client.from("watchlists").select().eq("title", "x' OR true --")).toMatchObject({ error: null, data: [] });
   });
+  it("rejects a missing embedded SQL column while preserving missing JSON keys and left-join null", async () => {
+    const missing = await client.from("api_keys").select("api_key_id,agents(no_such_column)");
+    expect(missing.error).toMatchObject({ code: "42703" });
+    const orphan = await client.from("api_keys").select("api_key_id,agents(owner_id)").eq("api_key_id", "orphan").single();
+    expect(orphan).toMatchObject({ error: null, data: { api_key_id: "orphan", agents: null } });
+    expect(await client.from("watchlists").select("watchlist_id").eq("watchlist_id", "two").is("metadata->missing", null).single())
+      .toMatchObject({ error: null, data: { watchlist_id: "two" } });
+  });
   it("enforces inner owner joins without leaking related private fields", async () => {
     const result = await client.from("watchlists").select("*,agents!inner(owner_id,suspended_at)").eq("agents.owner_id", "owner").is("agents.suspended_at", null).order("amount", { ascending: false });
     expect(result.error).toBeNull();

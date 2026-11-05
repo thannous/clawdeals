@@ -97,7 +97,7 @@ class NeonQuery implements PromiseLike<Result> {
       if (this.countMode && this.countMode !== "exact") throw new Error("Only exact counts are supported");
       const params: unknown[] = [];
       const bind = (value: unknown) => { params.push(value); return `$${params.length}`; };
-      const relations = new Map<string, { alias: string; join: string; target: string }>();
+      const relations = new Map<string, { alias: string; join: string; target: string; fields: string }>();
       const fields = split(this.projection).map((field) => {
         const embedded = /^(?:([a-zA-Z_][\w]*):)?([a-zA-Z_][\w]*)(!inner)?\s*\((.*)\)$/.exec(field);
         if (embedded) {
@@ -106,10 +106,11 @@ class NeonQuery implements PromiseLike<Result> {
           const relation = RELATIONS[this.table]?.[target];
           if (!relation || this.operation !== "select" || relations.has(alias)) throw new Error("Unsupported embedded relationship");
           const joinAlias = `r${relations.size}`;
-          relations.set(alias, { alias: joinAlias, target, join: `${inner ? "INNER" : "LEFT"} JOIN public.${ident(target)} AS ${joinAlias} ON ${joinAlias}.${ident(relation[1])}=t.${ident(relation[0])}` });
-          const columnsSql = split(columns).map((key) => `${bind(key)}::text,t.${ident(alias)}->${bind(key)}::text`).join(",");
-          split(columns).forEach(ident);
-          return `CASE WHEN t.${ident(alias)} IS NULL THEN NULL ELSE jsonb_build_object(${columnsSql}) END AS ${ident(alias)}`;
+          // Resolve related SQL columns before JSON construction. JSON extraction
+          // would silently turn an absent SQL column into null, hiding schema drift.
+          const columnsSql = split(columns).map((key) => `${bind(key)}::text,${joinAlias}.${ident(key)}`).join(",");
+          relations.set(alias, { alias: joinAlias, target, fields: columnsSql, join: `${inner ? "INNER" : "LEFT"} JOIN public.${ident(target)} AS ${joinAlias} ON ${joinAlias}.${ident(relation[1])}=t.${ident(relation[0])}` });
+          return `t.${ident(alias)} AS ${ident(alias)}`;
         }
         return field === "*" ? "t.*" : `t.${ident(field)}`;
       }).join(",");
@@ -189,7 +190,7 @@ class NeonQuery implements PromiseLike<Result> {
         scalarSet = !signature.composite;
         source = `SELECT t.* FROM ${call} AS t${scalarSet ? "(value)" : ""}${where}`;
       } else if (this.operation === "select") {
-        source = `SELECT t.*${[...relations.entries()].map(([alias, relation]) => `,CASE WHEN ${relation.alias} IS NULL THEN NULL ELSE to_jsonb(${relation.alias}) END AS ${ident(alias)}`).join("")} FROM ${table} AS t ${[...relations.values()].map((relation) => relation.join).join(" ")}${where}`;
+        source = `SELECT t.*${[...relations.entries()].map(([alias, relation]) => `,CASE WHEN ${relation.alias} IS NULL THEN NULL ELSE jsonb_build_object(${relation.fields}) END AS ${ident(alias)}`).join("")} FROM ${table} AS t ${[...relations.values()].map((relation) => relation.join).join(" ")}${where}`;
       } else {
         if (relations.size || this.orders.length || this.take !== undefined || this.skip) throw new Error("Unsupported mutation transform");
         let mutation: string;
@@ -233,7 +234,14 @@ class NeonQuery implements PromiseLike<Result> {
       return { data: omit ? null : this.cardinality ? data[0] ?? null : data, error: null, count: this.countMode ? Number(rows[0]?.count || 0) : null, status: 200, statusText: "OK" };
     } catch (error: any) {
       const cardinality = error?.code === "22P02" && String(error?.message).includes("__clawdeals_cardinality_");
-      return { data: null, count: null, error: { message: cardinality ? "JSON object requested, multiple (or no) rows returned" : error?.message || String(error), code: cardinality ? "PGRST116" : error?.code || "NEON_ADAPTER_ERROR", details: error?.detail || null, hint: error?.hint || null }, status: cardinality ? 406 : 400, statusText: cardinality ? "Not Acceptable" : "Bad Request" };
+      // Composite-field lookup emits different wording from a plain missing
+      // column. Preserve SQLSTATE/details while keeping existing service fallback
+      // detection compatible. Do not normalize other messages or error classes.
+      const rawMessage = error?.message || String(error);
+      const message = error?.code === "42703" && typeof rawMessage === "string"
+        ? rawMessage.replace(/^column ("(?:[^"\r\n]|"")+") not found in data type ([^\r\n]+)$/, "column $1 does not exist in data type $2")
+        : rawMessage;
+      return { data: null, count: null, error: { message: cardinality ? "JSON object requested, multiple (or no) rows returned" : message, code: cardinality ? "PGRST116" : error?.code || "NEON_ADAPTER_ERROR", details: error?.detail || null, hint: error?.hint || null }, status: cardinality ? 406 : 400, statusText: cardinality ? "Not Acceptable" : "Bad Request" };
     }
   }
 }
