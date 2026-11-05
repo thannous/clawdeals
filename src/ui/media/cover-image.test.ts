@@ -16,3 +16,41 @@ describe("resolveCoverImageSrc", () => {
     );
   });
 });
+
+it("Neon does not resolve bare keys or retired-project URLs through inherited Supabase config", () => {
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "neon");
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://gztfmpuqtpvncdcuhqxy.supabase.co");
+  try {
+    for (const storage_key of [
+      "listings/fixture/photo.jpg",
+      "https://gztfmpuqtpvncdcuhqxy.supabase.co/storage/v1/object/public/listing-photos/fixture.jpg",
+      "//gztfmpuqtpvncdcuhqxy.supabase.co/storage/v1/object/public/fixture.jpg",
+      "https://GZTFMPUQTPVNCDCUHQXY.supabase.co.:443/fixture.jpg",
+      "https://gztfmpuqtpvncdcuhqxy.storage.supabase.co/fixture.jpg",
+      "https://gztfmpuqtpvncdcuhqxy.supabase.in/fixture.jpg",
+      "https:\\gztfmpuqtpvncdcuhqxy.supabase.co\\fixture.jpg"
+    ]) expect(resolveCoverImageSrc({ storage_key })).toBeNull();
+  } finally { vi.unstubAllEnvs(); }
+});
+
+it("Neon preserves app assets, Blob images and other public HTTP hosts/projects", () => {
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "neon");
+  try {
+    for (const storage_key of [
+      "/fixtures/photo.jpg",
+      "https://store.public.blob.vercel-storage.com/fixture.jpg",
+      "https://images.example.com/fixture.jpg",
+      "http://images.example.com/fixture.jpg",
+      "https://other-project.supabase.co/storage/v1/object/public/photos/fixture.jpg",
+      "https://images.example.com/gztfmpuqtpvncdcuhqxy.supabase.co/fixture.jpg",
+      "https://gztfmpuqtpvncdcuhqxy.supabase.co.images.example.com/fixture.jpg"
+    ]) expect(resolveCoverImageSrc({ storage_key })).toBe(storage_key);
+  } finally { vi.unstubAllEnvs(); }
+});
+
+it("legacy Supabase rendering still accepts its original source URLs", () => {
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "supabase");
+  const storage_key = "https://gztfmpuqtpvncdcuhqxy.supabase.co/storage/v1/object/public/photos/fixture.jpg";
+  try { expect(resolveCoverImageSrc({ storage_key })).toBe(storage_key); }
+  finally { vi.unstubAllEnvs(); }
+});

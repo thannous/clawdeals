@@ -1,7 +1,8 @@
+import { isRetiredSupabaseLocator } from "../../shared/media/retired-storage";
 import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { del, get, head, issueSignedToken, presignUrl, put } from "@vercel/blob";
 
-import { getEvidenceStorageBackend } from "../config/backends";
+import { getDatabaseBackend, getEvidenceStorageBackend } from "../config/backends";
 import { getEnv } from "../config/env";
 import { getSupabaseServiceClient } from "../db/supabase";
 
@@ -24,7 +25,16 @@ function getEvidenceBlobToken() {
   );
 }
 
+function assertEvidenceLocatorAvailable(bucket: string, key?: string) {
+  if (getDatabaseBackend() === "neon" && (
+    bucket === SUPABASE_EVIDENCE_BUCKET || (key !== undefined && isRetiredSupabaseLocator(key))
+  )) {
+    throw buildStorageError("Legacy evidence storage is unavailable on Neon", "LEGACY_STORAGE_UNAVAILABLE", 409);
+  }
+}
+
 export function getEvidenceWriteBucket() {
+  if (getEvidenceStorageBackend() === "supabase") assertEvidenceLocatorAvailable(SUPABASE_EVIDENCE_BUCKET);
   return getEvidenceStorageBackend() === "vercel-blob"
     ? VERCEL_BLOB_EVIDENCE_BUCKET
     : SUPABASE_EVIDENCE_BUCKET;
@@ -43,6 +53,7 @@ export async function assertEvidenceStoragePolicy(
   bucket: string,
   policy: EvidenceStoragePolicy
 ) {
+  assertEvidenceLocatorAvailable(bucket);
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     getEvidenceBlobToken();
     return;
@@ -85,6 +96,7 @@ export async function createEvidenceUploadUrl({
   policy: EvidenceStoragePolicy;
 }) {
   assertRehearsalEffectAllowed("storage/evidence-storage");
+  assertEvidenceLocatorAvailable(bucket, key);
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     const validUntil = Date.now() + expiresInSeconds * 1000;
     const token = getEvidenceBlobToken();
@@ -125,6 +137,7 @@ export async function createEvidenceUploadUrl({
 
 export async function deleteEvidenceObject(bucket: string, key: string) {
   assertRehearsalEffectAllowed("storage/evidence-storage");
+  assertEvidenceLocatorAvailable(bucket, key);
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     await del(key, { token: getEvidenceBlobToken() });
     return;
@@ -138,6 +151,7 @@ export async function deleteEvidenceObject(bucket: string, key: string) {
 }
 
 export async function getEvidenceObjectInfo(bucket: string, key: string) {
+  assertEvidenceLocatorAvailable(bucket, key);
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     try {
       const info = await head(key, { token: getEvidenceBlobToken() });
@@ -158,6 +172,7 @@ export async function getEvidenceObjectInfo(bucket: string, key: string) {
 }
 
 export async function downloadEvidenceObjectBytes(bucket: string, key: string) {
+  assertEvidenceLocatorAvailable(bucket, key);
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     const result = await get(key, {
       access: "private",
@@ -182,6 +197,7 @@ export async function downloadEvidenceObjectBytes(bucket: string, key: string) {
 /** Server-mediated upload; never exposes a bearer upload token or public URL. */
 export async function putPrivateEvidenceObject(bucket: string, key: string, bytes: Buffer, contentType: string) {
   assertRehearsalEffectAllowed("storage/evidence-storage");
+  assertEvidenceLocatorAvailable(bucket, key);
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     await put(key, bytes, {
       access: "private", contentType, addRandomSuffix: false, allowOverwrite: false,
