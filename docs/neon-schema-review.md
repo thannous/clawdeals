@@ -148,3 +148,21 @@ FK CONSTRAINT, POLICY, RULE, TABLE ATTACH and INDEX ATTACH require a structured
 `{schema,name}` parent relation identity. For attachments this is the parent table
 or parent index, respectively; the main identity names the child. The extractor
 must provide these structural identities; the manifest does not infer them.
+
+## Independent catalog review follow-up
+
+A later read-only catalog snapshot (SHA256
+`e00218c5ae94517cafb356b06337539d2a778d275c890687b047795829506491`)
+is available outside this repository. It is not bound to the encrypted archive.
+It confirms all 84 routines and 390 relation records are owned by postgres,
+39 routines have explicit PUBLIC EXECUTE, six default-ACL records differ, and
+58 policies target anon/authenticated. Copying these grants or owner roles is not
+a valid restricted-runtime migration. Source PostGIS is 3.3.7 in extensions;
+target version/namespace compatibility remains to be established. The 31
+noninternal triggers versus 24 dump entries are consistent with seven partition
+clones but still require explicit reconciliation. Catalog dependency edges do not
+prove complete PL/pgSQL body closure: known net/Vault references remain relevant.
+
+The two masked values and normalized routine bodies were compared in memory to
+the repository: equality was attested without retaining values. This does not
+attest complete CREATE-wrapper equivalence or make the redacted artifact executable.

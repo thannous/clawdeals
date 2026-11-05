@@ -53,12 +53,15 @@ this evidence.
 ### Remaining release blockers
 
 - Actual archive-bound DDL identity/equivalence, original literal equality,
-  owner/ACL/default-ACL/role/dependency and extension metadata. The reviewed
+  approval of owner/ACL/default-ACL/role/dependency and extension mappings. Fresh
+  metadata is available as an independent snapshot, not dump-bound. The reviewed
   schema-only artifact is separate, redacted and non-executable.
 - Complete function/trigger/view/RLS privilege closure and actual-schema native
   restoration. Restricted queue/partition SQL remains a ROLLBACK review template;
   current restore admission intentionally does not admit the full source schema.
-- Review 12 dynamic query census entries; static coverage is not runtime parity.
+- The 12 dynamic census entries were traced to bounded current callsites; none
+  identified an unsupported pattern. This does not prove future callers, live
+  column/type availability, RPC dependencies or runtime authorization parity.
 - Neon Auth activation, validated production Google configuration and same-origin
   dual-proof user validation. Neither email nor OAuth was performed locally.
 - Verified deployed hourly recovery service and existing approved secret access;

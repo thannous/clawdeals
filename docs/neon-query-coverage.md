@@ -47,3 +47,11 @@ Retention, report redaction, partition RPC and observability are separately rout
 through the Neon adapter; retained Supabase rollback credentials must not cause
 source writes or skipped Neon maintenance. Additional permissions must be reviewed
 per domain. Do not grant owner credentials to make tests pass.
+
+The 12 dynamic entries were manually traced at reconstruction closeout: audit
+writer defaults to audit_logs; observability and dashboard helpers use fixed queue
+or approvals tables and scalar projections; retention defaults to audit_logs and
+reports; deal/listing helpers receive literal column lists with optional media
+fields. No current production override or unsupported shape was found. The AST
+census does not propagate arbitrary function arguments, so future callers and
+actual database column/type/authorization parity still require independent review.
