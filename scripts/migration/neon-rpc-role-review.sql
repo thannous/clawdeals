@@ -1,7 +1,9 @@
 -- ROLLBACK-ONLY RPC REVIEW. Independent source catalog e00218c5ae94517cafb356b06337539d2a778d275c890687b047795829506491.
 -- Not same-archive proof; no automatic migration/import integration.
 -- Dedicated queue/partition signatures are intentionally excluded.
--- Rendering context is a reviewed candidate, not historical source attestation.
+-- Rendering context pg_catalog,public verified by canonical-routines-v2 artifact
+-- SHA e8dc9ea399f44d60ce891f842127d2d97ce6bffcf3c1114be1e6a8a55fefc8ef.
+-- Current independent snapshot, not historical search_path or dump derivation.
 -- Both exact identity and exact definition SHA must match; mismatch aborts.
 BEGIN;
 SET LOCAL search_path='';

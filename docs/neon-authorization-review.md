@@ -80,7 +80,9 @@ restore admission was widened. Current prepared-SQL/archive hash agreement alone
 does not prove derivation: future execution needs DDL extracted from the same
 archive, structurally complete object inventory, exact approved replacements and
 owner/ACL/RLS/dependency closure. The two redacted bodies remain review-only despite
-literal/body equivalence attestations; complete CREATE wrappers are not proven.
+literal/body equivalence attestations. The native consent milestone below now
+proves both repository CREATE-wrapper hashes against canonical source metadata;
+it does not make the redacted files executable.
 Final source recheck after the bounded freeze remains required.
 
 Run `node --test scripts/migration/authorization-review.test.mjs` for focused tests.
@@ -142,8 +144,8 @@ must also be checked. Before creating a grant SQL candidate, run actual bodies
 under this nonowner role with matching operation policies and every approval/
 listing trigger enabled. Cover wrong participant/owner, missing verified contacts,
 self-dealing, first consent without reveal, second consent reveal, denial/revocation,
-reopen/idempotence, concurrent consent and trigger failure rollback. No consent
-role grants were applied or assumed tested in this milestone.
+reopen/idempotence, concurrent consent and trigger failure rollback. Those direct and trigger grants are now exercised in the synthetic native consent
+milestone below; no remote role grants were applied.
 
 ## Dedicated completed candidate closures
 
@@ -162,8 +164,8 @@ binding plus whole-schema role/trigger integration.
 ### Catalog rendering versus mutation context
 
 The RPC candidate explicitly renders identities and definitions under
-`pg_catalog, public`. This is a candidate context, **not an attestation of the
-historical exporter's search_path**. Exact identity and exact definition SHA must
+`pg_catalog, public`. Current canonical source evidence now verifies this context;
+it is **not an attestation of the historical exporter's search_path**. Exact identity and exact definition SHA must
 both match; mismatches abort without alternative hash acceptance. Historical
 context or same-archive extraction should still be recorded for reproducibility.
 The renderer requires an explicit bounded context/evidence record rather than an
@@ -174,3 +176,67 @@ shadow those operations. Native fixtures now cover an enum argument, a same-name
 text overload, differing caller search_paths, and rejection after changing the
 enum-overload body. This fixes rendering-induced mismatches without weakening the
 exact-definition guard or treating a matching candidate as archive derivation.
+
+
+## Canonical rendering evidence update
+
+Canonical-routines-v2 SHA256
+`e8dc9ea399f44d60ce891f842127d2d97ce6bffcf3c1114be1e6a8a55fefc8ef`
+now verifies current `pg_catalog, public` rendering at
+2026-11-05T16:40:10.623927Z, read-only snapshot 374122:374122:.
+All 84 exact identity/signature/definition hashes equal the previous catalog.
+This supersedes the earlier current-context uncertainty; it does not establish
+historical search_path or same-archive binding. Two review definitions remain
+redacted and are never executed.
+
+## Contact-consent native closure milestone
+
+`neon-contact-consent-role-plan.sql` is a rollback-only, exact-signature/SHA-gated
+candidate for the two contact functions. The candidate requires preexisting
+NOLOGIN NOINHERIT NOBYPASS consent role, no app role-assumption pathway, no app or
+consent ownership of application tables, denied public CREATE and FORCE RLS on
+all affected relations. It assigns only the two consent functions to that role,
+gives runtime only their EXECUTE and adds individually named `consent_*` policies.
+No runtime direct-table privilege is added. Column grants now include actual
+non-early-return invoker trigger dependencies, not only the direct function bodies.
+
+The native test executes repository definitions, never source dump/redacted DDL:
+- Both consent functions from the bilateral-contact migration.
+- Approvals side-effect trigger; listing search, watchlist enqueue, smartphone
+  invalidation and project invalidation triggers, all enabled.
+- Downstream watchlist monotonic-clock and queue-dispatch triggers, enabled.
+  The dispatcher calls the reviewed Neon transactional-marker replacement, not
+  source net/Vault. A separate restricted nonowner queue role owns those routines.
+- Consent operations run through an actual restricted app LOGIN, not a superuser
+  session capable of SET ROLE. Trigger definers use restricted NOLOGIN fixture
+  owners. The consent role owns neither tables nor unrelated trigger functions.
+
+Synthetic schemas implement the relevant rowtypes/columns and observed approval
+UUID/PENDING/JSON/now defaults plus queue counter/timestamp defaults. Full source
+foreign keys, constraints, indexes and unrelated trigger branches are not claimed.
+The fixture asserts that native PG17.11 repository CREATE-wrapper hashes exactly
+match both canonical source hashes under pg_catalog,public, with no hash rebinding.
+Thus these two wrapper renderings are proven equal; same-archive binding and full
+imported schema equivalence remain separate execution gates.
+
+Passed scenarios include wrong participant, wrong approval owner, self-dealing,
+missing verified contact during request and during second consent, no reveal after
+first consent, reveal after second, deny/cancel, revoke before finalization, reopen,
+request/approval idempotence, post-finalization revoke refusal and direct owner-table
+read/consent SET ROLE denial. Two independent concurrent app sessions produce one
+first-consent result and one reveal, with a single additional project invalidation.
+
+Nonempty smartphone/project rows exercise real side effects: invalidate matching
+state, remove watchlist match, mark project DRAFT/increment version, upsert durable
+watchlist queue row and insert private wake marker. ON CONFLICT required exact
+queue read columns in addition to insert/update columns; those grants are included.
+Revoking project update permission forces second-consent failure and atomically
+preserves pending approval and unrevealed transaction. The test restores that
+synthetic permission and then proves success. The existing source dispatch trigger
+catches errors by design; checking the durable marker confirms the successful
+queue path, not a claim that dispatch failures are impossible.
+
+Remaining: integrate this candidate with complete same-archive schema, other
+business trigger branches and global approved role/ACL policies. Do not replace
+an existing restrictive policy or broaden an app policy merely to make consent
+pass. This candidate is not applied to any remote database.

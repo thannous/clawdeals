@@ -9424,7 +9424,11 @@
   ],
   "rendering_context": {
     "search_path": "pg_catalog, public",
-    "evidence": "parent-approved-candidate-context-exact-identity-and-definition-hash-required",
-    "source_context_attested": false
+    "evidence": "canonical-routines-v2:e8dc9ea399f44d60ce891f842127d2d97ce6bffcf3c1114be1e6a8a55fefc8ef",
+    "source_context_attested": true,
+    "attested_at": "2026-11-05T16:40:10.623927Z",
+    "snapshot": "374122:374122:",
+    "historical_context_attested": false,
+    "same_archive_binding": false
   }
 }
