@@ -16,8 +16,8 @@ function encodePathSegments(path: string): string {
 export function resolveCoverImageSrc(image: any): string | null {
   const storageKey = typeof image?.storage_key === "string" ? image.storage_key.trim() : "";
   if (!storageKey) return null;
-  // This public selector is compiled into the browser bundle, like auth routing.
-  const neon = process.env.NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND?.trim().toLowerCase() === "neon";
+  // Build-derived from the server database selector, independently of auth.
+  const neon = process.env.NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND?.trim().toLowerCase() === "neon";
   if (neon && isRetiredSupabaseLocator(storageKey)) return null;
 
   if (

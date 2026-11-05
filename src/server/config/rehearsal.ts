@@ -27,6 +27,7 @@ export function assertRehearsalNeonBackend(backend: string): void {
 export function isRehearsalConfigurationReady(): boolean {
   return !isRehearsalMode() || (
     process.env.CLAWDEALS_DATABASE_BACKEND === "neon" &&
+    process.env.NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND === "neon" &&
     process.env.CLAWDEALS_AUTH_BACKEND === "neon" &&
     process.env.NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND === "neon" &&
     process.env.NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE === "true"

@@ -17,6 +17,7 @@ vi.mock("@vercel/functions", () => ({ waitUntil: transports.waitUntil, getDeadli
 beforeEach(() => {
   vi.stubEnv("CLAWDEALS_REHEARSAL_MODE", "true");
   vi.stubEnv("CLAWDEALS_DATABASE_BACKEND", "neon");
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND", "neon");
   vi.stubEnv("CLAWDEALS_AUTH_BACKEND", "neon");
   vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "neon");
   vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE", "true");
@@ -117,7 +118,7 @@ describe("server rehearsal boundary, including inherited credentials", () => {
   it("requires the safe compiled auth configuration before serving UI, preserves freeze", async () => {
     const request = new NextRequest("https://example.invalid/browse");
     expect(proxy(request).status).toBe(200);
-    for (const key of ["NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE", "CLAWDEALS_DATABASE_BACKEND", "CLAWDEALS_AUTH_BACKEND"]) {
+    for (const key of ["NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND", "NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE", "CLAWDEALS_DATABASE_BACKEND", "CLAWDEALS_AUTH_BACKEND"]) {
       const previous = process.env[key];
       vi.stubEnv(key, "");
       expect(proxy(request).status).toBe(503);

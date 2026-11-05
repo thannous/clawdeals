@@ -11,6 +11,16 @@ try {
   }
 }
 
+// Only the non-secret database selector is exposed, never connection settings.
+// Mirror the server default/normalization and reject contradictory public input.
+const databaseBackend = String(process.env.CLAWDEALS_DATABASE_BACKEND || "").trim().toLowerCase() || "supabase";
+if (!["supabase", "neon"].includes(databaseBackend)) {
+  throw new Error("CLAWDEALS_DATABASE_BACKEND must be supabase or neon");
+}
+const publicDatabaseBackend = String(process.env.NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND || "").trim().toLowerCase();
+if (publicDatabaseBackend && publicDatabaseBackend !== databaseBackend) {
+  throw new Error("NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND must match CLAWDEALS_DATABASE_BACKEND");
+}
 const rehearsalValue = String(process.env.CLAWDEALS_REHEARSAL_MODE || "").trim().toLowerCase();
 const rehearsalBuild = Boolean(rehearsalValue && rehearsalValue !== "false" && rehearsalValue !== "0");
 if (rehearsalBuild && process.env.NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND !== "neon") {
@@ -18,7 +28,10 @@ if (rehearsalBuild && process.env.NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND !== "neon")
 }
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: { NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE: rehearsalBuild ? "true" : "false" },
+  env: {
+    NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND: databaseBackend,
+    NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE: rehearsalBuild ? "true" : "false"
+  },
   reactStrictMode: true,
   // The root Proxy needs the original URL to distinguish explicit /en from /.
   skipProxyUrlNormalize: true,

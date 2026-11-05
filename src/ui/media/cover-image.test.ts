@@ -18,7 +18,7 @@ describe("resolveCoverImageSrc", () => {
 });
 
 it("Neon does not resolve bare keys or retired-project URLs through inherited Supabase config", () => {
-  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "neon");
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND", "neon");
   vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://gztfmpuqtpvncdcuhqxy.supabase.co");
   try {
     for (const storage_key of [
@@ -34,7 +34,7 @@ it("Neon does not resolve bare keys or retired-project URLs through inherited Su
 });
 
 it("Neon preserves app assets, Blob images and other public HTTP hosts/projects", () => {
-  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "neon");
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND", "neon");
   try {
     for (const storage_key of [
       "/fixtures/photo.jpg",
@@ -49,8 +49,27 @@ it("Neon preserves app assets, Blob images and other public HTTP hosts/projects"
 });
 
 it("legacy Supabase rendering still accepts its original source URLs", () => {
-  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", "supabase");
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND", "supabase");
   const storage_key = "https://gztfmpuqtpvncdcuhqxy.supabase.co/storage/v1/object/public/photos/fixture.jpg";
   try { expect(resolveCoverImageSrc({ storage_key })).toBe(storage_key); }
   finally { vi.unstubAllEnvs(); }
+});
+
+
+it.each([
+  ["supabase", "supabase"], ["neon", "supabase"],
+  ["supabase", "neon"], ["neon", "neon"]
+])("uses DB=%s independently of Auth=%s for legacy image routing", (database, auth) => {
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_DATABASE_BACKEND", database);
+  vi.stubEnv("NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND", auth);
+  const base = "https://gztfmpuqtpvncdcuhqxy.supabase.co";
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", base);
+  vi.stubEnv("NEXT_PUBLIC_LISTING_PHOTOS_BUCKET", "listing-photos");
+  const source = `${base}/storage/v1/object/public/listing-photos/fixture.jpg`;
+  try {
+    expect(resolveCoverImageSrc({ storage_key: "fixture.jpg" })).toBe(database === "neon" ? null : source);
+    expect(resolveCoverImageSrc({ storage_key: source })).toBe(database === "neon" ? null : source);
+    const other = "https://images.example.com/fixture.jpg";
+    expect(resolveCoverImageSrc({ storage_key: other })).toBe(other);
+  } finally { vi.unstubAllEnvs(); }
 });
