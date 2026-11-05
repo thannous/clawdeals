@@ -18,13 +18,13 @@ describe("verifyExternalAuthIdentity", () => {
     delete process.env.NEON_AUTH_BASE_URL;
   });
 
-  it("requires the Neon cookie session and matching bearer token", async () => {
+  it("rejects opaque session bearer tokens even with a live matching cookie", async () => {
     process.env.CLAWDEALS_AUTH_BACKEND = "neon";
     process.env.NEON_AUTH_BASE_URL = "https://auth.example.test/";
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
       new Response(
         JSON.stringify({
-          session: { token: "neon-session-token" },
+          session: { token: "neon-session-token", userId: "opaque-neon-subject", expiresAt: "2099-01-01T00:00:00Z" },
           user: { id: "opaque-neon-subject", email: "owner@example.test", emailVerified: true }
         }),
         { status: 200, headers: { "content-type": "application/json" } }
@@ -36,12 +36,7 @@ describe("verifyExternalAuthIdentity", () => {
         accessToken: "neon-session-token",
         cookieHeader: "cd_owner_session=secret; __Secure-neon-auth.session_token=neon-session-token"
       })
-    ).resolves.toMatchObject({
-      provider: "neon",
-      subject: "opaque-neon-subject",
-      email: "owner@example.test",
-      upstreamProvider: "neon"
-    });
+    ).resolves.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
       "https://auth.example.test/get-session",
       expect.objectContaining({
