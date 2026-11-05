@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { query } = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("@neondatabase/serverless", () => ({ neon: () => ({ query }) }));
 import { ensureNeonRuntimeRole, resetNeonSqlForTests } from "./neon";
-const safe = { rolsuper: false, rolbypassrls: false, rolcreaterole: false, rolcreatedb: false, rolreplication: false, can_temp: false, owns_database: false, elevated_membership: false, owns_tables: false, owns_schema: false };
+const safe = { rolsuper: false, rolbypassrls: false, rolcreaterole: false, rolcreatedb: false, rolreplication: false, rolinherit: false, assumed_role: false, can_create_database_objects: false, can_temp: false, owns_database: false, elevated_membership: false, owns_tables: false, owns_schema: false };
 beforeEach(() => { resetNeonSqlForTests(); query.mockReset(); vi.stubEnv("DATABASE_URL", "postgresql://fixture.invalid/db"); });
 describe("runtime role safety gate", () => {
   it("accepts and caches a fully restricted role", async () => {
@@ -11,6 +11,11 @@ describe("runtime role safety gate", () => {
     expect(query).toHaveBeenCalledTimes(1);
     expect(query.mock.calls[0][0]).toContain("'MEMBER'");
     expect(query.mock.calls[0][0]).toContain("'TEMP'");
+    expect(query.mock.calls[0][0]).toContain("current_user<>session_user AS assumed_role");
+    expect(query.mock.calls[0][0]).toContain("current_database(),'CREATE') AS can_create_database_objects");
+    expect(query.mock.calls[0][0]).toContain("r.rolinherit");
+    expect(query.mock.calls[0][0]).toContain("pg_has_role(current_user,p.oid,'MEMBER')) AS elevated_membership");
+    expect(query.mock.calls[0][0]).not.toContain("p.rolsuper");
   });
   it.each(Object.keys(safe))("rejects %s", async (key) => {
     query.mockResolvedValue([{ ...safe, [key]: true }]);

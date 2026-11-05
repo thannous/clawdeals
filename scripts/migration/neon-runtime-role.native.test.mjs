@@ -1,0 +1,41 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+const bin=process.env.PG_FIXTURE_BIN;
+test("exact runtime gate accepts LOGIN app and rejects CREATE, membership, INHERIT and SET ROLE",{skip:!bin&&'Set PG_FIXTURE_BIN to verified official PostgreSQL binaries'},()=>{
+  const source=fs.readFileSync(new URL('../../src/server/db/neon.ts',import.meta.url),'utf8');
+  const sql=source.match(/getNeonSql\(\)\.query\(`([\s\S]*?)`, \[\]\)/)?.[1]; assert(sql);
+  const flags=JSON.parse(source.match(/const flags = (\[[^;]+\]);/)?.[1]||'null'); assert.equal(flags.length,13);
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'neon-role-native-')),data=path.join(root,'data'),socket=path.join(root,'socket');fs.mkdirSync(socket);let started=false;
+  const run=(tool,args,input)=>spawnSync(path.join(bin,tool),args,{input,encoding:'utf8',timeout:30000});
+  const check=(tool,args,input)=>{const r=run(tool,args,input);assert.equal(r.status,0,r.stderr||r.error?.message);return r.stdout.trim();};
+  try{
+    check('initdb',['-D',data,'--no-locale','--username=fixture_owner']);
+    check('pg_ctl',['-D',data,'-l',path.join(root,'server.log'),'-o',`-c listen_addresses='' -c unix_socket_directories='${socket}'`,'-w','start']);started=true;
+    const args=['-X','-h',socket,'-d','postgres','-At','-v','ON_ERROR_STOP=1'];
+    const query=(sql,user='fixture_owner')=>check('psql',[...args,'-U',user,'-c',sql]);
+    query(`create role clawdeals_app login nosuperuser nobypassrls noinherit;
+      create role harmless_group nologin nosuperuser nobypassrls;
+      create schema private; revoke all on schema public,private from public;
+      revoke create,temporary on database postgres from public,clawdeals_app;
+      grant connect on database postgres to clawdeals_app; grant usage on schema public to clawdeals_app;`);
+    const inspect=(prefix='',user='clawdeals_app')=>JSON.parse(query(prefix+`select row_to_json(g) from (${sql}) g`,user).split('\n').at(-1));
+    const accepted=row=>flags.every(flag=>row[flag]===false);
+    assert(accepted(inspect()),'actual LOGIN app should pass');
+    query('grant create on database postgres to clawdeals_app');
+    assert.equal(inspect().can_create_database_objects,true);assert(!accepted(inspect()));
+    query('revoke create on database postgres from clawdeals_app');
+    query('grant harmless_group to clawdeals_app');
+    assert.equal(inspect().elevated_membership,true);assert(!accepted(inspect()));
+    query('revoke harmless_group from clawdeals_app');
+    query('alter role clawdeals_app inherit');
+    assert.equal(inspect().rolinherit,true);assert(!accepted(inspect()));
+    query('alter role clawdeals_app noinherit');
+    const assumed=inspect('set role clawdeals_app;','fixture_owner');
+    assert.equal(assumed.assumed_role,true);assert(!accepted(assumed));
+    assert(accepted(inspect()),'restored LOGIN app should pass');
+  }finally{if(started)check('pg_ctl',['-D',data,'-m','fast','-w','stop']);fs.rmSync(root,{recursive:true,force:true});}
+});
