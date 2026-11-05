@@ -10,6 +10,12 @@ import {
   shouldEncryptResponseBody
 } from "./crypto";
 import {
+  decryptResponseEnvelope,
+  encryptResponseEnvelope,
+  isResponseEnvelope,
+  shouldEncryptResponseHeaders
+} from "./response-envelope";
+import {
   IDEMPOTENCY_LOCK_TTL_MS,
   IDEMPOTENCY_MAX_KEY_LENGTH,
   IDEMPOTENCY_MAX_WAIT_MS,
@@ -612,28 +618,41 @@ export async function beginIdempotency(req: any, ctx: any, options: any = {}): P
 }
 
 function buildReplayResponse(record) {
-  const headers = Object.assign({}, record.response_headers || {}, {
-    "Idempotency-Replayed": "true"
-  });
-  let body = record.response_body || null;
-  if (!body && record.response_body_encrypted) {
-    try {
-      body = decryptJson({
-        secret: process.env.IDEMPOTENCY_SECRET,
-        payload: record.response_body_encrypted
-      });
-    } catch (error) {
-      return jsonResponse(
-        500,
-        errorPayload(
-          "IDEMPOTENCY_REPLAY_FAILED",
-          "Failed to replay idempotent response"
-        ),
-        headers
-      );
+  const replayHeader = { "Idempotency-Replayed": "true" };
+  let headers;
+  let body;
+  try {
+    // Ciphertext is authoritative, including when stale/plaintext shadow fields
+    // exist. Never fall back to those fields after authentication or parse failure.
+    if (record.response_body_encrypted != null) {
+      if (isResponseEnvelope(record.response_body_encrypted)) {
+        const envelope = decryptResponseEnvelope({
+          secret: process.env.IDEMPOTENCY_SECRET,
+          payload: record.response_body_encrypted
+        });
+        body = envelope.body;
+        headers = { ...envelope.headers, ...replayHeader };
+      } else {
+        body = decryptJson({
+          secret: process.env.IDEMPOTENCY_SECRET,
+          payload: record.response_body_encrypted
+        }) || {};
+        headers = { ...record.response_headers, ...replayHeader };
+      }
+    } else {
+      body = record.response_body || {};
+      headers = { ...record.response_headers, ...replayHeader };
     }
+  } catch {
+    // Stored headers may contain live cookies, even on legacy body-only rows.
+    // Only attach them after successful replay decoding, never to an error.
+    return jsonResponse(
+      500,
+      errorPayload("IDEMPOTENCY_REPLAY_FAILED", "Failed to replay idempotent response"),
+      replayHeader
+    );
   }
-  return jsonResponse(record.response_status || 200, body || {}, headers);
+  return jsonResponse(record.response_status || 200, body, headers);
 }
 
 function shouldPersistStatus(status) {
@@ -655,11 +674,21 @@ export async function finalizeIdempotency(context, result) {
   }
 
   const status = result.status >= 500 ? "FAILED" : "COMPLETED";
-  const responseHeaders = result.headers || {};
+  let responseHeaders = result.headers || {};
 
   let responseBody = result.body ?? null;
   let responseBodyEncrypted = null;
-  if (responseBody && shouldEncryptResponseBody(responseBody)) {
+  // Reader-first rollout: enable only after every serving/rollback build can
+  // decode v2. Safe-header responses retain their existing storage format.
+  if (process.env.IDEMPOTENCY_RESPONSE_ENVELOPE_V2 === "true" && shouldEncryptResponseHeaders(responseHeaders)) {
+    responseBodyEncrypted = encryptResponseEnvelope({
+      secret: process.env.IDEMPOTENCY_SECRET,
+      body: responseBody,
+      headers: responseHeaders
+    });
+    responseBody = null;
+    responseHeaders = null;
+  } else if (responseBody && shouldEncryptResponseBody(responseBody)) {
     responseBodyEncrypted = encryptJson({ secret: process.env.IDEMPOTENCY_SECRET, payload: responseBody });
     responseBody = null;
   }

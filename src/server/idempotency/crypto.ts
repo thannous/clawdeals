@@ -36,13 +36,16 @@ export function buildRequestHmac({ secret, method, path, query, canonicalBody })
   return hmacSha256(secret, data);
 }
 
-export function encryptJson({ secret, payload }) {
+export function encryptJson({ secret, payload, additionalAuthenticatedData = undefined }) {
   if (!secret) {
     throw new Error("IDEMPOTENCY_SECRET is required to encrypt payloads.");
   }
   const key = crypto.createHash("sha256").update(secret).digest();
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  if (additionalAuthenticatedData !== undefined) {
+    cipher.setAAD(Buffer.from(additionalAuthenticatedData));
+  }
   const plaintext = Buffer.from(JSON.stringify(payload));
   const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   const tag = cipher.getAuthTag();
@@ -50,7 +53,7 @@ export function encryptJson({ secret, payload }) {
   return `v1:${packed}`;
 }
 
-export function decryptJson({ secret, payload }) {
+export function decryptJson({ secret, payload, additionalAuthenticatedData = undefined }) {
   if (!secret) {
     throw new Error("IDEMPOTENCY_SECRET is required to decrypt payloads.");
   }
@@ -69,7 +72,16 @@ export function decryptJson({ secret, payload }) {
   const iv = Buffer.from(ivB64, "base64");
   const encrypted = Buffer.from(encryptedB64, "base64");
   const tag = Buffer.from(tagB64, "base64");
+  // Writers always use a 96-bit IV and full 128-bit tag. Do not accept truncated
+  // tags or alternate/malformed base64 encodings on replay.
+  if (iv.length !== 12 || tag.length !== 16 ||
+      parts.some((part) => Buffer.from(part, "base64").toString("base64") !== part)) {
+    throw new Error("Encrypted payload is malformed.");
+  }
   const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  if (additionalAuthenticatedData !== undefined) {
+    decipher.setAAD(Buffer.from(additionalAuthenticatedData));
+  }
   decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([decipher.update(encrypted), decipher.final()]);
   return JSON.parse(plaintext.toString("utf-8"));
