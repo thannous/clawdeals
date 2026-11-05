@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const dependencyMocks = vi.hoisted(() => ({
   getSupabaseServiceClient: vi.fn(),
+  ensureNeonRuntimeRole: vi.fn().mockResolvedValue(undefined),
   getNeonSql: vi.fn(),
   neonQuery: vi.fn()
 }));
@@ -11,6 +12,7 @@ vi.mock("../db/supabase", () => ({
 }));
 
 vi.mock("../db/neon", () => ({
+  ensureNeonRuntimeRole: vi.fn().mockResolvedValue(undefined),
   getNeonSql: dependencyMocks.getNeonSql
 }));
 

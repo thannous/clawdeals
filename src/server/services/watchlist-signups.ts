@@ -1,5 +1,5 @@
 import { getDatabaseBackend } from "../config/backends";
-import { getNeonSql } from "../db/neon";
+import { ensureNeonRuntimeRole, getNeonSql } from "../db/neon";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { sendEmailMessage } from "../channels/email/client";
@@ -50,6 +50,7 @@ export async function createWatchlistSignup({ email, locale, source, sendEmail =
 
   if (getDatabaseBackend() === "neon") {
     try {
+      await ensureNeonRuntimeRole();
       const sql = getNeonSql();
       const rows = await sql`
         insert into public.watchlist_signups (email, locale, source)
