@@ -83,3 +83,68 @@ or demonstrate structured equivalence with every difference explicitly reviewed.
 Masked placeholders must never become invented business constants. A final dump
 requires fresh review after the bounded write freeze; an earlier fingerprint does
 not prove future source state. Final cutover admission remains separate and closed.
+
+## Exact-object review contract (non-executing)
+
+`scripts/migration/object-transform-manifest.mjs` now provides two pure functions:
+`buildObjectTransformManifest(inputs)` and
+`validateObjectTransformManifest(manifest, inputs, approvedManifestSha256)`.
+They do not read files, connect to databases, emit executable SQL, admit definitions
+into the restore path, or turn inventory candidates into approvals.
+
+The caller supplies:
+
+- `source`: `archive_sha256`, `artifact_sha256`, exact `artifact` Buffer,
+  `redacted:false`, `metadata_sha256`, and a complete ordered `objects` list.
+  Each object has `identity:{schema,kind,name,identity_arguments,parent_identity}`, zero-based byte `start`/exclusive
+  `end`, and `definition_sha256` over exactly that byte span. Spans cannot overlap.
+  The artifact digest covers all bytes, including preamble, gaps and trailer.
+- `replacements`: explicit `{identity,definition,definition_sha256,redacted:false}`
+  records. Definition is a Buffer, never included in the output manifest.
+- `reviews`: exactly one per source object, containing `source_identity`,
+  `source_definition_sha256`, `action` (`keep` or `replace`), `target_identity`,
+  `target_definition_sha256`, and a nonsecret `review_reference`.
+  Keeping requires unchanged identity/hash. Replacing requires an exact matching
+  replacement record. Omissions, implicit approvals, unused replacements and
+  duplicate targets are refused. Splits/merges/additions are not supported yet.
+- `ordering`: every source identity exactly once, specifying explicit output order.
+  Order is bound to the review, not inferred from catalog dependencies.
+
+Retain the resulting canonical SHA256 from `digest(manifest)` independently in the
+reviewing orchestrator. Validation rebuilds the expected manifest from current
+inputs and compares every field plus this prior digest. Changes to any artifact
+byte, archive identity, metadata digest, object, replacement, review reference or
+ordering invalidate that prior approval. A digest is a change detector, not a
+signature, proof of author identity or substitute for required user authorization.
+
+The supplied structural identities/spans and complete inventory still need a
+trusted extraction/review step. This module does not parse PostgreSQL to establish
+that a label matches its DDL, detect an omitted object hidden in a byte gap, or
+prove dependency/authorization closure. It rejects the current known redaction
+markers and requires an explicit non-redacted attestation, but cannot detect every
+possible masking convention. These limits are explicit output flags:
+`structural_identities_verified:false`, `dependency_closure_verified:false`,
+`authorization_closure_verified:false`, `executable:false`,
+`restore_eligible:false`, `cutover_eligible:false`.
+
+The real redacted review artifact cannot enter this contract. Missing exact dump
+binding and source owner/ACL/dependency metadata remain blockers. After those are
+provided, the next smallest step is an independently reviewed structural extractor
+and explicit per-object transformation decisions for routines, views, triggers,
+defaults and provider replacements, followed by approved role closure. Lifting the
+full restore block additionally requires isolated PostgreSQL tests of complete
+transformed schema/dependencies, all trigger paths, PostGIS, partition maintenance,
+queue replacement, privilege isolation, atomic rollback and archive/schema parity.
+Neither manifest validity nor these fixture tests lifts the current restore gate.
+
+Focused tests: `node --test scripts/migration/object-transform-manifest.test.mjs`.
+
+Object identities now require `identity_arguments` explicitly: use PostgreSQL's
+identity-argument signature for FUNCTION/PROCEDURE/AGGREGATE, including an empty
+string for zero-argument routines; use an empty string for nonroutines. Overloads
+with the same schema/name remain distinct. Do not encode arguments into `name`.
+`parent_identity` is explicitly null for unscoped objects. TRIGGER, CONSTRAINT,
+FK CONSTRAINT, POLICY, RULE, TABLE ATTACH and INDEX ATTACH require a structured
+`{schema,name}` parent relation identity. For attachments this is the parent table
+or parent index, respectively; the main identity names the child. The extractor
+must provide these structural identities; the manifest does not infer them.
