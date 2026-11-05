@@ -147,3 +147,80 @@ access. Verify existing approved configuration; obtain any required approval for
 new secret transmission/access before deployment. No restored queue has been
 drained. Immediate self-origin Vercel wakes reuse its existing dispatch secret and
 do not require a new Cloudflare secret, but cannot replace unattended recovery.
+
+## Reviewed per-signature dependency closure (2026-11-05)
+
+Evidence: separately held source catalog SHA-256
+`e00218c5ae94517cafb356b06337539d2a778d275c890687b047795829506491`,
+plus its sanitized schema review. Neither artifact is a restorable dump or proof
+that a later dump matches. All three queue/partition SQL files now end ROLLBACK.
+Only disposable fixtures explicitly replace that final statement. Missing imported
+send/claim/configure signatures fail the queue overlay before replacement.
+
+Exact routine groups and target changes:
+
+| Signatures | Target treatment and direct dependencies |
+| --- | --- |
+| `private.send_queue_wake_v1(text)` | Replace net/Vault call with bounded queue state INSERT. Nonowner `clawdeals_functions`, SECURITY DEFINER, empty path. |
+| `private.wake_queue_consumer_v1()` | Retain reviewed trigger body; calls send, reads NEW/OLD only. Same nonowner definer. |
+| `private.queue_drain_claim_v1(text,uuid)` | Replace with state lease INSERT/UPDATE plus notification reconciliation. Same nonowner definer. |
+| `private.queue_drain_release_v1(text,uuid)` | Retain token-qualified state UPDATE. Same nonowner definer. |
+| `private.notification_schedule_preferences_v1(jsonb)` | Retain pure JSON projection, SECURITY INVOKER; owned by functions role for internal EXECUTE. |
+| `private.notification_event_enabled_v1(jsonb,text)` | Retain pure event selection, SECURITY INVOKER; same owner. |
+| `private.notification_eligible_at_v1(jsonb,timestamptz)` | Retain scheduling calculation, SECURITY INVOKER; pg_catalog timezone view/functions only, same owner. |
+| `private.schedule_notification_row_v1()` | Retain BEFORE trigger; SELECT preferences, pure helpers, edits NEW fields. Nonowner definer. |
+| `private.reschedule_owner_notifications_v1()` | Retain preference trigger; helpers plus UPDATE of two schedule columns on PENDING outbox rows. Nonowner definer. |
+| `private.reconcile_notification_schedules_v1()` | Retain reconciliation; SELECT outbox/preferences and same two-column UPDATE. Nonowner definer. |
+| `private.retry_pending_queue_wakes_v1()` | Retain reviewed body under functions owner; SELECT three queues and due outbox, calls reconcile/send. No runtime EXECUTE, no Neon database cron installation. |
+| `private.configure_queue_dispatch_v1(text)` | Replace Vault operation with explicit exception; SECURITY INVOKER, functions owner, no runtime EXECUTE. |
+| `public.queue_drain_claim_v1(text,uuid)`, `public.queue_drain_release_v1(text,uuid)` | Existing wrappers become empty-path SECURITY DEFINER owned by functions role; app EXECUTE only. |
+| `public.claim_neon_queue_wakes_v1()` | Explicit new app-dispatch wrapper, not a claimed source RPC. Same owner; reconcile plus bounded pending reads/state claim. |
+| `private.ensure_audit_log_partitions()`, `public.ensure_audit_log_partitions()` | Bounded replacement plus existing wrapper, maintenance owner, fixed UTC/ISO path and exact capture-trigger EXECUTE. |
+| `public.capture_acquisition_d7_retention()` | Retain SECURITY INVOKER and empty path. App needs five-column acquisition SELECT/INSERT; maintenance needs function EXECUTE only for cloning. |
+
+For the acquisition trigger the exact columns are acquisition_id, event_name,
+occurred_at, agent_id and market_code. SELECT policy must expose both first_match
+and d7_retained: PostgreSQL's ON CONFLICT visibility requires the latter even
+though the source SELECT filters first_match. INSERT policy admits d7_retained
+only. No sequence, UPDATE, DELETE or maintenance acquisition-table grant is needed.
+The UUID default is gen_random_uuid; source table review found no outbound user
+trigger on acquisition_funnel_events. This narrow trigger policy does not supply
+other app analytics operations and must be reconciled with the generic app grant
+review rather than interpreted as a complete analytics policy.
+
+Fresh isolated tests exercise a SUCCESS audit with a real agent ID and old
+first_match, duplicate/conflict idempotence, rollback of the audit write without
+INSERT privilege, rejection of first_match insertion and deletion by the narrow
+role, and retention of SECURITY INVOKER. Queue tests additionally execute real
+notification scheduling, permanently quiet preference, preference rescheduling,
+attempt backoff and reconciliation under the nonowner definer. These use actual
+repository routine bodies and fixture-shaped tables, not the full imported dump.
+
+Remaining precise inputs before apply:
+- Bind the actual unredacted dump's routine bodies, ACLs, triggers, table defaults,
+  constraints and policies to this reviewed catalog; reject drift or unreviewed
+  overloads. PostgreSQL catalog dependencies alone omit PL/pgSQL body references.
+- Generic authorization assembly must remove source service_role/anon/authenticated
+  grants where present, review owner-role ACLs and inherited membership, and merge
+  narrowly added policies without accidentally broadening other app policies.
+- Provisioning/approval of NOLOGIN functions and maintenance principals is separate.
+  The existing app principal must retain no role membership, private access,
+  ownership, schema CREATE or database TEMP privilege.
+- Exercise the full restored acquisition constraints/defaults and producer triggers
+  on native PostgreSQL, including all four wake triggers and outbox transaction
+  rollback. The current fixture proves named paths, not every imported trigger.
+- Validate app authorization and actual hosted execution before cutover; no source
+  scheduler, role, data or configuration has been changed by this review.
+
+Native PostgreSQL 17 fixture also passed on the existing official local binaries:
+`PG_FIXTURE_BIN=/path/to/verified/pg17/bin node --test scripts/migration/neon-queue-partition.native.test.mjs`.
+It initializes a synthetic temporary cluster, listens only on a Unix socket and
+stops/removes the cluster afterward. The initial sandbox run could not allocate
+shared memory; the reviewed escalated run succeeded. It executes the repository
+routine bodies and all four source producer triggers, proves transactional marker
+rollback, four-queue discovery/coalescence, quiet-to-due rescheduling, the successful
+acquisition write/idempotence, missing-grant atomic rollback and role denials.
+It does not load the actual dump, reproduce all table constraints/defaults, test
+PostGIS or substitute for target restoration. Thus the earlier native-test gate
+is reduced to full imported-schema parity and live role/catalog validation, not
+availability of PostgreSQL or PostGIS binaries.

@@ -9,6 +9,20 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM pg_partitioned_table WHERE partrelid='public.audit_logs'::regclass AND partstrat='r' AND partnatts=1 AND pg_get_partkeydef(partrelid)='RANGE (occurred_at)') THEN RAISE EXCEPTION 'Unexpected audit partition definition'; END IF;
 END;
 $$;
+-- The source capture trigger is SECURITY INVOKER. Its successful audit path
+-- reads first_match and inserts d7_retained under the app, not maintenance.
+-- This narrow addition is NOT the full app analytics-write policy.
+ALTER FUNCTION public.capture_acquisition_d7_retention() SECURITY INVOKER;
+ALTER FUNCTION public.capture_acquisition_d7_retention() SET search_path='';
+GRANT SELECT(acquisition_id,event_name,occurred_at,agent_id,market_code),
+  INSERT(acquisition_id,event_name,occurred_at,agent_id,market_code)
+  ON public.acquisition_funnel_events TO clawdeals_app;
+ALTER TABLE public.acquisition_funnel_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.acquisition_funnel_events FORCE ROW LEVEL SECURITY;
+CREATE POLICY clawdeals_audit_acquisition_read ON public.acquisition_funnel_events
+  FOR SELECT TO clawdeals_app USING(event_name IN ('first_match','d7_retained'));
+CREATE POLICY clawdeals_audit_acquisition_insert ON public.acquisition_funnel_events
+  FOR INSERT TO clawdeals_app WITH CHECK(event_name='d7_retained');
 GRANT USAGE,CREATE ON SCHEMA public TO clawdeals_maintenance;
 GRANT USAGE ON SCHEMA private TO clawdeals_maintenance;
 -- Verified source audit parent trigger: required when PostgreSQL clones it.

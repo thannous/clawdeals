@@ -1,0 +1,82 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+const bin = process.env.PG_FIXTURE_BIN;
+const read = (name) => fs.readFileSync(new URL(`../../${name}`, import.meta.url), "utf8");
+test("native PostgreSQL queue and acquisition-trigger closure with restricted principals", { skip: !bin && "Set PG_FIXTURE_BIN to verified official PostgreSQL binaries" }, () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-queue-native-"));
+  const data = path.join(root, "data"), socket = path.join(root, "socket");
+  fs.mkdirSync(socket);
+  let started = false;
+  const run = (name, args, input) => spawnSync(path.join(bin, name), args, { input, encoding: "utf8", timeout: 30000 });
+  const checked = (name, args, input) => { const result = run(name, args, input); assert.equal(result.status, 0, result.stderr || result.error?.message); return result.stdout.trim(); };
+  try {
+    checked("initdb", ["-D", data, "--no-locale", "--username=fixture_owner"]);
+    checked("pg_ctl", ["-D", data, "-l", path.join(root, "server.log"), "-o", `-c listen_addresses='' -c unix_socket_directories='${socket}'`, "-w", "start"]); started = true;
+    const args = ["-X", "-h", socket, "-U", "fixture_owner", "-d", "postgres", "-At", "-v", "ON_ERROR_STOP=1"];
+    const query = (sql) => checked("psql", [...args, "-c", sql]);
+    const apply = (sql) => checked("psql", [...args, "--single-transaction", "-f", "-"], sql);
+    const denied = (sql) => { const result = run("psql", [...args, "-c", sql]); assert.notEqual(result.status, 0); assert.match(result.stderr, /permission denied|row-level security/); };
+    apply(`create role anon; create role authenticated; create role service_role;
+      create role clawdeals_app nologin nosuperuser nobypassrls noinherit;
+      create role clawdeals_functions nologin nosuperuser nobypassrls noinherit;
+      create role clawdeals_maintenance nologin nosuperuser nobypassrls noinherit;
+      create schema private; revoke all on schema public,private from public;
+      grant usage on schema public to clawdeals_app;
+      create table private.queue_dispatch_state(queue_name text primary key,last_wake_at timestamptz not null default '-infinity',last_request_id bigint,lease_token uuid,lease_until timestamptz not null default '-infinity');
+      create table watchlist_match_queue(id int,attempt_count int default 0); create table watchlist_backfill_queue(id int); create table trustscore_recalc_queue(id int);
+      create table notification_preferences(owner_id uuid,mode text,event_types jsonb,quiet_enabled boolean,quiet_start_min int,quiet_end_min int,timezone text);
+      create table notification_outbox(notification_outbox_id uuid,owner_id uuid,status text,event_type text,attempt_count int,occurred_at timestamptz);
+      create table acquisition_funnel_events(event_id uuid default gen_random_uuid(),acquisition_id uuid not null,event_name text not null,occurred_at timestamptz default now(),agent_id uuid,market_code text,unique(acquisition_id,event_name));
+      create table audit_logs(id int,occurred_at timestamptz not null,outcome text,auth jsonb) partition by range(occurred_at);
+      grant select,insert on audit_logs to clawdeals_app;
+      create policy app_audit on audit_logs to clawdeals_app using(true) with check(true);`);
+    // SET ROLE exercises privileges; this synthetic app is intentionally NOLOGIN.
+    // Revoke the default PUBLIC TEMP grant so pg_temp cannot shadow dependencies.
+    query("revoke temporary on database postgres from public,clawdeals_app");
+    assert.equal(query("select has_database_privilege('clawdeals_app','postgres','TEMP')"), "f");
+    denied("set role clawdeals_app; create temporary table shadow_attempt(id int)");
+    // Bodies below are exact repository definitions, not a hash-bound dump import.
+    const queue = read("supabase/migrations/20260928210921_queue_event_dispatch.sql");
+    for (const sql of queue.match(/create or replace function [\s\S]*?\$\$;/gi) || []) apply(sql);
+    for (const sql of queue.match(/create trigger [\s\S]*?;/gi) || []) apply(sql);
+    apply(read("supabase/migrations/20260928220905_notification_eligibility_schedule.sql"));
+    apply(read("scripts/migration/neon-queue-runtime.sql").replace("ROLLBACK; -- Review template: actual dump binding and target authorization required.", "COMMIT;"));
+    for (const name of ["watchlist_match_queue", "watchlist_backfill_queue", "trustscore_recalc_queue", "notification_preferences", "notification_outbox"]) query(`alter table ${name} enable row level security; alter table ${name} force row level security`);
+    apply(read("scripts/migration/neon-queue-role-plan.sql").replace("ROLLBACK; -- Review template: full imported privilege closure is not yet verified.", "COMMIT;"));
+    const capture = read("supabase/migrations/20260726221554_acquisition_funnel_v1.sql").match(/create or replace function public\.capture_acquisition_d7_retention\(\)[\s\S]*?\$\$;/i);
+    assert(capture); apply(capture[0]);
+    query("revoke all on function capture_acquisition_d7_retention() from public; create trigger audit_logs_capture_acquisition_d7 after insert on audit_logs for each row execute function capture_acquisition_d7_retention()");
+    apply(read("scripts/migration/neon-partition-role-plan.sql").replace("ROLLBACK; -- Review template: imported privilege closure and owner changes require approval.", "COMMIT;"));
+    query("set role clawdeals_app; set datestyle='SQL,DMY'; select public.ensure_audit_log_partitions()");
+    const agent = "00000000-0000-4000-8000-000000000010";
+    query(`insert into acquisition_funnel_events(acquisition_id,event_name,occurred_at,agent_id,market_code) values('00000000-0000-4000-8000-000000000020','first_match',now()-interval '8 days','${agent}','FR')`);
+    const audit = `set role clawdeals_app; insert into audit_logs values(2,now(),'SUCCESS','{"agent_id":"${agent}"}')`;
+    query("revoke insert(acquisition_id,event_name,occurred_at,agent_id,market_code) on acquisition_funnel_events from clawdeals_app");
+    denied(audit); assert.equal(query("select count(*) from audit_logs"), "0");
+    query("grant insert(acquisition_id,event_name,occurred_at,agent_id,market_code) on acquisition_funnel_events to clawdeals_app");
+    query(audit); query(audit);
+    assert.equal(query("select count(*) from acquisition_funnel_events where event_name='d7_retained'"), "1");
+    denied("set role clawdeals_app; select * from private.queue_dispatch_state");
+    denied("set role clawdeals_app; create table public.bad(id int)");
+    query("begin; insert into watchlist_match_queue(id) values(1); rollback");
+    assert.equal(query("select count(*) from private.queue_dispatch_state"), "0");
+    query("insert into watchlist_match_queue(id) values(1); insert into watchlist_backfill_queue values(1); insert into trustscore_recalc_queue values(1)");
+    query(`insert into notification_preferences(owner_id,mode,event_types,quiet_enabled,quiet_start_min,quiet_end_min,timezone) values('${agent}','INSTANT','["watchlist_match"]',true,0,0,'UTC');
+      insert into notification_outbox values(gen_random_uuid(),'${agent}','PENDING','watchlist_match',0,now(),now(),'{}')`);
+    assert.equal(query("select available_at='infinity'::timestamptz from notification_outbox"), "t");
+    query("update notification_preferences set quiet_enabled=false");
+    assert.equal(query("select available_at<=now() from notification_outbox"), "t");
+    assert.equal(query("select count(*) from private.queue_dispatch_state"), "4");
+    assert.equal(query("set role clawdeals_app; select jsonb_array_length(public.claim_neon_queue_wakes_v1())").split("\n").at(-1), "4");
+    assert.equal(query("set role clawdeals_app; select jsonb_array_length(public.claim_neon_queue_wakes_v1())").split("\n").at(-1), "0");
+    denied("set role clawdeals_functions; update notification_outbox set status='SENT'");
+    assert.equal(query("select bool_and(c.relforcerowsecurity) from pg_inherits i join pg_class c on c.oid=i.inhrelid where inhparent='audit_logs'::regclass"), "t");
+  } finally {
+    if (started) checked("pg_ctl", ["-D", data, "-m", "fast", "-w", "stop"]);
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

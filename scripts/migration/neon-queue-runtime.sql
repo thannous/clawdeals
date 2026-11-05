@@ -1,6 +1,12 @@
 -- NEON TARGET ONLY, after reviewed public/private import. Never on Supabase.
 -- Durable public queue rows and notification eligibility are not removed.
 BEGIN;
+-- REVIEW ONLY: actual dump/signature binding is required before target apply.
+DO $$
+BEGIN
+  IF to_regprocedure('private.send_queue_wake_v1(text)') IS NULL OR to_regprocedure('private.queue_drain_claim_v1(text,uuid)') IS NULL OR to_regprocedure('private.configure_queue_dispatch_v1(text)') IS NULL THEN RAISE EXCEPTION 'Expected imported queue signatures are missing'; END IF;
+END;
+$$;
 CREATE OR REPLACE FUNCTION private.send_queue_wake_v1(queue text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 BEGIN
@@ -52,6 +58,6 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 BEGIN RAISE EXCEPTION 'Neon queue dispatch uses the app queue secret, not Vault'; END;
 $$;
 REVOKE ALL ON FUNCTION private.configure_queue_dispatch_v1(text) FROM PUBLIC;
-COMMIT;
+ROLLBACK; -- Review template: actual dump binding and target authorization required.
 -- Grant runtime only the reviewed public wrappers via neon-queue-role-plan.sql.
 -- Do not install the Supabase five-minute pg_cron recovery job on Neon.

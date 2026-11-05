@@ -12,7 +12,7 @@ describe("Neon queue overlay with source notification functions and restricted r
       create schema private; revoke all on schema private from public;
       create table private.queue_dispatch_state(queue_name text primary key,last_wake_at timestamptz not null default '-infinity',last_request_id bigint,lease_token uuid,lease_until timestamptz not null default '-infinity');
       create table watchlist_match_queue(id int); create table watchlist_backfill_queue(id int); create table trustscore_recalc_queue(id int);
-      create table notification_preferences(owner_id uuid,settings jsonb);
+      create table notification_preferences(owner_id uuid,mode text,event_types jsonb,quiet_enabled boolean,quiet_start_min int,quiet_end_min int,timezone text);
       create table notification_outbox(notification_outbox_id uuid,owner_id uuid,status text,event_type text,attempt_count int,occurred_at timestamptz);
     `);
     // Actual checked-in helper definitions, not lost live catalog metadata.
@@ -20,7 +20,7 @@ describe("Neon queue overlay with source notification functions and restricted r
     const functions = queueMigration.match(/create or replace function [\s\S]*?\$\$;/gi) || [];
     for (const statement of functions) await db.exec(statement);
     await db.exec(sqlFile("supabase/migrations/20260928220905_notification_eligibility_schedule.sql"));
-    await db.exec(sqlFile("scripts/migration/neon-queue-runtime.sql"));
+    await db.exec(sqlFile("scripts/migration/neon-queue-runtime.sql").replace("ROLLBACK; -- Review template: actual dump binding and target authorization required.", "COMMIT;"));
     for (const table of ["watchlist_match_queue", "watchlist_backfill_queue", "trustscore_recalc_queue", "notification_outbox", "notification_preferences"]) {
       await db.exec(`alter table public.${table} enable row level security; alter table public.${table} force row level security;`);
     }
@@ -44,6 +44,36 @@ describe("Neon queue overlay with source notification functions and restricted r
       expect((await db.query("select public.queue_drain_claim_v1('notifications-dispatch','00000000-0000-4000-8000-000000000001') as claimed")).rows).toEqual([{ claimed: true }]);
       expect((await db.query("select public.queue_drain_claim_v1('notifications-dispatch','00000000-0000-4000-8000-000000000002') as claimed")).rows).toEqual([{ claimed: false }]);
       await db.query("select public.queue_drain_release_v1('notifications-dispatch','00000000-0000-4000-8000-000000000001')");
+    } finally { await db.exec("reset role"); }
+  });
+  it("executes notification scheduling, rescheduling and reconciliation under the nonowner definer", async () => {
+    await db.exec(`insert into notification_preferences(owner_id,mode,event_types,quiet_enabled,quiet_start_min,quiet_end_min,timezone)
+      values('00000000-0000-4000-8000-000000000010','INSTANT','["watchlist_match"]',true,0,0,'UTC');
+      insert into notification_outbox(notification_outbox_id,owner_id,status,event_type,attempt_count,occurred_at)
+      values('00000000-0000-4000-8000-000000000020','00000000-0000-4000-8000-000000000010','PENDING','watchlist_match',0,now())`);
+    expect((await db.query("select available_at='infinity'::timestamptz as quiet from notification_outbox")).rows).toEqual([{ quiet: true }]);
+    await db.exec("update notification_preferences set quiet_enabled=false");
+    expect((await db.query("select available_at<=now() as due from notification_outbox")).rows).toEqual([{ due: true }]);
+    await db.exec("update notification_outbox set attempt_count=1");
+    expect((await db.query("select available_at>now()+interval '14 minutes' as backoff from notification_outbox")).rows).toEqual([{ backoff: true }]);
+    // A stale snapshot bypassing the preference trigger represents a concurrent
+    // insert/change missed by eager rescheduling. Public discovery must repair it.
+    await db.exec("update notification_outbox set schedule_preferences='{}',available_at='infinity'; set role clawdeals_app");
+    try { await db.query("select public.claim_neon_queue_wakes_v1()"); }
+    finally { await db.exec("reset role"); }
+    expect((await db.query("select schedule_preferences->>'mode' as mode,available_at<=now() as due from notification_outbox")).rows).toEqual([{ mode: "INSTANT", due: true }]);
+    await db.exec("set role clawdeals_functions");
+    try {
+      await expect(db.exec("update notification_outbox set status='SENT'")).rejects.toMatchObject({ code: "42501" });
+      await expect(db.exec("delete from notification_outbox")).rejects.toMatchObject({ code: "42501" });
+    } finally { await db.exec("reset role"); }
+  });
+  it("does not expose retained administrative helpers or arbitrary queue names", async () => {
+    await db.exec("set role clawdeals_app");
+    try {
+      await expect(db.exec("select private.retry_pending_queue_wakes_v1()")).rejects.toMatchObject({ code: "42501" });
+      await expect(db.exec("select private.configure_queue_dispatch_v1('not-a-secret')")).rejects.toMatchObject({ code: "42501" });
+      await expect(db.exec("select public.queue_drain_claim_v1('unapproved-queue','00000000-0000-4000-8000-000000000001')")).rejects.toMatchObject({ code: "42501" });
     } finally { await db.exec("reset role"); }
   });
   it("retains FORCE RLS and nonowner/nonbypass function/runtime roles", async () => {

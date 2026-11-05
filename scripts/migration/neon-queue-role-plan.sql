@@ -29,6 +29,12 @@ CREATE POLICY clawdeals_queue_function_read ON public.trustscore_recalc_queue FO
 CREATE POLICY clawdeals_queue_function_read ON public.notification_outbox FOR SELECT TO clawdeals_functions USING(true);
 CREATE POLICY clawdeals_queue_function_read ON public.notification_preferences FOR SELECT TO clawdeals_functions USING(true);
 CREATE POLICY clawdeals_queue_function_schedule ON public.notification_outbox FOR UPDATE TO clawdeals_functions USING(status='PENDING') WITH CHECK(status='PENDING');
+-- These imported administrative routines remain non-public; no Neon cron calls
+-- retry_pending_queue_wakes_v1. Configure's replacement only rejects Vault setup.
+ALTER FUNCTION private.retry_pending_queue_wakes_v1() OWNER TO clawdeals_functions;
+ALTER FUNCTION private.configure_queue_dispatch_v1(text) OWNER TO clawdeals_functions;
+ALTER FUNCTION private.configure_queue_dispatch_v1(text) SECURITY INVOKER;
+REVOKE ALL ON FUNCTION private.retry_pending_queue_wakes_v1(),private.configure_queue_dispatch_v1(text) FROM PUBLIC,clawdeals_app;
 ALTER FUNCTION private.send_queue_wake_v1(text) OWNER TO clawdeals_functions;
 ALTER FUNCTION private.wake_queue_consumer_v1() OWNER TO clawdeals_functions;
 ALTER FUNCTION private.queue_drain_claim_v1(text,uuid) OWNER TO clawdeals_functions;
