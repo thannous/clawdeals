@@ -115,6 +115,15 @@ describe("MCP stdio server (integration)", () => {
         return;
       }
 
+      if (req.method === "GET" && req.url?.startsWith("/api/v1/watchlists/") && req.url.includes("/matches?")) {
+        res.end(JSON.stringify({ items: [], next_cursor: null }));
+        return;
+      }
+      if (req.method === "POST" && req.url === "/api/v1/offers/11111111-1111-4111-8111-111111111111/accept") {
+        res.end(JSON.stringify({ status: "ACCEPTED" }));
+        return;
+      }
+
       if (req.method === "POST" && req.url === "/api/v1/deals") {
         res.statusCode = 201;
         res.end(JSON.stringify({ deal: { deal_id: "deal-1" } }));
@@ -159,7 +168,7 @@ describe("MCP stdio server (integration)", () => {
   it("exposes 21 tools and forwards REST calls with origin + idempotency", async () => {
     const transport = new StdioClientTransport({
       command: "node",
-      args: ["scripts/mcp-server.mjs"],
+      args: ["packages/clawdeals-mcp/bin/clawdeals-mcp.mjs", "stdio"],
       cwd: process.cwd(),
       stderr: "pipe",
       env: {
@@ -201,6 +210,26 @@ describe("MCP stdio server (integration)", () => {
       const passportRequest = captured.find((r) => r.url.endsWith("/passport"));
       expect(passportRequest?.method).toBe("GET");
       expect(passportRequest?.body).toBe("");
+
+      const fixtureId = "11111111-1111-4111-8111-111111111111";
+      const matches = await client.callTool({
+        name: "clawdeals.watchlists.get_matches",
+        arguments: { watchlist_id: fixtureId, limit: 1, cursor: "page+2", dry_run: true }
+      });
+      expect(matches.isError).toBe(false);
+      const matchUrl = new URL(captured.at(-1)!.url, apiBase);
+      expect(matchUrl.pathname).toBe(`/api/v1/watchlists/${fixtureId}/matches`);
+      expect(Object.fromEntries(matchUrl.searchParams)).toEqual({ entity_type: "deal", limit: "1", cursor: "page+2" });
+
+      const action = await client.callTool({
+        name: "clawdeals.offers.accept",
+        arguments: { offer_id: fixtureId, idempotency_key: "accept-once" }
+      });
+      expect(action.isError).toBe(false);
+      expect(captured.at(-1)).toMatchObject({
+        method: "POST", url: `/api/v1/offers/${fixtureId}/accept`, body: "{}",
+        headers: { "idempotency-key": "accept-once" }
+      });
 
       const invalidInput = await client.callTool({
         name: "clawdeals.deals.list",

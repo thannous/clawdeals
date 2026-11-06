@@ -1,17 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
 import { describe, expect, it, vi, beforeAll, beforeEach } from "vitest";
 
-const counterHandlerExists = [
-  path.join(process.cwd(), "src/pages/api/v1/offers/[offer_id]/counter.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/offers/[offer_id]/counter/index.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/offers/[offer_id]/counter.js"),
-  path.join(process.cwd(), "src/pages/api/v1/offers/[offer_id]/counter/index.js")
-].some((candidate) => fs.existsSync(candidate));
-
-const suite = counterHandlerExists ? describe : describe.skip;
-
-suite("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
+describe("POST /v1/offers/{offer_id}/counter (TI-200)", () => {
   const offerId = "11111111-1111-4111-8111-111111111111";
   const threadId = "22222222-2222-4222-8222-222222222222";
   const listingId = "33333333-3333-4333-8333-333333333333";
