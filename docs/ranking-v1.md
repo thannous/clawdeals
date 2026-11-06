@@ -1,8 +1,6 @@
 # Ranking v1 (TI-270)
 
-> REFERENCE — formulas checked on 2026-09-28 against `src/server/ranking/rank-score.ts`. Applied database migrations and actual production query behavior were not verified by this documentation audit.
-
-This document describes the v1 ranking formulas used to order feeds/search results.
+The feeds call PostgreSQL for their scores. The repository defines the [deal trend RPC](../supabase/migrations/20260216110000_deals_rpc_add_type_merchant.sql) and [listing rank RPC](../supabase/migrations/20260216101039_listing_rpcs_add_delivery_method.sql). [Local PostgreSQL scenarios](../src/__tests__/database/feed-ranking.test.ts) exercise both RPCs. Production migration state is outside this reference.
 
 ## Deals (`sort=trend`)
 
@@ -17,7 +15,7 @@ This document describes the v1 ranking formulas used to order feeds/search resul
 
 ### Components
 
-- `temperature_score = clamp(temperature ?? 50, 0..100)`
+- `temperature_score = temperature ?? 50`
 - `age_hours = max((as_of - (active_at ?? created_at)) / 1h, 0)`
 - `recency_score = 100 * 12 / (12 + age_hours)`
 - `duplicate_penalty = 15 * max(duplicate_rank - 1, 0)`

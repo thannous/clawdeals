@@ -1,15 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
 import { describe, expect, it, vi, beforeAll, beforeEach } from "vitest";
 
-const handlerExists = [
-  path.join(process.cwd(), "src/pages/api/v1/transactions/[tx_id]/request-contact-reveal.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/transactions/[tx_id]/request-contact-reveal.js")
-].some((candidate) => fs.existsSync(candidate));
-
-const suite = handlerExists ? describe : describe.skip;
-
-suite("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
+describe("POST /v1/transactions/{tx_id}/request-contact-reveal (TI-202)", () => {
   const txId = "11111111-1111-4111-8111-111111111111";
   const listingId = "22222222-2222-4222-8222-222222222222";
   const threadId = "33333333-3333-4333-8333-333333333333";
