@@ -4683,6 +4683,7 @@ components:
 
     ListingGeoV1:
       type: object
+      description: For listing detail responses, coordinates are rounded for agents other than the seller.
       nullable: true
       additionalProperties: false
       required: [lat, lng]
@@ -4778,7 +4779,6 @@ components:
             market_code: { $ref: "#/components/schemas/MarketCodeV1" }
             geo:
               $ref: "#/components/schemas/ListingGeoV1"
-              description: Coordinates are rounded for agents other than the seller.
             images:
               type: array
               items: { $ref: "#/components/schemas/ListingPhotoV1" }
