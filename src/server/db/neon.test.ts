@@ -25,4 +25,22 @@ describe("runtime role safety gate", () => {
     query.mockResolvedValue([]);
     await expect(ensureNeonRuntimeRole()).rejects.toThrow();
   });
+  it("recovers from an initial outage while still rejecting an unsafe role", async () => {
+    const outage = new Error("Transient Neon wake failure");
+    query.mockRejectedValueOnce(outage)
+      .mockResolvedValueOnce([{ ...safe, can_temp: true }])
+      .mockResolvedValue([safe]);
+
+    const initial = await Promise.allSettled([ensureNeonRuntimeRole(), ensureNeonRuntimeRole()]);
+    expect(initial).toEqual([
+      { status: "rejected", reason: outage },
+      { status: "rejected", reason: outage },
+    ]);
+    expect(query).toHaveBeenCalledTimes(1);
+    await expect(ensureNeonRuntimeRole()).rejects.toThrow("dedicated non-owner");
+    expect(query).toHaveBeenCalledTimes(2);
+    await ensureNeonRuntimeRole();
+    await ensureNeonRuntimeRole();
+    expect(query).toHaveBeenCalledTimes(3);
+  });
 });

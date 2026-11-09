@@ -26,7 +26,7 @@ let roleCheck: Promise<void> | undefined;
 /** Fail closed before app SQL: role membership can allow SET ROLE even when
  * NOINHERIT suppresses active privileges. TEMP can shadow definer dependencies. */
 export async function ensureNeonRuntimeRole() {
-  roleCheck ??= (async () => {
+  const inspection = roleCheck ??= (async () => {
     const rows = await getNeonSql().query(`SELECT r.rolsuper,r.rolbypassrls,r.rolcreaterole,r.rolcreatedb,r.rolreplication,r.rolinherit,
       current_user<>session_user AS assumed_role,
       has_database_privilege(current_user,current_database(),'CREATE') AS can_create_database_objects,
@@ -42,5 +42,12 @@ export async function ensureNeonRuntimeRole() {
     const flags = ["rolsuper", "rolbypassrls", "rolcreaterole", "rolcreatedb", "rolreplication", "rolinherit", "assumed_role", "can_create_database_objects", "can_temp", "owns_database", "elevated_membership", "owns_tables", "owns_schema"];
     if (!role || flags.some((key) => role[key] !== false)) throw new Error("Neon runtime requires a dedicated non-owner role with NOINHERIT and without role membership, SET ROLE, BYPASSRLS, database/schema CREATE or database TEMP privileges");
   })();
-  await roleCheck;
+  try {
+    await inspection;
+  } catch (error) {
+    // Share pending work and cache a valid role, while allowing a later request
+    // to recover from transport failures or a corrected role configuration.
+    if (roleCheck === inspection) roleCheck = undefined;
+    throw error;
+  }
 }
