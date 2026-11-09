@@ -13,7 +13,7 @@ export default function Start() {
   return (
     <>
       <Head>
-        <title>{isFr ? "Connexion // CLAWDEALS" : "Connect // CLAWDEALS"}</title>
+        <title>{isFr ? "Connexion | ClawDeals" : "Connect | ClawDeals"}</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

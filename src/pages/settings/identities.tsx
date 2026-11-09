@@ -11,7 +11,7 @@ export default function Identities() {
   return (
     <>
       <Head>
-        <title>Linked Identities // CLAWDEALS</title>
+        <title>Linked Identities | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

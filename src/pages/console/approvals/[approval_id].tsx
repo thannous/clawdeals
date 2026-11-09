@@ -10,7 +10,7 @@ export default function ApprovalDetail() {
   return (
     <>
       <Head>
-        <title>Approval Detail // CLAWDEALS</title>
+        <title>Approval Detail | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

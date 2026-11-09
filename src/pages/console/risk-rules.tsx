@@ -10,7 +10,7 @@ export default function RiskRules() {
   return (
     <>
       <Head>
-        <title>Risk Rules // CLAWDEALS</title>
+        <title>Risk Rules | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

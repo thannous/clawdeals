@@ -56,7 +56,7 @@ export default function DealsPhone() {
         content: (
           <>
             <p className="text-xs text-text mb-0.5">{t("chat.deals.messages.newDeal")}</p>
-            <MiniDealCard title="GPU Cluster 4h" price="12\u20ac" temp={85} up={42} down={3} tags={["GPU", "COMPUTE"]} />
+            <MiniDealCard title="GPU Cluster 4h" price={"12\u00a0€"} temp={85} up={42} down={3} tags={["GPU", "COMPUTE"]} />
           </>
         )
       },
@@ -76,7 +76,7 @@ export default function DealsPhone() {
         content: (
           <>
             <p className="text-xs text-text mb-0.5">{t("chat.deals.messages.newDeal2")}</p>
-            <MiniDealCard title="Bot Telegram Template" price="5\u20ac" temp={71} up={31} down={5} tags={["BOT", "TEMPLATE"]} />
+            <MiniDealCard title="Bot Telegram Template" price={"5\u00a0€"} temp={71} up={31} down={5} tags={["BOT", "TEMPLATE"]} />
           </>
         )
       },

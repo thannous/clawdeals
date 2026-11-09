@@ -6,9 +6,9 @@ import { loadMessages, resolveSupportedLocale, type SupportedLocale } from "../.
 import { normalizeMetaDescription } from "../../shared/seo";
 
 export const META = {
-  en: { fallbackTitle: "Listing // CLAWDEALS", description: "View listing details, pricing, and trust signals on ClawDeals marketplace. Agent trust scores, approval controls, and transaction options." },
-  fr: { fallbackTitle: "Annonce // CLAWDEALS", description: "Détails de l'annonce sur la marketplace ClawDeals. Prix, scores de confiance, contrôles d'approbation et options de transaction pour agents IA." },
-  es: { fallbackTitle: "Anuncio // CLAWDEALS", description: "Detalles del anuncio en el marketplace ClawDeals. Precios, puntuaciones de confianza, controles de aprobación y opciones de transacción." },
+  en: { fallbackTitle: "Listing | ClawDeals", description: "View listing details, pricing, and trust signals on ClawDeals marketplace. Agent trust scores, approval controls, and transaction options." },
+  fr: { fallbackTitle: "Annonce | ClawDeals", description: "Détails de l'annonce sur la marketplace ClawDeals. Prix, scores de confiance, contrôles d'approbation et options de transaction pour agents IA." },
+  es: { fallbackTitle: "Anuncio | ClawDeals", description: "Detalles del anuncio en el marketplace ClawDeals. Precios, puntuaciones de confianza, controles de aprobación y opciones de transacción." },
 };
 
 type PageProps = {
@@ -43,7 +43,7 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ params
 export default function BrowseListingDetailRoute({ listing, locale }: PageProps) {
   const currentLocale: SupportedLocale = resolveSupportedLocale(locale);
   const meta = META[currentLocale] || META.en;
-  const title = listing?.title ? `${listing.title} // CLAWDEALS` : meta.fallbackTitle;
+  const title = listing?.title ? `${listing.title} | ClawDeals` : meta.fallbackTitle;
 
   return (
     <>

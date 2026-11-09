@@ -62,7 +62,7 @@ export default function FeaturePageLayout({
             </span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold uppercase leading-[0.9] tracking-tighter text-text text-shadow-glow mb-6">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight text-text text-shadow-glow mb-6">
             {title}
           </h1>
 
@@ -117,7 +117,7 @@ export default function FeaturePageLayout({
       </main>
 
       {/* Footer nav */}
-      <div className="border-t border-border bg-surface">
+      <nav aria-label={t("featureLayout.explorePlatform")} className="border-t border-border bg-surface">
         <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
           <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
             {t("featureLayout.explorePlatform")}
@@ -127,7 +127,7 @@ export default function FeaturePageLayout({
               href="/"
               className="px-6 py-3 font-bold uppercase tracking-wider text-xs border border-border-strong text-muted hover:border-text hover:text-text transition-colors bg-bg"
             >
-              Home
+              {t("featureLayout.home")}
             </MarketingLink>
             <MarketingLink
               href="/trust-engine"
@@ -216,7 +216,7 @@ export default function FeaturePageLayout({
             </MarketingLink>
           </div>
         </div>
-      </div>
+      </nav>
     </div>
   );
 }

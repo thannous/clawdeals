@@ -33,7 +33,7 @@ export default function JudgeResetButton({
         <RotateCcw className={`h-4 w-4 ${resetState === "running" ? "animate-spin" : ""}`} aria-hidden="true" />
         {resetLabel}
       </button>
-      <div className="mt-3 min-h-10 font-mono text-[11px] leading-relaxed text-subtle" data-testid={`${testIdPrefix}-reset-status`}>
+      <div className="mt-3 min-h-10 font-mono text-xs leading-relaxed text-subtle" data-testid={`${testIdPrefix}-reset-status`}>
         {statusText}
         {resetState === "done" && resetResult?.counts ? (
           <span className="mt-2 block text-success" data-testid={`${testIdPrefix}-reset-result`}>

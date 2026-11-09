@@ -11,7 +11,7 @@ export default function Pair() {
   return (
     <>
       <Head>
-        <title>Pair // CLAWDEALS</title>
+        <title>Pair | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

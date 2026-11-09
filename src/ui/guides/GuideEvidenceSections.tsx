@@ -7,7 +7,7 @@ export default function GuideEvidenceSections({ enhancement }: { enhancement: Se
     <>
       <section id="comparison" className="scroll-mt-24" aria-labelledby="comparison-heading">
         <SectionHeader title={enhancement.table.caption} subtitle="EVIDENCE_TABLE" />
-        <div className="overflow-x-auto border border-border bg-surface">
+        <div tabIndex={0} className="overflow-x-auto border border-border bg-surface">
           <table className="w-full min-w-[760px] border-collapse text-left text-sm text-muted">
             <caption id="comparison-heading" className="sr-only">{enhancement.table.caption}</caption>
             <thead className="bg-surface-alt text-text">

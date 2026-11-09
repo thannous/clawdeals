@@ -506,7 +506,7 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
                     <p className="text-xs text-muted font-mono leading-relaxed mb-3 flex-1">
                       {gate.desc}
                     </p>
-                    <div className="bg-bg border border-border p-2 font-mono text-[11px] text-subtle break-all">
+                    <div className="bg-bg border border-border p-2 font-mono text-xs text-subtle break-all">
                       {gate.trigger}
                     </div>
                   </div>
@@ -651,7 +651,7 @@ function useMcpMarketplaceSafetyPage({ baseUrl, isPreviewHost }: PageProps) {
                     <p className="text-xs text-muted font-mono leading-relaxed mb-3 flex-1">
                       {ctrl.desc}
                     </p>
-                    <div className="bg-bg border border-border p-2 font-mono text-[11px] text-primary">
+                    <div className="bg-bg border border-border p-2 font-mono text-xs text-primary">
                       {ctrl.example}
                     </div>
                   </div>

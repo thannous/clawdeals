@@ -13,6 +13,7 @@ import { useMissionResource } from "./useMissionResource";
 import MissionChatGPT from "./MissionChatGPT";
 import { confirmedMissionMatches, confirmedSmartphoneMissionMatches, type MissionMatches } from "./missionMatches";
 import SmartphoneMissionResults from "./SmartphoneMissionResults";
+import { intlLocaleFor } from "../../shared/i18n";
 
 export default function MissionDetailPage() {
   const t = useTranslations("myMissions");
@@ -65,7 +66,7 @@ export default function MissionDetailPage() {
           <div className="border border-border bg-surface p-4 space-y-2">
             <p className="text-sm text-text">{t("savedHint")}</p>
             {item.criteria.notification_mode === "in_app" ? <p className="text-sm text-muted">{t("inAppHint")}</p> : null}
-            <p className="text-xs text-muted">{t("expires", { date: new Intl.DateTimeFormat(router.locale || "en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.criteria.mission.expires_at)) })}</p>
+            <p className="text-xs text-muted">{t("expires", { date: new Intl.DateTimeFormat(intlLocaleFor(router.locale), { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.criteria.mission.expires_at)) })}</p>
           </div>
           <section aria-labelledby="mission-matches-title" data-testid="mission-matches" className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">

@@ -23,12 +23,13 @@
     "agentFilter": "Agente:"
   },
   "nav": {
-    "marketplace": "Mercado",
+    "marketplace": "Marketplace",
     "deals": "Ofertas",
     "marketAccessGranted": "ACCESO_AL_MERCADO_AUTORIZADO",
     "language": "Idioma",
     "theme": "Tema",
     "settings": "Ajustes",
+    "menu": "Menú",
     "myAccount": "Mi cuenta"
   },
   "landing": {
@@ -100,13 +101,13 @@
       "bannerBody": "Sitio en desarrollo. Las funcionalidades están en preparación. Únete a la lista de espera para ser notificado."
     },
     "waitlist": {
-      "title": "Acceso anticipado — conecta tu primer agente",
+      "title": "Novedades del producto",
       "label": "Email",
       "placeholder": "tu@email.com",
-      "cta": "Unirse a la lista de espera",
-      "helper": "Solo actualizaciones de lanzamiento, sin spam.",
-      "success": "Estás en la lista de espera.",
-      "already": "Ya registrado. Te mantendremos informado.",
+      "cta": "Recibir novedades",
+      "helper": "Solo novedades de lanzamiento, sin spam.",
+      "success": "Listo: recibirás las novedades.",
+      "already": "Ya estás suscrito. Te mantendremos informado.",
       "invalid": "Introduce un email válido.",
       "error": "Algo salió mal. Inténtalo de nuevo."
     },
@@ -233,8 +234,8 @@
         },
         "messages": {
           "newListing": "Anuncio publicado.",
-          "offerReceived": "Oferta recibida: 1.300€ (TechBuyer).",
-          "counter": "Contraoferta: 1.380€.",
+          "offerReceived": "Oferta recibida: 1300 € (TechBuyer).",
+          "counter": "Contraoferta: 1380 €.",
           "accepted": "Aceptado. Revelación de contacto tras tu aprobación.",
           "contactRevealed": "OK, revelando datos de contacto.",
           "complete": "Transacción completada. ¿Qué calificación?"
@@ -416,7 +417,7 @@
       "link_4": "Integración OpenClaw",
       "link_5": "Protocolo MCP",
       "link_6": "Centro de desarrolladores",
-      "link_7": "Página de estado",
+      "link_7": "Aviso operativo",
       "linkCount": "8"
     },
     "legal": {
@@ -437,60 +438,60 @@
       "appDescription": "Conecta tu propio agente IA para vigilar, publicar y negociar bienes de segunda mano según tus reglas."
     },
     "trustEngine": {
-      "title": "Trust Engine — Motor de confianza // CLAWDEALS",
+      "title": "Trust Engine — Motor de confianza | ClawDeals",
       "description": "TrustScore 0-100, cuarentena automática para nuevos agentes, votos y reportes ponderados. La confianza se calcula, no se declara.",
-      "ogTitle": "Trust Engine — ClawDeals",
+      "ogTitle": "Trust Engine | ClawDeals",
       "ogDescription": "Puntuación de confianza 0-100. Cuarentena automática. Ponderación de votos. La confianza se calcula, no se declara."
     },
     "policyControl": {
-      "title": "Policy Control — Control de políticas // CLAWDEALS",
+      "title": "Policy Control — Control de políticas | ClawDeals",
       "description": "Presupuestos, umbrales de aprobación, horas silenciosas, allowlist/denylist. Tu agente opera dentro de tus reglas, no fuera de ellas.",
-      "ogTitle": "Policy Control — ClawDeals",
+      "ogTitle": "Policy Control | ClawDeals",
       "ogDescription": "Presupuestos, umbrales, horas silenciosas. Tu agente opera dentro de tus reglas. Control humano por defecto."
     },
     "auditTrail": {
-      "title": "Audit Trail — Registro de auditoría // CLAWDEALS",
+      "title": "Audit Trail — Registro de auditoría | ClawDeals",
       "description": "Cada acción de agente registrada. Cada credencial revocable. Rate limits, idempotencia y trazado de solicitudes por defecto.",
-      "ogTitle": "Audit Trail — ClawDeals",
+      "ogTitle": "Audit Trail | ClawDeals",
       "ogDescription": "Cada acción registrada. Cada credencial revocable. Rate limits e idempotencia por defecto."
     },
     "legalTerms": {
-      "title": "Términos de servicio // CLAWDEALS",
+      "title": "Términos de servicio | ClawDeals",
       "description": "Términos de servicio de ClawDeals, el marketplace agent-first. Condiciones de uso, política de uso aceptable y limitaciones de responsabilidad.",
-      "ogTitle": "Términos de servicio — ClawDeals",
+      "ogTitle": "Términos de servicio | ClawDeals",
       "ogDescription": "Términos de servicio de ClawDeals, el marketplace agent-first con control humano."
     },
     "legalPrivacy": {
-      "title": "Política de privacidad // CLAWDEALS",
+      "title": "Política de privacidad | ClawDeals",
       "description": "Política de privacidad de ClawDeals. Cómo recopilamos, utilizamos y protegemos sus datos. Cumple con RGPD, datos almacenados en Europa.",
-      "ogTitle": "Política de privacidad — ClawDeals",
+      "ogTitle": "Política de privacidad | ClawDeals",
       "ogDescription": "Política de privacidad de ClawDeals. Cumple con RGPD. Datos en Europa. Sus derechos explicados."
     },
     "legalMentions": {
-      "title": "Aviso legal // CLAWDEALS",
+      "title": "Aviso legal | ClawDeals",
       "description": "Aviso legal de ClawDeals. Información del editor, proveedores de alojamiento, propiedad intelectual y condiciones de utilización.",
-      "ogTitle": "Aviso legal — ClawDeals",
+      "ogTitle": "Aviso legal | ClawDeals",
       "ogDescription": "Aviso legal de ClawDeals. Editor, alojamiento y propiedad intelectual."
     },
     "guides": {
       "mcpSafety": {
         "title": "Seguridad MCP: aprobación y auditoría | ClawDeals",
         "description": "Cómo ClawDeals protege cada herramienta MCP con aprobación humana, registro de auditoría, idempotencia, límites de peticiones y presupuestos.",
-        "ogTitle": "Seguridad MCP: aprobación y auditoría — ClawDeals",
+        "ogTitle": "Seguridad MCP: aprobación y auditoría | ClawDeals",
         "ogDescription": "Aprobación humana, auditoría, idempotencia y límites de peticiones para cada llamada a una herramienta MCP."
       },
       "openclawDealwatch": {
-        "title": "DealWatch — Watchlist, Alerta y Aprobación // CLAWDEALS",
+        "title": "DealWatch — Watchlist, Alerta y Aprobación | ClawDeals",
         "description": "Guía completa: crea una watchlist, recibe alertas SSE, aprueba y deja que tu agente actúe. Pipeline de extremo a extremo.",
-        "ogTitle": "DealWatch Guide — ClawDeals",
+        "ogTitle": "DealWatch Guide | ClawDeals",
         "ogDescription": "Watchlist + SSE + Aprobación + Acción. El pipeline completo para monitoreo de deals por agente."
       }
     },
     "integrations": {
       "openclaw": {
-        "title": "Integración OpenClaw — Conecta tu agente // CLAWDEALS",
+        "title": "Integración OpenClaw — Conecta tu agente | ClawDeals",
         "description": "Instala ClawDeals como skill de OpenClaw, servidor MCP o conector de ClawHub y sigue la configuración guiada y segura.",
-        "ogTitle": "Integración OpenClaw — ClawDeals",
+        "ogTitle": "Integración OpenClaw | ClawDeals",
         "ogDescription": "Skill URL, servidor MCP o ClawHub. Conecta tu agente al mercado con una configuración guiada."
       }
     },
@@ -500,7 +501,8 @@
       "ctaBody": "Conéctate con una configuración guiada. Clave API, MCP o enlace de validación: elige tu método.",
       "ctaButton": "Conecta tu agente",
       "explorePlatform": "EXPLORAR LA PLATAFORMA",
-      "integrationsGuides": "INTEGRACIONES Y GUÍAS"
+      "integrationsGuides": "INTEGRACIONES Y GUÍAS",
+      "home": "Inicio"
     }
   },
   "auth": {
@@ -1117,7 +1119,7 @@
     }
   },
   "trustEngine": {
-    "meta": "Trust Engine // CLAWDEALS",
+    "meta": "Trust Engine | ClawDeals",
     "subtitle": "MOTOR DE CONFIANZA",
     "description": "TrustScore 0-100, cuarentena automática, votos y reportes ponderados. La confianza se calcula, no se declara.",
     "sections": {
@@ -1204,7 +1206,7 @@
     }
   },
   "policyControl": {
-    "meta": "Policy Control // CLAWDEALS",
+    "meta": "Policy Control | ClawDeals",
     "subtitle": "CONTROL DE POLÍTICAS",
     "description": "Presupuestos, umbrales de aprobación, horas silenciosas, allowlist/denylist. Tu agente opera dentro de tus reglas.",
     "ownerEditor": { "title": "Controles del propietario disponibles", "description": "Revisa la política que usan tus agentes y cambia presupuestos, aprobaciones y listas de vendedores en un solo lugar.", "cta": "Editar mi política" },
@@ -1307,7 +1309,7 @@
     "breadcrumb": "Control de políticas"
   },
   "auditTrail": {
-    "meta": "Audit Trail // CLAWDEALS",
+    "meta": "Audit Trail | ClawDeals",
     "subtitle": "TRAZA DE AUDITORÍA",
     "description": "Cada acción queda registrada. Cada credencial es revocable. Rate limits e idempotencia por defecto.",
     "sections": {
@@ -1479,7 +1481,7 @@
     }
   },
   "keys": {
-    "headTitle": "Clave API // CLAWDEALS",
+    "headTitle": "Clave API | ClawDeals",
     "title": "Clave API",
     "subtitle": "AUTENTICACION",
     "lead": "Genera o valida tu clave API antes de configurar el servidor MCP.",
@@ -1506,7 +1508,7 @@
     "continueToMcp": "Continuar a configuracion MCP"
   },
   "watchlistNew": {
-    "headTitle": "Nueva Watchlist // CLAWDEALS",
+    "headTitle": "Nueva Watchlist | ClawDeals",
     "pageTitle": "WATCHLIST NEW",
     "criteria": "Criterios",
     "queryLabel": "Consulta (tokens AND)",
@@ -1527,6 +1529,8 @@
       "tryAgain": "Reintentar",
       "generate": "Generar",
       "generating": "Generando…",
+      "generateKey": "Generar clave",
+      "newKey": "Clave nueva",
       "iHaveAKey": "Tengo una clave",
       "apiKeyLabel": "Clave API",
       "validate": "Validar",
@@ -1743,7 +1747,7 @@
     }
   },
   "notFound": {
-    "title": "Página no encontrada — ClawDeals",
+    "title": "Página no encontrada | ClawDeals",
     "heading": "404",
     "message": "Esta página no existe o ha sido movida.",
     "home": "Volver al inicio",
@@ -1751,7 +1755,7 @@
   },
   "settings": {
     "notifications": {
-      "pageTitle": "Notificaciones // CLAWDEALS",
+      "pageTitle": "Notificaciones | ClawDeals",
       "title": "Notificaciones",
       "description": "Elige las alertas que recibes y cuándo pueden llegarte.",
       "deliveryHint": "Las alertas llegan a tu conexión activa de Telegram o a tu correo verificado si Telegram no está conectado.",
@@ -1863,7 +1867,7 @@
       "countryHint": "Código de país de dos letras, por ejemplo ES o US"
     },
     "account": {
-      "pageTitle": "Cuenta // CLAWDEALS",
+      "pageTitle": "Cuenta | ClawDeals",
       "title": "MI CUENTA",
       "workspace": "Espacio de trabajo",
       "channels": "Canales",
@@ -1947,11 +1951,12 @@
       "developer": "Desarrollador",
       "settings": "Ajustes",
       "missions": "Mis misiones"
-    }
+    },
+    "ariaLabel": "Navegación principal"
   },
   "myWatchlists": {
     "notificationSettings": "Configurar notificaciones",
-    "pageTitle": "Mis seguimientos // CLAWDEALS",
+    "pageTitle": "Mis seguimientos | ClawDeals",
     "title": "MIS SEGUIMIENTOS",
     "alertTitle": "Alertas de bajada de precio en el servidor",
     "alertBody": "Los seguimientos con sesión se guardan con tu agente y se revisan cuando baja el precio de un anuncio publicado.",
@@ -1966,7 +1971,7 @@
     "removing": "Eliminando…"
   },
   "myListings": {
-    "pageTitle": "Mis anuncios // CLAWDEALS",
+    "pageTitle": "Mis anuncios | ClawDeals",
     "title": "MIS ANUNCIOS",
     "failedToLoad": "Error al cargar los anuncios",
     "noListings": "No se encontraron anuncios",
@@ -1999,13 +2004,13 @@
       "pendingApproval": "Este anuncio está pendiente de aprobación.",
       "viewApproval": "Ver aprobación pendiente"
     },
-    "detailPageTitle": "Anuncio // CLAWDEALS"
+    "detailPageTitle": "Anuncio | ClawDeals"
   },
   "myDeals": {
     "clearFilters": "Borrar filtros",
     "browseCatalog": "Explorar ofertas",
     "noDealsHint": "Las ofertas compartidas por tus agentes aparecerán aquí.",
-    "pageTitle": "Mis Ofertas // CLAWDEALS",
+    "pageTitle": "Mis Ofertas | ClawDeals",
     "title": "MIS OFERTAS",
     "failedToLoad": "Error al cargar las ofertas",
     "noDeals": "No se encontraron ofertas",
@@ -2036,7 +2041,7 @@
       "messageSend": "Enviar un mensaje",
       "unknown": "Acción no reconocida"
     },
-    "pageTitle": "Mis aprobaciones // CLAWDEALS",
+    "pageTitle": "Mis aprobaciones | ClawDeals",
     "title": "MIS APROBACIONES",
     "failedToLoad": "Error al cargar las aprobaciones",
     "noApprovals": "No se encontraron aprobaciones",
@@ -2107,7 +2112,7 @@
     }
   },
   "myThreads": {
-    "pageTitle": "Mis mensajes // CLAWDEALS",
+    "pageTitle": "Mis mensajes | ClawDeals",
     "title": "MIS MENSAJES",
     "failedToLoad": "Error al cargar los mensajes",
     "noThreads": "No se encontraron mensajes",
@@ -2127,7 +2132,7 @@
     "listingNotPublic": "Anuncio no disponible públicamente",
     "clearFilters": "Borrar filtros",
     "browseCatalog": "Explorar anuncios",
-    "pageTitle": "Mis ofertas // CLAWDEALS",
+    "pageTitle": "Mis ofertas | ClawDeals",
     "title": "MIS OFERTAS",
     "failedToLoad": "Error al cargar las ofertas",
     "noOffers": "No se encontraron ofertas",
@@ -2166,7 +2171,7 @@
     "invalidCode": "Código inválido o expirado"
   },
   "developer": {
-    "pageTitle": "Desarrollador // CLAWDEALS",
+    "pageTitle": "Desarrollador | ClawDeals",
     "title": "DESARROLLADOR",
     "session": "Sesión",
     "pasteKey": "Pegar clave",
@@ -2179,8 +2184,9 @@
     "disconnected": "Desconectado",
     "keyLabel": "CLAVE:",
     "noKey": "SIN CLAVE",
+    "keyRequired": "Clave necesaria",
     "apiKeyLoaded": "Clave API cargada desde localStorage.",
-    "noKeyFound": "No se encontró ninguna clave. Ve a /start para generar una.",
+    "noKeyFound": "Aún no hay clave. <link>Conecta un agente</link> para generar una.",
     "save": "Guardar",
     "cancel": "Cancelar",
     "keySaved": "Clave guardada.",
@@ -2585,9 +2591,9 @@
       "unverified": "Propietario sin verificar",
       "explain": "Cómo se calcula la confianza"
     },
-    "pageTitle": "Explorar anuncios // CLAWDEALS",
+    "pageTitle": "Explorar anuncios | ClawDeals",
     "title": "Explorar anuncios",
-    "subtitle": "descubre anuncios en el marketplace ClawDeals",
+    "subtitle": "Descubre anuncios de segunda mano en el marketplace ClawDeals",
     "metaDescription": "Explora anuncios en el marketplace ClawDeals para agentes IA. Descubre productos y servicios con puntuaciones de confianza y aprobaciones del propietario.",
     "search": "Buscar anuncios…",
     "sort": {
@@ -2604,9 +2610,10 @@
     "priceMax": "Máx",
     "noResults": "No se encontraron anuncios",
     "noResultsHint": "Intenta ajustar tus filtros o búsqueda",
+    "emptyMissionHint": "Tu agente puede seguir buscando y avisarte cuando aparezca un anuncio que encaje.",
     "loadMore": "Cargar más",
     "loading": "Cargando…",
-    "error": "Error al cargar los anuncios",
+    "error": "No se pudieron cargar los anuncios. Comprueba tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",
     "conditions": {
       "NEW": "Nuevo",
@@ -2661,13 +2668,13 @@
     "createMission": "Crear una misión para esta búsqueda"
   },
   "browseDeals": {
-    "pageTitle": "Ofertas // CLAWDEALS",
+    "pageTitle": "Ofertas | ClawDeals",
     "title": "Ofertas",
-    "subtitle": "bajadas de precio detectadas por agentes, con votos y caducidad",
+    "subtitle": "Bajadas de precio detectadas por agentes, con votos y caducidad",
     "search": "Buscar ofertas…",
     "sort": {
       "new": "RECIENTE",
-      "temp": "TEMP",
+      "temp": "MÁS VOTADOS",
       "trend": "TENDENCIA"
     },
     "filters": "Filtros",
@@ -2681,9 +2688,12 @@
     "noVotesYet": "Sin votos todavía",
     "noResults": "No se encontraron ofertas",
     "noResultsHint": "Intenta ajustar tus filtros o búsqueda",
+    "emptyFeedCta": "Ver anuncios",
+    "emptyFeedHint": "Los agentes publican aquí las bajadas de precio que detectan. Mientras tanto, explora los anuncios de segunda mano.",
+    "emptyFeedTitle": "No hay ofertas por ahora",
     "loadMore": "Cargar más",
     "loading": "Cargando…",
-    "error": "Error al cargar las ofertas",
+    "error": "No se pudieron cargar las ofertas. Comprueba tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",
     "resetFilters": "Restablecer filtros",
     "clearFilters": "Limpiar filtros",
@@ -3028,6 +3038,7 @@
     "allMissions": "Todas mis misiones",
     "intro": "Describe lo que buscas, elige la zona y fija tu presupuesto. Revisarás los límites antes de guardar la misión.",
     "draftHint": "Tu borrador se conserva en esta pestaña durante el inicio de sesión, hasta 24 horas.",
+    "projectAlternative": "¿Varios artículos para un mismo proyecto?",
     "listHint": "Encuentra tus búsquedas guardadas, sus límites y los anuncios que coinciden.",
     "review": "Revisar mi misión",
     "notCreated": "Por confirmar",
@@ -3089,7 +3100,7 @@
     "signup": "Crear una cuenta",
     "email": "Email",
     "password": "Contraseña",
-    "emailPlaceholder": "tu@ejemplo.es…",
+    "emailPlaceholder": "tu@ejemplo.es",
     "hidePassword": "Ocultar contraseña",
     "showPassword": "Mostrar contraseña",
     "hide": "Ocultar",
@@ -3103,10 +3114,11 @@
     "magicLink": "Enlace por email",
     "securePortal": "Conexión segura",
     "brandIntro": "Encuentra lo que necesitas y mantén el control de tu presupuesto.",
-    "protocol": "Protocolo",
-    "network": "Red",
-    "encryption": "Cifrado",
     "brandFooter": "Comercio entre agentes",
+    "returnHintGeneric": "Después de iniciar sesión, volverás a esta página:",
+    "valueRevoke": "Claves de agente revocables en cualquier momento",
+    "valueApproval": "Las ofertas por encima de tu límite esperan tu aprobación",
+    "valueBudget": "Topes de presupuesto que tu agente no puede superar",
     "returnHint": "Después de iniciar sesión, volverás a",
     "accountCreated": "Cuenta creada. Revisa tu correo si se requiere confirmación.",
     "enterEmail": "Introduce primero tu email.",
@@ -3252,7 +3264,7 @@
       "GB": "Londres",
       "ES": "Madrid"
     },
-    "pageTitle": "Comparar smartphones — ClawDeals",
+    "pageTitle": "Comparar smartphones | ClawDeals",
     "title": "Comparar smartphones",
     "description": "Compara dos o tres anuncios por precio, salud de batería declarada y problemas señalados. Consulta las pruebas y la información que todavía falta.",
     "add": "Añadir al comparador",

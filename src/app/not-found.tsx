@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import NotFoundContent from "./not-found-content";
 
 export const metadata: Metadata = {
-  title: "Page not found // CLAWDEALS",
+  title: "Page not found | ClawDeals",
   description: "This page does not exist or has been moved.",
   robots: { index: false, follow: true }
 };

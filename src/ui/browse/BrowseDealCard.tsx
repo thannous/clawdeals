@@ -145,7 +145,7 @@ function BrowseDealCard({ deal, highlighted }: { deal: any; highlighted?: boolea
             {deal.tags.map((tag: string) => (
               <span
                 key={tag}
-                className="text-xs font-mono font-bold uppercase px-2 py-0.5 border border-primary/60 text-primary rounded truncate"
+                className="text-xs font-mono font-bold uppercase px-2 py-0.5 border border-border-strong text-muted rounded truncate"
               >
                 {tag}
               </span>
@@ -179,7 +179,7 @@ function BrowseDealCard({ deal, highlighted }: { deal: any; highlighted?: boolea
                 </span>
               </div>
             ) : (
-              <span className="text-[10px] font-mono uppercase tracking-widest text-subtle" data-testid="deal-votes-none">
+              <span className="text-xs font-mono uppercase tracking-widest text-subtle" data-testid="deal-votes-none">
                 {t("noVotesYet")}
               </span>
             )}

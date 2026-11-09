@@ -4,8 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { useSyncExternalStore } from "react";
 import { useTheme } from "../../theme/theme-context";
-import { resolveSupportedLocale } from "../../shared/i18n";
-import { getPublicAppEntryHref } from "../../shared/urls";
+import { resolveSupportedLocale, intlLocaleFor } from "../../shared/i18n";
 import { NavbarCurrent } from "../landing/Navbar";
 import DealRoomPanel from "../webmcp/DealRoomPanel";
 import PendingApprovalBanner from "../webmcp/PendingApprovalBanner";
@@ -69,7 +68,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
           { lat: activeMission.location.lat, lng: activeMission.location.lon }
         )
       : null;
-  const dateFormatter = new Intl.DateTimeFormat(locale, {
+  const dateFormatter = new Intl.DateTimeFormat(intlLocaleFor(locale), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -80,7 +79,7 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
       <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
 
       <main id="main-content" tabIndex={-1} className="pt-20 pb-48">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Back link */}
           <Link
             href={`${localePrefix}/browse`}
@@ -100,158 +99,153 @@ export default function BrowseListingDetailPage({ listing }: BrowseListingDetail
               </Link>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Category + condition badges */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono font-bold uppercase px-2 py-0.5 border border-primary/60 text-primary rounded">
-                  {listing.category}
-                </span>
-                {listing.condition && (
-                  <span
-                    className={`text-xs font-mono font-bold uppercase px-2 py-0.5 border rounded ${
-                      CONDITION_COLORS[listing.condition] || "text-muted border-border"
-                    }`}
-                  >
-                    {t(`conditions.${listing.condition}`)}
-                  </span>
-                )}
-              </div>
-
-              {/* Title */}
-              <h1 className="text-2xl md:text-3xl font-bold text-text break-words">
-                {listing.title}
-              </h1>
-
-              {/* Price */}
-              <div className="text-xl font-mono font-bold text-primary">
-                {formatPrice(listing.price.amount, listing.price.currency, locale)}
-              </div>
-
-              <ComparisonToggle listing={listing} />
-
-              {/* Human actions: the page is no longer a dead end without an agent */}
-              <ListingHumanActions listing={listing} localePrefix={localePrefix} />
-
-              {/* Live negotiation state, when a mission is running in this browser */}
-              <PendingApprovalBanner />
-              <DealRoomPanel />
-
-              <ListingGallery listing={listing} title={listing.title || ""} />
-
-              {/* Description */}
-              {listing.description && (
-                <div className="bg-surface border border-border p-4">
-                  <div className="text-xs font-mono text-subtle uppercase tracking-wider mb-2">
-                    {t("detail.description")}
-                  </div>
-                  <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">
-                    {listing.description}
-                  </p>
+            <div className="space-y-10">
+              {/* Photos lead on mobile; on desktop the buying panel stays beside them. */}
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
+                <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+                  <ListingGallery listing={listing} title={listing.title || ""} />
                 </div>
-              )}
 
-              <SmartphonePassport key={listing.listing_id} listingId={listing.listing_id} title={listing.title} category={listing.category} />
-
-              {/* Details grid */}
-              <div className="bg-surface border border-border p-4 space-y-3">
-                {(listing.market_code || listing.geo) && (
-                  <DetailRow label={t("detail.location")}>
-                    <span className="text-xs font-mono text-text" data-testid="listing-location">
-                      {resolveListingLocation(listing.market_code, listing.geo)}
-                      {missionDistance !== null ? (
-                        <> · {t("detail.distanceFromMission", { distance: missionDistance.toFixed(1) })}</>
-                      ) : null}
-                      {listing.geo ? (
-                        <>
-                          {" · "}
-                          <a
-                            href={`https://www.openstreetmap.org/?mlat=${listing.geo.lat}&mlon=${listing.geo.lng}#map=12/${listing.geo.lat}/${listing.geo.lng}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline underline-offset-4"
-                          >
-                            {t("detail.viewOnMap")}
-                          </a>
-                        </>
-                      ) : null}
+                <aside className="min-w-0 space-y-5 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start lg:sticky lg:top-24">
+                  {/* Category + condition badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-mono font-bold uppercase px-2 py-0.5 border border-border-strong text-muted rounded">
+                      {listing.category}
                     </span>
-                  </DetailRow>
-                )}
-                {listing.delivery_method && (
-                  <DetailRow label={t("detail.deliveryMethod")}>
-                    <span className="text-xs font-mono text-text">{listing.delivery_method}</span>
-                  </DetailRow>
-                )}
-                {listing.country && (
-                  <DetailRow label={t("detail.country")}>
-                    <span className="text-xs font-mono text-text">{listing.country}</span>
-                  </DetailRow>
-                )}
-                <DetailRow label={t("detail.created")}>
-                  <span className="text-xs font-mono text-subtle">
-                    {dateFormatter.format(new Date(listing.created_at))}
-                  </span>
-                </DetailRow>
-                {listing.updated_at && (
-                  <DetailRow label={t("detail.updated")}>
-                    <span className="text-xs font-mono text-subtle">
-                      {dateFormatter.format(new Date(listing.updated_at))}
-                    </span>
-                  </DetailRow>
-                )}
-              </div>
-
-              {/* Seller */}
-              {listing.seller && (
-                <div className="bg-surface border border-border p-4">
-                  <div className="text-xs font-mono text-subtle uppercase tracking-wider mb-2">
-                    {t("seller")}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Image
-                      loader={avatarLoader}
-                      unoptimized
-                      src={resolveAvatarSrc(listing.seller.avatar_url)}
-                      alt=""
-                      width={32}
-                      height={32}
-                      className="h-8 w-8 rounded-full"
-                    />
-                    <span className="text-sm font-mono text-text">
-                      {listing.seller.display_name || t("seller")}
-                    </span>
-                    {listing.seller.verified && (
-                      <svg className="h-4 w-4 text-primary shrink-0" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8 0a8 8 0 110 16A8 8 0 018 0zm3.41 5.59a.75.75 0 00-1.06-1.06L7 7.88 5.65 6.53a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l4-4z" />
-                      </svg>
+                    {listing.condition && (
+                      <span
+                        className={`text-xs font-mono font-bold uppercase px-2 py-0.5 border rounded ${
+                          CONDITION_COLORS[listing.condition] || "text-muted border-border"
+                        }`}
+                      >
+                        {t(`conditions.${listing.condition}`)}
+                      </span>
                     )}
                   </div>
-                  <SellerTrust
-                    trust={listing.seller.trust}
-                    verified={Boolean(listing.seller.verified)}
-                    locale={locale}
-                    localePrefix={localePrefix}
-                  />
+
+                  <h1 className="text-2xl md:text-3xl font-bold text-text break-words">
+                    {listing.title}
+                  </h1>
+
+                  <div className="text-2xl font-mono font-bold text-primary">
+                    {formatPrice(listing.price.amount, listing.price.currency, locale)}
+                  </div>
+
+                  {/* Human actions: the page is no longer a dead end without an agent */}
+                  <ListingHumanActions listing={listing} localePrefix={localePrefix} />
+
+                  <ComparisonToggle listing={listing} />
+
+                  {/* Live negotiation state, when a mission is running in this browser */}
+                  <PendingApprovalBanner />
+                  <DealRoomPanel />
+
+                  {/* Seller */}
+                  {listing.seller && (
+                    <div className="bg-surface border border-border p-4">
+                      <div className="text-xs font-mono text-subtle uppercase tracking-wider mb-2">
+                        {t("seller")}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Image
+                          loader={avatarLoader}
+                          unoptimized
+                          src={resolveAvatarSrc(listing.seller.avatar_url)}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="h-8 w-8 rounded-full"
+                        />
+                        <span className="text-sm font-mono text-text">
+                          {listing.seller.display_name || t("seller")}
+                        </span>
+                        {listing.seller.verified && (
+                          <svg className="h-4 w-4 text-primary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path d="M8 0a8 8 0 110 16A8 8 0 018 0zm3.41 5.59a.75.75 0 00-1.06-1.06L7 7.88 5.65 6.53a.75.75 0 10-1.06 1.06l2 2a.75.75 0 001.06 0l4-4z" />
+                          </svg>
+                        )}
+                      </div>
+                      <SellerTrust
+                        trust={listing.seller.trust}
+                        verified={Boolean(listing.seller.verified)}
+                        locale={locale}
+                        localePrefix={localePrefix}
+                      />
+                    </div>
+                  )}
+                </aside>
+
+                <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-2">
+                  {/* Description */}
+                  {listing.description && (
+                    <div className="bg-surface border border-border p-4">
+                      <h2 className="text-xs font-mono text-subtle uppercase tracking-wider mb-2">
+                        {t("detail.description")}
+                      </h2>
+                      <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">
+                        {listing.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <SmartphonePassport key={listing.listing_id} listingId={listing.listing_id} title={listing.title} category={listing.category} />
+
+                  {/* Details grid */}
+                  <div className="bg-surface border border-border p-4 space-y-3">
+                    {(listing.market_code || listing.geo) && (
+                      <DetailRow label={t("detail.location")}>
+                        <span className="text-xs font-mono text-text" data-testid="listing-location">
+                          {resolveListingLocation(listing.market_code, listing.geo)}
+                          {missionDistance !== null ? (
+                            <> · {t("detail.distanceFromMission", { distance: missionDistance.toFixed(1) })}</>
+                          ) : null}
+                          {listing.geo ? (
+                            <>
+                              {" · "}
+                              <a
+                                href={`https://www.openstreetmap.org/?mlat=${listing.geo.lat}&mlon=${listing.geo.lng}#map=12/${listing.geo.lat}/${listing.geo.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline underline-offset-4"
+                              >
+                                {t("detail.viewOnMap")}
+                              </a>
+                            </>
+                          ) : null}
+                        </span>
+                      </DetailRow>
+                    )}
+                    {listing.delivery_method && (
+                      <DetailRow label={t("detail.deliveryMethod")}>
+                        <span className="text-xs font-mono text-text">{listing.delivery_method}</span>
+                      </DetailRow>
+                    )}
+                    {listing.country && (
+                      <DetailRow label={t("detail.country")}>
+                        <span className="text-xs font-mono text-text">{listing.country}</span>
+                      </DetailRow>
+                    )}
+                    <DetailRow label={t("detail.created")}>
+                      <span className="text-xs font-mono text-muted">
+                        {dateFormatter.format(new Date(listing.created_at))}
+                      </span>
+                    </DetailRow>
+                    {listing.updated_at && (
+                      <DetailRow label={t("detail.updated")}>
+                        <span className="text-xs font-mono text-muted">
+                          {dateFormatter.format(new Date(listing.updated_at))}
+                        </span>
+                      </DetailRow>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
 
               <SimilarListings
                 listingId={listing.listing_id}
                 category={listing.category ?? null}
                 marketCode={listing.market_code ?? null}
               />
-
-              {/* Secondary CTA for visitors who do not have an agent yet */}
-              <div className="border border-border bg-surface p-6 text-center space-y-3">
-                <p className="text-sm font-mono text-muted">{t("detail.ctaText")}</p>
-                <Link
-                  href={getPublicAppEntryHref(localePrefix)}
-                  data-acquisition-cta="browse"
-                  className="inline-block px-6 py-2.5 font-bold uppercase tracking-wider text-sm border border-border text-text hover:border-primary hover:text-primary transition-colors"
-                >
-                  {t("detail.ctaButton")}
-                </Link>
-              </div>
             </div>
           )}
         </div>
@@ -276,7 +270,7 @@ function SellerTrust({
 }) {
   const t = useTranslations("browse");
   const memberSince = trust?.member_since
-    ? new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }).format(new Date(trust.member_since))
+    ? new Intl.DateTimeFormat(intlLocaleFor(locale), { month: "short", year: "numeric" }).format(new Date(trust.member_since))
     : null;
   const score = typeof trust?.score === "number" ? Math.max(0, Math.min(100, Math.round(trust.score))) : null;
   const scoreTone = score === null ? "text-subtle" : score >= 60 ? "text-success" : score >= 30 ? "text-text" : "text-warning";

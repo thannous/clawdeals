@@ -207,19 +207,13 @@ export default function KeysPage() {
       <PageHeader
         containerClassName="max-w-3xl mx-auto px-4 py-4"
         htmlTitle={
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
-              <div className="absolute inset-0 hazard-stripe opacity-20" />
-              CD
-            </div>
-            <div className="space-y-0.5 leading-none">
-              <h1 className="font-bold tracking-wider">
-                <span className="text-primary">/ </span>
-                {copy.title}
-              </h1>
-              <div className="text-xs font-mono text-subtle uppercase tracking-[0.25em]">
-                {copy.subtitle}
-              </div>
+          <div className="min-w-0 space-y-0.5 leading-none">
+            <h1 className="font-bold tracking-wider truncate">
+              <span className="text-primary">/ </span>
+              {copy.title}
+            </h1>
+            <div className="hidden sm:block text-xs font-mono text-subtle uppercase tracking-[0.25em] truncate">
+              {copy.subtitle}
             </div>
           </div>
         }

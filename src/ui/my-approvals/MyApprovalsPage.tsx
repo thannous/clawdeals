@@ -85,7 +85,7 @@ export default function MyApprovalsPage() {
                 e.stopPropagation();
                 execute(row.approval_id, "approve", {}, row.owner_id);
               }}
-              className="px-2 py-1 text-[11px] font-mono font-bold uppercase border border-success/50 text-success hover:bg-success/10 transition-colors disabled:opacity-50"
+              className="px-2 py-1 text-xs font-mono font-bold uppercase border border-success/50 text-success hover:bg-success/10 transition-colors disabled:opacity-50"
             >
               {t("list.approve")}
             </button>
@@ -96,7 +96,7 @@ export default function MyApprovalsPage() {
                 e.stopPropagation();
                 execute(row.approval_id, "deny", {}, row.owner_id);
               }}
-              className="px-2 py-1 text-[11px] font-mono font-bold uppercase border border-error/50 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+              className="px-2 py-1 text-xs font-mono font-bold uppercase border border-error/50 text-error hover:bg-error/10 transition-colors disabled:opacity-50"
             >
               {t("list.deny")}
             </button>

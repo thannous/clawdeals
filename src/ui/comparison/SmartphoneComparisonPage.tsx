@@ -10,6 +10,7 @@ import PassportPhoto from "../passport/PassportPhoto";
 import SmartphoneMissionButton from "../my-missions/SmartphoneMissionButton";
 import { failedComparisonItem, fetchComparisonItems } from "./comparison-client";
 import { removeComparisonSelection, replaceComparisonSelection } from "./selection";
+import { intlLocaleFor } from "../../shared/i18n";
 
 type Props = { initialIds: string[]; invalidIds: boolean; initialPriority: ComparisonPriority };
 const priorities: ComparisonPriority[] = ["budget", "battery", "condition"];
@@ -69,7 +70,7 @@ export default function SmartphoneComparisonPage({ initialIds, invalidIds, initi
 
   const result = deriveComparison(items, priority);
   const busy = loading || retryIds.length > 0;
-  const dates = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+  const dates = new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "medium" });
   const names = (id: string) => items.find((item) => item.listing_id === id)?.listing?.title || t("itemFallback");
   const missingPassports = items.some((item) => item.availability === "available" && (!item.passport || item.passport_error));
 
@@ -115,20 +116,20 @@ export default function SmartphoneComparisonPage({ initialIds, invalidIds, initi
     catch { setShareState("error"); }
   }
   function formatPrice(amount: number, currency: string) {
-    return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
+    return new Intl.NumberFormat(intlLocaleFor(locale), { style: "currency", currency }).format(amount);
   }
 
   return <div data-testid="comparison-page" className="min-h-screen bg-bg">
     <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
     <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-6xl px-4 pb-16 pt-20 sm:px-6">
-      <Link href="/browse" className="text-sm text-muted hover:text-text">← {t("back")}</Link>
+      <Link href="/browse" className="inline-flex items-center gap-1 text-xs font-mono text-muted hover:text-text transition-colors"><span aria-hidden="true">←</span> {t("back")}</Link>
       <h1 className="mt-5 text-2xl font-bold text-text sm:text-3xl">{t("title")}</h1>
       <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted">{t("description")}</p>
       {invalid || ids.length < 2 ? <section data-testid="comparison-empty" className="mt-6 rounded border border-border bg-surface p-5">
         <h2 className="text-lg font-semibold text-text">{t(invalid ? "invalidTitle" : "emptyTitle")}</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">{t(invalid ? "invalidHint" : "emptyHint")}</p>
         {ids.length === 1 ? <p className="mt-3 text-sm text-text">{names(ids[0])}<button type="button" data-testid={`comparison-item-remove-${ids[0]}`} onClick={() => remove(ids[0])} className="ml-3 text-sm text-muted underline">{t("remove")}</button></p> : null}
-        <Link href="/browse" className={`${buttonClass} mt-4 inline-block`}>{t("browse")}</Link>
+        <Link href="/browse" className="mt-4 inline-flex px-5 py-2.5 text-xs font-bold uppercase tracking-wider bg-primary text-bg hover:bg-primary/85 transition-colors">{t("browse")}</Link>
       </section> : <>
         <fieldset className="mt-6"><legend className="text-base font-semibold text-text">{t("priorityTitle")}</legend><div className="mt-3 flex flex-wrap gap-2">{priorities.map((value) => <button type="button" key={value} data-testid={`comparison-priority-${value}`} aria-pressed={priority === value} onClick={() => { setPriority(value); setShareState("idle"); updateUrl(ids, value); }} className={`${buttonClass} ${priority === value ? "border-primary bg-primary/10 text-primary" : ""}`}>{t(`priorities.${value}`)}</button>)}</div></fieldset>
         <section data-testid="comparison-result" data-status={busy ? "loading" : result.status} aria-live="polite" className="mt-5 rounded border border-border bg-surface p-4 sm:p-5">

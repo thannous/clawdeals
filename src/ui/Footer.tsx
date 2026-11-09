@@ -46,7 +46,7 @@ function isStaticFile(href: string) {
 function FooterLinkColumn({ column, localePrefix }: { column: FooterColumn; localePrefix: string }) {
   return (
     <div>
-      <h4 className="text-text font-bold mb-4 uppercase">{column.title}</h4>
+      <h2 className="text-text font-bold mb-4 uppercase">{column.title}</h2>
       <ul className="space-y-2">
         {column.links.map((link) => (
           <li key={link.href}>
@@ -59,7 +59,7 @@ function FooterLinkColumn({ column, localePrefix }: { column: FooterColumn; loca
                     : `${localePrefix}${link.href}`
               }
               locale={false}
-              className="hover:text-primary focus-visible:text-primary focus-visible:outline-none"
+              className="hover:text-primary focus-visible:text-primary"
             >
               {link.label}
             </MarketingLink>

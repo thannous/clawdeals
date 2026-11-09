@@ -91,7 +91,7 @@ export default function BrowseDealsToolbar({
             data-testid={`status-${s}`}
             onClick={() => onStatusChange(status === s ? "" : s)}
             aria-pressed={status === s}
-            className={`px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
+            className={`px-2.5 py-1 text-xs font-mono font-bold uppercase rounded border transition-colors ${
               status === s
                 ? "border-secondary text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"

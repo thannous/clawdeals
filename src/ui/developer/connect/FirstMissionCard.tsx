@@ -34,7 +34,7 @@ export default function FirstMissionCard({ localePrefix = "" }: { localePrefix?:
 
   return (
     <div className="border border-primary/40 bg-primary/5 p-5 clip-corner space-y-3" data-testid="first-mission-card">
-      <div className="text-[11px] font-mono text-primary uppercase tracking-widest">{t("step.firstwin.firstMission.eyebrow")}</div>
+      <div className="text-xs font-mono text-primary uppercase tracking-widest">{t("step.firstwin.firstMission.eyebrow")}</div>
       <div className="text-lg font-bold tracking-tight">{t("step.firstwin.firstMission.title")}</div>
       <p className="text-sm text-muted leading-relaxed">
         {state.status === "ready"

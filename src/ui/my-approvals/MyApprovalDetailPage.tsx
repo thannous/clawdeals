@@ -142,7 +142,7 @@ export default function MyApprovalDetailPage() {
                 className="border border-primary/30 bg-surface p-5 space-y-5"
               >
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.missionOffer.requestedActionLabel")}
                   </p>
                   <p className="mt-1 text-base font-semibold text-text">
@@ -150,7 +150,7 @@ export default function MyApprovalDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.missionOffer.whyLabel")}
                   </p>
                   <p className="mt-1 text-sm text-muted">
@@ -167,7 +167,7 @@ export default function MyApprovalDetailPage() {
                 <div>
                   <label
                     htmlFor="approval-offer-amount"
-                    className="text-[10px] font-mono uppercase tracking-widest text-subtle"
+                    className="text-xs font-mono uppercase tracking-widest text-subtle"
                   >
                     {t("detail.missionOffer.amountLabel")}
                   </label>
@@ -200,7 +200,7 @@ export default function MyApprovalDetailPage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.missionOffer.consequencesLabel")}
                   </p>
                   <p className="mt-1 text-sm text-muted">
@@ -216,7 +216,7 @@ export default function MyApprovalDetailPage() {
                 className="border border-primary/30 bg-surface p-5 space-y-5"
               >
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.contactReveal.requestedActionLabel")}
                   </p>
                   <p className="mt-1 text-base font-semibold text-text">
@@ -224,7 +224,7 @@ export default function MyApprovalDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.contactReveal.yourRoleLabel")}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-text">
@@ -234,13 +234,13 @@ export default function MyApprovalDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.contactReveal.whyLabel")}
                   </p>
                   <p className="mt-1 text-sm text-muted">{t("detail.contactReveal.why")}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-subtle">
+                  <p className="text-xs font-mono uppercase tracking-widest text-subtle">
                     {t("detail.contactReveal.consequencesLabel")}
                   </p>
                   <p className="mt-1 text-sm text-muted">

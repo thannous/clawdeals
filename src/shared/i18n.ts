@@ -28,6 +28,13 @@ export function localePrefixFor(locale: SupportedLocale): string {
   return locale === DEFAULT_LOCALE ? "" : `/${locale}`;
 }
 
+const INTL_LOCALES: Record<SupportedLocale, string> = { en: "en-GB", fr: "fr-FR", es: "es-ES" };
+
+/** BCP 47 tag for Intl formatters: the English market is the UK, so dates read day first. */
+export function intlLocaleFor(value: unknown): string {
+  return INTL_LOCALES[resolveSupportedLocale(value)];
+}
+
 export function splitLocalePrefix(pathname: string) {
   const raw = String(pathname || "/");
   const path = raw.startsWith("/") ? raw : `/${raw}`;

@@ -232,8 +232,8 @@ test.describe("Console Cross-Feature — US-7", () => {
     await page.goto("/console/approvals");
     await expect(page.getByTestId("approvals-page")).toBeVisible();
 
-    // 2. Click on approval row
-    await page.locator("table tbody tr").first().click();
+    // 2. Open the first approval through its row button (row cells also hold copyable IDs)
+    await page.locator("table tbody tr").first().getByRole("button", { name: /^Open approval/ }).click();
 
     // 3. Approval detail
     await expect(page.getByTestId("approval-detail-page")).toBeVisible({ timeout: 30_000 });

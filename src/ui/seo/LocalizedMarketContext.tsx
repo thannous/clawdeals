@@ -70,13 +70,13 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
   fr: {
     landing: {
       eyebrow: "MARCHÉ FRANCE · EUR",
-      title: "Un parcours ClawDeals réglé pour le marché français",
+      title: "ClawDeals en France",
       intro:
-        "Le site reste commun aux marchés européens, mais les ressources créées par un agent doivent porter leur marché. Pour la France, utilise market_code FR avec EUR.",
+        "Ton agent cherche des annonces et des bons plans en France, en euros, et te laisse la décision au-delà de tes limites.",
       points: [
-        "Connecte l’agent, puis crée sa première watchlist avec market_code FR.",
-        "EUR ne suffit pas à distinguer la France de l’Espagne : le code marché reste explicite.",
-        "Un premier match valide le fonctionnement du parcours, pas encore sa rétention."
+        "Connecte ton agent, puis lance une première veille sur ta ville.",
+        "Tes recherches restent rattachées à la France, même si l’Espagne utilise aussi l’euro.",
+        "Commence avec un budget serré, puis élargis quand les résultats te conviennent."
       ],
       guideLabel: "Suivre le guide DealWatch France",
       marketCode: "FR",
@@ -84,13 +84,13 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
     },
     marketplace: {
       eyebrow: "MARKETPLACE · FRANCE",
-      title: "Commencer par des ressources rattachées au marché FR",
+      title: "Trouver des annonces en France",
       intro:
-        "La marketplace reste commune, mais une sélection utile en France doit conserver son marché, sa devise et sa source. Le filtre pays aide à explorer ; market_code FR reste le contrat opérationnel.",
+        "La marketplace couvre plusieurs pays. Pour une recherche utile en France, vérifie le pays, la devise et la source de chaque annonce.",
       points: [
         "Sélectionne la France et vérifie le pays affiché sur chaque annonce ou deal.",
         "Contrôle EUR, le marchand ou vendeur et la fraîcheur de la source.",
-        "Crée ensuite une watchlist FR étroite avant de valider le premier match."
+        "Crée ensuite une veille ciblée sur la France pour recevoir les nouvelles annonces."
       ],
       guideLabel: "Suivre le guide DealWatch France",
       marketCode: "FR",
@@ -102,7 +102,7 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
       intro:
         "Le Trust Engine aide à qualifier un agent ou une action. Il ne remplace pas la vérification du marchand, de la ressource et du marché concernés.",
       points: [
-        "Vérifie market_code FR sur le deal, le listing ou la watchlist.",
+        "Vérifie que le bon plan, l’annonce ou la veille concerne bien la France.",
         "Contrôle la devise EUR et la source marchande avant toute action sensible.",
         "Lis le score avec les preuves et événements récents disponibles dans l’audit."
       ],
@@ -117,7 +117,7 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
         "Les politiques encadrent notamment les montants et les approbations. La portée marché reste attachée aux deals, listings et watchlists.",
       points: [
         "Définis les seuils budgétaires dans la devise attendue, ici EUR.",
-        "Conserve market_code FR sur les ressources surveillées ou publiées.",
+        "Rattache tes veilles et tes annonces à la France.",
         "Teste les limites sur une action à faible risque avant d’élargir l’autonomie."
       ],
       guideLabel: "Configurer une première veille FR",
@@ -130,9 +130,9 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
       intro:
         "Une trace utile relie l’agent, la ressource, la politique appliquée et le résultat. Le contexte FR évite de mélanger deux opérations européennes en EUR.",
       points: [
-        "Filtre les ressources et événements portant market_code FR.",
+        "Filtre les annonces et événements concernant la France.",
         "Vérifie les montants en EUR et l’identité de l’agent à l’origine de l’action.",
-        "Distingue une action réussie d’un résultat métier ou d’une activation durable."
+        "Distingue une action technique réussie d’un achat ou d’une vente réellement conclus."
       ],
       guideLabel: "Observer le parcours DealWatch France",
       marketCode: "FR",
@@ -212,13 +212,13 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
   es: {
     landing: {
       eyebrow: "MERCADO ESPAÑA · EUR",
-      title: "Un recorrido ClawDeals configurado para España",
+      title: "ClawDeals en España",
       intro:
-        "La arquitectura es común a los mercados europeos, pero cada recurso creado por un agente conserva su mercado. Para España, utiliza market_code ES con EUR.",
+        "Tu agente busca anuncios y ofertas en España, en euros, y te deja la decisión cuando se superan tus límites.",
       points: [
-        "Conecta el agente y crea su primera watchlist con market_code ES.",
-        "EUR no distingue España de Francia: el código de mercado debe ser explícito.",
-        "El primer match valida el recorrido técnico, no demuestra todavía retención."
+        "Conecta tu agente y crea una primera alerta para tu ciudad.",
+        "Tus búsquedas quedan vinculadas a España, aunque Francia también use el euro.",
+        "Empieza con un presupuesto ajustado y amplíalo cuando los resultados te convenzan."
       ],
       guideLabel: "Seguir la guía DealWatch España",
       marketCode: "ES",
@@ -226,13 +226,13 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
     },
     marketplace: {
       eyebrow: "MARKETPLACE · ESPAÑA",
-      title: "Empezar por recursos vinculados al mercado ES",
+      title: "Encontrar anuncios en España",
       intro:
-        "El marketplace es común, pero una selección útil en España debe conservar mercado, moneda y fuente. El filtro por país ayuda a explorar; market_code ES sigue siendo el contrato operativo.",
+        "El marketplace cubre varios países. Para una búsqueda útil en España, comprueba el país, la moneda y la fuente de cada anuncio.",
       points: [
         "Selecciona España y comprueba el país de cada anuncio o deal.",
         "Verifica EUR, el comercio o vendedor y la actualidad de la fuente.",
-        "Crea después una watchlist ES limitada antes de validar el primer match."
+        "Crea después una alerta centrada en España para recibir los nuevos anuncios."
       ],
       guideLabel: "Seguir la guía DealWatch España",
       marketCode: "ES",
@@ -244,7 +244,7 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
       intro:
         "El Trust Engine ayuda a evaluar un agente o una acción. No sustituye la comprobación del comercio, del recurso y del mercado implicados.",
       points: [
-        "Comprueba market_code ES en el deal, listing o watchlist.",
+        "Comprueba que la oferta, el anuncio o la alerta correspondan a España.",
         "Verifica la moneda EUR y la fuente comercial antes de una acción sensible.",
         "Lee la puntuación junto con las evidencias y eventos recientes del audit."
       ],
@@ -259,7 +259,7 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
         "Las políticas controlan, entre otros aspectos, importes y aprobaciones. El alcance de mercado permanece en deals, listings y watchlists.",
       points: [
         "Define los límites de presupuesto en la moneda esperada, aquí EUR.",
-        "Mantén market_code ES en los recursos vigilados o publicados.",
+        "Vincula tus alertas y anuncios a España.",
         "Prueba los límites con una acción de bajo riesgo antes de ampliar autonomía."
       ],
       guideLabel: "Configurar una primera vigilancia ES",
@@ -272,9 +272,9 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
       intro:
         "Un registro útil relaciona agente, recurso, política aplicada y resultado. El contexto ES evita mezclar dos operaciones europeas denominadas en EUR.",
       points: [
-        "Filtra recursos y eventos con market_code ES.",
+        "Filtra los anuncios y eventos relativos a España.",
         "Comprueba importes en EUR y la identidad del agente que inició la acción.",
-        "Distingue una acción completada de un resultado de negocio o una activación duradera."
+        "Distingue una acción técnica completada de una compra o venta realmente cerrada."
       ],
       guideLabel: "Observar el recorrido DealWatch España",
       marketCode: "ES",
@@ -353,6 +353,15 @@ export const LOCALIZED_MARKET_CONTEXT: LocalizedMarketCopy = {
   }
 };
 
+/** Contexts read by people building agents; only they see the raw API parameters. */
+const TECHNICAL_CONTEXTS: ReadonlySet<LocalizedMarketContextKey> = new Set([
+  "mcp",
+  "openclaw",
+  "explore-agents",
+  "explore-skills",
+  "explore-data"
+]);
+
 export default function LocalizedMarketContext({
   locale,
   context
@@ -374,12 +383,12 @@ export default function LocalizedMarketContext({
       data-testid={`market-context-${context}-${locale}`}
     >
       <div className="font-mono text-xs uppercase tracking-[0.2em] text-primary mb-3">{copy.eyebrow}</div>
-      <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-4">{copy.title}</h2>
-      <p className="text-sm text-muted font-mono leading-relaxed max-w-3xl">{copy.intro}</p>
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-text mb-4">{copy.title}</h2>
+      <p className="text-base text-muted leading-relaxed max-w-3xl">{copy.intro}</p>
       <ul className="grid md:grid-cols-3 gap-4 mt-6">
         {copy.points.map((point, index) => (
-          <li key={point} className="border-l-2 border-primary pl-4 text-sm text-muted font-mono leading-relaxed">
-            <span className="block text-xs text-primary mb-2">{String(index + 1).padStart(2, "0")}</span>
+          <li key={point} className="border-l-2 border-primary pl-4 text-sm text-muted leading-relaxed">
+            <span aria-hidden="true" className="block font-mono text-xs text-primary mb-2">{String(index + 1).padStart(2, "0")}</span>
             {point}
           </li>
         ))}
@@ -391,9 +400,11 @@ export default function LocalizedMarketContext({
         >
           {copy.guideLabel}
         </Link>
-        <span className="font-mono text-xs text-subtle">
-          market_code={copy.marketCode} · currency={copy.currency}
-        </span>
+        {TECHNICAL_CONTEXTS.has(context) ? (
+          <span className="font-mono text-xs text-subtle">
+            market_code={copy.marketCode} · currency={copy.currency}
+          </span>
+        ) : null}
       </div>
       <nav
         aria-label={RELATED_NAV_LABEL[locale]}

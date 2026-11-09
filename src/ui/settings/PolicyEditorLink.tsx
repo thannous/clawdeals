@@ -12,7 +12,7 @@ export default function PolicyEditorLink() {
     <section className="border border-secondary/40 bg-secondary/5 p-5" data-testid="policy-control-owner-link">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-secondary">{t("title")}</p>
+          <p className="text-xs font-mono uppercase tracking-[0.18em] text-secondary">{t("title")}</p>
           <p className="mt-2 max-w-xl text-sm font-mono text-muted">
             {t("description")}
           </p>

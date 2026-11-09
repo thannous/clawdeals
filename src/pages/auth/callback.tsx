@@ -11,7 +11,7 @@ export default function AuthCallback() {
   return (
     <>
       <Head>
-        <title>Clawdeals | Auth Callback</title>
+        <title>Auth Callback | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />

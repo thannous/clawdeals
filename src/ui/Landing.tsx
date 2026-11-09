@@ -123,7 +123,7 @@ function WaitlistForm({
   const containerClasses = compact
     ? "border border-border bg-surface-alt p-4"
     : "border border-border bg-surface p-5";
-  const formClasses = compact ? "flex flex-col sm:flex-row gap-3" : "flex flex-col sm:flex-row gap-4";
+  const formClasses = compact ? "flex flex-col gap-3" : "flex flex-col sm:flex-row gap-4";
   const actionDisabled = isLoading || isSuccess;
 
   return (
@@ -403,8 +403,8 @@ function TabbedShowcaseFrame({
       {/* Active showcase */}
       <div key={active} className="showcase-enter">
         <SectionHeader title={header.title} subtitle={header.subtitle} accentText={activeTab.colorClass} accentBg={activeTab.accentBg} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <div className="lg:sticky lg:top-28 lg:pt-12">
             {singleTab ? (
               <p className={`font-mono text-xs ${activeTab.colorClass} tracking-widest uppercase mb-3`}>
                 {heroData[active].subtitle}
@@ -414,10 +414,10 @@ function TabbedShowcaseFrame({
             <ul className="space-y-3 mb-8">
               {bullets.map((bullet, index) => (
                 <li key={bullet} className="flex items-start gap-3">
-                  <span className={`w-5 h-5 border ${activeTab.borderClass} flex items-center justify-center text-xs font-mono ${activeTab.colorClass} flex-shrink-0 mt-0.5`}>
+                  <span aria-hidden="true" className={`w-5 h-5 border ${activeTab.borderClass} flex items-center justify-center text-xs font-mono ${activeTab.colorClass} flex-shrink-0 mt-0.5`}>
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className="text-sm text-muted font-mono">{bullet}</span>
+                  <span className="text-base text-muted">{bullet}</span>
                 </li>
               ))}
             </ul>
@@ -444,7 +444,7 @@ function TabbedShowcaseCurrent({ locale }: { locale: string }) {
       <Link
         href={entryUrl}
         data-acquisition-cta="showcase_deals"
-        className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
+        className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm border border-secondary text-secondary hover:bg-secondary/10 transition-colors"
       >
         {t("showcase.deals.cta")}
       </Link>
@@ -453,7 +453,7 @@ function TabbedShowcaseCurrent({ locale }: { locale: string }) {
       <Link
         href={`${localePrefix}/browse`}
         data-testid="showcase-browse-cta"
-        className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm bg-text text-bg hover:bg-primary hover:text-text transition-colors"
+        className="inline-flex px-6 py-3 font-bold uppercase tracking-wider text-sm border border-secondary text-secondary hover:bg-secondary/10 transition-colors"
       >
         {t("hero.exploreCta")}
       </Link>
@@ -610,17 +610,15 @@ function LandingShell({ mode, locale, buildTimeIso, appVersion, deploySha, banne
       </main>
 
       <Footer locale={locale}>
-        <div className="mt-4 leading-relaxed">
-          {t("footer.serverTime")}: <span suppressHydrationWarning>{buildTimeIso}</span>
-          <br />
-          VERSION: <span>v{appVersion}</span>
-          {deployShaShort ? (
-            <>
-              <br />
-              DEPLOY: <span title={deploySha}>{deployShaShort}</span>
-            </>
-          ) : null}
-        </div>
+        {/* Build identity stays machine-readable for release checks without showing it to visitors. */}
+        <div
+          hidden
+          data-testid="landing-build-identity"
+          data-app-version={appVersion}
+          data-deploy-sha={deployShaShort || undefined}
+          data-build-time={buildTimeIso}
+          suppressHydrationWarning
+        />
         <div className="mt-6 max-w-md">
           <WaitlistForm locale={locale} compact source="footer" />
         </div>

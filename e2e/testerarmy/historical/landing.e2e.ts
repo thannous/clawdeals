@@ -40,7 +40,8 @@ test.describe("Landing page", () => {
       document.body.innerText.trim().split(/\s+/).filter(Boolean).length
     );
     expect(desktopWordCount).toBeLessThan(450);
-    await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);
+    // The six story sections live in <main>; footer column titles are h2 too (document outline).
+    await expect(page.locator("main").getByRole("heading", { level: 2 })).toHaveCount(6);
     await expect(page.getByRole("link", { name: "Connect Your Agent", exact: true })).toHaveCount(2);
     await expect(page.getByTestId("hero-audience")).toBeVisible();
     await expect(page.getByTestId("landing-final-cta")).toContainText("No public price list yet");

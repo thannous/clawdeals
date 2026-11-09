@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Settings, ShoppingBag, Terminal, Zap } from "lucide-react";
+import { ChevronDown, Menu, Palette, ShoppingBag, Terminal, Zap } from "lucide-react";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { getLocaleLabels } from "../../shared/seo";
 import { resolveSupportedLocale, stripLocalePrefix } from "../../shared/i18n";
@@ -46,10 +46,6 @@ function useDropdownDismiss(open: boolean, setOpen: React.Dispatch<React.SetStat
   }, [open, ref, setOpen]);
 }
 
-function themeShortLabel(label: string) {
-  return (label.split(" ")[0] || label).toUpperCase();
-}
-
 function NavbarCurrentDesktopActions({ appEntryUrl, hasApiKey }: NavbarDesktopActionsProps) {
   const t = useTranslations("landing");
   const tn = useTranslations("nav");
@@ -69,9 +65,9 @@ function NavbarCurrentDesktopActions({ appEntryUrl, hasApiKey }: NavbarDesktopAc
         data-testid="navbar-connect-desktop"
         data-acquisition-cta="navbar"
         href={appEntryUrl}
-        className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
+        className="hidden sm:flex h-9 px-4 border border-primary bg-primary text-bg hover:bg-primary/85 transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
       >
-        <Terminal className="w-4 h-4" />
+        <Terminal className="w-4 h-4" aria-hidden="true" />
         {t("connect")}
       </MarketingLink>
     </>
@@ -86,19 +82,16 @@ function NavbarCurrentMobileActions({ appEntryUrl, closeMobileSettings }: Navbar
   const t = useTranslations("landing");
 
   return (
-    <>
-      <div className="border-t border-border" />
-      <MarketingLink
-        data-testid="navbar-connect-mobile"
-        data-acquisition-cta="navbar"
-        href={appEntryUrl}
-        onClick={closeMobileSettings}
-        className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
-      >
-        <Terminal className="w-3.5 h-3.5" />
-        {t("connect")}
-      </MarketingLink>
-    </>
+    <MarketingLink
+      data-testid="navbar-connect-mobile"
+      data-acquisition-cta="navbar"
+      href={appEntryUrl}
+      onClick={closeMobileSettings}
+      className="sm:hidden h-9 px-3 bg-primary text-bg font-bold text-xs uppercase tracking-widest flex items-center gap-1.5 hover:bg-primary/85 transition-colors"
+    >
+      <Terminal className="w-3.5 h-3.5" aria-hidden="true" />
+      {t("connect")}
+    </MarketingLink>
   );
 }
 
@@ -135,7 +128,6 @@ function NavbarFrame({
   useDropdownDismiss(langOpen, setLangOpen, langRef);
   useDropdownDismiss(themeOpen, setThemeOpen, themeRef);
   useDropdownDismiss(mobileSettingsOpen, setMobileSettingsOpen, mobileSettingsRef);
-  const activeTheme = themes.find((t) => t.id === themeId);
 
   const hasApiKey = useSyncExternalStore(
     () => () => {},
@@ -154,13 +146,13 @@ function NavbarFrame({
       <nav className="bg-bg backdrop-blur-md border-b border-border h-16">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-full grid grid-cols-[auto_1fr_auto] items-center gap-3 sm:gap-6">
           <MarketingLink href={`${localePrefix}/`} className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-base sm:text-xl relative overflow-hidden">
+            <div aria-hidden="true" className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-base sm:text-xl relative overflow-hidden">
               <div className="absolute inset-0 hazard-stripe opacity-20" />
               CD
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-base sm:text-xl font-bold tracking-tight text-text leading-none">CLAWDEALS</span>
-              <span className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1 hidden sm:block">
+              <span aria-hidden="true" className="text-xs font-mono text-primary tracking-[0.2em] leading-none mt-1 hidden sm:block">
                 {tn("marketAccessGranted")}
               </span>
             </div>
@@ -173,14 +165,14 @@ function NavbarFrame({
                   href={`${localePrefix}/browse`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-muted hover:text-text transition-colors"
                 >
-                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
                   {tn("marketplace")}
                 </MarketingLink>
                 <MarketingLink
                   href={`${localePrefix}/browse/deals`}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-muted hover:text-text transition-colors"
                 >
-                  <Zap className="w-3.5 h-3.5" />
+                  <Zap className="w-3.5 h-3.5" aria-hidden="true" />
                   {tn("deals")}
                 </MarketingLink>
               </div>
@@ -193,10 +185,13 @@ function NavbarFrame({
               <button
                 type="button"
                 onClick={() => setLangOpen((p) => !p)}
-                className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-secondary hover:border-border-strong transition-colors"
+                aria-haspopup="true"
+                aria-expanded={langOpen}
+                title={tn("language")}
+                className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-muted hover:text-text hover:border-border-strong transition-colors"
               >
                 {(router.locale || "en").toUpperCase()}
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-3 h-3" aria-hidden="true" />
               </button>
               {langOpen && (
                 <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[100px]">
@@ -225,12 +220,13 @@ function NavbarFrame({
                 type="button"
                 data-testid="theme-switch"
                 onClick={() => setThemeOpen((p) => !p)}
-                className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-text hover:border-border-strong transition-colors"
+                aria-haspopup="true"
+                aria-expanded={themeOpen}
+                aria-label={tn("theme")}
+                title={tn("theme")}
+                className="h-9 w-9 border border-border flex items-center justify-center text-muted hover:text-text hover:border-border-strong transition-colors"
               >
-                <span suppressHydrationWarning>
-                  {activeTheme ? themeShortLabel(activeTheme.label) : "THEME"}
-                </span>
-                <ChevronDown className="w-3 h-3" />
+                <Palette className="w-4 h-4" aria-hidden="true" />
               </button>
               {themeOpen && (
                 <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
@@ -238,6 +234,7 @@ function NavbarFrame({
                     <button
                       key={t.id}
                       type="button"
+                      aria-pressed={t.id === themeId}
                       onClick={() => {
                         setTheme(t.id);
                         setThemeOpen(false);
@@ -257,20 +254,43 @@ function NavbarFrame({
 
             <ShareButton locale={router.locale || "en"} />
 
-            {/* Mobile settings dropdown (language + theme) */}
+            <MobileActions
+              appEntryUrl={appEntryUrl}
+              closeMobileSettings={() => setMobileSettingsOpen(false)}
+            />
+
+            {/* Mobile menu: navigation first, then language and theme */}
             <div ref={mobileSettingsRef} className="relative sm:hidden">
               <button
                 type="button"
                 data-testid="navbar-mobile-settings-toggle"
                 onClick={() => setMobileSettingsOpen((p) => !p)}
-                className="h-9 w-9 border border-primary flex items-center justify-center text-primary hover:bg-primary/10 hover:border-primary transition-colors"
-                aria-label={tn("settings")}
+                className="h-9 w-9 border border-border flex items-center justify-center text-text hover:border-border-strong transition-colors"
+                aria-label={tn("menu")}
+                aria-haspopup="true"
+                aria-expanded={mobileSettingsOpen}
               >
-                <Settings className="w-4 h-4" />
+                <Menu className="w-4 h-4" aria-hidden="true" />
               </button>
               {mobileSettingsOpen && (
-                <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
-                  <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-border">
+                <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[200px]">
+                  <MarketingLink
+                    href={`${localePrefix}/browse`}
+                    onClick={() => setMobileSettingsOpen(false)}
+                    className="flex items-center gap-2 px-3 py-3 text-sm font-bold uppercase tracking-widest text-text hover:bg-surface-alt transition-colors"
+                  >
+                    <ShoppingBag className="w-4 h-4" aria-hidden="true" />
+                    {tn("marketplace")}
+                  </MarketingLink>
+                  <MarketingLink
+                    href={`${localePrefix}/browse/deals`}
+                    onClick={() => setMobileSettingsOpen(false)}
+                    className="flex items-center gap-2 px-3 py-3 text-sm font-bold uppercase tracking-widest text-text hover:bg-surface-alt transition-colors"
+                  >
+                    <Zap className="w-4 h-4" aria-hidden="true" />
+                    {tn("deals")}
+                  </MarketingLink>
+                  <div className="px-3 py-2 text-xs font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
                     {tn("language")}
                   </div>
                   {LOCALES.map((loc) => (
@@ -279,7 +299,7 @@ function NavbarFrame({
                       href={asPathNoLocale}
                       locale={loc.code}
                       onClick={() => setMobileSettingsOpen(false)}
-                      className={`block px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
+                      className={`block px-3 py-2.5 text-xs font-mono uppercase tracking-widest transition-colors ${
                         router.locale === loc.code
                           ? "text-secondary bg-secondary/10"
                           : "text-muted hover:text-text hover:bg-surface-alt"
@@ -288,18 +308,19 @@ function NavbarFrame({
                       {loc.label}
                     </MarketingLink>
                   ))}
-                  <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
+                  <div className="px-3 py-2 text-xs font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
                     {tn("theme")}
                   </div>
                   {themes.map((t) => (
                     <button
                       key={t.id}
                       type="button"
+                      aria-pressed={t.id === themeId}
                       onClick={() => {
                         setTheme(t.id);
                         setMobileSettingsOpen(false);
                       }}
-                      className={`block w-full text-left px-3 py-2 text-xs font-mono uppercase tracking-widest transition-colors ${
+                      className={`block w-full text-left px-3 py-2.5 text-xs font-mono uppercase tracking-widest transition-colors ${
                         t.id === themeId
                           ? "text-secondary bg-secondary/10"
                           : "text-muted hover:text-text hover:bg-surface-alt"
@@ -308,29 +329,6 @@ function NavbarFrame({
                       {t.label}
                     </button>
                   ))}
-                  <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
-                    {tn("marketplace")}
-                  </div>
-                  <MarketingLink
-                    href={`${localePrefix}/browse`}
-                    onClick={() => setMobileSettingsOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted hover:text-text hover:bg-surface-alt transition-colors"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" />
-                    {tn("marketplace")}
-                  </MarketingLink>
-                  <MarketingLink
-                    href={`${localePrefix}/browse/deals`}
-                    onClick={() => setMobileSettingsOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-muted hover:text-text hover:bg-surface-alt transition-colors"
-                  >
-                    <Zap className="w-3.5 h-3.5" />
-                    {tn("deals")}
-                  </MarketingLink>
-                  <MobileActions
-                    appEntryUrl={appEntryUrl}
-                    closeMobileSettings={() => setMobileSettingsOpen(false)}
-                  />
                 </div>
               )}
             </div>

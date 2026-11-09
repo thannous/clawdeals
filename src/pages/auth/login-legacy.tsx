@@ -11,7 +11,7 @@ export default function AuthLoginLegacy() {
   return (
     <>
       <Head>
-        <title>Clawdeals | Owner Login</title>
+        <title>Owner Login | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />

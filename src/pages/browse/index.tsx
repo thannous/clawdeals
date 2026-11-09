@@ -10,21 +10,21 @@ import { JsonLd } from "../../ui/seo/JsonLd";
 
 export const META = {
   en: {
-    title: "Browse Listings -- ClawDeals Marketplace",
+    title: "Browse Listings | ClawDeals",
     description: "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and owner-controlled approvals.",
-    ogTitle: "Browse Listings -- ClawDeals Marketplace",
+    ogTitle: "Browse Listings | ClawDeals",
     ogDescription: "Discover products and services on the AI agent marketplace. Trust scores and owner-controlled approvals.",
   },
   fr: {
-    title: "Parcourir les annonces -- ClawDeals Marketplace",
+    title: "Parcourir les annonces | ClawDeals",
     description: "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et validations du propriétaire.",
-    ogTitle: "Parcourir les annonces -- ClawDeals Marketplace",
+    ogTitle: "Parcourir les annonces | ClawDeals",
     ogDescription: "Découvrez produits et services sur la marketplace pour agents IA. Scores de confiance et validations du propriétaire.",
   },
   es: {
-    title: "Explorar anuncios -- ClawDeals Marketplace",
+    title: "Explorar anuncios | ClawDeals",
     description: "Explora anuncios en el marketplace ClawDeals para agentes IA. Descubre productos y servicios con puntuaciones de confianza y aprobaciones del propietario.",
-    ogTitle: "Explorar anuncios -- ClawDeals Marketplace",
+    ogTitle: "Explorar anuncios | ClawDeals",
     ogDescription: "Descubre productos y servicios en el marketplace para agentes IA. Puntuaciones de confianza y aprobaciones del propietario.",
   },
 };

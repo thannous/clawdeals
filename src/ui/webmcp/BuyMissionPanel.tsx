@@ -12,6 +12,7 @@ import { buyMissionZodSchema } from "../../webmcp/tools/mission-tools";
 import type { z } from "zod";
 import { emptySmartphoneMissionDraft, readBuyMissionDraft, saveBuyMissionDraft } from "./buyMissionDraft";
 import SmartphoneMissionFields, { SmartphoneMissionSummary } from "../my-missions/SmartphoneMissionFields";
+import { resolveListingLocation } from "../browse/listing-location";
 
 export type BuyMissionInput = z.infer<typeof buyMissionZodSchema>;
 
@@ -165,7 +166,7 @@ export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionVi
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 max-w-full">
-          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">
+          <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary">
             {statusLabel || t("mission.summary.eyebrow")}
           </p>
           <h3 className="mt-1 text-lg font-bold uppercase tracking-wide text-text [overflow-wrap:anywhere]">{mission.query}</h3>
@@ -173,26 +174,26 @@ export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionVi
             {mission.location.label || t("mission.summary.selectedArea")} · {mission.location.radius_km} km
           </p>
         </div>
-        <span className="border border-primary/50 px-2 py-1 text-[10px] font-mono uppercase text-primary">
+        <span className="border border-primary/50 px-2 py-1 text-xs font-mono uppercase text-primary">
           {statusLabel || (mission.status === "ACTIVE" ? t("mission.summary.active") : mission.status)}
         </span>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         <div>
-          <dt className="text-[10px] font-mono uppercase text-subtle">{t("mission.summary.preferred")}</dt>
+          <dt className="text-xs font-mono uppercase text-subtle">{t("mission.summary.preferred")}</dt>
           <dd className="text-sm font-mono text-text">
             {formatMoney(mission.preferred_price_max, mission.currency, locale)}
           </dd>
         </div>
         <div>
-          <dt className="text-[10px] font-mono uppercase text-subtle">{t("mission.summary.hardCeiling")}</dt>
+          <dt className="text-xs font-mono uppercase text-subtle">{t("mission.summary.hardCeiling")}</dt>
           <dd className="text-sm font-mono font-bold text-text">
             {formatMoney(mission.hard_budget_max, mission.currency, locale)}
           </dd>
         </div>
         <div>
-          <dt className="text-[10px] font-mono uppercase text-subtle">{t("mission.summary.autonomy")}</dt>
+          <dt className="text-xs font-mono uppercase text-subtle">{t("mission.summary.autonomy")}</dt>
           <dd className="text-xs font-mono text-text">
             {mission.autonomous_actions
               .map((action) => {
@@ -203,7 +204,7 @@ export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionVi
           </dd>
         </div>
         <div>
-          <dt className="text-[10px] font-mono uppercase text-subtle">{t("mission.summary.contact")}</dt>
+          <dt className="text-xs font-mono uppercase text-subtle">{t("mission.summary.contact")}</dt>
           <dd className="text-xs font-mono text-text">{t("mission.summary.bilateral")}</dd>
         </div>
       </dl>
@@ -211,7 +212,7 @@ export function MissionSummary({ mission, statusLabel }: { mission: BuyMissionVi
       {mission.smartphone ? <SmartphoneMissionSummary criteria={mission.smartphone} /> : null}
       {mission.requirements.length > 0 ? (
         <div className="mt-4 border-t border-border pt-3">
-          <p className="text-[10px] font-mono uppercase text-subtle">{t("mission.summary.requirements")}</p>
+          <p className="text-xs font-mono uppercase text-subtle">{t("mission.summary.requirements")}</p>
           <ul className="mt-1 space-y-1 text-xs font-mono text-muted">
             {mission.requirements.map((requirement) => (
               <li key={requirement}>· {requirement}</li>
@@ -272,7 +273,10 @@ export function prefillFromListing(input: {
   ) {
     prefill.latitude = String(input.latitude);
     prefill.longitude = String(input.longitude);
-    prefill.locationLabelKey = "mission.listingLocation";
+    // Name the listing's nearest known city rather than a generic "listing location".
+    const nearestCity = resolveListingLocation(prefill.marketCode, { lat: input.latitude, lng: input.longitude }).split(" · ");
+    if (nearestCity.length === 2) prefill.locationLabel = nearestCity[0];
+    else prefill.locationLabelKey = "mission.listingLocation";
   }
   prefill.requirements = "";
   return prefill;
@@ -546,7 +550,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
   const options = (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <label className="space-y-1">
-        <span id="mission-label-expires" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.expires")}</span>
+        <span id="mission-label-expires" className="text-xs font-mono uppercase text-subtle">{t("mission.fields.expires")}</span>
         <input
           {...param(t("mission.params.expires"))}
           {...invalid("expires_at")}
@@ -561,7 +565,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
         {errorHint("expires_at")}
       </label>
       <fieldset className="space-y-1" data-testid="buy-mission-autonomy">
-        <legend className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.autonomy")}</legend>
+        <legend className="text-xs font-mono uppercase text-subtle">{t("mission.fields.autonomy")}</legend>
         <div className="space-y-1.5 border border-border bg-bg px-3 py-2">
           {AUTONOMOUS_ACTION_OPTIONS.map((option) => {
             const checked = autonomousActions.includes(option.value);
@@ -583,7 +587,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
                   checked={option.locked ? true : checked}
                   disabled={option.locked}
                   onChange={(event) => toggleAutonomousAction(option.value, event.target.checked)}
-                  className="mt-0.5 accent-[var(--color-primary)]"
+                  className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]"
                 />
                 <span>
                   {t(option.labelKey)}
@@ -595,7 +599,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
         </div>
       </fieldset>
       <label className="space-y-1">
-        <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.contact")}</span>
+        <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.contact")}</span>
         <select
           {...param(t("mission.params.contact"))}
           required
@@ -626,7 +630,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">{t("mission.eyebrow")}</p>
+            <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary">{t("mission.eyebrow")}</p>
             <h2 className="mt-1 text-xl font-bold uppercase tracking-wide text-text">{t("mission.title")}</h2>
             {prefill?.listingTitle ? (
               <p className="mt-2 text-xs font-mono text-muted" data-testid="buy-mission-prefill-note">
@@ -634,7 +638,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
               </p>
             ) : null}
           </div>
-          {!draftSource ? <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.mode")}</span> : null}
+          {!draftSource ? <span className="text-xs font-mono uppercase text-subtle">{t("mission.mode")}</span> : null}
         </div>
 
         {draftSource ? <p className="mt-3 text-sm text-muted">{t(prefill?.listingTitle ? "mission.budgetHint" : "mission.currencyHint", { currency: marketCode === "GB" ? "GBP" : "EUR" })}</p> : null}
@@ -643,7 +647,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1 lg:col-span-2">
-            <span id="mission-label-query" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.query")}</span>
+            <span id="mission-label-query" className="text-xs font-mono uppercase text-subtle">{t("mission.fields.query")}</span>
             <input
               {...param(t("mission.params.query"))}
               {...invalid("query")}
@@ -658,7 +662,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
             {errorHint("query")}
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.city")}</span>
+            <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.city")}</span>
             <select
               data-testid="buy-mission-city"
               value={cityPreset}
@@ -673,8 +677,8 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
               <option value="custom">{t(draftSource && hasCustomLocation && latitude === prefill?.latitude && longitude === prefill?.longitude ? "mission.listingLocation" : "mission.customCoordinates")}</option>
             </select>
           </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.location")}</span>
+          <label className="space-y-1" hidden={cityPreset !== "custom"}>
+            <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.location")}</span>
             <input
               {...param(t("mission.params.location"))}
               maxLength={80}
@@ -688,7 +692,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
             />
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.radius")}</span>
+            <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.radius")}</span>
             <input
               {...param(t("mission.params.radius"))}
               required
@@ -702,7 +706,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
             />
           </label>
           <label className="space-y-1">
-            <span id="mission-label-preferred" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.preferred")}</span>
+            <span id="mission-label-preferred" className="text-xs font-mono uppercase text-subtle">{t("mission.fields.preferred")}</span>
             <input
               {...param(t("mission.params.preferred"))}
               {...invalid("preferred_price_max")}
@@ -718,7 +722,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
             {errorHint("preferred_price_max")}
           </label>
           <label className="space-y-1">
-            <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.ceiling")}</span>
+            <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.ceiling")}</span>
             <input
               {...param(t("mission.params.ceiling"))}
               required
@@ -732,7 +736,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
             />
           </label>
           <label className="space-y-1 lg:col-span-2">
-            <span id="mission-label-requirements" className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.requirements")}</span>
+            <span id="mission-label-requirements" className="text-xs font-mono uppercase text-subtle">{t("mission.fields.requirements")}</span>
             <textarea
               {...param(t("mission.params.requirements"))}
               {...invalid("requirements_text")}
@@ -754,7 +758,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
 
         {draftSource ? (
           <details className="mt-4 border border-border bg-bg/40" data-testid="buy-mission-options">
-            <summary className="cursor-pointer px-3 py-3 text-sm text-muted">{t("mission.options")}</summary>
+            <summary className="cursor-pointer select-none px-3 py-3 text-sm text-muted hover:text-text">{t("mission.options")}</summary>
             <div className="border-t border-border p-3">{options}</div>
           </details>
         ) : <div className="mt-4">{options}</div>}
@@ -765,12 +769,12 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
           onToggle={(event) => setCoordinatesOpen(event.currentTarget.open)}
           data-testid="buy-mission-advanced"
         >
-          <summary className="cursor-pointer select-none px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-subtle hover:text-text">
+          <summary className="cursor-pointer select-none px-3 py-3 text-sm text-muted hover:text-text">
             {t("mission.advanced")}
           </summary>
           <div className="grid grid-cols-1 gap-4 border-t border-border p-3 md:grid-cols-2">
             <label className="space-y-1">
-              <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.latitude")}</span>
+              <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.latitude")}</span>
               <input
                 {...param(t("mission.params.latitude"))}
                 required
@@ -788,7 +792,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.longitude")}</span>
+              <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.longitude")}</span>
               <input
                 {...param(t("mission.params.longitude"))}
                 required
@@ -806,7 +810,7 @@ export function BuyMissionForm({ prefill, draftSource, draftOwnerId = null, subm
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[10px] font-mono uppercase text-subtle">{t("mission.fields.market")}</span>
+              <span className="text-xs font-mono uppercase text-subtle">{t("mission.fields.market")}</span>
               <select
                 {...param(t("mission.params.market"))}
                 name="market_code"

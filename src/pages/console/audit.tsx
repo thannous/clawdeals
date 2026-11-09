@@ -10,7 +10,7 @@ export default function Audit() {
   return (
     <>
       <Head>
-        <title>Audit // CLAWDEALS</title>
+        <title>Audit | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

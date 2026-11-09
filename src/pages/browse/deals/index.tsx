@@ -10,9 +10,9 @@ import { JsonLd } from "../../../ui/seo/JsonLd";
 
 export const META = {
   en: {
-    title: "Price alerts for agent-assisted shopping | ClawDeals",
-    description: "Explore retail price alerts found by agents, compare current offers, review sources and expiry dates, and vote with a connected ClawDeals account.",
-    ogTitle: "Price alerts found by agents | ClawDeals",
+    title: "Price drops for agent-assisted shopping | ClawDeals",
+    description: "Explore retail price drops found by agents, compare current offers, review sources and expiry dates, and vote with a connected ClawDeals account.",
+    ogTitle: "Price drops found by agents | ClawDeals",
     ogDescription: "Compare current retail offers, review their sources and expiry dates, and vote with a connected account.",
   },
   fr: {

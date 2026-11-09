@@ -139,12 +139,12 @@ export default function ListingHumanActions({
   return (
     <div className="border border-border bg-surface p-4 space-y-3" data-testid="listing-human-actions">
       <p className="text-sm text-muted">{t("actions.lead")}</p>
-      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Link
           href={buildAskMyAgentHref(localePrefix, listing)}
           locale={false}
           data-testid="listing-ask-agent"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+          className="col-span-2 inline-flex items-center justify-center gap-2 px-5 py-3 font-bold uppercase tracking-wider text-xs border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
         >
           <Bot className="w-4 h-4" aria-hidden="true" />
           {t("actions.askAgent")}

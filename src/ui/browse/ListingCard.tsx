@@ -15,6 +15,7 @@ import {
 import { resolveCoverImageSrc } from "../media/cover-image";
 import { describePolicyFit } from "./policy-fit-label";
 import type { ListingPolicyFit } from "../../webmcp/ui-bridge";
+import { intlLocaleFor } from "../../shared/i18n";
 
 const POLICY_FIT_CLASSES = {
   fit: "text-success border-success/60 bg-success/10",
@@ -35,21 +36,20 @@ function formatPrice(amount: number, currency: string, locale: string): string {
   }
 }
 
-function timeAgo(dateStr: string): string {
-  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (seconds < 60) return "<1m";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
+/** Short, localized "listed … ago" label, e.g. "69d ago" or "il y a 69 j". */
+function timeAgo(dateStr: string, locale: string): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000));
+  const format = new Intl.RelativeTimeFormat(intlLocaleFor(locale), { numeric: "always", style: "narrow" });
+  if (seconds < 3600) return format.format(-Math.max(1, Math.floor(seconds / 60)), "minute");
+  const hours = Math.floor(seconds / 3600);
+  if (hours < 24) return format.format(-hours, "hour");
+  return format.format(-Math.floor(hours / 24), "day");
 }
 
 const CONDITION_CLASSES: Record<string, string> = {
   NEW: "text-success border-success/60 bg-success/10",
   LIKE_NEW: "text-secondary border-secondary/60 bg-secondary/10",
-  GOOD: "text-primary border-primary/60 bg-primary/10",
+  GOOD: "text-text border-border-strong bg-surface-alt",
   FAIR: "text-muted border-border-strong bg-surface-alt",
   POOR: "text-subtle border-border bg-surface-alt",
 };
@@ -131,9 +131,13 @@ function ListingCard({
               className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
             {listing.created_at && (
-              <span className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded">
-                {timeAgo(listing.created_at)}
-              </span>
+              <time
+                dateTime={listing.created_at}
+                suppressHydrationWarning
+                className="absolute top-2 right-2 text-xs font-mono text-text bg-bg/80 backdrop-blur-sm px-2 py-0.5 rounded"
+              >
+                {timeAgo(listing.created_at, locale || "en")}
+              </time>
             )}
           </div>
         ) : null}
@@ -155,9 +159,9 @@ function ListingCard({
                 </span>
               )}
               {!coverImageSrc && listing.created_at && (
-                <span className="text-xs font-mono text-subtle whitespace-nowrap">
-                  {timeAgo(listing.created_at)}
-                </span>
+                <time dateTime={listing.created_at} suppressHydrationWarning className="text-xs font-mono text-muted whitespace-nowrap">
+                  {timeAgo(listing.created_at, locale || "en")}
+                </time>
               )}
             </div>
           </div>
@@ -167,7 +171,7 @@ function ListingCard({
               data-testid="listing-policy-fit"
               data-tone={policyBadge.tone}
               title={policyBadgeDetails || policyBadgeLabel || undefined}
-              className={`self-start text-[11px] font-mono font-bold uppercase px-2 py-0.5 border rounded whitespace-nowrap ${POLICY_FIT_CLASSES[policyBadge.tone]}`}
+              className={`self-start text-xs font-mono font-bold uppercase px-2 py-0.5 border rounded whitespace-nowrap ${POLICY_FIT_CLASSES[policyBadge.tone]}`}
             >
               {policyBadgeLabel}
             </span>
@@ -180,7 +184,7 @@ function ListingCard({
 
           {/* Description */}
           {listing.description && (
-            <p className="text-xs text-muted font-mono line-clamp-2 leading-relaxed">
+            <p className="text-sm text-muted line-clamp-2 leading-relaxed">
               {listing.description}
             </p>
           )}
@@ -206,14 +210,14 @@ function ListingCard({
             </div>
           )}
 
-          {/* Footer: price + CTA */}
-          <div className="mt-auto pt-3 border-t border-dashed border-border flex flex-col gap-2.5">
+          {/* Footer: price + affordance (the whole card is the link) */}
+          <div className="mt-auto pt-3 border-t border-dashed border-border flex items-center justify-between gap-3">
             <span className="text-xl font-mono font-bold text-primary">
-              {formatPrice(listing.price.amount, listing.price.currency, locale || "en")}
+              {formatPrice(listing.price.amount, listing.price.currency, intlLocaleFor(locale))}
             </span>
-            <div className="flex items-center justify-center gap-2 w-full py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded group-hover:bg-primary group-hover:text-bg transition-colors">
-              {t("viewListing")}
-            </div>
+            <span aria-hidden="true" className="text-xs font-mono font-bold uppercase text-muted group-hover:text-primary transition-colors">
+              {t("viewListing")} →
+            </span>
           </div>
         </div>
       </article>

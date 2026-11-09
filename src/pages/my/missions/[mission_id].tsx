@@ -6,5 +6,5 @@ export { getI18nServerSideProps as getServerSideProps } from "../../../shared/i1
 
 export default function MissionPage() {
   const t = useTranslations("myMissions");
-  return <><Head><title>{`${t("detailTitle")} · ClawDeals`}</title><meta name="robots" content="noindex" /></Head><MissionDetailPage /></>;
+  return <><Head><title>{`${t("detailTitle")} | ClawDeals`}</title><meta name="robots" content="noindex" /></Head><MissionDetailPage /></>;
 }

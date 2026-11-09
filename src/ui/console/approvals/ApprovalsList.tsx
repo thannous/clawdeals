@@ -34,20 +34,23 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
   const columns: Column[] = [
     {
       key: "select",
-      label: "",
+      label: "Select",
+      srOnlyLabel: true,
       cell: (row: any) => {
         if (row.state !== "PENDING" || !onToggle) return null;
         return (
-          <input
-            type="checkbox"
-            checked={selectedIds?.has(row.approval_id) || false}
-            onChange={(e) => {
-              e.stopPropagation();
-              onToggle(row.approval_id);
-            }}
-            onClick={(e) => e.stopPropagation()}
-            className="accent-primary"
-          />
+          <label className="-m-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              aria-label={`Select approval ${String(row.approval_id || "").slice(0, 8)}`}
+              checked={selectedIds?.has(row.approval_id) || false}
+              onChange={(e) => {
+                e.stopPropagation();
+                onToggle(row.approval_id);
+              }}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
         );
       },
     },
@@ -68,9 +71,13 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
       cell: (row: any) => {
         const { text, stale } = formatAge(row.created_at);
         return (
-          <span className={`text-xs tabular-nums ${stale ? "text-error font-bold" : "text-subtle"}`}>
+          <span className={`text-xs tabular-nums ${stale ? "text-warning" : "text-muted"}`}>
             {text}
-            {stale && <span className="ml-1 text-xs border border-error/40 bg-error/10 px-1 rounded">SLA</span>}
+            {stale && (
+              <span title="Pending for more than 24 hours" className="ml-1 text-xs border border-warning/40 bg-warning/10 px-1 rounded">
+                Overdue
+              </span>
+            )}
           </span>
         );
       },
@@ -95,6 +102,7 @@ export default function ApprovalsList({ items, selectedIds, onToggle, onToggleAl
       rows={items}
       getRowKey={(row) => row.approval_id}
       onRowClick={handleRowClick}
+      rowActionLabel={(row) => `Open approval ${String(row.approval_id || "").slice(0, 8)}`}
     />
   );
 }

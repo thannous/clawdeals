@@ -79,6 +79,8 @@ export default function BrowseDealsPage({
             onRetry={refetch}
             onLoadMore={loadMore}
             onResetFilters={resetFilters}
+            filtersActive={q.trim().length > 0 || Boolean(status)}
+            browseListingsHref={`${localePrefix}/browse`}
             highlightedIds={highlightedIds}
           />
         </div>

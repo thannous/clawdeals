@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { isSmartphoneListing } from "../../lib/smartphone-passport";
 import { passportFromResponse, type Passport } from "./passport-types";
 import PassportPhoto from "./PassportPhoto";
+import { intlLocaleFor } from "../../shared/i18n";
 
 export default function SmartphonePassport({ listingId, title, category }: { listingId: string; title?: string; category?: string }) {
   const t = useTranslations("passport");
@@ -52,7 +53,7 @@ export default function SmartphonePassport({ listingId, title, category }: { lis
 
   if ((state === "ready" && !passport && !smartphoneHint) || (state === "loading" && !smartphoneHint)) return null;
 
-  const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
+  const dateFormatter = new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "medium" });
   const documentedCount = passport?.checks.filter((check) => check.status === "documented").length ?? 0;
 
   return (

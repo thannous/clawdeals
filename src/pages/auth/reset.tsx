@@ -11,7 +11,7 @@ export default function AuthReset() {
   return (
     <>
       <Head>
-        <title>Clawdeals | Reset Password</title>
+        <title>Reset Password | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />

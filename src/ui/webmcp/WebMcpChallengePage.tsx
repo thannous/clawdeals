@@ -101,7 +101,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
       <main id="main-content" tabIndex={-1} className="pb-20 pt-24">
         <section className="mx-auto grid max-w-[1440px] gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)] lg:items-end">
           <div>
-            <div className="mb-5 inline-flex items-center gap-2 border border-primary/50 bg-primary/10 px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
+            <div className="mb-5 inline-flex items-center gap-2 border border-primary/50 bg-primary/10 px-3 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-primary">
               <Radio className="h-3.5 w-3.5" aria-hidden="true" />
               {t("challenge.badge")}
             </div>
@@ -137,18 +137,18 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
           </div>
 
           <aside className="border border-border bg-surface p-5" aria-label={t("challenge.compatibility.ariaLabel")}>
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("challenge.compatibility.title")}</p>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{t("challenge.compatibility.title")}</p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className={`border p-3 ${statusTone(enabled)}`}>
-                <p className="font-mono text-[10px] uppercase tracking-widest">{t("challenge.compatibility.runtime")}</p>
+                <p className="font-mono text-xs uppercase tracking-widest">{t("challenge.compatibility.runtime")}</p>
                 <p className="mt-1 text-sm font-bold">{enabled ? t("common.enabled") : t("common.disabled")}</p>
               </div>
               <div className={`border p-3 ${statusTone(supported)}`} data-testid="webmcp-challenge-supported">
-                <p className="font-mono text-[10px] uppercase tracking-widest">{t("challenge.compatibility.browserApi")}</p>
+                <p className="font-mono text-xs uppercase tracking-widest">{t("challenge.compatibility.browserApi")}</p>
                 <p className="mt-1 text-sm font-bold">{supported ? t("common.supported") : t("common.notDetected")}</p>
               </div>
               <div className={`col-span-2 border p-3 ${statusTone(registered)}`} data-testid="webmcp-challenge-registered">
-                <p className="font-mono text-[10px] uppercase tracking-widest">{t("challenge.compatibility.registry")}</p>
+                <p className="font-mono text-xs uppercase tracking-widest">{t("challenge.compatibility.registry")}</p>
                 <p className="mt-1 text-sm font-bold">
                   {registered ? t("challenge.compatibility.toolsRegistered", { count: registeredToolNames.length }) : t("challenge.compatibility.noRegistration")}
                 </p>
@@ -168,7 +168,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
           <div className="border border-primary/40 bg-primary/5 p-5 sm:p-7">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">{t("challenge.startHere")}</p>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">{t("challenge.startHere")}</p>
                 <h2 id="judge-60s-title" className="mt-2 text-3xl font-bold uppercase">
                   {t("challenge.judge60")}
                 </h2>
@@ -216,7 +216,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
           <div className="border border-border bg-surface p-5 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("challenge.fixture.eyebrow")}</p>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{t("challenge.fixture.eyebrow")}</p>
                 <h2 className="mt-2 text-2xl font-bold uppercase">{t("challenge.fixture.title")}</h2>
               </div>
               <Database className="h-6 w-6 text-primary" aria-hidden="true" />
@@ -225,7 +225,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
               {t("challenge.fixture.description")}
             </p>
             <div className="mt-5 border-t border-border pt-4">
-              <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.fixture.judgeKey")}</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.fixture.judgeKey")}</p>
               <div className="mt-2">
                 <AgentKeyConnect compact />
               </div>
@@ -235,7 +235,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
             </div>
             {judgeReset.capability.authorized ? (
               <div className="mt-5 border-t border-border pt-4">
-                <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.fixture.seller")}</p>
+                <p className="mb-3 font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.fixture.seller")}</p>
                 <SellerTurnButton apiKey={apiKey} />
               </div>
             ) : null}
@@ -245,30 +245,30 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
             <div className="border border-border bg-surface p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("challenge.registry.eyebrow")}</p>
+                  <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{t("challenge.registry.eyebrow")}</p>
                   <h2 className="mt-2 text-2xl font-bold uppercase">{t("challenge.registry.title")}</h2>
                 </div>
-                <div className="inline-flex items-center gap-2 border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
+                <div className="inline-flex items-center gap-2 border border-border px-3 py-1.5 font-mono text-xs uppercase tracking-widest text-muted">
                   <Fingerprint className="h-3.5 w-3.5" aria-hidden="true" />
                   document.modelContext
                 </div>
               </div>
               <div className="mt-5">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.registry.registeredNow")}</p>
+                <p className="font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.registry.registeredNow")}</p>
                 <ul className="mt-2 flex flex-wrap gap-2" data-testid="webmcp-challenge-registered-tools">
                   {registeredToolNames.length ? (
                     registeredToolNames.map((name) => (
-                      <li key={name} data-testid="webmcp-challenge-registered-tool" className="border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-[11px] text-success">
+                      <li key={name} data-testid="webmcp-challenge-registered-tool" className="border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-xs text-success">
                         {name}
                       </li>
                     ))
                   ) : (
-                    <li className="border border-border px-2.5 py-1 font-mono text-[11px] text-subtle">{t("challenge.registry.none")}</li>
+                    <li className="border border-border px-2.5 py-1 font-mono text-xs text-subtle">{t("challenge.registry.none")}</li>
                   )}
                 </ul>
               </div>
               <div className="mt-5 border-t border-border pt-4">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.registry.expected")}</p>
+                <p className="font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.registry.expected")}</p>
                 <p className="mt-2 font-mono text-xs leading-relaxed text-muted" data-testid="webmcp-challenge-expected-tools">
                   {expectedTools.map((tool) => tool.name).join(" · ")}
                 </p>
@@ -282,7 +282,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
           <div className="border border-primary/40 bg-primary/5 p-5 sm:p-7">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">{t("challenge.copyExact")}</p>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">{t("challenge.copyExact")}</p>
                 <blockquote className="mt-3 max-w-5xl text-sm leading-relaxed text-text sm:text-base" data-testid="webmcp-challenge-prompt">
                   “{judgePrompt}”
                 </blockquote>
@@ -306,7 +306,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
         <section className="mx-auto mt-16 max-w-[1440px] px-4 sm:px-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("challenge.eligibility.eyebrow")}</p>
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{t("challenge.eligibility.eyebrow")}</p>
               <h2 className="mt-2 text-3xl font-bold uppercase">{t("challenge.eligibility.title")}</h2>
             </div>
           </div>
@@ -333,15 +333,15 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
           <div className="grid gap-4 border border-border bg-surface p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
             <div>
               <LockKeyhole className="h-5 w-5 text-primary" aria-hidden="true" />
-              <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.evidence.baseline")}</p>
+              <p className="mt-3 font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.evidence.baseline")}</p>
               <p className="mt-1 break-all font-mono text-xs text-text">00880457964929c0773237a9c724704f5da651f0</p>
-              <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.evidence.deployedBuild")}</p>
+              <p className="mt-3 font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.evidence.deployedBuild")}</p>
               <p className="mt-1 break-all font-mono text-xs text-text" data-testid="webmcp-challenge-deploy-sha">
                 {deploySha ? deploySha.slice(0, 12) : t("common.unavailable")}
               </p>
             </div>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.evidence.title")}</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.evidence.title")}</p>
               <div className="mt-3 space-y-2">
                 <EvidenceLink href={REPO_URL} label={t("challenge.links.repository")} />
                 <br />
@@ -349,7 +349,7 @@ export default function WebMcpChallengePage({ deploySha = null }: { deploySha?: 
               </div>
             </div>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("challenge.evidence.productPath")}</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-subtle">{t("challenge.evidence.productPath")}</p>
               <Link href="/webmcp" className="mt-3 inline-flex items-center gap-1.5 text-xs font-mono text-primary hover:underline">
                 {t("challenge.openMarketplace")}
                 <ExternalLink className="h-3 w-3" aria-hidden="true" />

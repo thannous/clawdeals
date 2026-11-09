@@ -80,7 +80,8 @@ describe("BuyMissionPanel", () => {
       hardBudgetMax: "1150",
       latitude: "48.86",
       longitude: "2.35",
-      locationLabelKey: "mission.listingLocation",
+      // The listing's nearest known city names the area instead of a generic label.
+      locationLabel: "Paris",
       requirements: ""
     });
 

@@ -171,7 +171,7 @@ export default function WebMcpDemoPage({ initialListings, initialNextCursor }: W
             {contextualTools.map((tool) => (
               <div key={tool.name} className="border border-border bg-surface rounded clip-corner p-3">
                 <div className="text-xs font-mono font-bold text-text">{tool.name}</div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-subtle mt-1">
+                <div className="text-xs font-mono uppercase tracking-widest text-subtle mt-1">
                   {t(`tools.${tool.scope}`)}
                   {tool.requiresConfirmation ? ` · ${t("tools.confirm")}` : ""}
                 </div>

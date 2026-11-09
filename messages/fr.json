@@ -23,12 +23,13 @@
     "agentFilter": "Agent :"
   },
   "nav": {
-    "marketplace": "Marché",
+    "marketplace": "Marketplace",
     "deals": "Bons plans",
     "marketAccessGranted": "ACCÈS_MARCHÉ_AUTORISÉ",
     "language": "Langue",
     "theme": "Thème",
     "settings": "Paramètres",
+    "menu": "Menu",
     "myAccount": "Mon compte"
   },
   "landing": {
@@ -38,7 +39,7 @@
       "headline_1": "Tu gardes le contrôle.",
       "headlineCount": "2",
       "subheadline": "Connecte ton agent IA pour acheter et vendre d'occasion en France, au Royaume-Uni et en Espagne. Fixe son budget et ses limites ; les actions sensibles attendent ta validation.",
-      "cta": "Connect ton agent",
+      "cta": "Connecte ton agent",
       "exploreCta": "Voir la marketplace",
       "demoCta": "Voir la démo de 60 secondes",
       "audience": "Pour acheter ou vendre d'occasion avec l'assistant IA que tu utilises déjà.",
@@ -89,9 +90,9 @@
       }
     },
     "ctas": {
-      "browseDeals": "Connect ton agent",
+      "browseDeals": "Connecte ton agent",
       "postDeal": "Lire la doc",
-      "browseListings": "Connect ton agent",
+      "browseListings": "Connecte ton agent",
       "createListing": "Lire la doc"
     },
     "future": {
@@ -100,12 +101,12 @@
       "bannerBody": "Site en cours de développement. Les fonctionnalités sont en préparation. Inscris-toi à la waitlist pour être notifié."
     },
     "waitlist": {
-      "title": "Accès anticipé — connecte ton premier agent",
+      "title": "Nouveautés produit",
       "label": "Email",
       "placeholder": "ton@email.com",
-      "cta": "Rejoindre la waitlist",
-      "helper": "Notifications de lancement, pas de spam.",
-      "success": "Merci ! Tu es sur la waitlist.",
+      "cta": "Recevoir les nouveautés",
+      "helper": "Annonces de lancement uniquement, pas de spam.",
+      "success": "C’est noté : tu recevras les nouveautés.",
       "already": "Déjà inscrit. On te tient au courant.",
       "invalid": "Entre un email valide.",
       "error": "Une erreur est survenue. Réessaie."
@@ -151,7 +152,7 @@
         "bullet_1": "Vérifie prix, devise, marchand ou source sur chaque match retourné",
         "bullet_2": "Élargis les critères seulement après des résultats utiles répétés",
         "bulletCount": "3",
-        "cta": "Connect ton agent"
+        "cta": "Connecte ton agent"
       },
       "marketplace": {
         "title": "Ton agent agit dans la politique. Tu gères les exceptions.",
@@ -159,7 +160,7 @@
         "bullet_1": "Les montants hors politique sont bloqués en attente de validation",
         "bullet_2": "Les coordonnées restent masquées jusqu'à l'approbation du propriétaire",
         "bulletCount": "3",
-        "cta": "Connect ton agent"
+        "cta": "Connecte ton agent"
       }
     },
     "howItWorks": {
@@ -233,9 +234,9 @@
         },
         "messages": {
           "newListing": "Annonce publiée.",
-          "offerReceived": "Offre reçue: 1 300 € (TechBuyer).",
-          "counter": "Contre-offre: 1 380 €.",
-          "accepted": "Accepté. Révélation du contact après votre approbation.",
+          "offerReceived": "Offre reçue : 1 300 € (TechBuyer).",
+          "counter": "Contre-offre : 1 380 €.",
+          "accepted": "Accepté. Contact révélé après ta validation.",
           "contactRevealed": "OK, je dévoile les coordonnées.",
           "complete": "Transaction terminée. Tu mets quelle note ?"
         }
@@ -416,7 +417,7 @@
       "link_4": "Intégration OpenClaw",
       "link_5": "Protocole MCP",
       "link_6": "Espace développeur",
-      "link_7": "Page de statut",
+      "link_7": "Avis opérationnel",
       "linkCount": "8"
     },
     "legal": {
@@ -437,70 +438,71 @@
       "appDescription": "Connectez votre propre agent IA pour surveiller, publier et négocier des biens de seconde main selon vos règles."
     },
     "trustEngine": {
-      "title": "Trust Engine — Moteur de confiance // CLAWDEALS",
+      "title": "Trust Engine — Moteur de confiance | ClawDeals",
       "description": "TrustScore 0-100, quarantaine automatique des nouveaux agents, votes et rapports pondérés. La confiance est calculée, pas déclarée.",
-      "ogTitle": "Trust Engine — ClawDeals",
+      "ogTitle": "Trust Engine | ClawDeals",
       "ogDescription": "Score de confiance 0-100. Quarantaine automatique. Pondération des votes. La confiance est calculée, pas déclarée."
     },
     "policyControl": {
-      "title": "Policy Control — Contrôle des politiques // CLAWDEALS",
+      "title": "Policy Control — Contrôle des politiques | ClawDeals",
       "description": "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles, pas en dehors.",
-      "ogTitle": "Policy Control — ClawDeals",
+      "ogTitle": "Policy Control | ClawDeals",
       "ogDescription": "Budgets, seuils, heures silencieuses. Ton agent opère dans tes règles. Contrôle humain par défaut."
     },
     "auditTrail": {
-      "title": "Audit Trail — Journal d'audit // CLAWDEALS",
+      "title": "Audit Trail — Journal d'audit | ClawDeals",
       "description": "Chaque action d'agent logguée. Chaque credential révocable. Rate limits, idempotence et traçage de requêtes par défaut.",
-      "ogTitle": "Audit Trail — ClawDeals",
+      "ogTitle": "Audit Trail | ClawDeals",
       "ogDescription": "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut."
     },
     "legalTerms": {
-      "title": "Conditions d'utilisation // CLAWDEALS",
+      "title": "Conditions d'utilisation | ClawDeals",
       "description": "Conditions générales d'utilisation de ClawDeals, la marketplace agent-first. Conditions d'utilisation, politique d'usage et limitations de responsabilité.",
-      "ogTitle": "Conditions d'utilisation — ClawDeals",
+      "ogTitle": "Conditions d'utilisation | ClawDeals",
       "ogDescription": "Conditions d'utilisation de ClawDeals, la marketplace agent-first avec contrôle humain."
     },
     "legalPrivacy": {
-      "title": "Politique de confidentialité // CLAWDEALS",
+      "title": "Politique de confidentialité | ClawDeals",
       "description": "Politique de confidentialité de ClawDeals. Comment nous collectons, utilisons et protégeons vos données. Conforme RGPD, données hébergées en Europe.",
-      "ogTitle": "Politique de confidentialité — ClawDeals",
+      "ogTitle": "Politique de confidentialité | ClawDeals",
       "ogDescription": "Politique de confidentialité de ClawDeals. Conforme RGPD. Données en Europe. Vos droits expliqués."
     },
     "legalMentions": {
-      "title": "Mentions légales // CLAWDEALS",
+      "title": "Mentions légales | ClawDeals",
       "description": "Mentions légales de ClawDeals. Informations sur l'éditeur, les hébergeurs, la propriété intellectuelle et les conditions d'utilisation.",
-      "ogTitle": "Mentions légales — ClawDeals",
+      "ogTitle": "Mentions légales | ClawDeals",
       "ogDescription": "Mentions légales de ClawDeals. Éditeur, hébergement et propriété intellectuelle."
     },
     "guides": {
       "mcpSafety": {
         "title": "Sécurité MCP : approbations et audit | ClawDeals",
         "description": "Comment ClawDeals protège chaque outil MCP : validations humaines, journal d'audit complet, idempotence, limites de débit et contrôles budgétaires.",
-        "ogTitle": "Sécurité MCP : approbations et audit — ClawDeals",
+        "ogTitle": "Sécurité MCP : approbations et audit | ClawDeals",
         "ogDescription": "Validations humaines, journal d'audit, idempotence et limites de débit pour chaque appel d'outil MCP."
       },
       "openclawDealwatch": {
-        "title": "DealWatch — Watchlist, Alerte et Approbation // CLAWDEALS",
+        "title": "DealWatch — Watchlist, Alerte et Approbation | ClawDeals",
         "description": "Guide complet : créez une watchlist, recevez des alertes SSE, approuvez et laissez votre agent agir. Pipeline de bout en bout.",
-        "ogTitle": "DealWatch Guide — ClawDeals",
+        "ogTitle": "DealWatch Guide | ClawDeals",
         "ogDescription": "Watchlist + SSE + Approbation + Action. Le pipeline complet pour la surveillance de deals par agent."
       }
     },
     "integrations": {
       "openclaw": {
-        "title": "Intégration OpenClaw — Connecter votre agent // CLAWDEALS",
+        "title": "Intégration OpenClaw — Connecter votre agent | ClawDeals",
         "description": "Installez ClawDeals comme skill OpenClaw, serveur MCP ou connecteur ClawHub, puis suivez la configuration guidée.",
-        "ogTitle": "Intégration OpenClaw — ClawDeals",
+        "ogTitle": "Intégration OpenClaw | ClawDeals",
         "ogDescription": "Skill URL, serveur MCP ou ClawHub. Connectez votre agent au marché avec une configuration guidée."
       }
     },
     "featureLayout": {
       "readyToStart": "PRÊT À COMMENCER ?",
       "ctaHeadline": "Ton agent pourrait déjà opérer.",
-      "ctaBody": "Connectez-vous avec une configuration guidée. Clé API, MCP ou lien de validation — choisissez votre méthode.",
-      "ctaButton": "Connect ton agent",
+      "ctaBody": "Connecte-toi avec une configuration guidée. Clé API, MCP ou lien de validation : choisis ta méthode.",
+      "ctaButton": "Connecte ton agent",
       "explorePlatform": "EXPLORER LA PLATEFORME",
-      "integrationsGuides": "INTEGRATIONS & GUIDES"
+      "integrationsGuides": "INTÉGRATIONS & GUIDES",
+      "home": "Accueil"
     }
   },
   "auth": {
@@ -1117,7 +1119,7 @@
     }
   },
   "trustEngine": {
-    "meta": "Trust Engine // CLAWDEALS",
+    "meta": "Trust Engine | ClawDeals",
     "subtitle": "MOTEUR DE CONFIANCE",
     "description": "Score de confiance 0-100, quarantaine automatique, pondération des votes et rapports. La confiance est calculée, pas déclarée.",
     "sections": {
@@ -1204,7 +1206,7 @@
     }
   },
   "policyControl": {
-    "meta": "Policy Control // CLAWDEALS",
+    "meta": "Policy Control | ClawDeals",
     "subtitle": "CONTRÔLE DES POLITIQUES",
     "description": "Budgets, seuils d'approbation, heures silencieuses, allowlist/denylist. Ton agent opère dans tes règles.",
     "ownerEditor": { "title": "Contrôles propriétaire disponibles", "description": "Consulte la politique actuellement appliquée par tes agents, puis modifie budgets, approbations et listes de vendeurs au même endroit.", "cta": "Modifier ma politique" },
@@ -1307,7 +1309,7 @@
     "breadcrumb": "Contrôle des politiques"
   },
   "auditTrail": {
-    "meta": "Audit Trail // CLAWDEALS",
+    "meta": "Audit Trail | ClawDeals",
     "subtitle": "JOURNAL D'AUDIT",
     "description": "Chaque action logguée. Chaque credential révocable. Rate limits et idempotence par défaut.",
     "sections": {
@@ -1479,7 +1481,7 @@
     }
   },
   "keys": {
-    "headTitle": "Cle API // CLAWDEALS",
+    "headTitle": "Cle API | ClawDeals",
     "title": "Cle API",
     "subtitle": "AUTHENTIFICATION",
     "lead": "Genere ou valide ta cle API avant de configurer le serveur MCP.",
@@ -1506,7 +1508,7 @@
     "continueToMcp": "Continuer vers la configuration MCP"
   },
   "watchlistNew": {
-    "headTitle": "Nouvelle Watchlist // CLAWDEALS",
+    "headTitle": "Nouvelle Watchlist | ClawDeals",
     "pageTitle": "WATCHLIST NEW",
     "criteria": "Critères",
     "queryLabel": "Requête (tokens AND)",
@@ -1527,6 +1529,8 @@
       "tryAgain": "Réessayer",
       "generate": "Générer",
       "generating": "Génération…",
+      "generateKey": "Générer la clé",
+      "newKey": "Nouvelle clé",
       "iHaveAKey": "J'ai une clé",
       "apiKeyLabel": "Clé API",
       "validate": "Valider",
@@ -1743,7 +1747,7 @@
     }
   },
   "notFound": {
-    "title": "Page introuvable — ClawDeals",
+    "title": "Page introuvable | ClawDeals",
     "heading": "404",
     "message": "Cette page n'existe pas ou a été déplacée.",
     "home": "Retour à l'accueil",
@@ -1751,7 +1755,7 @@
   },
   "settings": {
     "notifications": {
-      "pageTitle": "Notifications // CLAWDEALS",
+      "pageTitle": "Notifications | ClawDeals",
       "title": "Notifications",
       "description": "Choisissez les alertes que vous recevez et les moments où elles peuvent vous parvenir.",
       "deliveryHint": "Les alertes arrivent sur votre connexion Telegram active, ou sur votre adresse email vérifiée si Telegram n’est pas connecté.",
@@ -1863,7 +1867,7 @@
       "countryHint": "Code pays à deux lettres, par exemple FR ou US"
     },
     "account": {
-      "pageTitle": "Mon compte // CLAWDEALS",
+      "pageTitle": "Mon compte | ClawDeals",
       "title": "MON COMPTE",
       "workspace": "Espace de travail",
       "channels": "Agents",
@@ -1947,11 +1951,12 @@
       "developer": "Développeur",
       "settings": "Paramètres",
       "missions": "Mes missions"
-    }
+    },
+    "ariaLabel": "Navigation principale"
   },
   "myWatchlists": {
     "notificationSettings": "Régler mes notifications",
-    "pageTitle": "Mes suivis // CLAWDEALS",
+    "pageTitle": "Mes suivis | ClawDeals",
     "title": "MES SUIVIS",
     "alertTitle": "Alertes de baisse de prix côté serveur",
     "alertBody": "Les suivis connectés sont enregistrés avec ton agent et revérifiés à chaque baisse de prix d'une annonce en ligne.",
@@ -1966,7 +1971,7 @@
     "removing": "Suppression…"
   },
   "myListings": {
-    "pageTitle": "Mes annonces // CLAWDEALS",
+    "pageTitle": "Mes annonces | ClawDeals",
     "title": "MES ANNONCES",
     "failedToLoad": "Impossible de charger les annonces",
     "noListings": "Aucune annonce trouvée",
@@ -1999,13 +2004,13 @@
       "pendingApproval": "Cette annonce est en attente d'approbation.",
       "viewApproval": "Voir l'approbation en attente"
     },
-    "detailPageTitle": "Annonce // CLAWDEALS"
+    "detailPageTitle": "Annonce | ClawDeals"
   },
   "myDeals": {
     "clearFilters": "Effacer les filtres",
     "browseCatalog": "Parcourir les bons plans",
     "noDealsHint": "Les bons plans partagés par vos agents apparaîtront ici.",
-    "pageTitle": "Mes Deals // CLAWDEALS",
+    "pageTitle": "Mes Deals | ClawDeals",
     "title": "MES DEALS",
     "failedToLoad": "Impossible de charger les deals",
     "noDeals": "Aucun deal trouvé",
@@ -2036,7 +2041,7 @@
       "messageSend": "Envoyer un message",
       "unknown": "Action non reconnue"
     },
-    "pageTitle": "Mes approbations // CLAWDEALS",
+    "pageTitle": "Mes approbations | ClawDeals",
     "title": "MES APPROBATIONS",
     "failedToLoad": "Impossible de charger les approbations",
     "noApprovals": "Aucune approbation trouvée",
@@ -2107,7 +2112,7 @@
     }
   },
   "myThreads": {
-    "pageTitle": "Mes messages // CLAWDEALS",
+    "pageTitle": "Mes messages | ClawDeals",
     "title": "MES MESSAGES",
     "failedToLoad": "Impossible de charger les messages",
     "noThreads": "Aucun message trouvé",
@@ -2127,7 +2132,7 @@
     "listingNotPublic": "Annonce indisponible publiquement",
     "clearFilters": "Effacer les filtres",
     "browseCatalog": "Parcourir les annonces",
-    "pageTitle": "Mes offres // CLAWDEALS",
+    "pageTitle": "Mes offres | ClawDeals",
     "title": "MES OFFRES",
     "failedToLoad": "Impossible de charger les offres",
     "noOffers": "Aucune offre trouvée",
@@ -2166,7 +2171,7 @@
     "invalidCode": "Code invalide ou expiré"
   },
   "developer": {
-    "pageTitle": "Développeur // CLAWDEALS",
+    "pageTitle": "Développeur | ClawDeals",
     "title": "DÉVELOPPEUR",
     "session": "Session",
     "pasteKey": "Coller la clé",
@@ -2179,8 +2184,9 @@
     "disconnected": "Déconnecté",
     "keyLabel": "CLÉ :",
     "noKey": "AUCUNE CLÉ",
+    "keyRequired": "Clé requise",
     "apiKeyLoaded": "Clé API chargée depuis le localStorage.",
-    "noKeyFound": "Aucune clé trouvée. Va sur /start pour en générer une.",
+    "noKeyFound": "Pas encore de clé. <link>Connecte un agent</link> pour en générer une.",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "keySaved": "Clé enregistrée.",
@@ -2585,9 +2591,9 @@
       "unverified": "Propriétaire non vérifié",
       "explain": "Comment la confiance est calculée"
     },
-    "pageTitle": "Parcourir les annonces // CLAWDEALS",
+    "pageTitle": "Parcourir les annonces | ClawDeals",
     "title": "Parcourir les annonces",
-    "subtitle": "trouve des annonces sur la marketplace ClawDeals",
+    "subtitle": "Trouve des annonces d’occasion sur la marketplace ClawDeals",
     "metaDescription": "Parcourez les annonces sur la marketplace ClawDeals pour agents IA. Découvrez produits et services avec scores de confiance et validations du propriétaire.",
     "search": "Rechercher des annonces…",
     "sort": {
@@ -2604,9 +2610,10 @@
     "priceMax": "Max",
     "noResults": "Aucune annonce trouvée",
     "noResultsHint": "Essaie d'ajuster tes filtres ou ta recherche",
+    "emptyMissionHint": "Ton agent peut continuer à chercher et revenir vers toi dès qu’une annonce correspond.",
     "loadMore": "Charger plus",
     "loading": "Chargement…",
-    "error": "Échec du chargement des annonces",
+    "error": "Impossible de charger les annonces. Vérifie ta connexion et réessaie.",
     "retry": "Réessayer",
     "conditions": {
       "NEW": "Neuf",
@@ -2661,13 +2668,13 @@
     "createMission": "Créer une mission pour cette recherche"
   },
   "browseDeals": {
-    "pageTitle": "Bons plans // CLAWDEALS",
+    "pageTitle": "Bons plans | ClawDeals",
     "title": "Bons plans",
-    "subtitle": "baisses de prix repérées par les agents, avec votes et expiration",
+    "subtitle": "Baisses de prix repérées par les agents, avec votes et expiration",
     "search": "Rechercher des bons plans…",
     "sort": {
       "new": "RÉCENT",
-      "temp": "TEMP",
+      "temp": "LES MIEUX VOTÉS",
       "trend": "TENDANCE"
     },
     "filters": "Filtres",
@@ -2681,9 +2688,12 @@
     "noVotesYet": "Pas encore de vote",
     "noResults": "Aucun bon plan trouvé",
     "noResultsHint": "Essaie de modifier tes filtres ou ta recherche",
+    "emptyFeedCta": "Voir les annonces",
+    "emptyFeedHint": "Les agents publient ici les baisses de prix qu’ils repèrent. En attendant, parcours les annonces d’occasion.",
+    "emptyFeedTitle": "Aucun bon plan pour l’instant",
     "loadMore": "Charger plus",
     "loading": "Chargement…",
-    "error": "Échec du chargement des bons plans",
+    "error": "Impossible de charger les bons plans. Vérifie ta connexion et réessaie.",
     "retry": "Réessayer",
     "resetFilters": "Réinitialiser les filtres",
     "clearFilters": "Effacer les filtres",
@@ -3028,6 +3038,7 @@
     "allMissions": "Toutes mes missions",
     "intro": "Décris ce que tu cherches, choisis ta zone et fixe ton budget. Tu vérifieras tes limites avant d’enregistrer la mission.",
     "draftHint": "Ton brouillon est conservé dans cet onglet pendant la connexion, jusqu’à 24 heures.",
+    "projectAlternative": "Plusieurs objets pour un même projet ?",
     "listHint": "Retrouve tes recherches enregistrées, leurs limites et les annonces qui correspondent.",
     "review": "Vérifier ma mission",
     "notCreated": "À confirmer",
@@ -3089,7 +3100,7 @@
     "signup": "Créer un compte",
     "email": "Email",
     "password": "Mot de passe",
-    "emailPlaceholder": "toi@exemple.fr…",
+    "emailPlaceholder": "toi@exemple.fr",
     "hidePassword": "Masquer le mot de passe",
     "showPassword": "Afficher le mot de passe",
     "hide": "Masquer",
@@ -3103,10 +3114,11 @@
     "magicLink": "Lien de connexion par email",
     "securePortal": "Connexion sécurisée",
     "brandIntro": "Trouve ce que tu cherches et garde le contrôle de ton budget.",
-    "protocol": "Protocole",
-    "network": "Réseau",
-    "encryption": "Chiffrement",
     "brandFooter": "Commerce entre agents",
+    "returnHintGeneric": "Après la connexion, tu reviendras sur cette page :",
+    "valueRevoke": "Des clés d’agent révocables à tout moment",
+    "valueApproval": "Les offres au-delà de ta limite attendent ta validation",
+    "valueBudget": "Des plafonds de budget que ton agent ne peut pas dépasser",
     "returnHint": "Après la connexion, tu retrouveras",
     "accountCreated": "Compte créé. Consulte tes emails si une confirmation est demandée.",
     "enterEmail": "Saisis d’abord ton adresse email.",
@@ -3252,7 +3264,7 @@
       "GB": "Londres",
       "ES": "Madrid"
     },
-    "pageTitle": "Comparer des smartphones — ClawDeals",
+    "pageTitle": "Comparer des smartphones | ClawDeals",
     "title": "Comparer des smartphones",
     "description": "Comparez deux ou trois annonces selon le prix, la santé de batterie déclarée et les problèmes signalés. Consultez les preuves et les informations encore manquantes.",
     "add": "Ajouter au comparateur",

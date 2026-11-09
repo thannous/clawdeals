@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { waitForOwnerSessionReady } from "./ownerSessionReady";
 import { safeRedirectUrl } from "./safeRedirect";
@@ -78,19 +78,6 @@ function resolveRequestedAuthMode(isReady: boolean, queryMode: unknown): "login"
 
 /* ─── Decorative left-panel components ─── */
 
-function TerminalBlock() {
-  return (
-    <div className="font-mono text-xs leading-relaxed text-subtle/70 select-none">
-      <div><span className="text-primary">$</span> clawdeals auth --status</div>
-      <div className="text-secondary/60 mt-1">&#9679; gateway&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;online</div>
-      <div className="text-secondary/60">&#9679; trust-engine online</div>
-      <div className="text-secondary/60">&#9679; escrow&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;online</div>
-      <div className="mt-2"><span className="text-primary">$</span> awaiting credentials&hellip;</div>
-      <div className="inline-block w-2 h-3.5 bg-primary/80 animate-pulse ml-0.5 align-middle" />
-    </div>
-  );
-}
-
 function AsciiClaw() {
   return (
     <pre className="font-mono text-xs leading-none text-primary/25 select-none" aria-hidden="true">{
@@ -104,13 +91,30 @@ function AsciiClaw() {
   );
 }
 
-function StatusBadge({ label, value }: { label: string; value: string }) {
+const RETURN_DESTINATIONS: Array<{ pattern: RegExp; labelKey: string }> = [
+  { pattern: /^\/(?:my\/)?deals(?:[/?#]|$)/, labelKey: "nav.deals" },
+  { pattern: /^\/my\/missions(?:[/?#]|$)/, labelKey: "nav.missions" },
+  { pattern: /^\/my\/listings(?:[/?#]|$)/, labelKey: "nav.listings" },
+  { pattern: /^\/my\/watchlists(?:[/?#]|$)/, labelKey: "nav.watchlists" },
+  { pattern: /^\/my\/approvals(?:[/?#]|$)/, labelKey: "nav.approvals" },
+  { pattern: /^\/my\/offers(?:[/?#]|$)/, labelKey: "nav.offers" },
+  { pattern: /^\/my\/threads(?:[/?#]|$)/, labelKey: "nav.threads" },
+  { pattern: /^\/developer(?:[/?#]|$)/, labelKey: "nav.developer" },
+  { pattern: /^\/settings(?:[/?#]|$)/, labelKey: "nav.settings" }
+];
+
+/** Names the page the owner returns to, instead of printing a raw route. */
+function returnDestinationKey(target: string): string | null {
+  const path = target.replace(/^https?:\/\/[^/]+/, "").replace(/^\/(?:fr|en|es)(?=\/)/, "");
+  return RETURN_DESTINATIONS.find((entry) => entry.pattern.test(path))?.labelKey ?? null;
+}
+
+function ValuePoint({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-widest">
-      <span className="text-subtle">{label}</span>
-      <span className="h-px flex-1 bg-border" />
-      <span className="text-text/70">{value}</span>
-    </div>
+    <li className="flex items-start gap-3 text-sm text-muted leading-relaxed">
+      <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 bg-primary" />
+      <span>{children}</span>
+    </li>
   );
 }
 
@@ -123,6 +127,7 @@ export default function LoginPage() {
 function useLoginPageView() {
   const t = useTranslations("ownerLogin");
   const legacy = useTranslations("auth.legacy");
+  const appNav = useTranslations("appNav");
   const router = useRouter();
   const hasCheckedExistingSessionRef = useRef(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
@@ -307,7 +312,7 @@ function useLoginPageView() {
     <div data-testid="auth-login-page" className="min-h-screen bg-bg relative overflow-hidden flex flex-col lg:flex-row">
 
       {/* ── Left branding panel ── */}
-      <div className={missionReturn ? "hidden" : "hidden lg:flex lg:w-[45%] xl:w-[50%] relative flex-col justify-between p-10 xl:p-14 overflow-hidden"}>
+      <aside aria-label="ClawDeals" className={missionReturn ? "hidden" : "hidden lg:flex lg:w-[45%] xl:w-[50%] relative flex-col justify-between p-10 xl:p-14 overflow-hidden"}>
         {/* Background layers */}
         <div className="absolute inset-0 tech-grid opacity-40" />
         <div className="absolute inset-0 bg-linear-to-br from-primary/4 via-transparent to-secondary/2" />
@@ -325,9 +330,9 @@ function useLoginPageView() {
               <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">{t("securePortal")}</span>
             </div>
             <Link href="/" className="block w-fit">
-              <h2 className="text-4xl xl:text-5xl font-bold tracking-wider text-text text-shadow-glow leading-tight">
+              <span className="block text-4xl xl:text-5xl font-bold tracking-wider text-text text-shadow-glow leading-tight">
                 CLAW<span className="text-primary">DEALS</span>
-              </h2>
+              </span>
             </Link>
             <p className="text-sm font-mono text-muted max-w-sm leading-relaxed">
               {t("brandIntro")}
@@ -336,29 +341,28 @@ function useLoginPageView() {
 
           <div className="w-16 h-px bg-linear-to-r from-primary/60 to-transparent" />
 
-          <div className="space-y-3 max-w-xs">
-            <StatusBadge label={t("protocol")} value="v1.4" />
-            <StatusBadge label={t("network")} value="mainnet" />
-            <StatusBadge label={t("encryption")} value="AES-256" />
-          </div>
+          <ul className="space-y-3 max-w-sm">
+            <ValuePoint>{t("valueBudget")}</ValuePoint>
+            <ValuePoint>{t("valueApproval")}</ValuePoint>
+            <ValuePoint>{t("valueRevoke")}</ValuePoint>
+          </ul>
         </div>
 
-        {/* Bottom: terminal + ascii */}
+        {/* Bottom: brand mark */}
         <div className="relative z-10 space-y-8">
           <AsciiClaw />
-          <TerminalBlock />
 
-          <div className="text-xs font-mono text-subtle/50">
-            &copy; {new Date().getFullYear()} Clawdeals &mdash; {t("brandFooter")}
+          <div className="text-xs font-mono text-subtle">
+            &copy; {new Date().getFullYear()} ClawDeals &mdash; {t("brandFooter")}
           </div>
         </div>
 
         {/* Right border accent */}
         <div className="absolute right-0 top-0 bottom-0 w-px bg-linear-to-b from-transparent via-border to-transparent" />
-      </div>
+      </aside>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 relative flex flex-col">
+      <main id="main-content" tabIndex={-1} className="flex-1 relative flex flex-col">
         {/* Background */}
         <div className="absolute inset-0 tech-grid opacity-60 lg:opacity-30" />
         <div className="animate-scanline lg:hidden" />
@@ -370,9 +374,9 @@ function useLoginPageView() {
             <span className="text-xs font-mono text-subtle uppercase tracking-[0.3em]">{t("securePortal")}</span>
           </div>
           <Link href="/" className="block w-fit mt-2">
-            <h2 className="text-2xl font-bold tracking-wider text-text text-shadow-glow">
+            <span className="block text-2xl font-bold tracking-wider text-text text-shadow-glow">
               CLAW<span className="text-primary">DEALS</span>
-            </h2>
+            </span>
           </Link>
         </div>
 
@@ -556,11 +560,17 @@ function useLoginPageView() {
 
             {/* Footer hint */}
             {redirectHintReady && !missionReturn ? <div className="text-sm text-muted px-1 space-y-2">
-              <p>{t("returnHint")} <span className="text-text">{redirectTarget}</span></p>
+              {returnDestinationKey(redirectTarget) ? (
+                <p>{t("returnHint")} <span className="text-text">{appNav(returnDestinationKey(redirectTarget) as string)}</span></p>
+              ) : (
+                <p>{t("returnHintGeneric")}</p>
+              )}
+              {/* The exact destination stays visible so the owner can check where sign-in leads. */}
+              <p className="font-mono text-xs text-subtle break-all">{redirectTarget}</p>
             </div> : null}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

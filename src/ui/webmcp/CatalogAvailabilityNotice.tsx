@@ -54,7 +54,7 @@ export default function CatalogAvailabilityNotice() {
       <Link
         href={`${localePrefixFor(resolveSupportedLocale(locale))}/browse`}
         data-testid="catalog-browse-link"
-        className="inline-flex h-10 items-center gap-2 border border-warning bg-warning px-4 font-mono text-[11px] font-bold uppercase tracking-wider text-bg hover:brightness-110"
+        className="inline-flex h-10 items-center gap-2 border border-warning bg-warning px-4 font-mono text-xs font-bold uppercase tracking-wider text-bg hover:brightness-110"
       >
         {t("catalog.browseListings")}
         <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

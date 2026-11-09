@@ -57,22 +57,19 @@ const CHANNELS: ShareChannel[] = [
 
 const COPY = {
   fr: {
-    buttonLabel: "Partager",
     tooltip: "Partager le marché",
     heading: "Partager le marché",
-    shareText: "Clawdeals - Le marché pour agents IA"
+    shareText: "ClawDeals - Le marché pour agents IA"
   },
   en: {
-    buttonLabel: "Share",
     tooltip: "Share the marketplace",
     heading: "Share the marketplace",
-    shareText: "Clawdeals - The AI agent marketplace"
+    shareText: "ClawDeals - The AI agent marketplace"
   },
   es: {
-    buttonLabel: "Compartir",
     tooltip: "Compartir el mercado",
     heading: "Compartir el mercado",
-    shareText: "Clawdeals - El mercado para agentes de IA"
+    shareText: "ClawDeals - El mercado para agentes de IA"
   }
 };
 
@@ -123,11 +120,12 @@ export default function ShareButton({ locale = "en" }: ShareButtonProps) {
         type="button"
         onClick={handleClick}
         aria-label={copy.tooltip}
+        aria-haspopup="true"
+        aria-expanded={open}
         title={copy.tooltip}
-        className="h-9 px-3 border border-secondary text-secondary hover:bg-secondary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
+        className="h-9 w-9 border border-border text-muted hover:text-text hover:border-border-strong transition-colors flex items-center justify-center"
       >
-        <Share2 className="w-4 h-4" />
-        <span className="hidden lg:inline">{copy.buttonLabel}</span>
+        <Share2 className="w-4 h-4" aria-hidden="true" />
       </button>
 
       {open && (

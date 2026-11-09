@@ -49,7 +49,7 @@ export default function PendingApprovalBanner() {
           {count > 1 ? (
             <Link
               href="/my/approvals"
-              className="border border-border px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-muted hover:border-primary hover:text-primary"
+              className="border border-border px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-muted hover:border-primary hover:text-primary"
             >
               {t("approvals.all")}
             </Link>
@@ -57,7 +57,7 @@ export default function PendingApprovalBanner() {
           <Link
             href={`/my/approvals/${encodeURIComponent(latest.approvalId)}`}
             data-testid="pending-approval-review"
-            className="border border-warning bg-warning px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-bg hover:brightness-110"
+            className="border border-warning bg-warning px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-bg hover:brightness-110"
           >
             {t("approvals.review")}
           </Link>

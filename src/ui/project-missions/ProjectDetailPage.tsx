@@ -8,6 +8,7 @@ import ProjectFactsForm from "./ProjectFactsForm";
 import ProjectConversations from "./ProjectConversations";
 import ProjectShell, { buttonClass, ProjectFailure, secondaryClass } from "./ProjectShell";
 import { assertProjectOwner, mutationHeaders, projectRequest, ProjectRequestError, useProjectResource, type ProjectMission } from "./projectClient";
+import { intlLocaleFor } from "../../shared/i18n";
 
 type Review = { kind: "basket" | "contact"; mission: ProjectMission; configuration: ProjectConfiguration };
 
@@ -50,7 +51,7 @@ export default function ProjectDetailPage() {
     <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs text-muted">{t(`slots.${item.slot}`)}</p><Link className="block text-sm font-semibold text-text underline underline-offset-4 [overflow-wrap:anywhere]" href={`/browse/${item.listing_id}`}>{item.title}</Link></div><span className="shrink-0 text-sm font-semibold text-text">{money(projectCandidatePriceCents(item))}</span></div>
     {item.facts?.quoted_price_cents != null ? <p className="text-xs text-muted">{t("quotedPriceUsed", { amount: money(item.price_cents) })}</p> : null}
     <p className="text-xs text-muted">{item.facts?.delivery_fee_cents == null ? t("feeUnknown") : t("itemFee", { amount: money(item.facts.delivery_fee_cents) })}{item.distance_km == null ? "" : ` · ${t("distance", { distance: Math.round(item.distance_km) })}`}</p>
-    {item.facts ? <p className="text-xs text-muted">{t("userConfirmed", { date: new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(item.facts.confirmed_at)) })}</p> : <p className="text-xs text-warning">{t("notVerified")}</p>}
+    {item.facts ? <p className="text-xs text-muted">{t("userConfirmed", { date: new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "short", timeStyle: "short" }).format(new Date(item.facts.confirmed_at)) })}</p> : <p className="text-xs text-warning">{t("notVerified")}</p>}
     <ProjectFactsForm key={`${item.listing_id}:${version}`} item={item} usbC={mission?.brief.laptop_connector === "USB_C"} busy={busy || Boolean(review)} save={(facts: ProjectFacts) => mutate("facts", { listing_id: item.listing_id, facts })} />
   </div>;
   if (loading) return <ProjectShell title={t("detailTitle")}><p role="status" className="text-muted">{t("loading")}</p></ProjectShell>;
@@ -58,7 +59,7 @@ export default function ProjectDetailPage() {
   const selected = mission.plan.configurations.find(configuration => configuration.id === mission.selected_configuration_id);
   const approved = mission.confirmed_version === mission.version;
   return <ProjectShell title={t("detailTitle")}>
-    <section className="space-y-4 border-b border-border pb-5"><div className="flex flex-wrap items-start justify-between gap-5"><div className="min-w-0 max-w-3xl space-y-2"><h2 className="text-2xl font-semibold text-text [overflow-wrap:anywhere]">{mission.brief.description}</h2><p className="text-sm text-muted">{t("listSummary", { budget: money(mission.brief.budget_cents), area: mission.brief.location.label || t("selectedArea"), radius: mission.brief.location.radius_km })}</p></div><button disabled={busy || Boolean(review)} className={secondaryClass} onClick={() => void mutate("recalculate", {})}>{busy ? t("updating") : t("recalculate")}</button></div><p className="text-sm text-muted">{t("boundary")}</p><p className="text-xs text-muted">{t("freshness", { date: new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(mission.updated_at)), version: mission.version })}</p></section>
+    <section className="space-y-4 border-b border-border pb-5"><div className="flex flex-wrap items-start justify-between gap-5"><div className="min-w-0 max-w-3xl space-y-2"><h2 className="text-2xl font-semibold text-text [overflow-wrap:anywhere]">{mission.brief.description}</h2><p className="text-sm text-muted">{t("listSummary", { budget: money(mission.brief.budget_cents), area: mission.brief.location.label || t("selectedArea"), radius: mission.brief.location.radius_km })}</p></div><button disabled={busy || Boolean(review)} className={secondaryClass} onClick={() => void mutate("recalculate", {})}>{busy ? t("updating") : t("recalculate")}</button></div><p className="text-sm text-muted">{t("boundary")}</p><p className="text-xs text-muted">{t("freshness", { date: new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "short", timeStyle: "short" }).format(new Date(mission.updated_at)), version: mission.version })}</p></section>
     {mission.plan.pickup_expired ? <div role="alert" className="space-y-3 border border-warning p-4 text-warning"><p>{t("deadlineExpired")}</p><Link href="/my/projects/new" className="inline-block min-h-11 py-2 underline">{t("adjustProject")}</Link></div> : null}
     {mutationError ? <ProjectFailure code={mutationError} /> : null}
     {notice ? <p role="status" className="border border-primary p-4 text-sm text-primary">{t(notice)}</p> : null}

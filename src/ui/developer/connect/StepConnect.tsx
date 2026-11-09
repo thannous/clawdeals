@@ -63,17 +63,21 @@ function KeyModeToggle({
   return (
     <div className="flex gap-1 bg-bg p-0.5 w-fit border border-border">
       <button
+        type="button"
+        aria-pressed={mode === "generate"}
         onClick={() => onModeChange("generate")}
         className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-          mode === "generate" ? "bg-text text-bg" : "text-subtle hover:text-text"
+          mode === "generate" ? "bg-text text-bg" : "text-muted hover:text-text"
         } transition-colors`}
       >
         {generateLabel}
       </button>
       <button
+        type="button"
+        aria-pressed={mode === "paste"}
         onClick={() => onModeChange("paste")}
         className={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-          mode === "paste" ? "bg-text text-bg" : "text-subtle hover:text-text"
+          mode === "paste" ? "bg-text text-bg" : "text-muted hover:text-text"
         } transition-colors`}
       >
         {pasteLabel}
@@ -427,7 +431,7 @@ function useStepConnectView({
           )}
         </div>
 
-        <div className="text-[11px] font-mono text-subtle">{t("step.connect.mcp.chooseOneLabel")}</div>
+        <div className="text-xs font-mono text-subtle">{t("step.connect.mcp.chooseOneLabel")}</div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Option A: auto install */}
@@ -523,16 +527,16 @@ function useStepConnectView({
         <h1 className="text-3xl font-bold tracking-tight">
           {t("step.connect.heading")}
         </h1>
-        <p className="text-sm font-mono text-subtle max-w-lg leading-relaxed">
+        <p className="text-base text-muted max-w-xl leading-relaxed">
           {t("step.connect.heroDesc")}
         </p>
       </div>
 
       {/* Method selector: one key form, two destinations */}
       <div className="space-y-4">
-        <div className="text-[11px] font-mono text-subtle uppercase tracking-widest">
+        <h2 className="text-xs font-mono text-subtle uppercase tracking-widest">
           {t("step.connect.chooseMethod")}
-        </div>
+        </h2>
         <div role="tablist" aria-label={t("step.connect.chooseMethod")} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {METHOD_TABS.map((tab) => {
             const active = method === tab;
@@ -552,7 +556,7 @@ function useStepConnectView({
               >
                 <div className="text-sm font-bold tracking-wide text-text">{t(`step.connect.method.${tab}.title`)}</div>
                 <div className="mt-1 text-xs text-muted leading-relaxed">{t(`step.connect.method.${tab}.desc`)}</div>
-                <div className="mt-2 text-[10px] font-mono uppercase tracking-widest text-subtle">
+                <div className="mt-2 text-xs font-mono uppercase tracking-widest text-subtle">
                   {t(`step.connect.method.${tab}.tech`)}
                 </div>
               </button>
@@ -585,7 +589,7 @@ function useStepConnectView({
           <KeyModeToggle
             mode={keyMode}
             onModeChange={handleKeyModeChange}
-            generateLabel={t("common.generate")}
+            generateLabel={t("common.newKey")}
             pasteLabel={t("common.iHaveAKey")}
           />
 
@@ -642,7 +646,7 @@ function useStepConnectView({
                   } transition-colors`}
                   data-testid="generate-key"
                 >
-                  {keyStatus === "loading" ? t("common.generating") : t("common.generate")}
+                  {keyStatus === "loading" ? t("common.generating") : t("common.generateKey")}
                 </button>
               </div>
             )
@@ -704,7 +708,7 @@ function useStepConnectView({
           <KeyModeToggle
             mode={mcpKeyMode}
             onModeChange={handleMcpKeyModeChange}
-            generateLabel={t("common.generate")}
+            generateLabel={t("common.newKey")}
             pasteLabel={t("common.iHaveAKey")}
           />
 
@@ -735,7 +739,7 @@ function useStepConnectView({
                     } transition-colors`}
                     data-testid="mcp-generate-key"
                   >
-                    {mcpKeyStatus === "loading" ? t("common.generating") : t("common.generate")}
+                    {mcpKeyStatus === "loading" ? t("common.generating") : t("common.generateKey")}
                   </button>
                 </div>
               ) : (
@@ -784,7 +788,7 @@ function useStepConnectView({
           <div className="flex flex-wrap gap-2">
             <Link
               href={loginHref}
-              className="border border-primary bg-primary text-bg px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-text hover:border-text transition-colors"
+              className="border border-primary text-primary px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-primary/10 transition-colors"
             >
               {t("step.connect.logIn")}
             </Link>
@@ -817,7 +821,7 @@ function useStepConnectView({
             <div className="text-lg font-bold tracking-wide">
               {t("step.connect.claim.title")}
             </div>
-            <div className="text-[10px] font-mono uppercase tracking-widest text-subtle">Claim Link</div>
+            <div className="text-xs font-mono uppercase tracking-widest text-subtle">Claim Link</div>
             <div className="text-sm font-mono text-subtle leading-relaxed">
               {t("step.connect.claim.longDesc")}
             </div>
@@ -827,10 +831,10 @@ function useStepConnectView({
             <button
               onClick={handleCreateClaim}
               disabled={isCreatingSession}
-              className={`shrink-0 h-12 px-8 font-bold uppercase tracking-wider text-sm border border-primary ${
+              className={`shrink-0 h-12 px-8 font-bold uppercase tracking-wider text-sm border ${
                 isCreatingSession
-                  ? "bg-surface-alt text-subtle cursor-not-allowed"
-                  : "bg-primary text-bg hover:bg-text hover:text-bg"
+                  ? "border-border bg-surface-alt text-subtle cursor-not-allowed"
+                  : "border-secondary text-secondary hover:bg-secondary/10"
               } transition-colors`}
             >
               {isCreatingSession

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -11,6 +11,10 @@ function randomIdempotencyKey(): string {
     return `${Date.now()}-${Math.random()}`;
   }
 }
+
+const subscribeHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 function resolveQueryParam(value: unknown) {
   if (Array.isArray(value)) return value[0] || "";
@@ -27,6 +31,9 @@ export default function PairPage() {
   const returnPath = `${localePrefixFor(locale)}/pair?${new URLSearchParams({ token })}`;
   const loginHref = `/auth/login?next=${encodeURIComponent(returnPath)}`;
 
+  // The static HTML cannot know ?token=; keep the first client render identical to it.
+  const hydrated = useSyncExternalStore(subscribeHydration, clientReady, serverReady);
+  const missingToken = hydrated && router.isReady && !token;
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [authRequired, setAuthRequired] = useState(false);
@@ -90,7 +97,7 @@ export default function PairPage() {
           <p className="text-xs font-mono text-subtle">{t("subtitle")}</p>
         </div>
 
-        {!token && router.isReady && (
+        {missingToken && (
           <div role="alert" className="border border-error/30 bg-error/5 rounded clip-corner p-3">
             <div className="text-xs font-mono text-error">{t("missingToken")}</div>
             <div className="text-xs font-mono text-muted mt-1">{t("newLink")}</div>
@@ -148,7 +155,7 @@ export default function PairPage() {
           )}
         </div>
 
-        <p className="text-xs font-mono text-subtle">{t("newLink")}</p>
+        {!missingToken ? <p className="text-xs font-mono text-subtle">{t("newLink")}</p> : null}
       </div>
     </main>
   );

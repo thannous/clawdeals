@@ -27,7 +27,7 @@ export default function ClaimTokenPage() {
       <Head>
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />
-        <title>{locale === "fr" ? "Clawdeals | Connexion" : locale === "es" ? "Clawdeals | Conexion" : "Clawdeals | Claim"}</title>
+        <title>{locale === "fr" ? "Connexion | ClawDeals" : locale === "es" ? "Conexion | ClawDeals" : "Claim | ClawDeals"}</title>
         <meta name="description" content={normalizeMetaDescription(t("subtitle"))} />
       </Head>
       <ClaimPage key={claimToken || "empty"} claimToken={claimToken} />
