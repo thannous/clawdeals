@@ -120,6 +120,14 @@ describe("evaluateWatchlistMatchListing", () => {
     expect(result.reason.geo_missing).toBe(true);
   });
 
+  it("uses the public rounded listing position for a geo match and its reason", () => {
+    const listing = { title: "Bike", currency: "EUR", geo_lat: 48.8649, geo_lng: 2.3549 };
+    const watchlist = { active: true, geo_lat: 48.86, geo_lon: 2.35, distance_km: 0.1 };
+    const result = evaluateWatchlistMatchListing({ listing, watchlist });
+    expect(result).toMatchObject({ matched: true, reason: { geo_km: 0, geo_ok: true } });
+    expect(evaluateWatchlistMatchListing({ listing: { ...listing, geo_lat: 48.8651 }, watchlist }).matched).toBe(false);
+  });
+
   it("filters by delivery_method when criteria is set", () => {
     const listing = { title: "RTX 4070", category: "gpu", currency: "EUR", price_amount: 399, delivery_method: "PICKUP" };
     const watchlist = { active: true, query_text: null, tags: ["gpu"], criteria: { delivery_method: "SHIPPING" } };

@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getListing } from "../../../../../server/services/listings";
+import { isListingPubliclyVisible } from "../../../../../server/services/listing-visibility";
 import {
   createMessage,
   createOrGetThread,
@@ -107,6 +108,9 @@ export async function handler(req, res, ctx) {
 
     if (listing.status !== "LIVE") {
       // Anti-enumeration: do not reveal listing status.
+      return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
+    }
+    if (!await isListingPubliclyVisible(listing)) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
     }
 

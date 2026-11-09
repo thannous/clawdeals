@@ -40,7 +40,7 @@ export function existsDir(p) {
 }
 
 export function mkdirp(p) {
-  fs.mkdirSync(p, { recursive: true });
+  fs.mkdirSync(p, { recursive: true, mode: 0o700 });
 }
 
 function nowStamp() {
@@ -56,7 +56,11 @@ function readUtf8(p) {
 }
 
 function writeUtf8(p, content) {
-  fs.writeFileSync(p, content, "utf8");
+  // Existing client configs can hold credentials for several servers. Tighten
+  // them before writing so updated bytes are never visible under old modes.
+  if (existsFile(p)) fs.chmodSync(p, 0o600);
+  fs.writeFileSync(p, content, { encoding: "utf8", mode: 0o600 });
+  fs.chmodSync(p, 0o600);
 }
 
 function backupIfExists(filePath) {
@@ -509,10 +513,14 @@ async function main() {
       console.log("mcp:install: Tip: run with --client codex|claude-code|cursor|claude-desktop|windsurf|gemini");
       console.log("");
       console.log("Manual config (Cursor-style):");
+      const manualConfig = {
+        ...serverConfig,
+        env: { ...serverConfig.env, CLAWDEALS_API_KEY: "<your-api-key>" }
+      };
       console.log(
         formatJson({
           servers: {
-            clawdeals: serverConfig
+            clawdeals: manualConfig
           }
         }).trimEnd()
       );

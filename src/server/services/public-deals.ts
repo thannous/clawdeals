@@ -45,6 +45,30 @@ export type PublicDeal = {
   created_at: string;
 };
 
+export async function isDealPubliclyVisible(deal: { deal_id: string; status: string; source_url: string | null } | null | undefined): Promise<boolean> {
+  if (!deal || isSyntheticDealSource(deal.source_url) || !PUBLIC_DEAL_STATUSES.has(deal.status)) return false;
+  const { data, error } = await getSupabaseServiceClient()
+    .from("moderation_states")
+    .select("hidden")
+    .eq("entity_type", "deal")
+    .eq("entity_id", deal.deal_id)
+    .maybeSingle();
+  if (error) mapError(error);
+  return !data?.hidden;
+}
+
+export async function assertDealPubliclyVisible(dealId: string): Promise<void> {
+  const { data, error } = await getSupabaseServiceClient()
+    .from("deals")
+    .select("deal_id,status,source_url")
+    .eq("deal_id", dealId)
+    .maybeSingle();
+  if (error) mapError(error);
+  if (!await isDealPubliclyVisible(data)) {
+    throw Object.assign(new Error("Deal not found"), { status: 404, code: "DEAL_NOT_FOUND" });
+  }
+}
+
 export async function getPublicDeal(dealId: string): Promise<PublicDeal | null> {
   if (!dealId || typeof dealId !== "string") return null;
 
@@ -67,18 +91,7 @@ export async function getPublicDeal(dealId: string): Promise<PublicDeal | null> 
   }
 
   if (error) mapError(error);
-  if (!data || isSyntheticDealSource(data.source_url)) return null;
-  if (!PUBLIC_DEAL_STATUSES.has(data.status)) return null;
-
-  const { data: moderationState, error: moderationError } = await client
-    .from("moderation_states")
-    .select("hidden")
-    .eq("entity_type", "deal")
-    .eq("entity_id", dealId)
-    .maybeSingle();
-
-  if (moderationError) mapError(moderationError);
-  if (moderationState?.hidden) return null;
+  if (!await isDealPubliclyVisible(data)) return null;
 
   const media = normalizeReadMedia({
     rawImages: data?.images,

@@ -2,6 +2,7 @@ import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { matchDealToWatchlists, matchListingToWatchlists } from "./watchlist-matching";
 import { mapSupabaseError } from "./supabase-errors";
+import { visiblePublicEntityIds } from "./public-entity-visibility";
 
 type QueueEntityType = "deal" | "listing";
 
@@ -55,7 +56,7 @@ function errorMessage(error: any) {
 async function fetchDealForMatch({ client, dealId }: { client: any; dealId: string }) {
   const { data, error } = await client
     .from("deals")
-    .select("deal_id,title,tags,price,currency,market_code,status,created_at")
+    .select("deal_id,title,tags,price,currency,market_code,status,source_url,created_at")
     .eq("deal_id", dealId)
     .in("status", ["NEW", "ACTIVE"])
     .maybeSingle();
@@ -215,6 +216,13 @@ export async function runWatchlistMatchQueue({
           : await fetchListingForMatch({ client, listingId: row.entity_id });
 
       if (!entity) {
+        await deleteQueueRow({ client, row });
+        summary.skipped_count += 1;
+        continue;
+      }
+
+      const visible = await visiblePublicEntityIds(client, row.entity_type, [entity]);
+      if (!visible.has(row.entity_id)) {
         await deleteQueueRow({ client, row });
         summary.skipped_count += 1;
         continue;

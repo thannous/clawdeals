@@ -154,6 +154,8 @@ SELECT json_build_object(
   stage("public-lockdown",()=>admin("REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public,private FROM PUBLIC; REVOKE ALL ON ALL TABLES IN SCHEMA public,private FROM PUBLIC; REVOKE ALL ON SCHEMA private FROM PUBLIC; REVOKE CREATE ON SCHEMA public FROM PUBLIC;","lockdown","composition"));
   // RPC guard expects original invoker definitions, so apply before deliberate queue ownership/definer replacements.
   for(const file of ["neon-rpc-role-review.sql","neon-queue-role-plan.sql","neon-partition-role-plan.sql","neon-contact-consent-role-plan.sql","neon-direct-table-role-plan.sql","neon-acquisition-role-plan.sql","neon-view-role-plan.sql","neon-residual-ownership-role-plan.sql"])stage(`compose-${file}`,()=>candidate(file));
+  // Preserve all 84 historical hashes first; review the later repository geo migration separately.
+  stage("geo-privacy-overlay-after-historical-role-plans",()=>candidate("neon-geo-privacy-role-plan.sql"));
   for(const mutation of ["ALTER POLICY deny_all_anon_authenticated ON public.connect_sessions USING (true);","ALTER POLICY deny_all_anon_authenticated ON public.connect_sessions TO service_role;"]){
    const retirement=fs.readFileSync("scripts/migration/neon-source-policy-retirement.sql","utf8").replace("BEGIN;",`BEGIN;\n${mutation}`);
    const rejected=sql(retirement,{user:"fixture_admin",stage:"reject-mutated-source-policy",allowFailure:true});

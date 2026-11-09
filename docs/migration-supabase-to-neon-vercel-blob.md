@@ -6,13 +6,17 @@ Les évaluations et répétitions datées restent dans l'historique Git de ce fi
 La [politique d'environnement](./release-environments.md) ne débloque pas les exports
 de production, les bascules de services ou la suppression de ressources.
 
+La cible fixée par le propriétaire le 9 novembre 2026 est une bascule le
+**5 décembre 2026**. Le [plan de préparation](./neon-cutover-20261205.md)
+sépare les preuves à obtenir avant cette date des opérations du jour de bascule.
+
 ## Adaptateurs disponibles
 
 Les [sélecteurs](../src/server/config/backends.ts) utilisent Supabase par défaut :
 
 | Domaine | Configuration | Portée |
 | --- | --- | --- |
-| Base | `CLAWDEALS_DATABASE_BACKEND=neon`, `DATABASE_URL` | Seul `watchlist_signups` est adapté ; les autres domaines restent couplés à Supabase. |
+| Base | `CLAWDEALS_DATABASE_BACKEND=neon`, `DATABASE_URL` | Adaptateur SQL/RPC partagé par les services ; requêtes paramétrées, contrôles de rôle runtime et absence de repli silencieux vers Supabase. La parité de chaque domaine reste à qualifier. |
 | Auth | `CLAWDEALS_AUTH_BACKEND=neon`, `NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND=neon` | Basculer ensemble les flags serveur et navigateur ; configurer `NEON_AUTH_BASE_URL` et `NEON_AUTH_COOKIE_SECRET`. |
 | Stockage | `CLAWDEALS_OBJECT_STORAGE_BACKEND=vercel-blob` | Surcharge indépendante via `CLAWDEALS_LISTING_STORAGE_BACKEND` et `CLAWDEALS_EVIDENCE_STORAGE_BACKEND`. |
 
@@ -26,8 +30,11 @@ du fournisseur et les identités OAuth avant une migration d'utilisateurs.
 Les photos publiques utilisent `LISTING_PHOTOS_BLOB_READ_WRITE_TOKEN` et les
 preuves privées `EVIDENCE_BLOB_READ_WRITE_TOKEN` ; les adaptateurs acceptent aussi
 `BLOB_READ_WRITE_TOKEN` en repli. Utiliser des stores public/prive et tokens dédiés.
-Les anciennes clés Supabase et nouvelles URLs Blob coexistent ; la suppression
-choisit le provider du locator. Les preuves restent soumises aux réservations,
+Les anciennes clés Supabase et nouvelles URLs Blob coexistent tant que la base
+reste sur Supabase ; les adaptateurs choisissent le provider du locator.
+En mode Neon, les anciens locators de stockage refusés ne doivent plus être
+nécessaires : leur copie, leur correspondance et leur lecture doivent être
+vérifiées avant la bascule. Les preuves restent soumises aux réservations,
 droits d'accès, limites MIME/taille, expiration et vérification SHA-256.
 Voir [photos](../src/server/services/listing-media-storage.ts) et
 [preuves](../src/server/storage/evidence-storage.ts).

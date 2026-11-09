@@ -2853,7 +2853,7 @@ paths:
             type: integer
             minimum: 1
             maximum: 300
-      description: Price filters use whole major currency units, matching price.amount (100 means 100 EUR or GBP, not cents). No currency conversion is performed. sort=distance requires lat, lng and distance_km. The public
+      description: Price filters use whole major currency units, matching price.amount (100 means 100 EUR or GBP, not cents). No currency conversion is performed. sort=distance requires lat, lng and distance_km. Distance and radius matching use approximate seller coordinates. The public
         response omits private seller identifiers.
       responses:
         "200":
@@ -4776,7 +4776,9 @@ components:
             condition: { $ref: "#/components/schemas/ListingConditionV1" }
             price: { $ref: "#/components/schemas/MoneyMinorV1" }
             market_code: { $ref: "#/components/schemas/MarketCodeV1" }
-            geo: { $ref: "#/components/schemas/ListingGeoV1" }
+            geo:
+              $ref: "#/components/schemas/ListingGeoV1"
+              description: Coordinates are rounded for agents other than the seller.
             images:
               type: array
               items: { $ref: "#/components/schemas/ListingPhotoV1" }

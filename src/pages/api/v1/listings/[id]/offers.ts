@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getListing } from "../../../../../server/services/listings";
+import { isListingPubliclyVisible } from "../../../../../server/services/listing-visibility";
 import { createOrGetThread, createMessage, getThread } from "../../../../../server/services/threads";
 import { createOffer, getOpenOfferForThread } from "../../../../../server/services/offers";
 import { isUuid } from "../../../../../server/utils/validators";
@@ -196,6 +197,9 @@ export async function handler(req, res, ctx) {
 
     if (listing.status !== "LIVE") {
       return jsonResponse(409, errorPayload("LISTING_NOT_LIVE", "Listing not live"));
+    }
+    if (!await isListingPubliclyVisible(listing)) {
+      return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
     }
 
     if (missionId) {

@@ -15,11 +15,13 @@ class FakeSupabaseClient {
   queue: QueueRow[];
   deals: any[];
   listings: any[];
+  moderationStates: any[];
 
-  constructor({ queue = [], deals = [], listings = [] }: { queue?: QueueRow[]; deals?: any[]; listings?: any[] }) {
+  constructor({ queue = [], deals = [], listings = [], moderationStates = [] }: { queue?: QueueRow[]; deals?: any[]; listings?: any[]; moderationStates?: any[] }) {
     this.queue = queue;
     this.deals = deals;
     this.listings = listings;
+    this.moderationStates = moderationStates;
   }
 
   upsertQueueRow(next: QueueRow) {
@@ -100,6 +102,7 @@ class FakeQuery {
     if (this.table === "watchlist_match_queue") return this.client.queue;
     if (this.table === "deals") return this.client.deals;
     if (this.table === "listings") return this.client.listings;
+    if (this.table === "moderation_states") return this.client.moderationStates;
     throw new Error(`Unexpected table: ${this.table}`);
   }
 
@@ -116,6 +119,9 @@ class FakeQuery {
   }
 
   private async execute() {
+    if (this.table === "moderation_states" && this.op === "select") {
+      return { data: this.tableRows().filter((row) => this.matches(row)).map((row) => ({ ...row })), error: null };
+    }
     if (this.table !== "watchlist_match_queue") {
       return { data: null, error: new Error(`Unexpected operation on table: ${this.table}`) };
     }
@@ -150,6 +156,19 @@ class FakeQuery {
 describe("runWatchlistMatchQueue", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("skips a LIVE listing hidden by moderation before notifying watchlists", async () => {
+    const listingId = "11111111-1111-4111-8111-111111111111";
+    const client = new FakeSupabaseClient({
+      queue: [{ entity_type: "listing", entity_id: listingId, updated_at: "2026-11-01T00:00:00Z" }],
+      listings: [{ listing_id: listingId, status: "LIVE", market_code: "FR" }],
+      moderationStates: [{ entity_type: "listing", entity_id: listingId, hidden: true }]
+    });
+    const matchListing = vi.fn();
+    const result = await runWatchlistMatchQueue({ client, matchListing });
+    expect(result).toMatchObject({ skipped_count: 1, processed_count: 0, error_count: 0 });
+    expect(matchListing).not.toHaveBeenCalled();
   });
 
   it("does not delete a row that was re-enqueued while a deal was matching", async () => {
