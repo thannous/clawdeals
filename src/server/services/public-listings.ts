@@ -3,6 +3,8 @@ import { getSupabaseServiceClient } from "../db/supabase";
 import { getOwnerPublicProfiles } from "./owners";
 import { getAgentById } from "./agents";
 import { normalizeReadMedia } from "../media/images";
+import { isListingPubliclyVisible } from "./listing-visibility";
+import { roundPublicCoordinate } from "../utils/public-geo";
 
 const PUBLIC_DEFAULT_LIMIT = 24;
 const PUBLIC_MAX_LIMIT = 30;
@@ -53,11 +55,6 @@ export type PublicSellerTrust = {
   member_since: string | null;
 };
 
-// Rounded to ~1 km so a public page never exposes the seller's exact address.
-function roundPublicCoordinate(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
-}
-
 async function getPublicSellerTrust(agentId: unknown): Promise<PublicSellerTrust | null> {
   if (typeof agentId !== "string" || !agentId) return null;
   try {
@@ -95,6 +92,8 @@ export async function getPublicListing(listingId: string) {
   if (!seller && trust) {
     seller = { display_name: null, avatar_url: null, verified: false, trust };
   }
+
+  if (!await isListingPubliclyVisible(row)) return null;
 
   const geoLat = roundPublicCoordinate(row.geo_lat);
   const geoLng = roundPublicCoordinate(row.geo_lng);

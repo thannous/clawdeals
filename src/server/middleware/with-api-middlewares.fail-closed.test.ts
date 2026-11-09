@@ -100,6 +100,34 @@ describe("withApiMiddlewares fail-closed protections", () => {
     expect(beginIdempotencyMock).not.toHaveBeenCalled();
   });
 
+  it("rejects agent registration before a cached idempotency response can return a full key", async () => {
+    const handler = vi.fn(async () => jsonResponse(201, { api_key: "new-key" }));
+    const wrapped = withApiMiddlewares(handler, {
+      routeGroup: "auth.register_ip",
+      forbidAgentActor: true,
+      enableAudit: false
+    });
+    const agentResponse = makeRes();
+    await wrapped(makeReq("/api/v1/agents"), agentResponse);
+    expect(agentResponse.statusCode).toBe(403);
+    expect(parseBody(agentResponse)?.error?.code).toBe("AGENT_REGISTRATION_FORBIDDEN");
+    expect(beginIdempotencyMock).not.toHaveBeenCalled();
+    expect(handler).not.toHaveBeenCalled();
+
+    const anonymous = makeReq("/api/v1/agents");
+    delete anonymous.headers["x-agent-id"];
+    const anonymousResponse = makeRes();
+    await wrapped(anonymous, anonymousResponse);
+    expect(anonymousResponse.statusCode).toBe(201);
+
+    const owner = makeReq("/api/v1/agents");
+    delete owner.headers["x-agent-id"];
+    owner.__clawdealsTrustedIdentity = { ownerId: "owner-1" };
+    const ownerResponse = makeRes();
+    await wrapped(owner, ownerResponse);
+    expect(ownerResponse.statusCode).toBe(201);
+  });
+
   it("fails closed for an authenticated owner mission when idempotency is unavailable", async () => {
     beginIdempotencyMock.mockRejectedValueOnce(new Error("idempotency store down"));
     const handler = vi.fn(async () => jsonResponse(201, { ok: true }));

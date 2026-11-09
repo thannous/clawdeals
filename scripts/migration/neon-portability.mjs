@@ -1,9 +1,10 @@
+import { splitSqlStatements, stripComments } from "./sql-statements.mjs";
 const STRIPPED_LINE_RULES = [
   ["create_policy", /^CREATE POLICY\b/i],
   ["alter_policy", /^ALTER POLICY\b/i],
   ["comment_policy", /^COMMENT ON POLICY\b/i],
-  ["enable_rls", /^ALTER TABLE\b.*\bENABLE ROW LEVEL SECURITY;\s*$/i],
-  ["force_rls", /^ALTER TABLE\b.*\bFORCE ROW LEVEL SECURITY;\s*$/i]
+  ["enable_rls", /^ALTER TABLE\b[\s\S]*\bENABLE ROW LEVEL SECURITY;\s*$/i],
+  ["force_rls", /^ALTER TABLE\b[\s\S]*\bFORCE ROW LEVEL SECURITY;\s*$/i]
 ];
 
 const PRELUDE = `-- Clawdeals Neon portable baseline
@@ -11,6 +12,7 @@ const PRELUDE = `-- Clawdeals Neon portable baseline
 -- RLS/Data API policies are intentionally rebuilt after Neon Auth validation.
 create schema if not exists extensions;
 create extension if not exists pgcrypto;
+create extension if not exists "uuid-ossp" with schema extensions;
 create extension if not exists postgis with schema extensions;
 
 `;
@@ -19,6 +21,7 @@ export function findNeonBlockers(sql) {
   const checks = [
     ["Supabase auth schema", /\bauth\.[a-z_][a-z0-9_]*\b/i],
     ["Supabase storage schema", /\bstorage\.[a-z_][a-z0-9_]*\b/i],
+    ["provider queue or secrets dependency", /\b(?:net|cron|vault|private)\s*\./i],
     ["Supabase realtime schema", /\brealtime\.[a-z_][a-z0-9_]*\b/i],
     ["Supabase API role", /\b(?:anon|authenticated|service_role|supabase_admin)\b/i],
     ["remaining RLS policy", /\b(?:CREATE|ALTER) POLICY\b/i],
@@ -33,15 +36,13 @@ export function transformSupabasePublicDump(input) {
   const counts = Object.fromEntries(STRIPPED_LINE_RULES.map(([name]) => [name, 0]));
   const outputLines = [];
 
-  for (const line of String(input).split(/\r?\n/)) {
-    const trimmed = line.trim();
+  for (const chunk of splitSqlStatements(input)) {
+    const trimmed = stripComments(chunk.sql).trim();
     const rule = STRIPPED_LINE_RULES.find(([, pattern]) => pattern.test(trimmed));
-    if (rule) {
+    if (rule && !chunk.copy) {
       counts[rule[0]] += 1;
       outputLines.push(`-- stripped Supabase ${rule[0]} statement`);
-      continue;
-    }
-    outputLines.push(line);
+    } else outputLines.push(chunk.text);
   }
 
   const sql = `${PRELUDE}${outputLines.join("\n")}\n`;

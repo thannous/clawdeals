@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { safeAuditLog } from "../audit/singleton";
@@ -235,6 +236,7 @@ export async function runRiskRulesEngine({
   now = new Date(),
   client: injectedClient
 }: RunRiskRulesOptions = {}) {
+  assertRehearsalEffectAllowed("services/risk-rules");
   const client = injectedClient || getSupabaseServiceClient();
   const normalizedRuleKey = normalizeRuleKey(ruleKey);
   const normalizedMaxAgents =

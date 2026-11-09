@@ -9,6 +9,7 @@ import {
   listDealVotes
 } from "../../../../../server/services/deal-votes";
 import { isUuid } from "../../../../../server/utils/validators";
+import { assertDealPubliclyVisible } from "../../../../../server/services/public-deals";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -86,6 +87,7 @@ export async function handler(req, res, ctx) {
   }
 
   try {
+    await assertDealPubliclyVisible(dealId);
     const result = await listDealVotes({
       dealId,
       direction,

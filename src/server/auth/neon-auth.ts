@@ -1,19 +1,18 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { createNeonAuth } from "@neondatabase/auth/next/server";
+import { validateNeonAuthConfiguration } from "./neon-auth-config";
 
 let neonAuth: ReturnType<typeof createNeonAuth> | null = null;
 
-function requireEnv(name: string, value: string | undefined) {
-  if (value && value.trim()) return value.trim();
-  throw new Error(`Missing required env var: ${name}`);
-}
-
 export function getNeonAuth() {
+  assertRehearsalEffectAllowed("auth/neon-auth");
   if (neonAuth) return neonAuth;
 
+  const { baseUrl, secret } = validateNeonAuthConfiguration();
   neonAuth = createNeonAuth({
-    baseUrl: requireEnv("NEON_AUTH_BASE_URL", process.env.NEON_AUTH_BASE_URL),
+    baseUrl: baseUrl,
     cookies: {
-      secret: requireEnv("NEON_AUTH_COOKIE_SECRET", process.env.NEON_AUTH_COOKIE_SECRET),
+      secret: secret,
       sessionDataTtl: 300
     },
     logLevel: process.env.NODE_ENV === "test" ? "silent" : "warn"

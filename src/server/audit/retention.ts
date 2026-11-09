@@ -1,4 +1,5 @@
-import { parseRetentionDays, computeCutoffDate, restRequest } from "../retention/shared";
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
+import { parseRetentionDays, computeCutoffDate, restRequest, missingRetentionConfiguration } from "../retention/shared";
 
 const RETENTION_ENV = "AUDIT_RETENTION_DAYS";
 const PAYLOAD_RETENTION_ENV = "AUDIT_PAYLOAD_RETENTION_DAYS";
@@ -7,10 +8,11 @@ const UA_RETENTION_ENV = "AUDIT_USER_AGENT_RETENTION_DAYS";
 
 const TIME_COLUMN = "occurred_at";
 
-async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }: any) {
+async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, env }: any) {
   return restRequest({
     supabaseUrl,
     serviceRoleKey,
+    env,
     table,
     timeColumn: TIME_COLUMN,
     cutoff,
@@ -18,10 +20,11 @@ async function deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }: a
   });
 }
 
-async function updateAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, updates }: any) {
+async function updateAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, updates, env }: any) {
   return restRequest({
     supabaseUrl,
     serviceRoleKey,
+    env,
     table,
     timeColumn: TIME_COLUMN,
     cutoff,
@@ -35,12 +38,14 @@ export async function runAuditRetention({
   now = new Date(),
   table = "audit_logs"
 }: any = {}) {
+  assertRehearsalEffectAllowed("audit/retention");
   const supabaseUrl = env.SUPABASE_URL;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const missing = missingRetentionConfiguration(env);
+  if (missing) {
     return {
       skipped: true,
-      reason: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY."
+      reason: missing
     };
   }
 
@@ -52,7 +57,7 @@ export async function runAuditRetention({
     results.delete = {
       retentionDays,
       cutoff: cutoff.toISOString(),
-      ...(await deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff }))
+      ...(await deleteAuditLogs({ supabaseUrl, serviceRoleKey, table, cutoff, env }))
     };
   }
 
@@ -65,6 +70,7 @@ export async function runAuditRetention({
       ...(await updateAuditLogs({
         supabaseUrl,
         serviceRoleKey,
+        env,
         table,
         cutoff,
         updates: { payload: {}, redacted: true }
@@ -81,6 +87,7 @@ export async function runAuditRetention({
       ...(await updateAuditLogs({
         supabaseUrl,
         serviceRoleKey,
+        env,
         table,
         cutoff,
         updates: { ip_full: null }
@@ -97,6 +104,7 @@ export async function runAuditRetention({
       ...(await updateAuditLogs({
         supabaseUrl,
         serviceRoleKey,
+        env,
         table,
         cutoff,
         updates: { user_agent: null }

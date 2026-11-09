@@ -1,3 +1,4 @@
+import { isRehearsalMode } from "./config/rehearsal";
 import crypto from "node:crypto";
 
 type CronAuthRequest = {
@@ -30,6 +31,7 @@ function matchesAnySecret(value: string, secrets: string[]) {
 }
 
 export function isInternalCronAuthorized(req: CronAuthRequest) {
+  if (isRehearsalMode()) return false;
   const internalSecret = process.env.INTERNAL_CRON_SECRET;
   const cronSecret = process.env.CRON_SECRET;
 
@@ -52,6 +54,7 @@ export function isInternalCronAuthorized(req: CronAuthRequest) {
 
 // The database credential can wake only queue consumers, not maintenance jobs.
 export function isQueueDispatchAuthorized(req: CronAuthRequest) {
+  if (isRehearsalMode()) return false;
   if (isInternalCronAuthorized(req)) return true;
   const secret = process.env.QUEUE_DISPATCH_SECRET;
   const authorization = getHeaderValue(req.headers, "authorization");

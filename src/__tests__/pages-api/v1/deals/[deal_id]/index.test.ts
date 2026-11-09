@@ -4,6 +4,10 @@ vi.mock("../../../../../server/services/deal-detail", () => ({
   getDealById: vi.fn()
 }));
 
+vi.mock("../../../../../server/services/public-deals", () => ({
+  isDealPubliclyVisible: vi.fn()
+}));
+
 vi.mock("../../../../../server/services/deal-update", () => ({
   getDealForUpdate: vi.fn(),
   applyDealUpdate: vi.fn()
@@ -16,6 +20,7 @@ vi.mock("../../../../../server/services/deal-remove", () => ({
 
 import { handler } from "../../../../../pages/api/v1/deals/[deal_id]/index";
 import { getDealById } from "../../../../../server/services/deal-detail";
+import { isDealPubliclyVisible } from "../../../../../server/services/public-deals";
 import { applyDealUpdate, getDealForUpdate } from "../../../../../server/services/deal-update";
 import { getDealForRemove, removeDeal } from "../../../../../server/services/deal-remove";
 
@@ -37,6 +42,15 @@ const baseCtx: any = {
 describe("PATCH /v1/deals/:deal_id", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isDealPubliclyVisible).mockResolvedValue(true);
+  });
+
+  it("does not return hidden or removed deal details to an arbitrary agent", async () => {
+    getDealByIdMock.mockResolvedValue({ deal_id: dealId, status: "REMOVED", source_url: "https://example.test/deal" } as any);
+    vi.mocked(isDealPubliclyVisible).mockResolvedValue(false);
+    const result: any = await handler({ method: "GET", query: { deal_id: dealId }, headers: {} }, null, { ...agentCtx });
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("DEAL_NOT_FOUND");
   });
 
   const agentCtx: any = {

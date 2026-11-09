@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../../../server/http/response";
 import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { getDealById } from "../../../../../server/services/deal-detail";
+import { isDealPubliclyVisible } from "../../../../../server/services/public-deals";
 import { applyDealUpdate, getDealForUpdate } from "../../../../../server/services/deal-update";
 import { getDealForRemove, removeDeal } from "../../../../../server/services/deal-remove";
 import { isUuid } from "../../../../../server/utils/validators";
@@ -338,6 +339,9 @@ export async function handler(req, res, ctx) {
     }
 
     const deal = await getDealById({ dealId });
+    if (!await isDealPubliclyVisible(deal)) {
+      return jsonResponse(404, errorPayload("DEAL_NOT_FOUND", "Deal not found"));
+    }
 
     const responseDeal = mapDealResponse(deal, { includeImages: true });
 

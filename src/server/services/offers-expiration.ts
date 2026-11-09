@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getAuditLogger } from "../audit/singleton";
 import { publishSseEvent } from "../sse/store";
@@ -11,6 +12,7 @@ function uniqueStrings(values: Array<string | null | undefined>) {
 }
 
 export async function runOffersExpiration({ now = new Date(), limit = 100 }: any = {}) {
+  assertRehearsalEffectAllowed("services/offers-expiration");
   const client = getSupabaseServiceClient();
   const logger = getAuditLogger();
   const nowIso = now.toISOString();

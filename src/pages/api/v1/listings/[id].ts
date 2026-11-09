@@ -3,6 +3,8 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import { getListing, updateListingBySeller } from "../../../../server/services/listings";
+import { isListingPubliclyVisible } from "../../../../server/services/listing-visibility";
+import { roundPublicCoordinate } from "../../../../server/utils/public-geo";
 import { resolveTrustContext } from "../../../../server/trustscore/context";
 import { evaluatePolicyAction, POLICY_DECISION } from "../../../../server/policy/evaluate";
 import { getPolicyOrDefault } from "../../../../server/services/policies";
@@ -44,7 +46,7 @@ function stripHtmlTags(value) {
   return value.replace(/<[^>]*>/g, "");
 }
 
-function mapListingDetail(listing: any) {
+function mapListingDetail(listing: any, revealExactGeo = false) {
   const media = normalizeReadMedia({
     rawImages: listing?.photos,
     rawCoverImageIndex: listing?.cover_image_index
@@ -52,7 +54,7 @@ function mapListingDetail(listing: any) {
   const geo =
     typeof listing?.geo_lat === "number" && Number.isFinite(listing.geo_lat) &&
     typeof listing?.geo_lng === "number" && Number.isFinite(listing.geo_lng)
-      ? { lat: listing.geo_lat, lng: listing.geo_lng }
+      ? { lat: revealExactGeo ? listing.geo_lat : roundPublicCoordinate(listing.geo_lat), lng: revealExactGeo ? listing.geo_lng : roundPublicCoordinate(listing.geo_lng) }
       : null;
 
   return {
@@ -115,12 +117,12 @@ export async function handler(req, res, ctx) {
         return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
       }
 
-      if (listing.status !== "LIVE" && listing.seller_agent_id !== ctx.agentId) {
+      if (listing.seller_agent_id !== ctx.agentId && !await isListingPubliclyVisible(listing)) {
         // Anti-enumeration: do not reveal listing status for non-sellers.
         return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
       }
 
-      return jsonResponse(200, { data: mapListingDetail(listing) });
+      return jsonResponse(200, { data: mapListingDetail(listing, listing.seller_agent_id === ctx.agentId) });
     } catch (error) {
       return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message));
     }

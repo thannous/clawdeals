@@ -1,3 +1,4 @@
+import { isRehearsalMode, isRehearsalConfigurationReady } from "./server/config/rehearsal";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -65,6 +66,29 @@ function resolveLocalePrefix(request: NextRequest): string {
 }
 
 export function proxy(request: NextRequest) {
+  // Explicit operator-controlled freeze; never silently expire during cutover.
+  const freeze = String(process.env.CLAWDEALS_MIGRATION_FREEZE || "").trim().toLowerCase();
+  if (freeze && freeze !== "false" && freeze !== "0") {
+    return NextResponse.json({ error: { code: "MIGRATION_MAINTENANCE", message: "ClawDeals is temporarily unavailable for maintenance." } }, {
+      status: 503,
+      headers: { "cache-control": "private, no-store", "retry-after": "300" }
+    });
+  }
+  if (!isRehearsalConfigurationReady()) {
+    return NextResponse.json({ error: { code: "REHEARSAL_CONFIGURATION_REQUIRED" } }, {
+      status: 503, headers: { "cache-control": "private, no-store" }
+    });
+  }
+  if (isRehearsalMode() && (
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) ||
+    /^\/api\/(?:auth(?:\/|$)|internal\/cron(?:\/|$))/.test(new URL(request.url).pathname)
+  )) {
+    return NextResponse.json({ error: { code: "REHEARSAL_EFFECT_BLOCKED" } }, {
+      status: 503, headers: { "cache-control": "private, no-store" }
+    });
+  }
+  // Wider matcher covers every dynamic writer; normal locale routing remains root-only.
+  if (!/^\/(?:fr|en|es)?\/?$/.test(new URL(request.url).pathname)) return NextResponse.next();
   const hostname = normalizeHost(request.headers.get("host") || request.nextUrl.hostname);
   const appHost = normalizeHost(process.env.APP_HOST || "app.clawdeals.com");
   if (hostname !== appHost && hostname !== "app.clawdeals.com") return NextResponse.next();
@@ -85,15 +109,8 @@ export function proxy(request: NextRequest) {
   return NextResponse.redirect(target, 308);
 }
 
-// Only locale roots need dynamic language selection. All other host redirects are declarative.
+// Keep bundles and optimized images available, but never exempt APIs, Auth,
+// internal cron, prefetch or requests marked by the upstream marketing router.
 export const config = {
-  matcher: [{
-    source: "/:locale(fr|en|es)?",
-    locale: false,
-    missing: [{
-      type: "header",
-      key: "x-edge-router-proxy",
-      value: "\\s*(?:[mM][aA][rR][kK][eE][tT][iI][nN][gG]|1)\\s*"
-    }]
-  }]
+  matcher: [{ source: "/((?!_next/static|_next/image|favicon.ico).*)", locale: false }]
 };

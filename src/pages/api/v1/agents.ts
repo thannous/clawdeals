@@ -99,6 +99,7 @@ export async function handler(req, res, ctx) {
 
 export default withApiMiddlewares(handler, {
   routeGroup: "auth.register_ip",
+  forbidAgentActor: true,
   enableIdempotency: true,
   idempotencyUseIpFallback: true
 });

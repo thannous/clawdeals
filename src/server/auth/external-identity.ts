@@ -1,4 +1,5 @@
-import crypto from "node:crypto";
+import { getNeonAuthBaseUrl } from "./neon-auth-config";
+import { verifyNeonAccessToken } from "./neon-jwt";
 
 import { getAuthBackend } from "../config/backends";
 import { getSupabaseServiceClient } from "../db/supabase";
@@ -40,12 +41,6 @@ function resolveSupabaseProvider(user: any) {
   return normalizeNonEmptyString(identities[0]?.provider)?.toLowerCase() || null;
 }
 
-function tokensMatch(left: string, right: string) {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
-}
-
 function getNeonAuthCookies(cookieHeader: string) {
   return cookieHeader
     .split(";")
@@ -74,8 +69,7 @@ async function verifyNeonIdentity(
   accessToken: string,
   cookieHeader: string | null
 ): Promise<ExternalAuthIdentity | null> {
-  const baseUrl = normalizeNonEmptyString(process.env.NEON_AUTH_BASE_URL);
-  if (!baseUrl) throw new Error("Missing required env var: NEON_AUTH_BASE_URL");
+  const baseUrl = getNeonAuthBaseUrl();
   if (!cookieHeader) return null;
   const neonCookies = getNeonAuthCookies(cookieHeader);
   if (!neonCookies) return null;
@@ -86,7 +80,9 @@ async function verifyNeonIdentity(
       accept: "application/json",
       cookie: neonCookies
     },
-    cache: "no-store"
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(10_000)
   });
   if (!response.ok) return null;
 
@@ -96,7 +92,10 @@ async function verifyNeonIdentity(
   const user = resolved?.user;
   const sessionToken = normalizeNonEmptyString(session?.token);
   const subject = normalizeNonEmptyString(user?.id);
-  if (!sessionToken || !tokensMatch(accessToken, sessionToken) || !subject) return null;
+  const expiresAt = typeof session?.expiresAt === "string" ? Date.parse(session.expiresAt) : NaN;
+  if (!sessionToken || !subject || user?.banned === true || session?.userId !== subject ||
+      !Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
+  if (!await verifyNeonAccessToken(accessToken, baseUrl, subject)) return null;
 
   return {
     provider: "neon",

@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { publishSseEvent } from "../sse/store";
@@ -70,6 +71,7 @@ export async function runWatchlistDigest({
   now = new Date(),
   client
 }: any = {}) {
+  assertRehearsalEffectAllowed("services/watchlist-digest");
   const supabase = client || getSupabaseServiceClient();
   const cappedRows = Math.max(1, Math.min(20000, toPositiveInt(limitRows, 5000)));
   const cappedEntities = Math.max(1, Math.min(200, toPositiveInt(maxEntitiesPerAgent, 50)));

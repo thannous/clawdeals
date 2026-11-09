@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import crypto from "node:crypto";
 
 import { buildOwnerSessionCookie } from "../auth/session-cookie";
@@ -125,6 +126,7 @@ export async function startOwnerLogin({
   uaHash?: string | null;
   now?: Date;
 }) {
+  assertRehearsalEffectAllowed("services/owner-login");
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) {
     throw buildServiceError("email is required", 400, "VALIDATION_ERROR");
@@ -192,6 +194,7 @@ export async function confirmOwnerLogin({
   cookieSecure?: boolean;
   now?: Date;
 }) {
+  assertRehearsalEffectAllowed("services/owner-login");
   const resolvedSessionId = normalizeNonEmptyString(sessionId);
   if (!resolvedSessionId) {
     throw buildServiceError("sessionId is required", 400, "VALIDATION_ERROR");

@@ -16,10 +16,14 @@ function getPublicAuthBackend() {
 }
 
 export function getBrowserAuthClient() {
+  if (process.env.NEXT_PUBLIC_CLAWDEALS_REHEARSAL_MODE === "true") {
+    throw new Error("External authentication is disabled in rehearsal; use isolated fixtures");
+  }
   if (browserClient) return browserClient;
 
   if (getPublicAuthBackend() === "neon") {
-    const auth = createNeonAuthClient("/api/auth", {
+    if (typeof window === "undefined") throw new Error("Neon browser auth requires a browser origin");
+    const auth = createNeonAuthClient(new URL("/api/auth", window.location.origin).href, {
       adapter: SupabaseAuthAdapter()
     });
     browserClient = { auth };

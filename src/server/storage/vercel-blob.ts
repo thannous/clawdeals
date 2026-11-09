@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { del, put } from "@vercel/blob";
 
 import { getEnv } from "../config/env";
@@ -31,6 +32,7 @@ export async function putPublicListingPhoto({
   bytes: Buffer;
   contentType: string;
 }) {
+  assertRehearsalEffectAllowed("storage/vercel-blob");
   return put(key, bytes, {
     access: "public",
     addRandomSuffix: false,
@@ -41,5 +43,6 @@ export async function putPublicListingPhoto({
 }
 
 export async function deleteVercelBlob(locator: string) {
+  assertRehearsalEffectAllowed("storage/vercel-blob");
   await del(locator, { token: getListingPhotosBlobToken() });
 }

@@ -1,4 +1,5 @@
-import { parseRetentionDays, computeCutoffDate, restRequest } from "../retention/shared";
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
+import { parseRetentionDays, computeCutoffDate, restRequest, missingRetentionConfiguration } from "../retention/shared";
 
 const RETENTION_ENV = "REPORTS_RETENTION_DAYS";
 const PII_RETENTION_ENV = "REPORTS_PII_RETENTION_DAYS";
@@ -10,12 +11,14 @@ export async function runReportsRetention({
   now = new Date(),
   table = "reports"
 }: any = {}) {
+  assertRehearsalEffectAllowed("services/reports-retention");
   const supabaseUrl = env.SUPABASE_URL;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceRoleKey) {
+  const missing = missingRetentionConfiguration(env);
+  if (missing) {
     return {
       skipped: true,
-      reason: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY."
+      reason: missing
     };
   }
 
@@ -30,6 +33,7 @@ export async function runReportsRetention({
       ...(await restRequest({
         supabaseUrl,
         serviceRoleKey,
+        env,
         table,
         timeColumn: TIME_COLUMN,
         cutoff,
@@ -47,6 +51,7 @@ export async function runReportsRetention({
       ...(await restRequest({
         supabaseUrl,
         serviceRoleKey,
+        env,
         table,
         timeColumn: TIME_COLUMN,
         cutoff,

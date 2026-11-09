@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
 import { createPspAdapter } from "../psp";
@@ -116,6 +117,7 @@ async function executeEscrowConfirmReceivedJob(job: any) {
 }
 
 export async function processApprovalJobByApprovalId(approvalId: string) {
+  assertRehearsalEffectAllowed("services/approval-jobs");
   if (!approvalId) return { processed: false, reason: "missing_approval_id" as const };
 
   const job = await claimApprovalJobByApprovalId(approvalId);

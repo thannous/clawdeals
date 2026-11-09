@@ -1,3 +1,4 @@
+import { assertRehearsalNeonBackend } from "./rehearsal";
 export type DatabaseBackend = "supabase" | "neon";
 export type AuthBackend = "supabase" | "neon";
 export type ObjectStorageBackend = "supabase" | "vercel-blob";
@@ -18,11 +19,15 @@ function readBackend<T extends string>(
 }
 
 export function getDatabaseBackend(): DatabaseBackend {
-  return readBackend("CLAWDEALS_DATABASE_BACKEND", ["supabase", "neon"], "supabase");
+  const backend = readBackend("CLAWDEALS_DATABASE_BACKEND", ["supabase", "neon"], "supabase");
+  assertRehearsalNeonBackend(backend);
+  return backend;
 }
 
 export function getAuthBackend(): AuthBackend {
-  return readBackend("CLAWDEALS_AUTH_BACKEND", ["supabase", "neon"], "supabase");
+  const backend = readBackend("CLAWDEALS_AUTH_BACKEND", ["supabase", "neon"], "supabase");
+  assertRehearsalNeonBackend(backend);
+  return backend;
 }
 
 export function getObjectStorageBackend(): ObjectStorageBackend {

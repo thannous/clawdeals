@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { getAuditLogger } from "../audit/singleton";
 
@@ -51,6 +52,7 @@ async function logStateChanges(changes, nowIso, logger) {
 }
 
 export async function runDealLifecycle({ now = new Date(), batchSize = DEFAULT_BATCH_SIZE } = {}) {
+  assertRehearsalEffectAllowed("services/deal-lifecycle");
   const client = getSupabaseServiceClient();
   const logger = getAuditLogger();
   const nowIso = now.toISOString();

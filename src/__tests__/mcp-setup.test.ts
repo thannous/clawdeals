@@ -1,3 +1,4 @@
+import { fixturePort, listenFixture } from "./loopback-fixture";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -117,19 +118,7 @@ describe("mcp/setup-cli.mjs", () => {
       res.end(JSON.stringify({ error: { code: "NOT_FOUND", message: "not found", details: {} } }));
     });
 
-    await new Promise<void>((resolve, reject) => {
-      const onError = (err: unknown) => {
-        apiServer.off("listening", onListening);
-        reject(err);
-      };
-      const onListening = () => {
-        apiServer.off("error", onError);
-        resolve();
-      };
-      apiServer.once("error", onError);
-      apiServer.once("listening", onListening);
-      apiServer.listen(0, "127.0.0.1");
-    });
+    await listenFixture(apiServer, fixturePort("CLAWDEALS_TEST_MCP_SETUP_PORT"));
 
     const addr = apiServer.address();
     if (!addr || typeof addr === "string") throw new Error("Failed to bind setup test server");

@@ -1,6 +1,7 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import crypto from "node:crypto";
 
-import { getListingStorageBackend } from "../config/backends";
+import { getDatabaseBackend, getListingStorageBackend } from "../config/backends";
 import { getListingPhotosBucket, getMaxPhotoBytes } from "../config/listing-media";
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
@@ -48,6 +49,7 @@ export async function uploadListingPhoto({
   mime: string;
   bucket?: string;
 }) {
+  assertRehearsalEffectAllowed("services/listing-media-storage");
   if (!listingId || typeof listingId !== "string") {
     throw buildServiceError("listingId is required", 400, "VALIDATION_ERROR");
   }
@@ -88,6 +90,9 @@ export async function uploadListingPhoto({
     }
   }
 
+  if (getDatabaseBackend() === "neon") {
+    throw buildServiceError("Legacy listing storage is unavailable on Neon", 409, "LEGACY_STORAGE_UNAVAILABLE");
+  }
   const client = getSupabaseServiceClient();
   const { error } = await client.storage.from(resolvedBucket).upload(key, bytes, { contentType: mime, upsert: false });
   if (error) mapError(error);
@@ -107,6 +112,7 @@ export async function deleteListingPhoto({
   storageKey: string;
   bucket?: string;
 }) {
+  assertRehearsalEffectAllowed("services/listing-media-storage");
   const key = typeof storageKey === "string" ? storageKey.trim() : "";
   if (!key) {
     throw buildServiceError("storageKey is required", 400, "VALIDATION_ERROR");
@@ -122,6 +128,9 @@ export async function deleteListingPhoto({
     }
   }
 
+  if (getDatabaseBackend() === "neon") {
+    throw buildServiceError("Legacy listing storage is unavailable on Neon", 409, "LEGACY_STORAGE_UNAVAILABLE");
+  }
   const client = getSupabaseServiceClient();
   const { error } = await client.storage.from(resolvedBucket).remove([key]);
   if (error) {

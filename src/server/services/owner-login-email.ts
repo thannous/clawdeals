@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { getPublicAppUrl, joinUrl } from "../../shared/urls";
 import { splitLocalePrefix } from "../../shared/i18n";
 import { safeRedirectUrl } from "../../ui/auth/safeRedirect";
@@ -93,6 +94,7 @@ async function sendViaResend({
   text: string;
   html: string;
 }) {
+  assertRehearsalEffectAllowed("services/owner-login-email");
   const apiKey = normalizeNonEmptyString(process.env.RESEND_API_KEY);
   if (!apiKey) {
     throw buildServiceError("RESEND_API_KEY is required", 500, "EMAIL_PROVIDER_NOT_CONFIGURED");
@@ -149,6 +151,7 @@ export async function sendOwnerLoginMagicLinkEmail({
   appUrl?: string | null;
   next?: string;
 }): Promise<OwnerLoginEmailResult> {
+  assertRehearsalEffectAllowed("services/owner-login-email");
   const toEmail = normalizeEmail(email);
   if (!toEmail) {
     throw buildServiceError("email is required", 400, "VALIDATION_ERROR");

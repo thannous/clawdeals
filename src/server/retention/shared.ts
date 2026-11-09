@@ -1,3 +1,22 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
+import { getDatabaseBackend } from "../config/backends";
+import { getNeonDataClient } from "../db/neon-client";
+
+export function getRetentionDatabaseBackend(env: NodeJS.ProcessEnv = process.env) {
+  const raw = env.CLAWDEALS_DATABASE_BACKEND;
+  if (!raw) return getDatabaseBackend();
+  const backend = raw.trim().toLowerCase();
+  if (backend !== "neon" && backend !== "supabase") throw new Error("Invalid CLAWDEALS_DATABASE_BACKEND");
+  return backend;
+}
+export function missingRetentionConfiguration(env: NodeJS.ProcessEnv = process.env) {
+  if (getRetentionDatabaseBackend(env) === "neon") {
+    if (!env.DATABASE_URL) throw new Error("Missing DATABASE_URL for Neon database operations.");
+    return null;
+  }
+  return env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY ? null : "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.";
+}
+
 export function parseRetentionDays(value) {
   if (!value) {
     return null;
@@ -26,7 +45,17 @@ export function parseDeletedCount(contentRange) {
   return Number.isFinite(count) ? count : null;
 }
 
-export async function restRequest({ supabaseUrl, serviceRoleKey, table, timeColumn, method, cutoff, body }: any) {
+export async function restRequest({ supabaseUrl, serviceRoleKey, table, timeColumn, method, cutoff, body, env = process.env }: any) {
+  assertRehearsalEffectAllowed("retention/shared");
+  if (getRetentionDatabaseBackend(env) === "neon") {
+    const client = getNeonDataClient();
+    const query = client.from(table);
+    if (method !== "DELETE" && method !== "PATCH") throw new Error("Unsupported retention method");
+    const mutation = method === "DELETE" ? query.delete() : query.update(body);
+    const result = await mutation.lt(timeColumn, cutoff.toISOString()).select("*", { count: "exact", head: true });
+    if (result.error) throw Object.assign(new Error(`Retention ${method} on ${table} failed: ${result.error.message}`), { code: result.error.code });
+    return { affected: result.count };
+  }
   const baseUrl = supabaseUrl.replace(/\/$/, "");
   const url = new URL(`${baseUrl}/rest/v1/${table}`);
   url.searchParams.set(timeColumn, `lt.${cutoff.toISOString()}`);

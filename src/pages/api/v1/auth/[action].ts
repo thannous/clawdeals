@@ -3,6 +3,7 @@ import { jsonResponse } from "../../../../server/http/response";
 import { methodNotAllowed } from "../../../../server/http/methods";
 import { errorPayload } from "../../../../server/http/errors";
 import crypto from "node:crypto";
+import { getAuthBackend } from "../../../../server/config/backends";
 import { verifyExternalAuthIdentity } from "../../../../server/auth/external-identity";
 
 import { buildOwnerSessionClearCookies, isSecureRequest, readOwnerSessionCookie } from "../../../../server/auth/session-cookie";
@@ -53,15 +54,19 @@ function parseBearerToken(value: any) {
   return parts[1];
 }
 
-function resolveRequestOrigin(req: any) {
-  const forwardedProto = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-proto"));
-  const forwardedHost = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-host"));
-  const hostHeader = normalizeNonEmptyString(getHeaderValue(req, "host"));
-
-  const proto = (forwardedProto ? forwardedProto.split(",")[0] : isSecureRequest(req) ? "https" : "http").trim().toLowerCase();
-  const host = (forwardedHost ? forwardedHost.split(",")[0] : hostHeader || "").trim();
-  if (!host) return null;
-  return `${proto}://${host}`;
+/** Only a hashed, active first-party cookie is source-owner proof. */
+async function readExistingOwnerProof(req: any, now: Date) {
+  const token = readOwnerSessionCookie(req);
+  if (!token) return null;
+  const invalid = () => Object.assign(new Error("Sign in to your existing ClawDeals account before linking Neon"), { status: 401, code: "OWNER_LINK_SESSION_INVALID" });
+  if (!isOwnerSessionToken(token)) throw invalid();
+  const session = await getOwnerSessionByTokenHash(hashOwnerSessionToken(token));
+  const expiry = Date.parse(session?.expires_at || "");
+  if (!session || session.status !== "ACTIVE" || session.revoked_at || !Number.isFinite(expiry) || expiry <= now.getTime() || !isUuid(session.owner_id)) throw invalid();
+  const owner = await getOwner(session.owner_id);
+  if (!owner || owner.owner_id !== session.owner_id) throw invalid();
+  if (owner.suspended_at) throw Object.assign(new Error("Owner account is suspended"), { status: 403, code: "OWNER_SUSPENDED" });
+  return owner;
 }
 
 function shouldEchoToken() {
@@ -145,6 +150,24 @@ export async function handler(req: any, _res: any, ctx: any) {
   const rawAction = resolveParam(req.query?.action);
   const action = rawAction ? String(rawAction) : "";
 
+  const dedicatedLink = action === "neon:link";
+  if (dedicatedLink || action === "neon:link-status") {
+    if (process.env.CLAWDEALS_NEON_ACCOUNT_LINKING !== "true" || getAuthBackend() !== "neon" || process.env.NEXT_PUBLIC_CLAWDEALS_AUTH_BACKEND !== "neon") {
+      return jsonResponse(404, errorPayload("NOT_FOUND", "Account linking is not enabled"));
+    }
+    const origin = getHeaderValue(req, "origin");
+    const host = getHeaderValue(req, "host");
+    let sameOrigin = false;
+    try { const parsed = new URL(origin); sameOrigin = parsed.origin === origin && parsed.host === host && parsed.protocol === (isSecureRequest(req) ? "https:" : "http:"); } catch {}
+    if (!sameOrigin || getHeaderValue(req, "x-clawdeals-link") !== "1") return jsonResponse(403, errorPayload("LINK_ORIGIN_REQUIRED", "Use the account linking page on this origin"));
+    try {
+      const proof = await readExistingOwnerProof(req, new Date());
+      if (!proof) return jsonResponse(401, errorPayload("OWNER_LINK_PROOF_REQUIRED", "Sign in to your existing ClawDeals account on this origin first"));
+      if (dedicatedLink && req.body?.expected_owner_id !== proof.owner_id) return jsonResponse(409, errorPayload("OWNER_AUTH_LINK_CONFLICT", "The current owner changed; review the account before linking"));
+      if (!dedicatedLink) return jsonResponse(200, { data: { owner_id: proof.owner_id, email: proof.email ?? null } }, { "Cache-Control": "no-store" });
+    } catch (error: any) { return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message)); }
+  }
+
   if (LOGIN_START_ACTIONS.has(action)) {
     const body = req.body || {};
     const email = body.email;
@@ -167,7 +190,6 @@ export async function handler(req: any, _res: any, ctx: any) {
           sessionId: result.session?.session_id,
           token: result.session_token,
           expiresAt: result.session?.expires_at || null,
-          appUrl: resolveRequestOrigin(req),
           next: safeRedirectUrl(body.next ?? "/settings/identities")
         });
       } catch (deliveryError: any) {
@@ -263,7 +285,7 @@ export async function handler(req: any, _res: any, ctx: any) {
     }
   }
 
-  if (SESSION_BRIDGE_ACTIONS.has(action)) {
+  if (SESSION_BRIDGE_ACTIONS.has(action) || dedicatedLink) {
     const authHeader = getHeaderValue(req, "authorization");
     const bearerToken = parseBearerToken(authHeader);
     const accessToken = normalizeNonEmptyString(bearerToken);
@@ -281,6 +303,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         return jsonResponse(401, errorPayload("UNAUTHORIZED", "Invalid external auth session"));
       }
 
+      if (dedicatedLink && identity.provider !== "neon") return jsonResponse(401, errorPayload("NEON_IDENTITY_REQUIRED", "Sign in to Neon before linking"));
       const authSubject = normalizeNonEmptyString(identity.subject);
       if (!authSubject) {
         return jsonResponse(400, errorPayload("VALIDATION_ERROR", "auth subject is required"));
@@ -292,14 +315,26 @@ export async function handler(req: any, _res: any, ctx: any) {
 
       let linkCreated = false;
       let linkedByVerifiedEmail = false;
+      let linkedByOwnerSession = false;
 
       let ownerLink = await getOwnerLinkByAuthIdentity({
         authProvider: identity.provider,
         authSubject
       });
+      let existingOwnerProof: any = null;
+      if (identity.provider === "neon") {
+        try { existingOwnerProof = await readExistingOwnerProof(req, now); }
+        catch (error: any) {
+          // Linked Neon login can renew despite a stale first-party cookie.
+          // Explicit linking/replay still needs fresh source proof.
+          if (dedicatedLink || !ownerLink || !["OWNER_LINK_SESSION_INVALID", "OWNER_SUSPENDED"].includes(error?.code)) throw error;
+        }
+      }
+      if (dedicatedLink && (!existingOwnerProof || existingOwnerProof.owner_id !== req.body?.expected_owner_id)) return jsonResponse(401, errorPayload("OWNER_LINK_PROOF_REQUIRED", "Your existing owner session is required"));
       let owner: any = null;
 
       if (ownerLink) {
+        if (existingOwnerProof && existingOwnerProof.owner_id !== ownerLink.owner_id) return jsonResponse(409, errorPayload("OWNER_AUTH_LINK_CONFLICT", "This Neon identity is linked to another owner"));
         // A historical Supabase link may have been created from local
         // autoconfirmation or editable metadata. Require current mailbox proof
         // before renewing a link that was recorded as email verified.
@@ -310,6 +345,7 @@ export async function handler(req: any, _res: any, ctx: any) {
           );
         }
         const existingOwner = await getOwner(ownerLink.owner_id);
+        if (identity.provider === "neon" && (!existingOwner || existingOwner.suspended_at)) return jsonResponse(403, errorPayload("OWNER_UNAVAILABLE", "Linked owner is unavailable"));
         const nextEmail = email ?? existingOwner?.email ?? null;
         const existingEmail = normalizeEmail(existingOwner?.email);
         const nextEmailNormalized = normalizeEmail(nextEmail);
@@ -318,7 +354,7 @@ export async function handler(req: any, _res: any, ctx: any) {
         const existingPhone = existingOwner?.phone_e164 ?? null;
         const existingPhoneVerifiedAt = existingOwner?.phone_verified_at ?? null;
 
-        owner = await upsertOwner({
+        owner = dedicatedLink ? existingOwner : await upsertOwner({
           ownerId: ownerLink.owner_id,
           email: nextEmail,
           phoneE164: existingPhone,
@@ -348,7 +384,13 @@ export async function handler(req: any, _res: any, ctx: any) {
           );
         }
 
-        if (ownerByEmail) {
+        if (identity.provider === "neon" && ownerByEmail && !existingOwnerProof) return jsonResponse(409, errorPayload("OWNER_LINK_PROOF_REQUIRED", "Sign in to the existing ClawDeals account before linking Neon"));
+        if (identity.provider === "neon" && existingOwnerProof) {
+          if (ownerByEmail && ownerByEmail.owner_id !== existingOwnerProof.owner_id) return jsonResponse(409, errorPayload("OWNER_AUTH_LINK_CONFLICT", "Neon email belongs to a different existing owner"));
+          if (!emailVerifiedAt) return jsonResponse(409, errorPayload("OWNER_EMAIL_LINK_CONFLICT", "Verify the Neon email before linking"));
+          owner = existingOwnerProof;
+          linkedByOwnerSession = true;
+        } else if (ownerByEmail) {
           linkedByVerifiedEmail = true;
           owner = await upsertOwner({
             ownerId: ownerByEmail.owner_id,
@@ -369,16 +411,23 @@ export async function handler(req: any, _res: any, ctx: any) {
           });
         }
 
-        ownerLink = await createOwnerAuthLink({
-          ownerId: owner.owner_id,
-          authProvider: identity.provider,
-          authSubject,
-          supabaseUserId: identity.provider === "supabase" ? authSubject : null,
-          email: email ?? null,
-          emailVerifiedAt: emailVerifiedAt ?? null,
-          now
-        });
-        linkCreated = true;
+        try {
+          ownerLink = await createOwnerAuthLink({
+            ownerId: owner.owner_id,
+            authProvider: identity.provider,
+            authSubject,
+            supabaseUserId: identity.provider === "supabase" ? authSubject : null,
+            email: email ?? null,
+            emailVerifiedAt: emailVerifiedAt ?? null,
+            now
+          });
+          linkCreated = true;
+        } catch (error: any) {
+          if (identity.provider !== "neon" || (error?.status !== 409 && error?.code !== "23505")) throw error;
+          const raced = await getOwnerLinkByAuthIdentity({ authProvider: identity.provider, authSubject });
+          if (!raced || raced.owner_id !== owner.owner_id) return jsonResponse(409, errorPayload("OWNER_AUTH_LINK_CONFLICT", "Identity linked elsewhere; previous links preserved"));
+          ownerLink = raced;
+        }
       }
 
       if (!owner?.owner_id || !isUuid(owner.owner_id)) {
@@ -388,6 +437,10 @@ export async function handler(req: any, _res: any, ctx: any) {
         return jsonResponse(403, errorPayload("OWNER_SUSPENDED", "Owner account is suspended"));
       }
 
+      if (dedicatedLink) {
+        if (ctx) { ctx.auditEvent = "owner.linked_by_owner_session"; ctx.auditEntityType = "owner"; ctx.auditEntityId = owner.owner_id; }
+        return jsonResponse(200, { data: { owner_id: owner.owner_id, linked: true } }, { "Cache-Control": "no-store" });
+      }
       const cookieSecure = isSecureRequest(req);
       const issued = await issueTrustedOwnerSession({
         ownerId: owner.owner_id,
@@ -398,7 +451,7 @@ export async function handler(req: any, _res: any, ctx: any) {
       });
 
       if (ctx) {
-        ctx.auditEvent = linkedByVerifiedEmail
+        ctx.auditEvent = linkedByOwnerSession ? "owner.linked_by_owner_session" : linkedByVerifiedEmail
           ? "owner.linked_by_verified_email"
           : linkCreated
             ? "owner.link_created"
@@ -472,7 +525,14 @@ export async function handler(req: any, _res: any, ctx: any) {
   return jsonResponse(404, errorPayload("NOT_FOUND", "Unknown auth action"));
 }
 
-export default withApiMiddlewares(handler, {
+const standardHandler = withApiMiddlewares(handler, {
   enableIdempotency: true,
   idempotencyUseIpFallback: true
 });
+
+// Preserve auth, rate limiting and audit, but never cache dual-proof responses.
+const linkingHandler = withApiMiddlewares(handler, { enableIdempotency: false, routeGroup: "auth.session.confirm" });
+export default function authHandler(req: any, res: any) {
+  const action = resolveParam(req.query?.action);
+  return (action === "neon:link" || action === "neon:link-status" ? linkingHandler : standardHandler)(req, res);
+}

@@ -1,3 +1,4 @@
+import { assertRehearsalEffectAllowed } from "../config/rehearsal";
 import { loadSmartphoneMissionSnapshots, recordSmartphoneMissionMatch } from "./smartphone-mission-matching";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
@@ -9,6 +10,7 @@ import {
   WATCHLIST_BACKFILL_REQUEST_TIMEOUT_MS
 } from "../config/watchlists";
 import { safeRecordAgentMilestone } from "./acquisition";
+import { visiblePublicEntityIds } from "./public-entity-visibility";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
   const error: any = new Error(message);
@@ -29,6 +31,7 @@ function toPositiveInt(value: any, fallback: number) {
 }
 
 export async function enqueueWatchlistBackfill({ watchlistId, now = new Date(), client }: any = {}) {
+  assertRehearsalEffectAllowed("services/watchlist-backfill-queue");
   if (!watchlistId || typeof watchlistId !== "string") {
     throw buildServiceError("watchlistId is required", 400, "VALIDATION_ERROR");
   }
@@ -69,7 +72,7 @@ async function fetchRecentDeals({ client, limit, signal }: any = {}) {
   const capped = Math.max(1, Math.min(5000, toPositiveInt(limit, 500)));
   const { data, error } = await client
     .from("deals")
-    .select("deal_id,title,tags,price,currency,market_code,status,created_at")
+    .select("deal_id,title,tags,price,currency,market_code,status,source_url,created_at")
     .in("status", ["NEW", "ACTIVE"])
     .order("created_at", { ascending: false })
     .order("deal_id", { ascending: false })
@@ -160,6 +163,7 @@ export async function runWatchlistBackfillQueue({
   now = new Date(),
   client
 }: any = {}) {
+  assertRehearsalEffectAllowed("services/watchlist-backfill-queue");
   const supabase = client || getSupabaseServiceClient();
   const cappedLimit = Math.max(1, Math.min(200, toPositiveInt(limit, 20)));
   const cappedTransitions = Math.min(WATCHLIST_BACKFILL_MAX_TRANSITIONS, toPositiveInt(transitionLimit, WATCHLIST_BACKFILL_MAX_TRANSITIONS));
@@ -246,9 +250,13 @@ export async function runWatchlistBackfillQueue({
 
       // Ordinary watchlists retain their existing batch matching semantics.
       if (!ordinaryEntities) {
+        const deals = await fetchRecentDeals({ client: supabase, limit: dealsLimit, signal: requestSignal() });
+        const listings = await fetchRecentLiveListings({ client: supabase, limit: listingsLimit, signal: requestSignal() });
+        const visibleDeals = await visiblePublicEntityIds(supabase, "deal", deals);
+        const visibleListings = await visiblePublicEntityIds(supabase, "listing", listings);
         ordinaryEntities = {
-          deals: await fetchRecentDeals({ client: supabase, limit: dealsLimit, signal: requestSignal() }),
-          listings: await fetchRecentLiveListings({ client: supabase, limit: listingsLimit, signal: requestSignal() })
+          deals: deals.filter((deal) => visibleDeals.has(deal.deal_id)),
+          listings: listings.filter((listing) => visibleListings.has(listing.listing_id))
         };
       }
       const { deals, listings } = ordinaryEntities;
