@@ -1,17 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const handlerExists = [
-  path.join(process.cwd(), "src/pages/api/v1/psp/webhooks.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/psp/webhooks/index.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/psp/webhooks.js"),
-  path.join(process.cwd(), "src/pages/api/v1/psp/webhooks/index.js")
-].some((candidate) => fs.existsSync(candidate));
-
-const suite = handlerExists ? describe : describe.skip;
-
-suite("POST /v1/psp/webhooks", () => {
+describe("POST /v1/psp/webhooks", () => {
   let handler: any;
   let getPspConfigMock: any;
 

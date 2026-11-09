@@ -1,17 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const handlerExists = [
-  path.join(process.cwd(), "src/pages/api/v1/ops/psp/configure.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/ops/psp/configure/index.ts"),
-  path.join(process.cwd(), "src/pages/api/v1/ops/psp/configure.js"),
-  path.join(process.cwd(), "src/pages/api/v1/ops/psp/configure/index.js")
-].some((candidate) => fs.existsSync(candidate));
-
-const suite = handlerExists ? describe : describe.skip;
-
-suite("POST /v1/ops/psp/configure", () => {
+describe("POST /v1/ops/psp/configure", () => {
   const opsOwnerId = "00000000-0000-4000-a000-000000000000";
 
   const baseCtx: any = {
