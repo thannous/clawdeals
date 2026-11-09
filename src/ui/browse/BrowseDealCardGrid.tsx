@@ -1,4 +1,5 @@
 import { memo } from "react";
+import Link from "next/link";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import BrowseDealCard from "./BrowseDealCard";
@@ -49,6 +50,8 @@ function BrowseDealCardGrid({
   onRetry,
   onLoadMore,
   onResetFilters,
+  filtersActive = true,
+  browseListingsHref,
   highlightedIds,
 }: {
   deals: any[];
@@ -59,6 +62,8 @@ function BrowseDealCardGrid({
   onRetry: () => void;
   onLoadMore: () => void;
   onResetFilters?: () => void;
+  filtersActive?: boolean;
+  browseListingsHref?: string;
   highlightedIds?: string[];
 }) {
   const t = useTranslations("browseDeals");
@@ -76,8 +81,8 @@ function BrowseDealCardGrid({
   if (fetchState === "error") {
     return (
       <div data-testid="browse-deals-error" className="border border-error/40 bg-error/5 rounded clip-corner p-6 text-center">
-        <AlertTriangle size={24} className="mx-auto mb-2 text-error" />
-        <p className="text-sm text-error-muted mb-3">{error || t("error")}</p>
+        <AlertTriangle size={24} className="mx-auto mb-2 text-error" aria-hidden="true" />
+        <p role="alert" className="text-sm text-error-muted mb-3" title={error || undefined}>{t("error")}</p>
         <button
           data-testid="browse-deals-retry"
           onClick={onRetry}
@@ -89,12 +94,30 @@ function BrowseDealCardGrid({
     );
   }
 
+  if (fetchState === "done" && deals.length === 0 && !filtersActive) {
+    return (
+      <div data-testid="browse-deals-empty" className="border border-border bg-surface rounded clip-corner p-8 text-center">
+        <Inbox size={32} className="mx-auto mb-3 text-subtle" aria-hidden="true" />
+        <p className="text-base text-text mb-1">{t("emptyFeedTitle")}</p>
+        <p className="text-sm text-muted mb-4 max-w-md mx-auto">{t("emptyFeedHint")}</p>
+        {browseListingsHref && (
+          <Link
+            href={browseListingsHref}
+            className="inline-flex px-4 py-2 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
+          >
+            {t("emptyFeedCta")}
+          </Link>
+        )}
+      </div>
+    );
+  }
+
   if (fetchState === "done" && deals.length === 0) {
     return (
       <div data-testid="browse-deals-empty" className="border border-border bg-surface rounded clip-corner p-8 text-center">
-        <Inbox size={32} className="mx-auto mb-3 text-subtle" />
-        <p className="text-sm text-muted mb-1">{t("noResults")}</p>
-        <p className="text-xs text-subtle mb-4">{t("noResultsHint")}</p>
+        <Inbox size={32} className="mx-auto mb-3 text-subtle" aria-hidden="true" />
+        <p className="text-base text-text mb-1">{t("noResults")}</p>
+        <p className="text-sm text-muted mb-4">{t("noResultsHint")}</p>
         {onResetFilters && (
           <button
             data-testid="browse-deals-reset-filters"
@@ -111,9 +134,9 @@ function BrowseDealCardGrid({
   return (
     <>
       {deals.length > 0 && (
-        <p className="text-xs font-mono text-subtle mb-3">
+        <h2 className="text-xs font-mono text-subtle mb-3">
           {t("results", { count: deals.length })}
-        </p>
+        </h2>
       )}
       <div data-testid="browse-deals-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {deals.map((deal) => (

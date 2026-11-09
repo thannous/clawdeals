@@ -27,7 +27,7 @@ export default function AppNav({ current }: { current: AppNavCurrent }) {
   return (
     <nav
       data-testid="app-nav"
-      aria-label="Main navigation"
+      aria-label={t("ariaLabel")}
       className="mt-4 flex items-center gap-2 overflow-x-auto"
     >
       {NAV_ITEMS.map((item) => {

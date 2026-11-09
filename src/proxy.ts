@@ -78,9 +78,13 @@ export function proxy(request: NextRequest) {
 
   const appEntry = process.env.APP_ENTRY_PATH || "/start";
   const target = new URL(request.url);
-  target.protocol = "https:";
-  target.host = hostname;
-  target.port = "";
+  // Local development serves plain HTTP on a custom port: keep both so `/` still opens the app.
+  const isLoopback = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+  if (!isLoopback) {
+    target.protocol = "https:";
+    target.host = hostname;
+    target.port = "";
+  }
   target.pathname = `${resolveLocalePrefix(request)}${appEntry.startsWith("/") ? appEntry : `/${appEntry}`}`;
   return NextResponse.redirect(target, 308);
 }

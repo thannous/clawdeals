@@ -189,7 +189,7 @@ function sectionTitle(icon: ReactNode, eyebrow: string, title: string, descripti
         {icon}
       </div>
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
+        <p className="text-xs font-mono uppercase tracking-[0.18em] text-primary">{eyebrow}</p>
         <h2 className="mt-1 text-base font-bold uppercase tracking-wide text-text">{title}</h2>
         <p className="mt-1 max-w-2xl text-xs font-mono leading-relaxed text-muted">{description}</p>
       </div>
@@ -415,7 +415,7 @@ export default function PolicyPage() {
               <div className="absolute inset-y-0 left-0 w-1 bg-primary" />
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">Active owner policy</p>
+                  <p className="text-xs font-mono uppercase tracking-[0.2em] text-primary">Active owner policy</p>
                   <h1 className="mt-1 text-xl font-bold uppercase tracking-wide text-text">Set the limits. Keep the final say.</h1>
                   <p className="mt-2 max-w-2xl text-xs font-mono leading-relaxed text-muted">
                     Changes are enforced by the API on the next action. Deal Missions may set a tighter per-mission ceiling.
@@ -461,7 +461,7 @@ export default function PolicyPage() {
                   )}
                   <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-subtle">Preferred offer</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-subtle">Preferred offer</span>
                       <input
                         name="preferred_offer"
                         data-testid="policy-preferred-offer"
@@ -475,7 +475,7 @@ export default function PolicyPage() {
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-subtle">Hard ceiling</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-subtle">Hard ceiling</span>
                       <input
                         name="max_offer"
                         data-testid="policy-hard-ceiling"
@@ -489,7 +489,7 @@ export default function PolicyPage() {
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-subtle">Approval above</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-subtle">Approval above</span>
                       <input
                         name="offer_amount_gt"
                         data-testid="policy-approval-threshold"
@@ -503,7 +503,7 @@ export default function PolicyPage() {
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-subtle">Currency</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-subtle">Currency</span>
                       <select
                         name="currency"
                         value={form.currency}
@@ -554,7 +554,7 @@ export default function PolicyPage() {
                       </div>
                     </fieldset>
                     <label className="space-y-1.5">
-                      <span className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-subtle">
+                      <span className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-subtle">
                         <MapPin size={12} /> Default radius
                       </span>
                       <div className="relative">
@@ -585,7 +585,7 @@ export default function PolicyPage() {
                   )}
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-success">Allowlist</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-success">Allowlist</span>
                       <textarea
                         name="allowlist_agent_ids"
                         data-testid="policy-allowlist"
@@ -597,7 +597,7 @@ export default function PolicyPage() {
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-error">Denylist</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-error">Denylist</span>
                       <textarea
                         name="denylist_agent_ids"
                         data-testid="policy-denylist"
@@ -615,8 +615,8 @@ export default function PolicyPage() {
               <aside className="space-y-6">
                 <section className="border border-warning/30 bg-warning/5 p-5" data-testid="policy-preview">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-warning">Live decision preview</p>
-                    <span className="text-[10px] font-mono text-subtle">SERVER RULES</span>
+                    <p className="text-xs font-mono uppercase tracking-[0.18em] text-warning">Live decision preview</p>
+                    <span className="text-xs font-mono text-subtle">SERVER RULES</span>
                   </div>
                   <p className="mt-4 text-sm font-medium leading-relaxed text-text">
                     With these rules, a {form.currency} 1,200 offer on the used e-bike would be:
@@ -651,7 +651,7 @@ export default function PolicyPage() {
                   </label>
                   <div className="mt-3 grid grid-cols-2 gap-3">
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase text-subtle">From</span>
+                      <span className="text-xs font-mono uppercase text-subtle">From</span>
                       <input
                         name="quiet_start"
                         type="time"
@@ -662,7 +662,7 @@ export default function PolicyPage() {
                       />
                     </label>
                     <label className="space-y-1.5">
-                      <span className="text-[10px] font-mono uppercase text-subtle">Until</span>
+                      <span className="text-xs font-mono uppercase text-subtle">Until</span>
                       <input
                         name="quiet_end"
                         type="time"
@@ -674,7 +674,7 @@ export default function PolicyPage() {
                     </label>
                   </div>
                   <label className="mt-3 block space-y-1.5">
-                    <span className="text-[10px] font-mono uppercase text-subtle">Timezone</span>
+                    <span className="text-xs font-mono uppercase text-subtle">Timezone</span>
                     <input
                       name="timezone"
                       value={form.timezone}
@@ -708,11 +708,11 @@ export default function PolicyPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <strong className="text-sm text-text">{decision.action}</strong>
-                            <span className={`border px-2 py-0.5 text-[10px] font-mono uppercase ${decisionClasses(chip.tone)}`}>
+                            <span className={`border px-2 py-0.5 text-xs font-mono uppercase ${decisionClasses(chip.tone)}`}>
                               {tWebMcp(chip.labelKey, chip.values)}
                             </span>
                             {decision.policy_version !== null ? (
-                              <span className="text-[10px] font-mono text-subtle">v{decision.policy_version}</span>
+                              <span className="text-xs font-mono text-subtle">v{decision.policy_version}</span>
                             ) : null}
                           </div>
                           <p className="mt-1.5 truncate text-xs font-mono text-subtle">

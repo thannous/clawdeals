@@ -95,7 +95,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
     <div data-testid="agent-key-connect" className={compact ? "space-y-2" : "space-y-3"}>
       {apiKey ? (
         <div className="flex flex-wrap items-center gap-2" data-testid="agent-key-connected">
-          <span className="inline-flex items-center gap-1.5 border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-[11px] text-success">
+          <span className="inline-flex items-center gap-1.5 border border-success/40 bg-success/10 px-2.5 py-1 font-mono text-xs text-success">
             <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
             {activeRole ? t("agentKey.roleKey", { role: roleLabel(activeRole) }) : t("agentKey.agentKey")} ·{" "}
             {maskApiKey(apiKey)}
@@ -105,7 +105,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
               type="button"
               data-testid="agent-key-switch"
               onClick={switchRole}
-              className="inline-flex items-center gap-1.5 border border-primary px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-primary hover:bg-primary hover:text-bg"
+              className="inline-flex items-center gap-1.5 border border-primary px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-primary hover:bg-primary hover:text-bg"
             >
               <ArrowLeftRight className="h-3.5 w-3.5" aria-hidden="true" />
               {t("agentKey.switchTo", { role: roleLabel(switchTarget).toLocaleLowerCase() })}
@@ -118,7 +118,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
                 setDraftRole(otherRole(activeRole));
                 setAdding(true);
               }}
-              className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-muted hover:border-primary hover:text-primary"
+              className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-muted hover:border-primary hover:text-primary"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               {t("agentKey.addRole", { role: roleLabel(otherRole(activeRole)).toLocaleLowerCase() })}
@@ -128,7 +128,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
             type="button"
             data-testid="agent-key-disconnect"
             onClick={disconnect}
-            className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-muted hover:border-error hover:text-error"
+            className="inline-flex items-center gap-1.5 border border-border px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-muted hover:border-error hover:text-error"
           >
             <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
             {t("agentKey.disconnect")}
@@ -139,7 +139,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
       {showForm ? (
         <form onSubmit={connect} className="flex flex-wrap items-end gap-2" data-testid="agent-key-form">
           <label className="flex min-w-[10rem] flex-1 flex-col gap-1">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">
+            <span className="font-mono text-xs uppercase tracking-widest text-subtle">
               {apiKey
                 ? t("agentKey.pasteRole", { role: roleLabel(draftRole).toLocaleLowerCase() })
                 : t("agentKey.paste")}
@@ -166,7 +166,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
             </div>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-subtle">{t("agentKey.role")}</span>
+            <span className="font-mono text-xs uppercase tracking-widest text-subtle">{t("agentKey.role")}</span>
             <select
               data-testid="agent-key-role"
               value={draftRole}
@@ -181,7 +181,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
             type="submit"
             data-testid="agent-key-submit"
             disabled={state === "checking" || !draft.trim()}
-            className="h-[34px] border border-primary bg-primary px-4 font-mono text-[11px] font-bold uppercase tracking-wider text-bg disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-[34px] border border-primary bg-primary px-4 font-mono text-xs font-bold uppercase tracking-wider text-bg disabled:cursor-not-allowed disabled:opacity-50"
           >
             {state === "checking" ? t("agentKey.checking") : t("agentKey.connect")}
           </button>
@@ -192,7 +192,7 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
                 setAdding(false);
                 setDraft("");
               }}
-              className="h-[34px] border border-border px-3 font-mono text-[11px] uppercase tracking-wider text-muted hover:text-text"
+              className="h-[34px] border border-border px-3 font-mono text-xs uppercase tracking-wider text-muted hover:text-text"
             >
               {t("common.cancel")}
             </button>
@@ -204,13 +204,13 @@ export default function AgentKeyConnect({ compact = false }: { compact?: boolean
         <p
           data-testid="agent-key-message"
           role="status"
-          className={`font-mono text-[11px] leading-relaxed ${state === "error" ? "text-error" : "text-muted"}`}
+          className={`font-mono text-xs leading-relaxed ${state === "error" ? "text-error" : "text-muted"}`}
         >
           {message}
         </p>
       ) : null}
       {!apiKey && !message ? (
-        <p className="font-mono text-[11px] leading-relaxed text-subtle">{t("agentKey.hint")}</p>
+        <p className="font-mono text-xs leading-relaxed text-subtle">{t("agentKey.hint")}</p>
       ) : null}
     </div>
   );

@@ -93,7 +93,7 @@ export default function SellerTurnButton({
         {state.kind === "running" ? t("sellerTurn.thinking") : t("sellerTurn.run")}
       </button>
       <div
-        className="mt-3 min-h-10 font-mono text-[11px] leading-relaxed text-subtle"
+        className="mt-3 min-h-10 font-mono text-xs leading-relaxed text-subtle"
         data-testid={`${testIdPrefix}-seller-turn-status`}
       >
         {state.kind === "idle" || state.kind === "running" ? t("sellerTurn.policy") : null}

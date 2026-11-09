@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Settings, Terminal } from "lucide-react";
+import { ChevronDown, Palette, Settings, Terminal } from "lucide-react";
 
 import { useTheme } from "../../../theme/theme-context";
 import { getPublicLandingUrl } from "../../../shared/urls";
@@ -47,9 +47,6 @@ function useDropdown() {
   return { open, setOpen, ref } as const;
 }
 
-function themeShortLabel(label: string) {
-  return (label.split(" ")[0] || label).toUpperCase();
-}
 
 const STEPS: WizardStep[] = ["connect", "verify", "firstwin"];
 
@@ -168,14 +165,13 @@ function HeaderActions({
 }) {
   const router = useRouter();
   const t = useTranslations("connect");
+  const tn = useTranslations("nav");
   const { themeId, setTheme, themes } = useTheme();
   const asPathNoLocale = stripLocalePrefix(router.asPath || "/");
 
   const { open: langOpen, setOpen: setLangOpen, ref: langRef } = useDropdown();
   const { open: themeOpen, setOpen: setThemeOpen, ref: themeRef } = useDropdown();
   const { open: mobileSettingsOpen, setOpen: setMobileSettingsOpen, ref: mobileSettingsRef } = useDropdown();
-  const activeTheme = themes.find((t) => t.id === themeId);
-
   return (
     <>
       {/* Language dropdown — desktop */}
@@ -183,10 +179,13 @@ function HeaderActions({
         <button
           type="button"
           onClick={() => setLangOpen((p) => !p)}
-          className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-secondary hover:border-border-strong transition-colors"
+          aria-haspopup="true"
+          aria-expanded={langOpen}
+          title={tn("language")}
+          className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-muted hover:text-text hover:border-border-strong transition-colors"
         >
           {(router.locale || "en").toUpperCase()}
-          <ChevronDown className="w-3 h-3" />
+          <ChevronDown className="w-3 h-3" aria-hidden="true" />
         </button>
         {langOpen && (
           <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[100px]">
@@ -215,12 +214,13 @@ function HeaderActions({
           type="button"
           data-testid="theme-switch"
           onClick={() => setThemeOpen((p) => !p)}
-          className="h-9 px-3 border border-border text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 text-text hover:border-border-strong transition-colors"
+          aria-haspopup="true"
+          aria-expanded={themeOpen}
+          aria-label={tn("theme")}
+          title={tn("theme")}
+          className="h-9 w-9 border border-border flex items-center justify-center text-muted hover:text-text hover:border-border-strong transition-colors"
         >
-          <span suppressHydrationWarning>
-            {activeTheme ? themeShortLabel(activeTheme.label) : "THEME"}
-          </span>
-          <ChevronDown className="w-3 h-3" />
+          <Palette className="w-4 h-4" aria-hidden="true" />
         </button>
         {themeOpen && (
           <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
@@ -253,8 +253,8 @@ function HeaderActions({
           href={loginHref}
           className="hidden sm:flex h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest items-center gap-2"
         >
-          <Terminal className="w-4 h-4" />
-          Login
+          <Terminal className="w-4 h-4" aria-hidden="true" />
+          {t("step.connect.logIn")}
         </Link>
       )}
 
@@ -266,14 +266,16 @@ function HeaderActions({
         <button
           type="button"
           onClick={() => setMobileSettingsOpen((p) => !p)}
-          className="h-9 w-9 border border-primary flex items-center justify-center text-primary hover:bg-primary/10 hover:border-primary transition-colors"
+          className="h-9 w-9 border border-border flex items-center justify-center text-text hover:border-border-strong transition-colors"
           aria-label={t("wizard.settings")}
+          aria-haspopup="true"
+          aria-expanded={mobileSettingsOpen}
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="w-4 h-4" aria-hidden="true" />
         </button>
         {mobileSettingsOpen && (
           <div className="absolute right-0 top-full mt-2 bg-surface border border-border shadow-lg z-50 min-w-[160px]">
-            <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-border">
+            <div className="px-3 py-2 text-xs font-mono text-subtle uppercase tracking-widest border-b border-border">
               {t("wizard.language")}
             </div>
             {LOCALES.map((loc) => (
@@ -291,8 +293,8 @@ function HeaderActions({
                 {loc.label}
               </Link>
             ))}
-            <div className="px-3 py-2 text-[10px] font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
-              Theme
+            <div className="px-3 py-2 text-xs font-mono text-subtle uppercase tracking-widest border-b border-t border-border">
+              {tn("theme")}
             </div>
             {themes.map((th) => (
               <button
@@ -316,8 +318,8 @@ function HeaderActions({
                   onClick={() => setMobileSettingsOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
                 >
-                  <Terminal className="w-3.5 h-3.5" />
-                  Login
+                  <Terminal className="w-3.5 h-3.5" aria-hidden="true" />
+                  {t("step.connect.logIn")}
                 </Link>
               </>
             )}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { memo } from "react";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -46,6 +47,7 @@ function ListingCardGrid({
   onRetry,
   onLoadMore,
   onResetFilters,
+  createMissionHref,
   highlightedIds,
   policyFitById,
   enableComparison = false,
@@ -58,6 +60,7 @@ function ListingCardGrid({
   onRetry: () => void;
   onLoadMore: () => void;
   onResetFilters?: () => void;
+  createMissionHref?: string;
   highlightedIds?: string[];
   policyFitById?: Record<string, ListingPolicyFit> | null;
   enableComparison?: boolean;
@@ -77,8 +80,8 @@ function ListingCardGrid({
   if (fetchState === "error") {
     return (
       <div data-testid="browse-error" className="border border-error/40 bg-error/5 rounded clip-corner p-6 text-center">
-        <AlertTriangle size={24} className="mx-auto mb-2 text-error" />
-        <p className="text-sm text-error-muted mb-3">{error || t("error")}</p>
+        <AlertTriangle size={24} className="mx-auto mb-2 text-error" aria-hidden="true" />
+        <p role="alert" className="text-sm text-error-muted mb-3" title={error || undefined}>{t("error")}</p>
         <button
           data-testid="browse-retry"
           onClick={onRetry}
@@ -93,18 +96,33 @@ function ListingCardGrid({
   if (fetchState === "done" && listings.length === 0) {
     return (
       <div data-testid="browse-empty" className="border border-border bg-surface rounded clip-corner p-8 text-center">
-        <Inbox size={32} className="mx-auto mb-3 text-subtle" />
-        <p className="text-sm text-muted mb-1">{t("noResults")}</p>
-        <p className="text-xs text-subtle mb-4">{t("noResultsHint")}</p>
-        {onResetFilters && (
-          <button
-            data-testid="browse-reset-filters"
-            onClick={onResetFilters}
-            className="px-4 py-1.5 text-xs font-mono font-bold uppercase border border-primary text-primary rounded hover:bg-primary/10 transition-colors"
-          >
-            {t("resetFilters")}
-          </button>
-        )}
+        <Inbox size={32} className="mx-auto mb-3 text-subtle" aria-hidden="true" />
+        <p className="text-base text-text mb-1">{t("noResults")}</p>
+        <p className="text-sm text-muted mb-5 max-w-md mx-auto">
+          {createMissionHref ? t("emptyMissionHint") : t("noResultsHint")}
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {createMissionHref && (
+            <Link
+              href={createMissionHref}
+              locale={false}
+              data-testid="browse-empty-create-mission"
+              className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider bg-primary text-bg hover:bg-primary/85 transition-colors"
+            >
+              {t("createMission")}
+            </Link>
+          )}
+          {onResetFilters && (
+            <button
+              type="button"
+              data-testid="browse-reset-filters"
+              onClick={onResetFilters}
+              className="px-4 py-2.5 text-xs font-mono font-bold uppercase border border-border text-muted hover:text-text hover:border-border-strong transition-colors"
+            >
+              {t("resetFilters")}
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -112,9 +130,9 @@ function ListingCardGrid({
   return (
     <>
       {listings.length > 0 && (
-        <p className="text-xs font-mono text-subtle mb-3">
+        <h2 className="text-xs font-mono text-subtle mb-3">
           {t("results", { count: listings.length })}
-        </p>
+        </h2>
       )}
       <div data-testid="browse-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {listings.map((listing) => (

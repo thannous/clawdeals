@@ -58,6 +58,12 @@ export default function BrowseListingsPage({
     setPriceMax("");
   }, [setQ, setCategory, setCondition, setPriceMin, setPriceMax]);
 
+  const createMissionHref = getPublicAppHref(
+    `${localePrefix}/my/missions/new?${new URLSearchParams({ query: q, ...(priceMax ? { price_max: priceMax } : {}) }).toString()}`
+  );
+  const hasSearch = q.trim().length > 0 || Boolean(category || condition || priceMin || priceMax);
+  const showNextStep = !(fetchState === "done" && listings.length === 0);
+
   return (
     <div className="min-h-screen bg-bg">
       <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
@@ -91,7 +97,7 @@ export default function BrowseListingsPage({
         </div>
 
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 mb-6">
-          <Link href={getPublicAppHref(`${localePrefix}/my/missions/new?${new URLSearchParams({ query: q, ...(priceMax ? { price_max: priceMax } : {}) }).toString()}`)} locale={false}
+          <Link href={createMissionHref} locale={false}
             data-testid="browse-create-mission" className="inline-flex border border-primary px-5 py-3 text-sm font-semibold text-primary hover:bg-primary/10">
             {t("createMission")}
           </Link>
@@ -109,32 +115,35 @@ export default function BrowseListingsPage({
             onRetry={refetch}
             onLoadMore={loadMore}
             onResetFilters={resetFilters}
+            createMissionHref={hasSearch ? createMissionHref : undefined}
             highlightedIds={highlightedIds}
             policyFitById={policyFitById}
           />
         </div>
 
         {/* CTA */}
-        <div className="border-t border-border bg-surface mt-16">
-          <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
-            <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
-              {t("cta.label")}
+        {showNextStep && (
+          <div className="border-t border-border bg-surface mt-16">
+            <div className="max-w-[960px] mx-auto px-6 py-16 flex flex-col items-center text-center">
+              <div className="font-mono text-xs text-subtle tracking-widest uppercase mb-4">
+                {t("cta.label")}
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
+                {t("cta.title")}
+              </h2>
+              <p className="text-sm text-muted font-mono max-w-lg mb-8">
+                {t("cta.subtitle")}
+              </p>
+              <Link
+                href={getPublicAppEntryHref(localePrefix)}
+                data-acquisition-cta="browse"
+                className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
+              >
+                {t("cta.button")}
+              </Link>
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-text mb-3">
-              {t("cta.title")}
-            </h2>
-            <p className="text-sm text-muted font-mono max-w-lg mb-8">
-              {t("cta.subtitle")}
-            </p>
-            <Link
-              href={getPublicAppEntryHref(localePrefix)}
-              data-acquisition-cta="browse"
-              className="px-8 py-3 font-bold uppercase tracking-wider text-sm border border-primary bg-primary text-bg hover:bg-text hover:border-text transition-colors"
-            >
-              {t("cta.button")}
-            </Link>
           </div>
-        </div>
+        )}
       </main>
       <ComparisonTray />
     </div>

@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { ExternalLink, MapPin } from "lucide-react";
 import { useTheme } from "../../theme/theme-context";
-import { resolveSupportedLocale } from "../../shared/i18n";
+import { resolveSupportedLocale, intlLocaleFor } from "../../shared/i18n";
 import { getPublicAppEntryHref } from "../../shared/urls";
 import { resolveCoverImageSrc } from "../media/cover-image";
 import StatusBadge from "../deals/StatusBadge";
@@ -39,7 +39,7 @@ export default function BrowseDealDetailPage({ deal }: BrowseDealDetailPageProps
   const { themeId, setTheme, themes } = useTheme();
   const coverImageSrc = resolveCoverImageSrc(deal?.cover_image);
 
-  const dateFormatter = new Intl.DateTimeFormat(locale, {
+  const dateFormatter = new Intl.DateTimeFormat(intlLocaleFor(locale), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

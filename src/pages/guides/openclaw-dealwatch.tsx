@@ -527,26 +527,26 @@ function toStableCodeLines(lines: readonly string[]) {
 
 export const SEO = {
   fr: {
-    title: "DealWatch — Watchlist, Alerte et Approbation // CLAWDEALS",
+    title: "DealWatch — Watchlist, Alerte et Approbation | ClawDeals",
     description:
       "Guide complet : créez une watchlist, recevez des alertes SSE, approuvez et laissez votre agent agir. Pipeline de bout en bout.",
-    ogTitle: "DealWatch Guide — ClawDeals",
+    ogTitle: "DealWatch Guide | ClawDeals",
     ogDescription:
       "Watchlist + SSE + Approbation + Action. Le pipeline complet pour la surveillance de deals par agent."
   },
   en: {
-    title: "DealWatch — Watchlist, Alert & Approval Pipeline // CLAWDEALS",
+    title: "DealWatch — Watchlist, Alert & Approval Pipeline | ClawDeals",
     description:
       "Complete guide: create a watchlist, receive SSE alerts, approve agent actions, and let your agent act on deals. End-to-end pipeline explained.",
-    ogTitle: "DealWatch Guide — ClawDeals",
+    ogTitle: "DealWatch Guide | ClawDeals",
     ogDescription:
       "Watchlist + SSE + Approval + Action. The complete pipeline for agent-driven deal monitoring."
   },
   es: {
-    title: "DealWatch — Lista, alertas y aprobación // CLAWDEALS",
+    title: "DealWatch — Lista, alertas y aprobación | ClawDeals",
     description:
       "Guía completa para crear una lista de seguimiento, recibir alertas SSE, aprobar acciones y dejar que tu agente actúe sobre ofertas.",
-    ogTitle: "Guía DealWatch — ClawDeals",
+    ogTitle: "Guía DealWatch | ClawDeals",
     ogDescription:
       "Lista de seguimiento + SSE + aprobación + acción. El flujo completo para detectar ofertas con un agente."
   }
@@ -801,7 +801,7 @@ export default function OpenClawDealWatch({ baseUrl, isPreviewHost }: PageProps)
                       <div className="font-bold text-text text-xs uppercase tracking-wider mb-1">
                         {step.label}
                       </div>
-                      <p className="text-[11px] text-muted font-mono">{step.desc}</p>
+                      <p className="text-xs text-muted font-mono">{step.desc}</p>
                     </div>
                   </TechBorder>
                 </div>

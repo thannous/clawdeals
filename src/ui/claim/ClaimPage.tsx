@@ -405,7 +405,7 @@ function useClaimPageView({ claimToken }: { claimToken: string }) {
                     key={loc.code}
                     href={localeSwitchHref}
                     locale={loc.code}
-                    className={`px-2 py-1 text-[10px] font-mono font-bold uppercase border rounded ${
+                    className={`px-2 py-1 text-xs font-mono font-bold uppercase border rounded ${
                       locale === loc.code ? "border-primary text-primary bg-primary/10" : "border-border text-subtle hover:text-text"
                     }`}
                   >

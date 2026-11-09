@@ -12,7 +12,7 @@ export default function PolicySettings() {
   return (
     <>
       <Head>
-        <title>Policy Control // CLAWDEALS</title>
+        <title>Policy Control | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

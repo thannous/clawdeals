@@ -211,6 +211,14 @@ function useChatAnimation(messagePattern: string) {
 
     clearTimeouts();
 
+    // Reduced motion: show the whole conversation at once instead of looping it.
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      timeoutsRef.current.push(
+        setTimeout(() => dispatch({ type: "reveal", visibleCount: messagePattern.length, hideTyping: true }), 0)
+      );
+      return clearTimeouts;
+    }
+
     timeoutsRef.current.push(
       setTimeout(() => {
         dispatch({ type: "resetCycleStart" });

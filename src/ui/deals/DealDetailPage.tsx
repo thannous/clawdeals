@@ -10,6 +10,7 @@ import { useDealReasons } from "./useDealReasons";
 import { useDealNotes } from "./useDealNotes";
 import { resolveDealBackHref } from "./detailNavigation";
 import PageHeader from "../shared/PageHeader";
+import { intlLocaleFor } from "../../shared/i18n";
 
 const DATE_OPTS: Intl.DateTimeFormatOptions = {
   year: "numeric",
@@ -27,7 +28,7 @@ function formatDate(value, locale = "en") {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat(locale, DATE_OPTS).format(date);
+  return new Intl.DateTimeFormat(intlLocaleFor(locale), DATE_OPTS).format(date);
 }
 
 function formatWeight(value) {

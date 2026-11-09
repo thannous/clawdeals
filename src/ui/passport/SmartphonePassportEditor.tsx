@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { CHECK_IDS, passportFromResponse, photoFromResponse, type Answer, type CheckId, type Passport, type PassportPhoto as Photo } from "./passport-types";
 import PassportPhoto from "./PassportPhoto";
 import { PASSPORT_MAX_PHOTO_BYTES, PASSPORT_MAX_NOTES_LENGTH } from "../../lib/smartphone-passport";
+import { intlLocaleFor } from "../../shared/i18n";
 
 type DraftCheck = { answer: Answer; notes: string; photos: Photo[] };
 type Draft = { model: string; batteryHealth: string; checks: Record<CheckId, DraftCheck> };
@@ -224,7 +225,7 @@ export default function SmartphonePassportEditor({ listingId, listingStatus }: {
     }
   }
 
-  const lastSaved = passport ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(passport.updated_at)) : null;
+  const lastSaved = passport ? new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "medium", timeStyle: "short" }).format(new Date(passport.updated_at)) : null;
 
   return (
     <section aria-labelledby="passport-editor-title" className="rounded border border-border bg-surface p-4 sm:p-6" data-testid="smartphone-passport-editor">

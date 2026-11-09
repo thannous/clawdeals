@@ -11,7 +11,7 @@ export default function AuthVerify() {
   return (
     <>
       <Head>
-        <title>Clawdeals | Verify Login</title>
+        <title>Verify Login | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />

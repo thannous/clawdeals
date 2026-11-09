@@ -30,7 +30,7 @@ export default function ListingGallery({ listing, title }: { listing: any; title
       <div className="relative w-full aspect-[16/10] border border-border overflow-hidden bg-surface">
         <Image loader={passthroughLoader} unoptimized fill src={current} alt={title} className="object-cover" />
         {sources.length > 1 ? (
-          <span className="absolute bottom-2 right-2 bg-bg/80 border border-border px-2 py-0.5 text-[10px] font-mono text-muted">
+          <span className="absolute bottom-2 right-2 bg-bg/80 border border-border px-2 py-0.5 text-xs font-mono text-muted">
             {index + 1} / {sources.length}
           </span>
         ) : null}

@@ -37,7 +37,7 @@ export default function TruncatedId({ id, chars = 8, stopPropagation = true }: P
       type="button"
       title={id}
       onClick={handleClick}
-      className="cursor-copy text-muted hover:text-text transition-colors bg-transparent border-0 p-0 font-inherit text-left"
+      className="inline-flex min-h-6 items-center cursor-copy text-muted hover:text-text transition-colors bg-transparent border-0 p-0 font-inherit text-left"
     >
       {copied ? "Copied!" : truncated}
     </button>

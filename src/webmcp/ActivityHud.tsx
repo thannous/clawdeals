@@ -103,7 +103,7 @@ function ReceiptRow({ receipt, defaultOpen }: { receipt: ActionReceipt; defaultO
               <span className="truncate text-xs font-mono font-semibold text-text">{receipt.tool.name}</span>
               <span
                 data-testid="webmcp-receipt-outcome"
-                className={`border px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider ${OUTCOME_STYLES[receipt.outcome]}`}
+                className={`border px-1.5 py-0.5 text-xs font-mono uppercase tracking-wider ${OUTCOME_STYLES[receipt.outcome]}`}
               >
                 {t(`activity.outcomes.${receipt.outcome}`)}
               </span>
@@ -112,7 +112,7 @@ function ReceiptRow({ receipt, defaultOpen }: { receipt: ActionReceipt; defaultO
             <span
               data-testid="webmcp-receipt-policy-chip"
               data-tone={chip.tone}
-              className={`mt-1 inline-block border px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider ${CHIP_STYLES[chip.tone]}`}
+              className={`mt-1 inline-block border px-1.5 py-0.5 text-xs font-mono uppercase tracking-wider ${CHIP_STYLES[chip.tone]}`}
             >
               {t(chip.labelKey, chip.values)}
             </span>

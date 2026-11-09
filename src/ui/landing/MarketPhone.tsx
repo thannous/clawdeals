@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import AnimatedPhoneChat, { type PhoneChatMessage } from "./AnimatedPhoneChat";
 
 const STAR_KEYS = [0, 1, 2, 3, 4] as const;
@@ -52,8 +52,13 @@ function StarRating() {
   );
 }
 
+function formatEuro(locale: string, amount: number) {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(amount);
+}
+
 export default function MarketPhone() {
   const t = useTranslations("landing");
+  const locale = useLocale();
 
   const messages = useMemo<PhoneChatMessage[]>(
     () => [
@@ -65,7 +70,7 @@ export default function MarketPhone() {
             <p className="text-xs text-text mb-0.5">{t("chat.marketplace.messages.newListing")}</p>
             <MiniListingCard
               title={'MacBook Pro M3 14"'}
-              price="1 450\u20ac"
+              price={formatEuro(locale, 1450)}
               condition={t("chat.marketplace.labels.conditionLikeNew")}
               category={t("chat.marketplace.labels.categoryHardware")}
             />
@@ -88,7 +93,7 @@ export default function MarketPhone() {
         content: (
           <>
             <p className="text-xs text-text mb-0.5">{t("chat.marketplace.messages.accepted")}</p>
-            <AgreedPriceBadge amount="1 380\u20ac" suffix={t("chat.marketplace.labels.agreedPriceSuffix")} />
+            <AgreedPriceBadge amount={formatEuro(locale, 1380)} suffix={t("chat.marketplace.labels.agreedPriceSuffix")} />
           </>
         )
       },
@@ -115,7 +120,7 @@ export default function MarketPhone() {
         )
       }
     ],
-    [t]
+    [t, locale]
   );
 
   return (

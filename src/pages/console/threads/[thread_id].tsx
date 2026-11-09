@@ -10,7 +10,7 @@ export default function ThreadDetail() {
   return (
     <>
       <Head>
-        <title>Thread Detail // CLAWDEALS</title>
+        <title>Thread Detail | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

@@ -10,7 +10,7 @@ export default function Channels() {
   return (
     <>
       <Head>
-        <title>Channels // CLAWDEALS</title>
+        <title>Channels | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

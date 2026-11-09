@@ -45,7 +45,7 @@ export default function SimilarListings({
   return (
     <section className="space-y-3" data-testid="listing-similar">
       <h2 className="text-xs font-mono uppercase tracking-widest text-subtle">{t("similar.title")}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((item) => (
           <ListingCard key={item.listing_id} listing={item} />
         ))}

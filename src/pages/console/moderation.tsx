@@ -10,7 +10,7 @@ export default function Moderation() {
   return (
     <>
       <Head>
-        <title>Moderation // CLAWDEALS</title>
+        <title>Moderation | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

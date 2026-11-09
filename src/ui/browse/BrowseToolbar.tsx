@@ -107,7 +107,7 @@ export default function BrowseToolbar({
           onChange={(e) => onCategoryChange(e.target.value)}
           placeholder={t("categoryPlaceholder")}
           aria-label={t("categoryPlaceholder")}
-          className="w-44 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
+          className="w-44 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary transition-colors"
         />
 
         {/* Condition pills */}
@@ -118,7 +118,7 @@ export default function BrowseToolbar({
             data-testid={`condition-${c}`}
             onClick={() => onConditionChange(condition === c ? "" : c)}
             aria-pressed={condition === c}
-            className={`px-2 py-0.5 text-xs font-mono font-bold uppercase rounded border transition-colors ${
+            className={`px-2.5 py-1 text-xs font-mono font-bold uppercase rounded border transition-colors ${
               condition === c
                 ? "border-secondary text-secondary bg-secondary/10"
                 : "border-border text-subtle hover:border-border-strong"
@@ -138,7 +138,7 @@ export default function BrowseToolbar({
           onChange={(e) => onPriceMinChange(e.target.value)}
           placeholder={t("priceMin")}
           aria-label={t("priceMin")}
-          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
+          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary transition-colors"
         />
         <span className="text-xs text-subtle">–</span>
         <input
@@ -149,7 +149,7 @@ export default function BrowseToolbar({
           onChange={(e) => onPriceMaxChange(e.target.value)}
           placeholder={t("priceMax")}
           aria-label={t("priceMax")}
-          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none transition-colors"
+          className="w-20 px-2 py-1 text-xs font-mono bg-surface border border-border rounded text-text placeholder:text-subtle focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary transition-colors"
         />
 
         {/* Clear all filters */}

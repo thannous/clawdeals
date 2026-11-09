@@ -39,16 +39,16 @@ function MilestoneRow({ milestone, index }: { milestone: Milestone; index: numbe
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
           <p className={`text-sm font-semibold ${done ? "text-text" : "text-muted"}`}>
-            <span className="mr-2 font-mono text-[10px] text-subtle">{String(index + 1).padStart(2, "0")}</span>
+            <span className="mr-2 font-mono text-xs text-subtle">{String(index + 1).padStart(2, "0")}</span>
             {t(milestone.labelKey)}
           </p>
           {done ? (
-            <span className="font-mono text-[10px] text-subtle" title={milestone.requestId || undefined}>
+            <span className="font-mono text-xs text-subtle" title={milestone.requestId || undefined}>
               {formatTime(milestone.timestamp, locale)}
               {milestone.requestId ? ` · ${milestone.requestId.slice(0, 8)}` : ""}
             </span>
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-wider text-subtle">{t("common.pending")}</span>
+            <span className="font-mono text-xs uppercase tracking-wider text-subtle">{t("common.pending")}</span>
           )}
         </div>
         <p className="mt-0.5 text-xs leading-relaxed text-muted">{t(milestone.detailKey)}</p>
@@ -72,12 +72,12 @@ export default function MissionMilestones({ title }: { title?: string }) {
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("milestones.eyebrow")}</p>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{t("milestones.eyebrow")}</p>
           <h2 className="mt-1 text-lg font-bold uppercase tracking-wide text-text">{resolvedTitle}</h2>
         </div>
         <span
           data-testid="mission-milestones-progress"
-          className="border border-border px-2.5 py-1 font-mono text-[11px] text-muted"
+          className="border border-border px-2.5 py-1 font-mono text-xs text-muted"
         >
           {t("milestones.progress", { done: doneCount, total: milestones.length })}
         </span>

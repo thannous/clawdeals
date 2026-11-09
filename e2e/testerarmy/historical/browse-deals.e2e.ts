@@ -88,7 +88,7 @@ test.describe("Browse Deals page", () => {
       await page.goto("/browse/deals");
 
       await expect(page.locator("h1")).toBeVisible();
-      expect(await page.title()).toContain("Price alerts");
+      expect(await page.title()).toContain("Price drops");
     });
 
     test("toolbar is visible with sort tabs and search", async ({ page }) => {

@@ -10,7 +10,7 @@ export default function Timeline() {
   return (
     <>
       <Head>
-        <title>Timeline // CLAWDEALS</title>
+        <title>Timeline | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

@@ -86,7 +86,7 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
   }));
 
   const codeCount = parseInt(t("sections.weighted.codeCount"), 10);
-  const codeLines = Array.from({ length: codeCount }, (_, i) => t(`sections.weighted.code_${i}`));
+  const codeLines = Array.from({ length: codeCount }, (_, i) => String(t.raw(`sections.weighted.code_${i}`)));
   const keyedCodeLines = toStableCodeLines(codeLines);
 
   return (
@@ -330,7 +330,7 @@ export default function TrustEngine({ baseUrl, isPreviewHost }: PageProps) {
               <span className="w-2 h-2 rounded-full bg-success" />
               <span className="font-mono text-xs text-subtle ml-2">computeReportWeight.ts</span>
             </div>
-            <pre className="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
+            <pre tabIndex={0} aria-label="computeReportWeight.ts" className="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
               {keyedCodeLines.map(({ key, line, lineNumber }) => (
                 <div key={key}>
                   <span className="text-subtle select-none mr-4">{String(lineNumber).padStart(2, " ")}</span>

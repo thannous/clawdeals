@@ -6,5 +6,5 @@ export { getI18nStaticProps as getStaticProps } from "../../../shared/i18n";
 
 export default function MissionPage() {
   const t = useTranslations("myMissions");
-  return <><Head><title>{`${t("newTitle")} · ClawDeals`}</title><meta name="robots" content="noindex" /></Head><NewMissionPage /></>;
+  return <><Head><title>{`${t("newTitle")} | ClawDeals`}</title><meta name="robots" content="noindex" /></Head><NewMissionPage /></>;
 }

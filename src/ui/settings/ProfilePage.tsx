@@ -185,7 +185,7 @@ function useProfilePageView() {
               <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
               <div className="absolute inset-2 rounded-full border border-dashed border-primary/20 animate-spin-slow" />
             </div>
-            <span className="text-[11px] font-mono text-subtle tracking-[0.3em] uppercase">
+            <span className="text-xs font-mono text-subtle tracking-[0.3em] uppercase">
               {t("profile.loading")}
             </span>
           </div>
@@ -221,7 +221,7 @@ function useProfilePageView() {
                 {/* Section header */}
                 <div className="flex items-center gap-2.5 mb-6">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary font-bold">
+                  <span className="text-xs font-mono uppercase tracking-[0.25em] text-primary font-bold">
                     {t("profile.avatar.label")}
                   </span>
                   <div className="flex-1 h-px bg-linear-to-r from-primary/25 to-transparent" />
@@ -238,7 +238,7 @@ function useProfilePageView() {
                         />
                       ))}
                     </div>
-                    <span className="text-[9px] font-mono text-subtle tabular-nums">
+                    <span className="text-xs font-mono text-subtle tabular-nums">
                       {completionCount}/3
                     </span>
                   </div>
@@ -292,7 +292,7 @@ function useProfilePageView() {
                       <button
                         type="button"
                         onClick={() => setShowAvatarInput(true)}
-                        className="text-[10px] font-mono text-subtle hover:text-primary transition-colors tracking-wider uppercase group"
+                        className="text-xs font-mono text-subtle hover:text-primary transition-colors tracking-wider uppercase group"
                       >
                         {t("profile.avatar.customUrl")}{" "}
                         <span className="inline-block transition-transform group-hover:translate-x-0.5">&rarr;</span>
@@ -307,12 +307,12 @@ function useProfilePageView() {
                           onBlur={applyCustomAvatar}
                           onKeyDown={(e) => { if (e.key === "Enter") applyCustomAvatar(); }}
                           placeholder={t("profile.avatar.urlPlaceholder")}
-                          className="flex-1 px-2 py-1.5 text-[10px] font-mono bg-bg/80 border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
+                          className="flex-1 px-2 py-1.5 text-xs font-mono bg-bg/80 border border-border rounded text-text placeholder:text-subtle focus:border-primary focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={applyCustomAvatar}
-                          className="px-2.5 py-1.5 text-[10px] font-mono font-bold uppercase border border-primary/50 text-primary rounded hover:bg-primary/10 transition-colors"
+                          className="px-2.5 py-1.5 text-xs font-mono font-bold uppercase border border-primary/50 text-primary rounded hover:bg-primary/10 transition-colors"
                         >
                           OK
                         </button>
@@ -325,7 +325,7 @@ function useProfilePageView() {
                     {/* Display name */}
                     <div>
                       <label htmlFor="profile-display-name" className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] font-mono text-subtle uppercase tracking-widest">
+                        <span className="text-xs font-mono text-subtle uppercase tracking-widest">
                           {t("profile.fields.displayName")}
                         </span>
                         {nameComplete && <span aria-hidden="true" className="text-[8px] text-success">&#9632;</span>}
@@ -343,10 +343,10 @@ function useProfilePageView() {
                     {/* Bio */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label htmlFor="profile-bio" className="text-[10px] font-mono text-subtle uppercase tracking-widest">
+                        <label htmlFor="profile-bio" className="text-xs font-mono text-subtle uppercase tracking-widest">
                           {t("profile.fields.bio")}
                         </label>
-                        <span className="text-[10px] font-mono text-subtle tabular-nums">
+                        <span className="text-xs font-mono text-subtle tabular-nums">
                           {bio.length}
                           <span className="text-border">/2000</span>
                         </span>
@@ -375,12 +375,12 @@ function useProfilePageView() {
               >
                 <div className="px-6 py-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary font-bold">
+                    <span className="text-xs font-mono uppercase tracking-[0.2em] text-primary font-bold">
                       {t("profile.completeBanner.heading")}
                     </span>
                     <div className="flex-1 h-px bg-border/40" />
                   </div>
-                  <p className="text-[11px] font-mono text-muted mb-3">{t("profile.completeBanner.subtitle")}</p>
+                  <p className="text-xs font-mono text-muted mb-3">{t("profile.completeBanner.subtitle")}</p>
 
                   <div className="flex flex-wrap gap-2">
                     {[
@@ -390,13 +390,13 @@ function useProfilePageView() {
                     ].map((item) => (
                       <div
                         key={item.label}
-                        className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-3 py-1.5 rounded-full border transition-all duration-300 ${
+                        className={`inline-flex items-center gap-1.5 text-xs font-mono px-3 py-1.5 rounded-full border transition-all duration-300 ${
                           item.done
                             ? "border-success/25 bg-success/5 text-success/80"
                             : "border-border/40 bg-bg/30 text-muted"
                         }`}
                       >
-                        <span className="text-[10px]">{item.done ? "\u2713" : "\u25CB"}</span>
+                        <span className="text-xs">{item.done ? "\u2713" : "\u25CB"}</span>
                         <span className={item.done ? "line-through opacity-60" : ""}>
                           {item.label}
                         </span>
@@ -422,12 +422,12 @@ function useProfilePageView() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-warning">{t("profile.verifyBanner.heading")}</h3>
-                      <p className="text-[11px] font-mono text-muted mt-0.5">{t("profile.verifyBanner.subtitle")}</p>
+                      <p className="text-xs font-mono text-muted mt-0.5">{t("profile.verifyBanner.subtitle")}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => void router.push("/settings/identities")}
-                    className="px-4 py-2 text-[11px] font-mono font-bold uppercase border border-warning/30 text-warning rounded hover:bg-warning/10 hover:border-warning/60 transition-all whitespace-nowrap group"
+                    className="px-4 py-2 text-xs font-mono font-bold uppercase border border-warning/30 text-warning rounded hover:bg-warning/10 hover:border-warning/60 transition-all whitespace-nowrap group"
                   >
                     {t("profile.verifyBanner.cta")}{" "}
                     <span className="inline-block transition-transform group-hover:translate-x-0.5">&rarr;</span>
@@ -447,18 +447,18 @@ function useProfilePageView() {
                 {/* Section header */}
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-primary text-sm">&#128205;</span>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary font-bold">
+                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-primary font-bold">
                     {t("profile.location")}
                   </span>
                   <div className="flex-1 h-px bg-linear-to-r from-primary/20 to-transparent" />
-                  <span className="text-[9px] font-mono text-warning uppercase tracking-wider">
+                  <span className="text-xs font-mono text-warning uppercase tracking-wider">
                     {t("profile.locationHint")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label htmlFor="profile-city" className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                    <label htmlFor="profile-city" className="block text-xs font-mono text-subtle uppercase tracking-wider mb-1.5">
                       {t("profile.fields.city")}
                     </label>
                     <input
@@ -471,7 +471,7 @@ function useProfilePageView() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="profile-region" className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                    <label htmlFor="profile-region" className="block text-xs font-mono text-subtle uppercase tracking-wider mb-1.5">
                       {t("profile.fields.stateRegion")}
                     </label>
                     <input
@@ -484,7 +484,7 @@ function useProfilePageView() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="profile-country" className="block text-[10px] font-mono text-subtle uppercase tracking-wider mb-1.5">
+                    <label htmlFor="profile-country" className="block text-xs font-mono text-subtle uppercase tracking-wider mb-1.5">
                       {t("profile.fields.country")}
                     </label>
                     <input
@@ -513,7 +513,7 @@ function useProfilePageView() {
               <div className="px-6 py-5">
                 <div className="flex items-center gap-2 mb-5">
                   <span className="h-1.5 w-1.5 rounded-sm bg-secondary/50" />
-                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-secondary/70 font-bold">
+                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-secondary/70 font-bold">
                     {t("profile.preferences")}
                   </span>
                   <div className="flex-1 h-px bg-linear-to-r from-secondary/15 to-transparent" />
@@ -523,11 +523,11 @@ function useProfilePageView() {
                 <div className="flex items-center py-3 border-b border-border/25">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-text">{t("profile.fields.available")}</div>
-                    <div className="text-[11px] font-mono text-muted mt-0.5">{t("profile.fields.availableDesc")}</div>
+                    <div className="text-xs font-mono text-muted mt-0.5">{t("profile.fields.availableDesc")}</div>
                   </div>
                   <div className="flex items-center gap-2.5 shrink-0 ml-4">
                     <span
-                      className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-300 ${
+                      className={`text-xs font-mono uppercase tracking-wider transition-colors duration-300 ${
                         available ? "text-success" : "text-subtle"
                       }`}
                     >
@@ -562,11 +562,11 @@ function useProfilePageView() {
                 <div className="flex items-center py-3">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-bold text-text">{t("profile.fields.showEmail")}</div>
-                    <div className="text-[11px] font-mono text-muted mt-0.5">{t("profile.fields.showEmailDesc")}</div>
+                    <div className="text-xs font-mono text-muted mt-0.5">{t("profile.fields.showEmailDesc")}</div>
                   </div>
                   <div className="flex items-center gap-2.5 shrink-0 ml-4">
                     <span
-                      className={`text-[9px] font-mono uppercase tracking-wider transition-colors duration-300 ${
+                      className={`text-xs font-mono uppercase tracking-wider transition-colors duration-300 ${
                         showEmail ? "text-success" : "text-subtle"
                       }`}
                     >

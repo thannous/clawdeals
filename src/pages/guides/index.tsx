@@ -153,7 +153,7 @@ export default function GuidesIndex({ baseUrl, isPreviewHost }: SeoGuidePageProp
                 <MarketingLink href={`/guides/${guide.slug}`} className="group block p-6 h-full">
                   <div className="flex items-center justify-between gap-3 mb-4">
                     <span className="font-mono text-xs text-primary tracking-widest">{String(index + 1).padStart(2, "0")} {"//"}</span>
-                    <span className="font-mono text-[10px] text-subtle uppercase">{guide.category}</span>
+                    <span className="font-mono text-xs text-subtle uppercase">{guide.category}</span>
                   </div>
                   <h2 className="font-bold text-lg text-text leading-snug group-hover:text-primary transition-colors mb-3">
                     {guide.title[locale]}

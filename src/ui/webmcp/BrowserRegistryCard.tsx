@@ -71,10 +71,10 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
     <div className="border border-border bg-surface p-5 sm:p-6" data-testid="webmcp-browser-registry">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-subtle">{t("browserRegistry.eyebrow")}</p>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{t("browserRegistry.eyebrow")}</p>
           <h2 className="mt-2 text-2xl font-bold uppercase">{t("browserRegistry.title")}</h2>
         </div>
-        <div className="inline-flex items-center gap-2 border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
+        <div className="inline-flex items-center gap-2 border border-border px-3 py-1.5 font-mono text-xs uppercase tracking-widest text-muted">
           <Radar className="h-3.5 w-3.5" aria-hidden="true" />
           getTools() · toolchange
         </div>
@@ -85,7 +85,7 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
           <span
             data-testid="webmcp-browser-registry-match"
             data-match={match ? "true" : "false"}
-            className={`border px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider ${
+            className={`border px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider ${
               match ? "border-success/40 bg-success/10 text-success" : "border-error/40 bg-error/10 text-error"
             }`}
           >
@@ -96,7 +96,7 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
           <span
             data-testid="webmcp-browser-registry-match"
             data-match="unavailable"
-            className="border border-border px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-subtle"
+            className="border border-border px-2.5 py-1 font-mono text-xs uppercase tracking-wider text-subtle"
           >
             {state.kind === "loading"
               ? t("browserRegistry.reading")
@@ -106,10 +106,10 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
           </span>
         )}
         {origin ? (
-          <span className="font-mono text-[11px] text-muted">{t("browserRegistry.origin", { origin })}</span>
+          <span className="font-mono text-xs text-muted">{t("browserRegistry.origin", { origin })}</span>
         ) : null}
         {state.kind === "ready" && state.changes > 0 ? (
-          <span className="font-mono text-[11px] text-muted" data-testid="webmcp-browser-registry-changes">
+          <span className="font-mono text-xs text-muted" data-testid="webmcp-browser-registry-changes">
             {t("browserRegistry.changeCount", { count: state.changes })}
           </span>
         ) : null}
@@ -121,7 +121,7 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
             <li
               key={tool.name}
               data-testid="webmcp-browser-registry-tool"
-              className={`border px-2.5 py-1 font-mono text-[11px] ${
+              className={`border px-2.5 py-1 font-mono text-xs ${
                 providerToolNames.includes(tool.name)
                   ? "border-border text-text"
                   : "border-error/40 bg-error/10 text-error"
@@ -134,7 +134,7 @@ export default function BrowserRegistryCard({ providerToolNames }: { providerToo
             </li>
           ))
         ) : (
-          <li className="border border-border px-2.5 py-1 font-mono text-[11px] text-subtle">
+          <li className="border border-border px-2.5 py-1 font-mono text-xs text-subtle">
             {state.kind === "ready"
               ? t("browserRegistry.noTools")
               : state.kind === "error"

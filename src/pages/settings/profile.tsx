@@ -11,7 +11,7 @@ export default function Profile() {
   return (
     <>
       <Head>
-        <title>Profile // CLAWDEALS</title>
+        <title>Profile | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

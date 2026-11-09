@@ -10,7 +10,7 @@ export default function Acquisition() {
   return (
     <>
       <Head>
-        <title>Acquisition // CLAWDEALS</title>
+        <title>Acquisition | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

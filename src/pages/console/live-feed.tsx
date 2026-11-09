@@ -10,7 +10,7 @@ export default function LiveFeed() {
   return (
     <>
       <Head>
-        <title>Live Feed // CLAWDEALS</title>
+        <title>Live Feed | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

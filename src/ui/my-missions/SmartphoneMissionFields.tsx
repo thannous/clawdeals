@@ -14,7 +14,7 @@ export default function SmartphoneMissionFields({ value, onChange, invalid }: {
     <label className="flex items-start gap-3 text-sm text-text">
       <input type="checkbox" name="smartphone_enabled" data-testid="buy-mission-smartphone-enabled" checked={value.enabled}
         aria-invalid={invalid || undefined} aria-describedby={invalid ? "mission-error-smartphone_enabled" : undefined}
-        onChange={event => onChange({ ...value, enabled: event.target.checked })} className="mt-1 accent-[var(--color-primary)]" />
+        onChange={event => onChange({ ...value, enabled: event.target.checked })} className="mt-1 h-4 w-4 accent-[var(--color-primary)]" />
       <span>{t("enabled")}</span>
     </label>
     {value.enabled ? <>
@@ -40,7 +40,7 @@ export default function SmartphoneMissionFields({ value, onChange, invalid }: {
         {SMARTPHONE_CHECK_IDS.map(id => <label key={id} className="flex items-start gap-3 text-sm text-text">
           <input type="checkbox" name="smartphone_required_checks" value={id} data-testid={`buy-mission-smartphone-check-${id}`}
             checked={value.requiredChecks.includes(id)} onChange={event => onChange({ ...value, requiredChecks: SMARTPHONE_CHECK_IDS.filter(check => check === id ? event.target.checked : value.requiredChecks.includes(check)) })}
-            className="mt-1 accent-[var(--color-primary)]" />
+            className="mt-1 h-4 w-4 accent-[var(--color-primary)]" />
           <span>{t(`checks.${id}`)}</span>
         </label>)}
       </fieldset>

@@ -10,7 +10,7 @@ export default function Listings() {
   return (
     <>
       <Head>
-        <title>Listings // CLAWDEALS</title>
+        <title>Listings | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

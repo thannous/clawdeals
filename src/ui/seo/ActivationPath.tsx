@@ -31,7 +31,7 @@ export const ACTIVATION_PATH_COPY: Record<SupportedLocale, ActivationPathCopy> =
     title: "From connection to a first verified match",
     eyebrow: "ACTIVATION_PATH",
     intro:
-      "Installation is only the first step. Use this sequence to validate the product workflow without treating a connection or a returned match as proof of retention.",
+      "Installing the tools is only the start. These four steps take you from a connected agent to a first match you have checked yourself.",
     steps: [
       {
         title: "Connect one agent",
@@ -46,12 +46,12 @@ export const ACTIVATION_PATH_COPY: Record<SupportedLocale, ActivationPathCopy> =
         body: "When a match is returned, verify its price, currency, merchant or source, and request trace before acting."
       },
       {
-        title: "Evaluate repeated value",
-        body: "Review later alerts and useful matches before widening criteria, permissions, or budgets."
+        title: "Widen gradually",
+        body: "Once several matches prove useful, widen your criteria, permissions or budget step by step."
       }
     ],
     marketContract:
-      "Launch contract: FR/EUR, GB/GBP, and ES/EUR. Matching checks market before currency. Merchant availability depends on current deal and listing sources; ClawDeals does not promise a fixed merchant catalogue.",
+      "Available markets: France (EUR), United Kingdom (GBP) and Spain (EUR). Matches stay within the market you choose. Which merchants appear depends on the deals and listings currently published; there is no fixed catalogue.",
     primaryCta: "Connect an agent",
     guideCta: "Follow the DealWatch guide"
   },
@@ -59,27 +59,27 @@ export const ACTIVATION_PATH_COPY: Record<SupportedLocale, ActivationPathCopy> =
     title: "De la connexion au premier match vérifié",
     eyebrow: "PARCOURS_ACTIVATION",
     intro:
-      "L’installation n’est que la première étape. Cette séquence permet de valider le parcours produit sans présenter une connexion ou un match comme une preuve de rétention.",
+      "Installer les outils n’est qu’un début. Ces quatre étapes te mènent d’un agent connecté à un premier match que tu as vérifié toi-même.",
     steps: [
       {
         title: "Connecter un agent",
-        body: "Utilisez OAuth Device Code ou Claim Link pour créer une identité d’agent dédiée et révocable."
+        body: "Utilise OAuth Device Code ou Claim Link pour créer une identité d’agent dédiée et révocable."
       },
       {
         title: "Créer une watchlist",
-        body: "Définissez explicitement le marché et la devise : FR/EUR, GB/GBP ou ES/EUR."
+        body: "Indique explicitement le marché et la devise : FR/EUR, GB/GBP ou ES/EUR."
       },
       {
         title: "Vérifier le premier match",
-        body: "Lorsqu’un match est retourné, contrôlez son prix, sa devise, le marchand ou la source et la trace de requête avant d’agir."
+        body: "Quand un match arrive, contrôle son prix, sa devise, le marchand ou la source et la trace de requête avant d’agir."
       },
       {
-        title: "Évaluer la valeur répétée",
-        body: "Relisez les alertes et matchs utiles suivants avant d’élargir critères, permissions ou budgets."
+        title: "Élargir progressivement",
+        body: "Quand plusieurs matchs se révèlent utiles, élargis tes critères, permissions ou budget étape par étape."
       }
     ],
     marketContract:
-      "Contrat de lancement : FR/EUR, GB/GBP et ES/EUR. Le matching vérifie le marché avant la devise. La disponibilité des marchands dépend des sources de deals et d’annonces présentes ; ClawDeals ne promet pas de catalogue marchand fixe.",
+      "Marchés disponibles : France (EUR), Royaume-Uni (GBP) et Espagne (EUR). Les matchs restent dans le marché que tu choisis. Les marchands présents dépendent des bons plans et annonces publiés ; il n’y a pas de catalogue fixe.",
     primaryCta: "Connecter un agent",
     guideCta: "Suivre le guide DealWatch"
   },
@@ -87,7 +87,7 @@ export const ACTIVATION_PATH_COPY: Record<SupportedLocale, ActivationPathCopy> =
     title: "De la conexión al primer match verificado",
     eyebrow: "RUTA_ACTIVACIÓN",
     intro:
-      "La instalación es solo el primer paso. Esta secuencia valida el recorrido del producto sin presentar una conexión o un match como prueba de retención.",
+      "Instalar las herramientas es solo el comienzo. Estos cuatro pasos te llevan de un agente conectado a un primer match que has comprobado tú mismo.",
     steps: [
       {
         title: "Conectar un agente",
@@ -102,12 +102,12 @@ export const ACTIVATION_PATH_COPY: Record<SupportedLocale, ActivationPathCopy> =
         body: "Cuando se devuelva un match, comprueba precio, moneda, comercio o fuente y la traza de solicitud antes de actuar."
       },
       {
-        title: "Evaluar el valor repetido",
-        body: "Revisa las alertas y matches útiles posteriores antes de ampliar criterios, permisos o presupuestos."
+        title: "Ampliar poco a poco",
+        body: "Cuando varios matches resulten útiles, amplía tus criterios, permisos o presupuesto paso a paso."
       }
     ],
     marketContract:
-      "Contrato de lanzamiento: FR/EUR, GB/GBP y ES/EUR. El matching comprueba el mercado antes que la moneda. La disponibilidad de comercios depende de las fuentes actuales de deals y anuncios; ClawDeals no promete un catálogo fijo.",
+      "Mercados disponibles: Francia (EUR), Reino Unido (GBP) y España (EUR). Los matches se quedan en el mercado que elijas. Los comercios que aparecen dependen de las ofertas y anuncios publicados; no hay un catálogo fijo.",
     primaryCta: "Conectar un agente",
     guideCta: "Seguir la guía DealWatch"
   }
@@ -126,13 +126,13 @@ export default function ActivationPath({
   return (
     <section data-testid={`activation-path-${source}`}>
       <SectionHeader title={copy.title} subtitle={copy.eyebrow} />
-      <p className="max-w-3xl text-sm text-muted font-mono leading-7 mb-8">{copy.intro}</p>
+      <p className="max-w-3xl text-base text-muted leading-7 mb-8">{copy.intro}</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {copy.steps.map((step, index) => (
           <TechBorder key={step.title} className="h-full">
             <div className="h-full p-5 flex items-start gap-4">
-              <span className="shrink-0 w-8 h-8 border border-primary/50 bg-primary/5 text-primary font-mono text-xs flex items-center justify-center">
+              <span aria-hidden="true" className="shrink-0 w-8 h-8 border border-primary/50 bg-primary/5 text-primary font-mono text-xs flex items-center justify-center">
                 {String(index + 1).padStart(2, "0")}
               </span>
               <div>
@@ -145,7 +145,7 @@ export default function ActivationPath({
       </div>
 
       <div className="mt-5 border border-success/40 bg-success/5 p-5 flex items-start gap-3">
-        <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
+        <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
         <p className="text-sm text-muted leading-6">{copy.marketContract}</p>
       </div>
 

@@ -3,6 +3,7 @@ import type { ProjectCandidate } from "../../shared/project-missions";
 import { useLocale, useTranslations } from "next-intl";
 import { ProjectFailure, secondaryClass } from "./ProjectShell";
 import { useProjectResource } from "./projectClient";
+import { intlLocaleFor } from "../../shared/i18n";
 
 type Conversation = {
   seller_agent_id: string; thread_id: string; listing_ids: string[];
@@ -23,7 +24,7 @@ export default function ProjectConversations({ missionId, agentId, candidates }:
         <h4 className="font-semibold text-text">{t("sellerConversation")}</h4>
         <ul className="mb-4 mt-2 space-y-1 text-sm text-primary">{conversation.listing_ids.map(listingId => <li key={listingId}><Link className="underline underline-offset-4 [overflow-wrap:anywhere]" href={`/browse/${listingId}`}>{listings.get(listingId)?.title || t("originalListing")}</Link></li>)}</ul>
         {conversation.messages.length ? <ol className="space-y-4">{conversation.messages.map(message => <li key={message.message_id} className={`space-y-2 border-l-2 pl-3 ${message.sender_id === agentId ? "border-border" : "border-primary"}`}>
-          <div className="flex flex-wrap justify-between gap-2 text-xs text-muted"><span>{t(message.sender_type?.toLowerCase() === "system" ? "systemMessage" : message.sender_id === agentId ? "yourAgent" : "sellerReply")}</span><time dateTime={message.created_at}>{new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(message.created_at))}</time></div>
+          <div className="flex flex-wrap justify-between gap-2 text-xs text-muted"><span>{t(message.sender_type?.toLowerCase() === "system" ? "systemMessage" : message.sender_id === agentId ? "yourAgent" : "sellerReply")}</span><time dateTime={message.created_at}>{new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "short", timeStyle: "short" }).format(new Date(message.created_at))}</time></div>
           <p className="whitespace-pre-wrap text-sm text-text [overflow-wrap:anywhere]">{typeof message.payload?.text === "string" ? message.payload.text : t("protectedMessage")}</p>
           {message.redacted ? <p className="text-xs text-muted">{t("redactedMessage")}</p> : null}
         </li>)}</ol> : <p className="text-sm text-muted">{t("noReplies")}</p>}

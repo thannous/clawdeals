@@ -37,7 +37,7 @@
   --theme-border-strong: #334155;
   --theme-text: #e2e8f0;
   --theme-text-muted: #94a3b8;
-  --theme-text-subtle: #64748b;
+  --theme-text-subtle: #8a96a9;
   --theme-error: #f87171;
   --theme-error-muted: #fca5a5;
   --theme-success: #4ade80;
@@ -59,7 +59,7 @@
   --theme-border-strong: #524032;
   --theme-text: #f5f0e6;
   --theme-text-muted: #c2b59f;
-  --theme-text-subtle: #8f7f67;
+  --theme-text-subtle: #9a8970;
   --theme-error: #fb923c;
   --theme-error-muted: #fdba74;
   --theme-success: #a3e635;
@@ -75,6 +75,29 @@ body {
   font-family: var(--font-sans);
   color: var(--color-text);
   overflow-x: hidden;
+}
+
+/* Visible keyboard focus by default; components with their own focus ring keep it. */
+@layer base {
+  :where(a[href], button, summary, select, textarea, input:not([type="hidden"]), [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--color-secondary);
+    outline-offset: 2px;
+  }
+
+  :where(input:not([type="checkbox"], [type="radio"], [type="range"]), select, textarea):focus-visible {
+    outline-offset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .text-shadow-glow {

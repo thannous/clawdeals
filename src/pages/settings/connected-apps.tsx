@@ -11,7 +11,7 @@ export default function ConnectedApps() {
   return (
     <>
       <Head>
-        <title>Connected Apps // CLAWDEALS</title>
+        <title>Connected Apps | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
       </Head>

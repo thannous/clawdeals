@@ -110,7 +110,15 @@ function useDeveloperDashboardView() {
             <div className="space-y-1">
               <div className="text-xs font-mono uppercase tracking-widest text-subtle">{t("session")}</div>
               <div className="text-sm text-muted font-mono">
-                {apiKey ? t("apiKeyLoaded") : t("noKeyFound")}
+                {apiKey
+                  ? t("apiKeyLoaded")
+                  : t.rich("noKeyFound", {
+                      link: (chunks) => (
+                        <Link href="/start" className="text-primary underline underline-offset-4">
+                          {chunks}
+                        </Link>
+                      )
+                    })}
               </div>
             </div>
             <div className="flex gap-2">
@@ -122,14 +130,14 @@ function useDeveloperDashboardView() {
               </button>
               <button
                 onClick={handleForget}
-                className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong"
+                className="border border-border px-3 py-2 text-xs font-bold uppercase tracking-widest hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border"
                 disabled={!apiKey}
               >
                 {t("forget")}
               </button>
               <button
                 onClick={handleTest}
-                className="border border-primary px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary hover:text-bg"
+                className="border border-primary px-3 py-2 text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary hover:text-bg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-primary"
                 disabled={!apiKey || status === "loading"}
               >
                 {status === "loading" ? t("testing") : t("testApi")}
@@ -182,36 +190,61 @@ function useDeveloperDashboardView() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link
-            href="/start"
-            className="border border-border bg-bg p-5 hover:border-border-strong transition-colors"
-          >
-            <div className="text-xs font-mono uppercase tracking-widest text-subtle">01</div>
-            <div className="mt-2 font-bold tracking-wide">{t("card01Title")}</div>
-            <div className="mt-2 text-xs font-mono text-muted">{t("card01Desc")}</div>
-          </Link>
-          <Link
+          <StepCard href="/start" step="01" title={t("card01Title")} description={t("card01Desc")} />
+          <StepCard
             href="/developer/watchlists/new"
-            className={`border border-border bg-bg p-5 transition-colors ${
-              apiKey ? "hover:border-border-strong" : "opacity-60 pointer-events-none"
-            }`}
-          >
-            <div className="text-xs font-mono uppercase tracking-widest text-subtle">02</div>
-            <div className="mt-2 font-bold tracking-wide">{t("card02Title")}</div>
-            <div className="mt-2 text-xs font-mono text-muted">{t("card02Desc")}</div>
-          </Link>
-          <Link
+            step="02"
+            title={t("card02Title")}
+            description={t("card02Desc")}
+            lockedLabel={apiKey ? undefined : t("keyRequired")}
+          />
+          <StepCard
             href="/developer/events"
-            className={`border border-border bg-bg p-5 transition-colors ${
-              apiKey ? "hover:border-border-strong" : "opacity-60 pointer-events-none"
-            }`}
-          >
-            <div className="text-xs font-mono uppercase tracking-widest text-subtle">03</div>
-            <div className="mt-2 font-bold tracking-wide">{t("card03Title")}</div>
-            <div className="mt-2 text-xs font-mono text-muted">{t("card03Desc")}</div>
-          </Link>
+            step="03"
+            title={t("card03Title")}
+            description={t("card03Desc")}
+            lockedLabel={apiKey ? undefined : t("keyRequired")}
+          />
         </div>
       </main>
     </div>
+  );
+}
+
+/** A step that needs an API key stays readable but is not a link until the key exists. */
+function StepCard({
+  href,
+  step,
+  title,
+  description,
+  lockedLabel
+}: {
+  href: string;
+  step: string;
+  title: string;
+  description: string;
+  lockedLabel?: string;
+}) {
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-mono uppercase tracking-widest text-subtle">{step}</span>
+        {lockedLabel ? (
+          <span className="text-xs font-mono uppercase tracking-widest text-subtle border border-border px-1.5 py-0.5">
+            {lockedLabel}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-2 font-bold tracking-wide">{title}</div>
+      <div className="mt-2 text-xs font-mono text-muted">{description}</div>
+    </>
+  );
+  if (lockedLabel) {
+    return <div className="border border-dashed border-border bg-bg p-5">{body}</div>;
+  }
+  return (
+    <Link href={href} className="border border-border bg-bg p-5 hover:border-border-strong transition-colors">
+      {body}
+    </Link>
   );
 }

@@ -196,13 +196,21 @@ export default function NewMissionPage() {
 
   return (
     <div className="min-h-screen bg-bg" data-testid="new-mission-page">
-      <PageHeader title={t("newTitle")}><AppNav current="missions" /></PageHeader>
+      {/* Visitors drafting before sign-in do not need the owner's workspace tabs yet. */}
+      <PageHeader title={t("newTitle")}>{prepared?.ownerId ? <AppNav current="missions" /> : null}</PageHeader>
       <main id="main-content" tabIndex={-1} className="max-w-5xl mx-auto py-6 space-y-5">
-        <div className="px-4 sm:px-6 space-y-2">
-          <Link href="/my/missions" className="text-sm text-primary underline">{t("allMissions")}</Link>
-          <p className="text-sm text-muted max-w-2xl">{t("intro")}</p>
-          <p className="text-xs text-subtle">{t("draftHint")}</p>
-          <Link href="/my/projects/new" className="inline-block py-2 text-sm text-primary underline">{projectT("newTitle")}</Link>
+        <div className="px-4 sm:px-6 space-y-3">
+          {prepared?.ownerId ? (
+            <Link href="/my/missions" className="inline-flex items-center gap-1 text-xs font-mono text-muted hover:text-text transition-colors">
+              <span aria-hidden="true">←</span> {t("allMissions")}
+            </Link>
+          ) : null}
+          <p className="text-base text-muted max-w-2xl">{t("intro")}</p>
+          <p className="text-sm text-subtle">{t("draftHint")}</p>
+          <p className="text-sm text-muted">
+            {t("projectAlternative")}{" "}
+            <Link href="/my/projects/new" className="text-primary underline underline-offset-4">{projectT("newTitle")}</Link>
+          </p>
         </div>
         {pending && preview ? (
           <section aria-labelledby="mission-review-title" className="mx-4 sm:mx-6 border border-primary/50 bg-surface p-4 space-y-4">

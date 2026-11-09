@@ -2,10 +2,11 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTranslations } from "next-intl";
 import { useCallback, useState } from "react";
-import { Copy, ExternalLink, Key, Terminal } from "lucide-react";
+import { Copy, Key, ListTree, Terminal } from "lucide-react";
 
 import { SectionHeader, TechBorder } from "../landing/primitives";
-import PageHeader from "../shared/PageHeader";
+import { NavbarCurrent } from "../landing/Navbar";
+import { useTheme } from "../../theme/theme-context";
 import ActivationPath from "../seo/ActivationPath";
 import LocalizedMarketContext from "../seo/LocalizedMarketContext";
 import { getPublicAppUrl, getPublicLandingUrl, joinUrl } from "../../shared/urls";
@@ -282,7 +283,7 @@ function StepCard({
             <span className="text-lg font-bold font-mono text-primary">{stepNum}</span>
           </div>
           <div className="space-y-1 pt-0.5">
-            <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">{k}</div>
+            <div className="text-xs font-mono uppercase tracking-[0.3em] text-primary">{k}</div>
             <div className="text-lg font-bold uppercase tracking-wider text-text">{title}</div>
           </div>
         </div>
@@ -305,6 +306,7 @@ export default function McpPage() {
 
 function useMcpPageView() {
   const router = useRouter();
+  const { themeId, setTheme, themes } = useTheme();
   const t = useTranslations("mcp");
   const locale: McpLocale = router.locale === "fr" || router.locale === "es" ? router.locale : "en";
   const translatedCopy = {
@@ -415,7 +417,6 @@ function useMcpPageView() {
   const landingBase = getPublicLandingUrl();
   const localePrefix = router.locale === "fr" ? "/fr" : router.locale === "es" ? "/es" : "";
   const startUrl = joinUrl(appBase, `${localePrefix}/start`);
-  const dealsUrl = joinUrl(appBase, `${localePrefix}/deals`);
   const mcpBackUrl = landingBase ? joinUrl(landingBase, "/mcp") : "/mcp";
   const keysUrl = `${appBase}${localePrefix}/keys?next=${encodeURIComponent(mcpBackUrl)}`;
 
@@ -428,48 +429,30 @@ function useMcpPageView() {
 
   return (
     <div className="min-h-screen bg-bg text-text">
-      <PageHeader
-        containerClassName="max-w-6xl mx-auto px-4 py-4"
-        homeHref={dealsUrl}
-        htmlTitle={
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary clip-corner-top-right flex items-center justify-center text-bg font-bold text-xl relative overflow-hidden">
-              <div className="absolute inset-0 hazard-stripe opacity-20" />
-              CD
-            </div>
-            <div className="space-y-0.5 leading-none">
-              <h1 className="font-bold tracking-wider">
-                <span className="text-primary">/ </span>
-                {copy.title}
-              </h1>
-              <div className="text-xs font-mono text-subtle uppercase tracking-[0.25em]">
-                {copy.subtitle}
-              </div>
-            </div>
-          </div>
-        }
-        actions={
-          <>
+      <NavbarCurrent themeId={themeId} setTheme={setTheme} themes={themes} />
+
+      <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16 space-y-10">
+        <header className="space-y-4">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-subtle">{copy.subtitle}</p>
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-text">{copy.title}</h1>
+          <div className="flex flex-wrap gap-3">
             <a
               href={startUrl}
               data-acquisition-cta="mcp"
-              className="h-9 px-4 border border-primary text-primary hover:bg-primary hover:text-bg transition-all font-bold text-xs uppercase tracking-widest flex items-center gap-2"
+              className="h-11 px-5 border border-primary text-primary hover:bg-primary/10 transition-colors font-bold text-xs uppercase tracking-widest inline-flex items-center gap-2"
             >
-              <Terminal className="w-4 h-4" />
+              <Terminal className="w-4 h-4" aria-hidden="true" />
               {copy.openStart}
             </a>
             <a
               href="#catalog"
-              className="h-9 px-4 border border-border text-muted hover:text-text hover:border-border-strong transition-all text-xs font-mono uppercase tracking-widest flex items-center gap-2"
+              className="h-11 px-5 border border-border text-muted hover:text-text hover:border-border-strong transition-colors text-xs font-mono uppercase tracking-widest inline-flex items-center gap-2"
             >
-              <ExternalLink className="w-4 h-4" />
+              <ListTree className="w-4 h-4" aria-hidden="true" />
               {t("tools")}
             </a>
-          </>
-        }
-      />
-
-      <main id="main-content" tabIndex={-1} className="max-w-6xl mx-auto px-4 py-10 space-y-10">
+          </div>
+        </header>
         <LocalizedMarketContext locale={locale} context="mcp" />
         <ActivationPath locale={locale} source="mcp" />
 
@@ -491,7 +474,7 @@ function useMcpPageView() {
               <span className="text-lg font-bold font-mono text-bg">0</span>
             </div>
             <div className="space-y-1 pt-0.5">
-              <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">STEP_00</div>
+              <div className="text-xs font-mono uppercase tracking-[0.3em] text-primary">STEP_00</div>
               <div className="text-lg font-bold uppercase tracking-wider text-text">{copy.step0Title}</div>
             </div>
           </div>
@@ -524,8 +507,8 @@ function useMcpPageView() {
             </div>
             <div className="space-y-1 pt-0.5">
               <div className="flex items-center gap-2">
-                <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-secondary/60">STEP_00</div>
-                <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold uppercase border border-secondary/40 text-secondary">
+                <div className="text-xs font-mono uppercase tracking-[0.3em] text-secondary/60">STEP_00</div>
+                <span className="px-1.5 py-0.5 text-xs font-mono font-bold uppercase border border-secondary/40 text-secondary">
                   {labels.newBadge}
                 </span>
               </div>
@@ -551,7 +534,7 @@ function useMcpPageView() {
             {/* OR divider */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex-1 border-t border-dashed border-border" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-subtle">
+              <span className="text-xs font-mono font-bold uppercase tracking-[0.3em] text-subtle">
                 {copy.step0AltOr}
               </span>
               <div className="flex-1 border-t border-dashed border-border" />

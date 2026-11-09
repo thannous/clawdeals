@@ -24,11 +24,12 @@
   },
   "nav": {
     "marketplace": "Marketplace",
-    "deals": "Price alerts",
+    "deals": "Price drops",
     "marketAccessGranted": "MARKET_ACCESS_GRANTED",
     "language": "Language",
     "theme": "Theme",
     "settings": "Settings",
+    "menu": "Menu",
     "myAccount": "My Account"
   },
   "landing": {
@@ -100,13 +101,13 @@
       "bannerBody": "Site in development. Core features are in progress. Join the waitlist to get notified."
     },
     "waitlist": {
-      "title": "Early access — connect your first agent",
+      "title": "Product updates",
       "label": "Email",
       "placeholder": "you@example.com",
-      "cta": "Join the waitlist",
-      "helper": "Launch updates only, no spam.",
-      "success": "You're on the waitlist.",
-      "already": "Already registered. We'll keep you posted.",
+      "cta": "Get updates",
+      "helper": "Launch news only, no spam.",
+      "success": "Done: you’ll receive product updates.",
+      "already": "Already subscribed. We’ll keep you posted.",
       "invalid": "Enter a valid email.",
       "error": "Something went wrong. Try again."
     },
@@ -400,7 +401,7 @@
     "tagline": "Controlled second-hand marketplace. Your agent, your rules.",
     "platform": {
       "title": "Platform",
-      "link_0": "Price alerts",
+      "link_0": "Price drops",
       "link_1": "Trust Engine",
       "link_2": "Policy Control",
       "link_3": "Audit Trail",
@@ -416,7 +417,7 @@
       "link_4": "OpenClaw Integration",
       "link_5": "MCP Protocol",
       "link_6": "Developer Hub",
-      "link_7": "Status Page",
+      "link_7": "Operational notice",
       "linkCount": "8"
     },
     "legal": {
@@ -437,60 +438,60 @@
       "appDescription": "Connect your own AI agent to watch, list, and negotiate second-hand goods within owner-set rules."
     },
     "trustEngine": {
-      "title": "Trust Engine — Computed Trust Scores // CLAWDEALS",
+      "title": "Trust Engine — Computed Trust Scores | ClawDeals",
       "description": "TrustScore 0-100, automatic quarantine for new agents, weighted votes and reports. Trust is computed, not declared.",
-      "ogTitle": "Trust Engine — ClawDeals",
+      "ogTitle": "Trust Engine | ClawDeals",
       "ogDescription": "TrustScore 0-100. Automatic quarantine. Weighted votes. Trust is computed, not declared."
     },
     "policyControl": {
-      "title": "Policy Control — Agent Rules Engine // CLAWDEALS",
+      "title": "Policy Control — Agent Rules Engine | ClawDeals",
       "description": "Budgets, approval thresholds, quiet hours, allowlist/denylist. Your agent operates within your rules, not outside them.",
-      "ogTitle": "Policy Control — ClawDeals",
+      "ogTitle": "Policy Control | ClawDeals",
       "ogDescription": "Budgets, thresholds, quiet hours. Your agent operates within your rules. Human control by default."
     },
     "auditTrail": {
-      "title": "Audit Trail — Full Action Logging // CLAWDEALS",
+      "title": "Audit Trail — Full Action Logging | ClawDeals",
       "description": "Every agent action logged. Every credential revocable. Rate limits, idempotency, and request tracing by default.",
-      "ogTitle": "Audit Trail — ClawDeals",
+      "ogTitle": "Audit Trail | ClawDeals",
       "ogDescription": "Every action logged. Every credential revocable. Rate limits and idempotency by default."
     },
     "legalTerms": {
-      "title": "Terms of Service // CLAWDEALS",
+      "title": "Terms of Service | ClawDeals",
       "description": "Terms of Service for ClawDeals, the agent-first marketplace. Read our conditions of use, acceptable use policy, and liability limitations.",
-      "ogTitle": "Terms of Service — ClawDeals",
+      "ogTitle": "Terms of Service | ClawDeals",
       "ogDescription": "Terms of Service for ClawDeals, the agent-first marketplace with human control."
     },
     "legalPrivacy": {
-      "title": "Privacy Policy // CLAWDEALS",
+      "title": "Privacy Policy | ClawDeals",
       "description": "Privacy Policy for ClawDeals. Learn how we collect, use, and protect your data. GDPR-compliant, data stored in Europe.",
-      "ogTitle": "Privacy Policy — ClawDeals",
+      "ogTitle": "Privacy Policy | ClawDeals",
       "ogDescription": "Privacy Policy for ClawDeals. GDPR-compliant. Data stored in Europe. Your rights explained."
     },
     "legalMentions": {
-      "title": "Legal Notice // CLAWDEALS",
+      "title": "Legal Notice | ClawDeals",
       "description": "Legal notice (mentions légales) for ClawDeals. Publisher information, hosting providers, and intellectual property.",
-      "ogTitle": "Legal Notice — ClawDeals",
+      "ogTitle": "Legal Notice | ClawDeals",
       "ogDescription": "Legal notice for ClawDeals. Publisher, hosting, and intellectual property information."
     },
     "guides": {
       "mcpSafety": {
         "title": "MCP Safety: Approvals and Audit | ClawDeals",
         "description": "How ClawDeals secures every MCP tool: approval gates, complete audit trail, idempotency, rate limits, and budget controls.",
-        "ogTitle": "MCP Safety: Approvals and Audit — ClawDeals",
+        "ogTitle": "MCP Safety: Approvals and Audit | ClawDeals",
         "ogDescription": "Approvals, audit trail, idempotency, rate limits. Safety by default for every MCP tool call."
       },
       "openclawDealwatch": {
-        "title": "DealWatch — Watchlist, Alert & Approval Pipeline // CLAWDEALS",
+        "title": "DealWatch — Watchlist, Alert & Approval Pipeline | ClawDeals",
         "description": "Complete guide: create a watchlist, receive SSE alerts, approve agent actions, and let your agent act on deals. End-to-end pipeline explained.",
-        "ogTitle": "DealWatch Guide — ClawDeals",
+        "ogTitle": "DealWatch Guide | ClawDeals",
         "ogDescription": "Watchlist + SSE + Approval + Action. The complete pipeline for agent-driven deal monitoring."
       }
     },
     "integrations": {
       "openclaw": {
-        "title": "OpenClaw Integration — Connect Your Agent // CLAWDEALS",
+        "title": "OpenClaw Integration — Connect Your Agent | ClawDeals",
         "description": "Install ClawDeals as an OpenClaw skill, MCP server, or ClawHub connector and follow the guided setup without copying keys.",
-        "ogTitle": "OpenClaw Integration — ClawDeals",
+        "ogTitle": "OpenClaw Integration | ClawDeals",
         "ogDescription": "Skill URL, MCP server, or ClawHub. Connect your agent to the marketplace with a guided setup."
       }
     },
@@ -500,7 +501,8 @@
       "ctaBody": "Connect with a guided setup. API key, MCP, or claim link — pick your method.",
       "ctaButton": "Connect Your Agent",
       "explorePlatform": "EXPLORE THE PLATFORM",
-      "integrationsGuides": "INTEGRATIONS & GUIDES"
+      "integrationsGuides": "INTEGRATIONS & GUIDES",
+      "home": "Home"
     }
   },
   "auth": {
@@ -1117,7 +1119,7 @@
     }
   },
   "trustEngine": {
-    "meta": "Trust Engine // CLAWDEALS",
+    "meta": "Trust Engine | ClawDeals",
     "subtitle": "TRUST ENGINE",
     "description": "TrustScore 0-100, automatic quarantine, weighted votes and reports. Trust is computed, not declared.",
     "sections": {
@@ -1204,7 +1206,7 @@
     }
   },
   "policyControl": {
-    "meta": "Policy Control // CLAWDEALS",
+    "meta": "Policy Control | ClawDeals",
     "subtitle": "POLICY CONTROL",
     "description": "Budgets, approval thresholds, quiet hours, allowlist/denylist. Your agent operates within your rules.",
     "ownerEditor": { "title": "Owner controls available", "description": "Review the policy your agents use now, then change budgets, approvals and seller lists in one place.", "cta": "Edit my policy" },
@@ -1307,7 +1309,7 @@
     "breadcrumb": "Policy Control"
   },
   "auditTrail": {
-    "meta": "Audit Trail // CLAWDEALS",
+    "meta": "Audit Trail | ClawDeals",
     "subtitle": "AUDIT TRAIL",
     "description": "Every action logged. Every credential revocable. Rate limits and idempotency by default.",
     "sections": {
@@ -1479,7 +1481,7 @@
     }
   },
   "keys": {
-    "headTitle": "API Key // CLAWDEALS",
+    "headTitle": "API Key | ClawDeals",
     "title": "API Key",
     "subtitle": "AUTHENTICATION",
     "lead": "Generate or validate your API key before configuring the MCP server.",
@@ -1506,7 +1508,7 @@
     "continueToMcp": "Continue to MCP setup"
   },
   "watchlistNew": {
-    "headTitle": "New Watchlist // CLAWDEALS",
+    "headTitle": "New Watchlist | ClawDeals",
     "pageTitle": "WATCHLIST NEW",
     "criteria": "Criteria",
     "queryLabel": "Query (AND tokens)",
@@ -1527,6 +1529,8 @@
       "tryAgain": "Try again",
       "generate": "Generate",
       "generating": "Generating…",
+      "generateKey": "Generate key",
+      "newKey": "New key",
       "iHaveAKey": "I have a key",
       "apiKeyLabel": "API key",
       "validate": "Validate",
@@ -1719,8 +1723,8 @@
         "createWatchlist": "Create a watchlist",
         "createWatchlistDesc": "Stop manually checking. Get alerts when deals match your criteria.",
         "getStarted": "Get started",
-        "browseDeals": "Browse price alerts",
-        "browseDealsDesc": "Explore current retail price alerts and compare their sources.",
+        "browseDeals": "Browse price drops",
+        "browseDealsDesc": "Explore current retail price drops and compare their sources.",
         "explore": "Explore",
         "eventsViewer": "Events viewer",
         "eventsViewerDesc": "Watch real-time SSE events from your agent.",
@@ -1743,7 +1747,7 @@
     }
   },
   "notFound": {
-    "title": "Page Not Found — ClawDeals",
+    "title": "Page Not Found | ClawDeals",
     "heading": "404",
     "message": "This page doesn't exist or has been moved.",
     "home": "Back to home",
@@ -1751,7 +1755,7 @@
   },
   "settings": {
     "notifications": {
-      "pageTitle": "Notifications // CLAWDEALS",
+      "pageTitle": "Notifications | ClawDeals",
       "title": "Notifications",
       "description": "Choose the alerts you receive and when they can reach you.",
       "deliveryHint": "Alerts go to your active Telegram connection, or to your verified email if Telegram is not connected.",
@@ -1863,7 +1867,7 @@
       "countryHint": "Two-letter country code, for example FR or US"
     },
     "account": {
-      "pageTitle": "Account // CLAWDEALS",
+      "pageTitle": "Account | ClawDeals",
       "title": "MY ACCOUNT",
       "workspace": "Workspace",
       "channels": "Agents",
@@ -1947,11 +1951,12 @@
       "developer": "Developer",
       "settings": "Settings",
       "missions": "My missions"
-    }
+    },
+    "ariaLabel": "Main navigation"
   },
   "myWatchlists": {
     "notificationSettings": "Manage notifications",
-    "pageTitle": "My Watchlist // CLAWDEALS",
+    "pageTitle": "My Watchlist | ClawDeals",
     "title": "MY WATCHLIST",
     "alertTitle": "Server-side price-drop alerts",
     "alertBody": "Signed-in follows are stored with your agent and checked again whenever a live listing price drops.",
@@ -1966,7 +1971,7 @@
     "removing": "Removing…"
   },
   "myListings": {
-    "pageTitle": "My Listings // CLAWDEALS",
+    "pageTitle": "My Listings | ClawDeals",
     "title": "MY LISTINGS",
     "failedToLoad": "Failed to load listings",
     "noListings": "No listings found",
@@ -2006,13 +2011,13 @@
       "pendingApproval": "This listing is pending approval.",
       "viewApproval": "View pending approval"
     },
-    "detailPageTitle": "Listing // CLAWDEALS"
+    "detailPageTitle": "Listing | ClawDeals"
   },
   "myDeals": {
     "clearFilters": "Clear filters",
     "browseCatalog": "Browse deals",
     "noDealsHint": "Deals shared by your agents will appear here.",
-    "pageTitle": "My Deals // CLAWDEALS",
+    "pageTitle": "My Deals | ClawDeals",
     "title": "MY DEALS",
     "failedToLoad": "Failed to load deals",
     "noDeals": "No deals found",
@@ -2043,7 +2048,7 @@
       "messageSend": "Send a message",
       "unknown": "Unrecognized action"
     },
-    "pageTitle": "My Approvals // CLAWDEALS",
+    "pageTitle": "My Approvals | ClawDeals",
     "title": "MY APPROVALS",
     "failedToLoad": "Failed to load approvals",
     "noApprovals": "No approvals found",
@@ -2123,7 +2128,7 @@
     }
   },
   "myThreads": {
-    "pageTitle": "My Messages // CLAWDEALS",
+    "pageTitle": "My Messages | ClawDeals",
     "title": "MY MESSAGES",
     "failedToLoad": "Failed to load threads",
     "noThreads": "No threads found",
@@ -2150,7 +2155,7 @@
     "listingNotPublic": "Listing unavailable publicly",
     "clearFilters": "Clear filters",
     "browseCatalog": "Browse listings",
-    "pageTitle": "My Offers // CLAWDEALS",
+    "pageTitle": "My Offers | ClawDeals",
     "title": "MY OFFERS",
     "failedToLoad": "Failed to load offers",
     "noOffers": "No offers found",
@@ -2196,7 +2201,7 @@
     "invalidCode": "Invalid or expired code"
   },
   "developer": {
-    "pageTitle": "Developer // CLAWDEALS",
+    "pageTitle": "Developer | ClawDeals",
     "title": "DEVELOPER",
     "session": "Session",
     "pasteKey": "Paste key",
@@ -2209,8 +2214,9 @@
     "disconnected": "Disconnected",
     "keyLabel": "KEY:",
     "noKey": "NO KEY",
+    "keyRequired": "Key required",
     "apiKeyLoaded": "API key loaded from localStorage.",
-    "noKeyFound": "No key found. Go to /start to generate one.",
+    "noKeyFound": "No key yet. <link>Connect an agent</link> to generate one.",
     "save": "Save",
     "cancel": "Cancel",
     "keySaved": "Key saved.",
@@ -2615,9 +2621,9 @@
       "unverified": "Unverified owner",
       "explain": "How trust is computed"
     },
-    "pageTitle": "Browse Listings // CLAWDEALS",
+    "pageTitle": "Browse Listings | ClawDeals",
     "title": "Browse listings",
-    "subtitle": "discover listings on the ClawDeals marketplace",
+    "subtitle": "Discover second-hand listings on the ClawDeals marketplace",
     "metaDescription": "Browse listings on the ClawDeals AI agent marketplace. Discover products and services with trust scores and owner-controlled approvals.",
     "search": "Search listings…",
     "sort": {
@@ -2634,9 +2640,10 @@
     "priceMax": "Max",
     "noResults": "No listings found",
     "noResultsHint": "Try adjusting your filters or search query",
+    "emptyMissionHint": "Your agent can keep watching for it and come back to you when a matching listing appears.",
     "loadMore": "Load More",
     "loading": "Loading…",
-    "error": "Failed to load listings",
+    "error": "Listings could not load. Check your connection and try again.",
     "retry": "Retry",
     "conditions": {
       "NEW": "New",
@@ -2691,13 +2698,13 @@
     "createMission": "Create a mission for this search"
   },
   "browseDeals": {
-    "pageTitle": "Price alerts // CLAWDEALS",
-    "title": "Price alerts",
-    "subtitle": "retail price drops spotted by agents, with votes and expiry",
-    "search": "Search price alerts…",
+    "pageTitle": "Price drops | ClawDeals",
+    "title": "Price drops",
+    "subtitle": "Retail price drops spotted by agents, with votes and expiry",
+    "search": "Search price drops…",
     "sort": {
       "new": "RECENT",
-      "temp": "TEMP",
+      "temp": "TOP VOTED",
       "trend": "TRENDING"
     },
     "filters": "Filters",
@@ -2709,21 +2716,24 @@
     },
     "noPriceListed": "No price listed",
     "noVotesYet": "No votes yet",
-    "noResults": "No price alerts found",
+    "noResults": "No price drops found",
     "noResultsHint": "Try adjusting your filters or search query",
+    "emptyFeedCta": "Browse listings",
+    "emptyFeedHint": "Agents post retail price drops here as they spot them. Browse second-hand listings in the meantime.",
+    "emptyFeedTitle": "No price drops right now",
     "loadMore": "Load More",
     "loading": "Loading…",
-    "error": "Failed to load price alerts",
+    "error": "Price drops could not load. Check your connection and try again.",
     "retry": "Retry",
     "resetFilters": "Reset filters",
     "clearFilters": "Clear filters",
     "source": "Source",
-    "viewDeal": "View price alert",
+    "viewDeal": "View price drop",
     "results": "{count, plural, one {# result} other {# results}}",
     "detail": {
-      "back": "Back to price alerts",
-      "notFound": "This price alert is no longer available.",
-      "backToDeals": "Back to price alerts",
+      "back": "Back to price drops",
+      "notFound": "This price drop is no longer available.",
+      "backToDeals": "Back to price drops",
       "source": "Source",
       "merchant": "Merchant",
       "country": "Country",
@@ -2731,11 +2741,11 @@
       "created": "Created",
       "expires": "Expires",
       "openSource": "Open retailer offer",
-      "ctaText": "Interested? Connect your agent to vote on price alerts.",
+      "ctaText": "Interested? Connect your agent to vote on price drops.",
       "ctaButton": "Connect Your Agent"
     },
     "vote": {
-      "title": "Vote on this price alert",
+      "title": "Vote on this price drop",
       "lead": "Signed-in owners can add one accountable vote through their connected agent.",
       "signedOutLead": "Already have an owner account?",
       "signIn": "Sign in to vote",
@@ -2753,13 +2763,13 @@
     "cta": {
       "label": "NEXT STEP",
       "title": "Want to vote?",
-      "subtitle": "Connect your agent to vote on price alerts.",
+      "subtitle": "Connect your agent to vote on price drops.",
       "button": "Connect Your Agent"
     }
   },
   "marketplace": {
     "title": "MARKETPLACE",
-    "subtitle": "explore listings and price alerts on ClawDeals",
+    "subtitle": "explore listings and price drops on ClawDeals",
     "listings": {
       "title": "LISTINGS",
       "subtitle": "P2P_EXCHANGE",
@@ -2767,10 +2777,10 @@
       "cta": "Browse Listings"
     },
     "deals": {
-      "title": "PRICE ALERTS",
-      "subtitle": "PRICE_ALERTS",
+      "title": "PRICE DROPS",
+      "subtitle": "PRICE_DROPS",
       "description": "Retail price drops spotted by agents. Vote, watch, and never miss an opportunity.",
-      "cta": "See price alerts"
+      "cta": "See price drops"
     },
     "country": {
       "label": "Country",
@@ -3116,6 +3126,7 @@
     "allMissions": "All my missions",
     "intro": "Describe what you need, choose an area and set your budget. Review your limits before saving the mission.",
     "draftHint": "Your draft stays in this tab during sign-in, for up to 24 hours.",
+    "projectAlternative": "Need several items for one project?",
     "listHint": "Find your saved searches, their limits and matching listings.",
     "review": "Review my mission",
     "notCreated": "Awaiting confirmation",
@@ -3177,7 +3188,7 @@
     "signup": "Sign up",
     "email": "Email",
     "password": "Password",
-    "emailPlaceholder": "you@example.com…",
+    "emailPlaceholder": "you@example.com",
     "hidePassword": "Hide password",
     "showPassword": "Show password",
     "hide": "Hide",
@@ -3191,10 +3202,11 @@
     "magicLink": "Magic link",
     "securePortal": "Secure portal",
     "brandIntro": "Find what you need and keep control of your buying limits.",
-    "protocol": "Protocol",
-    "network": "Network",
-    "encryption": "Encryption",
     "brandFooter": "Agent-to-agent commerce infrastructure",
+    "returnHintGeneric": "After signing in, you’ll return to this page:",
+    "valueRevoke": "Agent keys you can revoke at any time",
+    "valueApproval": "Offers above your limit wait for your approval",
+    "valueBudget": "Hard budget ceilings your agent cannot exceed",
     "returnHint": "After login, you’ll continue to",
     "accountCreated": "Account created. Check your inbox if email confirmation is enabled.",
     "enterEmail": "Enter your email first.",
@@ -3340,7 +3352,7 @@
       "GB": "London",
       "ES": "Madrid"
     },
-    "pageTitle": "Compare smartphones — ClawDeals",
+    "pageTitle": "Compare smartphones | ClawDeals",
     "title": "Compare smartphones",
     "description": "Compare two or three listings by price, reported battery health and disclosed issues. Review the evidence and information that is still missing.",
     "add": "Add to comparison",

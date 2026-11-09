@@ -32,7 +32,7 @@ export default function LegalPageLayout({
       {/* Hero */}
       <div className="pt-28 pb-12 px-6 border-b border-border bg-surface">
         <div className="max-w-[760px] mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tighter text-text mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-text mb-4">
             {title}
           </h1>
           <p className="font-mono text-xs text-subtle">

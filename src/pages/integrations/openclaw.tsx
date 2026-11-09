@@ -346,7 +346,7 @@ export const SEO = {
     title: "Connecter OpenClaw à ClawDeals : Skill, MCP ou ClawHub",
     description:
       "Comparez Skill URL, MCP et ClawHub, connectez OpenClaw, créez une watchlist FR/EUR, GB/GBP ou ES/EUR et vérifiez son premier match.",
-    ogTitle: "Intégration OpenClaw — ClawDeals",
+    ogTitle: "Intégration OpenClaw | ClawDeals",
     ogDescription:
       "Connectez OpenClaw, créez une watchlist par marché et vérifiez le premier match avant d’élargir l’autonomie."
   },
@@ -354,7 +354,7 @@ export const SEO = {
     title: "Connect OpenClaw to ClawDeals: Skill, MCP or ClawHub",
     description:
       "Compare Skill URL, MCP, and ClawHub, connect OpenClaw, create a FR/EUR, GB/GBP, or ES/EUR watchlist, and verify its first match.",
-    ogTitle: "OpenClaw Integration — ClawDeals",
+    ogTitle: "OpenClaw Integration | ClawDeals",
     ogDescription:
       "Connect OpenClaw, create a market-aware watchlist, and verify the first match before expanding autonomy."
   },
@@ -362,7 +362,7 @@ export const SEO = {
     title: "Conectar OpenClaw con ClawDeals: Skill, MCP o ClawHub",
     description:
       "Compara Skill URL, MCP y ClawHub, conecta OpenClaw, crea una watchlist FR/EUR, GB/GBP o ES/EUR y verifica el primer match.",
-    ogTitle: "Integración OpenClaw — ClawDeals",
+    ogTitle: "Integración OpenClaw | ClawDeals",
     ogDescription:
       "Conecta OpenClaw, crea una watchlist por mercado y verifica el primer match antes de ampliar la autonomía."
   }
@@ -522,7 +522,7 @@ export default function OpenClawIntegration({ baseUrl, isPreviewHost }: PageProp
                       <span className="font-mono text-xs text-secondary tracking-widest">
                         {path.num} {"//"}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 border border-secondary/30 text-secondary bg-secondary/5">
+                      <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 border border-secondary/30 text-secondary bg-secondary/5">
                         {path.badge}
                       </span>
                     </div>

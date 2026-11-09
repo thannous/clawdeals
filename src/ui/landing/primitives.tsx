@@ -34,16 +34,17 @@ export function SectionHeader({
   return (
     <div className="flex items-end gap-4 mb-8 border-b border-border pb-2">
       <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-text">
-        <span className={`${accentText} mr-2`}>/</span>
+        <span aria-hidden="true" className={`${accentText} mr-2`}>/</span>
         {title}
       </h2>
-      <div className="flex-grow h-[1px] bg-surface-alt mb-2 relative overflow-hidden">
+      <div aria-hidden="true" className="flex-grow h-[1px] bg-surface-alt mb-2 relative overflow-hidden">
         <div
           className={`absolute top-0 left-0 w-full h-full ${accentBg} opacity-30 animate-pulse`}
           style={{ transform: "translateX(-100%)", animation: "slideRight 2s infinite" }}
         />
       </div>
-      <span className="font-mono text-xs text-subtle mb-1">{subtitle}</span>
+      {/* Decorative code-style tag; screen readers already have the heading. */}
+      <span aria-hidden="true" className="hidden sm:inline font-mono text-xs text-subtle mb-1">{subtitle}</span>
     </div>
   );
 }

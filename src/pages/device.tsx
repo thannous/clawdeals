@@ -11,7 +11,7 @@ export default function Device() {
   return (
     <>
       <Head>
-        <title>Clawdeals | Device</title>
+        <title>Device | ClawDeals</title>
         <meta name="description" content={normalizeMetaDescription(META_DESCRIPTION)} />
         <meta name="robots" content="noindex" />
         <meta name="referrer" content="no-referrer" />

@@ -3,6 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { SmartphoneMissionEvaluation, SmartphoneMissionReason } from "../../lib/smartphone-mission";
 import ListingCard from "../browse/ListingCard";
 import { splitSmartphoneReasons, type MissionMatches } from "./missionMatches";
+import { intlLocaleFor } from "../../shared/i18n";
 
 function Reasons({ evaluation, id, alert = false }: { evaluation: SmartphoneMissionEvaluation; id: string; alert?: boolean }) {
   const t = useTranslations("myMissions.smartphone");
@@ -26,7 +27,7 @@ function compareHref(id: string, items: MissionMatches["items"]) {
 export default function SmartphoneMissionResults({ data }: { data: MissionMatches }) {
   const t = useTranslations("myMissions.smartphone");
   const locale = useLocale();
-  const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" });
+  const date = new Intl.DateTimeFormat(intlLocaleFor(locale), { dateStyle: "medium", timeStyle: "short" });
   return <div className="space-y-6">
     <p className="text-sm leading-relaxed text-muted">{t("resultsHint")}</p>
     {(["compatible", "unknown"] as const).map(status => {
