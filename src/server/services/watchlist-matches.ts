@@ -1,6 +1,7 @@
 import { getSupabaseServiceClient } from "../db/supabase";
 import { WATCHLIST_MATCHES_DEFAULT_LIMIT, WATCHLIST_MATCHES_MAX_LIMIT } from "../config/watchlists";
 import { mapSupabaseError } from "./supabase-errors";
+import { visiblePublicEntityIds } from "./public-entity-visibility";
 
 function buildServiceError(message, status = 500, code = "ERROR") {
   const error: any = new Error(message);
@@ -133,16 +134,17 @@ export async function hydrateDealSummaries({ dealIds }: any = {}) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client
     .from("deals")
-    .select("deal_id,title,price,currency,expires_at,tags,status,created_at")
+    .select("deal_id,title,price,currency,expires_at,tags,status,source_url,created_at")
     .in("deal_id", ids);
 
   if (error) {
     mapError(error);
   }
 
+  const visible = await visiblePublicEntityIds(client, "deal", Array.isArray(data) ? data : []);
   const map = new Map();
   for (const row of Array.isArray(data) ? data : []) {
-    if (!row?.deal_id) continue;
+    if (!visible.has(row?.deal_id)) continue;
     map.set(row.deal_id, row);
   }
   return map;
@@ -155,16 +157,17 @@ export async function hydrateListingSummaries({ listingIds }: any = {}) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client
     .from("listings")
-    .select("listing_id,title,category,condition,price_amount,currency,status,created_at")
+    .select("listing_id,title,category,condition,price_amount,currency,status,geo_lat,geo_lng,created_at")
     .in("listing_id", ids);
 
   if (error) {
     mapError(error);
   }
 
+  const visible = await visiblePublicEntityIds(client, "listing", Array.isArray(data) ? data : []);
   const map = new Map();
   for (const row of Array.isArray(data) ? data : []) {
-    if (!row?.listing_id) continue;
+    if (!visible.has(row?.listing_id)) continue;
     map.set(row.listing_id, row);
   }
   return map;

@@ -13,6 +13,7 @@ import { publishThreadEvent } from "./thread-events";
 import { resolveTrustContext } from "../trustscore/context";
 import { rateLimitMiddleware } from "../rate-limit/middleware";
 import { projectContactSchema, projectMutationSchema, projectSelectionSchema } from "../http/project-missions";
+import { roundPublicCoordinate } from "../utils/public-geo";
 
 export interface ProjectContactReceipt {
   seller_agent_id: string;
@@ -65,9 +66,9 @@ function mapMission(row: StoredMission): OwnerProjectMission {
 }
 function distanceKm(lat: number, lon: number, listing: any): number | null {
   if (listing.geo_lat == null || listing.geo_lng == null) return null;
-  const otherLat = Number(listing.geo_lat);
-  const otherLon = Number(listing.geo_lng);
-  if (!Number.isFinite(otherLat) || !Number.isFinite(otherLon)) return null;
+  const otherLat = roundPublicCoordinate(Number(listing.geo_lat));
+  const otherLon = roundPublicCoordinate(Number(listing.geo_lng));
+  if (otherLat === null || otherLon === null) return null;
   const rad = Math.PI / 180;
   const a = Math.sin((otherLat - lat) * rad / 2) ** 2 + Math.cos(lat * rad) * Math.cos(otherLat * rad) * Math.sin((otherLon - lon) * rad / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - Math.min(1, a)));

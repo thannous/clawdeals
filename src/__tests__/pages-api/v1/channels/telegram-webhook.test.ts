@@ -32,6 +32,10 @@ vi.mock("../../../../server/audit/singleton", () => ({
   safeAuditLog: vi.fn(async () => {})
 }));
 
+vi.mock("../../../../server/services/api-keys", () => ({
+  authenticateApiKey: vi.fn()
+}));
+
 vi.mock("../../../../server/services/channel-identities", () => ({
   findActiveIdentityByChannel: vi.fn(),
   findPendingIdentityByChannel: vi.fn(),
@@ -99,7 +103,9 @@ vi.mock("../../../../server/channels/telegram/media", () => ({
   stripJpegExif: vi.fn((b: any) => b)
 }));
 
-import { handler } from "../../../../pages/api/v1/channels/telegram/webhook";
+import apiHandler, { handler } from "../../../../pages/api/v1/channels/telegram/webhook";
+import { authenticateApiKey } from "../../../../server/services/api-keys";
+import { API_KEY_NAMESPACE } from "../../../../server/utils/api-keys";
 import { safeAuditLog } from "../../../../server/audit/singleton";
 import { rateLimitMiddleware } from "../../../../server/rate-limit/middleware";
 import {
@@ -252,6 +258,22 @@ describe("POST /api/v1/channels/telegram/webhook", () => {
     });
 
     process.env.TELEGRAM_BOT_TOKEN = "token";
+  });
+
+  it("rejects an invalid Telegram secret without querying API-key authentication", async () => {
+    const req: any = makeReq("hello", {
+      headers: {
+        authorization: `Bearer ${API_KEY_NAMESPACE}_abcdefgh.${"s".repeat(43)}`,
+        "x-telegram-bot-api-secret-token": "invalid"
+      }
+    });
+    req.url = "/api/v1/channels/telegram/webhook";
+    const res: any = { statusCode: 0, writableEnded: false, setHeader: vi.fn(), end: vi.fn(() => { res.writableEnded = true; }) };
+    await apiHandler(req, res);
+    expect(res.statusCode).toBe(401);
+    expect(authenticateApiKey).not.toHaveBeenCalled();
+    expect(rateLimitMiddleware).not.toHaveBeenCalled();
+    expect(safeAuditLog).not.toHaveBeenCalled();
   });
 
   it("supports removing a draft photo via text command", async () => {

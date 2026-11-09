@@ -19,6 +19,16 @@ function createQueueDeleteChain(filters: Array<{ column: string; value: any }>) 
   return chain;
 }
 
+function emptyModerationQuery() {
+  const query: any = {
+    select: () => query,
+    eq: () => query,
+    in: () => query,
+    then: (resolve: any, reject: any) => Promise.resolve({ data: [], error: null }).then(resolve, reject)
+  };
+  return query;
+}
+
 describe("runWatchlistBackfillQueue", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -122,6 +132,7 @@ describe("runWatchlistBackfillQueue", () => {
         if (table === "listings") return listingsTable;
         if (table === "watchlists") return watchlistsTable;
         if (table === "watchlist_matches") return matchesTable;
+        if (table === "moderation_states") return emptyModerationQuery();
         throw new Error(`Unexpected table ${table}`);
       })
     };
@@ -304,6 +315,7 @@ describe("runWatchlistBackfillQueue", () => {
         if (table === "listings") return listingsTable;
         if (table === "watchlists") return watchlistsTable;
         if (table === "watchlist_matches") return matchesTable;
+        if (table === "moderation_states") return emptyModerationQuery();
         throw new Error(`Unexpected table ${table}`);
       })
     };
@@ -321,7 +333,7 @@ describe("runWatchlistBackfillQueue", () => {
       listings_count: 2
     });
     expect(dealsTable.select).toHaveBeenCalledWith(
-      "deal_id,title,tags,price,currency,market_code,status,created_at"
+      "deal_id,title,tags,price,currency,market_code,status,source_url,created_at"
     );
     expect(listingsTable.select).toHaveBeenCalledWith(
       "listing_id,title,category,condition,price_amount,currency,market_code,geo_lat,geo_lng,status,created_at"

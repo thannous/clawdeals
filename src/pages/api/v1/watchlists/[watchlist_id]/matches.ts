@@ -11,6 +11,7 @@ import {
   listWatchlistMatches
 } from "../../../../../server/services/watchlist-matches";
 import { WATCHLIST_MATCHES_DEFAULT_LIMIT, WATCHLIST_MATCHES_MAX_LIMIT } from "../../../../../server/config/watchlists";
+import { evaluatePublicListingGeo } from "../../../../../server/utils/matching";
 
 function resolveParam(value) {
   if (Array.isArray(value)) return value[0];
@@ -116,7 +117,7 @@ export async function handler(req, res, ctx) {
     const dealsById = entityType === "deal" ? await hydrateDealSummaries({ dealIds: entityIds }) : new Map();
     const listingsById = entityType === "listing" ? await hydrateListingSummaries({ listingIds: entityIds }) : new Map();
 
-    const responseItems = items.map((row) => {
+    const responseItems = items.flatMap((row) => {
       const dealSummary =
         entityType === "deal"
           ? (() => {
@@ -157,16 +158,30 @@ export async function handler(req, res, ctx) {
             })()
           : null;
 
-      return {
+      // Stored matches predate the current visibility and public geo rules.
+      // Recheck at read time so old rows cannot reveal a removed entity or
+      // a distance computed from a seller's precise coordinates.
+      if (entityType === "deal" && !dealSummary) return [];
+      if (entityType === "listing" && !listingSummary) return [];
+      const geo = entityType === "listing" ? evaluatePublicListingGeo(listingsById.get(row.entity_id), watchlist) : null;
+      if (geo && !geo.matched) return [];
+      const reason = row.reason && typeof row.reason === "object" && !Array.isArray(row.reason)
+        ? { ...row.reason }
+        : null;
+      if (reason) {
+        delete reason.geo_km;
+        if (geo?.km !== null && geo?.km !== undefined) reason.geo_km = geo.km;
+      }
+      return [{
         watchlist_match_id: row.watchlist_match_id,
         watchlist_id: row.watchlist_id,
         entity_type: row.entity_type,
         entity_id: row.entity_id,
         matched_at: row.matched_at,
-        reason: row.reason || null,
+        reason,
         deal_summary: dealSummary,
         listing_summary: listingSummary
-      };
+      }];
     });
 
     return jsonResponse(200, {

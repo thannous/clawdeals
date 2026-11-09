@@ -7,9 +7,11 @@ vi.mock("../../../../../server/services/deal-votes", async (importOriginal) => {
     listDealVotes: vi.fn()
   };
 });
+vi.mock("../../../../../server/services/public-deals", () => ({ assertDealPubliclyVisible: vi.fn() }));
 
 import { handler } from "../../../../../pages/api/v1/deals/[deal_id]/votes";
 import { encodeDealVotesCursor, listDealVotes } from "../../../../../server/services/deal-votes";
+import { assertDealPubliclyVisible } from "../../../../../server/services/public-deals";
 
 const dealId = "2b079372-0a7a-4fa1-93e0-1f269ea0f1d7";
 
@@ -39,5 +41,14 @@ describe("GET /v1/deals/:deal_id/votes", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(400);
     expect(result.body.error.message).toContain("direction");
+  });
+
+  it("does not reveal vote reasons for a hidden deal", async () => {
+    vi.mocked(assertDealPubliclyVisible).mockRejectedValue(Object.assign(new Error("Deal not found"), {
+      status: 404, code: "DEAL_NOT_FOUND"
+    }));
+    const result: any = await handler({ method: "GET", query: { deal_id: dealId } }, null, { ...baseCtx });
+    expect(result.status).toBe(404);
+    expect(listDealVotesMock).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@ import { getAgentIdByOwnerId } from "./agents";
 import { getListing } from "./listings";
 import { createWatchlist, deleteWatchlistForAgent, getWatchlistForAgent } from "./watchlists";
 import { mapSupabaseError } from "./supabase-errors";
+import { isListingPubliclyVisible } from "./listing-visibility";
 
 const FOLLOW_KIND = "listing_follow";
 const MAX_FOLLOWS = 100;
@@ -71,7 +72,7 @@ export async function createOwnerListingFollow({ ownerId, listingId }: { ownerId
   if (!agentId) {
     throw serviceError("Connect an agent before following listings", 409, "AGENT_REQUIRED");
   }
-  if (!listing || listing.status !== "LIVE") {
+  if (!listing || !await isListingPubliclyVisible(listing)) {
     throw serviceError("Listing not found", 404, "NOT_FOUND");
   }
 

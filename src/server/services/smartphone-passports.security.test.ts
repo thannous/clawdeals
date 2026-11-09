@@ -36,6 +36,16 @@ describe("smartphone passport security", () => {
     expect(client.from.mock.calls.map(([table]) => table)).toEqual(["listings"]);
   });
 
+  it("denies a hidden LIVE passport before reading its private content but keeps owner access", async () => {
+    const publicClient = database({ listings: [listing], moderation_states: [{ entity_id: LISTING }] });
+    await expect(getSmartphonePassport(LISTING, { kind: "public" })).rejects.toMatchObject({ status: 404 });
+    expect(publicClient.from.mock.calls.map(([table]) => table)).toEqual(["listings", "moderation_states"]);
+
+    const ownerClient = database({ listings: [listing, listing], smartphone_passports: [null] });
+    await expect(getSmartphonePassport(LISTING, { kind: "owner", ownerId: OWNER })).resolves.toBeNull();
+    expect(ownerClient.from.mock.calls.map(([table]) => table)).not.toContain("moderation_states");
+  });
+
   it("rejects an owner accessing another seller before querying passport content", async () => {
     const client = database({ listings: [listing] });
     await expect(getSmartphonePassport(LISTING, { kind: "owner", ownerId: PHOTO })).rejects.toMatchObject({ status: 404 });

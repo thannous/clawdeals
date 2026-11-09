@@ -13,9 +13,11 @@ import { getInstallationOauthScopes } from "../services/installation-scopes-cach
 import { sortScopesStable, V1_SCOPES_WRITE_DEFAULT } from "../../shared/scopes/v1";
 
 const DEFAULT_OPTIONS = {
+  enableAuth: true,
   enableRateLimit: true,
   enableIdempotency: true,
   enableAudit: true,
+  forbidAgentActor: false,
   // Enable CORS only when explicitly configured (env or per-route option).
   cors: null as null | {
     allowOrigins?: string[];
@@ -471,7 +473,7 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
     ctx.routeGroup = resolved.routeGroup || matchRouteGroupFromRequest(req) || null;
     const failClosedProtections = shouldFailClosedProtections(ctx.routeGroup);
     applyCanonicalBody(req, ctx);
-    await applyAuthStub(req, ctx);
+    if (resolved.enableAuth) await applyAuthStub(req, ctx);
 
     const cors = resolveCorsOptions(resolved);
     const corsResult = applyCorsHeaders(req, res, cors, ctx.path);
@@ -485,6 +487,15 @@ export function withApiMiddlewares(handler: any, options: any = {}) {
     let idempotencyContext = null;
 
     try {
+      // Registration can be anonymous or use an owner session, but an
+      // installation-scoped agent must not mint an unrestricted API key.
+      // Keep this before idempotency so an old cached response cannot bypass it.
+      if (resolved.forbidAgentActor === true && ctx.actor?.type === "agent") {
+        ctx.response = jsonResponse(403, errorPayload("AGENT_REGISTRATION_FORBIDDEN", "Agent credentials cannot register agents"));
+        sendJson(res, ctx.response.status, ctx.response.body, {});
+        return;
+      }
+
       if (resolved.requireOwner === true && (ctx.authError || ctx.actor?.type !== "owner" || !ctx.ownerId)) {
         const authError = ctx.authError || { status: 401, code: "UNAUTHORIZED", message: "Owner authentication required" };
         ctx.response = jsonResponse(authError.status || 401, errorPayload(authError.code, authError.message));

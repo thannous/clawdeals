@@ -18,6 +18,7 @@ type PageProps = {
 const BROWSE_LISTING_DETAIL_I18N_NAMESPACES = ["browse", "landing", "nav", "footer", "webmcp", "passport", "comparison"] as const;
 
 export const getServerSideProps: GetServerSideProps<PageProps> = async ({ params, locale, res }) => {
+  res?.setHeader?.("Cache-Control", "no-store");
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
   if (!id) return { notFound: true };
 
@@ -29,10 +30,6 @@ export const getServerSideProps: GetServerSideProps<PageProps> = async ({ params
   }
 
   if (!listing) return { notFound: true };
-
-  if (res?.setHeader) {
-    res.setHeader("Cache-Control", "public, max-age=0, s-maxage=120, stale-while-revalidate=300");
-  }
 
   return {
     props: {

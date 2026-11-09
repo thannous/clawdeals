@@ -1,4 +1,5 @@
 import { evaluateSmartphoneMission, type SmartphoneMissionPassport } from "../../lib/smartphone-mission";
+import { roundPublicCoordinate } from "./public-geo";
 function coerceString(value) {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") return null;
@@ -85,6 +86,25 @@ function haversineKm(lat1, lon1, lat2, lon2) {
     Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+export function evaluatePublicListingGeo(listing: any, watchlist: any): { matched: boolean; km: number | null } | null {
+  const geoLatRaw = watchlist.geo_lat ?? watchlist?.criteria?.geo?.lat;
+  const geoLonRaw = watchlist.geo_lon ?? watchlist?.criteria?.geo?.lon;
+  const distanceKmRaw = watchlist.distance_km ?? watchlist?.criteria?.distance_km;
+  const requiresGeo = geoLatRaw != null || geoLonRaw != null || distanceKmRaw != null || Boolean(watchlist?.criteria?.geo);
+  if (!requiresGeo) return null;
+
+  const geoLat = toNumber(geoLatRaw);
+  const geoLon = toNumber(geoLonRaw);
+  const distanceKm = toNumber(distanceKmRaw);
+  const listingLat = roundPublicCoordinate(toNumber(listing.geo_lat));
+  const listingLon = roundPublicCoordinate(toNumber(listing.geo_lng));
+  if (geoLat === null || geoLon === null || distanceKm === null || listingLat === null || listingLon === null) {
+    return { matched: false, km: null };
+  }
+  const km = haversineKm(geoLat, geoLon, listingLat, listingLon);
+  return { matched: km !== null && km >= 0 && km <= distanceKm, km };
 }
 
 export type WatchlistMatchReason = Record<string, any>;
@@ -238,7 +258,7 @@ export type EvaluateWatchlistMatchListingArgs = {
   listing?: any;
   watchlist?: any;
   entityTokens?: any;
-  // Trusted catalogue distance, when exact seller coordinates are intentionally omitted.
+  // Trusted catalogue distance calculated from public rounded coordinates.
   listingDistanceKm?: number;
   smartphonePassport?: SmartphoneMissionPassport | null;
   skipSmartphone?: boolean;
@@ -375,8 +395,8 @@ export function evaluateWatchlistMatchListing({
     const geoLon = toNumber(geoLonRaw);
     const distanceKm = toNumber(distanceKmRaw);
 
-    const listingLat = toNumber(listing.geo_lat);
-    const listingLon = toNumber(listing.geo_lng);
+    const listingLat = roundPublicCoordinate(toNumber(listing.geo_lat));
+    const listingLon = roundPublicCoordinate(toNumber(listing.geo_lng));
 
     if (!Number.isFinite(geoLat) || !Number.isFinite(geoLon) || !Number.isFinite(distanceKm)) {
       return { matched: false, reason: { ...reason, geo_invalid: true } };

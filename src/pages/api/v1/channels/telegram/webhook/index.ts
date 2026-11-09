@@ -1264,6 +1264,12 @@ export async function handler(req, res, ctx) {
 
 export default withApiMiddlewares(handler, {
   routeGroup: "channels.telegram.webhook",
+  // Telegram's header secret authenticates this route. Checking an unrelated
+  // API key here would query the database before the secret is validated.
+  enableAuth: false,
   enableRateLimit: false,
-  enableIdempotency: false
+  enableIdempotency: false,
+  // Invalid webhook calls must not write audit rows before the shared secret.
+  // Verified commands emit their own scoped audit events below.
+  enableAudit: false
 });

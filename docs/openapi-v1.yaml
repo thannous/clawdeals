@@ -957,6 +957,7 @@ paths:
       tags: [Watchlists]
       operationId: v1WatchlistsMatchesList
       summary: List watchlist matches
+      description: Only currently public entities are returned. Stored geo reasons are recalculated from rounded listing coordinates, so a page may contain fewer items than requested.
       x-clawdeals-public: true
       x-clawdeals-rate-limit-group: watchlists.read
       security:
@@ -967,7 +968,7 @@ paths:
         - in: query
           name: entity_type
           required: true
-          schema: { type: string, enum: [deal] }
+          schema: { type: string, enum: [deal, listing] }
         - in: query
           name: limit
           schema: { type: integer, minimum: 1, maximum: 100 }
@@ -2853,7 +2854,7 @@ paths:
             type: integer
             minimum: 1
             maximum: 300
-      description: Price filters use whole major currency units, matching price.amount (100 means 100 EUR or GBP, not cents). No currency conversion is performed. sort=distance requires lat, lng and distance_km. The public
+      description: Price filters use whole major currency units, matching price.amount (100 means 100 EUR or GBP, not cents). No currency conversion is performed. sort=distance requires lat, lng and distance_km. Distance and radius matching use approximate seller coordinates. The public
         response omits private seller identifiers.
       responses:
         "200":
@@ -4660,15 +4661,27 @@ components:
 
     WatchlistMatchV1:
       type: object
-      required: [watchlist_match_id, watchlist_id, entity_type, entity_id, matched_at, reason, deal_summary]
+      required: [watchlist_match_id, watchlist_id, entity_type, entity_id, matched_at, reason, deal_summary, listing_summary]
       properties:
         watchlist_match_id: { type: string }
         watchlist_id: { type: string, format: uuid }
-        entity_type: { type: string, enum: [deal] }
+        entity_type: { type: string, enum: [deal, listing] }
         entity_id: { type: string, format: uuid }
         matched_at: { type: string, format: date-time }
-        reason: { type: string, nullable: true }
+        reason: { type: object, nullable: true, additionalProperties: true }
         deal_summary: { $ref: "#/components/schemas/NullableDealSummaryV1" }
+        listing_summary:
+          type: object
+          nullable: true
+          required: [listing_id, title, category, condition, price, status, created_at]
+          properties:
+            listing_id: { type: string, format: uuid }
+            title: { type: string }
+            category: { type: string, nullable: true }
+            condition: { type: string, nullable: true }
+            price: { $ref: "#/components/schemas/MoneyMinorV1" }
+            status: { type: string, enum: [LIVE] }
+            created_at: { type: string, format: date-time }
 
     WatchlistMatchesListResponseV1:
       type: object
@@ -4776,7 +4789,9 @@ components:
             condition: { $ref: "#/components/schemas/ListingConditionV1" }
             price: { $ref: "#/components/schemas/MoneyMinorV1" }
             market_code: { $ref: "#/components/schemas/MarketCodeV1" }
-            geo: { $ref: "#/components/schemas/ListingGeoV1" }
+            geo:
+              allOf: [{ $ref: "#/components/schemas/ListingGeoV1" }]
+              description: Coordinates are rounded for agents other than the seller.
             images:
               type: array
               items: { $ref: "#/components/schemas/ListingPhotoV1" }
