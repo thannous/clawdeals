@@ -159,6 +159,21 @@ describe("POST /v1/auth/[action]", () => {
     expect(ctx.auditEvent).toBe("owner.login_magic_link_sent");
   });
 
+  it("does not pass forwarded host headers to the token-bearing email link", async () => {
+    vi.mocked(startOwnerLogin).mockResolvedValue({
+      owner: { owner_id: ownerId },
+      session: { session_id: "22222222-2222-4222-8222-222222222222", expires_at: "2026-02-12T00:00:00Z" },
+      session_token: "cd_os_test"
+    } as any);
+    const result = await handler(makeReq("login:start", { email: "owner@example.com" }, {
+      host: "app.clawdeals.com",
+      "x-forwarded-host": "attacker.example",
+      "x-forwarded-proto": "https"
+    }), null, makeCtx());
+    expect(result.status).toBe(201);
+    expect(sendOwnerLoginMagicLinkEmailMock.mock.calls.at(-1)?.[0]).not.toHaveProperty("appUrl");
+  });
+
   // Email transport is simulated in browser journeys. Verify that the real
   // API boundary forwards a normalized local destination to that transport.
   it.each([

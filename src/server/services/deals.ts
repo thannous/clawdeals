@@ -1,6 +1,7 @@
 import { assertPublishableDealSource } from "../utils/synthetic-deal";
 import { getSupabaseServiceClient } from "../db/supabase";
 import { mapSupabaseError } from "./supabase-errors";
+import { assertDealPubliclyVisible } from "./public-deals";
 
 function mapVoteError(error) {
   if (!error) return null;
@@ -154,6 +155,7 @@ export async function findRecentDealDuplicate({
 }
 
 export async function createDealVote({ dealId, agentId, direction, reason, weight }) {
+  await assertDealPubliclyVisible(dealId);
   const client = getSupabaseServiceClient();
   const payload = {
     p_deal_id: dealId,

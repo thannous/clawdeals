@@ -11,6 +11,7 @@ import {
   type SmartphonePassportPhoto
 } from "../../lib/smartphone-passport";
 import { getSupabaseServiceClient } from "../db/supabase";
+import { isListingPubliclyVisible } from "./listing-visibility";
 import {
   assertEvidenceStoragePolicy,
   deleteEvidenceObject,
@@ -51,7 +52,7 @@ async function authorizeListing(listingId: string, access: PassportAccess) {
   const client = getSupabaseServiceClient();
   const { data, error } = await client.from("listings").select("listing_id,owner_id,status").eq("listing_id", listingId).maybeSingle();
   if (error) dbError(error);
-  if (!data || (access.kind === "owner" ? data.owner_id !== access.ownerId : data.status !== "LIVE")) fail("NOT_FOUND", 404, "Listing not found");
+  if (!data || (access.kind === "owner" ? data.owner_id !== access.ownerId : !await isListingPubliclyVisible(data))) fail("NOT_FOUND", 404, "Listing not found");
   return data;
 }
 

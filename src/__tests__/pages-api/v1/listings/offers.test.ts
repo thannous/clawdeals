@@ -43,12 +43,17 @@ suite("POST /v1/listings/{id}/offers (TI-199)", () => {
 
   let getOpenOfferForThreadMock: any;
   let createOfferMock: any;
+  let isListingPubliclyVisibleMock: any;
 
   beforeAll(async () => {
     vi.resetModules();
 
     vi.doMock("../../../../server/services/listings", () => ({
       getListing: vi.fn()
+    }));
+
+    vi.doMock("../../../../server/services/listing-visibility", () => ({
+      isListingPubliclyVisible: vi.fn()
     }));
 
     vi.doMock("../../../../server/services/threads", () => ({
@@ -91,6 +96,8 @@ suite("POST /v1/listings/{id}/offers (TI-199)", () => {
 
     const listingsMod = await import("../../../../server/services/listings");
     getListingMock = vi.mocked(listingsMod.getListing);
+    const visibilityMod = await import("../../../../server/services/listing-visibility");
+    isListingPubliclyVisibleMock = vi.mocked(visibilityMod.isListingPubliclyVisible);
 
     const threadsMod = await import("../../../../server/services/threads");
     getThreadMock = vi.mocked(threadsMod.getThread);
@@ -131,6 +138,7 @@ suite("POST /v1/listings/{id}/offers (TI-199)", () => {
       seller_agent_id: sellerAgentId,
       status: "LIVE"
     } as any);
+    isListingPubliclyVisibleMock.mockResolvedValue(true);
 
     getThreadMock.mockResolvedValue({
       thread_id: threadId,
@@ -195,6 +203,19 @@ suite("POST /v1/listings/{id}/offers (TI-199)", () => {
       redacted: false,
       created_at: "2026-02-06T12:00:00Z"
     } as any);
+  });
+
+  it("does not create an offer or a thread for a hidden LIVE listing", async () => {
+    isListingPubliclyVisibleMock.mockResolvedValue(false);
+    const result: any = await handler({
+      method: "POST",
+      headers: { "idempotency-key": "hidden-listing" },
+      query: { id: listingId },
+      body: { amount: 350, currency: "EUR", expires_at: validExpiresAt() }
+    }, null, { ...baseCtx });
+    expect(result.status).toBe(404);
+    expect(createOrGetThreadMock).not.toHaveBeenCalled();
+    expect(createOfferMock).not.toHaveBeenCalled();
   });
 
   it("rejects amount values that exceed Postgres int range", async () => {

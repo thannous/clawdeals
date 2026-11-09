@@ -13,6 +13,10 @@ vi.mock("../../../../server/services/listings", () => ({
   updateListingBySeller: vi.fn()
 }));
 
+vi.mock("../../../../server/services/listing-visibility", () => ({
+  isListingPubliclyVisible: vi.fn()
+}));
+
 vi.mock("../../../../server/services/policies", () => ({
   getPolicyOrDefault: vi.fn()
 }));
@@ -32,6 +36,7 @@ vi.mock("../../../../server/sse/store", () => ({
 
 import { handler } from "../../../../pages/api/v1/listings/[id]";
 import { getListing, updateListingBySeller } from "../../../../server/services/listings";
+import { isListingPubliclyVisible } from "../../../../server/services/listing-visibility";
 import { getPolicyOrDefault } from "../../../../server/services/policies";
 import { cancelPendingListingPublishApproval, createApproval } from "../../../../server/services/approvals";
 import { resolveTrustContext } from "../../../../server/trustscore/context";
@@ -57,6 +62,7 @@ const baseCtx: any = {
 describe("PATCH /v1/listings/{id} (TI-195)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isListingPubliclyVisible).mockResolvedValue(true);
     resolveTrustContextMock.mockResolvedValue({ trust_flags: [], quarantine_applied: false } as any);
     getPolicyOrDefaultMock.mockResolvedValue({ policy_json: { auto_approve: { actions: [] } } } as any);
     updateListingBySellerMock.mockResolvedValue({
@@ -64,6 +70,25 @@ describe("PATCH /v1/listings/{id} (TI-195)", () => {
       status: "LIVE",
       updated_at: "2026-02-06T12:00:00Z"
     } as any);
+  });
+
+  it("returns approximate coordinates to other agents and exact coordinates to the seller", async () => {
+    getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "seller-1", status: "LIVE", geo_lat: 48.856614, geo_lng: 2.352222 } as any);
+    const req: any = { method: "GET", headers: {}, query: { id: listingId } };
+    const other: any = await handler(req, null, { ...baseCtx });
+    expect(other.status).toBe(200);
+    expect(other.body.data.geo).toEqual({ lat: 48.86, lng: 2.35 });
+
+    const seller: any = await handler(req, null, { ...baseCtx, agentId: "seller-1" });
+    expect(seller.status).toBe(200);
+    expect(seller.body.data.geo).toEqual({ lat: 48.856614, lng: 2.352222 });
+  });
+
+  it("does not reveal a hidden LIVE listing to another agent", async () => {
+    getListingMock.mockResolvedValue({ listing_id: listingId, seller_agent_id: "seller-1", status: "LIVE" } as any);
+    vi.mocked(isListingPubliclyVisible).mockResolvedValue(false);
+    const result: any = await handler({ method: "GET", headers: {}, query: { id: listingId } }, null, { ...baseCtx });
+    expect(result.status).toBe(404);
   });
 
   it("returns 404 for non-seller agent non-media patch (anti-enumeration)", async () => {

@@ -53,17 +53,6 @@ function parseBearerToken(value: any) {
   return parts[1];
 }
 
-function resolveRequestOrigin(req: any) {
-  const forwardedProto = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-proto"));
-  const forwardedHost = normalizeNonEmptyString(getHeaderValue(req, "x-forwarded-host"));
-  const hostHeader = normalizeNonEmptyString(getHeaderValue(req, "host"));
-
-  const proto = (forwardedProto ? forwardedProto.split(",")[0] : isSecureRequest(req) ? "https" : "http").trim().toLowerCase();
-  const host = (forwardedHost ? forwardedHost.split(",")[0] : hostHeader || "").trim();
-  if (!host) return null;
-  return `${proto}://${host}`;
-}
-
 function shouldEchoToken() {
   if (process.env.OWNER_LOGIN_ECHO_TOKEN === "true") return true;
   if (process.env.OWNER_VERIFICATION_ECHO_TOKEN === "true") return true;
@@ -167,7 +156,6 @@ export async function handler(req: any, _res: any, ctx: any) {
           sessionId: result.session?.session_id,
           token: result.session_token,
           expiresAt: result.session?.expires_at || null,
-          appUrl: resolveRequestOrigin(req),
           next: safeRedirectUrl(body.next ?? "/settings/identities")
         });
       } catch (deliveryError: any) {

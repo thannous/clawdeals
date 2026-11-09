@@ -32,6 +32,9 @@ const getOwnerProfilesMock = vi.mocked(getOwnerPublicProfiles);
 describe("getPublicListing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getClientMock.mockReturnValue({
+      from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) })
+    } as any);
   });
 
   const liveRow = {
@@ -74,6 +77,16 @@ describe("getPublicListing", () => {
     getAgentByIdMock.mockRejectedValueOnce(new Error("db down"));
     const degraded = await getPublicListing("lst-1");
     expect(degraded?.seller).toEqual({ display_name: "New seller", avatar_url: null, verified: false, trust: null });
+  });
+
+  it("hides a LIVE listing from direct detail when moderation hides it", async () => {
+    getListingMock.mockResolvedValue(liveRow as any);
+    getClientMock.mockReturnValue({
+      from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { entity_id: liveRow.listing_id }, error: null }) }) }) }) }) })
+    } as any);
+    getOwnerProfilesMock.mockResolvedValue(new Map());
+    getAgentByIdMock.mockResolvedValue(null);
+    expect(await getPublicListing(liveRow.listing_id)).toBeNull();
   });
 });
 

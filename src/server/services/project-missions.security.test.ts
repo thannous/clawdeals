@@ -116,6 +116,16 @@ describe("project mission service trust boundaries", () => {
     expect(result.plan.configurations[0].ready_to_approve).toBe(false);
   });
 
+  it("does not expose exact seller position through project radius membership", async () => {
+    const desk = { ...listing("Bureau compact", 10), geo_lat: 48.8585 };
+    seedListings([desk, listing("Chaise de bureau", 11), listing("Écran HDMI", 12)]);
+    const result = await createOwnerProjectMission(owner, {
+      brief: { ...brief, location: { ...brief.location, radius_km: 1 } }
+    }, creationKey);
+    expect(result.plan.configurations).toEqual([]);
+    expect(result.plan.alternatives.desk).toEqual([]);
+  });
+
   it("bounds a 300-result disjoint search union without losing the requested equipment roles", async () => {
     const searches = { bureau: "Bureau", desk: "Bureau", chaise: "Chaise", fauteuil: "Fauteuil", chair: "Chaise", "écran": "Écran", moniteur: "Moniteur", monitor: "Écran", lampe: "Lampe de bureau", clavier: "Clavier" };
     let counter = 100;

@@ -177,6 +177,7 @@ describe("scripts/mcp/install.mjs regression", () => {
     expect(parsed?.servers?.clawdeals?.type).toBe("stdio");
     expect(parsed?.servers?.clawdeals?.command).toBe("node");
     expect(parsed?.servers?.clawdeals?.env?.CLAWDEALS_API_KEY).toBe("test_api_key");
+    if (process.platform !== "win32") expect(fs.statSync(filePath).mode & 0o777).toBe(0o600);
 
     const backupPath = res.stdout.match(/mcp:install: Backup (.+)/)?.[1]?.trim();
     expect(backupPath).toBeTruthy();
@@ -219,6 +220,7 @@ describe("scripts/mcp/install.mjs regression", () => {
       expect(installed).toContain(fakeKey);
       expect(first.stdout + first.stderr).not.toContain(fakeKey);
       if (process.platform !== "win32") {
+        expect(fs.statSync(filePath).mode & 0o777).toBe(0o600);
         expect(fs.statSync(backup!).mode & 0o777).toBe(0o600);
         expect(fs.statSync(path.dirname(backup!)).mode & 0o777).toBe(0o700);
       }
@@ -253,6 +255,28 @@ describe("scripts/mcp/install.mjs regression", () => {
     expect(result.code).toBe(1);
     expect(result.stdout).not.toContain("Updated");
     expect(fs.readFileSync(filePath, "utf8")).toBe(original);
+  });
+
+  it("creates a new config and its parent directory privately", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-private-"));
+    const parent = path.join(dir, "private", "nested");
+    const filePath = path.join(parent, "mcp.json");
+    const result = runInstaller({ repoRoot, filePath, ioDir: dir });
+    expect(result.code).toBe(0);
+    if (process.platform !== "win32") {
+      expect(fs.statSync(parent).mode & 0o777).toBe(0o700);
+      expect(fs.statSync(filePath).mode & 0o777).toBe(0o600);
+    }
+  });
+
+  it("does not print an API key when no config target is found", () => {
+    const repoRoot = repoRootFromImportMetaUrl(import.meta.url);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdeals-mcp-no-target-"));
+    const result = runInstallerRaw({ repoRoot, ioDir: dir });
+    expect(result.code).toBe(2);
+    expect(result.stdout).toContain("<your-api-key>");
+    expect(result.stdout + result.stderr).not.toContain("test_api_key");
   });
 
   it("exits non-zero and does not claim success when target file is unparseable", () => {
