@@ -222,9 +222,7 @@ test.describe("My Deals page", () => {
       await expect(page.getByTestId("my-deals-page")).toBeVisible();
 
       await page.getByTestId("my-deals-toolbar").getByRole("button", { name: /^Active$/ }).click();
-      await page.waitForTimeout(400);
-
-      expect(page.url()).toContain("status=ACTIVE");
+      await expect(page).toHaveURL(/[?&]status=ACTIVE(?:&|$)/);
     });
   });
 

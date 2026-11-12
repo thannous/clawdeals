@@ -26,9 +26,18 @@ const MOCK_LISTINGS = [
   },
 ];
 
-/** Bypass Next.js dev overlay (<nextjs-portal>) by using DOM click */
+/**
+ * Bypass Next.js dev overlay (<nextjs-portal>) by using DOM click.
+ * A DOM click dispatched before React hydrates the control reaches no handler.
+ * React stores the props on the node when it hydrates it, so wait for that
+ * marker instead of sleeping after navigation.
+ */
 async function domClick(page: Page, testId: string) {
-  await page.getByTestId(testId).evaluate((el) => (el as HTMLButtonElement).click());
+  const target = page.getByTestId(testId);
+  await expect
+    .poll(() => target.evaluate((el) => Object.keys(el).some((key) => key.startsWith("__reactProps$"))))
+    .toBe(true);
+  await target.evaluate((el) => (el as HTMLButtonElement).click());
 }
 
 /**
@@ -128,10 +137,8 @@ test.describe("Browse page", () => {
       await page.goto("/browse");
 
       await page.getByTestId("browse-search").fill("laptop");
-      // Wait for debounce (300ms) + URL update
-      await page.waitForTimeout(600);
-
-      expect(page.url()).toContain("q=laptop");
+      // The URL follows the 300 ms debounce; the matcher retries until it does.
+      await expect(page).toHaveURL(/[?&]q=laptop(?:&|$)/);
     });
 
     test("condition pills toggle filter and update URL", async ({ page }) => {
@@ -172,7 +179,6 @@ test.describe("Browse page", () => {
 
     test("verifies cover image DOM markers per listing card after client fetch", async ({ page }) => {
       await page.goto("/browse");
-      await page.waitForTimeout(500);
 
       const listingsWithCoverStates = [
         {
@@ -215,8 +221,6 @@ test.describe("Browse page", () => {
       // First let SSR load real data, then mock client-side to return empty
       await page.goto("/browse");
 
-      // Wait for initial content
-      await page.waitForTimeout(500);
 
       // Now mock client-side to return empty
       await mockClientFetch(page, { items: [] });
@@ -229,7 +233,6 @@ test.describe("Browse page", () => {
 
     test("shows error state after client-side fetch failure", async ({ page }) => {
       await page.goto("/browse");
-      await page.waitForTimeout(500);
 
       // Mock client-side to return error
       await mockClientFetch(page, { status: 500, error: "Server error" });
@@ -242,7 +245,6 @@ test.describe("Browse page", () => {
 
     test("retry button re-fetches after error", async ({ page }) => {
       await page.goto("/browse");
-      await page.waitForTimeout(500);
 
       // First: fail
       await mockClientFetch(page, { status: 500, error: "Temporary error" });
@@ -259,7 +261,6 @@ test.describe("Browse page", () => {
 
     test("reset filters button appears in empty state", async ({ page }) => {
       await page.goto("/browse");
-      await page.waitForTimeout(500);
 
       await mockClientFetch(page, { items: [] });
       await domClick(page, "condition-POOR");
@@ -272,7 +273,6 @@ test.describe("Browse page", () => {
   test.describe("Pagination", () => {
     test("load more button appears with next_cursor and appends listings", async ({ page }) => {
       await page.goto("/browse");
-      await page.waitForTimeout(500);
 
       let callCount = 0;
       await page.route("**/api/v1/public/listings?*", async (route) => {
