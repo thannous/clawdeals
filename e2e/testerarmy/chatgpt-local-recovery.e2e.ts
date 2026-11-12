@@ -7,8 +7,8 @@ for (const refreshFails of [false, true]) {
   test(`ChatGPT can reconnect after disconnect${refreshFails ? " and a failed status refresh" : ""}`, {
     skip: process.env.TESTERARMY_CHATGPT_UI !== "1" ? "Requires the local ChatGPT panel" : false
   }, async ({ app, browser, screen }) => {
-    expect(new URL(app.baseUrl!).hostname).toBe("127.0.0.1");
-    const origin = new URL(app.baseUrl!).origin;
+    expect(new URL(app.baseUrl).hostname).toBe("127.0.0.1");
+    const origin = new URL(app.baseUrl).origin;
     const missionId = "33333333-3333-4333-8333-333333333333";
     const ownerId = "11111111-1111-4111-8111-111111111111";
     const mission = {

@@ -19,7 +19,7 @@ const reports = [
 }));
 
 beforeEach(async ({ app, browser }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     const url = new URL(route.request.url);
     if (url.origin !== origin || !["GET", "HEAD"].includes(route.request.method)) {

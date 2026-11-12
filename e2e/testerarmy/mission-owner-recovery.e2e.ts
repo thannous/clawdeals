@@ -11,7 +11,7 @@ const path = "/fr/my/missions/new?query=Vélo&price_max=80";
 
 for (const legacy of [false, true]) {
   test(`an unknown owner A mission survives owner B creation and exact replay${legacy ? " from legacy storage" : ""}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     let owner: string | null = ownerA;
     const writes: { owner: string; body: string; key: string }[] = [];
     const missions = new Map<string, Record<string, unknown>>();
@@ -84,7 +84,7 @@ for (const legacy of [false, true]) {
 
 test("a changed owner cannot submit or restore the previous owner's mounted draft", async ({ app, browser, screen }) => {
   let owner = ownerA;
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method) ? route.continue() : route.abort());
   await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: { authenticated: Boolean(owner), owner_id: owner } } }));
   await browser.route("**/api/v1/policies", route => route.fulfill({ json: { data: {} } }));
@@ -104,7 +104,7 @@ test("a changed owner cannot submit or restore the previous owner's mounted draf
 
 for (const mode of ["expired", "migration-write-fails", "confirmed-remove-fails", "legacy-rejected"]) {
   test(`an already sent mission retains exact recovery when ${mode}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const input: BuyMissionInput = {
       query: "Vélo déjà envoyé", market_code: "FR", location_label: "Paris", latitude: 48.85, longitude: 2.35,
       radius_km: 25, preferred_price_max: 75, hard_budget_max: 80, requirements: ["Brief envoyé"],
@@ -191,7 +191,7 @@ for (const mode of ["expired", "migration-write-fails", "confirmed-remove-fails"
 }
 
 test("an anonymous draft is claimed once when authentication changes before review", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let owner: string | null = null;
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method) ? route.continue() : route.abort());
   await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: { authenticated: Boolean(owner), owner_id: owner } } }));

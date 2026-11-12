@@ -3,7 +3,7 @@ import { expect } from "e2e";
 
 for (const storageFailure of ["throws", "drops-write"]) {
   test(`mission creation waits for durable retry state when storage ${storageFailure}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const ownerId = "11111111-1111-4111-8111-111111111111";
     const writes: { key: string; body: string }[] = [];
     await browser.route("**/*", async route => {
@@ -57,7 +57,7 @@ for (const storageFailure of ["throws", "drops-write"]) {
 
 for (const scenario of ["changed-owner", "signed-out", "changed-owner-after-uncertain-response"]) {
   test(`mission confirmation keeps its original owner when ${scenario}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const originalOwner = "11111111-1111-4111-8111-111111111111";
     let activeOwner: string | null = originalOwner;
     const writes: { key: string; body: string }[] = [];
@@ -103,7 +103,7 @@ for (const scenario of ["changed-owner", "signed-out", "changed-owner-after-unce
 // then returns the same record for an identical idempotency key and payload.
 // The separate mission-live selection proves real Auth/database persistence.
 test("an uncertain mission response survives reload and retries the same request", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)) await route.continue();
     else await route.abort();
@@ -157,7 +157,7 @@ test("an uncertain mission response survives reload and retries the same request
 
 for (const firstResponseLost of [false, true]) {
   test(`a quota rejection allows editing and a fresh confirmed request${firstResponseLost ? " after a lost response" : ""}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const missionId = "44444444-4444-4444-8444-444444444444";
     const writes: { key: string; body: string }[] = [];
     let mission: any;

@@ -17,7 +17,7 @@ const path = `/fr/my/approvals/${approvalId}`;
 // the separate commerce campaign qualifies real Auth and database persistence.
 for (const scenario of ["session expired", "response lost", "response truncated", "storage unavailable", "owner changed"]) {
   test(`an approval recovers safely after ${scenario}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     let activeOwner: string | null = ownerId;
     let current = structuredClone(approval);
     const writes: { key: string; body: string }[] = [];
@@ -163,7 +163,7 @@ test("approval context stays usable after resolution and never treats internal h
 });
 
 test("a queue decision cannot replace an interrupted approval or discard its note", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let current = structuredClone(approval);
   const writes: { url: string; key: string; body: string }[] = [];
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)

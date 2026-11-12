@@ -144,7 +144,7 @@ export async function execute({ historical = false } = {}) {
           format: "clawdeals-testerarmy-command-v1",
           selection,
           publicEvidence: !["ai", "mission-live", "commerce-live", "passport-missions-live"].includes(selection),
-          // A trace is an attempt ZIP in 0.18 and a result page in 0.21.
+          // A trace is an attempt ZIP in 0.18 and a result page since 0.21.
           requiredArtifactKinds: ["mission-live", "commerce-live", "passport-missions-live"].includes(selection) ? [] : ["trace"],
           runner,
           evidenceLayout,

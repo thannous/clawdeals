@@ -15,7 +15,7 @@ const listings = [
 }));
 
 beforeEach(async ({ app, browser }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     if (new URL(route.request.url).origin !== origin || !["GET", "HEAD"].includes(route.request.method)) {
       await route.abort();
@@ -47,7 +47,7 @@ test("seller listing prices keep currency units and free prices when opening det
   await expect(rows.nth(1).getByText("0.00 EUR")).toBeVisible();
   await app.screenshot("seller-listing-currency-units");
   await rows.nth(0).tap();
-  await expect(browser).toHaveURL(new URL(`/my/listings/${listings[0].listing_id}`, app.baseUrl!).href);
+  await expect(browser).toHaveURL(new URL(`/my/listings/${listings[0].listing_id}`, app.baseUrl).href);
   await expect(screen.getByRole("heading", "Bike")).toBeVisible();
   await expect(screen.getByText("1234.00 EUR")).toBeVisible();
 });

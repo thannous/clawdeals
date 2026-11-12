@@ -8,7 +8,8 @@ export const sha256 = (bytes) =>
 export function reportLayout(runner) {
   if (runner?.name === "e2e" && /^0\.18\.\d+$/.test(runner.version))
     return { artifactsDirectory: "artifacts", traceFormat: "zip" };
-  if (runner?.name === "e2e" && /^0\.21\.\d+$/.test(runner.version))
+  // Qualified against real reports only; 0.22 was never pinned here.
+  if (runner?.name === "e2e" && /^0\.(?:21|23)\.\d+$/.test(runner.version))
     return { artifactsDirectory: "results", traceFormat: "markdown" };
   throw new Error("Unsupported TesterArmy evidence layout.");
 }

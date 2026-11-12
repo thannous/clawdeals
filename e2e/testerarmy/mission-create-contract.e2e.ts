@@ -8,7 +8,7 @@ const REQUEST_KEY = `clawdeals:buy-mission-request:v2:${OWNER_A}`;
 
 for (const corruption of ["missing-criteria", "missing-mission", "invalid-location", "invalid-autonomy"]) {
   test(`mission recovery survives a successful response with ${corruption}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const writes: { key: string; body: string }[] = [];
     let mission: any;
     await browser.route("**/*", async route => {
@@ -57,7 +57,7 @@ for (const corruption of ["missing-criteria", "missing-mission", "invalid-locati
 
 for (const priorUncertain of [false, true]) {
   test(`mission POST binds the confirmed account across a cookie race${priorUncertain ? " during recovery" : ""}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     let cookieOwner = OWNER_A;
     const writes: { owner: string; key: string; body: string }[] = [];
     const insertedOwners: string[] = [];

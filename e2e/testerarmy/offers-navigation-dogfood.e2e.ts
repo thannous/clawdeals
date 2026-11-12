@@ -17,7 +17,7 @@ const offer = {
 };
 
 beforeEach(async ({ app, browser }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     const url = new URL(route.request.url);
     if (url.origin !== origin || !["GET", "HEAD"].includes(route.request.method)) {
@@ -60,7 +60,9 @@ test("a created offer opens its live listing detail", async ({ app, screen, brow
   }));
   await app.open("/my/offers");
   await screen.getByTestId("my-offers-item-link").tap();
-  await expect(browser).toHaveURL(new URL(`/browse/${listingId}`, app.baseUrl!).href);
+  // The client transition waits for the dev server's first compile of the
+  // detail route, which can outlast the default assertion timeout.
+  await expect(browser).toHaveURL(new URL(`/browse/${listingId}`, app.baseUrl).href, { timeout: 45_000 });
   await expect(screen.getByRole("heading", listing.title)).toBeVisible();
   await app.screenshot("created-offer-live-listing");
 });
@@ -86,7 +88,7 @@ for (const state of [
     await screen.getByRole("button", listingId.slice(0, 8)).tap();
     await expect(screen.getByRole("button", "Copied!")).toBeVisible();
     expect(await browser.evaluate("window.__dogfoodCopiedId")).toBe(listingId);
-    await expect(browser).toHaveURL(new URL("/my/offers", app.baseUrl!).href);
+    await expect(browser).toHaveURL(new URL("/my/offers", app.baseUrl).href);
     await app.screenshot(`offer-${state.status}-${state.listing_status ?? "missing"}-reference`);
   });
 }

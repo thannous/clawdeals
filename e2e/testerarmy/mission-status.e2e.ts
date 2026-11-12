@@ -4,7 +4,7 @@ import { expect } from "e2e";
 // A suspended agent pauses a mission on the server even while the stored
 // watchlist stays active and its expiration is still in the future.
 test("a server-paused mission stays paused in its list and detail", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   const missionId = "33333333-3333-4333-8333-333333333333";
   const query = "Vélo pliant conservé";
   const mission = {

@@ -6,10 +6,11 @@ and read `node_modules/e2e/skills/e2e/SKILL.md` plus the relevant topic before
 changing the tests or SDK calls. Current functional requirements and
 [AGENTS.md](../AGENTS.md) govern expectations and proportional verification.
 
-The pinned runner is `e2e` 0.21.3 with `@e2e-dev/web` 0.15.3, matching
-Noctalia's web integration. The web engine and the retained Playwright suites
-both use `playwright-core` 1.64.1, so the Chromium installation below serves
-both. Use the repository's Node 24 runtime; native device tooling is not needed
+The pinned runner is `e2e` 0.23.0 with `@e2e-dev/web` 0.15.5. The web engine
+pins `playwright-core` 1.64.1, so the retained Playwright suites stay on
+`@playwright/test` 1.64.1 and the Chromium installation below serves both.
+Upgrade the three together: a newer `@playwright/test` alone installs a second
+`playwright-core` and a second browser build. Use the repository's Node 24 runtime; native device tooling is not needed
 for this browser application.
 
 ## Start and select a target
@@ -122,7 +123,10 @@ Only same-origin reads, sign-in, session bridging and mission creation are allow
 Offers, seller messages, payments and other browser writes are blocked.
 Cleanup deletes only the attempt's identities/rows; incomplete cleanup fails the run.
 Private `mission-fixtures/` receipts keep safe identities and cleanup summaries.
-Network traces are disabled and screenshots suppressed after password entry.
+Network traces are disabled and the tests take no screenshot after password entry.
+Since `e2e` 0.22 the SDK no longer turns screenshots off after a secret fill: a
+failed attempt can still capture one, with secure fields masked. These reports
+stay private.
 
 Client-only drafts, account changes, quota/lost-response recovery, paused status
 and price-unit regressions use intercepted API seams:
