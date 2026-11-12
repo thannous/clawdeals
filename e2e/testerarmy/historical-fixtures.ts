@@ -20,7 +20,7 @@ export function createHistoricalTest() {
   const parity = base.extend<{ historical: Historical }>({
     historical: async ({ app, browser }, provide) => {
       const forbidden: string[] = [];
-      const origin = new URL(app.baseUrl!).origin;
+      const origin = new URL(app.baseUrl).origin;
       // Existing page.route mocks take precedence. Unmocked API traffic must
       // never turn a client contract test into an authenticated backend action.
       await browser.route("**/*", async route => {
@@ -51,9 +51,9 @@ export function createHistoricalTest() {
       };
       page.setDefaultTimeout(30_000);
       page.setDefaultNavigationTimeout(30_000);
-      page.goto = (url, options) => goto.call(page, new URL(url, app.baseUrl!).href, options);
-      request.get = (url, options) => get.call(request, new URL(url, app.baseUrl!).href, options);
-      try { await provide({ page, context, request, browser, baseURL: app.baseUrl! }); }
+      page.goto = (url, options) => goto.call(page, new URL(url, app.baseUrl).href, options);
+      request.get = (url, options) => get.call(request, new URL(url, app.baseUrl).href, options);
+      try { await provide({ page, context, request, browser, baseURL: app.baseUrl }); }
       finally {
         page.goto = goto;
         page.addInitScript = addInitScript;

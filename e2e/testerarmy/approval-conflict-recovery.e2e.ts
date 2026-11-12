@@ -18,7 +18,7 @@ const approval = {
 for (const code of ["APPROVAL_EXPIRED", "APPROVAL_INVALID", "APPROVAL_STALE", "APPROVAL_ALREADY_RESOLVED"]) {
   for (const interrupted of [false, true]) {
     test(`a definitive ${code} after a ${interrupted ? "lost response" : "fresh request"} releases approval recovery`, async ({ app, browser, screen }) => {
-      const origin = new URL(app.baseUrl!).origin;
+      const origin = new URL(app.baseUrl).origin;
       let current = structuredClone(approval);
       let reads = 0;
       const writes: { action: string; key: string; body: string }[] = [];
@@ -80,7 +80,7 @@ for (const code of ["APPROVAL_EXPIRED", "APPROVAL_INVALID", "APPROVAL_STALE", "A
 
 for (const code of ["IDEMPOTENCY_IN_PROGRESS", "IDEMPOTENCY_KEY_REUSE", "CONFLICT"]) {
   test(`an uncertain ${code} retains the exact approval attempt across reload`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     let current = structuredClone(approval);
     let reads = 0;
     const writes: { key: string; body: string }[] = [];
@@ -119,7 +119,7 @@ for (const code of ["IDEMPOTENCY_IN_PROGRESS", "IDEMPOTENCY_KEY_REUSE", "CONFLIC
 
 test("a definitive queue conflict refreshes resolved rows and releases other decisions", async ({ app, browser, screen }) => {
   const otherId = "66666666-6666-4666-8666-666666666666";
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let rows = [approval, { ...approval, approval_id: otherId }];
   let reads = 0;
   let writes = 0;

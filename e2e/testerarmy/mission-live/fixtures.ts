@@ -26,7 +26,7 @@ export const test = base.extend<{ missionFixture: Fixture }>({
     const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
     const id = randomUUID();
     const email = `mission-${id}@example.test`;
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const authOrigin = new URL(url).origin;
     const localChatGPT = process.env.TESTERARMY_CHATGPT_LOCAL === "1" &&
       new URL(origin).hostname === "127.0.0.1" && new URL(origin).protocol === "http:";

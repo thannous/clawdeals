@@ -8,7 +8,7 @@ test("a real mission compares its matching listing with the local ChatGPT subscr
   trace: "off", video: "off", timeout: 240000,
   skip: process.env.TESTERARMY_CHATGPT_LOCAL !== "1" ? "Requires the explicit local ChatGPT pilot" : false
 }, async ({ app, browser, screen, missionFixture }) => {
-  expect(new URL(app.baseUrl!).hostname).toBe("127.0.0.1");
+  expect(new URL(app.baseUrl).hostname).toBe("127.0.0.1");
   const listing = await missionFixture.createListing("GB", 75);
   await app.open(`/fr/browse/${listing.id}`);
   await screen.getByTestId("listing-ask-agent").click();

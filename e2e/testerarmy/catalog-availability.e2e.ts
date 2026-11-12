@@ -10,7 +10,7 @@ for (const locale of ["en", "fr"] as const) {
     screen,
     browser,
   }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     await browser.route("**/*", async (route) => {
       if (
         new URL(route.request.url).origin !== origin ||

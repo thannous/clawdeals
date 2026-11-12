@@ -7,7 +7,7 @@ import { desktopEngine, mobileEngine } from "./web-engines";
 // A real second browser tab has separate sessionStorage and shared session
 // cookies. Only email delivery/session APIs are modeled: no email is sent.
 test("a magic link in a separate tab preserves the private draft in its original tab", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let authenticated = false;
   const sends: { email: string; next: string }[] = [];
   await browser.route("**/*", async route => {
@@ -78,7 +78,7 @@ test("a magic link in a separate tab preserves the private draft in its original
 
 // An already owned draft must also survive reauthentication in its original tab.
 test("a same-tab magic link restores only the reconnecting owner's mission draft", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   const ownerId = "11111111-1111-4111-8111-111111111111";
   let authenticated = true;
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method) ? route.continue() : route.abort());

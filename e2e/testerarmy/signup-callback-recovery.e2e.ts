@@ -14,7 +14,7 @@ function callbackHash() {
 // The actual Supabase browser client parses the callback; all auth network
 // responses and owner sessions are fixtures. No signup or email is sent.
 test("signup email in an independent tab returns to the original private mission draft", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let authenticated = false;
   let signupCallback: string | null = null;
   let bridgeCalls = 0;
@@ -87,7 +87,7 @@ test("signup email in an independent tab returns to the original private mission
 });
 
 for (const initiallyAuthenticated of [false, true]) test(`signup callback in the original tab resumes its ${initiallyAuthenticated ? "owned" : "anonymous"} matching draft automatically`, async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let authenticated = initiallyAuthenticated;
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)
     ? route.continue() : route.abort());

@@ -9,7 +9,7 @@ for (const locale of [
   { path: "/es/my/offers", name: "ES", countered: "Contraofertada", all: "Todos" },
 ]) {
   test(`${locale.name} countered offers remain readable and filterable after reload`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     await browser.route("**/*", async route => {
       if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)) await route.continue();
       else await route.abort();

@@ -4,7 +4,7 @@ import { expect } from "e2e";
 // This client navigation contract uses synthetic responses, without creating
 // real agents or sending requests to the supplied continuation destinations.
 beforeEach(async ({ app, browser }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     const url = new URL(route.request.url);
     if (url.origin !== origin || !["GET", "HEAD"].includes(route.request.method)) {

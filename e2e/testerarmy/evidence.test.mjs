@@ -11,7 +11,7 @@ import {
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { reserveOutput, withEvidence } from "./evidence.mjs";
-import { assertUnion, inspectReport, sha256 } from "./manifest.mjs";
+import { assertUnion, inspectReport, reportLayout, sha256 } from "./manifest.mjs";
 import { bundleRuns, verifyBundle } from "./bundle.mjs";
 
 function temporary(t) {
@@ -177,10 +177,10 @@ function fixture(root) {
   return { directory, run };
 }
 
-function currentFixture(root) {
+function currentFixture(root, version = "0.21.0") {
   const fixtureData = fixture(root);
   const { directory, run } = fixtureData;
-  run.runner.version = "0.21.0";
+  run.runner.version = version;
   for (const result of run.results) {
     result.id = sha256(Buffer.from(`${result.targetId}/${result.testId}`));
     result.file = "tests/catalog.e2e.ts";
@@ -191,7 +191,7 @@ function currentFixture(root) {
     mkdirSync(folder, { recursive: true });
     writeFileSync(
       join(folder, "trace.md"),
-      `# ✓ a public journey\n\n<sub>e2e 0.21.0 · run \`${run.id}\` · the whole run is in \`report.json\`</sub>\n`,
+      `# ✓ a public journey\n\n<sub>e2e ${version} · run \`${run.id}\` · the whole run is in \`report.json\`</sub>\n`,
     );
     const mediaPath = `${segment}/attempt-1/screen.png`;
     const bytes = Buffer.from(`synthetic screenshot ${result.targetId}`);
@@ -239,6 +239,44 @@ test("0.21 result media and one trace page per executed result round-trip in a p
   );
   assert.equal(verifyBundle(root, bundle.output).journeysPassed, true);
 });
+
+// The runner is pinned exactly. A bump that reaches CI without a qualified
+// evidence layout must fail here, not while a campaign reserves its output.
+test("the pinned runner's result pages and media round-trip in a public bundle", (t) => {
+  const pinned = JSON.parse(
+    readFileSync(new URL("../../package.json", import.meta.url), "utf8"),
+  ).devDependencies.e2e;
+  assert.match(pinned, /^\d+\.\d+\.\d+$/);
+  assert.deepEqual(reportLayout({ name: "e2e", version: pinned }), {
+    artifactsDirectory: "results",
+    traceFormat: "markdown",
+  });
+  const root = temporary(t),
+    { directory } = currentFixture(root, pinned);
+  const index = inspectReport(root, directory, {
+    requiredArtifactKinds: ["trace"],
+  });
+  assert.equal(index.evidenceComplete, true);
+  assert.equal(index.tracePages.length, 2);
+  const bundle = bundleRuns(root, ".e2e/bundles/pinned", [directory]);
+  assert.equal(bundle.evidenceComplete, true);
+  assert.equal(verifyBundle(root, bundle.output).journeysPassed, true);
+});
+
+for (const version of ["0.22.0", "0.24.0", "1.0.0"]) {
+  test(`an unqualified ${version} runner layout is refused`, (t) => {
+    assert.throws(
+      () => reportLayout({ name: "e2e", version }),
+      /Unsupported TesterArmy evidence layout/,
+    );
+    const root = temporary(t),
+      { directory } = currentFixture(root, version);
+    assert.throws(
+      () => inspectReport(root, directory, { requiredArtifactKinds: ["trace"] }),
+      /Unsupported TesterArmy evidence layout/,
+    );
+  });
+}
 
 for (const defect of [
   "missing",

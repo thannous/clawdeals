@@ -24,7 +24,7 @@ const pending = { input, ownerId: ownerA, key: "44444444-4444-4444-8444-44444444
 
 for (const unrelatedRequest of [false, true]) {
   test(`an unowned v1 draft stays quarantined${unrelatedRequest ? " even beside an unrelated owner's request" : " without a request"}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const legacy = JSON.stringify({ source: sourceOne, at: Date.now(), draft: draft("Vélo", unrelatedRequest ? "Ancien brief privé B" : "Ancien brief privé A") });
     await browser.addInitScript(({ legacy, pending, unrelatedRequest }) => {
       if (!sessionStorage.getItem("fixture.seeded")) {
@@ -65,7 +65,7 @@ for (const unrelatedRequest of [false, true]) {
 
 for (const anonymous of [false, true]) for (const legacyV2 of [false, true]) {
   test(`${anonymous ? "anonymous" : "owned"} drafts preserve distinct sources${legacyV2 ? " while migrating v2" : ""}`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     let owner: string | null = anonymous ? null : ownerA;
     if (legacyV2) await browser.addInitScript(({ anonymous, ownerA, sourceOne, savedDraft }) => {
       if (!sessionStorage.getItem("fixture.seeded")) {
@@ -110,7 +110,7 @@ for (const anonymous of [false, true]) for (const legacyV2 of [false, true]) {
 
 for (const knownSource of [false, true]) {
   test(`replaying a ${knownSource ? "source-bound" : "legacy source-unknown"} attempt from another source preserves that draft`, async ({ app, browser, screen }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     const request = { ...pending, ...(knownSource ? { draftSource: sourceOne } : {}) };
     const mission = { ...missionPayload(input), watchlist_id: missionId, currency: "EUR", status: "ACTIVE", created_at: new Date().toISOString() };
     const writes: { body: string; key: string }[] = [];
@@ -139,7 +139,7 @@ for (const knownSource of [false, true]) {
 }
 
 test("a returning owner continues the newer anonymous brief for the same source", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let owner: string | null = ownerA;
   await browser.route("**/*", route => new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method) ? route.continue() : route.abort());
   await browser.route("**/api/v1/auth/session", route => route.fulfill({ json: { data: { authenticated: Boolean(owner), owner_id: owner } } }));

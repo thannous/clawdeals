@@ -7,7 +7,7 @@ import { installPassportClientFixture, passportListingId, passportPhotoId, passp
 const ownerPath = `/fr/my/listings/${passportListingId}`;
 
 test("passport client: seller creates, reloads and edits five smartphone checks", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!);
+  const fixture = await installPassportClientFixture(browser, app.baseUrl);
   await app.open(ownerPath);
   const editor = screen.getByTestId("smartphone-passport-editor");
   await expect(editor).toBeVisible();
@@ -42,7 +42,7 @@ test("passport client: seller creates, reloads and edits five smartphone checks"
 });
 
 test("passport client: buyer sees evidence provenance and copies questions for missing information", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!, samplePassport());
+  const fixture = await installPassportClientFixture(browser, app.baseUrl, samplePassport());
   await app.open("/fr/browse");
   await screen.getByTestId("sort-price_asc").tap();
   await screen.getByTestId("browse-grid").getByText(fixture.listing.title).tap();
@@ -71,7 +71,7 @@ for (const failure of [
   { status: 409, code: "PASSPORT_REVISION_CONFLICT", message: "Le passeport a été modifié ailleurs" },
 ]) {
   test(`passport client: ${failure.status} save failure preserves the seller draft`, async ({ app, screen, browser }) => {
-    const fixture = await installPassportClientFixture(browser, app.baseUrl!, samplePassport());
+    const fixture = await installPassportClientFixture(browser, app.baseUrl, samplePassport());
     await app.open(ownerPath);
     await screen.getByTestId("passport-model").fill("iPhone 13 · brouillon privé");
     await screen.getByTestId("passport-notes-functionality").fill("Microphone à contrôler avant la vente");
@@ -100,7 +100,7 @@ for (const failure of [
 }
 
 test("passport client: a listing without a smartphone passport has no buyer passport", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!);
+  const fixture = await installPassportClientFixture(browser, app.baseUrl);
   await app.open("/fr/browse");
   await screen.getByTestId("sort-price_asc").tap();
   await screen.getByTestId("browse-grid").getByText(fixture.listing.title).tap();
@@ -110,7 +110,7 @@ test("passport client: a listing without a smartphone passport has no buyer pass
 
 
 test("passport client: an incomplete success response retains edits without claiming a save", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!, samplePassport());
+  const fixture = await installPassportClientFixture(browser, app.baseUrl, samplePassport());
   await app.open(ownerPath);
   await screen.getByTestId("passport-model").fill("iPhone 13 · saisie conservée");
   fixture.returnMalformedSave();
@@ -122,7 +122,7 @@ test("passport client: an incomplete success response retains edits without clai
 });
 
 test("passport client: a reserved listing keeps the passport readable and blocks edits", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!, samplePassport());
+  const fixture = await installPassportClientFixture(browser, app.baseUrl, samplePassport());
   fixture.listing.status = "RESERVED";
   await app.open(ownerPath);
   await expect(screen.getByTestId("passport-model")).toHaveValue("iPhone 13");
@@ -136,7 +136,7 @@ test("passport client: a reserved listing keeps the passport readable and blocks
 
 
 test("passport client: removing an unsaved uploaded photo releases it without saving a passport", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!);
+  const fixture = await installPassportClientFixture(browser, app.baseUrl);
   await app.open(ownerPath);
   await screen.getByTestId("passport-enabled").check();
   await screen.getByTestId("passport-photo-battery").setInputFiles("public/favicon-192.png");
@@ -150,7 +150,7 @@ test("passport client: removing an unsaved uploaded photo releases it without sa
 });
 
 test("passport client: saved photo removal waits for a saved detachment and retries cleanup separately", async ({ app, screen, browser }) => {
-  const fixture = await installPassportClientFixture(browser, app.baseUrl!, samplePassport());
+  const fixture = await installPassportClientFixture(browser, app.baseUrl, samplePassport());
   await app.open(ownerPath);
   const remove = screen.getByTestId(`passport-remove-photo-battery-${passportPhotoId}`);
   await remove.tap();

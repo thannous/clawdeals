@@ -4,7 +4,7 @@ import { expect } from "e2e";
 // Read-only client fixtures; service tests separately verify the visibility
 // decision against the public-detail contract. No real moderation writes.
 test("owner deals retain hidden records without sending readers to unavailable public details", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   const base = {
     status: "ACTIVE", temperature: 25, price: 35, currency: "EUR",
     created_at: "2026-10-15T10:00:00.000Z", creator_agent_id: null,

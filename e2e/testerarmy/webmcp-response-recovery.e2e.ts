@@ -11,7 +11,7 @@ async function revealSubmit(browser: Browser, screen: Screen) {
 }
 
 beforeEach(async ({ app, browser }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method)) await route.continue();
     else await route.abort();

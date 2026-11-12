@@ -12,7 +12,7 @@ const approvalId = "33333333-3333-4333-8333-333333333333";
 for (const locale of ["fr", "es"] as const) {
   for (const trigger of ["anonymous reload", "queue request expires"] as const) {
     test(`${locale} approval filters survive ${trigger} and the real login return`, async ({ app, browser, screen }) => {
-      const origin = new URL(app.baseUrl!).origin;
+      const origin = new URL(app.baseUrl).origin;
       let authenticated = true;
       let expireNextRead = false;
       const reads: { state: string | null; agentId: string | null }[] = [];

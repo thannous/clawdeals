@@ -4,7 +4,7 @@ import { expect } from "e2e";
 // CI models the browser WebMCP contract and the authenticated write endpoint.
 // Native browser support and real public reads are checked separately in dogfooding.
 test.beforeEach(async ({ app, browser }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   await browser.route("**/*", async route => {
     if (new URL(route.request.url).origin === origin && ["GET", "HEAD"].includes(route.request.method))
       await route.continue();

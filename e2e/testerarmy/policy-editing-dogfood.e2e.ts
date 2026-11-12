@@ -20,7 +20,7 @@ for (const outcome of ["saved", "rejected"] as const) {
   test(`policy edits made during a pending ${outcome} response remain available for a validated retry`, {
     tags: ["dogfood", "policy", "network-recovery"], requires: ["browser"]
   }, async ({ app, screen, browser }) => {
-    const origin = new URL(app.baseUrl!).origin;
+    const origin = new URL(app.baseUrl).origin;
     let policy = structuredClone(initialPolicy);
     const writes: { version: string; body: Policy }[] = [];
     let releaseFirst!: () => void;

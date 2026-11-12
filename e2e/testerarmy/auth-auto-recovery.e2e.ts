@@ -10,7 +10,7 @@ const token = [Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toStrin
 // The real auth client retains a synthetic Supabase session. Its owner cookie
 // expires independently, and a delayed bridge exposes route-render cancellation.
 test("a client-side return to login survives a router update while restoring its owner session", async ({ app, browser, screen }) => {
-  const origin = new URL(app.baseUrl!).origin;
+  const origin = new URL(app.baseUrl).origin;
   let authenticated = false;
   let bridgeCalls = 0;
   let approvalPosts = 0;
