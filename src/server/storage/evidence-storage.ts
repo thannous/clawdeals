@@ -138,6 +138,7 @@ export async function createEvidenceReadUrl(bucket: string, key: string, expires
       operation: "get",
       pathname: key,
       validUntil,
+      access: "private",
       useCache: false
     });
     if (!result?.presignedUrl) {

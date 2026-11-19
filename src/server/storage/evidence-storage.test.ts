@@ -104,6 +104,7 @@ describe("private evidence storage on Vercel Blob", () => {
         operation: "get",
         pathname: "disputes/dispute-1/object-1",
         validUntil: 1_060_000,
+        access: "private",
         useCache: false
       }
     );
