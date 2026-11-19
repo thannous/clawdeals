@@ -310,7 +310,7 @@ export function buildPartyActions(view: any, parties: { buyer: boolean; seller: 
   const disputeActive = Boolean(view.dispute) && view.dispute.status !== "RESOLVED";
   return {
     register_shipment: parties.seller && status === "HOLD" && !view.shipment,
-    mark_delivered: parties.seller && status === "HOLD" && !view.shipment,
+    mark_delivered: parties.seller && status === "HOLD" && !view.shipment && view.terms?.listing?.delivery_method !== "SHIPPING",
     confirm_received: parties.buyer && status === "DELIVERED",
     open_dispute: isParty && !view.dispute && (status === "HOLD" || (status === "DELIVERED" && view.inspection.open)),
     submit_evidence: isParty && disputeActive,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-type AppNavCurrent = "missions" | "deals" | "listings" | "watchlists" | "approvals" | "offers" | "threads" | "developer" | "settings";
+type AppNavCurrent = "missions" | "deals" | "listings" | "watchlists" | "approvals" | "offers" | "orders" | "threads" | "developer" | "settings";
 
 type NavItem = {
   key: AppNavCurrent;
@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: "watchlists", href: "/my/watchlists", labelKey: "nav.watchlists" },
   { key: "approvals", href: "/my/approvals", labelKey: "nav.approvals" },
   { key: "offers", href: "/my/offers", labelKey: "nav.offers" },
+  { key: "orders", href: "/my/orders", labelKey: "nav.orders" },
   { key: "threads", href: "/my/threads", labelKey: "nav.threads" },
   { key: "developer", href: "/developer", labelKey: "nav.developer" },
   { key: "settings", href: "/settings/account", labelKey: "nav.settings" },

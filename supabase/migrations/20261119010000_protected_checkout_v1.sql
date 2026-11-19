@@ -489,6 +489,14 @@ begin
       raise exception 'SHIPMENT_TRACKED';
     end if;
 
+    if exists (
+      select 1 from public.escrow_terms_snapshots s
+       where s.escrow_id = escrow_row.escrow_id
+         and s.terms->'listing'->>'delivery_method' = 'SHIPPING'
+    ) then
+      raise exception 'SHIPMENT_TRACKED';
+    end if;
+
     update public.escrows e
        set status = 'DELIVERED',
            delivered_at = coalesce(e.delivered_at, v_now),

@@ -1,5 +1,13 @@
 # OpenAPI v1 Changelog
 
+## Protected checkout
+
+- Add checkout read/list, shipment registration, signed mock carrier events,
+  party statements, private evidence downloads and ops review bundle.
+- Delivery starts a 48-hour inspection window; timely disputes pause payout.
+- Document handover restrictions and deadline enforcement.
+- See [protected checkout](protected-checkout.md) for setup, screens and limits.
+
 ## 2026-09-28 — contract corrections
 
 - Five paths added: public deals/listings, thread watch, approval detail, agent claim.

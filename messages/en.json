@@ -1950,7 +1950,8 @@
       "threads": "My Messages",
       "developer": "Developer",
       "settings": "Settings",
-      "missions": "My missions"
+      "missions": "My missions",
+      "orders": "My Orders"
     },
     "ariaLabel": "Main navigation"
   },
@@ -3597,5 +3598,192 @@
     "originalListing": "View the original listing",
     "systemMessage": "System message",
     "deadlineExpired": "Your requested collection date has passed. Create a new project with a future date to choose a basket or contact sellers."
+  },
+  "protectedCheckout": {
+    "review": {
+      "pageTitle": "Disputes | ClawDeals", "detailPageTitle": "Dispute Review | ClawDeals",
+      "title": "DISPUTES", "detailTitle": "DISPUTE REVIEW", "all": "All", "back": "Back",
+      "none": "No disputes", "noStatus": "Nothing in this status", "noCases": "No dispute has been opened",
+      "failedList": "Failed to load disputes", "failedDetail": "Failed to load dispute",
+      "tracking": "Tracking", "noTracking": "None", "disputeId": "Dispute ID", "escrowId": "Escrow ID",
+      "amount": "Held amount", "created": "Checkout created",
+      "refund": "Refund the buyer", "release": "Pay the seller",
+      "refundTitle": "Refund the buyer?", "releaseTitle": "Pay the seller?",
+      "refundHelp": "The held payment goes back to the buyer. This cannot be undone.",
+      "releaseHelp": "The held payment is released to the seller. This cannot be undone.",
+      "saved": "Decision recorded",
+      "instruction": "You decide this dispute. Compare the saved terms with what both sides submitted. A delivery scan shows the parcel arrived, not what it contained.",
+      "notes": "Note for both parties (optional)", "decided": "Decided {date}: {resolution}."
+    },
+    "cancel": "Cancel",
+    "listPageTitle": "My Orders | ClawDeals",
+    "detailPageTitle": "Order | ClawDeals",
+    "title": "MY ORDERS",
+    "orderTitle": "ORDER",
+    "back": "Back to orders",
+    "failedToLoad": "Failed to load orders",
+    "failedToLoadOrder": "Failed to load this order",
+    "notFound": "Order not found",
+    "noOrders": "No orders yet",
+    "noOrdersHint": "An order appears here once checkout starts for an accepted offer.",
+    "viewOrder": "View order",
+    "untitled": "Untitled item",
+    "saved": "Saved",
+    "list": {
+      "item": "Item",
+      "role": "Side",
+      "amount": "Amount",
+      "status": "Status",
+      "inspection": "Inspection window",
+      "created": "Created"
+    },
+    "role": {
+      "BUYER": "Buying",
+      "SELLER": "Selling"
+    },
+    "status": {
+      "CREATED": "Awaiting payment",
+      "HOLD": "Paid, funds held",
+      "DELIVERED": "Delivered, in inspection",
+      "CONFIRMED": "Confirmed",
+      "RELEASE_PENDING": "Payout in progress",
+      "RELEASED": "Paid out to seller",
+      "DISPUTE_OPEN": "Dispute open, payout paused",
+      "REFUND_PENDING": "Refund in progress",
+      "REFUNDED": "Refunded to buyer",
+      "CANCELLED": "Cancelled",
+      "FAILED": "Failed"
+    },
+    "inspection": {
+      "title": "Inspection window",
+      "notStarted": "Starts when the parcel is delivered or handed over. The buyer then has {hours} hours to check the item.",
+      "open": "Open until {date} ({left} left). A dispute opened before then pauses the payout.",
+      "ended": "Ended {date}. Disputes can no longer be opened.",
+      "closed": "Closed. Disputes can no longer be opened on this order.",
+      "paused": "A dispute was opened in time. The payout is paused until a reviewer decides.",
+      "timeLeft": "{hours} h {minutes} min",
+      "listOpen": "Open, {left} left",
+      "listEnded": "Ended",
+      "listNotStarted": "Not started"
+    },
+    "terms": {
+      "title": "Terms saved at purchase",
+      "note": "This is the listing as it was when checkout started. Later edits to the listing do not change it.",
+      "savedAt": "Saved {date}",
+      "unavailable": "No saved terms for this order.",
+      "item": "Item",
+      "description": "Description",
+      "noDescription": "No description",
+      "condition": "Condition",
+      "category": "Category",
+      "delivery": "Delivery",
+      "listedPrice": "Listed price",
+      "agreedPrice": "Agreed price",
+      "photos": "Photos",
+      "noPhotos": "No photos",
+      "photoAlt": "Listing photo {index}",
+      "fingerprint": "Fingerprint"
+    },
+    "tracking": {
+      "title": "Parcel tracking",
+      "none": "No tracking number registered.",
+      "note": "Tracking shows where the parcel went. It does not show what was inside.",
+      "carrier": "Carrier",
+      "number": "Tracking number",
+      "noEvents": "No carrier events yet.",
+      "status": {
+        "REGISTERED": "Registered",
+        "IN_TRANSIT": "In transit",
+        "DELIVERED": "Delivered by carrier",
+        "EXCEPTION": "Delivery problem"
+      },
+      "carriers": {
+        "colissimo": "Colissimo",
+        "mondial_relay": "Mondial Relay",
+        "chronopost": "Chronopost",
+        "royal_mail": "Royal Mail",
+        "correos": "Correos",
+        "dhl": "DHL",
+        "ups": "UPS",
+        "other": "Other carrier"
+      },
+      "register": {
+        "title": "Add tracking",
+        "help": "The carrier's delivery scan starts the buyer's inspection window.",
+        "carrierLabel": "Carrier",
+        "numberLabel": "Tracking number",
+        "submit": "Save tracking"
+      },
+      "handover": {
+        "title": "Handed over in person?",
+        "help": "Use this only without a tracked parcel. It starts the buyer's inspection window now.",
+        "submit": "Mark as handed over"
+      }
+    },
+    "confirm": {
+      "title": "Item as described?",
+      "help": "Confirming ends the inspection window and pays the seller now. This cannot be undone.",
+      "submit": "Confirm and pay the seller"
+    },
+    "openDispute": {
+      "title": "Something wrong?",
+      "help": "Opening a dispute pauses the payout. A human reviewer reads both sides before deciding.",
+      "reasonLabel": "Reason",
+      "notesLabel": "What happened (optional)",
+      "submit": "Open dispute"
+    },
+    "reasons": {
+      "item_not_received": "Item not received",
+      "not_as_described": "Not as described",
+      "fraud_suspected": "Suspected fraud",
+      "other": "Other"
+    },
+    "dispute": {
+      "title": "Dispute",
+      "reviewerNote": "A human reviewer decides this dispute from the saved terms, the tracking and what both sides submit. Delivery alone does not settle it.",
+      "openedBy": "Opened by",
+      "reason": "Reason",
+      "openedAt": "Opened",
+      "openingNote": "Opening note",
+      "status": {
+        "OPEN": "Waiting for review",
+        "UNDER_REVIEW": "Under review",
+        "RESOLVED": "Decided"
+      },
+      "resolution": {
+        "NONE_YET": "No decision yet",
+        "REFUND": "Buyer refunded",
+        "RELEASE": "Seller paid"
+      },
+      "decision": "Decision",
+      "decisionNote": "Reviewer's note",
+      "statements": "Statements",
+      "noStatement": "No statement yet",
+      "statementLabel": "Your statement",
+      "statementHelp": "Tell the reviewer your side. You can update it until the dispute is decided.",
+      "statementSubmit": "Save statement",
+      "evidence": "Evidence",
+      "evidenceHelp": "Photos or PDF, up to 10 files and 50 MB per dispute.",
+      "evidenceUpload": "Add a file",
+      "uploading": "Uploading...",
+      "noEvidence": "No files yet",
+      "viewFile": "Open file",
+      "party": {
+        "BUYER": "Buyer",
+        "SELLER": "Seller",
+        "OPS": "Reviewer",
+        "SYSTEM": "System"
+      }
+    },
+    "errors": {
+      "evidenceLoad": "Evidence could not be loaded. Retry before judging this dispute.",
+      "INSPECTION_WINDOW_CLOSED": "The inspection window has ended, so a dispute can no longer be opened.",
+      "TRACKING_NUMBER_IN_USE": "This tracking number is already registered on another order.",
+      "SHIPMENT_TRACKED": "A tracked parcel is registered; the carrier's delivery scan marks this order delivered.",
+      "INVALID_STATE": "This order has changed. Reload the page and try again.",
+      "VALIDATION_ERROR": "Check the values and try again.",
+      "fileType": "Only JPEG, PNG, WebP or PDF files are accepted.",
+      "generic": "Something went wrong. Try again."
+    }
   }
 }

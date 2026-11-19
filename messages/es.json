@@ -1950,7 +1950,8 @@
       "threads": "Mis mensajes",
       "developer": "Desarrollador",
       "settings": "Ajustes",
-      "missions": "Mis misiones"
+      "missions": "Mis misiones",
+      "orders": "Mis pedidos"
     },
     "ariaLabel": "Navegación principal"
   },
@@ -3509,5 +3510,192 @@
     "originalListing": "Ver el anuncio original",
     "systemMessage": "Mensaje del sistema",
     "deadlineExpired": "La fecha de recogida deseada ya ha pasado. Crea otro proyecto con una fecha futura para elegir una cesta o contactar a los vendedores."
+  },
+  "protectedCheckout": {
+    "review": {
+      "pageTitle": "Disputas | ClawDeals", "detailPageTitle": "Revisión de disputa | ClawDeals",
+      "title": "DISPUTAS", "detailTitle": "REVISIÓN DE DISPUTA", "all": "Todas", "back": "Volver",
+      "none": "Sin disputas", "noStatus": "Nada en este estado", "noCases": "No se ha abierto ninguna disputa",
+      "failedList": "No se pudieron cargar las disputas", "failedDetail": "No se pudo cargar la disputa",
+      "tracking": "Seguimiento", "noTracking": "Ninguno", "disputeId": "ID de disputa", "escrowId": "ID del depósito",
+      "amount": "Importe retenido", "created": "Pedido creado",
+      "refund": "Reembolsar al comprador", "release": "Pagar al vendedor",
+      "refundTitle": "¿Reembolsar al comprador?", "releaseTitle": "¿Pagar al vendedor?",
+      "refundHelp": "El pago retenido vuelve al comprador. No se puede deshacer.",
+      "releaseHelp": "El pago retenido se entrega al vendedor. No se puede deshacer.",
+      "saved": "Decisión registrada",
+      "instruction": "Tú decides esta disputa. Compara las condiciones guardadas con las pruebas de ambas partes. Un escaneo demuestra la llegada del paquete, no su contenido.",
+      "notes": "Nota para ambas partes (opcional)", "decided": "Decidido el {date}: {resolution}."
+    },
+    "cancel": "Cancelar",
+    "listPageTitle": "Mis pedidos | ClawDeals",
+    "detailPageTitle": "Pedido | ClawDeals",
+    "title": "MIS PEDIDOS",
+    "orderTitle": "PEDIDO",
+    "back": "Volver a los pedidos",
+    "failedToLoad": "No se pudieron cargar los pedidos",
+    "failedToLoadOrder": "No se pudo cargar este pedido",
+    "notFound": "Pedido no encontrado",
+    "noOrders": "Aún no hay pedidos",
+    "noOrdersHint": "Un pedido aparece aquí cuando se inicia la compra de una oferta aceptada.",
+    "viewOrder": "Ver pedido",
+    "untitled": "Artículo sin título",
+    "saved": "Guardado",
+    "list": {
+      "item": "Artículo",
+      "role": "Lado",
+      "amount": "Importe",
+      "status": "Estado",
+      "inspection": "Plazo de inspección",
+      "created": "Creado"
+    },
+    "role": {
+      "BUYER": "Compra",
+      "SELLER": "Venta"
+    },
+    "status": {
+      "CREATED": "Pendiente de pago",
+      "HOLD": "Pagado, fondos retenidos",
+      "DELIVERED": "Entregado, en inspección",
+      "CONFIRMED": "Confirmado",
+      "RELEASE_PENDING": "Pago al vendedor en curso",
+      "RELEASED": "Pagado al vendedor",
+      "DISPUTE_OPEN": "Disputa abierta, pago en pausa",
+      "REFUND_PENDING": "Reembolso en curso",
+      "REFUNDED": "Reembolsado al comprador",
+      "CANCELLED": "Cancelado",
+      "FAILED": "Fallido"
+    },
+    "inspection": {
+      "title": "Plazo de inspección",
+      "notStarted": "Empieza cuando el paquete se entrega o se da en mano. El comprador tiene entonces {hours} horas para revisar el artículo.",
+      "open": "Abierto hasta el {date} (quedan {left}). Una disputa abierta antes de esa fecha pone el pago en pausa.",
+      "ended": "Terminó el {date}. Ya no se pueden abrir disputas.",
+      "closed": "Cerrado. Ya no se pueden abrir disputas en este pedido.",
+      "paused": "Se abrió una disputa a tiempo. El pago queda en pausa hasta que decida un revisor.",
+      "timeLeft": "{hours} h {minutes} min",
+      "listOpen": "Abierto, quedan {left}",
+      "listEnded": "Terminado",
+      "listNotStarted": "Sin empezar"
+    },
+    "terms": {
+      "title": "Condiciones guardadas en la compra",
+      "note": "Este es el anuncio tal como estaba al iniciar la compra. Los cambios posteriores del anuncio no lo modifican.",
+      "savedAt": "Guardadas el {date}",
+      "unavailable": "No hay condiciones guardadas para este pedido.",
+      "item": "Artículo",
+      "description": "Descripción",
+      "noDescription": "Sin descripción",
+      "condition": "Estado",
+      "category": "Categoría",
+      "delivery": "Entrega",
+      "listedPrice": "Precio publicado",
+      "agreedPrice": "Precio acordado",
+      "photos": "Fotos",
+      "noPhotos": "Sin fotos",
+      "photoAlt": "Foto del anuncio {index}",
+      "fingerprint": "Huella"
+    },
+    "tracking": {
+      "title": "Seguimiento del paquete",
+      "none": "No hay número de seguimiento registrado.",
+      "note": "El seguimiento muestra por dónde pasó el paquete. No muestra lo que contenía.",
+      "carrier": "Transportista",
+      "number": "Número de seguimiento",
+      "noEvents": "Aún no hay eventos del transportista.",
+      "status": {
+        "REGISTERED": "Registrado",
+        "IN_TRANSIT": "En tránsito",
+        "DELIVERED": "Entregado por el transportista",
+        "EXCEPTION": "Problema de entrega"
+      },
+      "carriers": {
+        "colissimo": "Colissimo",
+        "mondial_relay": "Mondial Relay",
+        "chronopost": "Chronopost",
+        "royal_mail": "Royal Mail",
+        "correos": "Correos",
+        "dhl": "DHL",
+        "ups": "UPS",
+        "other": "Otro transportista"
+      },
+      "register": {
+        "title": "Añadir seguimiento",
+        "help": "El escaneo de entrega del transportista inicia el plazo de inspección del comprador.",
+        "carrierLabel": "Transportista",
+        "numberLabel": "Número de seguimiento",
+        "submit": "Guardar seguimiento"
+      },
+      "handover": {
+        "title": "¿Entregado en mano?",
+        "help": "Úsalo solo si no hay paquete con seguimiento. El plazo de inspección del comprador empieza ahora.",
+        "submit": "Marcar como entregado en mano"
+      }
+    },
+    "confirm": {
+      "title": "¿El artículo es como se describía?",
+      "help": "Confirmar termina el plazo de inspección y paga al vendedor ahora. No se puede deshacer.",
+      "submit": "Confirmar y pagar al vendedor"
+    },
+    "openDispute": {
+      "title": "¿Algo va mal?",
+      "help": "Abrir una disputa pone el pago en pausa. Un revisor humano lee a las dos partes antes de decidir.",
+      "reasonLabel": "Motivo",
+      "notesLabel": "Qué ha pasado (opcional)",
+      "submit": "Abrir disputa"
+    },
+    "reasons": {
+      "item_not_received": "Artículo no recibido",
+      "not_as_described": "No es como se describía",
+      "fraud_suspected": "Sospecha de fraude",
+      "other": "Otro"
+    },
+    "dispute": {
+      "title": "Disputa",
+      "reviewerNote": "Un revisor humano decide esta disputa a partir de las condiciones guardadas, el seguimiento y lo que envían las dos partes. La entrega por sí sola no la resuelve.",
+      "openedBy": "Abierta por",
+      "reason": "Motivo",
+      "openedAt": "Abierta el",
+      "openingNote": "Nota de apertura",
+      "status": {
+        "OPEN": "En espera de revisión",
+        "UNDER_REVIEW": "En revisión",
+        "RESOLVED": "Decidida"
+      },
+      "resolution": {
+        "NONE_YET": "Sin decisión todavía",
+        "REFUND": "Comprador reembolsado",
+        "RELEASE": "Vendedor pagado"
+      },
+      "decision": "Decisión",
+      "decisionNote": "Nota del revisor",
+      "statements": "Declaraciones",
+      "noStatement": "Aún no hay declaración",
+      "statementLabel": "Tu declaración",
+      "statementHelp": "Cuenta tu versión al revisor. Puedes cambiarla hasta que se decida la disputa.",
+      "statementSubmit": "Guardar declaración",
+      "evidence": "Pruebas",
+      "evidenceHelp": "Fotos o PDF, hasta 10 archivos y 50 MB por disputa.",
+      "evidenceUpload": "Añadir un archivo",
+      "uploading": "Subiendo...",
+      "noEvidence": "Aún no hay archivos",
+      "viewFile": "Abrir archivo",
+      "party": {
+        "BUYER": "Comprador",
+        "SELLER": "Vendedor",
+        "OPS": "Revisor",
+        "SYSTEM": "Sistema"
+      }
+    },
+    "errors": {
+      "evidenceLoad": "No se pudieron cargar las pruebas. Reinténtalo antes de decidir esta disputa.",
+      "INSPECTION_WINDOW_CLOSED": "El plazo de inspección ha terminado, así que ya no se puede abrir una disputa.",
+      "TRACKING_NUMBER_IN_USE": "Este número de seguimiento ya está registrado en otro pedido.",
+      "SHIPMENT_TRACKED": "Hay un paquete con seguimiento registrado; el escaneo de entrega del transportista marca el pedido como entregado.",
+      "INVALID_STATE": "Este pedido ha cambiado. Recarga la página e inténtalo de nuevo.",
+      "VALIDATION_ERROR": "Revisa los valores e inténtalo de nuevo.",
+      "fileType": "Solo se aceptan archivos JPEG, PNG, WebP o PDF.",
+      "generic": "Algo ha fallado. Inténtalo de nuevo."
+    }
   }
 }

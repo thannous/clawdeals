@@ -115,6 +115,8 @@
       "route": "/v1/disputes/{dispute_id}/{action}",
       "covered_paths": [
         "/v1/disputes/{dispute_id}/resolve",
+        "/v1/disputes/{dispute_id}/statement",
+        "/v1/disputes/{dispute_id}/review",
         "/v1/disputes/{dispute_id}/evidence",
         "/v1/disputes/{dispute_id}/evidence:confirm"
       ]
