@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
   assertEvidenceStoragePolicy,
+  createEvidenceReadUrl,
   createEvidenceUploadUrl,
   deleteEvidenceObject,
   downloadEvidenceObjectBytes,
@@ -482,4 +483,37 @@ export async function listEvidenceBundle({
     })),
     timeline
   };
+}
+
+export async function getEvidenceItemReadUrl({
+  disputeId,
+  evidenceItemId
+}: {
+  disputeId: string;
+  evidenceItemId: string;
+}) {
+  const client = getSupabaseServiceClient();
+  const { data: pack, error: packError } = await client
+    .from("evidence_packs")
+    .select("evidence_pack_id")
+    .eq("dispute_id", disputeId)
+    .maybeSingle();
+  if (packError) {
+    mapError(packError);
+  }
+  if (!pack) return null;
+
+  const { data: item, error } = await client
+    .from("evidence_items")
+    .select("evidence_item_id,storage_bucket,storage_key,content_type")
+    .eq("evidence_item_id", evidenceItemId)
+    .eq("evidence_pack_id", pack.evidence_pack_id)
+    .maybeSingle();
+  if (error) {
+    mapError(error);
+  }
+  if (!item || !isAllowedEvidenceContentType(item.content_type)) return null;
+
+  const url = await createEvidenceReadUrl(item.storage_bucket, item.storage_key);
+  return { url };
 }

@@ -18,6 +18,7 @@ import {
   isValidSha256Hex,
   listEvidenceBundle
 } from "../../../../../server/services/evidence";
+import { loadProtectedCheckout, submitDisputeStatement } from "../../../../../server/services/protected-checkout";
 import { redactEmailsAndPhones } from "../../../../../server/utils/free-text-redaction";
 
 function getHeaderValue(req, name) {
@@ -400,6 +401,103 @@ export async function handler(req, res, ctx) {
     }
   }
 
+  if (action === "statement" && req.method === "POST") {
+    if (!getHeaderValue(req, "idempotency-key")) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "Idempotency-Key is required"));
+    }
+    if (role.submittedBy === "OPS") {
+      return jsonResponse(403, errorPayload("PERMISSION_DENIED", "Only the buyer or the seller can submit a statement"));
+    }
+
+    const raw = typeof req.body?.statement === "string" ? req.body.statement.trim() : "";
+    if (!raw || raw.length > 4000) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "statement is invalid"));
+    }
+    const statementRedacted = redactEmailsAndPhones(raw).text.slice(0, 2000).trim();
+    if (!statementRedacted) {
+      return jsonResponse(400, errorPayload("VALIDATION_ERROR", "statement is invalid"));
+    }
+
+    if (ctx) {
+      ctx.auditEvent = "dispute.statement_submitted";
+      ctx.auditEntityType = "dispute";
+      ctx.auditEntityId = String(disputeId);
+      ctx.body = { dispute_id: String(disputeId), action: "statement", submitted_by: role.submittedBy };
+    }
+
+    try {
+      const saved = await submitDisputeStatement({
+        disputeId: String(disputeId),
+        submittedBy: role.submittedBy,
+        bodyRedacted: statementRedacted
+      });
+      return jsonResponse(200, {
+        dispute_id: saved.dispute_id,
+        submitted_by: saved.submitted_by,
+        statement: saved.body_redacted,
+        updated_at: saved.updated_at
+      });
+    } catch (error) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    }
+  }
+
+  // Everything the reviewer decides on, in one response: the terms frozen at
+  // purchase, carrier tracking, both statements and both evidence sets.
+  if (action === "review" && req.method === "GET") {
+    if (role.submittedBy !== "OPS") {
+      return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
+    }
+
+    if (ctx) {
+      ctx.auditEvent = "dispute.review_read";
+      ctx.auditEntityType = "dispute";
+      ctx.auditEntityId = String(disputeId);
+      ctx.body = { dispute_id: String(disputeId), action: "review" };
+    }
+
+    try {
+      const [view, bundle] = await Promise.all([
+        loadProtectedCheckout(escrow),
+        listEvidenceBundle({ disputeId: String(disputeId), escrowId: escrow.escrow_id })
+      ]);
+      const evidenceBy = (party: string) =>
+        bundle.items
+          .filter((item: any) => item.submitted_by === party)
+          .map((item: any) => ({
+            evidence_item_id: item.evidence_item_id,
+            content_type: item.content_type,
+            bytes: item.bytes,
+            sha256: item.sha256,
+            created_at: item.created_at
+          }));
+
+      return jsonResponse(
+        200,
+        {
+          ...view,
+          evidence: { buyer: evidenceBy("BUYER"), seller: evidenceBy("SELLER"), ops: evidenceBy("OPS") },
+          timeline: bundle.timeline,
+          // Tracking shows where the parcel went, not what was inside it.
+          decision: {
+            required: view.dispute?.status !== "RESOLVED",
+            decided_by: "HUMAN_REVIEWER",
+            options: ["REFUND", "RELEASE"]
+          }
+        },
+        { "Cache-Control": "no-store" }
+      );
+    } catch (error) {
+      return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));
+    }
+  }
+
+  if (action === "statement") {
+    return methodNotAllowed(["POST"]);
+  }
+  if (action === "review") {
+    return methodNotAllowed(["GET"]);
+  }
   if (action === "evidence") {
     return methodNotAllowed(["GET", "POST"]);
   }

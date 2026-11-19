@@ -15,6 +15,7 @@ vi.mock("../db/supabase", () => ({ getSupabaseServiceClient }));
 import {
   VERCEL_BLOB_EVIDENCE_BUCKET,
   assertEvidenceStoragePolicy,
+  createEvidenceReadUrl,
   createEvidenceUploadUrl,
   downloadEvidenceObjectBytes,
   getEvidenceWriteBucket
@@ -73,6 +74,71 @@ describe("private evidence storage on Vercel Blob", () => {
         addRandomSuffix: false
       })
     );
+  });
+
+  it("issues a pathname-bound private GET URL with a 60-second expiry", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    issueSignedToken.mockResolvedValue({
+      delegationToken: "delegation",
+      clientSigningToken: "signing",
+      validUntil: 1_060_000
+    });
+    presignUrl.mockResolvedValue({ presignedUrl: "https://blob.test/private-read" });
+
+    const url = await createEvidenceReadUrl(
+      VERCEL_BLOB_EVIDENCE_BUCKET,
+      "disputes/dispute-1/object-1"
+    );
+    const issuedToken = issueSignedToken.mock.calls[0][0];
+
+    expect(url).toBe("https://blob.test/private-read");
+    expect(issuedToken).toEqual({
+      pathname: "disputes/dispute-1/object-1",
+      operations: ["get"],
+      validUntil: 1_060_000,
+      token: "private-blob-token"
+    });
+    expect(presignUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ delegationToken: "delegation", clientSigningToken: "signing" }),
+      {
+        operation: "get",
+        pathname: "disputes/dispute-1/object-1",
+        validUntil: 1_060_000,
+        access: "private",
+        useCache: false
+      }
+    );
+    now.mockRestore();
+  });
+
+  it("issues a download-only Supabase URL scoped to one object for 60 seconds", async () => {
+    process.env.CLAWDEALS_EVIDENCE_STORAGE_BACKEND = "supabase";
+    const storage = {
+      createSignedUrl: vi.fn(async () => ({
+        data: { signedUrl: "https://storage.test/private-read" },
+        error: null
+      }))
+    };
+    const client = { storage: { from: vi.fn(() => storage) } };
+    getSupabaseServiceClient.mockReturnValue(client);
+    const key = "disputes/dispute-1/object-1";
+
+    await expect(createEvidenceReadUrl("evidence", key)).resolves.toBe(
+      "https://storage.test/private-read"
+    );
+
+    expect(client.storage.from).toHaveBeenCalledWith("evidence");
+    expect(storage.createSignedUrl).toHaveBeenCalledWith(key, 60, { download: true });
+    expect(issueSignedToken).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown evidence storage buckets", async () => {
+    await expect(createEvidenceReadUrl("unknown", "disputes/dispute-1/object-1")).rejects.toMatchObject({
+      code: "STORAGE_ERROR"
+    });
+    expect(getSupabaseServiceClient).not.toHaveBeenCalled();
+    expect(issueSignedToken).not.toHaveBeenCalled();
   });
 
   it("bypasses cache when materializing bytes for SHA-256 verification", async () => {

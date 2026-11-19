@@ -356,6 +356,29 @@ export const RATE_LIMIT_PROFILES = {
   "escrows.confirm_received": {
     buckets: [{ limit: 200, windowSeconds: DAY }],
   },
+  "escrows.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "escrows.shipment": {
+    buckets: [{ limit: 200, windowSeconds: DAY }],
+  },
+  "owner.escrows.read": {
+    scope: "owner",
+    buckets: [{ limit: 120, windowSeconds: MINUTE }],
+  },
+  "tracking.webhooks": {
+    scope: "ip",
+    buckets: [{ limit: 600, windowSeconds: MINUTE }],
+  },
+  "console.disputes.read": {
+    scope: "owner",
+    buckets: [{ limit: 240, windowSeconds: MINUTE }],
+  },
+  "console.disputes.write": {
+    scope: "owner",
+    buckets: [{ limit: 500, windowSeconds: HOUR }],
+  },
   "disputes.open": {
     scope: "owner",
     buckets: [

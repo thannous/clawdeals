@@ -1950,7 +1950,8 @@
       "threads": "Mes messages",
       "developer": "Développeur",
       "settings": "Paramètres",
-      "missions": "Mes missions"
+      "missions": "Mes missions",
+      "orders": "Mes commandes"
     },
     "ariaLabel": "Navigation principale"
   },
@@ -3509,5 +3510,192 @@
     "originalListing": "Voir l’annonce d’origine",
     "systemMessage": "Message système",
     "deadlineExpired": "La date de retrait souhaitée est passée. Crée un nouveau projet avec une date à venir pour choisir un panier ou contacter les vendeurs."
+  },
+  "protectedCheckout": {
+    "review": {
+      "pageTitle": "Litiges | ClawDeals", "detailPageTitle": "Examen du litige | ClawDeals",
+      "title": "LITIGES", "detailTitle": "EXAMEN DU LITIGE", "all": "Tous", "back": "Retour",
+      "none": "Aucun litige", "noStatus": "Aucun litige dans ce statut", "noCases": "Aucun litige n'a été ouvert",
+      "failedList": "Impossible de charger les litiges", "failedDetail": "Impossible de charger le litige",
+      "tracking": "Suivi", "noTracking": "Aucun", "disputeId": "ID du litige", "escrowId": "ID du séquestre",
+      "amount": "Montant retenu", "created": "Commande créée",
+      "refund": "Rembourser l'acheteur", "release": "Payer le vendeur",
+      "refundTitle": "Rembourser l'acheteur ?", "releaseTitle": "Payer le vendeur ?",
+      "refundHelp": "Le paiement retenu revient à l'acheteur. Cette action est irréversible.",
+      "releaseHelp": "Le paiement retenu est versé au vendeur. Cette action est irréversible.",
+      "saved": "Décision enregistrée",
+      "instruction": "Vous tranchez ce litige. Comparez les conditions enregistrées aux éléments des deux parties. Un scan de livraison prouve l'arrivée du colis, pas son contenu.",
+      "notes": "Note pour les deux parties (facultatif)", "decided": "Décision du {date} : {resolution}."
+    },
+    "cancel": "Annuler",
+    "listPageTitle": "Mes commandes | ClawDeals",
+    "detailPageTitle": "Commande | ClawDeals",
+    "title": "MES COMMANDES",
+    "orderTitle": "COMMANDE",
+    "back": "Retour aux commandes",
+    "failedToLoad": "Impossible de charger les commandes",
+    "failedToLoadOrder": "Impossible de charger cette commande",
+    "notFound": "Commande introuvable",
+    "noOrders": "Aucune commande pour l'instant",
+    "noOrdersHint": "Une commande apparaît ici dès que l'achat d'une offre acceptée est lancé.",
+    "viewOrder": "Voir la commande",
+    "untitled": "Article sans titre",
+    "saved": "Enregistré",
+    "list": {
+      "item": "Article",
+      "role": "Côté",
+      "amount": "Montant",
+      "status": "Statut",
+      "inspection": "Fenêtre d'inspection",
+      "created": "Créée"
+    },
+    "role": {
+      "BUYER": "Achat",
+      "SELLER": "Vente"
+    },
+    "status": {
+      "CREATED": "En attente de paiement",
+      "HOLD": "Payée, fonds bloqués",
+      "DELIVERED": "Livrée, en inspection",
+      "CONFIRMED": "Confirmée",
+      "RELEASE_PENDING": "Versement en cours",
+      "RELEASED": "Versée au vendeur",
+      "DISPUTE_OPEN": "Litige ouvert, versement suspendu",
+      "REFUND_PENDING": "Remboursement en cours",
+      "REFUNDED": "Remboursée à l'acheteur",
+      "CANCELLED": "Annulée",
+      "FAILED": "Échouée"
+    },
+    "inspection": {
+      "title": "Fenêtre d'inspection",
+      "notStarted": "Elle commence à la livraison du colis ou à la remise en main propre. L'acheteur a ensuite {hours} heures pour vérifier l'article.",
+      "open": "Ouverte jusqu'au {date} (encore {left}). Un litige ouvert avant cette date suspend le versement.",
+      "ended": "Terminée le {date}. Il n'est plus possible d'ouvrir un litige.",
+      "closed": "Fermée. Il n'est plus possible d'ouvrir un litige sur cette commande.",
+      "paused": "Un litige a été ouvert à temps. Le versement est suspendu jusqu'à la décision d'un examinateur.",
+      "timeLeft": "{hours} h {minutes} min",
+      "listOpen": "Ouverte, encore {left}",
+      "listEnded": "Terminée",
+      "listNotStarted": "Pas commencée"
+    },
+    "terms": {
+      "title": "Conditions enregistrées à l'achat",
+      "note": "Voici l'annonce telle qu'elle était au début de l'achat. Les modifications ultérieures de l'annonce ne la changent pas.",
+      "savedAt": "Enregistrées le {date}",
+      "unavailable": "Aucune condition enregistrée pour cette commande.",
+      "item": "Article",
+      "description": "Description",
+      "noDescription": "Pas de description",
+      "condition": "État",
+      "category": "Catégorie",
+      "delivery": "Livraison",
+      "listedPrice": "Prix affiché",
+      "agreedPrice": "Prix convenu",
+      "photos": "Photos",
+      "noPhotos": "Pas de photo",
+      "photoAlt": "Photo de l'annonce {index}",
+      "fingerprint": "Empreinte"
+    },
+    "tracking": {
+      "title": "Suivi du colis",
+      "none": "Aucun numéro de suivi enregistré.",
+      "note": "Le suivi montre où le colis est allé. Il ne montre pas ce qu'il contenait.",
+      "carrier": "Transporteur",
+      "number": "Numéro de suivi",
+      "noEvents": "Aucun événement transporteur pour l'instant.",
+      "status": {
+        "REGISTERED": "Enregistré",
+        "IN_TRANSIT": "En transit",
+        "DELIVERED": "Livré par le transporteur",
+        "EXCEPTION": "Problème de livraison"
+      },
+      "carriers": {
+        "colissimo": "Colissimo",
+        "mondial_relay": "Mondial Relay",
+        "chronopost": "Chronopost",
+        "royal_mail": "Royal Mail",
+        "correos": "Correos",
+        "dhl": "DHL",
+        "ups": "UPS",
+        "other": "Autre transporteur"
+      },
+      "register": {
+        "title": "Ajouter le suivi",
+        "help": "Le scan de livraison du transporteur démarre la fenêtre d'inspection de l'acheteur.",
+        "carrierLabel": "Transporteur",
+        "numberLabel": "Numéro de suivi",
+        "submit": "Enregistrer le suivi"
+      },
+      "handover": {
+        "title": "Remis en main propre ?",
+        "help": "À utiliser uniquement sans colis suivi. La fenêtre d'inspection de l'acheteur démarre tout de suite.",
+        "submit": "Marquer comme remis"
+      }
+    },
+    "confirm": {
+      "title": "Article conforme ?",
+      "help": "Confirmer met fin à la fenêtre d'inspection et paie le vendeur tout de suite. C'est irréversible.",
+      "submit": "Confirmer et payer le vendeur"
+    },
+    "openDispute": {
+      "title": "Un problème ?",
+      "help": "Ouvrir un litige suspend le versement. Un examinateur humain lit les deux versions avant de décider.",
+      "reasonLabel": "Motif",
+      "notesLabel": "Ce qui s'est passé (facultatif)",
+      "submit": "Ouvrir un litige"
+    },
+    "reasons": {
+      "item_not_received": "Article non reçu",
+      "not_as_described": "Non conforme à la description",
+      "fraud_suspected": "Soupçon de fraude",
+      "other": "Autre"
+    },
+    "dispute": {
+      "title": "Litige",
+      "reviewerNote": "Un examinateur humain tranche ce litige à partir des conditions enregistrées, du suivi et de ce que les deux parties transmettent. La livraison seule ne suffit pas à le régler.",
+      "openedBy": "Ouvert par",
+      "reason": "Motif",
+      "openedAt": "Ouvert le",
+      "openingNote": "Note d'ouverture",
+      "status": {
+        "OPEN": "En attente d'examen",
+        "UNDER_REVIEW": "En cours d'examen",
+        "RESOLVED": "Tranché"
+      },
+      "resolution": {
+        "NONE_YET": "Pas encore de décision",
+        "REFUND": "Acheteur remboursé",
+        "RELEASE": "Vendeur payé"
+      },
+      "decision": "Décision",
+      "decisionNote": "Note de l'examinateur",
+      "statements": "Déclarations",
+      "noStatement": "Pas encore de déclaration",
+      "statementLabel": "Votre déclaration",
+      "statementHelp": "Donnez votre version à l'examinateur. Vous pouvez la modifier tant que le litige n'est pas tranché.",
+      "statementSubmit": "Enregistrer la déclaration",
+      "evidence": "Preuves",
+      "evidenceHelp": "Photos ou PDF, jusqu'à 10 fichiers et 50 Mo par litige.",
+      "evidenceUpload": "Ajouter un fichier",
+      "uploading": "Envoi en cours...",
+      "noEvidence": "Aucun fichier pour l'instant",
+      "viewFile": "Ouvrir le fichier",
+      "party": {
+        "BUYER": "Acheteur",
+        "SELLER": "Vendeur",
+        "OPS": "Examinateur",
+        "SYSTEM": "Système"
+      }
+    },
+    "errors": {
+      "evidenceLoad": "Impossible de charger les preuves. Réessayez avant de juger ce litige.",
+      "INSPECTION_WINDOW_CLOSED": "La fenêtre d'inspection est terminée : il n'est plus possible d'ouvrir un litige.",
+      "TRACKING_NUMBER_IN_USE": "Ce numéro de suivi est déjà enregistré sur une autre commande.",
+      "SHIPMENT_TRACKED": "Un colis suivi est enregistré ; c'est le scan de livraison du transporteur qui marque la commande comme livrée.",
+      "INVALID_STATE": "Cette commande a changé. Rechargez la page et réessayez.",
+      "VALIDATION_ERROR": "Vérifiez les valeurs et réessayez.",
+      "fileType": "Seuls les fichiers JPEG, PNG, WebP ou PDF sont acceptés.",
+      "generic": "Une erreur s'est produite. Réessayez."
+    }
   }
 }

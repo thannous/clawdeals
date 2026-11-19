@@ -6,6 +6,7 @@ import { isUuid } from "../../../../../server/utils/validators";
 import { getPspConfig } from "../../../../../server/services/psp-config";
 import { createPspAdapter } from "../../../../../server/psp";
 import { getEscrowById, markEscrowConfirmed, setEscrowReleasePending } from "../../../../../server/services/escrows";
+import { resolveEscrowParties } from "../../../../../server/services/protected-checkout";
 import { upsertPendingApproval } from "../../../../../server/services/approvals";
 import { claimOrphanedPspWebhookEvents } from "../../../../../server/services/psp-webhook-events";
 import { replayPendingEscrowEvents } from "../../../../../server/services/psp-webhook-replay";
@@ -65,8 +66,9 @@ export async function handler(req, res, ctx) {
   }
 
   const agentId = ctx?.agentId || null;
-  if (!agentId) {
-    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
+  const sessionOwnerId = ctx?.actor?.type === "owner" ? ctx?.ownerId || null : null;
+  if (!agentId && !sessionOwnerId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent or owner authentication required"));
   }
 
   const escrowId = resolveParam(req.query?.escrow_id);
@@ -88,7 +90,9 @@ export async function handler(req, res, ctx) {
     }
 
     const escrow = await getEscrowById(String(escrowId));
-    if (!escrow || escrow.buyer_agent_id !== agentId) {
+    // An owner session acts for the buyer agent it holds.
+    const parties = await resolveEscrowParties({ escrow, agentId, ownerId: sessionOwnerId });
+    if (!escrow || !parties.buyer) {
       return jsonResponse(404, errorPayload("ESCROW_NOT_FOUND", "Escrow not found"));
     }
 
@@ -145,7 +149,7 @@ export async function handler(req, res, ctx) {
       return jsonResponse(409, errorPayload("ESCROW_NOT_READY", "Escrow payment not initialized"));
     }
 
-    const confirmed = await markEscrowConfirmed({ escrowId: escrow.escrow_id, actorAgentId: agentId });
+    const confirmed = await markEscrowConfirmed({ escrowId: escrow.escrow_id, actorAgentId: escrow.buyer_agent_id });
 
     const adapter = createPspAdapter({ provider: config.provider as any, mode: config.mode as any });
     const release = await adapter.release({
@@ -179,7 +183,7 @@ export async function handler(req, res, ctx) {
 
     await publishEscrowStateChanged({
       escrow: pending,
-      actor: { type: "agent", id: agentId },
+      actor: agentId ? { type: "agent", id: agentId } : { type: "owner", id: sessionOwnerId },
       transition: "confirm_received"
     });
 

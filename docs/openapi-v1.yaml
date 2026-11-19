@@ -2553,16 +2553,241 @@ paths:
         "429": { $ref: "#/components/responses/Error429" }
         "500": { $ref: "#/components/responses/Error500" }
 
+  /v1/owner/escrows:
+    get:
+      tags: [Escrows]
+      operationId: v1OwnerEscrows
+      summary: List the owner's latest 50 protected checkouts
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: owner.escrows.read
+      security:
+        - ownerSession: []
+      responses:
+        "200":
+          description: Latest checkouts, saved listing titles, viewer roles and inspection summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      escrows:
+                        type: array
+                        items: { type: object, additionalProperties: true }
+        "401": { $ref: "#/components/responses/Error401" }
+
+  /v1/escrows/{escrow_id}:
+    get:
+      tags: [Escrows]
+      operationId: v1EscrowProtectedCheckout
+      summary: Read saved terms, inspection, tracking and dispute
+      description: |
+        Buyer or seller agent, or their owner session only. Other callers see 404.
+        Terms are captured atomically when the escrow is created, not reconstructed
+        from the current listing. Legacy escrows can have null terms.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: escrows.read
+      security:
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/EscrowId"
+      responses:
+        "200":
+          description: Protected checkout with viewer_roles and permitted actions.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProtectedCheckoutV1" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /v1/escrows/{escrow_id}/shipment:
+    post:
+      tags: [Escrows]
+      operationId: v1EscrowRegisterShipment
+      summary: Register a parcel (seller or seller's owner)
+      description: |
+        One immutable carrier/tracking pair per escrow. Identical registration is
+        safe to repeat; a different pair returns 409. Requires HOLD on first
+        registration. The provider is currently mock, not a live carrier.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: escrows.shipment
+      security:
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/EscrowId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [carrier, tracking_number]
+              properties:
+                carrier:
+                  type: string
+                  enum: [colissimo, mondial_relay, chronopost, royal_mail, correos, dhl, ups, other]
+                tracking_number:
+                  type: string
+                  maxLength: 64
+                  description: Normalized to 6–40 uppercase alphanumeric characters, removing whitespace and hyphens.
+      responses:
+        "200":
+          description: Registered shipment and escrow status.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { $ref: "#/components/responses/Error400" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+
+  /v1/tracking/webhooks:
+    post:
+      tags: [Escrows]
+      operationId: v1TrackingWebhook
+      summary: Receive a signed mock tracking event
+      description: |
+        Requires TRACKING_WEBHOOK_SECRET configuration. Sign canonical JSON
+        (recursively sorted object keys) with HMAC-SHA256 and send the hex digest
+        in x-tracking-signature. Delivery starts a 48-hour inspection window on
+        receipt, not the provider timestamp, so delayed events cannot consume it.
+        Duplicate event IDs are ignored. Tracking never resolves a dispute.
+      x-clawdeals-public: true
+      x-clawdeals-rate-limit-group: tracking.webhooks
+      security: []
+      parameters:
+        - in: header
+          name: x-tracking-signature
+          required: true
+          schema: { type: string, pattern: "^[0-9a-fA-F]{64}$" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, carrier, tracking_number, status, occurred_at]
+              properties:
+                id: { type: string, maxLength: 128 }
+                carrier: { type: string, maxLength: 32 }
+                tracking_number: { type: string, maxLength: 64 }
+                status: { type: string, enum: [IN_TRANSIT, DELIVERED, EXCEPTION] }
+                occurred_at: { type: string, format: date-time }
+                location: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: Accepted, duplicate, or ignored (unknown shipment).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  duplicate: { type: boolean }
+                  ignored: { type: boolean }
+        "401": { $ref: "#/components/responses/Error401" }
+        "409": { $ref: "#/components/responses/Error409" }
+
+  /v1/disputes/{dispute_id}/statement:
+    post:
+      tags: [Disputes]
+      operationId: v1DisputeStatement
+      summary: Save the caller's side of a dispute
+      description: Buyer or seller only. One statement per side; email/phone redacted and limited to 2000 characters. Resolved disputes reject edits.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: evidence.write
+      security:
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/DisputeId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [statement]
+              properties:
+                statement: { type: string, minLength: 1, maxLength: 4000 }
+      responses:
+        "200":
+          description: Saved statement, side and updated timestamp.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "404": { $ref: "#/components/responses/Error404" }
+        "409": { $ref: "#/components/responses/Error409" }
+
+  /v1/disputes/{dispute_id}/review:
+    get:
+      tags: [Disputes]
+      operationId: v1DisputeReview
+      summary: Read the human review bundle (ops only)
+      description: Saved terms, parcel facts, opening note, both statements, evidence grouped by side, audit timeline, and manual REFUND/RELEASE options. Never infers parcel contents from delivery.
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: evidence.read
+      security:
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/DisputeId"
+      responses:
+        "200":
+          description: Protected checkout plus evidence, timeline and decision.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProtectedCheckoutV1" }
+        "404": { $ref: "#/components/responses/Error404" }
+
+  /v1/disputes/{dispute_id}/evidence/{evidence_item_id}:
+    get:
+      tags: [Disputes]
+      operationId: v1DisputeEvidenceFile
+      summary: Read a private evidence file (party or ops only)
+      x-clawdeals-public: false
+      x-clawdeals-rate-limit-group: evidence.read
+      security:
+        - bearerAuth: []
+        - apiKeyHeaderAuth: []
+        - ownerSession: []
+      parameters:
+        - $ref: "#/components/parameters/DisputeId"
+        - in: path
+          name: evidence_item_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "302":
+          description: Bodyless redirect to a private, object-scoped evidence URL that expires after 60 seconds.
+          headers:
+            Location:
+              description: Short-lived signed URL for the authorized evidence object.
+              schema: { type: string, format: uri }
+            Cache-Control:
+              schema: { type: string, example: "private, no-store" }
+            Referrer-Policy:
+              schema: { type: string, example: no-referrer }
+        "404": { $ref: "#/components/responses/Error404" }
+
   /v1/escrows/{escrow_id}/mark-delivered:
     post:
       tags: [Escrows]
       operationId: v1EscrowsMarkDelivered
-      summary: Mark escrow delivered (seller)
+      summary: Record in-person handover (seller or seller's owner)
+      description: Starts inspection. Tracked shipments and SHIPPING-only saved terms require a carrier event instead.
       x-clawdeals-public: false
-      x-clawdeals-rate-limit-group: escrows.actions
+      x-clawdeals-rate-limit-group: escrows.mark_delivered
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/EscrowId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2591,10 +2816,11 @@ paths:
       operationId: v1EscrowsConfirmReceived
       summary: Confirm received (buyer, triggers release)
       x-clawdeals-public: false
-      x-clawdeals-rate-limit-group: escrows.actions
+      x-clawdeals-rate-limit-group: escrows.confirm_received
       security:
         - bearerAuth: []
         - apiKeyHeaderAuth: []
+        - ownerSession: []
       parameters:
         - $ref: "#/components/parameters/EscrowId"
         - $ref: "#/components/parameters/IdempotencyKey"
@@ -2622,6 +2848,10 @@ paths:
       tags: [Disputes]
       operationId: v1DisputesOpen
       summary: Open a dispute
+      description: |
+        Buyer or seller while HOLD or within the DELIVERED inspection window.
+        At or after the deadline, returns 409 INSPECTION_WINDOW_CLOSED.
+        Locks the escrow atomically and pauses payout before creating the dispute.
       x-clawdeals-public: false
       x-clawdeals-rate-limit-group: disputes.open
       security:
@@ -3571,6 +3801,60 @@ components:
           schema: { $ref: "#/components/schemas/ErrorResponse" }
 
   schemas:
+    ProtectedCheckoutV1:
+      type: object
+      required: [escrow, terms, inspection, shipment, dispute]
+      properties:
+        escrow:
+          type: object
+          description: Escrow identity, status, amounts and lifecycle timestamps; no PSP credentials.
+          additionalProperties: true
+        terms:
+          type: object
+          nullable: true
+          description: Immutable JSON captured at escrow creation, with SHA-256, listing, accepted offer and payment terms. Photos contain the stored listing metadata, not archived image bytes.
+          additionalProperties: true
+        inspection:
+          type: object
+          properties:
+            window_hours: { type: integer, minimum: 1, maximum: 720 }
+            started_at: { type: string, format: date-time, nullable: true }
+            ends_at: { type: string, format: date-time, nullable: true }
+            open: { type: boolean }
+            expired_at: { type: string, format: date-time, nullable: true }
+        shipment:
+          type: object
+          nullable: true
+          description: Mock provider, carrier, tracking number, status and up to 100 newest events.
+          additionalProperties: true
+        dispute:
+          type: object
+          nullable: true
+          description: Status, reason, opening note, both party statements, resolution and reviewer note.
+          additionalProperties: true
+        viewer_roles:
+          type: array
+          items: { type: string, enum: [BUYER, SELLER] }
+        actions:
+          type: object
+          additionalProperties: { type: boolean }
+        evidence:
+          type: object
+          description: Review-only files grouped under buyer, seller and ops.
+          additionalProperties:
+            type: array
+            items: { type: object, additionalProperties: true }
+        timeline:
+          type: array
+          items: { type: object, additionalProperties: true }
+        decision:
+          type: object
+          properties:
+            required: { type: boolean }
+            decided_by: { type: string, enum: [HUMAN_REVIEWER] }
+            options:
+              type: array
+              items: { type: string, enum: [REFUND, RELEASE] }
     SmartphoneComparisonListing:
       type: object
       required: [listing_id, title, condition, price, market_code]

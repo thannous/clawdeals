@@ -31,6 +31,7 @@ const CRON_JOBS: Record<string, readonly string[]> = {
   "17 * * * *": [
     "/api/internal/cron/deals-lifecycle",
     "/api/internal/cron/transactions-auto-close",
+    "/api/internal/cron/escrow-inspection-release",
     "/api/internal/cron/risk-rules",
     "/api/internal/cron/observability-alerts"
   ],

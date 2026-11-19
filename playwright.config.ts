@@ -24,6 +24,9 @@ const webServerMode = process.env.PW_WEB_SERVER_MODE || "dev";
 // Integration tests run the server in "prod" mode; ensure required runtime env is present.
 const telegramBotUsername = process.env.TELEGRAM_BOT_USERNAME || "clawdeals_bot";
 const internalCronSecret = process.env.INTERNAL_CRON_SECRET || "test-cron-secret";
+// Signs mock carrier tracking events in the protected-checkout integration tests.
+const trackingWebhookSecret = process.env.TRACKING_WEBHOOK_SECRET || "test-tracking-secret";
+process.env.TRACKING_WEBHOOK_SECRET = trackingWebhookSecret;
 // Enable the WebMCP demo route for UI smoke tests.
 const webmcpEnv = "NEXT_PUBLIC_WEBMCP_ENABLED=1";
 const webmcpJudgeEnv = `WEBMCP_JUDGE_AGENT_ID=${process.env.WEBMCP_JUDGE_AGENT_ID || "93000000-0000-4000-8000-000000000001"}`;
@@ -50,7 +53,7 @@ if (useLocalUpstashMock) {
 }
 const webServerCommand =
   webServerMode === "prod"
-    ? `${webmcpEnv} ${webmcpJudgeEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} ${webmcpJudgeEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
+    ? `${webmcpEnv} ${webmcpJudgeEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TRACKING_WEBHOOK_SECRET=${trackingWebhookSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run build && ${webmcpEnv} ${webmcpJudgeEnv} ${authLegacyBridgeEnv} ${consoleOpsOwnerEnv} ${ownerLoginEmailEnv} INTERNAL_CRON_SECRET=${internalCronSecret} TRACKING_WEBHOOK_SECRET=${trackingWebhookSecret} TELEGRAM_BOT_USERNAME=${telegramBotUsername} CONSOLE_OPS_ENABLED=1 OWNER_VERIFICATION_ECHO_TOKEN=true SSE_ALLOW_OWNER_OPS=true npm run start -- -p ${devPort}`
     : `${webmcpEnv} npm run dev -- --port ${devPort} ${devBundlerFlag}`;
 const integrationWorkers = (() => {
   const raw = process.env.PW_INTEGRATION_WORKERS;
