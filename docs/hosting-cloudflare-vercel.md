@@ -83,7 +83,7 @@ Le Worker assure les schedules de `wrangler.jsonc`, a garder synchronises avec
 | --- | --- |
 | `0 */6 * * *` | Expiration des offres |
 | `2 * * * *` | Recuperation des files watchlist, notifications et trustscore |
-| `17 * * * *` | Cycle de vie des deals, cloture des transactions, risque et alertes |
+| `17 * * * *` | Cycle de vie des deals, cloture des transactions, liberation des escrows apres la fenetre d'inspection, risque et alertes |
 | `10 2 * * *` | Digest watchlist, retention et partitions |
 
 Le sweep trustscore quotidien reste sur Vercel a 03:00 UTC. Les evenements de

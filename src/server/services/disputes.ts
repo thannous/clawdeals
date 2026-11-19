@@ -25,6 +25,14 @@ export function mapDisputeRpcError(error: any) {
     return { status: 404, code: "ESCROW_NOT_FOUND", message: "Escrow not found" };
   }
 
+  if (/INSPECTION_WINDOW_CLOSED/i.test(message)) {
+    return {
+      status: 409,
+      code: "INSPECTION_WINDOW_CLOSED",
+      message: "The inspection window has ended; a dispute can no longer be opened"
+    };
+  }
+
   const invalidState = /INVALID_STATE:([A-Z_]+)/i.exec(message);
   if (invalidState) {
     return {

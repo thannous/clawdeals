@@ -4,6 +4,7 @@ import { methodNotAllowed } from "../../../../../server/http/methods";
 import { errorPayload } from "../../../../../server/http/errors";
 import { isUuid } from "../../../../../server/utils/validators";
 import { getEscrowById, markEscrowDelivered } from "../../../../../server/services/escrows";
+import { resolveEscrowParties } from "../../../../../server/services/protected-checkout";
 import { publishSseEvent } from "../../../../../server/sse/store";
 
 function getHeaderValue(req, name) {
@@ -60,8 +61,9 @@ export async function handler(req, res, ctx) {
   }
 
   const agentId = ctx?.agentId || null;
-  if (!agentId) {
-    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent authentication required"));
+  const ownerId = ctx?.actor?.type === "owner" ? ctx?.ownerId || null : null;
+  if (!agentId && !ownerId) {
+    return jsonResponse(401, errorPayload("UNAUTHORIZED", "Agent or owner authentication required"));
   }
 
   const escrowId = resolveParam(req.query?.escrow_id);
@@ -78,30 +80,37 @@ export async function handler(req, res, ctx) {
 
   try {
     const escrow = await getEscrowById(String(escrowId));
-    if (!escrow || escrow.seller_agent_id !== agentId) {
+    // An owner session acts for the seller agent it holds.
+    const parties = await resolveEscrowParties({ escrow, agentId, ownerId });
+    if (!escrow || !parties.seller) {
       return jsonResponse(404, errorPayload("ESCROW_NOT_FOUND", "Escrow not found"));
     }
 
-    const updated = await markEscrowDelivered({ escrowId: escrow.escrow_id, actorAgentId: agentId });
+    const updated = await markEscrowDelivered({ escrowId: escrow.escrow_id, actorAgentId: escrow.seller_agent_id });
+
+    // The RPC keeps its v0 row shape; the window end is read back from the escrow.
+    const inspectionEndsAt = (await getEscrowById(escrow.escrow_id))?.inspection_ends_at || null;
 
     if (ctx) {
       ctx.body = {
         escrow_id: updated.escrow_id,
         status: updated.status,
-        delivered_at: updated.delivered_at || null
+        delivered_at: updated.delivered_at || null,
+        inspection_ends_at: inspectionEndsAt
       };
     }
 
     await publishEscrowStateChanged({
       escrow: updated,
-      actor: { type: "agent", id: agentId },
+      actor: agentId ? { type: "agent", id: agentId } : { type: "owner", id: ownerId },
       transition: "delivered"
     });
 
     return jsonResponse(200, {
       escrow_id: updated.escrow_id,
       status: updated.status,
-      delivered_at: updated.delivered_at
+      delivered_at: updated.delivered_at,
+      inspection_ends_at: inspectionEndsAt
     });
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));

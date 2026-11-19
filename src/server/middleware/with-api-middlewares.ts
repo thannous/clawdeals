@@ -42,6 +42,7 @@ const FAIL_CLOSED_PROTECTION_ROUTE_GROUPS = new Set([
   "approvals.deny",
   "approvals.write",
   "console.approvals.write",
+  "console.disputes.write",
   "channels.pairing_confirm",
   "channels.pairings.write",
   "console.moderation.write",
@@ -56,6 +57,7 @@ const FAIL_CLOSED_PROTECTION_ROUTE_GROUPS = new Set([
   "policies.write",
   "psp.webhooks",
   "ratings.create",
+  "tracking.webhooks",
   "reports.create",
   "sellers.psp.write"
 ]);
@@ -327,6 +329,8 @@ const ROUTE_GROUP_REQUIRED_SCOPES: Record<string, string[]> = {
   "escrows.create": ["escrow:*"],
   "escrows.pay": ["escrow:*"],
   "escrows.mark_delivered": ["escrow:*"],
+  "escrows.read": ["escrow:*"],
+  "escrows.shipment": ["escrow:*"],
   "escrows.confirm_received": ["escrow:*", "payout:*"]
 };
 

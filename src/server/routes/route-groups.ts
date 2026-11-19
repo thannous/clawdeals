@@ -454,6 +454,26 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
     pattern: /^\/v1\/escrows\/[^/]+\/confirm-received$/
   },
   {
+    group: "escrows.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/escrows\/[^/]+$/
+  },
+  {
+    group: "escrows.shipment",
+    methods: ["POST"],
+    pattern: /^\/v1\/escrows\/[^/]+\/shipment$/
+  },
+  {
+    group: "owner.escrows.read",
+    methods: ["GET"],
+    pattern: /^\/v1\/owner\/escrows$/
+  },
+  {
+    group: "tracking.webhooks",
+    methods: ["POST"],
+    pattern: /^\/v1\/tracking\/webhooks$/
+  },
+  {
     group: "disputes.open",
     methods: ["POST"],
     pattern: /^\/v1\/escrows\/[^/]+\/disputes$/
@@ -466,12 +486,12 @@ const ROUTE_GROUPS: RouteGroupMatcher[] = [
   {
     group: "evidence.write",
     methods: ["POST"],
-    pattern: /^\/v1\/disputes\/[^/]+\/(?:evidence|evidence:confirm)$/
+    pattern: /^\/v1\/disputes\/[^/]+\/(?:evidence|evidence:confirm|statement)$/
   },
   {
     group: "evidence.read",
     methods: ["GET"],
-    pattern: /^\/v1\/disputes\/[^/]+\/evidence$/
+    pattern: /^\/v1\/disputes\/[^/]+\/(?:evidence(?:\/[^/]+)?|review)$/
   },
   {
     group: "offers.write",

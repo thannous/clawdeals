@@ -188,6 +188,7 @@ describe("worker edge router", () => {
     const hourlyTargets = fetchSpy.mock.calls.map(([target]) => target.toString());
     expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/deals-lifecycle");
     expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/transactions-auto-close");
+    expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/escrow-inspection-release");
     expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/risk-rules");
     expect(hourlyTargets).toContain("https://app.clawdeals.com/api/internal/cron/observability-alerts");
 

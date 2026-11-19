@@ -55,6 +55,14 @@ export function mapEscrowRpcError(error: any) {
     return { status: 409, code: "ESCROW_FINALIZED", message: "Escrow finalized" };
   }
 
+  if (/SHIPMENT_TRACKED/i.test(message)) {
+    return {
+      status: 409,
+      code: "SHIPMENT_TRACKED",
+      message: "A tracked shipment is registered; the carrier delivery event marks this escrow delivered"
+    };
+  }
+
   if (/ESCROW_PAYMENT_ALREADY_SET/i.test(message)) {
     return { status: 409, code: "ESCROW_PAYMENT_ALREADY_SET", message: "Escrow payment already set" };
   }
