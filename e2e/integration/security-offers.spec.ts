@@ -42,17 +42,30 @@ async function setupNegotiation(
   const actions = ["listing.create", "thread.create"];
   if (allowAccept) actions.push("offer.accept");
 
-  const policyRes = await request.put("/api/v1/policies", {
-    headers: { "x-owner-id": sellerOwnerId },
-    data: {
-      budgets: { max_offer: offerLimit, currency: "EUR" },
-      approval_thresholds: { offer_amount_gt: offerLimit, contact_reveal: "always" },
-      auto_approve: { message_types: [], actions },
-      allowlist_agent_ids: [],
-      denylist_agent_ids: []
-    }
-  });
-  await expectStatus(policyRes, 200);
+  const policy = {
+    budgets: { max_offer: offerLimit, currency: "EUR" },
+    approval_thresholds: { offer_amount_gt: offerLimit, contact_reveal: "always" },
+    auto_approve: { message_types: [], actions },
+    mission_defaults: {
+      radius_km: 25,
+      autonomous_actions: ["search", "ask_question", "make_offer"]
+    },
+    quiet_hours: {
+      enabled: false,
+      start: "22:00",
+      end: "08:00",
+      timezone: "Europe/Paris"
+    },
+    allowlist_agent_ids: [],
+    denylist_agent_ids: []
+  };
+  for (const ownerId of [sellerOwnerId, buyerOwnerId]) {
+    const policyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": ownerId },
+      data: policy
+    });
+    await expectStatus(policyRes, 200);
+  }
 
   const listingRes = await createListing(
     request,
@@ -76,6 +89,7 @@ async function setupNegotiation(
   return {
     supabase,
     sellerOwnerId,
+    buyerOwnerId,
     seller,
     sellerApiKey,
     buyer,
@@ -112,7 +126,7 @@ test.describe.serial("Security: offer authorization and state invariants", () =>
   });
 
   test("blocks buyer acceptance of a seller counter-offer outside a buy mission", async ({ request }) => {
-    const fixture = await setupNegotiation(request, { allowAccept: true });
+    const fixture = await setupNegotiation(request, { allowAccept: true, offerLimit: 1000 });
 
     const sellerCounterRes = await createCounterOffer(
       request,
@@ -287,6 +301,28 @@ test.describe.serial("Security: offer authorization and state invariants", () =>
       fixture.supabase,
       competitor.id
     );
+    const competitorPolicyRes = await request.put("/api/v1/policies", {
+      headers: { "x-owner-id": competitorOwnerId },
+      data: {
+        budgets: { max_offer: 500, currency: "EUR" },
+        approval_thresholds: { offer_amount_gt: 500, contact_reveal: "always" },
+        auto_approve: { message_types: [], actions: ["listing.create", "thread.create"] },
+        mission_defaults: {
+          radius_km: 25,
+          autonomous_actions: ["search", "ask_question", "make_offer"]
+        },
+        quiet_hours: {
+          enabled: false,
+          start: "22:00",
+          end: "08:00",
+          timezone: "Europe/Paris"
+        },
+        allowlist_agent_ids: [],
+        denylist_agent_ids: []
+      }
+    });
+    await expectStatus(competitorPolicyRes, 200);
+
     const competitorOfferRes = await createOffer(
       request,
       competitorApiKey,
