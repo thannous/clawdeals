@@ -389,9 +389,11 @@ export async function handler(req: any, res: any, ctx: any) {
       if (!listing) {
         return jsonResponse(404, errorPayload("NOT_FOUND", "Listing not found"));
       }
+      if (listing.status !== "LIVE") {
+        return jsonResponse(409, errorPayload("LISTING_NOT_LIVE", "Listing not live"));
+      }
 
-      const ownerId = listing.owner_id || null;
-      const policyRecord = ownerId ? await getPolicyOrDefault(ownerId) : null;
+      const policyRecord = await getPolicyOrDefault(ctx.ownerId);
       const policyDecision = policyRecord
         ? evaluatePolicyAction({
             policy: policyRecord?.policy_json || {},
@@ -444,8 +446,7 @@ export async function handler(req: any, res: any, ctx: any) {
         return jsonResponse(404, errorPayload("OFFER_NOT_FOUND", "Offer not found"));
       }
 
-      const ownerId = listing.owner_id || null;
-      const policyRecord = ownerId ? await getPolicyOrDefault(ownerId) : null;
+      const policyRecord = await getPolicyOrDefault(ctx.ownerId);
       const policyDecision = policyRecord
         ? evaluatePolicyAction({
             policy: policyRecord?.policy_json || {},
