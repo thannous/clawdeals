@@ -85,8 +85,11 @@ All authenticated writes require `Idempotency-Key`.
 
 Existing private upload reservations, hash verification, type limits and quota
 enforcement remain in place (10 files, 50 MB total, JPEG/PNG/WebP/PDF).
-Downloads use `/api/v1/disputes/{id}/evidence/{item_id}`; files are streamed
-privately with no-store/nosniff/sandbox headers, not public storage URLs.
+Downloads use `/api/v1/disputes/{id}/evidence/{item_id}`. After repeating the
+party/reviewer authorization checks, the API returns a bodyless redirect to a
+private, object-scoped storage URL that expires after 60 seconds. The redirect
+is `private, no-store` and `no-referrer`; the signed URL is not included in the
+response body or audit record.
 
 The reviewer can refund despite a delivered parcel: arrival proves neither the
 contents nor their condition. Both sides can add statements and evidence; the

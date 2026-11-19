@@ -2764,17 +2764,16 @@ paths:
           required: true
           schema: { type: string, format: uuid }
       responses:
-        "200":
-          description: Confirmed private evidence bytes with no-store and sandbox headers.
-          content:
-            application/pdf:
-              schema: { type: string, format: binary }
-            image/png:
-              schema: { type: string, format: binary }
-            image/jpeg:
-              schema: { type: string, format: binary }
-            image/webp:
-              schema: { type: string, format: binary }
+        "302":
+          description: Bodyless redirect to a private, object-scoped evidence URL that expires after 60 seconds.
+          headers:
+            Location:
+              description: Short-lived signed URL for the authorized evidence object.
+              schema: { type: string, format: uri }
+            Cache-Control:
+              schema: { type: string, example: "private, no-store" }
+            Referrer-Policy:
+              schema: { type: string, example: no-referrer }
         "404": { $ref: "#/components/responses/Error404" }
 
   /v1/escrows/{escrow_id}/mark-delivered:

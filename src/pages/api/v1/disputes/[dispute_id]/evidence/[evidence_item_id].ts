@@ -5,7 +5,7 @@ import { errorPayload } from "../../../../../../server/http/errors";
 import { isUuid } from "../../../../../../server/utils/validators";
 import { getOpsConsoleOwnerId } from "../../../../../../server/config/ops";
 import { getDisputeById } from "../../../../../../server/services/disputes";
-import { getEscrow, getEvidenceItemContent } from "../../../../../../server/services/evidence";
+import { getEscrow, getEvidenceItemReadUrl } from "../../../../../../server/services/evidence";
 import { resolveEscrowParties } from "../../../../../../server/services/protected-checkout";
 
 function resolveParam(value) {
@@ -13,8 +13,8 @@ function resolveParam(value) {
   return value;
 }
 
-// Streams one confirmed evidence file to a party of the dispute or to the
-// reviewer. Files stay in private storage; no storage URL is handed out.
+// Authorizes the dispute party or reviewer before redirecting to a short-lived
+// URL for the private evidence object.
 export async function handler(req, res, ctx) {
   if (req.method !== "GET") {
     return methodNotAllowed(["GET"]);
@@ -54,19 +54,19 @@ export async function handler(req, res, ctx) {
       }
     }
 
-    const content = await getEvidenceItemContent({ disputeId: String(disputeId), evidenceItemId: String(evidenceItemId) });
-    if (!content) {
+    const readUrl = await getEvidenceItemReadUrl({
+      disputeId: String(disputeId),
+      evidenceItemId: String(evidenceItemId)
+    });
+    if (!readUrl) {
       return jsonResponse(404, errorPayload("NOT_FOUND", "Not found"));
     }
 
-    res.statusCode = 200;
-    res.setHeader("Content-Type", content.contentType);
-    res.setHeader("Content-Length", String(content.bytes.byteLength));
-    res.setHeader("Content-Disposition", `inline; filename="evidence-${String(evidenceItemId)}"`);
+    res.statusCode = 302;
+    res.setHeader("Location", readUrl.url);
     res.setHeader("Cache-Control", "private, no-store");
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
-    res.end(content.bytes);
+    res.setHeader("Referrer-Policy", "no-referrer");
+    res.end();
     return null;
   } catch (error) {
     return jsonResponse(error.status || 500, errorPayload(error.code || "ERROR", error.message, error.details));

@@ -121,6 +121,44 @@ export async function createEvidenceUploadUrl({
   return signedUrl;
 }
 
+export async function createEvidenceReadUrl(bucket: string, key: string, expiresInSeconds = 60) {
+  if (!Number.isSafeInteger(expiresInSeconds) || expiresInSeconds <= 0) {
+    throw buildStorageError("Invalid evidence URL expiry", "VALIDATION_ERROR", 400);
+  }
+
+  if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
+    const validUntil = Date.now() + expiresInSeconds * 1000;
+    const signedToken = await issueSignedToken({
+      pathname: key,
+      operations: ["get"],
+      validUntil,
+      token: getEvidenceBlobToken()
+    });
+    const result = await presignUrl(signedToken, {
+      operation: "get",
+      pathname: key,
+      validUntil,
+      useCache: false
+    });
+    if (!result?.presignedUrl) {
+      throw buildStorageError("Failed to create evidence read URL");
+    }
+    return result.presignedUrl;
+  }
+
+  if (bucket !== SUPABASE_EVIDENCE_BUCKET) {
+    throw buildStorageError("Unsupported evidence storage provider");
+  }
+  const client = getSupabaseServiceClient();
+  const { data, error } = await client.storage
+    .from(bucket)
+    .createSignedUrl(key, expiresInSeconds, { download: true });
+  if (error) throw buildStorageError(error.message || "Storage error");
+  const signedUrl = (data as any)?.signedUrl;
+  if (!signedUrl) throw buildStorageError("Failed to create evidence read URL");
+  return signedUrl;
+}
+
 export async function deleteEvidenceObject(bucket: string, key: string) {
   if (bucket === VERCEL_BLOB_EVIDENCE_BUCKET) {
     await del(key, { token: getEvidenceBlobToken() });

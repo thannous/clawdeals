@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getSupabaseServiceClient } from "../db/supabase";
 import {
   assertEvidenceStoragePolicy,
+  createEvidenceReadUrl,
   createEvidenceUploadUrl,
   deleteEvidenceObject,
   downloadEvidenceObjectBytes,
@@ -484,7 +485,7 @@ export async function listEvidenceBundle({
   };
 }
 
-export async function getEvidenceItemContent({
+export async function getEvidenceItemReadUrl({
   disputeId,
   evidenceItemId
 }: {
@@ -513,6 +514,6 @@ export async function getEvidenceItemContent({
   }
   if (!item || !isAllowedEvidenceContentType(item.content_type)) return null;
 
-  const bytes = await downloadEvidenceObjectBytes(item.storage_bucket, item.storage_key);
-  return { contentType: String(item.content_type), bytes };
+  const url = await createEvidenceReadUrl(item.storage_bucket, item.storage_key);
+  return { url };
 }
