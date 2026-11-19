@@ -24,7 +24,8 @@ export default async function handler(req, res) {
   try {
     const limit = parseOptionalInt(req.query?.limit);
     const result = await runInspectionAutoRelease({ ...(limit ? { limit } : {}) });
-    res.status(200).json(result);
+    const status = result?.failed_count > 0 || result?.skipped ? 503 : 200;
+    res.status(status).json(result);
   } catch (error) {
     res.status(500).json({
       error: error instanceof Error ? error.message : "Unknown error"
