@@ -8,6 +8,12 @@ import { publishSseEvent } from "../../../../../server/sse/store";
 import { safeAuditLog } from "../../../../../server/audit/singleton";
 import { enforceBuyMissionOffer } from "../../../../../server/policy/buy-mission-guard";
 import { createBuyMissionOfferApproval } from "../../../../../server/policy/buy-mission-approval";
+import { enforceAllowlist } from "../../../../../server/policy/enforce-allowlist";
+import { evaluatePolicyAction, POLICY_DECISION } from "../../../../../server/policy/evaluate";
+import { getPolicyOrDefault } from "../../../../../server/services/policies";
+import { createApproval } from "../../../../../server/services/approvals";
+import { canonicalJsonStringify } from "../../../../../server/utils/canonical-json";
+import crypto from "crypto";
 
 function getHeaderValue(req, name) {
   const value = req.headers?.[name];
@@ -141,6 +147,104 @@ export async function handler(req, res, ctx) {
             approval_id: approval.approval_id,
             reason: error?.details?.reason || "mission_policy",
             hard_budget_max: error?.details?.hard_budget_max ?? null
+          })
+        );
+      }
+    }
+
+    // Accepting a counterparty offer commits the buyer to its amount, so the
+    // buyer owner's offer policy applies exactly as if the buyer had proposed it.
+    if (isBuyer && !linkedMissionId && offer.proposed_by_agent_id !== agentId && ctx?.ownerId) {
+      const policyOwnerId = String(ctx.ownerId);
+      const policyRecord = await getPolicyOrDefault(policyOwnerId);
+
+      const allowlistResponse = await enforceAllowlist({
+        ownerId: policyOwnerId,
+        agentId: offer.seller_agent_id,
+        ctx,
+        policyRecord
+      });
+      if (allowlistResponse) {
+        return allowlistResponse;
+      }
+
+      const amount = Number(offer.amount);
+      const currency = String(offer.currency || "").toUpperCase();
+      const expiresAt = String(offer.expires_at);
+      const policyDecision = evaluatePolicyAction({
+        policy: policyRecord?.policy_json || {},
+        action: "offer.create",
+        offerAmount: amount,
+        offerCurrency: currency
+      });
+
+      ctx.policy = {
+        decision: policyDecision.decision,
+        policy_version: policyDecision.policy_version,
+        approval_id: null,
+        owner_id: policyOwnerId
+      };
+
+      if (policyDecision.decision !== POLICY_DECISION.AUTO_APPROVED) {
+        const reason = policyDecision.reason || "policy_requires_approval";
+        const actionRefId = crypto
+          .createHash("sha256")
+          .update(
+            canonicalJsonStringify({
+              previous_offer_id: offerId,
+              thread_id: offer.thread_id,
+              agent_id: agentId,
+              amount,
+              currency,
+              expires_at: expiresAt
+            })
+          )
+          .digest("hex");
+
+        const approval = await createApproval({
+          ownerId: policyOwnerId,
+          actionType: "offer_over_budget",
+          actionRef: {
+            listing_id: offer.listing_id,
+            thread_id: offer.thread_id,
+            owner_id: policyOwnerId,
+            agent_id: agentId,
+            buyer_agent_id: offer.buyer_agent_id,
+            seller_agent_id: offer.seller_agent_id,
+            previous_offer_id: offerId,
+            requested_action: "accept",
+            amount,
+            currency,
+            expires_at: expiresAt,
+            policy_reason: reason
+          },
+          actionRefId,
+          actionPayload: {
+            offer: { amount, currency, expires_at: expiresAt },
+            policy: {
+              decision: policyDecision.decision,
+              reason,
+              policy_version: policyDecision.policy_version
+            },
+            consequence: "Sends a binding counteroffer at the seller's amount. No contact information is shared."
+          },
+          createdByAgentId: agentId
+        });
+
+        ctx.auditEvent = "offer.approval_required";
+        ctx.outcome = { type: "BLOCKED", reason: "policy" };
+        ctx.policy = {
+          decision: POLICY_DECISION.REQUIRES_APPROVAL,
+          policy_version: policyDecision.policy_version,
+          approval_id: approval.approval_id,
+          owner_id: policyOwnerId
+        };
+
+        return jsonResponse(
+          409,
+          errorPayload("APPROVAL_REQUIRED", "Approval required", {
+            approval_id: approval.approval_id,
+            reason
           })
         );
       }
