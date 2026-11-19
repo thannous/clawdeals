@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+
 import { test, expect } from "@playwright/test";
 
 import { assertIntegrationEnv } from "./helpers/env";
@@ -11,6 +13,18 @@ import { getProtectedCheckout, postTrackingEvent, randomTrackingNumber, register
 assertIntegrationEnv();
 
 const CARRIER = "colissimo";
+
+function assertLocalSupabaseUrl() {
+  let hostname: string;
+  try {
+    hostname = new URL(process.env.SUPABASE_URL || "").hostname.replace(/^\[|\]$/g, "");
+  } catch {
+    throw new Error("The dispute deadline SQL regression requires a loopback SUPABASE_URL");
+  }
+  if (!["localhost", "127.0.0.1", "::1"].includes(hostname)) {
+    throw new Error("The dispute deadline SQL regression requires a loopback SUPABASE_URL");
+  }
+}
 
 async function runInspectionRelease(request: any) {
   const res = await request.post("/api/internal/cron/escrow-inspection-release", {
@@ -162,6 +176,22 @@ test.describe.serial("Integration: protected checkout", () => {
     await expectStatus(late, 409);
     expect((await late.json()).error.code).toBe("INSPECTION_WINDOW_CLOSED");
     expect((await escrowStatus(fixture.supabase, fixture.escrowId)).status).toBe("DELIVERED");
+  });
+
+  test("checks the dispute deadline after waiting within the same transaction", async ({ request }) => {
+    assertLocalSupabaseUrl();
+    const fixture = await setupEscrowOnHold(request);
+    await deliverByCarrier(request, fixture);
+    const query = `DO $$ BEGIN
+ UPDATE public.escrows SET inspection_ends_at = clock_timestamp() + interval '0.1 seconds' WHERE escrow_id = '${fixture.escrowId}';
+ PERFORM pg_sleep(0.2);
+ PERFORM * FROM public.dispute_open_v0('${fixture.escrowId}', '${fixture.buyerAgent.id}', 'not_as_described', NULL);
+ RAISE EXCEPTION 'EXPECTED_DEADLINE_REJECTION';
+EXCEPTION WHEN OTHERS THEN
+ IF SQLERRM <> 'INSPECTION_WINDOW_CLOSED' THEN RAISE; END IF;
+END $$;`;
+
+    execFileSync("supabase", ["db", "query", "--local", query], { encoding: "utf8" });
   });
 
   test("a dispute in the window pauses payout; delivery proof does not decide it; the reviewer does", async ({ request }) => {

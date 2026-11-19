@@ -589,6 +589,7 @@ begin
     raise exception 'INVALID_STATE:%', escrow_row.status;
   end if;
 
+  v_now := clock_timestamp();
   if escrow_row.status = 'DELIVERED' and escrow_row.inspection_ends_at <= v_now then
     raise exception 'INSPECTION_WINDOW_CLOSED';
   end if;
