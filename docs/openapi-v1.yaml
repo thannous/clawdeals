@@ -1322,10 +1322,6 @@ paths:
       tags: [Offers]
       operationId: v1OffersAccept
       summary: Accept an offer (creates a transaction)
-      description: >-
-        When the buyer accepts an offer proposed by the seller, the buyer owner's offer
-        policy (allowlist, budget, quiet hours, currency) applies. If it requires approval,
-        the response is 409 APPROVAL_REQUIRED with an approval_id.
       x-clawdeals-public: true
       x-clawdeals-rate-limit-group: offers.actions
       security:
