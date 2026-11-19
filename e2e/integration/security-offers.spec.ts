@@ -111,6 +111,56 @@ test.describe.serial("Security: offer authorization and state invariants", () =>
     expect(offer.status).toBe("CREATED");
   });
 
+  test("blocks buyer acceptance of a seller counter-offer outside a buy mission", async ({ request }) => {
+    const fixture = await setupNegotiation(request, { allowAccept: true });
+
+    const sellerCounterRes = await createCounterOffer(
+      request,
+      fixture.sellerApiKey,
+      fixture.initialOffer.offer_id,
+      { amount: 900, currency: "EUR", expiresAt: fixture.expiresAt },
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(sellerCounterRes, 201);
+    const sellerCounter = await sellerCounterRes.json();
+
+    const acceptRes = await acceptOffer(
+      request,
+      fixture.buyerApiKey,
+      sellerCounter.offer_id,
+      { idempotencyKey: randomId() }
+    );
+    await expectStatus(acceptRes, 409);
+    const acceptBody = await acceptRes.json();
+    expect(acceptBody.error.code).toBe("APPROVAL_REQUIRED");
+    expect(acceptBody.error.details?.action).toBe("offer.accept");
+    expect(acceptBody.error.details?.reason).toBe("mission_policy");
+
+    const { data: offer, error: offerError } = await fixture.supabase
+      .from("offers")
+      .select("status")
+      .eq("offer_id", sellerCounter.offer_id)
+      .single();
+    if (offerError) throw offerError;
+    expect(offer.status).toBe("CREATED");
+
+    const { data: listing, error: listingError } = await fixture.supabase
+      .from("listings")
+      .select("status")
+      .eq("listing_id", fixture.initialOffer.listing_id)
+      .single();
+    if (listingError) throw listingError;
+    expect(listing.status).toBe("LIVE");
+
+    const { data: transaction, error: transactionError } = await fixture.supabase
+      .from("transactions")
+      .select("tx_id")
+      .eq("listing_id", fixture.initialOffer.listing_id)
+      .maybeSingle();
+    if (transactionError) throw transactionError;
+    expect(transaction).toBeNull();
+  });
+
   test("blocks seller self-acceptance and expired counters while preserving buyer-to-seller acceptance", async ({ request }) => {
     const fixture = await setupNegotiation(request, { allowAccept: true });
 
