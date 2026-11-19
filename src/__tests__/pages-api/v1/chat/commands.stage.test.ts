@@ -10,15 +10,57 @@ vi.mock("../../../../server/services/offers", () => ({
 vi.mock("../../../../server/services/channel-identities", () => ({
   getChannelIdentity: vi.fn()
 }));
+vi.mock("../../../../server/services/listings", () => ({
+  getListing: vi.fn()
+}));
+vi.mock("../../../../server/services/policies", () => ({
+  getPolicyOrDefault: vi.fn()
+}));
 
 import { handler } from "../../../../pages/api/v1/chat/[command]";
 import { createStagedCommand } from "../../../../server/services/staged-commands";
 import { getOffer } from "../../../../server/services/offers";
 import { getChannelIdentity } from "../../../../server/services/channel-identities";
+import { getListing } from "../../../../server/services/listings";
+import { getPolicyOrDefault } from "../../../../server/services/policies";
 
 const createStagedCommandMock = vi.mocked(createStagedCommand);
 const getOfferMock = vi.mocked(getOffer);
 const getChannelIdentityMock = vi.mocked(getChannelIdentity);
+const getListingMock = vi.mocked(getListing);
+const getPolicyOrDefaultMock = vi.mocked(getPolicyOrDefault);
+const sellerOwnerId = "00000000-0000-4000-a000-000000000999";
+const listingId = "00000000-0000-4000-a000-000000000444";
+
+function policyRecordFor(ownerId: string, maxOffer: number, version: number) {
+  return {
+    owner_id: ownerId,
+    policy_json: {
+      version,
+      budgets: { max_offer: maxOffer, currency: "EUR" },
+      approval_thresholds: { offer_amount_gt: maxOffer - 1, contact_reveal: "ALWAYS" }
+    }
+  } as any;
+}
+
+function offerCreateRequest() {
+  return {
+    method: "POST",
+    query: { command: "commands:stage" },
+    headers: {},
+    body: {
+      action_type: "offer.create",
+      channel_identity_id: channelIdentityId,
+      origin_context: { kind: "control_dm" },
+      payload: {
+        listing_id: listingId,
+        amount: 50,
+        currency: "EUR",
+        expires_at: new Date(Date.now() + 60_000).toISOString()
+      }
+    }
+  } as any;
+}
 const channelIdentityId = "00000000-0000-4000-a000-000000000888";
 
 const baseCtx: any = {
@@ -202,6 +244,49 @@ describe("POST /v1/chat/commands:stage", () => {
     const result: any = await handler(req, null, { ...baseCtx });
     expect(result.status).toBe(404);
     expect(result.body.error.code).toBe("OFFER_NOT_FOUND");
+    expect(createStagedCommandMock).not.toHaveBeenCalled();
+  });
+  it("offer.create preview uses the caller's policy, never the seller's", async () => {
+    createStagedCommandMock.mockResolvedValue({
+      command_id: "00000000-0000-4000-a000-000000000777",
+      state: "STAGED",
+      action_type: "offer.create",
+      expires_at: new Date(Date.now() + 600_000).toISOString()
+    } as any);
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      owner_id: sellerOwnerId,
+      seller_agent_id: "00000000-0000-4000-a000-000000000666",
+      status: "LIVE"
+    } as any);
+    getPolicyOrDefaultMock.mockImplementation(async (ownerId: any) =>
+      ownerId === sellerOwnerId ? policyRecordFor(sellerOwnerId, 7777, 9) : policyRecordFor(baseCtx.ownerId, 100, 2)
+    );
+
+    const result: any = await handler(offerCreateRequest(), null, { ...baseCtx });
+
+    expect(result.status).toBe(201);
+    expect(getPolicyOrDefaultMock).toHaveBeenCalledTimes(1);
+    expect(getPolicyOrDefaultMock).toHaveBeenCalledWith(baseCtx.ownerId);
+    const impacts = result.body.preview.policy.impacts;
+    expect(impacts).toContain("max_offer=100");
+    expect(JSON.stringify(result.body)).not.toContain("7777");
+    expect(JSON.stringify(result.body)).not.toContain("7776");
+  });
+
+  it("offer.create staging rejects listings that are not LIVE", async () => {
+    getListingMock.mockResolvedValue({
+      listing_id: listingId,
+      owner_id: sellerOwnerId,
+      seller_agent_id: "00000000-0000-4000-a000-000000000666",
+      status: "DRAFT"
+    } as any);
+
+    const result: any = await handler(offerCreateRequest(), null, { ...baseCtx });
+
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("LISTING_NOT_LIVE");
+    expect(getPolicyOrDefaultMock).not.toHaveBeenCalled();
     expect(createStagedCommandMock).not.toHaveBeenCalled();
   });
 });
