@@ -106,8 +106,8 @@ test("passport mission connected: comparison criteria survive login, reload and 
   await expect(screen.getByTestId("buy-mission-smartphone-check-screen")).toBeChecked();
 });
 
-test("passport mission connected: passport and price saves produce only eligible in-app alerts and stable deduplication", { trace: "off", video: "off" }, async context => {
-  const { browser, screen, passportMission: fixture } = context;
+test("passport mission connected: passport and price saves produce only eligible in-app alerts and stable deduplication", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   const id = await createMission(fixture);
   await drain(fixture, "watchlist-backfill-queue");
   await drain(fixture, "watchlist-match-queue");
@@ -150,8 +150,8 @@ test("passport mission connected: passport and price saves produce only eligible
   expect(new URL(await browser.url()).searchParams.has("battery_health_min")).toBe(false);
 });
 
-test("passport mission connected: hidden listings, paused or expired missions and another owner disclose no alerts", { trace: "off", video: "off" }, async context => {
-  const { browser, screen, passportMission: fixture } = context;
+test("passport mission connected: hidden listings, paused or expired missions and another owner disclose no alerts", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   const id = await createMission(fixture);
   await drain(fixture, "watchlist-backfill-queue");
   await login(context, `/fr/my/missions/${id}`);
@@ -177,8 +177,8 @@ test("passport mission connected: hidden listings, paused or expired missions an
   expect(await fixture.externalDeliveries()).toBe(0);
 });
 
-test("passport mission connected: invalid criteria create nothing and opting out preserves a conventional mission", { trace: "off", video: "off" }, async context => {
-  const { browser, screen, passportMission: fixture } = context;
+test("passport mission connected: invalid criteria create nothing and opting out preserves a conventional mission", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   for (const invalid of [
     { ...smartphone, battery_health_min: 101 },
     { ...smartphone, battery_health_min: 90.5 },
@@ -205,8 +205,8 @@ test("passport mission connected: invalid criteria create nothing and opting out
 });
 
 
-test("passport mission connected: category filters agree across owner results, UI, backfill and match queues", { trace: "off", video: "off" }, async context => {
-  const { screen, passportMission: fixture } = context;
+test("passport mission connected: category filters agree across owner results, UI, backfill and match queues", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   await fixture.setListingCategory("peer", "electronics");
   const payload = body(fixture);
   const response = await fixture.api("buyer", "POST", "/api/v1/owner/missions", {
@@ -248,8 +248,8 @@ test("passport mission connected: category filters agree across owner results, U
 });
 
 
-test("passport mission connected: a foreign-market candidate creates no compatibility state or alert", { trace: "off", video: "off" }, async context => {
-  const { screen, passportMission: fixture } = context;
+test("passport mission connected: a foreign-market candidate creates no compatibility state or alert", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   const response = await fixture.api("buyer", "POST", "/api/v1/owner/missions", { ...body(fixture), market_code: "ES" });
   expect(response.status).toBe(201);
   const foreignId = response.body.watchlist_id;
@@ -271,8 +271,8 @@ test("passport mission connected: a foreign-market candidate creates no compatib
   expect(await fixture.stateRows(foreignId)).toEqual([]);
 });
 
-test("passport mission connected: market-only edits invalidate immediately and returning home emits a fresh alert", { trace: "off", video: "off" }, async context => {
-  const { browser, screen, passportMission: fixture } = context;
+test("passport mission connected: market-only edits invalidate immediately and returning home emits a fresh alert", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   const id = await createMission(fixture);
   await drain(fixture, "watchlist-backfill-queue");
   const initial = (await fixture.alertRows(id)).find(row => row.entity_id === fixture.entries.compatible.id);
@@ -301,8 +301,8 @@ test("passport mission connected: market-only edits invalidate immediately and r
 });
 
 
-test("passport mission connected: bounded backfill shares its budget fairly and resets progress on a new enqueue", { trace: "off", video: "off" }, async context => {
-  const { screen, passportMission: fixture } = context;
+test("passport mission connected: bounded backfill shares its budget fairly and resets progress on a new enqueue", { trace: "off", video: "off" }, async ({ app, browser, screen, passportMission: fixture }) => {
+  const context = { app, browser, screen, passportMission: fixture };
   await fixture.placeListingLast("compatible");
   const ids = [await createMission(fixture), await createMission(fixture)];
   const first = await fixture.drain("watchlist-backfill-queue", { transition_limit: 2 });
