@@ -11,7 +11,9 @@ type RefusedRequest = { method: string; origin: string; path: string };
 type CollectionError = { stage: string; name: string; message: string; stack?: string };
 
 export const test = base.extend<{ publicTraffic: void }>({
-  publicTraffic: async ({ app, browser }, provide) => {
+  // No test names this guard. Since e2e 0.24 a fixture is set up only for a
+  // test that names it, so `auto` keeps it installed before every app.open.
+  publicTraffic: [async ({ app, browser }, provide) => {
     expect(app.baseUrl).toBe(`${APP_ORIGIN}/`);
     const refusedWrites: RefusedRequest[] = [];
     const refusedExternal: RefusedRequest[] = [];
@@ -81,5 +83,5 @@ export const test = base.extend<{ publicTraffic: void }>({
     // the guard active until then, including for late background requests.
     if (bodyFailed) throw bodyError;
     if (collectionErrors.length) throw new AggregateError(rawCollectionErrors, "Production public evidence collection failed");
-  }
+  }, { auto: true }]
 });

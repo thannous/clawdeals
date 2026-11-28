@@ -6,12 +6,22 @@ and read `node_modules/e2e/skills/e2e/SKILL.md` plus the relevant topic before
 changing the tests or SDK calls. Current functional requirements and
 [AGENTS.md](../AGENTS.md) govern expectations and proportional verification.
 
-The pinned runner is `e2e` 0.23.0 with `@e2e-dev/web` 0.15.5. The web engine
-pins `playwright-core` 1.64.1, so the retained Playwright suites stay on
-`@playwright/test` 1.64.1 and the Chromium installation below serves both.
+The pinned runner is `e2e` 0.25.0 (with its `@e2e-dev/core` 0.25.0) and
+`@e2e-dev/web` 0.17.0. The web engine pins `playwright-core` 1.65.1, so the
+retained Playwright suites stay on `@playwright/test` 1.65.1 and the Chromium
+installation below serves both.
 Upgrade the three together: a newer `@playwright/test` alone installs a second
-`playwright-core` and a second browser build. Use the repository's Node 24 runtime; native device tooling is not needed
+`playwright-core` and a second browser build. A new runner version also needs
+its report layout qualified in `e2e/testerarmy/manifest.mjs` against a real run.
+Use the repository's Node 24 runtime; native device tooling is not needed
 for this browser application.
+
+Since `e2e` 0.24 a `test.extend` fixture is set up only for a test that names it
+by destructuring its first parameter; a guard that no test names, such as the
+production request guard, is declared `{ auto: true }`. Since `@e2e-dev/web` 0.17,
+string patterns given to `browser.route`, `unroute` and `waitForResponse` are
+Playwright URL globs: `?` is literal and a pattern without a leading `*` resolves
+against the app URL.
 
 ## Start and select a target
 
